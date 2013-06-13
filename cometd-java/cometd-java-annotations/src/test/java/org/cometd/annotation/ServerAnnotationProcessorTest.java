@@ -81,139 +81,133 @@ public class ServerAnnotationProcessorTest
     @Test
     public void testNonServiceAnnotatedClass() throws Exception
     {
-        class S
-        {
-            @Inject
-            private BayeuxServer bayeux;
-        }
-
-        S s = new S();
+        NonServiceAnnotatedService s = new NonServiceAnnotatedService();
         boolean processed = processor.process(s);
         assertFalse(processed);
         assertNull(s.bayeux);
     }
 
+    public static class NonServiceAnnotatedService
+    {
+        @Inject
+        private BayeuxServer bayeux;
+    }
+
     @Test
     public void testInjectBayeuxServerOnField() throws Exception
     {
-        @Service
-        class S
-        {
-            @Inject
-            private BayeuxServer bayeux;
-        }
-
-        S s = new S();
+        InjectBayeuxServerOnFieldService s = new InjectBayeuxServerOnFieldService();
         boolean processed = processor.process(s);
         assertTrue(processed);
         assertNotNull(s.bayeux);
+    }
+
+    @Service
+    public static class InjectBayeuxServerOnFieldService
+    {
+        @Inject
+        private BayeuxServer bayeux;
     }
 
     @Test
     public void testInjectBayeuxServerOnMethod() throws Exception
     {
-        @Service
-        class S
-        {
-            private BayeuxServer bayeux;
-            @Inject
-            private void setBayeuxServer(BayeuxServer bayeuxServer)
-            {
-                this.bayeux = bayeuxServer;
-            }
-        }
-
-        S s = new S();
+        InjectBayeuxServerOnMethodService s = new InjectBayeuxServerOnMethodService();
         boolean processed = processor.process(s);
         assertTrue(processed);
         assertNotNull(s.bayeux);
     }
 
+        @Service
+    public static class InjectBayeuxServerOnMethodService
+    {
+        private BayeuxServer bayeux;
+
+        @Inject
+        private void setBayeuxServer(BayeuxServer bayeuxServer)
+        {
+            this.bayeux = bayeuxServer;
+        }
+    }
+
     @Test
     public void testInjectLocalSessionOnField() throws Exception
     {
-        @Service
-        class S
-        {
-            @Session
-            private LocalSession localSession;
-        }
-
-        S s = new S();
+        InjectLocalSessionOnFieldService s = new InjectLocalSessionOnFieldService();
         boolean processed = processor.process(s);
         assertTrue(processed);
         assertNotNull(s.localSession);
+    }
+
+    @Service
+    public static class InjectLocalSessionOnFieldService
+    {
+        @Session
+        private LocalSession localSession;
     }
 
     @Test
     public void testInjectLocalSessionOnMethod() throws Exception
     {
-        @Service
-        class S
-        {
-            private LocalSession localSession;
-            @Session
-            private void set(LocalSession localSession)
-            {
-                this.localSession = localSession;
-            }
-        }
-
-        S s = new S();
+        InjectLocalSessionOnMethodService s = new InjectLocalSessionOnMethodService();
         boolean processed = processor.process(s);
         assertTrue(processed);
         assertNotNull(s.localSession);
     }
 
+    @Service
+    public static class InjectLocalSessionOnMethodService
+    {
+        private LocalSession localSession;
+
+        @Session
+        private void set(LocalSession localSession)
+        {
+            this.localSession = localSession;
+        }
+    }
+
     @Test
     public void testInjectServerSessionOnField() throws Exception
     {
-        @Service
-        class S
-        {
-            @Session
-            private ServerSession serverSession;
-        }
-
-        S s = new S();
+        InjectServerSessionOnFieldService s = new InjectServerSessionOnFieldService();
         boolean processed = processor.process(s);
         assertTrue(processed);
         assertNotNull(s.serverSession);
+    }
+
+    @Service
+    public static class InjectServerSessionOnFieldService
+    {
+        @Session
+        private ServerSession serverSession;
     }
 
     @Test
     public void testInjectServerSessionOnMethod() throws Exception
     {
-        @Service
-        class S
-        {
-            private ServerSession serverSession;
-            @Session
-            private void set(ServerSession serverSession)
-            {
-                this.serverSession = serverSession;
-            }
-        }
-
-        S s = new S();
+        InjectServerSessionOnMethodService s = new InjectServerSessionOnMethodService();
         boolean processed = processor.process(s);
         assertTrue(processed);
         assertNotNull(s.serverSession);
     }
 
+    @Service
+    public static class InjectServerSessionOnMethodService
+    {
+        private ServerSession serverSession;
+
+        @Session
+        private void set(ServerSession serverSession)
+        {
+            this.serverSession = serverSession;
+        }
+    }
+
     @Test
     public void testInjectLocalSessionAndServerSession() throws Exception
     {
-        @Service
-        class S
-        {
-            @Session
-            private LocalSession localSession;
-            @Session
-            private ServerSession serverSession;
-        }
-
-        S s = new S();
+        InjectLocalSessionAndServerSessionService s = new InjectLocalSessionAndServerSessionService();
         boolean processed = processor.process(s);
         assertTrue(processed);
         assertNotNull(s.localSession);
@@ -221,26 +215,22 @@ public class ServerAnnotationProcessorTest
         assertSame(s.localSession.getServerSession(), s.serverSession);
     }
 
+    @Service
+    public static class InjectLocalSessionAndServerSessionService
+    {
+        @Session
+        private LocalSession localSession;
+        @Session
+        private ServerSession serverSession;
+    }
+
     @Test
     public void testListenUnlisten() throws Exception
     {
-        final AtomicReference<ServerSession> sessionRef = new AtomicReference<>();
-        final AtomicReference<ServerMessage> messageRef = new AtomicReference<>();
+        final AtomicReference<ServerSession> sessionRef = new AtomicReference<ServerSession>();
+        final AtomicReference<ServerMessage> messageRef = new AtomicReference<ServerMessage>();
 
-        @Service
-        class S
-        {
-            @Listener("/foo")
-            private void foo(ServerSession remote, ServerMessage.Mutable message)
-            {
-                assertNotNull(remote);
-                assertNotNull(message);
-                sessionRef.set(remote);
-                messageRef.set(message);
-            }
-        }
-
-        S s = new S();
+        ListenUnlistenService s = new ListenUnlistenService(sessionRef, messageRef);
         boolean processed = processor.process(s);
         assertTrue(processed);
         ServerChannel channel = bayeuxServer.getChannel("/foo");
@@ -277,36 +267,34 @@ public class ServerAnnotationProcessorTest
         assertNull(bayeuxServer.getChannel(channel.getId()));
     }
 
+    @Service
+    public static class ListenUnlistenService
+    {
+        private final AtomicReference<ServerSession> sessionRef;
+        private final AtomicReference<ServerMessage> messageRef;
+
+        public ListenUnlistenService(AtomicReference<ServerSession> sessionRef, AtomicReference<ServerMessage> messageRef)
+        {
+            this.sessionRef = sessionRef;
+            this.messageRef = messageRef;
+        }
+
+        @Listener("/foo")
+        public void foo(ServerSession remote, ServerMessage.Mutable message)
+        {
+            assertNotNull(remote);
+            assertNotNull(message);
+            sessionRef.set(remote);
+            messageRef.set(message);
+        }
+    }
+
     @Test
     public void testListenerPublishingOnOwnChannelDoesNotReceive() throws Exception
     {
         final AtomicInteger counter = new AtomicInteger();
 
-        @Service
-        class S
-        {
-            @Inject
-            private BayeuxServer bayeuxServer;
-            @Session
-            private ServerSession serverSession;
-
-            @Listener("/foo/*")
-            private void foo(ServerSession remote, ServerMessage.Mutable message)
-            {
-                int count = counter.incrementAndGet();
-
-                String channelName = "/foo/own";
-                bayeuxServer.createIfAbsent(channelName);
-
-                // This callback should be called only once, triggered by the client's publish
-                // However if the Listener.receiveOwnPublishes attribute is not taken in account
-                // this callback is called again, and we want to test that this does not happen.
-                if (count == 1)
-                    bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap<>());
-            }
-        }
-
-        S s = new S();
+        ListenerPublishingOnOwnChannelDoesNotReceiveService s = new ListenerPublishingOnOwnChannelDoesNotReceiveService(counter);
         boolean processed = processor.process(s);
         assertTrue(processed);
 
@@ -320,31 +308,42 @@ public class ServerAnnotationProcessorTest
         assertEquals(1, counter.get());
     }
 
+    @Service
+    public static class ListenerPublishingOnOwnChannelDoesNotReceiveService
+    {
+        private final AtomicInteger counter;
+        @Inject
+        private BayeuxServer bayeuxServer;
+        @Session
+        private ServerSession serverSession;
+
+        public ListenerPublishingOnOwnChannelDoesNotReceiveService(AtomicInteger counter)
+        {
+            this.counter = counter;
+        }
+
+        @Listener("/foo/*")
+        public void foo(ServerSession remote, ServerMessage.Mutable message)
+        {
+            int count = counter.incrementAndGet();
+
+            String channelName = "/foo/own";
+            bayeuxServer.createIfAbsent(channelName);
+
+            // This callback should be called only once, triggered by the client's publish
+            // However if the Listener.receiveOwnPublishes attribute is not taken in account
+            // this callback is called again, and we want to test that this does not happen.
+            if (count == 1)
+                bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap(), null);
+        }
+    }
+
     @Test
     public void testListenerPublishingOnOwnChannelReceives() throws Exception
     {
         final AtomicInteger counter = new AtomicInteger();
 
-        @Service
-        class S
-        {
-            @Inject
-            private BayeuxServer bayeuxServer;
-            @Session
-            private ServerSession serverSession;
-
-            @Listener(value = "/foo/*", receiveOwnPublishes = true)
-            private void foo(ServerSession remote, ServerMessage.Mutable message)
-            {
-                counter.incrementAndGet();
-                String channelName = "/foo/own";
-                bayeuxServer.createIfAbsent(channelName);
-                if (!channelName.equals(message.getChannel()))
-                    bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap<>());
-            }
-        }
-
-        S s = new S();
+        ListenerPublishingOnOwnChannelReceivesService s = new ListenerPublishingOnOwnChannelReceivesService(counter);
         boolean processed = processor.process(s);
         assertTrue(processed);
 
@@ -358,25 +357,37 @@ public class ServerAnnotationProcessorTest
         assertEquals(2, counter.get());
     }
 
+    @Service
+    public static class ListenerPublishingOnOwnChannelReceivesService
+    {
+        private final AtomicInteger counter;
+        @Inject
+        private BayeuxServer bayeuxServer;
+        @Session
+        private ServerSession serverSession;
+
+        public ListenerPublishingOnOwnChannelReceivesService(AtomicInteger counter)
+        {
+            this.counter = counter;
+        }
+
+        @Listener(value = "/foo/*", receiveOwnPublishes = true)
+        public void foo(ServerSession remote, ServerMessage.Mutable message)
+        {
+            counter.incrementAndGet();
+            String channelName = "/foo/own";
+            bayeuxServer.createIfAbsent(channelName);
+            if (!channelName.equals(message.getChannel()))
+                bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap(), null);
+        }
+    }
+
     @Test
     public void testSubscribeUnsubscribe() throws Exception
     {
-        final AtomicReference<Message> messageRef = new AtomicReference<>();
+        final AtomicReference<Message> messageRef = new AtomicReference<Message>();
 
-        @Service
-        class S
-        {
-            @Session
-            private LocalSession serverSession;
-
-            @Subscription("/foo/**")
-            private void foo(Message message)
-            {
-                messageRef.set(message);
-            }
-        }
-
-        S s = new S();
+        SubscribeUnsubscribeService s = new SubscribeUnsubscribeService(messageRef);
         boolean processed = processor.process(s);
         assertTrue(processed);
 
@@ -403,32 +414,31 @@ public class ServerAnnotationProcessorTest
         assertNull(messageRef.get());
     }
 
+    @Service
+    public static class SubscribeUnsubscribeService
+    {
+        private final AtomicReference<Message> messageRef;
+        @Session
+        private LocalSession serverSession;
+
+        public SubscribeUnsubscribeService(AtomicReference<Message> messageRef)
+        {
+            this.messageRef = messageRef;
+        }
+
+        @Subscription("/foo/**")
+        public void foo(Message message)
+        {
+            messageRef.set(message);
+        }
+    }
+
     @Test
     public void testListenerOnOverriddenMethod() throws Exception
     {
         final CountDownLatch messageLatch = new CountDownLatch(2);
 
-        @Service
-        class S
-        {
-            @Listener("/foo")
-            protected void foo(ServerSession remote, ServerMessage.Mutable message)
-            {
-                messageLatch.countDown();
-            }
-        }
-
-        class SS extends S
-        {
-            @Override
-            protected void foo(ServerSession remote, ServerMessage.Mutable message)
-            {
-                super.foo(remote, message);
-                messageLatch.countDown();
-            }
-        }
-
-        SS ss = new SS();
+        DerivedListenerOnOverriddenMethodService ss = new DerivedListenerOnOverriddenMethodService(messageLatch);
         boolean processed = processor.process(ss);
         assertTrue(processed);
 
@@ -440,22 +450,45 @@ public class ServerAnnotationProcessorTest
         assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
     }
 
+    @Service
+    public static class ListenerOnOverriddenMethodService
+    {
+        protected final CountDownLatch messageLatch;
+
+        public ListenerOnOverriddenMethodService(CountDownLatch messageLatch)
+        {
+
+            this.messageLatch = messageLatch;
+        }
+
+        @Listener("/foo")
+        public void foo(ServerSession remote, ServerMessage.Mutable message)
+        {
+            messageLatch.countDown();
+        }
+    }
+
+    public static class DerivedListenerOnOverriddenMethodService extends ListenerOnOverriddenMethodService
+    {
+        public DerivedListenerOnOverriddenMethodService(CountDownLatch messageLatch)
+        {
+            super(messageLatch);
+        }
+
+        @Override
+        public void foo(ServerSession remote, ServerMessage.Mutable message)
+        {
+            super.foo(remote, message);
+            messageLatch.countDown();
+        }
+    }
+
     @Test
     public void testListenerMethodWithCovariantParameters() throws Exception
     {
         final CountDownLatch messageLatch = new CountDownLatch(1);
 
-        @Service
-        class S
-        {
-            @Listener("/foo")
-            protected void foo(org.cometd.bayeux.Session remote, Message message)
-            {
-                messageLatch.countDown();
-            }
-        }
-
-        S s = new S();
+        ListenerMethodWithCovariantParametersService s = new ListenerMethodWithCovariantParametersService(messageLatch);
         boolean processed = processor.process(s);
         assertTrue(processed);
 
@@ -464,10 +497,27 @@ public class ServerAnnotationProcessorTest
         remote.handshake();
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo");
-        message.setData(new HashMap<>());
+        message.setData(new HashMap());
         bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
 
         assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class ListenerMethodWithCovariantParametersService
+    {
+        private final CountDownLatch messageLatch;
+
+        public ListenerMethodWithCovariantParametersService(CountDownLatch messageLatch)
+        {
+            this.messageLatch = messageLatch;
+        }
+
+        @Listener("/foo")
+        public void foo(org.cometd.bayeux.Session remote, Message message)
+        {
+            messageLatch.countDown();
+        }
     }
 
     @Test
@@ -475,24 +525,7 @@ public class ServerAnnotationProcessorTest
     {
         final CountDownLatch messageLatch = new CountDownLatch(1);
 
-        @Service
-        class S
-        {
-            @Listener("/foo")
-            protected Object foo(ServerSession remote, ServerMessage.Mutable message)
-            {
-                // Do not unbox it, we are testing exactly this case
-                return new Boolean(false);
-            }
-
-            @Subscription("/foo")
-            public void foo(Message message)
-            {
-                messageLatch.countDown();
-            }
-        }
-
-        S s = new S();
+        ListenerMethodReturningNewBooleanFalseService s = new ListenerMethodReturningNewBooleanFalseService(messageLatch);
         boolean processed = processor.process(s);
         assertTrue(processed);
 
@@ -507,26 +540,34 @@ public class ServerAnnotationProcessorTest
         assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
     }
 
+    @Service
+    public static class ListenerMethodReturningNewBooleanFalseService
+    {
+        private final CountDownLatch messageLatch;
+
+        public ListenerMethodReturningNewBooleanFalseService(CountDownLatch messageLatch)
+        {
+            this.messageLatch = messageLatch;
+        }
+
+        @Listener("/foo")
+        public Object foo(ServerSession remote, ServerMessage.Mutable message)
+        {
+            // Do not unbox it, we are testing exactly this case
+            return new Boolean(false);
+        }
+
+        @Subscription("/foo")
+        public void foo(Message message)
+        {
+            messageLatch.countDown();
+        }
+    }
+
     @Test
     public void testLifecycleMethodsWithWrongReturnType() throws Exception
     {
-        @Service
-        class S
-        {
-            @PostConstruct
-            public Object init()
-            {
-                return null;
-            }
-
-            @PreDestroy
-            public Object destroy()
-            {
-                return null;
-            }
-        }
-
-        S s = new S();
+        LifecycleMethodsWithWrongReturnTypeService s = new LifecycleMethodsWithWrongReturnTypeService();
 
         try
         {
@@ -547,24 +588,26 @@ public class ServerAnnotationProcessorTest
         }
     }
 
+    @Service
+    public static class LifecycleMethodsWithWrongReturnTypeService
+    {
+        @PostConstruct
+        public Object init()
+        {
+            return null;
+        }
+
+        @PreDestroy
+        public Object destroy()
+        {
+            return null;
+        }
+    }
+
     @Test
     public void testLifecycleMethodsWithWrongParameters() throws Exception
     {
-        @Service
-        class S
-        {
-            @PostConstruct
-            public void init(Object param)
-            {
-            }
-
-            @PreDestroy
-            public void destroy(Object param)
-            {
-            }
-        }
-
-        S s = new S();
+        LifecycleMethodsWithWrongParametersService s = new LifecycleMethodsWithWrongParametersService();
 
         try
         {
@@ -581,6 +624,20 @@ public class ServerAnnotationProcessorTest
             fail();
         }
         catch (RuntimeException x)
+        {
+        }
+    }
+
+    @Service
+    public static class LifecycleMethodsWithWrongParametersService
+    {
+        @PostConstruct
+        public void init(Object param)
+        {
+        }
+
+        @PreDestroy
+        public void destroy(Object param)
         {
         }
     }
@@ -612,31 +669,7 @@ public class ServerAnnotationProcessorTest
     @Test
     public void testMultipleLifecycleMethodsInSameClass() throws Exception
     {
-        @Service
-        class S
-        {
-            @PostConstruct
-            public void init1()
-            {
-            }
-
-            @PostConstruct
-            public void init2()
-            {
-            }
-
-            @PreDestroy
-            public void destroy1()
-            {
-            }
-
-            @PreDestroy
-            public void destroy2()
-            {
-            }
-        }
-
-        S s = new S();
+        MultipleLifecycleMethodsInSameClassService s = new MultipleLifecycleMethodsInSameClassService();
 
         try
         {
@@ -657,29 +690,37 @@ public class ServerAnnotationProcessorTest
         }
     }
 
+    @Service
+    public static class MultipleLifecycleMethodsInSameClassService
+    {
+        @PostConstruct
+        public void init1()
+        {
+        }
+
+        @PostConstruct
+        public void init2()
+        {
+        }
+
+        @PreDestroy
+        public void destroy1()
+        {
+        }
+
+        @PreDestroy
+        public void destroy2()
+        {
+        }
+    }
+
     @Test
     public void testInitDestroy() throws Exception
     {
         final CountDownLatch initLatch = new CountDownLatch(1);
         final CountDownLatch destroyLatch = new CountDownLatch(1);
 
-        @Service
-        class S
-        {
-            @PostConstruct
-            public void init()
-            {
-                initLatch.countDown();
-            }
-
-            @PreDestroy
-            public void destroy()
-            {
-                destroyLatch.countDown();
-            }
-        }
-
-        S s = new S();
+        InitDestroyService s = new InitDestroyService(initLatch, destroyLatch);
 
         processor.process(s);
         assertTrue(initLatch.await(5, TimeUnit.SECONDS));
@@ -688,38 +729,78 @@ public class ServerAnnotationProcessorTest
         assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
     }
 
+    @Service
+    public static class InitDestroyService
+    {
+        private final CountDownLatch initLatch;
+        private final CountDownLatch destroyLatch;
+
+        public InitDestroyService(CountDownLatch initLatch, CountDownLatch destroyLatch)
+        {
+            this.initLatch = initLatch;
+            this.destroyLatch = destroyLatch;
+        }
+
+        @PostConstruct
+        public void init()
+        {
+            initLatch.countDown();
+        }
+
+        @PreDestroy
+        public void destroy()
+        {
+            destroyLatch.countDown();
+        }
+    }
+
     @Test
     public void testInitInSuperClass() throws Exception
     {
         final CountDownLatch initLatch = new CountDownLatch(1);
         final CountDownLatch destroyLatch = new CountDownLatch(1);
 
-        @Service
-        class S
-        {
-            @PostConstruct
-            protected void init()
-            {
-                initLatch.countDown();
-            }
-        }
-
-        class SS extends S
-        {
-            @PreDestroy
-            private void destroy()
-            {
-                destroyLatch.countDown();
-            }
-        }
-
-        SS ss = new SS();
+        DerivedInitInSuperClassService ss = new DerivedInitInSuperClassService(initLatch, destroyLatch);
 
         processor.process(ss);
         assertTrue(initLatch.await(5, TimeUnit.SECONDS));
 
         processor.deprocess(ss);
         assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class InitInSuperClassService
+    {
+        private final CountDownLatch initLatch;
+
+        public InitInSuperClassService(CountDownLatch initLatch)
+        {
+            this.initLatch = initLatch;
+        }
+
+        @PostConstruct
+        protected void init()
+        {
+            initLatch.countDown();
+        }
+    }
+
+    public class DerivedInitInSuperClassService extends InitInSuperClassService
+    {
+        private final CountDownLatch destroyLatch;
+
+        public DerivedInitInSuperClassService(CountDownLatch initLatch, CountDownLatch destroyLatch)
+        {
+            super(initLatch);
+            this.destroyLatch = destroyLatch;
+        }
+
+        @PreDestroy
+        private void destroy()
+        {
+            destroyLatch.countDown();
+        }
     }
 
     @Test
@@ -728,41 +809,56 @@ public class ServerAnnotationProcessorTest
         final CountDownLatch initLatch = new CountDownLatch(2);
         final CountDownLatch destroyLatch = new CountDownLatch(1);
 
-        @Service
-        class S
-        {
-            @PostConstruct
-            public void init()
-            {
-                assertEquals(1, initLatch.getCount());
-                initLatch.countDown();
-            }
-        }
-
-        class SS extends S
-        {
-            @Override
-            public void init()
-            {
-                assertEquals(2, initLatch.getCount());
-                initLatch.countDown();
-                super.init();
-            }
-
-            @PreDestroy
-            void destroy()
-            {
-                destroyLatch.countDown();
-            }
-        }
-
-        SS ss = new SS();
+        DerivedInitOverriddenService ss = new DerivedInitOverriddenService(initLatch, destroyLatch);
 
         processor.process(ss);
         assertTrue(initLatch.await(5, TimeUnit.SECONDS));
 
         processor.deprocess(ss);
         assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class InitOverriddenService
+    {
+        protected final CountDownLatch initLatch;
+
+        public InitOverriddenService(CountDownLatch initLatch)
+        {
+            this.initLatch = initLatch;
+        }
+
+        @PostConstruct
+        public void init()
+        {
+            assertEquals(1, initLatch.getCount());
+            initLatch.countDown();
+        }
+    }
+
+    public static class DerivedInitOverriddenService extends InitOverriddenService
+    {
+        private final CountDownLatch destroyLatch;
+
+        public DerivedInitOverriddenService(CountDownLatch initLatch, CountDownLatch destroyLatch)
+        {
+            super(initLatch);
+            this.destroyLatch = destroyLatch;
+        }
+
+        @Override
+        public void init()
+        {
+            assertEquals(2, initLatch.getCount());
+            initLatch.countDown();
+            super.init();
+        }
+
+        @PreDestroy
+        void destroy()
+        {
+            destroyLatch.countDown();
+        }
     }
 
     @Test
@@ -771,42 +867,7 @@ public class ServerAnnotationProcessorTest
         final CountDownLatch initLatch = new CountDownLatch(2);
         final CountDownLatch destroyLatch = new CountDownLatch(2);
 
-        @Service
-        class S
-        {
-            @PostConstruct
-            public void init1()
-            {
-                assertEquals(2, initLatch.getCount());
-                initLatch.countDown();
-            }
-
-            @PreDestroy
-            public void destroy1()
-            {
-                assertEquals(1, destroyLatch.getCount());
-                destroyLatch.countDown();
-            }
-        }
-
-        class SS extends S
-        {
-            @PostConstruct
-            public void init2()
-            {
-                assertEquals(1, initLatch.getCount());
-                initLatch.countDown();
-            }
-
-            @PreDestroy
-            public void destroy2()
-            {
-                assertEquals(2, destroyLatch.getCount());
-                destroyLatch.countDown();
-            }
-        }
-
-        SS ss = new SS();
+        DerivedMultipleLifecycleMethodsInDifferentClassesService ss = new DerivedMultipleLifecycleMethodsInDifferentClassesService(initLatch, destroyLatch);
 
         processor.process(ss);
         assertTrue(initLatch.await(5, TimeUnit.SECONDS));
@@ -815,28 +876,61 @@ public class ServerAnnotationProcessorTest
         assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
     }
 
+    @Service
+    public static class MultipleLifecycleMethodsInDifferentClassesService
+    {
+        protected final CountDownLatch initLatch;
+        protected final CountDownLatch destroyLatch;
+
+        public MultipleLifecycleMethodsInDifferentClassesService(CountDownLatch initLatch, CountDownLatch destroyLatch)
+        {
+            this.initLatch = initLatch;
+            this.destroyLatch = destroyLatch;
+        }
+
+        @PostConstruct
+        public void init1()
+        {
+            assertEquals(2, initLatch.getCount());
+            initLatch.countDown();
+        }
+
+        @PreDestroy
+        public void destroy1()
+        {
+            assertEquals(1, destroyLatch.getCount());
+            destroyLatch.countDown();
+        }
+    }
+
+    public class DerivedMultipleLifecycleMethodsInDifferentClassesService extends MultipleLifecycleMethodsInDifferentClassesService
+    {
+        public DerivedMultipleLifecycleMethodsInDifferentClassesService(CountDownLatch initLatch, CountDownLatch destroyLatch)
+        {
+            super(initLatch, destroyLatch);
+        }
+
+        @PostConstruct
+        public void init2()
+        {
+            assertEquals(1, initLatch.getCount());
+            initLatch.countDown();
+        }
+
+        @PreDestroy
+        public void destroy2()
+        {
+            assertEquals(2, destroyLatch.getCount());
+            destroyLatch.countDown();
+        }
+    }
+
     @Test
     public void testConfigureDefault() throws Exception
     {
-        final Set<String> configured = new HashSet<>();
+        final Set<String> configured = new HashSet<String>();
 
-        @Service
-        class S
-        {
-            @Configure(value = "/foo/bar")
-            private void configureFooBar(ConfigurableServerChannel channel)
-            {
-                configured.add(channel.getId());
-            }
-
-            @Configure(value = {"/blah", "/halb"})
-            private void configureBlah(ConfigurableServerChannel channel)
-            {
-                configured.add(channel.getId());
-            }
-        }
-
-        S s = new S();
+        ConfigureDefaultService s = new ConfigureDefaultService(configured);
         boolean processed = processor.process(s);
         assertTrue(processed);
 
@@ -844,7 +938,7 @@ public class ServerAnnotationProcessorTest
         assertTrue(configured.contains("/blah"));
         assertTrue(configured.contains("/halb"));
 
-        S s2 = new S();
+        ConfigureDefaultService s2 = new ConfigureDefaultService(configured);
         try
         {
             processor.process(s2);
@@ -855,25 +949,38 @@ public class ServerAnnotationProcessorTest
         }
     }
 
+    @Service
+    public static class ConfigureDefaultService
+    {
+        private final Set<String> configured;
+
+        public ConfigureDefaultService(Set<String> configured)
+        {
+            this.configured = configured;
+        }
+
+        @Configure(value = "/foo/bar")
+        private void configureFooBar(ConfigurableServerChannel channel)
+        {
+            configured.add(channel.getId());
+        }
+
+        @Configure(value = {"/blah", "/halb"})
+        private void configureBlah(ConfigurableServerChannel channel)
+        {
+            configured.add(channel.getId());
+        }
+    }
+
     @Test
     public void testConfigureNoErrorIfExists() throws Exception
     {
-        final List<String> configured = new ArrayList<>();
+        final List<String> configured = new ArrayList<String>();
 
-        @Service
-        class S
-        {
-            @Configure(value = "/foo", errorIfExists = false)
-            private void configureFooBar(ConfigurableServerChannel channel)
-            {
-                configured.add(channel.getId());
-            }
-        }
-
-        S s1 = new S();
+        ConfigureNoErrorIfExistsService s1 = new ConfigureNoErrorIfExistsService(configured);
         boolean processed = processor.process(s1);
         assertTrue(processed);
-        S s2 = new S();
+        ConfigureNoErrorIfExistsService s2 = new ConfigureNoErrorIfExistsService(configured);
         processed = processor.process(s2);
         assertTrue(processed);
 
@@ -881,25 +988,32 @@ public class ServerAnnotationProcessorTest
         assertEquals("/foo", configured.get(0));
     }
 
+    @Service
+    public static class ConfigureNoErrorIfExistsService
+    {
+        private final List<String> configured;
+
+        public ConfigureNoErrorIfExistsService(List<String> configured)
+        {
+            this.configured = configured;
+        }
+
+        @Configure(value = "/foo", errorIfExists = false)
+        private void configureFooBar(ConfigurableServerChannel channel)
+        {
+            configured.add(channel.getId());
+        }
+    }
+
     @Test
     public void testConfigureConfigureIfExists() throws Exception
     {
-        final List<String> configured = new ArrayList<>();
+        final List<String> configured = new ArrayList<String>();
 
-        @Service
-        class S
-        {
-            @Configure(value = "/foo", configureIfExists = true)
-            private void configureFooBar(ConfigurableServerChannel channel)
-            {
-                configured.add(channel.getId());
-            }
-        }
-
-        S s1 = new S();
+        ConfigureConfigureIfExistsService s1 = new ConfigureConfigureIfExistsService(configured);
         boolean processed = processor.process(s1);
         assertTrue(processed);
-        S s2 = new S();
+        ConfigureConfigureIfExistsService s2 = new ConfigureConfigureIfExistsService(configured);
         processed = processor.process(s2);
         assertTrue(processed);
 
@@ -908,31 +1022,48 @@ public class ServerAnnotationProcessorTest
         assertEquals("/foo", configured.get(1));
     }
 
+    @Service
+    public static class ConfigureConfigureIfExistsService
+    {
+        private final List<String> configured;
+
+        public ConfigureConfigureIfExistsService(List<String> configured)
+        {
+            this.configured = configured;
+        }
+
+        @Configure(value = "/foo", configureIfExists = true)
+        private void configureFooBar(ConfigurableServerChannel channel)
+        {
+            configured.add(channel.getId());
+        }
+    }
+
     @Test
     public void testInjectables() throws Exception
     {
-        class I
-        {
-        }
-
-        class II extends I
-        {
-        }
-
-        @Service
-        class S
-        {
-            @Inject
-            private I i;
-        }
-
-        I i = new II();
-        S s = new S();
+        Injectables i = new DerivedInjectables();
+        InjectablesService s = new InjectablesService();
         processor = new ServerAnnotationProcessor(bayeuxServer, i);
         boolean processed = processor.process(s);
         assertTrue(processed);
 
         assertSame(i, s.i);
+    }
+
+    class Injectables
+    {
+    }
+
+    class DerivedInjectables extends Injectables
+    {
+    }
+
+    @Service
+    public static class InjectablesService
+    {
+        @Inject
+        private Injectables i;
     }
 
     @Service

@@ -46,17 +46,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
         bayeux.setSecurityPolicy(new Policy());
 
         final AtomicBoolean subscribe = new AtomicBoolean();
-        new AbstractService(bayeux, "test")
-        {
-            {
-                addService(Channel.META_SUBSCRIBE, "metaSubscribe");
-            }
-
-            public void metaSubscribe(ServerSession remote, Message message)
-            {
-                subscribe.set(true);
-            }
-        };
+        new MetaSubscribeService(bayeux, subscribe);
 
         // A bad sequence of messages that clients should prevent
         // (by not allowing a subscribe until the handshake is completed)
@@ -103,17 +93,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
 
         final String channelName = "/foo";
         final AtomicBoolean publish = new AtomicBoolean();
-        new AbstractService(bayeux, "test")
-        {
-            {
-                addService(channelName, "process");
-            }
-
-            public void process(ServerSession remote, Message message)
-            {
-                publish.set(true);
-            }
-        };
+        new BroadcastChannelService(bayeux, channelName, publish);
 
         // A bad sequence of messages that clients should prevent
         // (by not allowing a publish until the handshake is completed)
@@ -161,6 +141,40 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 return true;
             Map<String,Object> ext = message.getExt();
             return ext != null && ext.get("authn") != null;
+        }
+    }
+
+    public static class MetaSubscribeService extends AbstractService
+    {
+        private final AtomicBoolean subscribe;
+
+        public MetaSubscribeService(BayeuxServerImpl bayeux, AtomicBoolean subscribe)
+        {
+            super(bayeux, "test");
+            this.subscribe = subscribe;
+            addService(Channel.META_SUBSCRIBE, "metaSubscribe");
+        }
+
+        public void metaSubscribe(ServerSession remote, Message message)
+        {
+            subscribe.set(true);
+        }
+    }
+
+    public static class BroadcastChannelService extends AbstractService
+    {
+        private final AtomicBoolean publish;
+
+        public BroadcastChannelService(BayeuxServerImpl bayeux, String channelName, AtomicBoolean publish)
+        {
+            super(bayeux, "test");
+            this.publish = publish;
+            addService(channelName, "process");
+        }
+
+        public void process(ServerSession remote, Message message)
+        {
+            publish.set(true);
         }
     }
 }

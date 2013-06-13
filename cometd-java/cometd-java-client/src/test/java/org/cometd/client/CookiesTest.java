@@ -26,6 +26,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxContext;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
@@ -103,65 +104,7 @@ public class CookiesTest extends ClientServerTest
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
         final CountDownLatch publishLatch = new CountDownLatch(1);
-        new AbstractService(bayeux, "test")
-        {
-            {
-                addService(Channel.META_HANDSHAKE, "metaHandshake");
-                addService(Channel.META_CONNECT, "metaConnect");
-                addService(Channel.META_SUBSCRIBE, "metaSubscribe");
-                addService(Channel.META_UNSUBSCRIBE, "metaUnsubscribe");
-                addService(channelName, "process");
-            }
-
-            public void metaHandshake(ServerSession session, ServerMessage message)
-            {
-                BayeuxContext context = getBayeux().getContext();
-                String value1 = context.getCookie(cookie1);
-                String value2 = context.getCookie(cookie2);
-                if (value1 != null && value2 != null)
-                    handshakeLatch.countDown();
-            }
-
-            public void metaConnect(ServerSession session, ServerMessage message)
-            {
-                BayeuxContext context = getBayeux().getContext();
-                String value1 = context.getCookie(cookie1);
-                String value2 = context.getCookie(cookie2);
-                String value3 = context.getCookie("BAYEUX_BROWSER");
-                if (value1 != null && value2 != null && value3 != null)
-                    connectLatch.countDown();
-            }
-
-            public void metaSubscribe(ServerSession session, ServerMessage message)
-            {
-                BayeuxContext context = getBayeux().getContext();
-                String value1 = context.getCookie(cookie1);
-                String value2 = context.getCookie(cookie2);
-                String value3 = context.getCookie("BAYEUX_BROWSER");
-                if (value1 != null && value2 != null && value3 != null)
-                    subscribeLatch.countDown();
-            }
-
-            public void metaUnsubscribe(ServerSession session, ServerMessage message)
-            {
-                BayeuxContext context = getBayeux().getContext();
-                String value1 = context.getCookie(cookie1);
-                String value2 = context.getCookie(cookie2);
-                String value3 = context.getCookie("BAYEUX_BROWSER");
-                if (value1 != null && value2 != null && value3 != null)
-                    unsubscribeLatch.countDown();
-            }
-
-            public void process(ServerSession session, ServerMessage message)
-            {
-                BayeuxContext context = getBayeux().getContext();
-                String value1 = context.getCookie(cookie1);
-                String value2 = context.getCookie(cookie2);
-                String value3 = context.getCookie("BAYEUX_BROWSER");
-                if (value1 != null && value2 != null && value3 != null)
-                    publishLatch.countDown();
-            }
-        };
+        new CookieService(bayeux, channelName, cookie1, cookie2, handshakeLatch, connectLatch, subscribeLatch, unsubscribeLatch, publishLatch);
 
         BayeuxClient client = newBayeuxClient();
 
@@ -190,5 +133,82 @@ public class CookiesTest extends ClientServerTest
         assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
+    }
+
+    public static class CookieService extends AbstractService
+    {
+        private final String cookie1;
+        private final String cookie2;
+        private final CountDownLatch handshakeLatch;
+        private final CountDownLatch connectLatch;
+        private final CountDownLatch subscribeLatch;
+        private final CountDownLatch unsubscribeLatch;
+        private final CountDownLatch publishLatch;
+
+        public CookieService(BayeuxServer bayeux, String channelName, String cookie1, String cookie2, CountDownLatch handshakeLatch, CountDownLatch connectLatch, CountDownLatch subscribeLatch, CountDownLatch unsubscribeLatch, CountDownLatch publishLatch)
+        {
+            super(bayeux, "test");
+            this.cookie1 = cookie1;
+            this.cookie2 = cookie2;
+            this.handshakeLatch = handshakeLatch;
+            this.connectLatch = connectLatch;
+            this.subscribeLatch = subscribeLatch;
+            this.unsubscribeLatch = unsubscribeLatch;
+            this.publishLatch = publishLatch;
+            addService(Channel.META_HANDSHAKE, "metaHandshake");
+            addService(Channel.META_CONNECT, "metaConnect");
+            addService(Channel.META_SUBSCRIBE, "metaSubscribe");
+            addService(Channel.META_UNSUBSCRIBE, "metaUnsubscribe");
+            addService(channelName, "process");
+        }
+
+        public void metaHandshake(ServerSession session, ServerMessage message)
+        {
+            BayeuxContext context = getBayeux().getContext();
+            String value1 = context.getCookie(cookie1);
+            String value2 = context.getCookie(cookie2);
+            if (value1 != null && value2 != null)
+                handshakeLatch.countDown();
+        }
+
+        public void metaConnect(ServerSession session, ServerMessage message)
+        {
+            BayeuxContext context = getBayeux().getContext();
+            String value1 = context.getCookie(cookie1);
+            String value2 = context.getCookie(cookie2);
+            String value3 = context.getCookie("BAYEUX_BROWSER");
+            if (value1 != null && value2 != null && value3 != null)
+                connectLatch.countDown();
+        }
+
+        public void metaSubscribe(ServerSession session, ServerMessage message)
+        {
+            BayeuxContext context = getBayeux().getContext();
+            String value1 = context.getCookie(cookie1);
+            String value2 = context.getCookie(cookie2);
+            String value3 = context.getCookie("BAYEUX_BROWSER");
+            if (value1 != null && value2 != null && value3 != null)
+                subscribeLatch.countDown();
+        }
+
+        public void metaUnsubscribe(ServerSession session, ServerMessage message)
+        {
+            BayeuxContext context = getBayeux().getContext();
+            String value1 = context.getCookie(cookie1);
+            String value2 = context.getCookie(cookie2);
+            String value3 = context.getCookie("BAYEUX_BROWSER");
+            if (value1 != null && value2 != null && value3 != null)
+                unsubscribeLatch.countDown();
+        }
+
+        public void process(ServerSession session, ServerMessage message)
+        {
+            BayeuxContext context = getBayeux().getContext();
+            String value1 = context.getCookie(cookie1);
+            String value2 = context.getCookie(cookie2);
+            String value3 = context.getCookie("BAYEUX_BROWSER");
+            if (value1 != null && value2 != null && value3 != null)
+                publishLatch.countDown();
+        }
     }
 }

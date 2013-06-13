@@ -105,9 +105,12 @@ public class OortMasterLong extends OortMasterService<Long, OortMasterLong.Conte
     }
 
     @Override
-    protected Long onForward(Object actionData)
+    protected Result<Long> onForward(Request request)
     {
-        long delta = ((Number)actionData).longValue();
+        if (!isMaster())
+            return Result.ignore(0L);
+
+        long delta = ((Number)request.getData()).longValue();
         long oldValue = value.get();
         while (true)
         {
@@ -115,7 +118,7 @@ public class OortMasterLong extends OortMasterService<Long, OortMasterLong.Conte
                 break;
             oldValue = value.get();
         }
-        return oldValue;
+        return Result.success(oldValue);
     }
 
     @Override

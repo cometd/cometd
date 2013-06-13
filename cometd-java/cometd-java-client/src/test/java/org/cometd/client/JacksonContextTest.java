@@ -86,41 +86,7 @@ public class JacksonContextTest extends ClientServerTest
 
         final String channelName = "/test_jackson";
         final CountDownLatch localLatch = new CountDownLatch(2);
-        new AbstractService(bayeux, channelName)
-        {
-            {
-                addService(channelName, "process");
-
-                getLocalSession().getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-                {
-                    private boolean republishSeen;
-
-                    public void onMessage(ClientSessionChannel channel, Message message)
-                    {
-                        System.err.println("local message = " + message);
-                        Map<String, Object> data = message.getDataAsMap();
-                        Assert.assertTrue(data.containsKey("publish"));
-                        republishSeen |= data.containsKey("republish");
-                        if (localLatch.getCount() == 1 && !republishSeen)
-                            Assert.fail();
-                        localLatch.countDown();
-                    }
-                });
-            }
-
-            public void process(ServerSession session, ServerMessage message)
-            {
-                // Republish
-                Map<String, Object> data = message.getDataAsMap();
-                Map<String, Object> republishData = new HashMap<>(data);
-                republishData.put("republish", true);
-                getBayeux().getChannel(channelName).publish(getServerSession(), republishData);
-                // Deliver
-                Map<String, Object> deliverData = new HashMap<>(data);
-                deliverData.put("deliver", true);
-                session.deliver(getServerSession(), channelName, deliverData, null);
-            }
-        };
+        new JacksonService(bayeux, channelName, localLatch);
 
         // Clear out the jsonContexts embedded in the message classes
         Field clientJSONContext = HashMapMessage.class.getDeclaredField("_jsonContext");
@@ -163,5 +129,46 @@ public class JacksonContextTest extends ClientServerTest
         Assert.assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
+    }
+
+    public static class JacksonService extends AbstractService
+    {
+        private final String channelName;
+
+        public JacksonService(BayeuxServer bayeux, String channelName, final CountDownLatch localLatch)
+        {
+            super(bayeux, channelName);
+            this.channelName = channelName;
+            addService(channelName, "process");
+
+            getLocalSession().getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+            {
+                private boolean republishSeen;
+
+                public void onMessage(ClientSessionChannel channel, Message message)
+                {
+                    System.err.println("local message = " + message);
+                    Map<String, Object> data = message.getDataAsMap();
+                    Assert.assertTrue(data.containsKey("publish"));
+                    republishSeen |= data.containsKey("republish");
+                    if (localLatch.getCount() == 1 && !republishSeen)
+                        Assert.fail();
+                    localLatch.countDown();
+                }
+            });
+        }
+
+        public void process(ServerSession session, ServerMessage message)
+        {
+            // Republish
+            Map<String, Object> data = message.getDataAsMap();
+            Map<String, Object> republishData = new HashMap<String, Object>(data);
+            republishData.put("republish", true);
+            getBayeux().getChannel(channelName).publish(getServerSession(), republishData, null);
+            // Deliver
+            Map<String, Object> deliverData = new HashMap<String, Object>(data);
+            deliverData.put("deliver", true);
+            session.deliver(getServerSession(), channelName, deliverData, null);
+        }
     }
 }

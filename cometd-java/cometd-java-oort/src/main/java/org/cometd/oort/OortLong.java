@@ -18,6 +18,7 @@ package org.cometd.oort;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.cometd.bayeux.server.LocalSession;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /**
@@ -78,6 +79,40 @@ public class OortLong extends AbstractLifeCycle
     protected void doStop() throws Exception
     {
         value.stop();
+    }
+
+    /**
+     * @return the {@link Oort} instance associated with this oort long
+     */
+    public Oort getOort()
+    {
+        return value.getOort();
+    }
+
+    /**
+     * @return the local session that sends messages to other nodes
+     */
+    public LocalSession getLocalSession()
+    {
+        return value.getLocalSession();
+    }
+
+    /**
+     * @param listener the listener to add that is notified of updates of the value in a node
+     * @see #removeListener(OortObject.Listener)
+     */
+    public void addListener(OortObject.Listener<Long> listener)
+    {
+        value.addListener(listener);
+    }
+
+    /**
+     * @param listener the listener to remove
+     * @see #addListener(OortObject.Listener)
+     */
+    public void removeListener(OortObject.Listener<Long> listener)
+    {
+        value.removeListener(listener);
     }
 
     /**

@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.server.BayeuxServer;
@@ -27,7 +28,9 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.thread.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +63,7 @@ import org.slf4j.LoggerFactory;
  * the owner node, the action data, and an opaque context
  * </li>
  * <li>
- * The application implements {@link #onForward(Object)}, which is
+ * The application implements {@link #onForward(Request)}, which is
  * executed in the <em>owner node</em>. In this method the action
  * data is used to perform the action that modifies the entity, and
  * the result is returned (or an exception thrown in case of failure).
@@ -77,7 +80,7 @@ import org.slf4j.LoggerFactory;
  * which provides as parameters the failure from the second step and
  * the opaque context from the first step.
  * The failure object is the message string of a generic exception,
- * or the failure passed to a {@link ServiceException}.
+ * or the failure returned by {@link Result#failure(Object)}.
  * </li>
  * </ol>
  * The steps above do not change if the <em>requesting node</em> and
@@ -88,20 +91,24 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class OortService<R, C> extends AbstractLifeCycle implements ServerChannel.MessageListener
 {
-    private static final String ACTION_FIELD = "oort.service.action";
+    private static final String CONTEXT_FIELD = "oort.service.context";
+    private static final String DATA_FIELD = "oort.service.data";
     private static final String ID_FIELD = "oort.service.id";
     private static final String OORT_URL_FIELD = "oort.service.url";
+    private static final String PARAMETER_FIELD = "oort.service.parameter";
     private static final String RESULT_FIELD = "oort.service.result";
-    private static final String FAILURE_FIELD = "oort.service.failure";
+    private static final String TIMEOUT_FIELD = "oort.service.timeout";
 
-    private final AtomicLong actions = new AtomicLong();
-    private final ConcurrentMap<Long, C> callbacks = new ConcurrentHashMap<>();
+    private final AtomicLong contextIds = new AtomicLong();
+    private final ConcurrentMap<Long, Map<String, Object>> callbacks = new ConcurrentHashMap<Long, Map<String, Object>>();
     private final Oort oort;
     private final String name;
     private final String forwardChannelName;
+    private final String broadcastChannelName;
     private final String resultChannelName;
     private final LocalSession session;
     protected final Logger logger;
+    private volatile long timeout = 5000;
 
     /**
      * Creates an {@link OortService} with the given name.
@@ -114,6 +121,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         this.oort = oort;
         this.name = name;
         this.forwardChannelName = "/service/oort/service/" + name;
+        this.broadcastChannelName = "/oort/service/" + name;
         this.resultChannelName = forwardChannelName + "/result";
         this.session = oort.getBayeuxServer().newLocalSession(name);
         this.logger = LoggerFactory.getLogger(getLoggerName());
@@ -148,6 +156,22 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         return session;
     }
 
+    /**
+     * @return the timeout, in milliseconds, for an action to return a result (by default 5000 ms)
+     */
+    public long getTimeout()
+    {
+        return timeout;
+    }
+
+    /**
+     * @param timeout the timeout, in milliseconds, for an action to return a result
+     */
+    public void setTimeout(long timeout)
+    {
+        this.timeout = timeout;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
@@ -155,16 +179,21 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         bayeuxServer.createIfAbsent(forwardChannelName);
         bayeuxServer.getChannel(forwardChannelName).addListener(this);
+        bayeuxServer.createIfAbsent(broadcastChannelName);
+        bayeuxServer.getChannel(broadcastChannelName).addListener(this);
         bayeuxServer.createIfAbsent(resultChannelName);
         bayeuxServer.getChannel(resultChannelName).addListener(this);
+        oort.observeChannel(broadcastChannelName);
         logger.debug("Started {}", this);
     }
 
     @Override
     protected void doStop() throws Exception
     {
+        oort.deobserveChannel(broadcastChannelName);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         bayeuxServer.getChannel(resultChannelName).removeListener(this);
+        bayeuxServer.getChannel(broadcastChannelName).removeListener(this);
         bayeuxServer.getChannel(forwardChannelName).removeListener(this);
         session.disconnect();
         logger.debug("Stopped {}", this);
@@ -172,45 +201,65 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
 
     /**
      * Subclasses must call this method to forward the action to the owner node.
+     * <p />
+     * If the {@code targetOortURL} is {@code null}, then the action is broadcast to all nodes.
+     * Nodes that receive an action request that they can't fullfill because they don't own the
+     * entity the action should be applied to must return {@link Result#ignore(Object)}.
      *
-     * @param targetOortURL the owner node Oort URL
-     * @param actionData the action data that will be passed to {@link #onForward(Object)}
+     * @param targetOortURL the owner node Oort URL, or null to broadcast the action to all nodes
+     * @param parameter the action parameter that will be passed to {@link #onForward(Request)}
      * @param context the opaque context passed to {@link #onForwardSucceeded(Object, Object)}
      * @return whether the forward succeeded
      */
-    protected boolean forward(String targetOortURL, Object actionData, C context)
+    protected boolean forward(String targetOortURL, Object parameter, C context)
     {
-        long actionId = actions.incrementAndGet();
-        if (context != null)
-            callbacks.put(actionId, context);
+        Map<String, Object> ctx = new HashMap<String, Object>(4);
+        long contextId = contextIds.incrementAndGet();
+        ctx.put(ID_FIELD, contextId);
+        ctx.put(CONTEXT_FIELD, context);
+        callbacks.put(contextId, ctx);
+
         Map<String, Object> data = new HashMap<>(3);
-        data.put(ID_FIELD, actionId);
-        data.put(ACTION_FIELD, actionData);
+        data.put(ID_FIELD, contextId);
+        data.put(PARAMETER_FIELD, parameter);
         String localOortURL = getOort().getURL();
         data.put(OORT_URL_FIELD, localOortURL);
 
-        if (localOortURL.equals(targetOortURL))
+        if (targetOortURL == null)
         {
-            // Local case
-            logger.debug("Forwarding action locally ({}): {}", localOortURL, data);
-            oort.getBayeuxServer().getChannel(forwardChannelName).publish(getLocalSession(), data);
+            // Application does not know where the entity is, broadcast
+            logger.debug("Broadcasting action: {}", data);
+            startTimeout(ctx);
+            oort.getBayeuxServer().getChannel(broadcastChannelName).publish(getLocalSession(), data, null);
             return true;
         }
         else
         {
-            // Remote case
-            if (targetOortURL != null)
+            if (localOortURL.equals(targetOortURL))
             {
+                // Local case
+                logger.debug("Forwarding action locally ({}): {}", localOortURL, data);
+                startTimeout(ctx);
+                onForwardMessage(data, false);
+                return true;
+            }
+            else
+            {
+                // Remote case
                 OortComet comet = getOort().getComet(targetOortURL);
                 if (comet != null)
                 {
                     logger.debug("Forwarding action from {} to {}: {}", localOortURL, targetOortURL, data);
+                    startTimeout(ctx);
                     comet.getChannel(forwardChannelName).publish(data);
                     return true;
                 }
+                else
+                {
+                    logger.debug("Could not forward action from {} to {}: {}", localOortURL, targetOortURL, data);
+                    return false;
+                }
             }
-            logger.debug("Could not forward action from {} to {}: {}", localOortURL, targetOortURL, data);
-            return false;
         }
     }
 
@@ -218,82 +267,148 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     {
         if (forwardChannelName.equals(message.getChannel()))
         {
-            logger.debug("Received forwarded action {}", message);
-            Map<String, Object> data = message.getDataAsMap();
-            Map<String, Object> resultData = new HashMap<>(3);
-            resultData.put(ID_FIELD, data.get(ID_FIELD));
-            resultData.put(OORT_URL_FIELD, getOort().getURL());
-            try
-            {
-                R result = onForward(data.get(ACTION_FIELD));
-                resultData.put(RESULT_FIELD, result);
-            }
-            catch (ServiceException x)
-            {
-                resultData.put(FAILURE_FIELD, x.getFailure());
-            }
-            catch (Exception x)
-            {
-                String failure = x.getMessage();
-                if (failure == null || failure.length() == 0)
-                    failure = x.getClass().getName();
-                resultData.put(FAILURE_FIELD, failure);
-            }
-
-            String oortURL = (String)data.get(OORT_URL_FIELD);
-            if (getOort().getURL().equals(oortURL))
-            {
-                // Local case
-                logger.debug("Returning forwarded action result {} to local {}", resultData, oortURL);
-                oort.getBayeuxServer().getChannel(resultChannelName).publish(getLocalSession(), resultData);
-            }
-            else
-            {
-                // Remote case
-                OortComet comet = getOort().getComet(oortURL);
-                if (comet != null)
-                {
-                    logger.debug("Returning forwarded action result {} to remote {}", resultData, oortURL);
-                    comet.getChannel(resultChannelName).publish(resultData);
-                }
-                else
-                {
-                    logger.debug("Could not return forwarded action result {} to remote {}", resultData, oortURL);
-                }
-            }
+            onForwardMessage(message.getDataAsMap(), false);
+        }
+        else if (broadcastChannelName.equals(message.getChannel()))
+        {
+            onForwardMessage(message.getDataAsMap(), true);
         }
         else if (resultChannelName.equals(message.getChannel()))
         {
-            logger.debug("Received forwarded action result {}", message);
-            Map<String, Object> data = message.getDataAsMap();
-            long actionId = ((Number)data.get(ID_FIELD)).longValue();
-            C context = callbacks.remove(actionId);
-            if (context != null)
+            onResultMessage(message.getDataAsMap());
+        }
+        return true;
+    }
+
+    protected void onForwardMessage(Map<String, Object> data, boolean broadcast)
+    {
+        logger.debug("Received {} action {}", broadcast ? "broadcast" : "forwarded", data);
+        Map<String, Object> resultData = new HashMap<String, Object>(3);
+        resultData.put(ID_FIELD, data.get(ID_FIELD));
+        resultData.put(OORT_URL_FIELD, getOort().getURL());
+        String oortURL = (String)data.get(OORT_URL_FIELD);
+        try
+        {
+            Result<R> result = onForward(new Request(oort.getURL(), data.get(PARAMETER_FIELD), oortURL));
+            logger.debug("Forwarded action result {}", result);
+            if (result.succeeded())
             {
-                Object failure = data.get(FAILURE_FIELD);
-                if (failure != null)
+                resultData.put(RESULT_FIELD, true);
+                resultData.put(DATA_FIELD, result.data);
+            }
+            else if (result.failed())
+            {
+                resultData.put(RESULT_FIELD, false);
+                resultData.put(DATA_FIELD, result.data);
+            }
+            else
+            {
+                if (broadcast)
                 {
-                    onForwardFailed(failure, context);
+                    // Ignore and therefore return
+                    logger.debug("Ignoring broadcast action result {}", result);
+                    return;
                 }
                 else
                 {
-                    @SuppressWarnings("unchecked")
-                    R result = (R)data.get(RESULT_FIELD);
-                    onForwardSucceeded(result, context);
+                    // Convert ignore into failure
+                    resultData.put(RESULT_FIELD, false);
+                    resultData.put(DATA_FIELD, result.data);
                 }
             }
         }
-        return true;
+        catch (Exception x)
+        {
+            if (broadcast)
+                return;
+
+            String failure = x.getMessage();
+            if (failure == null || failure.length() == 0)
+                failure = x.getClass().getName();
+            resultData.put(RESULT_FIELD, false);
+            resultData.put(DATA_FIELD, failure);
+        }
+
+        if (getOort().getURL().equals(oortURL))
+        {
+            // Local case
+            logger.debug("Returning forwarded action result {} to local {}", resultData, oortURL);
+            onResultMessage(resultData);
+        }
+        else
+        {
+            // Remote case
+            OortComet comet = getOort().getComet(oortURL);
+            if (comet != null)
+            {
+                logger.debug("Returning forwarded action result {} to remote {}", resultData, oortURL);
+                comet.getChannel(resultChannelName).publish(resultData);
+            }
+            else
+            {
+                // Probably the node disconnected concurrently
+                logger.debug("Could not return forwarded action result {} to remote {}", resultData, oortURL);
+            }
+        }
+    }
+
+    protected void onResultMessage(Map<String, Object> data)
+    {
+        long actionId = ((Number)data.get(ID_FIELD)).longValue();
+        Map<String, Object> ctx = callbacks.remove(actionId);
+        logger.debug("Action result {} with context {}", data, ctx);
+        // Atomically remove the callback, so we guarantee one notification only.
+        // Multiple notifications may happen when broadcasting the forward request
+        // and nodes mistakenly return multiple results.
+        if (ctx != null)
+        {
+            cancelTimeout(ctx);
+
+            @SuppressWarnings("unchecked")
+            C context = (C)ctx.get(CONTEXT_FIELD);
+            boolean success = (Boolean)data.get(RESULT_FIELD);
+            if (success)
+            {
+                @SuppressWarnings("unchecked")
+                R result = (R)data.get(DATA_FIELD);
+                onForwardSucceeded(result, context);
+            }
+            else
+            {
+                Object failure = data.get(DATA_FIELD);
+                onForwardFailed(failure, context);
+            }
+        }
+    }
+
+    private void startTimeout(Map<String, Object> ctx)
+    {
+        long contextId = (Long)ctx.get(ID_FIELD);
+        Timeout.Task timeoutTask = new TimeoutTask(contextId);
+        ctx.put(TIMEOUT_FIELD, timeoutTask);
+        ((BayeuxServerImpl)oort.getBayeuxServer()).startTimeout(timeoutTask, getTimeout());
+    }
+
+    private void cancelTimeout(Map<String, Object> ctx)
+    {
+        Timeout.Task timeoutTask = (Timeout.Task)ctx.get(TIMEOUT_FIELD);
+        if (timeoutTask != null)
+            ((BayeuxServerImpl)oort.getBayeuxServer()).cancelTimeout(timeoutTask);
     }
 
     /**
      * Subclasses must implement this method, that runs on the <em>owner node</em>,
      * to implement the action functionality.
+     * <p />
+     * The result to return is {@link Result#success(Object)} or {@link Result#failure(Object)}
+     * if the implementation of this method was able to find the entity on which the action
+     * functionality was meant to be applied, or {@link Result#ignore(Object)} if the entity
+     * was not found.
      *
-     * @param actionData the action data passed from {@link #forward(String, Object, Object)}
-     * @return the action result that will be passed to {@link #onForwardSucceeded(Object, Object)}
+     * @param request the request containing the parameter passed from {@link #forward(String, Object, Object)}
+     * @return the result containing the data that will be passed to {@link #onForwardSucceeded(Object, Object)}
      */
-    protected abstract R onForward(Object actionData);
+    protected abstract Result<R> onForward(Request request);
 
     /**
      * Subclasses must implement this method, that runs on the <em>requesting node</em>,
@@ -320,27 +435,142 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     }
 
     /**
-     * Subclasses may throw this exception from {@link #onForward(Object)} if they want
-     * to produce a complex failure object that will be reported to {@link #onForwardFailed(Object, Object)}.
+     * Encapsulates a forwarded request.
+     *
+     * @see #onForward(Request)
+     * @see Result
      */
-    public static class ServiceException extends RuntimeException
+    public static class Request
     {
-        private final Object failure;
+        private final String localOortURL;
+        private final Object data;
+        private final String oortURL;
 
-        public ServiceException(Object failure)
+        private Request(String localOortURL, Object data, String oortURL)
         {
-            this.failure = failure;
+            this.localOortURL = localOortURL;
+            this.data = data;
+            this.oortURL = oortURL;
         }
 
-        public ServiceException(Throwable cause, Object failure)
+        /**
+         * @return the request data
+         */
+        public Object getData()
         {
-            super(cause);
-            this.failure = failure;
+            return data;
         }
 
-        public Object getFailure()
+        /**
+         * @return the request data as a {@code Map&lt;String, Object&gt;}
+         */
+        public Map<String, Object> getDataAsMap()
         {
-            return failure;
+            return (Map<String, Object>)getData();
+        }
+
+        /**
+         * @return the Oort URL of the <em>requesting node</em>
+         */
+        public String getOortURL()
+        {
+            return oortURL;
+        }
+
+        /**
+         * @return whether the request is local to the current Oort node
+         */
+        public boolean isLocal()
+        {
+            return localOortURL.equals(getOortURL());
+        }
+    }
+
+    /**
+     * Encapsulates the result of a forwarded request returned by {@link #onForward(Request)}.
+     * <p />
+     * Applications must use methods {@link #success(Object)}, {@link #failure(Object)} or {@link #ignore(Object)}
+     * to signal to the implementation the result of the forwarded request.
+     * <p />
+     * {@link OortService} may forward a request action for an entity to the owner node, but before the request
+     * arrives to the owner node, the entity may be removed from the owner node.
+     * When the owner node receives the request for the entity, the entity is not available anymore.
+     * Similarly, a request that is broadcast to all nodes arrives to nodes that do not own the entity.
+     * The node that receives the request must return a {@link Result} using the following rules:
+     * <ul>
+     * <li>If the node owns the entity, use {@link #success(Object)} or {@link #failure(Object)} - never use
+     * {@link #ignore(Object)}</li>
+     * <li>If the node does not own the entity (it never was the owner, or it was the owner but it is not anymore),
+     * then use {@link #ignore(Object)}</li>
+     * </ul>
+     *
+     * @param <U> the result type
+     * @see Request
+     */
+    public static class Result<U>
+    {
+        private final Boolean result;
+        private final Object data;
+
+        private Result(Boolean result, Object data)
+        {
+            this.result = result;
+            this.data = data;
+        }
+
+        /**
+         * Returns a successful {@link Result} containing the given result object.
+         *
+         * @param result the result object
+         * @param <S> the type of the result object
+         * @return a new {@link Result} instance wrapping the result object
+         */
+        public static <S> Result<S> success(S result)
+        {
+            return new Result<S>(true, result);
+        }
+
+        /**
+         * Returns a failed {@link Result} containing the given failure object.
+         *
+         * @param failure the failure object
+         * @param <S> the type of the result
+         * @return a new {@link Result} instance wrapping the failure object
+         */
+        public static <S> Result<S> failure(Object failure)
+        {
+            return new Result<S>(false, failure);
+        }
+
+        /**
+         * Returns an ignored {@link Result} containing the given data object
+         *
+         * @param data the data object
+         * @param <S> the type of the result
+         * @return a new {@link Result} instance wrapping the data object
+         */
+        public static <S> Result<S> ignore(Object data)
+        {
+            return new Result<S>(null, data);
+        }
+
+        private boolean succeeded()
+        {
+            return result != null && result;
+        }
+
+        private boolean failed()
+        {
+            return result != null && !result;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s[%s] %s",
+                    getClass().getSimpleName(),
+                    result == null ? "ignored" : result ? "success" : "failure",
+                    data);
         }
     }
 
@@ -393,6 +623,26 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         public ServerMessage getServerMessage()
         {
             return message;
+        }
+    }
+
+    private class TimeoutTask extends Timeout.Task
+    {
+        private final long contextId;
+
+        private TimeoutTask(long contextId)
+        {
+            this.contextId = contextId;
+        }
+
+        @Override
+        public void expired()
+        {
+            Map<String, Object> data = new HashMap<String, Object>(3);
+            data.put(ID_FIELD, contextId);
+            data.put(RESULT_FIELD, false);
+            data.put(DATA_FIELD, new TimeoutException());
+            onResultMessage(data);
         }
     }
 }

@@ -121,53 +121,53 @@ public class ClientAnnotationProcessorTest
     @Test
     public void testNonServiceAnnotatedClass() throws Exception
     {
-        class S
-        {
-            @Session
-            private ClientSession session;
-        }
-
-        S s = new S();
+        NonServiceAnnotatedService s = new NonServiceAnnotatedService();
         boolean processed = processor.process(s);
         assertFalse(processed);
         assertNull(s.session);
     }
 
+    public static class NonServiceAnnotatedService
+    {
+        @Session
+        private ClientSession session;
+    }
+
     @Test
     public void testInjectClientSessionOnField() throws Exception
     {
-        @Service
-        class S
-        {
-            @Session
-            private ClientSession session;
-        }
-
-        S s = new S();
+        InjectClientSessionOnFieldService s = new InjectClientSessionOnFieldService();
         boolean processed = processor.process(s);
         assertTrue(processed);
         assertNotNull(s.session);
     }
 
+    @Service
+    public static class InjectClientSessionOnFieldService
+    {
+        @Session
+        private ClientSession session;
+    }
+
     @Test
     public void testInjectClientSessionOnMethod() throws Exception
     {
-        @Service
-        class S
-        {
-            private ClientSession session;
-
-            @Session
-            private void set(ClientSession session)
-            {
-                this.session = session;
-            }
-        }
-
-        S s = new S();
+        InjectClientSessionOnMethodService s = new InjectClientSessionOnMethodService();
         boolean processed = processor.process(s);
         assertTrue(processed);
         assertNotNull(s.session);
+    }
+
+    @Service
+    public static class InjectClientSessionOnMethodService
+    {
+        private ClientSession session;
+
+        @Session
+        private void set(ClientSession session)
+        {
+            this.session = session;
+        }
     }
 
     @Test
@@ -180,32 +180,7 @@ public class ClientAnnotationProcessorTest
         final AtomicReference<Message> disconnectRef = new AtomicReference<>();
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
 
-        @Service
-        class S
-        {
-            @Listener(Channel.META_HANDSHAKE)
-            private void metaHandshake(Message handshake)
-            {
-                handshakeRef.set(handshake);
-                handshakeLatch.countDown();
-            }
-
-            @Listener(Channel.META_CONNECT)
-            private void metaConnect(Message connect)
-            {
-                connectRef.set(connect);
-                connectLatch.countDown();
-            }
-
-            @Listener(Channel.META_DISCONNECT)
-            private void metaDisconnect(Message connect)
-            {
-                disconnectRef.set(connect);
-                disconnectLatch.countDown();
-            }
-        }
-
-        S s = new S();
+        ListenUnlistenService s = new ListenUnlistenService(handshakeRef, handshakeLatch, connectRef, connectLatch, disconnectRef, disconnectLatch);
         boolean processed = processor.process(s);
         assertTrue(processed);
 
@@ -227,24 +202,56 @@ public class ClientAnnotationProcessorTest
         bayeuxClient.disconnect(1000);
     }
 
+    @Service
+    public static class ListenUnlistenService
+    {
+        private final AtomicReference<Message> handshakeRef;
+        private final CountDownLatch handshakeLatch;
+        private final AtomicReference<Message> connectRef;
+        private final CountDownLatch connectLatch;
+        private final AtomicReference<Message> disconnectRef;
+        private final CountDownLatch disconnectLatch;
+
+        public ListenUnlistenService(AtomicReference<Message> handshakeRef, CountDownLatch handshakeLatch, AtomicReference<Message> connectRef, CountDownLatch connectLatch, AtomicReference<Message> disconnectRef, CountDownLatch disconnectLatch)
+        {
+
+            this.handshakeRef = handshakeRef;
+            this.handshakeLatch = handshakeLatch;
+            this.connectRef = connectRef;
+            this.connectLatch = connectLatch;
+            this.disconnectRef = disconnectRef;
+            this.disconnectLatch = disconnectLatch;
+        }
+
+        @Listener(Channel.META_HANDSHAKE)
+        public void metaHandshake(Message handshake)
+        {
+            handshakeRef.set(handshake);
+            handshakeLatch.countDown();
+        }
+
+        @Listener(Channel.META_CONNECT)
+        public void metaConnect(Message connect)
+        {
+            connectRef.set(connect);
+            connectLatch.countDown();
+        }
+
+        @Listener(Channel.META_DISCONNECT)
+        public void metaDisconnect(Message connect)
+        {
+            disconnectRef.set(connect);
+            disconnectLatch.countDown();
+        }
+    }
+
     @Test
     public void testSubscribeUnsubscribe() throws Exception
     {
         final AtomicReference<Message> messageRef = new AtomicReference<>();
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
 
-        @Service
-        class S
-        {
-            @Subscription("/foo")
-            private void foo(Message message)
-            {
-                messageRef.set(message);
-                messageLatch.get().countDown();
-            }
-        }
-
-        S s = new S();
+        SubscribeUnsubscribeService s = new SubscribeUnsubscribeService(messageRef, messageLatch);
         boolean processed = processor.process(s);
         assertTrue(processed);
 
@@ -282,48 +289,33 @@ public class ClientAnnotationProcessorTest
         assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
     }
 
+    @Service
+    public static class SubscribeUnsubscribeService
+    {
+        private final AtomicReference<Message> messageRef;
+        private final AtomicReference<CountDownLatch> messageLatch;
+
+        public SubscribeUnsubscribeService(AtomicReference<Message> messageRef, AtomicReference<CountDownLatch> messageLatch)
+        {
+            this.messageRef = messageRef;
+            this.messageLatch = messageLatch;
+        }
+
+        @Subscription("/foo")
+        public void foo(Message message)
+        {
+            messageRef.set(message);
+            messageLatch.get().countDown();
+        }
+    }
+
     @Test
     public void testUsage() throws Exception
     {
         final CountDownLatch connectLatch = new CountDownLatch(1);
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>();
 
-        @Service
-        class S
-        {
-            private boolean initialized;
-            private boolean connected;
-
-            @Session
-            private ClientSession session;
-
-            @PostConstruct
-            private void init()
-            {
-                initialized = true;
-            }
-
-            @PreDestroy
-            private void destroy()
-            {
-                initialized = false;
-            }
-
-            @Listener(Channel.META_CONNECT)
-            public void metaConnect(Message connect)
-            {
-                connected = connect.isSuccessful();
-                connectLatch.countDown();
-            }
-
-            @Subscription("/foo")
-            public void foo(Message message)
-            {
-                messageLatch.get().countDown();
-            }
-        }
-
-        S s = new S();
+        UsageService s = new UsageService(connectLatch, messageLatch);
         processor.process(s);
         assertTrue(s.initialized);
         assertFalse(s.connected);
@@ -354,30 +346,72 @@ public class ClientAnnotationProcessorTest
         assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
     }
 
+    @Service
+    public static class UsageService
+    {
+        private final CountDownLatch connectLatch;
+        private final AtomicReference<CountDownLatch> messageLatch;
+        private boolean initialized;
+        private boolean connected;
+        @Session
+        private ClientSession session;
+
+        public UsageService(CountDownLatch connectLatch, AtomicReference<CountDownLatch> messageLatch)
+        {
+            this.connectLatch = connectLatch;
+            this.messageLatch = messageLatch;
+        }
+
+        @PostConstruct
+        private void init()
+        {
+            initialized = true;
+        }
+
+        @PreDestroy
+        private void destroy()
+        {
+            initialized = false;
+        }
+
+        @Listener(Channel.META_CONNECT)
+        public void metaConnect(Message connect)
+        {
+            connected = connect.isSuccessful();
+            connectLatch.countDown();
+        }
+
+        @Subscription("/foo")
+        public void foo(Message message)
+        {
+            messageLatch.get().countDown();
+        }
+    }
+
     @Test
     public void testInjectables() throws Exception
     {
-        class I
-        {
-        }
-
-        class II extends I
-        {
-        }
-
-        @Service
-        class S
-        {
-            @Inject
-            private I i;
-        }
-
-        I i = new II();
-        S s = new S();
+        Injectable i = new DerivedInjectable();
+        InjectablesService s = new InjectablesService();
         processor = new ClientAnnotationProcessor(bayeuxClient, i);
         boolean processed = processor.process(s);
         assertTrue(processed);
 
         assertSame(i, s.i);
+    }
+
+    class Injectable
+    {
+    }
+
+    class DerivedInjectable extends Injectable
+    {
+    }
+
+    @Service
+    public static class InjectablesService
+    {
+        @Inject
+        private Injectable i;
     }
 }

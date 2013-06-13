@@ -19,6 +19,7 @@ package org.cometd.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -108,6 +109,9 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         Service serviceAnnotation = klass.getAnnotation(Service.class);
         if (serviceAnnotation == null)
             return false;
+
+        if (!Modifier.isPublic(klass.getModifiers()))
+            throw new IllegalArgumentException("Service class '" + klass.getName() + "' must be public");
 
         boolean result = processListener(bean);
         result |= processSubscription(bean);
@@ -218,6 +222,9 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                 Listener listener = method.getAnnotation(Listener.class);
                 if (listener != null)
                 {
+                    if (!Modifier.isPublic(method.getModifiers()))
+                        throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+
                     String[] channels = listener.value();
                     for (String channel : channels)
                     {
@@ -272,6 +279,9 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                 Subscription subscription = method.getAnnotation(Subscription.class);
                 if (subscription != null)
                 {
+                    if (!Modifier.isPublic(method.getModifiers()))
+                        throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+
                     String[] channels = subscription.value();
                     for (String channel : channels)
                     {
@@ -336,23 +346,22 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
 
         public void onMessage(ClientSessionChannel channel, Message message)
         {
-            boolean accessible = method.isAccessible();
             try
             {
-                method.setAccessible(true);
                 method.invoke(target, message);
             }
             catch (InvocationTargetException x)
             {
-                throw new RuntimeException(x.getCause());
+                Throwable cause = x.getCause();
+                if (cause instanceof RuntimeException)
+                    throw (RuntimeException)cause;
+                if (cause instanceof Error)
+                    throw (Error)cause;
+                throw new RuntimeException(cause);
             }
             catch (IllegalAccessException x)
             {
                 throw new RuntimeException(x);
-            }
-            finally
-            {
-                method.setAccessible(accessible);
             }
         }
     }
@@ -399,23 +408,22 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
 
         private void forward(Message message)
         {
-            boolean accessible = method.isAccessible();
             try
             {
-                method.setAccessible(true);
                 method.invoke(target, message);
             }
             catch (InvocationTargetException x)
             {
-                throw new RuntimeException(x.getCause());
+                Throwable cause = x.getCause();
+                if (cause instanceof RuntimeException)
+                    throw (RuntimeException)cause;
+                if (cause instanceof Error)
+                    throw (Error)cause;
+                throw new RuntimeException(cause);
             }
             catch (IllegalAccessException x)
             {
                 throw new RuntimeException(x);
-            }
-            finally
-            {
-                method.setAccessible(accessible);
             }
         }
     }

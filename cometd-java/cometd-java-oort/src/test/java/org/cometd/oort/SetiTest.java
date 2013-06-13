@@ -610,7 +610,7 @@ public class SetiTest extends OortTest
         seti2.removePresenceListener(listener);
     }
 
-    private static class SetiService extends AbstractService
+    public static class SetiService extends AbstractService
     {
         private final Seti seti;
 

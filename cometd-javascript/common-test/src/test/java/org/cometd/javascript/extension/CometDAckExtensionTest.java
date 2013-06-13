@@ -132,7 +132,7 @@ public class CometDAckExtensionTest extends AbstractCometDTest
         evaluateScript("cometd.disconnect(true);");
     }
 
-    private static class AckService extends AbstractService
+    public static class AckService extends AbstractService
     {
         private AckService(BayeuxServerImpl bayeux)
         {

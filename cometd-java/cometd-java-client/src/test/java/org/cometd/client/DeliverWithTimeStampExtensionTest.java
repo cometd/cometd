@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
@@ -49,20 +50,7 @@ public class DeliverWithTimeStampExtensionTest extends ClientServerTest
             }
         });
 
-        new AbstractService(bayeux, "test")
-        {
-            {
-                addService(channelName, "process");
-            }
-
-            public void process(ServerSession remote, ServerMessage.Mutable message)
-            {
-                ServerMessage.Mutable reply = bayeux.newMessage();
-                reply.setChannel(channelName);
-                reply.setData("from_server");
-                remote.deliver(getServerSession(), reply);
-            }
-        };
+        new DeliverService(bayeux, channelName);
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -75,5 +63,25 @@ public class DeliverWithTimeStampExtensionTest extends ClientServerTest
         Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
+    }
+
+    public static class DeliverService extends AbstractService
+    {
+        private final String channelName;
+
+        public DeliverService(BayeuxServer bayeux, String channelName)
+        {
+            super(bayeux, "test");
+            this.channelName = channelName;
+            addService(channelName, "process");
+        }
+
+        public void process(ServerSession remote, ServerMessage.Mutable message)
+        {
+            ServerMessage.Mutable reply = getBayeux().newMessage();
+            reply.setChannel(channelName);
+            reply.setData("from_server");
+            remote.deliver(getServerSession(), reply);
+        }
     }
 }

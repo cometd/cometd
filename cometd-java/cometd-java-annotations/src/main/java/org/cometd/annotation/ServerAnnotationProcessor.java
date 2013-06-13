@@ -19,6 +19,7 @@ package org.cometd.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -242,6 +243,9 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         if (serviceAnnotation == null)
             return false;
 
+        if (!Modifier.isPublic(klass.getModifiers()))
+            throw new IllegalArgumentException("Service class '" + klass.getName() + "' must be public");
+
         LocalSession session = findOrCreateLocalSession(bean, serviceAnnotation.value());
         boolean result = processListener(bean, session);
         result |= processSubscription(bean, session);
@@ -378,6 +382,9 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                 Listener listener = method.getAnnotation(Listener.class);
                 if (listener != null)
                 {
+                    if (!Modifier.isPublic(method.getModifiers()))
+                        throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+
                     String[] channels = listener.value();
                     for (String channel : channels)
                     {
@@ -433,6 +440,9 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                 Subscription subscription = method.getAnnotation(Subscription.class);
                 if (subscription != null)
                 {
+                    if (!Modifier.isPublic(method.getModifiers()))
+                        throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+
                     String[] channels = subscription.value();
                     for (String channel : channels)
                     {
@@ -498,24 +508,23 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
             if (from == localSession.getServerSession() && !receiveOwnPublishes)
                 return true;
 
-            boolean accessible = method.isAccessible();
             try
             {
-                method.setAccessible(true);
                 Object result = method.invoke(target, from, message);
                 return !Boolean.FALSE.equals(result);
             }
             catch (InvocationTargetException x)
             {
-                throw new RuntimeException(x.getCause());
+                Throwable cause = x.getCause();
+                if (cause instanceof RuntimeException)
+                    throw (RuntimeException)cause;
+                if (cause instanceof Error)
+                    throw (Error)cause;
+                throw new RuntimeException(cause);
             }
             catch (IllegalAccessException x)
             {
                 throw new RuntimeException(x);
-            }
-            finally
-            {
-                method.setAccessible(accessible);
             }
         }
     }
@@ -541,23 +550,22 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
         public void onMessage(ClientSessionChannel channel, Message message)
         {
-            boolean accessible = method.isAccessible();
             try
             {
-                method.setAccessible(true);
                 method.invoke(target, message);
             }
             catch (InvocationTargetException x)
             {
-                throw new RuntimeException(x.getCause());
+                Throwable cause = x.getCause();
+                if (cause instanceof RuntimeException)
+                    throw (RuntimeException)cause;
+                if (cause instanceof Error)
+                    throw (Error)cause;
+                throw new RuntimeException(cause);
             }
             catch (IllegalAccessException x)
             {
                 throw new RuntimeException(x);
-            }
-            finally
-            {
-                method.setAccessible(accessible);
             }
         }
     }
