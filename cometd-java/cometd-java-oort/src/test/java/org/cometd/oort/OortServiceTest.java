@@ -286,12 +286,6 @@ public class OortServiceTest extends AbstractOortObjectTest
             this.latch = latch;
         }
 
-        @Override
-        protected String getLoggerName()
-        {
-            return OortService.class.getName();
-        }
-
         public boolean perform(String oortURL, String context)
         {
             this.context = context;
@@ -334,12 +328,6 @@ public class OortServiceTest extends AbstractOortObjectTest
         {
             super(oort, "test");
             this.latch = latch;
-        }
-
-        @Override
-        protected String getLoggerName()
-        {
-            return OortService.class.getName();
         }
 
         public String getBroadcastChannelName()
@@ -387,12 +375,6 @@ public class OortServiceTest extends AbstractOortObjectTest
         {
             super(oort, "test");
             this.latch = latch;
-        }
-
-        @Override
-        protected String getLoggerName()
-        {
-            return OortService.class.getName() + "." + Integer.toHexString(System.identityHashCode(this));
         }
 
         public String getBroadcastChannelName()
