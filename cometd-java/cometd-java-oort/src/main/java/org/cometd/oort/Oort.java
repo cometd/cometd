@@ -126,7 +126,7 @@ public class Oort extends ContainerLifeCycle
         _url = url;
         _id = UUID.randomUUID().toString();
 
-        _logger = LoggerFactory.getLogger(getClass().getName() + "." + _url);
+        _logger = LoggerFactory.getLogger(getClass().getName() + "." + replacePunctuation(_url, '_'));
         _debug = String.valueOf(BayeuxServerImpl.DEBUG_LOG_LEVEL).equals(bayeux.getOption(BayeuxServerImpl.LOG_LEVEL));
 
         _oortSession = bayeux.newLocalSession("oort");
@@ -705,6 +705,13 @@ public class Oort extends ContainerLifeCycle
     public LocalSession getOortSession()
     {
         return _oortSession;
+    }
+
+    protected static String replacePunctuation(String source, char replacement)
+    {
+        String replaced = source.replaceAll("[^\\p{Alnum}]", String.valueOf(replacement));
+        // Compact multiple consecutive replacement chars
+        return replaced.replaceAll("(" + replacement + ")\\1+", "$1");
     }
 
     public String toString()

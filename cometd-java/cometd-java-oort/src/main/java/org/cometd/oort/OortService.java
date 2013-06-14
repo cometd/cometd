@@ -124,12 +124,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         this.broadcastChannelName = "/oort/service/" + name;
         this.resultChannelName = forwardChannelName + "/result";
         this.session = oort.getBayeuxServer().newLocalSession(name);
-        this.logger = LoggerFactory.getLogger(getLoggerName());
-    }
-
-    protected String getLoggerName()
-    {
-        return getClass().getName();
+        this.logger = LoggerFactory.getLogger(getClass().getName() + "." + Oort.replacePunctuation(oort.getURL(), '_') + name);
     }
 
     /**

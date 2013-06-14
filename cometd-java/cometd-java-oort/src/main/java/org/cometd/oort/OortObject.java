@@ -144,7 +144,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         this.oort = oort;
         this.name = name;
         this.factory = factory;
-        this.logger = LoggerFactory.getLogger(getClass().getName() + "." + oort.getURL() + "." + name);
+        this.logger = LoggerFactory.getLogger(getClass().getName() + "." + Oort.replacePunctuation(oort.getURL(), '_') + "." + name);
         this.sender = oort.getBayeuxServer().newLocalSession(getClass().getSimpleName() + "." + name);
         this.channelName = OORT_OBJECTS_CHANNEL + "/" + name;
         this.messageListener = new MessageListener();
