@@ -309,7 +309,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         List<String> allowedTransports = getAllowedTransports();
         // Pick the first transport for the handshake, it will renegotiate if not right
         final ClientTransport initialTransport = transportRegistry.negotiate(allowedTransports.toArray(), BAYEUX_VERSION).get(0);
-        initialTransport.init();
+        prepareTransport(null, initialTransport);
         debug("Using initial transport {} from {}", initialTransport.getName(), allowedTransports);
 
         updateBayeuxClientState(new BayeuxClientStateUpdater()
@@ -645,10 +645,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     public BayeuxClientState create(BayeuxClientState oldState)
                     {
                         if (newTransport != oldState.transport)
-                        {
-                            oldState.transport.reset();
-                            newTransport.init();
-                        }
+                            prepareTransport(oldState.transport, newTransport);
+
                         String action = getAdviceAction(handshake.getAdvice(), Message.RECONNECT_RETRY_VALUE);
                         if (Message.RECONNECT_RETRY_VALUE.equals(action))
                             return new ConnectingState(oldState.handshakeFields, handshake.getAdvice(), newTransport, handshake.getClientId());
@@ -1079,6 +1077,14 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return b.toString();
     }
 
+    private void prepareTransport(ClientTransport oldTransport, ClientTransport newTransport)
+    {
+        if (oldTransport != null)
+            oldTransport.reset();
+        newTransport.init();
+        newTransport.setDebugEnabled(isDebugEnabled());
+    }
+
     /**
      * The states that a {@link BayeuxClient} may assume
      */
@@ -1192,10 +1198,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     {
                         ClientTransport newTransport = transports.get(0);
                         if (newTransport != oldState.transport)
-                        {
-                            oldState.transport.reset();
-                            newTransport.init();
-                        }
+                            prepareTransport(oldState.transport, newTransport);
                         return new RehandshakingState(oldState.handshakeFields, newTransport, oldState.nextBackoff());
                     }
                 }
