@@ -480,7 +480,10 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             try
             {
                 if (session == null)
+                {
+                    debug("No session, skipping reply {}", expiredConnectReply);
                     return;
+                }
 
                 // Decide atomically if we have to reply to the meta connect
                 // We need to guarantee the metaConnectDeliverOnly semantic

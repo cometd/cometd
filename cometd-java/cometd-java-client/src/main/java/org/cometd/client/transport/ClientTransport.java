@@ -36,7 +36,7 @@ public abstract class ClientTransport extends AbstractTransport
     public static final String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
     public static final String JSON_CONTEXT = "jsonContext";
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass().getName());
+    protected final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + System.identityHashCode(this));
     private boolean debug;
     private JSONContext.Client jsonContext;
 
