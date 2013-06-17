@@ -565,7 +565,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 if (!timeout)
                     _scheduling.compareAndSet(true, false);
 
-                if (reschedule && !session.isQueueEmpty())
+                if (reschedule && session.hasNonLazyMessages())
                     schedule();
             }
         }
