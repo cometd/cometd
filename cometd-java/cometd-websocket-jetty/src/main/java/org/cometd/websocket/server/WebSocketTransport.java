@@ -113,7 +113,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             _logger.trace("", x);
         }
 
-        _scheduler.shutdown();
+        _scheduler.shutdownNow();
 
         Executor threadPool = _executor;
         if (threadPool instanceof ExecutorService)

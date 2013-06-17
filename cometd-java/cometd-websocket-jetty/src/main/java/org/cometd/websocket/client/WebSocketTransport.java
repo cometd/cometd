@@ -81,7 +81,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     }
 
     private final WebSocket _websocket = new CometDWebSocket();
-    private final Map<String, WebSocketExchange> _metaExchanges = new ConcurrentHashMap<String, WebSocketExchange>();
+    private final Map<String, WebSocketExchange> _exchanges = new ConcurrentHashMap<String, WebSocketExchange>();
     private final WebSocketClientFactory _webSocketClientFactory;
     private volatile ScheduledExecutorService _scheduler;
     private volatile boolean _shutdownScheduler;
@@ -120,6 +120,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public void init()
     {
         super.init();
+        _exchanges.clear();
         _aborted = false;
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
         _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, _maxNetworkDelay);
@@ -158,7 +159,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         if (_shutdownScheduler)
         {
             _shutdownScheduler = false;
-            _scheduler.shutdown();
+            _scheduler.shutdownNow();
             _scheduler = null;
         }
     }
@@ -330,7 +331,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
                 // Notify only if we won the race to deregister the message
                 WebSocketExchange exchange = deregisterMessage(message);
-                if (exchange != null)
+                if (exchange != null && _webSocketClientFactory.isRunning())
                     listener.onExpire(new Message[]{message});
             }
         }, maxNetworkDelay, TimeUnit.MILLISECONDS);
@@ -340,7 +341,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         WebSocketExchange exchange = new WebSocketExchange(message, listener, task);
         debug("Registering {}", exchange);
-        Object existing = _metaExchanges.put(message.getId(), exchange);
+        Object existing = _exchanges.put(message.getId(), exchange);
         // Paranoid check
         if (existing != null)
             throw new IllegalStateException();
@@ -348,7 +349,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     private WebSocketExchange deregisterMessage(Message message)
     {
-        WebSocketExchange exchange = _metaExchanges.remove(message.getId());
+        WebSocketExchange exchange = _exchanges.remove(message.getId());
         if (Channel.META_CONNECT.equals(message.getChannel()))
             _connected = false;
         else if (Channel.META_DISCONNECT.equals(message.getChannel()))
@@ -369,7 +370,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     private void failMessages(Throwable cause)
     {
-        List<WebSocketExchange> exchanges = new ArrayList<WebSocketExchange>(_metaExchanges.values());
+        List<WebSocketExchange> exchanges = new ArrayList<WebSocketExchange>(_exchanges.values());
         for (WebSocketExchange exchange : exchanges)
         {
             deregisterMessage(exchange.message);
