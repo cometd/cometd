@@ -318,15 +318,15 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         }
 
         // Schedule a task to expire if the maxNetworkDelay elapses
-        final long expiration = System.currentTimeMillis() + maxNetworkDelay;
+        final long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + maxNetworkDelay;
         ScheduledFuture<?> task = _scheduler.schedule(new Runnable()
         {
             public void run()
             {
-                long now = System.currentTimeMillis();
-                long jitter = now - expiration;
-                if (jitter > 5000) // TODO: make the max jitter a parameter ?
-                    debug("Expired too late {} for {}", jitter, message);
+                long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                long delay = now - expiration;
+                if (delay > 5000) // TODO: make the max delay a parameter ?
+                    debug("Message {} expired {} ms too late", message, delay);
 
                 // Notify only if we won the race to deregister the message
                 WebSocketExchange exchange = deregisterMessage(message);

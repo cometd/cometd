@@ -501,7 +501,7 @@ public class BayeuxClientTest extends ClientServerTest
 
         Assert.assertEquals(clients.length, connections.get());
 
-        long start0 = System.currentTimeMillis();
+        long start0 = System.nanoTime();
         for (int i = 0; i < publish; i++)
         {
             final int sender = random.nextInt(clients.length);
@@ -523,13 +523,13 @@ public class BayeuxClientTest extends ClientServerTest
 
         int expected = clients.length * publish / rooms;
 
-        long start = System.currentTimeMillis();
-        while (received.get() < expected && (System.currentTimeMillis() - start) < 10000)
+        long start = System.nanoTime();
+        while (received.get() < expected && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 10)
         {
             Thread.sleep(100);
             System.err.println("received " + received.get() + "/" + expected);
         }
-        System.err.println((received.get() * 1000) / (System.currentTimeMillis() - start0) + " m/s");
+        System.err.println((received.get() * 1000 * 1000 * 1000L) / (System.nanoTime() - start0) + " m/s");
 
         Assert.assertEquals(expected, received.get());
 

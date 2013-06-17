@@ -402,7 +402,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                                     _connectReply = reply;
 
                                     // Delay the connect reply until timeout.
-                                    long expiration = System.currentTimeMillis() + timeout;
+                                    long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + timeout;
                                     _connectTask = _scheduler.schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
                                     reply = null;
                                 }
@@ -583,10 +583,10 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
             public void run()
             {
-                long now = System.currentTimeMillis();
+                long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 long delay = now - _connectExpiration;
                 if (delay > 5000) // TODO: make the max delay a parameter ?
-                    debug("/meta/connect timeout expired {} ms too late", delay);
+                    debug("/meta/connect {} expired {} ms too late", _connectReply, delay);
 
                 // Send the meta connect response after timeout.
                 // We *must* execute the next schedule() otherwise
