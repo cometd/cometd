@@ -38,7 +38,6 @@ import java.util.concurrent.TimeoutException;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
-import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
@@ -47,13 +46,9 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class WebSocketTransport extends HttpClientTransport implements MessageClientTransport
 {
-    private final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + Integer.toHexString(System.identityHashCode(this)));
-
     public final static String PREFIX = "ws";
     public final static String NAME = "websocket";
     public final static String PROTOCOL_OPTION = "protocol";
@@ -84,7 +79,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     }
 
     private final CometDWebSocket _websocket = new CometDWebSocket();
-    private final Map<String, WebSocketExchange> _metaExchanges = new ConcurrentHashMap<>();
+    private final Map<String, WebSocketExchange> _exchanges = new ConcurrentHashMap<>();
     private final WebSocketClient _webSocketClient;
     private volatile ScheduledExecutorService _scheduler;
     private volatile boolean _shutdownScheduler;
@@ -123,10 +118,11 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public void init()
     {
         super.init();
+        _exchanges.clear();
         _aborted = false;
 
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
-        _maxNetworkDelay = getOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, _maxNetworkDelay);
+        _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, _maxNetworkDelay);
         _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, _connectTimeout);
         _idleTimeout = getOption(IDLE_TIMEOUT_OPTION, _idleTimeout);
         _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClient.getPolicy().getMaxMessageSize());
@@ -171,7 +167,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         if (_shutdownScheduler)
         {
             _shutdownScheduler = false;
-            _scheduler.shutdown();
+            _scheduler.shutdownNow();
             _scheduler = null;
         }
     }
@@ -323,19 +319,19 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         }
 
         // Schedule a task to expire if the maxNetworkDelay elapses
-        final long expiration = System.currentTimeMillis() + maxNetworkDelay;
+        final long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + maxNetworkDelay;
         ScheduledFuture<?> task = _scheduler.schedule(new Runnable()
         {
             public void run()
             {
-                long now = System.currentTimeMillis();
-                long jitter = now - expiration;
-                if (jitter > 5000) // TODO: make the max jitter a parameter ?
-                    debug("Expired too late {} for {}", jitter, message);
+                long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                long delay = now - expiration;
+                if (delay > 5000) // TODO: make the max delay a parameter ?
+                    debug("Message {} expired {} ms too late", message, delay);
 
                 // Notify only if we won the race to deregister the message
                 WebSocketExchange exchange = deregisterMessage(message);
-                if (exchange != null)
+                if (exchange != null && _webSocketClient.isRunning())
                     listener.onFailure(new TimeoutException("Exchange expired"), new Message[]{message});
             }
         }, maxNetworkDelay, TimeUnit.MILLISECONDS);
@@ -345,7 +341,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         WebSocketExchange exchange = new WebSocketExchange(message, listener, task);
         debug("Registering {}", exchange);
-        Object existing = _metaExchanges.put(message.getId(), exchange);
+        Object existing = _exchanges.put(message.getId(), exchange);
         // Paranoid check
         if (existing != null)
             throw new IllegalStateException();
@@ -353,7 +349,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     private WebSocketExchange deregisterMessage(Message message)
     {
-        WebSocketExchange exchange = _metaExchanges.remove(message.getId());
+        WebSocketExchange exchange = _exchanges.remove(message.getId());
         if (Channel.META_CONNECT.equals(message.getChannel()))
             _connected = false;
         else if (Channel.META_DISCONNECT.equals(message.getChannel()))
@@ -374,7 +370,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     private void failMessages(Throwable cause)
     {
-        List<WebSocketExchange> exchanges = new ArrayList<>(_metaExchanges.values());
+        List<WebSocketExchange> exchanges = new ArrayList<>(_exchanges.values());
         for (WebSocketExchange exchange : exchanges)
         {
             deregisterMessage(exchange.message);

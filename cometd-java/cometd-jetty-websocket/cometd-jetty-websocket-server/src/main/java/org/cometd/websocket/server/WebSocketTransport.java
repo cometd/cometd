@@ -144,7 +144,7 @@ public class WebSocketTransport extends HttpTransport
             _logger.trace("", x);
         }
 
-        _scheduler.shutdown();
+        _scheduler.shutdownNow();
 
         Executor threadPool = _executor;
         if (threadPool instanceof ExecutorService)
@@ -437,7 +437,7 @@ public class WebSocketTransport extends HttpTransport
                                     _connectReply = reply;
 
                                     // Delay the connect reply until timeout.
-                                    long expiration = System.currentTimeMillis() + timeout;
+                                    long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + timeout;
                                     _connectTask = _scheduler.schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
                                     _logger.debug("Scheduled meta connect {}", _connectTask);
                                     reply = null;
@@ -519,7 +519,10 @@ public class WebSocketTransport extends HttpTransport
             try
             {
                 if (session == null)
+                {
+                    debug("No session, skipping reply {}", expiredConnectReply);
                     return;
+                }
 
                 // Decide atomically if we have to reply to the meta connect
                 // We need to guarantee the metaConnectDeliverOnly semantic
@@ -604,7 +607,7 @@ public class WebSocketTransport extends HttpTransport
                 if (!timeout)
                     _scheduling.compareAndSet(true, false);
 
-                if (reschedule && !session.isQueueEmpty())
+                if (reschedule && session.hasNonLazyMessages())
                     schedule();
             }
         }
@@ -622,10 +625,10 @@ public class WebSocketTransport extends HttpTransport
 
             public void run()
             {
-                long now = System.currentTimeMillis();
+                long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 long delay = now - _connectExpiration;
                 if (delay > 5000) // TODO: make the max delay a parameter ?
-                    _logger.debug("/meta/connect timeout expired {} ms too late", delay);
+                    debug("/meta/connect {} expired {} ms too late", _connectReply, delay);
 
                 // Send the meta connect response after timeout.
                 // We *must* execute the next schedule() otherwise
@@ -639,8 +642,8 @@ public class WebSocketTransport extends HttpTransport
     protected class WebSocketContext implements BayeuxContext
     {
         private final Principal _principal;
-        //private final InetSocketAddress _local;
-        //private final InetSocketAddress _remote;
+        private final InetSocketAddress _local;
+        private final InetSocketAddress _remote;
         private final Map<String, List<String>> _headers = new HashMap<>();
         private final Map<String, List<String>> _parameters = new HashMap<>();
         private final Map<String, Object> _attributes = new HashMap<>();
@@ -648,20 +651,17 @@ public class WebSocketTransport extends HttpTransport
         private final HttpSession _session;
         private final ServletContext _context;
         private final String _url;
-        private final String _origin;
 
         @SuppressWarnings("unchecked")
         public WebSocketContext(ServletWebSocketRequest request)
         {
             _principal = request.getPrincipal();
 
-//            _local = new InetSocketAddress(request.getLocalAddr(), request.getLocalPort());
-//            _remote = new InetSocketAddress(request.getRemoteAddr(), request.getRemotePort());
-//
+            _local = request.getLocalSocketAddress();
+            _remote = request.getRemoteSocketAddress();
+
             for (String name : request.getHeaders().keySet())
-            {
                 _headers.put(name.toLowerCase(Locale.ENGLISH), request.getHeaders(name));
-            }
 
             _parameters.putAll(request.getServletParameters());
             _attributes.putAll(request.getServletAttributes());
@@ -674,43 +674,15 @@ public class WebSocketTransport extends HttpTransport
             }
 
             _session = (HttpSession)request.getSession();
-            if (_session != null)
-            {
-                _context = _session.getServletContext();
-            }
-            else
-            {
-                ServletContext context = null;
-//                try
-//                {
-//                    HttpSession s = request.getSession(true);
-//                    context = s.getServletContext();
-//                    s.invalidate();
-//                }
-//                catch (IllegalStateException x)
-//                {
-//                    _logger.trace("", x);
-//                }
-//                finally
-//                {
-                    _context = context;
-//                }
-            }
+            _context = _session == null ? null : _session.getServletContext();
 
             String url = request.getRequestURI().toString();
             String query = request.getQueryString();
-
             if (query != null)
                 url = url +"?" + query;
-
             this._url = url;
-
-            _origin = request.getOrigin();
         }
 
-        /**
-         * Note: the principal may be null
-         */
         @Override
         public Principal getUserPrincipal()
         {
@@ -724,6 +696,17 @@ public class WebSocketTransport extends HttpTransport
             return request != null && request.isUserInRole(role);
         }
 
+        @Override
+        public InetSocketAddress getRemoteAddress()
+        {
+            return _remote;
+        }
+
+        @Override
+        public InetSocketAddress getLocalAddress()
+        {
+            return _local;
+        }
 
         @Override
         public String getHeader(String name)
@@ -793,36 +776,19 @@ public class WebSocketTransport extends HttpTransport
         @Override
         public Object getContextAttribute(String name)
         {
-            return _context.getAttribute(name);
+            return _context == null ? null : _context.getAttribute(name);
         }
 
         @Override
         public String getContextInitParameter(String name)
         {
-            return _context.getInitParameter(name);
+            return _context == null ? null : _context.getInitParameter(name);
         }
 
         @Override
         public String getURL()
         {
             return _url;
-        }
-
-        public String getOrigin()
-        {
-            return _origin;
-        }
-
-        @Override
-        public InetSocketAddress getRemoteAddress()
-        {
-            return null;
-        }
-
-        @Override
-        public InetSocketAddress getLocalAddress()
-        {
-            return null;
         }
     }
 }

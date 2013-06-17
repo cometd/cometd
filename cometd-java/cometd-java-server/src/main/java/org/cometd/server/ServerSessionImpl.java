@@ -259,8 +259,12 @@ public class ServerSessionImpl implements ServerSession
 
         _bayeux.freeze((Mutable)message);
 
-        int maxQueueSize = _maxQueue;
-        int queueSize = _queue.size();
+        final int maxQueueSize = _maxQueue;
+        final int queueSize;
+        synchronized (_queue)
+        {
+            queueSize = _queue.size();
+        }
         for (ServerSessionListener listener : _listeners)
         {
             if (maxQueueSize > 0 && queueSize > maxQueueSize && listener instanceof MaxQueueListener)
@@ -355,7 +359,7 @@ public class ServerSessionImpl implements ServerSession
     {
         synchronized (_queue)
         {
-            if (--_batch == 0 && _queue.size() > 0)
+            if (--_batch == 0 && _nonLazyMessages)
             {
                 flush();
                 return true;
@@ -400,14 +404,6 @@ public class ServerSessionImpl implements ServerSession
     public Queue<ServerMessage> getQueue()
     {
         return _queue;
-    }
-
-    public boolean isQueueEmpty()
-    {
-        synchronized (_queue)
-        {
-            return _queue.size() == 0;
-        }
     }
 
     public boolean hasNonLazyMessages()

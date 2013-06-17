@@ -992,4 +992,73 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         Assert.assertTrue(latch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
     }
+
+    @Test
+    public void testDisconnectWithPendingMetaConnectWithoutResponseDoesNotExpire() throws Exception
+    {
+        stopServer();
+
+        final long timeout = 2000L;
+        Map<String, String> serverOptions = new HashMap<>();
+        serverOptions.put("timeout", String.valueOf(timeout));
+        runServer(serverOptions);
+
+        bayeux.addExtension(new BayeuxServer.Extension.Adapter()
+        {
+            @Override
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
+            {
+                if (Channel.META_CONNECT.equals(message.getChannel()))
+                {
+                    Map<String, Object> advice = message.getAdvice();
+                    if (advice != null)
+                    {
+                        if (Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)))
+                        {
+                            // Pretend this message could not be sent
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+        });
+
+        final long maxNetworkDelay = 2000L;
+        Map<String, Object> clientOptions = new HashMap<>();
+        clientOptions.put("maxNetworkDelay", maxNetworkDelay);
+        WebSocketTransport transport = WebSocketTransport.create(clientOptions, wsClient);
+        transport.setDebugEnabled(debugTests());
+        BayeuxClient client = new BayeuxClient(cometdURL, transport)
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                // Suppress expected exceptions
+                if (!(x instanceof EOFException))
+                    super.onFailure(x, messages);
+            }
+        };
+        client.setDebugEnabled(debugTests());
+
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait for the /meta/connect to be held on server
+        TimeUnit.MILLISECONDS.sleep(1000);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (!message.isSuccessful())
+                    latch.countDown();
+            }
+        });
+
+        client.disconnect();
+
+        Assert.assertFalse(latch.await(2 * maxNetworkDelay + timeout, TimeUnit.MILLISECONDS));
+    }
 }
