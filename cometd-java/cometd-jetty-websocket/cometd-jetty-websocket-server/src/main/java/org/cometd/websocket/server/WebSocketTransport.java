@@ -54,8 +54,8 @@ import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.server.ServletWebSocketRequest;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,15 +105,15 @@ public class WebSocketTransport extends HttpTransport
             @Override
             public Object createWebSocket(UpgradeRequest request, UpgradeResponse response)
             {
-                if (request instanceof ServletWebSocketRequest)
+                if (request instanceof ServletUpgradeRequest)
                 {
-                    ServletWebSocketRequest serverRequest = (ServletWebSocketRequest)request;
+                    ServletUpgradeRequest serverRequest = (ServletUpgradeRequest)request;
                     String origin = request.getHeader("Origin");
                     if (origin == null)
                         origin = request.getHeader("Sec-WebSocket-Origin");
                     if (checkOrigin(serverRequest, origin))
                     {
-                        WebSocketContext handshake = new WebSocketContext((ServletWebSocketRequest)request);
+                        WebSocketContext handshake = new WebSocketContext((ServletUpgradeRequest)request);
                         return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
                     }
                 }
@@ -186,15 +186,19 @@ public class WebSocketTransport extends HttpTransport
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (!_factory.acceptWebSocket(request, response))
+        if (_factory.isUpgradeRequest(request, response) && _factory.acceptWebSocket(request, response))
+            return;
+
+        _logger.warn("Websocket request not accepted");
+
+        if (!response.isCommitted())
         {
-            _logger.warn("Websocket not accepted");
             response.setHeader("Connection", "close");
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
-    public boolean checkOrigin(ServletWebSocketRequest request, String origin)
+    public boolean checkOrigin(ServletUpgradeRequest request, String origin)
     {
         return true;
     }
@@ -653,7 +657,7 @@ public class WebSocketTransport extends HttpTransport
         private final String _url;
 
         @SuppressWarnings("unchecked")
-        public WebSocketContext(ServletWebSocketRequest request)
+        public WebSocketContext(ServletUpgradeRequest request)
         {
             _principal = request.getPrincipal();
 
