@@ -16,6 +16,8 @@
 
 package org.cometd.websocket.client;
 
+import java.io.IOException;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -24,6 +26,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.MarkedReference;
@@ -37,9 +47,13 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.BayeuxClient.State;
+import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.HashMapMessage;
+import org.cometd.common.TransportException;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.cometd.websocket.ClientServerWebSocketTest;
+import org.eclipse.jetty.server.DispatcherType;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
 import org.junit.Before;
@@ -476,6 +490,75 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
                 // Verify the exception string is there
                 Assert.assertNotNull(failure.get("exception"));
                 latch.countDown();
+            }
+        });
+        client.handshake();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testWebSocketResponseHeadersRemoved() throws Exception
+    {
+        context.addFilter(new FilterHolder(new Filter()
+        {
+            public void init(FilterConfig filterConfig) throws ServletException
+            {
+            }
+
+            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+            {
+                try
+                {
+                    // Wrap the response to remove the header
+                    chain.doFilter(request, new HttpServletResponseWrapper((HttpServletResponse)response)
+                    {
+                        @Override
+                        public void addHeader(String name, String value)
+                        {
+                            if (!"Sec-WebSocket-Accept".equals(name))
+                                super.addHeader(name, value);
+                        }
+                    });
+                }
+                finally
+                {
+                    ((HttpServletResponse)response).setHeader("Sec-WebSocket-Accept", null);
+                }
+            }
+
+            public void destroy()
+            {
+            }
+        }), cometdServletPath, EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+
+        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsFactory);
+        webSocketTransport.setDebugEnabled(debugTests());
+        LongPollingTransport longPollingTransport = LongPollingTransport.create(null, httpClient);
+        longPollingTransport.setDebugEnabled(debugTests());
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                // Suppress expected exception
+                if (!(x instanceof TransportException))
+                    super.onFailure(x, messages);
+            }
+        };
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isSuccessful())
+                {
+                    Assert.assertEquals(LongPollingTransport.NAME, client.getTransport().getName());
+                    latch.countDown();
+                }
             }
         });
         client.handshake();
