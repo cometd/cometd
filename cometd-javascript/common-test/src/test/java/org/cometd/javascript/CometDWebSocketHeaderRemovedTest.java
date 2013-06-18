@@ -18,6 +18,7 @@ package org.cometd.javascript;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -27,7 +28,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.junit.Assert;
 import org.junit.Test;
