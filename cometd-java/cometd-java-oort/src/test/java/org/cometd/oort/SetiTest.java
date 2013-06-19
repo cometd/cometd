@@ -574,8 +574,8 @@ public class SetiTest extends OortTest
                 loginLatch2.countDown();
             }
         });
-        Assert.assertTrue(loginLatch2.await(555, TimeUnit.SECONDS));
-        Assert.assertTrue(localPresenceOnLatch.await(555, TimeUnit.SECONDS));
+        Assert.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(localPresenceOnLatch.await(5, TimeUnit.SECONDS));
 
         // Logout user2
         final CountDownLatch logoutLatch2 = new CountDownLatch(1);
@@ -589,8 +589,8 @@ public class SetiTest extends OortTest
                 logoutLatch2.countDown();
             }
         });
-        Assert.assertTrue(logoutLatch2.await(555, TimeUnit.SECONDS));
-        Assert.assertTrue(localPresenceOffLatch.await(555, TimeUnit.SECONDS));
+        Assert.assertTrue(logoutLatch2.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(localPresenceOffLatch.await(5, TimeUnit.SECONDS));
 
         // Logout user1
         final CountDownLatch logoutLatch1 = new CountDownLatch(1);
@@ -604,8 +604,8 @@ public class SetiTest extends OortTest
                 logoutLatch1.countDown();
             }
         });
-        Assert.assertTrue(logoutLatch1.await(555, TimeUnit.SECONDS));
-        Assert.assertTrue(remotePresenceOffLatch.await(555, TimeUnit.SECONDS));
+        Assert.assertTrue(logoutLatch1.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(remotePresenceOffLatch.await(5, TimeUnit.SECONDS));
 
         seti2.removePresenceListener(listener);
     }
