@@ -16,8 +16,11 @@
 
 package org.cometd.client;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -29,9 +32,19 @@ import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JacksonJSONContextServer;
+import org.eclipse.jetty.client.Address;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ConnectHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlets.ProxyServlet;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class BayeuxClientUsageTest extends ClientServerTest
@@ -67,6 +80,55 @@ public class BayeuxClientUsageTest extends ClientServerTest
         testClient(client);
     }
 
+    @Test
+    public void testClientWithProxy() throws Exception
+    {
+        startServer(null);
+
+        Server proxy = new Server();
+        Connector proxyConnector = new SelectChannelConnector();
+        proxy.addConnector(proxyConnector);
+
+        ServletContextHandler context = new ServletContextHandler(proxy, "/", ServletContextHandler.SESSIONS);
+        ServletHolder proxyServlet = new ServletHolder(ProxyServlet.class);
+        context.addServlet(proxyServlet, "/*");
+
+        proxy.start();
+        httpClient.setProxy(new Address("localhost", proxyConnector.getLocalPort()));
+
+        testClient(newBayeuxClient());
+    }
+
+    @Ignore // TODO: un-ignore when using Jetty 7.6.12 (which fixes https://bugs.eclipse.org/bugs/show_bug.cgi?id=411135)
+    @Test
+    public void testClientWithProxyTunnel() throws Exception
+    {
+        startServer(null);
+
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        File keyStoreFile = new File("src/test/resources/keystore.jks");
+        sslContextFactory.setKeyStorePath(keyStoreFile.getAbsolutePath());
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+        SslSelectChannelConnector sslConnector = new SslSelectChannelConnector(sslContextFactory);
+        server.addConnector(sslConnector);
+        sslConnector.start();
+
+        Server proxy = new Server();
+        Connector proxyConnector = new SelectChannelConnector();
+        proxy.addConnector(proxyConnector);
+
+        ConnectHandler connectHandler = new ConnectHandler();
+        proxy.setHandler(connectHandler);
+
+        proxy.start();
+        httpClient.setProxy(new Address("localhost", proxyConnector.getLocalPort()));
+
+        String url = "https://localhost:" + sslConnector.getLocalPort() + cometdServletPath;
+        BayeuxClient client = new BayeuxClient(url, new LongPollingTransport(null, httpClient));
+        testClient(client);
+    }
+
     private void testClient(BayeuxClient client) throws Exception
     {
         client.setDebugEnabled(debugTests());
@@ -88,49 +150,50 @@ public class BayeuxClientUsageTest extends ClientServerTest
             }
         });
 
-        final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
+        final BlockingQueue<Message> metaMessages = new ArrayBlockingQueue<Message>(16);
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                results.offer(message);
+                metaMessages.offer(message);
             }
         });
 
         client.handshake();
 
-        Message message = (Message)results.poll(1, TimeUnit.SECONDS);
+        Message message = metaMessages.poll(1, TimeUnit.SECONDS);
         Assert.assertNotNull(message);
         Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
         Assert.assertTrue(message.isSuccessful());
         String id = client.getId();
         Assert.assertNotNull(id);
 
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
+        message = metaMessages.poll(1, TimeUnit.SECONDS);
         Assert.assertEquals(Channel.META_CONNECT, message.getChannel());
         Assert.assertTrue(message.isSuccessful());
 
+        final BlockingQueue<Message> messages = new ArrayBlockingQueue<Message>(16);
         ClientSessionChannel.MessageListener subscriber = new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                results.offer(message);
+                messages.offer(message);
             }
         };
         ClientSessionChannel aChannel = client.getChannel("/a/channel");
         aChannel.subscribe(subscriber);
 
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
+        message = metaMessages.poll(1, TimeUnit.SECONDS);
         Assert.assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
         Assert.assertTrue(message.isSuccessful());
 
         String data = "data";
         aChannel.publish(data);
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
+        message = messages.poll(1, TimeUnit.SECONDS);
         Assert.assertEquals(data, message.getData());
 
         aChannel.unsubscribe(subscriber);
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
+        message = metaMessages.poll(1, TimeUnit.SECONDS);
         Assert.assertEquals(Channel.META_UNSUBSCRIBE, message.getChannel());
         Assert.assertTrue(message.isSuccessful());
 

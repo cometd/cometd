@@ -24,12 +24,12 @@ public class TransportException extends RuntimeException
 
     public TransportException(Map<String, Object> fields)
     {
-        this.fields = fields;
+        this(null, fields);
     }
 
     public TransportException(Throwable cause, Map<String, Object> fields)
     {
-        super(cause);
+        super(String.valueOf(fields), cause);
         this.fields = fields;
     }
 
