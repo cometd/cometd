@@ -110,7 +110,7 @@ public class ChatService
     }
 
     @Listener("/service/privatechat")
-    protected void privateChat(ServerSession client, ServerMessage message)
+    public void privateChat(ServerSession client, ServerMessage message)
     {
         Map<String,Object> data = message.getDataAsMap();
         String room = ((String)data.get("room")).substring("/chat/".length());
