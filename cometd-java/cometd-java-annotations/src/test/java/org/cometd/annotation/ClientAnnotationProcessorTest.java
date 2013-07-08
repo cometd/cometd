@@ -415,4 +415,75 @@ public class ClientAnnotationProcessorTest
         @Inject
         private Injectable i;
     }
+
+    @Test
+    public void testResubscribeOnRehandshake() throws Exception
+    {
+        AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>();
+        ResubscribeOnRehandshakeService s = new ResubscribeOnRehandshakeService(messageLatch);
+        boolean processed = processor.process(s);
+        assertTrue(processed);
+
+        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                subscribeLatch.countDown();
+            }
+        });
+
+        bayeuxClient.handshake();
+        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
+        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+
+        messageLatch.set(new CountDownLatch(1));
+        bayeuxClient.getChannel("/foo").publish(new HashMap());
+        assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
+
+        bayeuxClient.disconnect();
+        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+
+        // Rehandshake
+        bayeuxClient.handshake();
+        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
+
+        // Republish, it must have resubscribed
+        messageLatch.set(new CountDownLatch(1));
+        bayeuxClient.getChannel("/foo").publish(new HashMap());
+        assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
+
+        bayeuxClient.disconnect();
+        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+
+        boolean deprocessed = processor.deprocess(s);
+        assertTrue(deprocessed);
+
+        // Rehandshake
+        bayeuxClient.handshake();
+        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
+
+        // Republish, it must not have resubscribed
+        messageLatch.set(new CountDownLatch(1));
+        bayeuxClient.getChannel("/foo").publish(new HashMap());
+        assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class ResubscribeOnRehandshakeService
+    {
+        private final AtomicReference<CountDownLatch> messageLatch;
+
+        public ResubscribeOnRehandshakeService(AtomicReference<CountDownLatch> messageLatch)
+        {
+            this.messageLatch = messageLatch;
+        }
+
+        @Subscription("/foo")
+        public void foo(Message message)
+        {
+            if (message.getData() != null)
+                messageLatch.get().countDown();
+        }
+    }
 }
