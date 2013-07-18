@@ -113,6 +113,7 @@ public class Oort extends AggregateLifeCycle
     private boolean _debug;
     private boolean _clientDebug;
     private boolean _ackExtensionEnabled;
+    private Extension _ackExtension;
     private JSONContext.Client _jsonContext;
 
     public Oort(BayeuxServer bayeux, String url)
@@ -164,7 +165,7 @@ public class Oort extends AggregateLifeCycle
                 }
             }
             if (!present)
-                _bayeux.addExtension(new AcknowledgedMessagesExtension());
+                _bayeux.addExtension(_ackExtension = new AcknowledgedMessagesExtension());
         }
 
         _bayeux.addExtension(_oortExtension);
@@ -203,13 +204,17 @@ public class Oort extends AggregateLifeCycle
         _serverComets.clear();
         _channels.clear();
 
+        _bayeux.getChannel(OORT_SERVICE_CHANNEL).removeListener(_joinListener);
+
         ServerChannel oortCloudChannel = _bayeux.getChannel(OORT_CLOUD_CHANNEL);
-        if (oortCloudChannel != null)
-        {
-            oortCloudChannel.removeListener(_joinListener);
-            oortCloudChannel.removeListener(_cloudListener);
-            oortCloudChannel.removeAuthorizer(GrantAuthorizer.GRANT_ALL);
-        }
+        oortCloudChannel.removeListener(_cloudListener);
+        oortCloudChannel.removeAuthorizer(GrantAuthorizer.GRANT_ALL);
+
+        Extension ackExtension = _ackExtension;
+        _ackExtension = null;
+        if (ackExtension != null)
+            _bayeux.removeExtension(ackExtension);
+
         _bayeux.removeExtension(_oortExtension);
 
         super.doStop();
