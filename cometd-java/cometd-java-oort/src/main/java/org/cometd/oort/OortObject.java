@@ -258,13 +258,23 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
-        data.put(Info.OBJECT_FIELD, newObject);
+        data.put(Info.OBJECT_FIELD, serialize(newObject));
 
         logger.debug("Sharing {}", data);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
 
         return (T)data.getResult();
+    }
+
+    protected Object serialize(T object)
+    {
+        return object;
+    }
+
+    protected Object deserialize(Object object)
+    {
+        return object;
     }
 
     protected Info<T> newInfo(T local)
@@ -395,8 +405,9 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
     protected void onObject(Map<String, Object> data)
     {
+        Object object = deserialize(data.get(Info.OBJECT_FIELD));
         // Convert the object, for example from a JSON serialized Map to a ConcurrentMap
-        data.put(Info.OBJECT_FIELD, getFactory().newObject(data.get(Info.OBJECT_FIELD)));
+        data.put(Info.OBJECT_FIELD, getFactory().newObject(object));
         Info<T> newInfo = new Info<T>(oort.getURL(), data);
 
         MarkedReference<Info<T>> old = setInfo(newInfo, null);
