@@ -405,7 +405,10 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
     protected void onObject(Map<String, Object> data)
     {
-        Object object = deserialize(data.get(Info.OBJECT_FIELD));
+        boolean isLocal = oort.getURL().equals(data.get(Info.OORT_URL_FIELD));
+        Object object = data.get(Info.OBJECT_FIELD);
+        if (!isLocal)
+            object = deserialize(object);
         // Convert the object, for example from a JSON serialized Map to a ConcurrentMap
         data.put(Info.OBJECT_FIELD, getFactory().newObject(object));
         Info<T> newInfo = new Info<T>(oort.getURL(), data);
