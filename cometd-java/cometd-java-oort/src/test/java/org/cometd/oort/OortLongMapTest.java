@@ -16,6 +16,8 @@
 
 package org.cometd.oort;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -82,5 +84,77 @@ public class OortLongMapTest extends AbstractOortObjectTest
 
         ConcurrentMap<Long, Object> objectAtOort2 = oortMap2.merge(OortObjectMergers.<Long, Object>concurrentMapUnion());
         Assert.assertEquals(object1, objectAtOort2);
+    }
+
+    @Test
+    public void testHowToDealWitMutableValues() throws Exception
+    {
+        // We are using a Map as mutable value because it serializes easily in JSON.
+        // Any other mutable data structure would require a serializer/deserializer.
+
+        String name = "test";
+        OortObject.Factory<ConcurrentMap<Long, Map<String, Boolean>>> factory = OortObjectFactories.forConcurrentMap();
+        OortLongMap<Map<String, Boolean>> oortMap1 = new OortLongMap<Map<String, Boolean>>(oort1, name, factory);
+        OortLongMap<Map<String, Boolean>> oortMap2 = new OortLongMap<Map<String, Boolean>>(oort2, name, factory);
+        startOortObjects(oortMap1, oortMap2);
+
+        long key = 13L;
+        Map<String, Boolean> node1Value = new HashMap<String, Boolean>();
+
+        final CountDownLatch putLatch1 = new CountDownLatch(2);
+        OortMap.EntryListener.Adapter<Long, Map<String, Boolean>> listener1 = new OortMap.EntryListener.Adapter<Long, Map<String, Boolean>>()
+        {
+            @Override
+            public void onPut(OortObject.Info<ConcurrentMap<Long, Map<String, Boolean>>> info, OortMap.Entry<Long, Map<String, Boolean>> entry)
+            {
+                putLatch1.countDown();
+            }
+        };
+        oortMap1.addEntryListener(listener1);
+        oortMap2.addEntryListener(listener1);
+        // First problem is how concurrent threads may insert the initial value for a certain key:
+        // solution is to use putIfAbsentAndShare()
+        Map<String, Boolean> existing = oortMap1.putIfAbsentAndShare(key, node1Value);
+        if (existing != null)
+            node1Value = existing;
+
+        Assert.assertTrue(putLatch1.await(5, TimeUnit.SECONDS));
+        oortMap1.removeEntryListener(listener1);
+        oortMap2.removeEntryListener(listener1);
+
+        // Now we have a reference to the value object for that key.
+        // We mutate the value object.
+        synchronized (node1Value)
+        {
+            node1Value.put("1", true);
+        }
+
+        // Another thread may just get the value and modify it
+        node1Value = oortMap1.get(key);
+        synchronized (node1Value)
+        {
+            node1Value.put("2", true);
+        }
+
+        final CountDownLatch putLatch2 = new CountDownLatch(2);
+        OortMap.EntryListener.Adapter<Long, Map<String, Boolean>> listener2 = new OortMap.EntryListener.Adapter<Long, Map<String, Boolean>>()
+        {
+            @Override
+            public void onPut(OortObject.Info<ConcurrentMap<Long, Map<String, Boolean>>> info, OortMap.Entry<Long, Map<String, Boolean>> entry)
+            {
+                putLatch2.countDown();
+            }
+        };
+        oortMap1.addEntryListener(listener2);
+        oortMap2.addEntryListener(listener2);
+
+        // Share the value notifying EntryListeners
+        oortMap1.putAndShare(key, node1Value);
+        Assert.assertTrue(putLatch2.await(5, TimeUnit.SECONDS));
+        oortMap1.removeEntryListener(listener2);
+        oortMap2.removeEntryListener(listener2);
+
+        Map<String, Boolean> node2Value = oortMap2.find(key);
+        Assert.assertEquals(2, node2Value.size());
     }
 }
