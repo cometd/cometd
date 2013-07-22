@@ -182,12 +182,12 @@ public class Seti extends AbstractLifeCycle
         bayeux.getChannel(SETI_ALL_CHANNEL).setPersistent(false);
     }
 
-    public static String generateSetiId(String oortURL)
+    protected String generateSetiId(String oortURL)
     {
         return Oort.replacePunctuation(oortURL, '_');
     }
 
-    public static String generateSetiChannel(String setiId)
+    protected String generateSetiChannel(String setiId)
     {
         return "/seti/" + setiId;
     }
