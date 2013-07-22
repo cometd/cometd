@@ -64,6 +64,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
 {
     private static final String TYPE_FIELD_ENTRY_VALUE = "oort.map.entry";
     private static final String ACTION_FIELD_PUT_VALUE = "oort.map.put";
+    private static final String ACTION_FIELD_PUT_ABSENT_VALUE = "oort.map.put.absent";
     private static final String ACTION_FIELD_REMOVE_VALUE = "oort.map.remove";
     private static final String KEY_FIELD = "oort.map.key";
     private static final String VALUE_FIELD = "oort.map.value";
@@ -87,13 +88,14 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
 
     /**
      * Updates a single entry of the local entity map with the given {@code key} and {@code value},
-     * and then broadcasts the update to all nodes in the cluster.
+     * and broadcasts the operation to all nodes in the cluster.
      * <p/>
      * Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes.
      *
      * @param key   the key to associate the value to
      * @param value the value associated with the key
      * @return the previous value associated with the key, or null if no previous value was associated with the key
+     * @see #putIfAbsentAndShare(Object, Object)
      * @see #removeAndShare(Object)
      */
     public V putAndShare(K key, V value)
@@ -102,7 +104,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         entry.put(KEY_FIELD, key);
         entry.put(VALUE_FIELD, value);
 
-        Data data = new Data(6);
+        Data<V> data = new Data<V>(6);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
@@ -114,12 +116,45 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
 
-        return (V)data.getResult();
+        return data.getResult();
+    }
+
+    /**
+     * Updates a single entry of the local entity map with the given {@code key} and {@code value}
+     * if it does not exist yet, and broadcasts the operation to all nodes in the cluster.
+     * <p/>
+     * Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes,
+     * only if the key did not exist.
+     *
+     * @param key   the key to associate the value to
+     * @param value the value associated with the key
+     * @return the previous value associated with the key, or null if no previous value was associated with the key
+     * @see #putAndShare(Object, Object)
+     */
+    public V putIfAbsentAndShare(K key, V value)
+    {
+        Map<String, Object> entry = new HashMap<String, Object>(2);
+        entry.put(KEY_FIELD, key);
+        entry.put(VALUE_FIELD, value);
+
+        Data<V> data = new Data<V>(6);
+        data.put(Info.VERSION_FIELD, nextVersion());
+        data.put(Info.OORT_URL_FIELD, getOort().getURL());
+        data.put(Info.NAME_FIELD, getName());
+        data.put(Info.OBJECT_FIELD, entry);
+        data.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
+        data.put(Info.ACTION_FIELD, ACTION_FIELD_PUT_ABSENT_VALUE);
+
+        logger.debug("Sharing map putIfAbsent {}", data);
+        BayeuxServer bayeuxServer = getOort().getBayeuxServer();
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+
+        return data.getResult();
     }
 
     /**
      * Removes the given {@code key} from the local entity map,
-     * and then broadcasts the removal to all nodes in the cluster.
+     * and broadcasts the operation to all nodes in the cluster.
      * <p/>
      * Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes.
      *
@@ -132,7 +167,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         Map<String, Object> entry = new HashMap<String, Object>(1);
         entry.put(KEY_FIELD, key);
 
-        Data data = new Data(6);
+        Data<V> data = new Data<V>(6);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
@@ -144,7 +179,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
 
-        return (V)data.getResult();
+        return data.getResult();
     }
 
     /**
@@ -201,7 +236,8 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         {
             String action = (String)data.get(Info.ACTION_FIELD);
             final boolean remove = ACTION_FIELD_REMOVE_VALUE.equals(action);
-            if (!ACTION_FIELD_PUT_VALUE.equals(action) && !remove)
+            final boolean putAbsent = ACTION_FIELD_PUT_ABSENT_VALUE.equals(action);
+            if (!remove && !putAbsent && !ACTION_FIELD_PUT_VALUE.equals(action))
                 throw new IllegalArgumentException(action);
 
             String oortURL = (String)data.get(Info.OORT_URL_FIELD);
@@ -220,36 +256,39 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
                 Info<ConcurrentMap<K, V>> newInfo = new Info<ConcurrentMap<K, V>>(getOort().getURL(), data);
                 final ConcurrentMap<K, V> map = info.getObject();
                 newInfo.put(Info.OBJECT_FIELD, map);
-                final AtomicReference<V> result = new AtomicReference<V>();
+                final AtomicReference<V> resultRef = new AtomicReference<V>();
                 MarkedReference<Info<ConcurrentMap<K, V>>> old = setInfo(newInfo, new Runnable()
                 {
                     public void run()
                     {
                         if (remove)
-                            result.set(map.remove(key));
+                            resultRef.set(map.remove(key));
+                        else if (putAbsent)
+                            resultRef.set(map.putIfAbsent(key, value));
                         else
-                            result.set(map.put(key, value));
+                            resultRef.set(map.put(key, value));
                     }
                 });
 
-                Entry<K, V> entry = new Entry<K, V>(key, result.get(), value);
+                V result = resultRef.get();
+                Entry<K, V> entry = new Entry<K, V>(key, result, value);
 
                 logger.debug("{} {} map {} of {}",
                         old.isMarked() ? "Performed" : "Skipped",
                         newInfo.isLocal() ? "local" : "remote",
-                        remove ? "remove" : "put",
+                        remove ? "remove" : putAbsent ? "putIfAbsent" : "put",
                         entry);
 
                 if (old.isMarked())
                 {
                     if (remove)
                         notifyEntryRemoved(info, entry);
-                    else
+                    if (!putAbsent || result == null)
                         notifyEntryPut(info, entry);
                 }
 
                 if (data instanceof Data)
-                    ((Data)data).setResult(result.get());
+                    ((Data<V>)data).setResult(result);
             }
             else
             {
