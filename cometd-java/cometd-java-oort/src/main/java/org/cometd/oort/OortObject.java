@@ -254,17 +254,27 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         if (newObject == null)
             throw new NullPointerException();
 
-        Data data = new Data(4);
+        Data<T> data = new Data<>(4);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
-        data.put(Info.OBJECT_FIELD, newObject);
+        data.put(Info.OBJECT_FIELD, serialize(newObject));
 
         logger.debug("Sharing {}", data);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
-        return (T)data.getResult();
+        return data.getResult();
+    }
+
+    protected Object serialize(T object)
+    {
+        return object;
+    }
+
+    protected Object deserialize(Object object)
+    {
+        return object;
     }
 
     protected Info<T> newInfo(T local)
@@ -395,8 +405,12 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
     protected void onObject(Map<String, Object> data)
     {
+        boolean isLocal = oort.getURL().equals(data.get(Info.OORT_URL_FIELD));
+        Object object = data.get(Info.OBJECT_FIELD);
+        if (!isLocal)
+            object = deserialize(object);
         // Convert the object, for example from a JSON serialized Map to a ConcurrentMap
-        data.put(Info.OBJECT_FIELD, getFactory().newObject(data.get(Info.OBJECT_FIELD)));
+        data.put(Info.OBJECT_FIELD, getFactory().newObject(object));
         Info<T> newInfo = new Info<>(oort.getURL(), data);
 
         MarkedReference<Info<T>> old = setInfo(newInfo, null);
@@ -415,6 +429,12 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         // new OortObject and we need to push our own data to it.
         if (oldInfo == null)
         {
+            // We want to avoid an additional message at initialization.
+            // We are A, we just received infoB from B, which we did not have,
+            // so we push infoA to B. Very likely, B will receive infoA, find
+            // that is did not have info for A and will push infoB to A, again.
+            // Therefore we add a "peer" field, that tells whether the push
+            // of the info comes from, and we skip the extra push.
             if (!oort.getURL().equals(data.get(Info.PEER_FIELD)))
             {
                 Map<String, Object> localInfo = new HashMap<>(getInfo(oort.getURL()));
@@ -446,11 +466,9 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     protected void pushInfo(String oortURL, Map<String, Object> info)
     {
         OortComet oortComet = oort.getComet(oortURL);
+        logger.debug("Pushing (to {}) local {}", oortURL, info);
         if (oortComet != null)
-        {
-            logger.debug("Pushing (to {}) local {}", oortURL, info);
             oortComet.getChannel(channelName).publish(info);
-        }
     }
 
     protected Collection<Info<T>> getInfos()
@@ -548,21 +566,21 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         }
     }
 
-    protected static class Data extends HashMap<String, Object>
+    protected static class Data<T> extends HashMap<String, Object>
     {
-        private Object result;
+        private T result;
 
         public Data(int initialCapacity)
         {
             super(initialCapacity);
         }
 
-        protected Object getResult()
+        protected T getResult()
         {
             return result;
         }
 
-        protected void setResult(Object result)
+        protected void setResult(T result)
         {
             this.result = result;
         }

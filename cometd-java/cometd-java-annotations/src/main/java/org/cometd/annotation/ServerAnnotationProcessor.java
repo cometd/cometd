@@ -290,7 +290,15 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
         boolean result = deprocessListener(bean);
         result |= deprocessSubscription(bean);
+        destroyLocalSession(bean);
         return result;
+    }
+
+    private void destroyLocalSession(Object bean)
+    {
+        LocalSession session = sessions.remove(bean);
+        if (session != null)
+            session.disconnect();
     }
 
     /**
@@ -416,7 +424,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
     private boolean deprocessListener(Object bean)
     {
         boolean result = false;
-        List<ListenerCallback> callbacks = listeners.get(bean);
+        List<ListenerCallback> callbacks = listeners.remove(bean);
         if (callbacks != null)
         {
             for (ListenerCallback callback : callbacks)
@@ -473,7 +481,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
     private boolean deprocessSubscription(Object bean)
     {
         boolean result = false;
-        List<SubscriptionCallback> callbacks = subscribers.get(bean);
+        List<SubscriptionCallback> callbacks = subscribers.remove(bean);
         if (callbacks != null)
         {
             for (SubscriptionCallback callback : callbacks)

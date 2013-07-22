@@ -60,6 +60,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  */
 public class ClientAnnotationProcessor extends AnnotationProcessor
 {
+    private final ConcurrentMap<Object, ClientSessionChannel.MessageListener> handshakeListeners = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<>();
     private final ClientSession clientSession;
@@ -83,10 +84,22 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
      */
     public boolean process(Object bean)
     {
+        processMetaHandshakeListener(bean);
         boolean result = processDependencies(bean);
         result |= processCallbacks(bean);
         result |= processPostConstruct(bean);
         return result;
+    }
+
+    private void processMetaHandshakeListener(Object bean)
+    {
+        if (bean != null)
+        {
+            MetaHandshakeListener listener = new MetaHandshakeListener(bean);
+            ClientSessionChannel.MessageListener existing = handshakeListeners.putIfAbsent(bean, listener);
+            if (existing == null)
+                clientSession.getChannel(Channel.META_HANDSHAKE).addListener(listener);
+        }
     }
 
     /**
@@ -128,9 +141,17 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
      */
     public boolean deprocess(Object bean)
     {
+        deprocessMetaHandshakeListener(bean);
         boolean result = deprocessCallbacks(bean);
         result |= processPreDestroy(bean);
         return result;
+    }
+
+    private void deprocessMetaHandshakeListener(Object bean)
+    {
+        ClientSessionChannel.MessageListener listener = handshakeListeners.remove(bean);
+        if (listener != null)
+            clientSession.getChannel(Channel.META_HANDSHAKE).removeListener(listener);
     }
 
     /**
@@ -252,7 +273,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
     private boolean deprocessListener(Object bean)
     {
         boolean result = false;
-        List<ListenerCallback> callbacks = listeners.get(bean);
+        List<ListenerCallback> callbacks = listeners.remove(bean);
         if (callbacks != null)
         {
             for (ListenerCallback callback : callbacks)
@@ -289,8 +310,6 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                         // We should delay the subscription if the client session did not complete the handshake
                         if (clientSession.isHandshook())
                             clientSession.getChannel(channel).subscribe(subscriptionCallback);
-                        else
-                            clientSession.getChannel(Channel.META_HANDSHAKE).addListener(subscriptionCallback);
 
                         List<SubscriptionCallback> callbacks = subscribers.get(bean);
                         if (callbacks == null)
@@ -313,7 +332,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
     private boolean deprocessSubscription(Object bean)
     {
         boolean result = false;
-        List<SubscriptionCallback> callbacks = subscribers.get(bean);
+        List<SubscriptionCallback> callbacks = subscribers.remove(bean);
         if (callbacks != null)
         {
             for (SubscriptionCallback callback : callbacks)
@@ -389,25 +408,6 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
 
         public void onMessage(ClientSessionChannel channel, Message message)
         {
-            if (Channel.META_HANDSHAKE.equals(channel.getId()))
-            {
-                if (message.isSuccessful())
-                    subscribe();
-            }
-            else
-            {
-                forward(message);
-            }
-        }
-
-        private void subscribe()
-        {
-            clientSession.getChannel(channel).subscribe(this);
-            clientSession.getChannel(Channel.META_HANDSHAKE).removeListener(this);
-        }
-
-        private void forward(Message message)
-        {
             try
             {
                 method.invoke(target, message);
@@ -424,6 +424,40 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
             catch (IllegalAccessException x)
             {
                 throw new RuntimeException(x);
+            }
+        }
+
+        private void subscribe()
+        {
+            clientSession.getChannel(channel).subscribe(this);
+        }
+    }
+
+    private class MetaHandshakeListener implements ClientSessionChannel.MessageListener
+    {
+        private final Object bean;
+
+        public MetaHandshakeListener(Object bean)
+        {
+            this.bean = bean;
+        }
+
+        public void onMessage(ClientSessionChannel channel, Message message)
+        {
+            if (message.isSuccessful())
+            {
+                final List<SubscriptionCallback> subscriptions = subscribers.get(bean);
+                if (subscriptions != null)
+                {
+                    clientSession.batch(new Runnable()
+                    {
+                        public void run()
+                        {
+                            for (SubscriptionCallback subscription : subscriptions)
+                                subscription.subscribe();
+                        }
+                    });
+                }
             }
         }
     }

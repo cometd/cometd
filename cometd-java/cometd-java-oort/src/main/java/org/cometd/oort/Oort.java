@@ -41,7 +41,6 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -118,6 +117,7 @@ public class Oort extends ContainerLifeCycle
     private boolean _debug;
     private boolean _clientDebug;
     private boolean _ackExtensionEnabled;
+    private Extension _ackExtension;
     private JSONContext.Client _jsonContext;
 
     public Oort(BayeuxServer bayeux, String url)
@@ -172,25 +172,17 @@ public class Oort extends ContainerLifeCycle
                 }
             }
             if (!present)
-                _bayeux.addExtension(new AcknowledgedMessagesExtension());
+                _bayeux.addExtension(_ackExtension = new AcknowledgedMessagesExtension());
         }
 
         _bayeux.addExtension(_oortExtension);
-        _bayeux.createChannelIfAbsent(OORT_CLOUD_CHANNEL, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
-                channel.addListener(_cloudListener);
-            }
-        });
-        _bayeux.createChannelIfAbsent(OORT_SERVICE_CHANNEL, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.addListener(_joinListener);
-            }
-        });
+
+        ServerChannel oortCloudChannel = _bayeux.createChannelIfAbsent(OORT_CLOUD_CHANNEL).getReference();
+        oortCloudChannel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
+        oortCloudChannel.addListener(_cloudListener);
+
+        ServerChannel oortServiceChannel = _bayeux.createChannelIfAbsent(OORT_SERVICE_CHANNEL).getReference();
+        oortServiceChannel.addListener(_joinListener);
 
         _oortSession.handshake();
     }
@@ -211,13 +203,17 @@ public class Oort extends ContainerLifeCycle
         _serverComets.clear();
         _channels.clear();
 
+        _bayeux.getChannel(OORT_SERVICE_CHANNEL).removeListener(_joinListener);
+
         ServerChannel oortCloudChannel = _bayeux.getChannel(OORT_CLOUD_CHANNEL);
-        if (oortCloudChannel != null)
-        {
-            oortCloudChannel.removeListener(_joinListener);
-            oortCloudChannel.removeListener(_cloudListener);
-            oortCloudChannel.removeAuthorizer(GrantAuthorizer.GRANT_ALL);
-        }
+        oortCloudChannel.removeListener(_cloudListener);
+        oortCloudChannel.removeAuthorizer(GrantAuthorizer.GRANT_ALL);
+
+        Extension ackExtension = _ackExtension;
+        _ackExtension = null;
+        if (ackExtension != null)
+            _bayeux.removeExtension(ackExtension);
+
         _bayeux.removeExtension(_oortExtension);
 
         super.doStop();
@@ -858,6 +854,20 @@ public class Oort extends ContainerLifeCycle
          * @param event the comet event
          */
         public void cometLeft(Event event);
+
+        /**
+         * Empty implementation of {@link CometListener}
+         */
+        public static class Adapter implements CometListener
+        {
+            public void cometJoined(Event event)
+            {
+            }
+
+            public void cometLeft(Event event)
+            {
+            }
+        }
 
         /**
          * Comet event object delivered to {@link CometListener} methods.

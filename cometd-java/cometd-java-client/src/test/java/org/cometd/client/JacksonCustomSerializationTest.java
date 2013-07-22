@@ -76,7 +76,8 @@ public class JacksonCustomSerializationTest extends ClientServerTest
         startServer(serverOptions);
 
         String channelName = "/data";
-        final String content = "random";
+        final String dataContent = "random";
+        final long extraContent = 13;
         final CountDownLatch latch = new CountDownLatch(1);
 
         LocalSession service = bayeux.newLocalSession("custom_serialization");
@@ -86,25 +87,25 @@ public class JacksonCustomSerializationTest extends ClientServerTest
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 Data data = (Data)message.getData();
-                Assert.assertEquals(content, data.content);
+                Assert.assertEquals(dataContent, data.content);
                 Map<String, Object> ext = message.getExt();
                 Assert.assertNotNull(ext);
                 Extra extra = (Extra)ext.get("extra");
-                Assert.assertEquals(content, extra.content);
+                Assert.assertEquals(extraContent, extra.content);
                 latch.countDown();
             }
         });
 
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientOptions, httpClient));
         client.setDebugEnabled(debugTests());
-        client.addExtension(new ExtraExtension(content));
+        client.addExtension(new ExtraExtension(extraContent));
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         // Wait for the connect to establish
         Thread.sleep(1000);
 
-        client.getChannel(channelName).publish(new Data(content));
+        client.getChannel(channelName).publish(new Data(dataContent));
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
@@ -124,7 +125,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest
 
         JSONContext.Client jsonContext = (JSONContext.Client)getClass().getClassLoader().loadClass(jacksonContextClientClassName).newInstance();
         Data data1 = new Data("data");
-        Extra extra1 = new Extra("extra");
+        Extra extra1 = new Extra(42L);
         Map<String, Object> map1 = new HashMap<>();
         map1.put("data", data1);
         map1.put("extra", extra1);
@@ -138,9 +139,9 @@ public class JacksonCustomSerializationTest extends ClientServerTest
 
     private static class ExtraExtension extends ClientSession.Extension.Adapter
     {
-        private final String content;
+        private final long content;
 
-        public ExtraExtension(String content)
+        public ExtraExtension(long content)
         {
             this.content = content;
         }
@@ -207,14 +208,14 @@ public class JacksonCustomSerializationTest extends ClientServerTest
     {
         @com.fasterxml.jackson.annotation.JsonProperty
         @org.codehaus.jackson.annotate.JsonProperty
-        private String content;
+        private long content;
 
         private Extra()
         {
             // Needed by Jackson
         }
 
-        private Extra(String content)
+        private Extra(long content)
         {
             this.content = content;
         }

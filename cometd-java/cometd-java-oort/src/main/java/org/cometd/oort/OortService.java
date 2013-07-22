@@ -456,6 +456,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         /**
          * @return the request data as a {@code Map&lt;String, Object&gt;}
          */
+        @SuppressWarnings("unchecked")
         public Map<String, Object> getDataAsMap()
         {
             return (Map<String, Object>)getData();

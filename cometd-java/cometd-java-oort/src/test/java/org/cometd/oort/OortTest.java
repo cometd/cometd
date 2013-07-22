@@ -187,7 +187,7 @@ public abstract class OortTest
         }
     }
 
-    protected static class CometJoinedListener implements Oort.CometListener
+    protected static class CometJoinedListener extends Oort.CometListener.Adapter
     {
         private final CountDownLatch latch;
 
@@ -200,23 +200,15 @@ public abstract class OortTest
         {
             latch.countDown();
         }
-
-        public void cometLeft(Event event)
-        {
-        }
     }
 
-    protected static class CometLeftListener implements Oort.CometListener
+    protected static class CometLeftListener extends Oort.CometListener.Adapter
     {
         private final CountDownLatch latch;
 
         public CometLeftListener(CountDownLatch latch)
         {
             this.latch = latch;
-        }
-
-        public void cometJoined(Event event)
-        {
         }
 
         public void cometLeft(Event event)

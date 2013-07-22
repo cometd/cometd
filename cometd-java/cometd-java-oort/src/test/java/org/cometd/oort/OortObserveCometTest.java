@@ -276,13 +276,14 @@ public class OortObserveCometTest extends OortTest
         OortComet oortComet21 = oort2.observeComet(oort1.getURL());
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        int port2 = new URI(oort2.getURL()).getPort();
-        stopServer(server2);
+        ServerConnector connector2 = (ServerConnector)server2.getConnectors()[0];
+        int port2 = connector2.getLocalPort();
+        connector2.stop();
 
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.UNCONNECTED));
 
-        ((ServerConnector)server2.getConnectors()[0]).setPort(port2);
-        server2.start();
+        connector2.setPort(port2);
+        connector2.start();
 
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
     }
@@ -563,16 +564,12 @@ public class OortObserveCometTest extends OortTest
         final String channelName = "/test";
         final String data = "data";
         final CountDownLatch joinedLatch = new CountDownLatch(1);
-        oortA.addCometListener(new Oort.CometListener()
+        oortA.addCometListener(new Oort.CometListener.Adapter()
         {
             public void cometJoined(Event event)
             {
                 bayeuxServerA.createChannelIfAbsent(channelName).getReference().publish(serviceA, data);
                 joinedLatch.countDown();
-            }
-
-            public void cometLeft(Event event)
-            {
             }
         });
         oortA.observeChannel(channelName);

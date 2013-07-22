@@ -25,17 +25,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
-import org.cometd.server.authorizer.GrantAuthorizer;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -71,17 +71,19 @@ public class Seti extends AbstractLifeCycle
     private static final String SETI_ALL_CHANNEL = "/seti/all";
 
     private final Map<String, Set<Location>> _uid2Location = new HashMap<>();
-    private final List<PresenceListener> _listeners = new CopyOnWriteArrayList<>();
-    private final Logger _logger;
+    private final ConcurrentMap<String, Boolean> _setis = new ConcurrentHashMap<>();
+    private final List<PresenceListener> _presenceListeners = new CopyOnWriteArrayList<>();
+    private final Oort.CometListener _cometListener = new CometListener();
     private final Oort _oort;
     private final String _setiId;
+    private final Logger _logger;
     private final LocalSession _session;
     private boolean _debug;
 
     public Seti(Oort oort)
     {
         _oort = oort;
-        _setiId = Oort.replacePunctuation(oort.getURL(), '_');
+        _setiId = generateSetiId(oort.getURL());
         _logger = LoggerFactory.getLogger(getClass().getName() + "." + _setiId);
         _session = oort.getBayeuxServer().newLocalSession(_setiId);
         _debug = oort.isDebugEnabled();
@@ -126,32 +128,11 @@ public class Seti extends AbstractLifeCycle
     @Override
     protected void doStart() throws Exception
     {
-        _listeners.clear();
-
         BayeuxServer bayeux = _oort.getBayeuxServer();
-        bayeux.createChannelIfAbsent("/seti/**", new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
-            }
-        });
-
-        String channel = "/seti/" + _setiId;
-        bayeux.createChannelIfAbsent(channel, new ConfigurableServerChannel.Initializer.Persistent());
-        _oort.observeChannel(channel);
 
         _session.handshake();
 
-        _session.getChannel(channel).subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                receiveDirect(message);
-            }
-        });
-
-        bayeux.createChannelIfAbsent(SETI_ALL_CHANNEL, new ConfigurableServerChannel.Initializer.Persistent());
+        bayeux.createChannelIfAbsent(SETI_ALL_CHANNEL).getReference().setPersistent(true);
         _oort.observeChannel(SETI_ALL_CHANNEL);
         _session.getChannel(SETI_ALL_CHANNEL).subscribe(new ClientSessionChannel.MessageListener()
         {
@@ -160,22 +141,55 @@ public class Seti extends AbstractLifeCycle
                 receiveBroadcast(message);
             }
         });
+
+        String setiChannel = generateSetiChannel(_setiId);
+        bayeux.createChannelIfAbsent(setiChannel).getReference().setPersistent(true);
+        _session.getChannel(setiChannel).subscribe(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                receiveDirect(message);
+            }
+        });
+        _oort.observeChannel(setiChannel);
+
+        _oort.addCometListener(_cometListener);
+        // Broadcast userIds associated on this Seti
+        _session.getChannel(SETI_ALL_CHANNEL).publish(new SetiPresence(true, getAssociatedUserIds()));
     }
 
     @Override
     protected void doStop() throws Exception
     {
+        disassociateAll();
+        synchronized (_uid2Location)
+        {
+            _uid2Location.clear();
+        }
+        _presenceListeners.clear();
+        _setis.clear();
+
         _session.disconnect();
 
-        BayeuxServer bayeux = _oort.getBayeuxServer();
-        _oort.deobserveChannel(SETI_ALL_CHANNEL);
-        bayeux.getChannel(SETI_ALL_CHANNEL).setPersistent(false);
+        _oort.removeCometListener(_cometListener);
 
-        String channel = "/seti/" + _setiId;
+        BayeuxServer bayeux = _oort.getBayeuxServer();
+        String channel = generateSetiChannel(_setiId);
         _oort.deobserveChannel(channel);
         bayeux.getChannel(channel).setPersistent(false);
 
-        bayeux.getChannel("/seti/**").removeAuthorizer(GrantAuthorizer.GRANT_ALL);
+        _oort.deobserveChannel(SETI_ALL_CHANNEL);
+        bayeux.getChannel(SETI_ALL_CHANNEL).setPersistent(false);
+    }
+
+    public static String generateSetiId(String oortURL)
+    {
+        return Oort.replacePunctuation(oortURL, '_');
+    }
+
+    public static String generateSetiChannel(String setiId)
+    {
+        return "/seti/" + setiId;
     }
 
     /**
@@ -206,7 +220,7 @@ public class Seti extends AbstractLifeCycle
             {
                 debug("Broadcasting presence addition for user {}", userId);
                 // Let everyone in the cluster know that this session is here
-                _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, true));
+                _session.getChannel(SETI_ALL_CHANNEL).publish(new SetiPresence(true, userId));
             }
         }
 
@@ -341,7 +355,7 @@ public class Seti extends AbstractLifeCycle
         {
             debug("Broadcasting presence removal for user {}", userId);
             // Let everyone in the cluster know that this session is not here anymore
-            _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, false));
+            _session.getChannel(SETI_ALL_CHANNEL).publish(new SetiPresence(false, userId));
         }
 
         return removed;
@@ -364,8 +378,25 @@ public class Seti extends AbstractLifeCycle
         }
     }
 
+    protected void disassociateAll()
+    {
+        final Set<String> userIds = getAssociatedUserIds();
+        debug("Broadcasting presence removal for users {}", userIds);
+        _session.batch(new Runnable()
+        {
+            public void run()
+            {
+                ClientSessionChannel setiAllChannel = _session.getChannel(SETI_ALL_CHANNEL);
+                if (!userIds.isEmpty())
+                    setiAllChannel.publish(new SetiPresence(false, userIds));
+                // Send a special empty presence message to signal this Seti is stopping
+                setiAllChannel.publish(new SetiPresence(false, Collections.<String>emptySet()));
+            }
+        });
+    }
+
     /**
-     * @return the set of {@code userId}s known to this Seti
+     * @return the set of {@code userId}s known to this Seti, both local and remote
      */
     @ManagedAttribute(value = "The set of userIds known to this Seti", readonly = true)
     public Set<String> getUserIds()
@@ -374,6 +405,29 @@ public class Seti extends AbstractLifeCycle
         {
             return new HashSet<>(_uid2Location.keySet());
         }
+    }
+
+    /**
+     * @return the set of {@code userId}s associated via {@link #associate(String, ServerSession)}
+     */
+    public Set<String> getAssociatedUserIds()
+    {
+        Set<String> result = new HashSet<String>();
+        synchronized (_uid2Location)
+        {
+            for (Map.Entry<String, Set<Location>> entry : _uid2Location.entrySet())
+            {
+                for (Location location : entry.getValue())
+                {
+                    if (location instanceof LocalLocation)
+                    {
+                        result.add(entry.getKey());
+                        break;
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -425,7 +479,12 @@ public class Seti extends AbstractLifeCycle
     protected void receiveDirect(Message message)
     {
         debug("Received direct message {}", message);
-        receiveMessage(message);
+        Map<String, Object> data = message.getDataAsMap();
+        Boolean presence = (Boolean)data.get(SetiPresence.PRESENCE_FIELD);
+        if (presence != null)
+            receivePresence(data);
+        else
+            receiveMessage(data);
     }
 
     /**
@@ -442,84 +501,118 @@ public class Seti extends AbstractLifeCycle
      */
     protected void receiveBroadcast(Message message)
     {
+        debug("Received broadcast message {}", message);
         Map<String, Object> data = message.getDataAsMap();
         Boolean presence = (Boolean)data.get(SetiPresence.PRESENCE_FIELD);
         if (presence != null)
-            receivePresence(message);
+            receivePresence(data);
         else
-            receiveMessage(message);
+            receiveMessage(data);
     }
 
     /**
      * <p>Receives a presence message.</p>
      *
-     * @param message the presence message received
+     * @param presence the presence message received
      */
-    protected void receivePresence(Message message)
+    protected void receivePresence(Map<String, Object> presence)
     {
-        debug("Received presence message {}", message);
+        debug("Received presence message {}", presence);
 
-        Map<String, Object> presence = message.getDataAsMap();
         String setiId = (String)presence.get(SetiPresence.SETI_ID_FIELD);
         boolean present = (Boolean)presence.get(SetiPresence.PRESENCE_FIELD);
+        Set<String> userIds = convertPresenceUsers(presence);
+
         if (!_setiId.equals(setiId))
         {
-            String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
-            SetiLocation location = new SetiLocation(userId, "/seti/" + setiId);
-            if (present)
-                associate(userId, location);
+            boolean isSetiKnown = _setis.putIfAbsent(setiId, true) != null;
+            if (!isSetiKnown)
+                debug("Seti appeared {}", setiId);
+            if (userIds.isEmpty())
+            {
+                // Is the special message we send when stopping ?
+                if (isSetiKnown && !present)
+                {
+                    _setis.remove(setiId);
+                    debug("Seti disappeared {}", setiId);
+                }
+            }
             else
-                disassociate(userId, location);
+            {
+                debug("Updating association for {}", userIds);
+                for (String userId : userIds)
+                {
+                    SetiLocation location = new SetiLocation(userId, generateSetiChannel(setiId));
+                    if (present)
+                        associate(userId, location);
+                    else
+                        disassociate(userId, location);
+                }
+            }
+            if (!isSetiKnown)
+            {
+                Set<String> associatedUserIds = getAssociatedUserIds();
+                debug("Pushing associated {} to {}", associatedUserIds, setiId);
+                _session.getChannel(generateSetiChannel(setiId)).publish(new SetiPresence(true, associatedUserIds));
+            }
         }
 
-        if (present)
-            notifyPresenceAdded(presence);
-        else
-            notifyPresenceRemoved(presence);
+        if (!userIds.isEmpty())
+        {
+            debug("Notifying presence listeners {}", presence);
+            if (present)
+                notifyPresenceAdded(presence);
+            else
+                notifyPresenceRemoved(presence);
+        }
     }
 
     public void addPresenceListener(PresenceListener listener)
     {
-        _listeners.add(listener);
+        _presenceListeners.add(listener);
     }
 
     public void removePresenceListener(PresenceListener listener)
     {
-        _listeners.remove(listener);
+        _presenceListeners.remove(listener);
     }
 
     private void notifyPresenceAdded(Map<String, Object> presence)
     {
-        String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
         String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
-        PresenceListener.Event event = new PresenceListener.Event(this, userId, oortURL);
-        for (PresenceListener listener : _listeners)
+        for (String userId : convertPresenceUsers(presence))
         {
-            try
+            PresenceListener.Event event = new PresenceListener.Event(this, userId, oortURL);
+            for (PresenceListener listener : _presenceListeners)
             {
-                listener.presenceAdded(event);
-            }
-            catch (Exception x)
-            {
-                _logger.info("Exception while invoking listener " + listener, x);
+                try
+                {
+                    listener.presenceAdded(event);
+                }
+                catch (Exception x)
+                {
+                    _logger.info("Exception while invoking listener " + listener, x);
+                }
             }
         }
     }
 
     private void notifyPresenceRemoved(Map<String, Object> presence)
     {
-        String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
         String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
-        PresenceListener.Event event = new PresenceListener.Event(this, userId, oortURL);
-        for (PresenceListener listener : _listeners)
+        for (String userId : convertPresenceUsers(presence))
         {
-            try
+            PresenceListener.Event event = new PresenceListener.Event(this, userId, oortURL);
+            for (PresenceListener listener : _presenceListeners)
             {
-                listener.presenceRemoved(event);
-            }
-            catch (Exception x)
-            {
-                _logger.info("Exception while invoking listener " + listener, x);
+                try
+                {
+                    listener.presenceRemoved(event);
+                }
+                catch (Exception x)
+                {
+                    _logger.info("Exception while invoking listener " + listener, x);
+                }
             }
         }
     }
@@ -529,12 +622,11 @@ public class Seti extends AbstractLifeCycle
      *
      * @param message the seti message received
      */
-    protected void receiveMessage(Message message)
+    protected void receiveMessage(Map<String, Object> message)
     {
-        Map<String, Object> messageData = message.getDataAsMap();
-        String userId = (String)messageData.get(SetiMessage.USER_ID_FIELD);
-        String channel = (String)messageData.get(SetiMessage.CHANNEL_FIELD);
-        Object data = messageData.get(SetiMessage.DATA_FIELD);
+        String userId = (String)message.get(SetiMessage.USER_ID_FIELD);
+        String channel = (String)message.get(SetiMessage.CHANNEL_FIELD);
+        Object data = message.get(SetiMessage.DATA_FIELD);
 
         Set<Location> copy = new HashSet<>();
         synchronized (_uid2Location)
@@ -561,6 +653,24 @@ public class Seti extends AbstractLifeCycle
         debug("Received message {} for locations {}", message, copy);
         for (Location location : copy)
             location.receive(userId, channel, data);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Set<String> convertPresenceUsers(Map<String, Object> presence)
+    {
+        Object value = presence.get(SetiPresence.USER_IDS_FIELD);
+        if (value instanceof Set)
+            return (Set<String>)value;
+        if (value instanceof Collection)
+            return new HashSet<String>((Collection<? extends String>)value);
+        if (value.getClass().isArray())
+        {
+            Set<String> result = new HashSet<String>();
+            for (Object item : (Object[])value)
+                result.add(item.toString());
+            return result;
+        }
+        throw new IllegalArgumentException();
     }
 
     @Override
@@ -642,17 +752,17 @@ public class Seti extends AbstractLifeCycle
     protected class SetiLocation implements Location
     {
         private final String _userId;
-        private final String _setiId;
+        private final String _setiChannel;
 
-        protected SetiLocation(String userId, String channelId)
+        protected SetiLocation(String userId, String setiChannel)
         {
             _userId = userId;
-            _setiId = channelId;
+            _setiChannel = setiChannel;
         }
 
         public void send(String toUser, String toChannel, Object data)
         {
-            _session.getChannel(_setiId).publish(new SetiMessage(toUser, toChannel, data));
+            _session.getChannel(_setiChannel).publish(new SetiMessage(toUser, toChannel, data));
         }
 
         public void receive(String toUser, String toChannel, Object data)
@@ -673,19 +783,19 @@ public class Seti extends AbstractLifeCycle
             if (!(obj instanceof SetiLocation))
                 return false;
             SetiLocation that = (SetiLocation)obj;
-            return _userId.equals(that._userId) && _setiId.equals(that._setiId);
+            return _userId.equals(that._userId) && _setiChannel.equals(that._setiChannel);
         }
 
         @Override
         public int hashCode()
         {
-            return 31 * _userId.hashCode() + _setiId.hashCode();
+            return 31 * _userId.hashCode() + _setiChannel.hashCode();
         }
 
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + "[" + _setiId + "]";
+            return getClass().getSimpleName() + "[" + _setiChannel + "]";
         }
     }
 
@@ -708,15 +818,20 @@ public class Seti extends AbstractLifeCycle
 
     private class SetiPresence extends HashMap<String, Object>
     {
-        private static final String USER_ID_FIELD = "userId";
+        private static final String USER_IDS_FIELD = "userIds";
         private static final String OORT_URL_FIELD = "oortURL";
         private static final String SETI_ID_FIELD = "setiId";
         private static final String PRESENCE_FIELD = "presence";
 
-        private SetiPresence(String userId, boolean present)
+        private SetiPresence(boolean present, String userId)
+        {
+            this(present, Collections.singleton(userId));
+        }
+
+        private SetiPresence(boolean present, Set<String> userIds)
         {
             super(4);
-            put(USER_ID_FIELD, userId);
+            put(USER_IDS_FIELD, userIds);
             put(OORT_URL_FIELD, _oort.getURL());
             put(SETI_ID_FIELD, _setiId);
             put(PRESENCE_FIELD, present);
@@ -739,6 +854,20 @@ public class Seti extends AbstractLifeCycle
          * @param event the presence event
          */
         public void presenceRemoved(Event event);
+
+        /**
+         * Empty implementation of {@link PresenceListener}
+         */
+        public static class Adapter implements PresenceListener
+        {
+            public void presenceAdded(Event event)
+            {
+            }
+
+            public void presenceRemoved(Event event)
+            {
+            }
+        }
 
         /**
          * Seti presence event object, delivered to {@link PresenceListener} methods.
@@ -774,7 +903,7 @@ public class Seti extends AbstractLifeCycle
             /**
              * @return the Oort URL where this presence event happened
              */
-            public String getURL()
+            public String getOortURL()
             {
                 return url;
             }
@@ -784,7 +913,7 @@ public class Seti extends AbstractLifeCycle
              */
             public boolean isLocal()
             {
-                return getURL().equals(getSeti().getOort().getURL());
+                return getSeti().getOort().getURL().equals(getOortURL());
             }
 
             @Override
@@ -795,6 +924,20 @@ public class Seti extends AbstractLifeCycle
                         getUserId(),
                         isLocal() ? "local" : "remote",
                         getSeti());
+            }
+        }
+    }
+
+    private class CometListener extends Oort.CometListener.Adapter
+    {
+        public void cometJoined(Event event)
+        {
+            String oortURL = event.getCometURL();
+            OortComet oortComet = _oort.getComet(oortURL);
+            if (oortComet != null)
+            {
+                ClientSessionChannel channel = oortComet.getChannel(generateSetiChannel(generateSetiId(oortURL)));
+                channel.publish(new SetiPresence(true, getAssociatedUserIds()));
             }
         }
     }

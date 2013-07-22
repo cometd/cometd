@@ -108,7 +108,7 @@ public class OortList<E> extends OortObject<List<E>>
      */
     public boolean addAndShare(E... elements)
     {
-        Data data = new Data(6);
+        Data<Boolean> data = new Data<Boolean>(6);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
@@ -120,7 +120,7 @@ public class OortList<E> extends OortObject<List<E>>
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
-        return (Boolean)data.getResult();
+        return data.getResult();
     }
 
     /**
@@ -134,7 +134,7 @@ public class OortList<E> extends OortObject<List<E>>
      */
     public boolean removeAndShare(E... elements)
     {
-        Data data = new Data(6);
+        Data<Boolean> data = new Data<Boolean>(6);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
@@ -146,7 +146,7 @@ public class OortList<E> extends OortObject<List<E>>
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
-        return (Boolean)data.getResult();
+        return data.getResult();
     }
 
     @Override
@@ -167,6 +167,7 @@ public class OortList<E> extends OortObject<List<E>>
                 Object object = data.get(Info.OBJECT_FIELD);
                 if (object instanceof Object[])
                     object = Arrays.asList((Object[])object);
+                @SuppressWarnings("unchecked")
                 final List<E> elements = (List<E>)object;
 
                 // Set the new Info
@@ -200,7 +201,7 @@ public class OortList<E> extends OortObject<List<E>>
                 }
 
                 if (data instanceof Data)
-                    ((Data)data).setResult(result.get());
+                    ((Data<Boolean>)data).setResult(result.get());
             }
             else
             {
