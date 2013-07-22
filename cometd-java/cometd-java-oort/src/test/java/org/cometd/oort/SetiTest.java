@@ -84,8 +84,8 @@ public class SetiTest extends OortTest
 
         CountDownLatch presenceLatch = new CountDownLatch(2);
         UserPresentListener presenceListener = new UserPresentListener(presenceLatch);
-        seti1.addListener(presenceListener);
-        seti2.addListener(presenceListener);
+        seti1.addPresenceListener(presenceListener);
+        seti2.addPresenceListener(presenceListener);
 
         new SetiService(seti1);
         new SetiService(seti2);
@@ -150,8 +150,8 @@ public class SetiTest extends OortTest
 
         CountDownLatch presenceLatch = new CountDownLatch(2);
         UserPresentListener presenceListener = new UserPresentListener(presenceLatch);
-        seti1.addListener(presenceListener);
-        seti2.addListener(presenceListener);
+        seti1.addPresenceListener(presenceListener);
+        seti2.addPresenceListener(presenceListener);
 
         new SetiService(seti1);
         new SetiService(seti2);
@@ -170,7 +170,7 @@ public class SetiTest extends OortTest
 
         CountDownLatch absenceLatch = new CountDownLatch(1);
         UserAbsentListener absenceListener = new UserAbsentListener(absenceLatch);
-        seti1.addListener(absenceListener);
+        seti1.addPresenceListener(absenceListener);
 
         // Disassociate
         Map<String, Object> logout2 = new HashMap<String, Object>();
@@ -217,8 +217,8 @@ public class SetiTest extends OortTest
 
         CountDownLatch presenceLatch = new CountDownLatch(2);
         UserPresentListener presenceListener = new UserPresentListener(presenceLatch);
-        seti1.addListener(presenceListener);
-        seti2.addListener(presenceListener);
+        seti1.addPresenceListener(presenceListener);
+        seti2.addPresenceListener(presenceListener);
 
         new SetiService(seti1);
         new SetiService(seti2);
@@ -253,7 +253,7 @@ public class SetiTest extends OortTest
         Assert.assertTrue(presenceLatch.await(5, TimeUnit.SECONDS));
 
         CountDownLatch absenceLatch = new CountDownLatch(1);
-        seti1.addListener(new UserAbsentListener(absenceLatch));
+        seti1.addPresenceListener(new UserAbsentListener(absenceLatch));
 
         // Wait for the server to expire client2 and for Seti to disassociate it
         final CountDownLatch removedLatch = new CountDownLatch(1);
@@ -308,9 +308,9 @@ public class SetiTest extends OortTest
 
         CountDownLatch presenceLatch = new CountDownLatch(6);
         UserPresentListener presenceListener = new UserPresentListener(presenceLatch);
-        seti1.addListener(presenceListener);
-        seti2.addListener(presenceListener);
-        seti3.addListener(presenceListener);
+        seti1.addPresenceListener(presenceListener);
+        seti2.addPresenceListener(presenceListener);
+        seti3.addPresenceListener(presenceListener);
 
         new SetiService(seti1);
         new SetiService(seti2);
@@ -460,7 +460,7 @@ public class SetiTest extends OortTest
                 presenceOffLatch.countDown();
             }
         };
-        seti2.addListener(listener);
+        seti2.addPresenceListener(listener);
 
         LatchListener publishLatch = new LatchListener();
         Map<String, Object> login1 = new HashMap<String, Object>();
@@ -491,7 +491,7 @@ public class SetiTest extends OortTest
         Assert.assertFalse(seti1.isPresent(userId));
         Assert.assertFalse(seti2.isPresent(userId));
 
-        seti2.removeListener(listener);
+        seti2.removePresenceListener(listener);
     }
 
     @Test
@@ -535,8 +535,22 @@ public class SetiTest extends OortTest
         Seti seti2 = startSeti(oort2);
 
         // Wait for the Seti state to broadcast
+        Thread.sleep(1000);
 
         Assert.assertTrue(seti2.isPresent(userId));
+
+        // Stop Seti1
+        final CountDownLatch presenceOffLatch = new CountDownLatch(1);
+        seti2.addPresenceListener(new Seti.PresenceListener.Adapter()
+        {
+            @Override
+            public void presenceRemoved(Event event)
+            {
+                presenceOffLatch.countDown();
+            }
+        });
+        stopSeti(seti1);
+        Assert.assertTrue(presenceOffLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -588,7 +602,7 @@ public class SetiTest extends OortTest
                     remotePresenceOffLatch.countDown();
             }
         };
-        seti2.addListener(listener);
+        seti2.addPresenceListener(listener);
 
         // Login user1
         final CountDownLatch loginLatch1 = new CountDownLatch(1);
@@ -652,7 +666,7 @@ public class SetiTest extends OortTest
         Assert.assertTrue(logoutLatch1.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(remotePresenceOffLatch.await(5, TimeUnit.SECONDS));
 
-        seti2.removeListener(listener);
+        seti2.removePresenceListener(listener);
     }
 
     @Test
@@ -713,7 +727,7 @@ public class SetiTest extends OortTest
         Assert.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch presenceLatch = new CountDownLatch(1);
-        seti2.addListener(new UserAbsentListener(presenceLatch));
+        seti2.addPresenceListener(new UserAbsentListener(presenceLatch));
 
         // Stop Seti1
         stopSeti(seti1);
@@ -756,7 +770,7 @@ public class SetiTest extends OortTest
         }
     }
 
-    private static class UserPresentListener implements Seti.PresenceListener
+    private static class UserPresentListener extends Seti.PresenceListener.Adapter
     {
         private final CountDownLatch latch;
 
@@ -769,23 +783,15 @@ public class SetiTest extends OortTest
         {
             latch.countDown();
         }
-
-        public void presenceRemoved(Event event)
-        {
-        }
     }
 
-    private static class UserAbsentListener implements Seti.PresenceListener
+    private static class UserAbsentListener extends Seti.PresenceListener.Adapter
     {
         private final CountDownLatch latch;
 
         private UserAbsentListener(CountDownLatch latch)
         {
             this.latch = latch;
-        }
-
-        public void presenceAdded(Event event)
-        {
         }
 
         public void presenceRemoved(Event event)
