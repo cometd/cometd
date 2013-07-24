@@ -48,14 +48,13 @@ import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,8 +93,8 @@ public class WebSocketTransport extends HttpTransport
         _messagesPerFrame = getOption(MESSAGES_PER_FRAME_OPTION, _messagesPerFrame);
         int bufferSize = getOption(BUFFER_SIZE_OPTION, policy.getInputBufferSize());
         policy.setInputBufferSize(bufferSize);
-        long maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, policy.getMaxMessageSize());
-        policy.setMaxMessageSize(maxMessageSize);
+        int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, policy.getMaxTextMessageSize());
+        policy.setMaxTextMessageSize(maxMessageSize);
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, policy.getIdleTimeout());
         policy.setIdleTimeout((int)idleTimeout);
 
@@ -103,19 +102,15 @@ public class WebSocketTransport extends HttpTransport
         _factory.setCreator(new WebSocketCreator()
         {
             @Override
-            public Object createWebSocket(UpgradeRequest request, UpgradeResponse response)
+            public Object createWebSocket(ServletUpgradeRequest request, ServletUpgradeResponse response)
             {
-                if (request instanceof ServletUpgradeRequest)
+                String origin = request.getHeader("Origin");
+                if (origin == null)
+                    origin = request.getHeader("Sec-WebSocket-Origin");
+                if (checkOrigin(request, origin))
                 {
-                    ServletUpgradeRequest serverRequest = (ServletUpgradeRequest)request;
-                    String origin = request.getHeader("Origin");
-                    if (origin == null)
-                        origin = request.getHeader("Sec-WebSocket-Origin");
-                    if (checkOrigin(serverRequest, origin))
-                    {
-                        WebSocketContext handshake = new WebSocketContext((ServletUpgradeRequest)request);
-                        return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
-                    }
+                    WebSocketContext handshake = new WebSocketContext(request);
+                    return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
                 }
                 return null;
             }

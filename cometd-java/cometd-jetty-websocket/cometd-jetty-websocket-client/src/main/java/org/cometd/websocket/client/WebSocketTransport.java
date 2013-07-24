@@ -87,7 +87,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile long _maxNetworkDelay = 15000L;
     private volatile long _connectTimeout = 30000L;
     private volatile int _idleTimeout = 60000;
-    private volatile long _maxMessageSize;
+    private volatile int _maxMessageSize;
     private volatile boolean _connected;
     private volatile boolean _disconnected;
     private volatile boolean _aborted;
@@ -125,11 +125,11 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, _maxNetworkDelay);
         _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, _connectTimeout);
         _idleTimeout = getOption(IDLE_TIMEOUT_OPTION, _idleTimeout);
-        _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClient.getPolicy().getMaxMessageSize());
+        _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClient.getPolicy().getMaxTextMessageSize());
 
         _webSocketClient.setConnectTimeout(_connectTimeout);
         _webSocketClient.getPolicy().setIdleTimeout(_idleTimeout);
-        _webSocketClient.getPolicy().setMaxMessageSize(_maxMessageSize);
+        _webSocketClient.getPolicy().setMaxTextMessageSize(_maxMessageSize);
         _webSocketClient.setCookieStore(getCookieStore());
 
         if (_scheduler == null)
@@ -186,14 +186,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         if (session != null && session.isOpen())
         {
             debug("Closing websocket session {}", session);
-            try
-            {
-                session.close(1000, reason);
-            }
-            catch (IOException x)
-            {
-                logger.trace("Could not close " + session, x);
-            }
+            session.close(1000, reason);
         }
     }
 

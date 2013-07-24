@@ -68,7 +68,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
 
     public String jsGet_method()
     {
-        return exchange.getRequest().getMethod().asString();
+        return exchange.getRequest().getMethod();
     }
 
     public void jsFunction_setRequestContent(String data) throws UnsupportedEncodingException
