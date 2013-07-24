@@ -6,7 +6,7 @@
     <bean id="bayeux" class="org.cometd.server.BayeuxServerImpl" init-method="start" destroy-method="stop">
         <property name="transports">
             <list>
-                <bean id="ws" class="org.cometd.websocket.server.WebSocketTransport">
+                <bean id="ws" class="org.cometd.websocket.server.JettyWebSocketTransport">
                     <constructor-arg ref="bayeux" />
                 </bean>
                 <bean id="json" class="org.cometd.server.transport.JSONTransport">

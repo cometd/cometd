@@ -12,7 +12,7 @@
         <servlet-class>org.cometd.server.CometDServlet</servlet-class>
         <init-param>
             <param-name>transports</param-name>
-            <param-value>org.cometd.websocket.server.WebSocketTransport</param-value>
+            <param-value>org.cometd.websocket.server.JettyWebSocketTransport</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>

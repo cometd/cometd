@@ -55,7 +55,7 @@ import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.cometd.server.Jackson1JSONContextServer;
-import org.cometd.websocket.server.WebSocketTransport;
+import org.cometd.websocket.server.JettyWebSocketTransport;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -553,7 +553,7 @@ public class BayeuxLoadServer
         }
     }
 
-    public static class LoadWebSocketTransport extends WebSocketTransport
+    public static class LoadWebSocketTransport extends JettyWebSocketTransport
     {
         private final Executor executor;
 

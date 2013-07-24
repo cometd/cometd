@@ -22,7 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
-import org.cometd.websocket.server.WebSocketTransport;
+import org.cometd.websocket.server.JettyWebSocketTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -97,7 +97,7 @@ public abstract class AbstractCometDTest
         cometdServlet = new CometDServlet();
         ServletHolder cometServletHolder = new ServletHolder(cometdServlet);
         cometServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
-        cometServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
+        cometServletHolder.setInitParameter("transports", JettyWebSocketTransport.class.getName());
         if (Boolean.getBoolean("debugTests"))
             cometServletHolder.setInitParameter("logLevel", "3");
         context.addServlet(cometServletHolder, cometServletPath + "/*");

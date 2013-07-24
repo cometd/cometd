@@ -50,7 +50,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.Jackson1JSONContextClient;
-import org.cometd.websocket.client.WebSocketTransport;
+import org.cometd.websocket.client.JettyWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -437,8 +437,8 @@ public class BayeuxLoadClient
             {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT, new Jackson1JSONContextClient());
-                options.put(WebSocketTransport.IDLE_TIMEOUT_OPTION, 35000);
-                return new WebSocketTransport(options, webSocketClient, scheduler);
+                options.put(JettyWebSocketTransport.IDLE_TIMEOUT_OPTION, 35000);
+                return new JettyWebSocketTransport(options, webSocketClient, scheduler);
             }
             default:
             {

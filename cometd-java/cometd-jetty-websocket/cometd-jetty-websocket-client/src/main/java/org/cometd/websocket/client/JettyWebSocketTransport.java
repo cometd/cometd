@@ -47,7 +47,7 @@ import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
-public class WebSocketTransport extends HttpClientTransport implements MessageClientTransport
+public class JettyWebSocketTransport extends HttpClientTransport implements MessageClientTransport
 {
     public final static String PREFIX = "ws";
     public final static String NAME = "websocket";
@@ -56,14 +56,14 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public final static String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public final static String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
 
-    public static WebSocketTransport create(Map<String, Object> options, WebSocketClient webSocketClient)
+    public static JettyWebSocketTransport create(Map<String, Object> options, WebSocketClient webSocketClient)
     {
         return create(options, webSocketClient, null);
     }
 
-    public static WebSocketTransport create(Map<String, Object> options, WebSocketClient webSocketClient, ScheduledExecutorService scheduler)
+    public static JettyWebSocketTransport create(Map<String, Object> options, WebSocketClient webSocketClient, ScheduledExecutorService scheduler)
     {
-        WebSocketTransport transport = new WebSocketTransport(options, webSocketClient, scheduler);
+        JettyWebSocketTransport transport = new JettyWebSocketTransport(options, webSocketClient, scheduler);
         if (!webSocketClient.isStarted())
         {
             try
@@ -96,7 +96,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile TransportListener _listener;
     private volatile Map<String, Object> _advice;
 
-    public WebSocketTransport(Map<String, Object> options, WebSocketClient webSocketClient, ScheduledExecutorService scheduler)
+    public JettyWebSocketTransport(Map<String, Object> options, WebSocketClient webSocketClient, ScheduledExecutorService scheduler)
     {
         super(NAME, options);
         _webSocketClient = webSocketClient;

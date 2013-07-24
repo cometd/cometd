@@ -59,7 +59,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebSocketTransport extends HttpTransport
+public class JettyWebSocketTransport extends HttpTransport
 {
     public static final String PREFIX = "ws";
     public static final String NAME = "websocket";
@@ -77,7 +77,7 @@ public class WebSocketTransport extends HttpTransport
     private ScheduledExecutorService _scheduler;
     private int _messagesPerFrame = 1;
 
-    public WebSocketTransport(BayeuxServerImpl bayeux)
+    public JettyWebSocketTransport(BayeuxServerImpl bayeux)
     {
         super(bayeux, NAME);
         setOptionPrefix(PREFIX);
@@ -303,7 +303,7 @@ public class WebSocketTransport extends HttpTransport
                 cancelMetaConnectTask(session);
             }
             _logger.debug("Closing {}/{}", code, reason);
-            WebSocketTransport.this.onClose(code, reason);
+            JettyWebSocketTransport.this.onClose(code, reason);
         }
 
         @Override
@@ -336,7 +336,7 @@ public class WebSocketTransport extends HttpTransport
         public void onWebSocketText(String data)
         {
             _handshake.set(_context);
-            getBayeux().setCurrentTransport(WebSocketTransport.this);
+            getBayeux().setCurrentTransport(JettyWebSocketTransport.this);
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(data);
@@ -691,7 +691,7 @@ public class WebSocketTransport extends HttpTransport
         @Override
         public boolean isUserInRole(String role)
         {
-            HttpServletRequest request = WebSocketTransport.this.getCurrentRequest();
+            HttpServletRequest request = JettyWebSocketTransport.this.getCurrentRequest();
             return request != null && request.isUserInRole(role);
         }
 

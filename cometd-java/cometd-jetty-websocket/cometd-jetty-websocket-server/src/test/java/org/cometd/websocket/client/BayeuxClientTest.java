@@ -534,7 +534,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
             }
         }), cometdServletPath, EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
-        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsClient);
+        JettyWebSocketTransport webSocketTransport = JettyWebSocketTransport.create(null, wsClient);
         webSocketTransport.setDebugEnabled(debugTests());
         LongPollingTransport longPollingTransport = LongPollingTransport.create(null, httpClient);
         longPollingTransport.setDebugEnabled(debugTests());
