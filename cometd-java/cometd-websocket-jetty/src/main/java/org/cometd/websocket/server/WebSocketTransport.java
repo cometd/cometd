@@ -157,9 +157,12 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     {
         if (!_factory.acceptWebSocket(request, response))
         {
-            _logger.warn("Websocket not accepted");
-            response.setHeader("Connection", "close");
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            _logger.warn("WebSocket not accepted");
+            if (!response.isCommitted())
+            {
+                response.setHeader("Connection", "close");
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
         }
     }
 
@@ -173,6 +176,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             WebSocketContext handshake = new WebSocketContext(request);
             return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
         }
+
+        _logger.warn("WebSocket protocols do not match: server[{}] != client[{}]", _protocol, protocol);
 
         return null;
     }

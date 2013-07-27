@@ -8,31 +8,6 @@
     <name>CometD</name>
     <version>2.7.0-SNAPSHOT</version>
 
-    <repositories>
-        <repository>
-            <id>jetty-staging</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-1007</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>jetty-staging</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-1007</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jetty-version>7.6.12.v20130726</jetty-version>

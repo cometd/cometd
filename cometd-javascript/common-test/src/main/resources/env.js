@@ -977,10 +977,10 @@ var window = this;
         };
     }();
 
-    window.WebSocket = function(url)
+    window.WebSocket = function(url, protocol)
     {
         this._url = url;
-        this._ws = new WebSocketClient(cookies, threadModel, this, wsClientFactory, url);
+        this._ws = new WebSocketClient(cookies, threadModel, this, wsClientFactory, url, protocol);
     };
     window.WebSocket.CONNECTING = 0;
     window.WebSocket.OPEN = 1;

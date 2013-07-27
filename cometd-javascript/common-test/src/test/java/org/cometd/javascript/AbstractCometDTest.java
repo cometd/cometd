@@ -18,6 +18,8 @@ package org.cometd.javascript;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.cometd.server.BayeuxServerImpl;
@@ -75,6 +77,12 @@ public abstract class AbstractCometDTest
     @Before
     public void initCometDServer() throws Exception
     {
+        Map<String, String> options = new HashMap<String, String>();
+        initCometDServer(options);
+    }
+
+    protected void initCometDServer(Map<String, String> options) throws Exception
+    {
         String providerClass = getProviderClassName();
         provider = (TestProvider)Thread.currentThread().getContextClassLoader().loadClass(providerClass).newInstance();
 
@@ -96,6 +104,8 @@ public abstract class AbstractCometDTest
         // Setup CometD servlet
         cometdServlet = new CometdServlet();
         ServletHolder cometServletHolder = new ServletHolder(cometdServlet);
+        for (Map.Entry<String, String> entry : options.entrySet())
+            cometServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         cometServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
         cometServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
         if (Boolean.getBoolean("debugTests"))

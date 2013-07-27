@@ -22,6 +22,7 @@ import java.net.URI;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
     {
     }
 
-    public WebSocketClient(Object cookieStore, Object threadModel, Scriptable thiz, Object factory, String url)
+    public WebSocketClient(Object cookieStore, Object threadModel, Scriptable thiz, Object factory, String url, Object protocol)
     {
         this.threads = (ThreadModel)threadModel;
         this.thiz = thiz;
@@ -44,6 +45,8 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
         {
             WebSocketClientFactory wsFactory = (WebSocketClientFactory)factory;
             org.eclipse.jetty.websocket.WebSocketClient wsClient = wsFactory.newWebSocketClient();
+            if (protocol != null && protocol != Undefined.instance)
+                wsClient.setProtocol(protocol.toString());
             URI uri = new URI(url);
             wsClient.getCookies().putAll(((HttpCookieStore)cookieStore).getAll(uri));
             log("Opening WebSocket connection to {}", uri);
