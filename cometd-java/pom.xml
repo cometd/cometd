@@ -13,10 +13,6 @@
     <packaging>pom</packaging>
     <name>CometD :: Java</name>
 
-    <properties>
-        <jackson-version>1.9.12</jackson-version>
-    </properties>
-
     <modules>
         <module>bayeux-api</module>
         <module>cometd-java-annotations</module>

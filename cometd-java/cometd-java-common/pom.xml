@@ -10,9 +10,6 @@
     <artifactId>cometd-java-common</artifactId>
     <name>CometD :: Java :: Bayeux Common</name>
 
-    <properties>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.cometd.java</groupId>

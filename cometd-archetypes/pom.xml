@@ -14,10 +14,6 @@
     <name>CometD :: Archetypes</name>
     <description>${project.version} - CometD archetype for creating a server-side event-driven web application</description>
 
-    <properties>
-        <jetty8-version>8.1.10.v20130312</jetty8-version>
-    </properties>
-
     <modules>
         <module>dojo-jetty7</module>
         <module>spring-dojo-jetty7</module>
