@@ -205,7 +205,7 @@ public class BayeuxClientTest extends ClientServerTest
                 request.method(HttpMethod.PUT);
             }
         };
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {
             @Override
@@ -278,7 +278,7 @@ public class BayeuxClientTest extends ClientServerTest
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
         final CountDownLatch connectLatch = new CountDownLatch(1);
 
-        final BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             protected void processHandshake(Message.Mutable message)
@@ -326,7 +326,7 @@ public class BayeuxClientTest extends ClientServerTest
 
         final BlockingArrayQueue<Message> queue = new BlockingArrayQueue<>(100, 100);
         final AtomicBoolean connected = new AtomicBoolean(false);
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             public void onFailure(Throwable x, Message[] messages)
@@ -404,7 +404,7 @@ public class BayeuxClientTest extends ClientServerTest
     {
         final AtomicInteger connects = new AtomicInteger();
         final CountDownLatch attempts = new CountDownLatch(4);
-        final BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             protected boolean scheduleConnect(long interval, long backoff)
@@ -581,7 +581,7 @@ public class BayeuxClientTest extends ClientServerTest
     @Test
     public void testWaitFor() throws Exception
     {
-        final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
+        final BlockingArrayQueue<String> results = new BlockingArrayQueue<>();
 
         String channelName = "/chat/msg";
         MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
@@ -650,7 +650,7 @@ public class BayeuxClientTest extends ClientServerTest
         }
 
         final CountDownLatch latch = new CountDownLatch(1);
-        BayeuxClient client = new BayeuxClient("http://localhost/cometd", LongPollingTransport.create(null, httpClient))
+        BayeuxClient client = new BayeuxClient("http://localhost/cometd", new LongPollingTransport(null, httpClient))
         {
             @Override
             public void onFailure(Throwable x, Message[] messages)
@@ -687,7 +687,7 @@ public class BayeuxClientTest extends ClientServerTest
     @Test
     public void testAbortNotifiesListeners() throws Exception
     {
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             public void onFailure(Throwable x, Message[] messages)
@@ -724,7 +724,7 @@ public class BayeuxClientTest extends ClientServerTest
     public void testAbortThenRestart() throws Exception
     {
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(2));
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             public void onSending(Message[] messages)
@@ -769,7 +769,7 @@ public class BayeuxClientTest extends ClientServerTest
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(1));
         final CountDownLatch publishLatch = new CountDownLatch(1);
         final CountDownLatch failureLatch = new CountDownLatch(1);
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             protected AbstractSessionChannel newChannel(ChannelId channelId)
@@ -846,7 +846,7 @@ public class BayeuxClientTest extends ClientServerTest
         final AtomicBoolean abort = new AtomicBoolean(false);
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(1));
         final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<>(new CountDownLatch(1));
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             protected boolean sendMessages(Message.Mutable... messages)
@@ -905,7 +905,7 @@ public class BayeuxClientTest extends ClientServerTest
     @Test
     public void testRestart() throws Exception
     {
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             public void onFailure(Throwable x, Message[] messages)

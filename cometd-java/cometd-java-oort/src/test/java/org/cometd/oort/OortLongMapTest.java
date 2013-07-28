@@ -27,6 +27,11 @@ import org.junit.Test;
 
 public class OortLongMapTest extends AbstractOortObjectTest
 {
+    public OortLongMapTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Test
     public void testShare() throws Exception
     {

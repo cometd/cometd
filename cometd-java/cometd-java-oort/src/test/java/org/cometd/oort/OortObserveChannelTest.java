@@ -28,6 +28,11 @@ import org.junit.Test;
 
 public class OortObserveChannelTest extends OortTest
 {
+    public OortObserveChannelTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Test
     public void testObserveChannel() throws Exception
     {

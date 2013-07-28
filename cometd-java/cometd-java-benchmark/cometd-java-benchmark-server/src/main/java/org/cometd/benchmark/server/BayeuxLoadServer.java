@@ -216,7 +216,6 @@ public class BayeuxLoadServer
         MonitoringThreadPoolExecutor websocketThreadPool = new MonitoringThreadPoolExecutor(maxThreads, jettyThreadPool.getIdleTimeout(), TimeUnit.MILLISECONDS, new ThreadPoolExecutor.AbortPolicy());
 
         LoadWebSocketTransport webSocketTransport = new LoadWebSocketTransport(bayeux, websocketThreadPool);
-        webSocketTransport.init();
         bayeux.addTransport(webSocketTransport);
         bayeux.setAllowedTransports("websocket", "long-polling");
 

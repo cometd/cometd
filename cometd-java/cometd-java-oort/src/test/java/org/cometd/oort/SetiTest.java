@@ -42,6 +42,11 @@ public class SetiTest extends OortTest
 {
     private List<Seti> setis = new ArrayList<>();
 
+    public SetiTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     protected Seti startSeti(Oort oort) throws Exception
     {
         Seti seti = new Seti(oort);

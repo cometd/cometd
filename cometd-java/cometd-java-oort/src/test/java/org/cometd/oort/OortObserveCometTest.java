@@ -18,6 +18,7 @@ package org.cometd.oort;
 
 import java.net.ConnectException;
 import java.net.URI;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +39,11 @@ import org.junit.Test;
 
 public class OortObserveCometTest extends OortTest
 {
+    public OortObserveCometTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Test
     public void testObserveStartedOortAndExpectToBeObserved() throws Exception
     {
@@ -211,7 +217,6 @@ public class OortObserveCometTest extends OortTest
         stopOort(oort2);
         Assert.assertFalse(oort2.getOortSession().isConnected());
         Assert.assertTrue(oort2.getHttpClient().isStopped());
-        Assert.assertTrue(oort2.getWebSocketClient().isStopped());
         Assert.assertEquals(0, oort2.getKnownComets().size());
 
         // Stopping oort2 implies oort1 must see it disappearing
@@ -228,9 +233,9 @@ public class OortObserveCometTest extends OortTest
         Oort oort1 = new Oort(bayeuxServer, url)
         {
             @Override
-            protected OortComet newOortComet(String cometURL)
+            protected OortComet newOortComet(String cometURL, Map<String, Object> options)
             {
-                return new OortComet(this, cometURL)
+                return new OortComet(this, cometURL, null, options)
                 {
                     @Override
                     public void onFailure(Throwable x, Message[] messages)

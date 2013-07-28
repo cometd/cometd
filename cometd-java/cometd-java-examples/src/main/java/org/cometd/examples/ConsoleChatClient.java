@@ -17,7 +17,6 @@
 package org.cometd.examples;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,10 +28,11 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
+import org.eclipse.jetty.client.HttpClient;
 
 public class ConsoleChatClient
 {
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args) throws Exception
     {
         ConsoleChatClient client = new ConsoleChatClient();
         client.run();
@@ -43,7 +43,7 @@ public class ConsoleChatClient
     private final ChatListener chatListener = new ChatListener();
     private final MembersListener membersListener = new MembersListener();
 
-    private void run() throws IOException
+    private void run() throws Exception
     {
         BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
 
@@ -64,7 +64,10 @@ public class ConsoleChatClient
                 return;
         }
 
-        client = new BayeuxClient(url, LongPollingTransport.create(null));
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        client = new BayeuxClient(url, new LongPollingTransport(null, httpClient));
         client.getChannel(Channel.META_HANDSHAKE).addListener(new InitializerListener());
         client.getChannel(Channel.META_CONNECT).addListener(new ConnectionListener());
 

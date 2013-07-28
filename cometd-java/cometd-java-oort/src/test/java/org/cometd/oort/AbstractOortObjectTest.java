@@ -36,6 +36,11 @@ public class AbstractOortObjectTest extends OortTest
     protected Oort oort1;
     protected Oort oort2;
 
+    public AbstractOortObjectTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

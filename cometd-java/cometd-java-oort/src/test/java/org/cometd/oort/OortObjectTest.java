@@ -33,6 +33,11 @@ import org.junit.Test;
 
 public class OortObjectTest extends AbstractOortObjectTest
 {
+    public OortObjectTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Test
     public void testShareObject() throws Exception
     {

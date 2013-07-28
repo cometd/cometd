@@ -149,7 +149,7 @@
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>
-            <artifactId>cometd-jetty-websocket-server</artifactId>
+            <artifactId>cometd-java-websocket-javax-server</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

@@ -45,7 +45,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
     public void testHandshakeFailsConcurrentDisconnect() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(1);
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             protected boolean sendHandshake()
@@ -68,7 +68,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
     public void testConnectFailsConcurrentDisconnect() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(1);
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             protected boolean sendConnect()
@@ -90,7 +90,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
     @Test
     public void testSubscribeFailsConcurrentDisconnect() throws Exception
     {
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             protected void enqueueSend(Message.Mutable message)
@@ -127,7 +127,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
     public void testPublishFailsConcurrentDisconnect() throws Exception
     {
         final String channelName = "/test";
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             protected void enqueueSend(Message.Mutable message)
@@ -185,7 +185,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
     {
         final String channelName = "/test";
         final AtomicInteger connects = new AtomicInteger();
-        final BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             protected boolean sendConnect()
@@ -224,7 +224,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
     @Test
     public void testHandshakeListenersAreNotifiedBeforeConnectListeners() throws Exception
     {
-        final BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient));
+        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
         client.setDebugEnabled(debugTests());
         final int sleep = 1000;
         final AtomicBoolean handshaken = new AtomicBoolean();
@@ -263,7 +263,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
     public void testConcurrentHandshakeAndBatch() throws Exception
     {
         final CountDownLatch sendLatch = new CountDownLatch(1);
-        final BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             protected boolean sendMessages(Message.Mutable... messages)

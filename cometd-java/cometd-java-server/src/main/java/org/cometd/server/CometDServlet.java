@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Enumeration;
 import java.util.List;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -107,6 +108,9 @@ public class CometDServlet extends HttpServlet
                         _bayeux.setOption(initParameterName, value);
                     }
                 }
+
+                // Add the ServletContext to the options
+                _bayeux.setOption(ServletContext.class.getName(), getServletContext());
             }
 
             _bayeux.start();
@@ -155,7 +159,8 @@ public class CometDServlet extends HttpServlet
 
         if (transport == null)
         {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown Bayeux Transport");
+            if (!response.isCommitted())
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown Bayeux Transport");
         }
         else
         {

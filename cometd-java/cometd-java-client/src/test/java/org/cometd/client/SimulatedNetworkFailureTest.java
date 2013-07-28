@@ -230,7 +230,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
 
         private TestBayeuxClient()
         {
-            super(cometdURL, LongPollingTransport.create(null, httpClient));
+            super(cometdURL, new LongPollingTransport(null, httpClient));
         }
 
         public void setNetworkDown(long time)

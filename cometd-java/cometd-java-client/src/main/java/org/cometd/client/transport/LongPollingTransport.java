@@ -50,31 +50,6 @@ public class LongPollingTransport extends HttpClientTransport
     public static final String NAME = "long-polling";
     public static final String PREFIX = "long-polling.json";
 
-    public static LongPollingTransport create(Map<String, Object> options)
-    {
-        HttpClient httpClient = new HttpClient();
-        httpClient.setIdleTimeout(5000);
-        httpClient.setMaxConnectionsPerDestination(32768);
-        return create(options, httpClient);
-    }
-
-    public static LongPollingTransport create(Map<String, Object> options, HttpClient httpClient)
-    {
-        LongPollingTransport transport = new LongPollingTransport(options, httpClient);
-        if (!httpClient.isStarted())
-        {
-            try
-            {
-                httpClient.start();
-            }
-            catch (Exception x)
-            {
-                throw new RuntimeException(x);
-            }
-        }
-        return transport;
-    }
-
     private final HttpClient _httpClient;
     private final List<Request> _requests = new ArrayList<>();
     private volatile boolean _aborted;
@@ -289,5 +264,21 @@ public class LongPollingTransport extends HttpClientTransport
 
     protected void customize(Request request)
     {
+    }
+
+    public static class Factory implements ClientTransport.Factory
+    {
+        private final HttpClient httpClient;
+
+        public Factory(HttpClient httpClient)
+        {
+            this.httpClient = httpClient;
+        }
+
+        @Override
+        public ClientTransport newClientTransport(Map<String, Object> options)
+        {
+            return new LongPollingTransport(options, httpClient);
+        }
     }
 }

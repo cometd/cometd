@@ -22,13 +22,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.websocket.client.JettyWebSocketTransport;
+import org.cometd.websocket.client.WebSocketTransport;
 
 /**
  * <p>The Oort comet client connects a local Oort comet server to a remote Oort comet server.</p>
@@ -41,15 +42,10 @@ public class OortComet extends BayeuxClient
     private final String _cometURL;
     private volatile boolean _subscriptionsAllowed;
 
-    public OortComet(Oort oort, String cometURL)
+    public OortComet(Oort oort, String cometURL, ScheduledExecutorService scheduler, Map<String, Object> options)
     {
-        this(oort, cometURL, null);
-    }
-
-    public OortComet(Oort oort, String cometURL, Map<String, Object> options)
-    {
-        super(cometURL, JettyWebSocketTransport.create(options, oort.getWebSocketClient()),
-                LongPollingTransport.create(options, oort.getHttpClient()));
+        super(cometURL, scheduler, new WebSocketTransport.Factory(scheduler).newClientTransport(options),
+                new LongPollingTransport.Factory(oort.getHttpClient()).newClientTransport(options));
         _oort = oort;
         _cometURL = cometURL;
         setDebugEnabled(oort.isClientDebugEnabled());

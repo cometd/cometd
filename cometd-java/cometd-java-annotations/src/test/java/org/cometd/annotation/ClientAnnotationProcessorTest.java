@@ -100,7 +100,7 @@ public class ClientAnnotationProcessorTest
     @Before
     public void init()
     {
-        bayeuxClient = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient));
+        bayeuxClient = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
         bayeuxClient.setDebugEnabled(Boolean.getBoolean("debugTests"));
         processor = new ClientAnnotationProcessor(bayeuxClient);
     }

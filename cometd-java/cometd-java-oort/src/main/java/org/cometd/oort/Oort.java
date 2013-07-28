@@ -63,7 +63,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,7 +110,6 @@ public class Oort extends ContainerLifeCycle
     private final Logger _logger;
     private ThreadPool _threadPool;
     private HttpClient _httpClient;
-    private WebSocketClient _wsClient;
     private final LocalSession _oortSession;
     private String _secret;
     private boolean _debug;
@@ -139,8 +137,7 @@ public class Oort extends ContainerLifeCycle
         if (_threadPool == null)
             _threadPool = new QueuedThreadPool();
         addBean(_threadPool);
-        // Start the pool to avoid that HttpClient
-        // and WebSocketClientFactory try to manage it
+        // Start the pool to avoid that HttpClient manages it
         if (_threadPool instanceof LifeCycle)
             ((LifeCycle)_threadPool).start();
 
@@ -150,13 +147,6 @@ public class Oort extends ContainerLifeCycle
             _httpClient.setExecutor(_threadPool);
         }
         addBean(_httpClient);
-
-        if (_wsClient == null)
-        {
-            _wsClient = new WebSocketClient();
-            _wsClient.setExecutor(_threadPool);
-        }
-        addBean(_wsClient);
 
         super.doStart();
 
@@ -343,7 +333,11 @@ public class Oort extends ContainerLifeCycle
             return comet;
         }
 
-        comet = newOortComet(cometURL);
+        Map<String, Object> options = new HashMap<>(1);
+        JSONContext.Client jsonContext = getJSONContextClient();
+        if (jsonContext != null)
+            options.put(ClientTransport.JSON_CONTEXT, jsonContext);
+        comet = newOortComet(cometURL, options);
         configureOortComet(comet);
         OortComet existing = _pendingComets.putIfAbsent(cometURL, comet);
         if (existing != null)
@@ -370,13 +364,10 @@ public class Oort extends ContainerLifeCycle
         return comet;
     }
 
-    protected OortComet newOortComet(String cometURL)
+    protected OortComet newOortComet(String cometURL, Map<String, Object> options)
     {
-        Map<String, Object> options = new HashMap<>(1);
-        JSONContext.Client jsonContext = getJSONContextClient();
-        if (jsonContext != null)
-            options.put(ClientTransport.JSON_CONTEXT, jsonContext);
-        return new OortComet(this, cometURL, options);
+        // TODO: pass in a scheduler
+        return new OortComet(this, cometURL, null, options);
     }
 
     protected void configureOortComet(OortComet oortComet)
@@ -663,16 +654,6 @@ public class Oort extends ContainerLifeCycle
     public ThreadPool getThreadPool()
     {
         return _threadPool;
-    }
-
-    public WebSocketClient getWebSocketClient()
-    {
-        return _wsClient;
-    }
-
-    public void setWebSocketClientFactory(WebSocketClient wsClient)
-    {
-        this._wsClient = wsClient;
     }
 
     public HttpClient getHttpClient()

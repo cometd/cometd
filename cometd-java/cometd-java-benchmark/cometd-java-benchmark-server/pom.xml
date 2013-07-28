@@ -55,7 +55,7 @@
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>
-            <artifactId>cometd-jetty-websocket-server</artifactId>
+            <artifactId>cometd-java-websocket-jetty-server</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

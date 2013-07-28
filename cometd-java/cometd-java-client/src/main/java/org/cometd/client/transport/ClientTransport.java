@@ -126,4 +126,9 @@ public abstract class ClientTransport extends AbstractTransport
     {
         return jsonContext.generate(messages);
     }
+
+    public interface Factory
+    {
+        public ClientTransport newClientTransport(Map<String, Object> options);
+    }
 }

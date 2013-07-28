@@ -17,6 +17,7 @@
 package org.cometd.oort;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -30,6 +31,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.CometDServlet;
 import org.cometd.websocket.server.JettyWebSocketTransport;
+import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -37,14 +39,34 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.After;
 import org.junit.Rule;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public abstract class OortTest
 {
+    @Parameterized.Parameters(name= "{index}: transport: {0}")
+     public static Iterable<Object[]> data()
+     {
+         return Arrays.asList(new Object[][]
+                 {
+                         {WebSocketTransport.class.getName()},
+                         {JettyWebSocketTransport.class.getName()}
+                 }
+         );
+     }
+
     @Rule
     public final TestTracker testName = new TestTracker();
     private final List<Server> servers = new ArrayList<>();
     private final List<Oort> oorts = new ArrayList<>();
     private final List<BayeuxClient> clients = new ArrayList<>();
+    private final String serverTransport;
+
+    protected OortTest(String serverTransport)
+    {
+        this.serverTransport = serverTransport;
+    }
 
     protected Server startServer(int port) throws Exception
     {
@@ -59,7 +81,7 @@ public abstract class OortTest
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
-        cometdServletHolder.setInitParameter("transports", JettyWebSocketTransport.class.getName());
+        cometdServletHolder.setInitParameter("transports", serverTransport);
         if (Boolean.getBoolean("debugTests"))
             cometdServletHolder.setInitParameter("logLevel", "3");
         cometdServletHolder.setInitOrder(1);

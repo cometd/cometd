@@ -77,7 +77,7 @@ public class MaxNetworkDelayTest extends ClientServerTest
         });
 
         final CountDownLatch latch = new CountDownLatch(2);
-        LongPollingTransport transport = LongPollingTransport.create(null, httpClient);
+        ClientTransport transport = new LongPollingTransport(null, httpClient);
         transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
         BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {
@@ -139,7 +139,7 @@ public class MaxNetworkDelayTest extends ClientServerTest
         });
 
         final CountDownLatch latch = new CountDownLatch(3);
-        LongPollingTransport transport = LongPollingTransport.create(null, httpClient);
+        ClientTransport transport = new LongPollingTransport(null, httpClient);
         transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
         BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {

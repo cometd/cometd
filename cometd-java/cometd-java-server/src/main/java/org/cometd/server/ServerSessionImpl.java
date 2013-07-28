@@ -40,7 +40,6 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.AbstractServerTransport.OneTimeScheduler;
 import org.cometd.server.AbstractServerTransport.Scheduler;
-import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -113,7 +112,7 @@ public class ServerSessionImpl implements ServerSession
 
         _id = id.toString();
 
-        HttpTransport transport = (HttpTransport)_bayeux.getCurrentTransport();
+        ServerTransport transport = _bayeux.getCurrentTransport();
         if (transport != null)
             _intervalTimestamp = System.currentTimeMillis() + transport.getMaxInterval();
 
@@ -325,10 +324,10 @@ public class ServerSessionImpl implements ServerSession
     {
         _handshook.set(true);
 
-        HttpTransport transport = (HttpTransport)_bayeux.getCurrentTransport();
+        AbstractServerTransport transport = (AbstractServerTransport)_bayeux.getCurrentTransport();
         if (transport != null)
         {
-            _maxQueue = transport.getOption(HttpTransport.MAX_QUEUE_OPTION, -1);
+            _maxQueue = transport.getOption(AbstractServerTransport.MAX_QUEUE_OPTION, -1);
             _maxInterval = _interval >= 0 ? _interval + transport.getMaxInterval() : transport.getMaxInterval();
             _maxServerInterval = transport.getOption("maxServerInterval", -1);
             _randomizeLazy = transport.getOption(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, false);

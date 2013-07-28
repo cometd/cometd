@@ -25,6 +25,11 @@ import org.junit.Test;
 
 public class OortServiceTest extends AbstractOortObjectTest
 {
+    public OortServiceTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Test
     public void testActionIsForwarded() throws Exception
     {

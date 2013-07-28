@@ -27,6 +27,11 @@ import org.junit.Test;
 
 public class OortListTest extends AbstractOortObjectTest
 {
+    public OortListTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Test
     public void testElementAdded() throws Exception
     {

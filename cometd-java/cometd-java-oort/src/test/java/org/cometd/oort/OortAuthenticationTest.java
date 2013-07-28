@@ -34,6 +34,11 @@ import org.junit.Test;
 
 public class OortAuthenticationTest extends OortTest
 {
+    public OortAuthenticationTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Test
     public void testAuthenticationWithSecurityPolicy() throws Exception
     {

@@ -33,6 +33,8 @@ import org.cometd.common.HashMapMessage;
 import org.cometd.common.TransportException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.HttpCookieStore;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -54,18 +56,32 @@ public class LongPollingTransportTest
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
     };
+    private HttpClient httpClient;
+
+    @Before
+    public void prepare() throws Exception
+    {
+        httpClient = new HttpClient();
+        httpClient.start();
+    }
+
+    @After
+    public void dispose() throws Exception
+    {
+        httpClient.stop();
+    }
 
     @Test
     public void testType()
     {
-        ClientTransport transport = LongPollingTransport.create(null);
+        ClientTransport transport = new LongPollingTransport(null, httpClient);
         assertEquals("long-polling", transport.getName());
     }
 
     @Test
-    public void testAccept()
+    public void testAccept() throws Exception
     {
-        ClientTransport transport = LongPollingTransport.create(null);
+        ClientTransport transport = new LongPollingTransport(null, httpClient);
         assertTrue(transport.accept("1.0"));
     }
 

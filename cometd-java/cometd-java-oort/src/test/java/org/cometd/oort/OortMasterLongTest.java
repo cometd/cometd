@@ -24,6 +24,11 @@ import org.junit.Test;
 
 public class OortMasterLongTest extends AbstractOortObjectTest
 {
+    public OortMasterLongTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Test
     public void testCount() throws Exception
     {

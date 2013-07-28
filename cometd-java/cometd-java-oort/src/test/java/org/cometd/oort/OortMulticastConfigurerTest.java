@@ -35,6 +35,11 @@ public class OortMulticastConfigurerTest extends OortTest
 {
     private final List<OortMulticastConfigurer> configurers = new ArrayList<>();
 
+    public OortMulticastConfigurerTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void assumeMulticast() throws Exception
     {
