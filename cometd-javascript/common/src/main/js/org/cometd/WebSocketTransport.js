@@ -22,7 +22,7 @@ org.cometd.WebSocketTransport = function()
         this._debug('Transport', this.getType(), 'connecting to URL', url);
 
         var self = this;
-        var webSocket = new org.cometd.WebSocket(url);
+        var webSocket = new org.cometd.WebSocket(url, _cometd.getConfiguration().protocol);
 
         var connectTimer = null;
         var connectTimeout = _cometd.getConfiguration().connectTimeout;

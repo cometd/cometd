@@ -24,6 +24,7 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,11 +39,13 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     {
     }
 
-    public void jsConstructor(Object cookieStore, Object threadModel, Scriptable thiz, Object connector, String url)
+    public void jsConstructor(Object cookieStore, Object threadModel, Scriptable thiz, Object connector, String url, Object protocol)
     {
         this.threads = (ThreadModel)threadModel;
         this.thiz = thiz;
         WebSocketClient wsClient = ((WebSocketConnector)connector).getWebSocketClient();
+        if (protocol != null && protocol != Undefined.instance)
+            wsClient.setProtocol(protocol.toString());
         try
         {
             URI uri = new URI(url);

@@ -12,11 +12,6 @@
     <packaging>pom</packaging>
     <name>CometD :: JavaScript</name>
 
-    <properties>
-        <dojo-version>1.8.3</dojo-version>
-        <rhino-version>1.7R2</rhino-version>
-    </properties>
-
     <modules>
         <module>common</module>
         <module>common-test</module>

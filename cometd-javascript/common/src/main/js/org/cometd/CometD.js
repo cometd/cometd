@@ -43,6 +43,7 @@ org.cometd.CometD = function(name)
     var _reestablish = false;
     var _connected = false;
     var _config = {
+        protocol: null,
         connectTimeout: 0,
         maxConnections: 2,
         backoffIncrement: 1000,
@@ -746,6 +747,13 @@ org.cometd.CometD = function(name)
         // Pick up the first available transport as initial transport
         // since we don't know if the server supports it
         _transport = _transports.negotiateTransport(transportTypes, version, _crossDomain, _config.url);
+        if (!_transport)
+        {
+            var error = 'Could not find initial transport among: ' + _transports.getTransportTypes();
+            _cometd._warn(error);
+            throw error;
+        }
+
         _cometd._debug('Initial transport is', _transport.getType());
 
         // We started a batch to hold the application messages,

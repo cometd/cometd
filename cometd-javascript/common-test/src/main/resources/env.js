@@ -978,11 +978,11 @@ var window = this;
     }();
 
     var wsIds = 0;
-    window.WebSocket = function(url)
+    window.WebSocket = function(url, protocol)
     {
         this._id = ++wsIds;
         this._url = url;
-        this._ws = new WebSocketConnection(cookies, threadModel, this, wsConnector, url);
+        this._ws = new WebSocketConnection(cookies, threadModel, this, wsConnector, url, protocol);
     };
     window.WebSocket.CONNECTING = 0;
     window.WebSocket.OPEN = 1;
