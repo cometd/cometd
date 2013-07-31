@@ -21,6 +21,7 @@ import java.net.URI;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -44,16 +45,20 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
         this.threads = (ThreadModel)threadModel;
         this.thiz = thiz;
         WebSocketClient wsClient = ((WebSocketConnector)connector).getWebSocketClient();
-        if (protocol != null && protocol != Undefined.instance)
-            wsClient.setProtocol(protocol.toString());
         try
         {
             URI uri = new URI(url);
+
+            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            if (protocol != null && protocol != Undefined.instance)
+                request.setSubProtocols(protocol.toString());
+
             // TODO: pass in cookies
 //            wsClient.getUpgradeRequest().setCookieStore();
 //            wsClient.getCookies().putAll(((HttpCookieStore)cookieStore).getAll(uri));
+
             log("Opening WebSocket session to {}", uri);
-            wsClient.connect(this, uri);
+            wsClient.connect(this, uri, request);
         }
         catch (final Exception x)
         {
