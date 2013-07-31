@@ -19,7 +19,7 @@ package org.cometd.server;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.AsyncContext;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -164,7 +164,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
             }
 
             @Override
-            protected void metaConnectSuspended(HttpServletRequest request, ServerSession session, long timeout)
+            protected void metaConnectSuspended(AsyncContext asyncContext, ServerSession session)
             {
                 suspendLatch.countDown();
             }

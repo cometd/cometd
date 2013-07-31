@@ -17,7 +17,6 @@
 package org.cometd.server;
 
 import java.io.IOException;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -46,10 +45,11 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
             }
 
             @Override
-            protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws ServletException, IOException
+            protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws IOException
             {
                 // Suppress logging during tests
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                if (!response.isCommitted())
+                    response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             }
         });
 

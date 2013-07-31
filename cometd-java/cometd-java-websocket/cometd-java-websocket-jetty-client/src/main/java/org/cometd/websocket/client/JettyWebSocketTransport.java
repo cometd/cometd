@@ -85,10 +85,12 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
     {
         try
         {
-            session.getRemote().sendString(content);
+            session.getRemote().sendStringByFuture(content).get();
         }
-        catch (IOException x)
+        catch (Throwable x)
         {
+            if (x instanceof ExecutionException)
+                x = x.getCause();
             complete(messages);
             disconnect("Exception");
             listener.onFailure(x, messages);

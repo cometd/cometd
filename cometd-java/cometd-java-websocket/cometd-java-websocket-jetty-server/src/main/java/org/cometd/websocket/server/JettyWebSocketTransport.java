@@ -17,10 +17,13 @@
 package org.cometd.websocket.server;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 
@@ -95,12 +98,46 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
     protected void send(Session wsSession, ServerSession session, String data) throws IOException
     {
         debug("Sending {}", data);
-        // Blocking write.
-        // We trade - for now - a blocked thread with the frame queue growing
-        // and consequent increased message latency (messages sit in the queue).
-        wsSession.getRemote().sendString(data);
 
-        // TODO: implement async version
+        // First blocking version - but cannot be used for concurrent writes
+//        wsSession.getRemote().sendString(data);
+
+        // Second blocking version - uses Futures
+        Future<Void> future = wsSession.getRemote().sendStringByFuture(data);
+        try
+        {
+            future.get();
+        }
+        catch (InterruptedException x)
+        {
+            throw new InterruptedIOException();
+        }
+        catch (ExecutionException x)
+        {
+            Throwable cause = x.getCause();
+            if (cause instanceof RuntimeException)
+                throw (RuntimeException)cause;
+            if (cause instanceof Error)
+                throw (Error)cause;
+            if (cause instanceof IOException)
+                throw (IOException)cause;
+            throw new IOException(cause);
+        }
+
+        // Async version
+//        wsSession.getRemote().sendString(data, new WriteCallback()
+//        {
+//            @Override
+//            public void writeSuccess()
+//            {
+//            }
+//
+//            @Override
+//            public void writeFailed(Throwable x)
+//            {
+//                // TODO: log failure
+//            }
+//        });
     }
 
     private class WebSocketScheduler extends AbstractWebSocketScheduler implements WebSocketListener
