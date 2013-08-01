@@ -37,14 +37,16 @@ public class SpringFrameworkConfigurationTest extends ClientServerWebSocketTest
     @Test
     public void testXMLSpringConfigurationWithWebSocket() throws Exception
     {
-        prepareAndStart(null);
-        stopAndDispose();
+        prepareServer(0, null, false);
         // Add Spring listener
         context.addEventListener(new ContextLoaderListener());
         String config = WEBSOCKET_JSR_356.equals(implementation) ?
                 "applicationContext-javax-websocket.xml" : "applicationContext-jetty-websocket.xml";
         context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:/" + config);
         startServer();
+
+        prepareClient();
+        startClient();
 
         WebApplicationContext applicationContext = WebApplicationContextUtils.getRequiredWebApplicationContext(context.getServletContext());
         Assert.assertNotNull(applicationContext);

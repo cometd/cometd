@@ -21,7 +21,6 @@ import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 import javax.websocket.CloseReason;
@@ -62,6 +61,9 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         String cometdURLMapping = (String)getOption(COMETD_URL_MAPPING);
         if (cometdURLMapping == null)
             throw new IllegalArgumentException("Missing URL Mapping");
+
+        if (cometdURLMapping.endsWith("/*"))
+            cometdURLMapping = cometdURLMapping.substring(0, cometdURLMapping.length() - 2);
 
         ServerContainer container = (ServerContainer)context.getAttribute(ServerContainer.class.getName());
         // JSR 356 does not support a input buffer size option
@@ -228,14 +230,14 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public String getHeader(String name)
         {
-            List<String> headers = request.getHeaders().get(name.toLowerCase(Locale.ENGLISH));
+            List<String> headers = request.getHeaders().get(name);
             return headers != null && headers.size() > 0 ? headers.get(0) : null;
         }
 
         @Override
         public List<String> getHeaderValues(String name)
         {
-            return request.getHeaders().get(name.toLowerCase(Locale.ENGLISH));
+            return request.getHeaders().get(name);
         }
 
         public String getParameter(String name)

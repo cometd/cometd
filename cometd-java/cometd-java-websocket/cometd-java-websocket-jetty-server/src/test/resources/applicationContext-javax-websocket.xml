@@ -4,6 +4,13 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
 
     <bean id="bayeux" class="org.cometd.server.BayeuxServerImpl" init-method="start" destroy-method="stop">
+        <property name="options">
+            <map>
+                <!-- Bean "servletContext" is made available by Spring -->
+                <entry key="javax.servlet.ServletContext" value-ref="servletContext" />
+                <entry key="ws.cometdURLMapping" value="/cometd/*" />
+            </map>
+        </property>
         <property name="transports">
             <list>
                 <bean id="ws" class="org.cometd.websocket.server.WebSocketTransport">
@@ -22,9 +29,7 @@
     <bean class="org.springframework.web.context.support.ServletContextAttributeExporter">
         <property name="attributes">
             <map>
-                <entry key="org.cometd.bayeux">
-                    <ref local="bayeux" />
-                </entry>
+                <entry key="org.cometd.bayeux" value-ref="bayeux" />
             </map>
         </property>
     </bean>

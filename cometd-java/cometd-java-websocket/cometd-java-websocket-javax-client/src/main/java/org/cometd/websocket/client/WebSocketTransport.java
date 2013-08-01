@@ -25,7 +25,6 @@ import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.websocket.ClientEndpointConfig;
@@ -209,8 +208,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         public void afterResponse(HandshakeResponse hr)
         {
             Map<String, List<String>> headers = hr.getHeaders();
-            // Bad JSR API requires to lowercase the header name
-            _webSocketSupported = headers.containsKey(HandshakeResponse.SEC_WEBSOCKET_ACCEPT.toLowerCase(Locale.ENGLISH));
+            _webSocketSupported = headers.containsKey(HandshakeResponse.SEC_WEBSOCKET_ACCEPT);
             // TODO: cookie handling
         }
     }

@@ -1091,7 +1091,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private void prepareTransport(ClientTransport oldTransport, ClientTransport newTransport)
     {
         if (oldTransport != null)
-            oldTransport.reset();
+            oldTransport.reset(); // TODO: must terminate here!
         newTransport.init();
         newTransport.setDebugEnabled(isDebugEnabled());
     }

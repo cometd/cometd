@@ -64,6 +64,9 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         if (cometdURLMapping == null)
             throw new IllegalArgumentException("Missing URL Mapping");
 
+        if (cometdURLMapping.endsWith("/*"))
+            cometdURLMapping = cometdURLMapping.substring(0, cometdURLMapping.length() - 2);
+
         wsFilter.addMapping(new ServletPathSpec(cometdURLMapping), new WebSocketCreator()
         {
             @Override

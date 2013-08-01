@@ -106,6 +106,11 @@ public abstract class ClientServerWebSocketTest
 
     protected void prepareServer(int port, Map<String, String> initParams) throws Exception
     {
+        prepareServer(port, initParams, true);
+    }
+
+    protected void prepareServer(int port, Map<String, String> initParams, boolean eager) throws Exception
+    {
         server = new Server();
 
         connector = new ServerConnector(server);
@@ -121,8 +126,7 @@ public abstract class ClientServerWebSocketTest
 
         // CometD servlet
         cometdServletPath = "/cometd";
-        //        String cometdURLMapping = cometdServletPath + "/*";
-        String cometdURLMapping = cometdServletPath;
+        String cometdURLMapping = cometdServletPath + "/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         String serverTransport = WEBSOCKET_JSR_356.equals(implementation) ?
                 WebSocketTransport.class.getName() : JettyWebSocketTransport.class.getName();
@@ -131,7 +135,8 @@ public abstract class ClientServerWebSocketTest
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
         if (debugTests())
             cometdServletHolder.setInitParameter("logLevel", "3");
-        cometdServletHolder.setInitOrder(1);
+        if (eager)
+            cometdServletHolder.setInitOrder(1);
         if (initParams != null)
         {
             for (Map.Entry<String, String> entry : initParams.entrySet())
