@@ -319,6 +319,8 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
 
         protected void write(ServerSessionImpl session, boolean startInterval, ServerMessage.Mutable[] replies)
         {
+            // TODO: handle isMetaConnectDeliveryOnly
+
             List<ServerMessage> messages = Collections.emptyList();
             if (session != null)
                 messages = session.takeQueue();

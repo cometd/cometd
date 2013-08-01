@@ -33,6 +33,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import javax.websocket.ContainerProvider;
+import javax.websocket.WebSocketContainer;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -108,9 +110,10 @@ public class Oort extends ContainerLifeCycle
     private final String _url;
     private final String _id;
     private final Logger _logger;
+    private final LocalSession _oortSession;
     private ThreadPool _threadPool;
     private HttpClient _httpClient;
-    private final LocalSession _oortSession;
+    private WebSocketContainer _wsContainer;
     private String _secret;
     private boolean _debug;
     private boolean _clientDebug;
@@ -147,6 +150,10 @@ public class Oort extends ContainerLifeCycle
             _httpClient.setExecutor(_threadPool);
         }
         addBean(_httpClient);
+
+        if (_wsContainer == null)
+            _wsContainer = ContainerProvider.getWebSocketContainer();
+        addBean(_wsContainer, true);
 
         super.doStart();
 
@@ -664,6 +671,16 @@ public class Oort extends ContainerLifeCycle
     public void setHttpClient(HttpClient httpClient)
     {
         this._httpClient = httpClient;
+    }
+
+    public WebSocketContainer getWebSocketContainer()
+    {
+        return _wsContainer;
+    }
+
+    public void setWebSocketContainer(WebSocketContainer wsContainer)
+    {
+        _wsContainer = wsContainer;
     }
 
     protected Logger getLogger()

@@ -24,14 +24,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
-import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -43,9 +41,7 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.cometd.bayeux.Message.Mutable;
-import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
-import org.cometd.common.TransportException;
 
 public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 {
@@ -114,18 +110,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         }
         catch (ConnectException | SocketTimeoutException x)
         {
-            // TODO: no guarantee that the implementation throws these
             // Cannot connect, assume the server supports WebSocket until proved otherwise
             listener.onFailure(x, messages);
-        }
-        catch (IOException x)
-        {
-            _webSocketSupported = false;
-            Map<String, Object> failure = new HashMap<>(2);
-            failure.put("websocketCode", 1002);
-            // TODO: no httpCode available - I can only know if the connection succeeded but upgrade failed
-//            failure.put("httpCode", x.getResponseStatusCode());
-            listener.onFailure(new TransportException(x, failure), messages);
         }
         catch (Exception x)
         {
@@ -226,27 +212,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             // Bad JSR API requires to lowercase the header name
             _webSocketSupported = headers.containsKey(HandshakeResponse.SEC_WEBSOCKET_ACCEPT.toLowerCase(Locale.ENGLISH));
             // TODO: cookie handling
-        }
-    }
-
-    public static class Factory implements ClientTransport.Factory
-    {
-        private final ScheduledExecutorService scheduler;
-
-        public Factory()
-        {
-            this(null);
-        }
-
-        public Factory(ScheduledExecutorService scheduler)
-        {
-            this.scheduler = scheduler;
-        }
-
-        @Override
-        public ClientTransport newClientTransport(Map<String, Object> options)
-        {
-            return new WebSocketTransport(options, scheduler, ContainerProvider.getWebSocketContainer());
         }
     }
 }

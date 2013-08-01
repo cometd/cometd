@@ -18,6 +18,8 @@ package org.cometd.websocket;
 
 import java.util.Arrays;
 import java.util.Map;
+import javax.websocket.ContainerProvider;
+import javax.websocket.WebSocketContainer;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
@@ -78,36 +80,50 @@ public abstract class ClientServerWebSocketTest
     protected String cometdServletPath;
     protected HttpClient httpClient;
     protected QueuedThreadPool wsThreadPool;
+    protected WebSocketContainer wsClientContainer;
     protected WebSocketClient wsClient;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
-    protected ServerContainer webSocketContainer;
+    protected ServerContainer wsServerContainer;
 
     protected ClientServerWebSocketTest(String implementation)
     {
         this.implementation = implementation;
     }
 
-    public void runServer(Map<String, String> initParams) throws Exception
+    protected void prepareAndStart(Map<String, String> initParams) throws Exception
+    {
+        prepareAndStart(0, initParams);
+    }
+
+    protected void prepareAndStart(int port, Map<String, String> initParams) throws Exception
+    {
+        prepareServer(port, initParams);
+        prepareClient();
+        startServer();
+        startClient();
+    }
+
+    protected void prepareServer(int port, Map<String, String> initParams) throws Exception
     {
         server = new Server();
 
         connector = new ServerConnector(server);
-        //connector.setMaxIdleTime(30000);
+        connector.setPort(port);
         server.addConnector(connector);
 
         contextPath = "";
         context = new ServletContextHandler(server, contextPath, true, false);
 
         // WebSocket Filter
-        webSocketContainer = WebSocketConfiguration.configureContext(context);
-        webSocketContainer.start();
+        wsServerContainer = WebSocketConfiguration.configureContext(context);
+        wsServerContainer.start();
 
         // CometD servlet
         cometdServletPath = "/cometd";
-//        String cometdURLMapping = cometdServletPath + "/*";
+        //        String cometdURLMapping = cometdServletPath + "/*";
         String cometdURLMapping = cometdServletPath;
-                ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
+        ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         String serverTransport = WEBSOCKET_JSR_356.equals(implementation) ?
                 WebSocketTransport.class.getName() : JettyWebSocketTransport.class.getName();
         cometdServletHolder.setInitParameter("transports", serverTransport);
@@ -122,18 +138,27 @@ public abstract class ClientServerWebSocketTest
                 cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         }
         context.addServlet(cometdServletHolder, cometdURLMapping);
+    }
 
+    protected void prepareClient()
+    {
         httpClient = new HttpClient();
-
-        if (WEBSOCKET_JETTY.equals(implementation))
+        switch (implementation)
         {
-            wsThreadPool = new QueuedThreadPool();
-            wsThreadPool.setName(wsThreadPool.getName() + "-client");
-            wsClient = new WebSocketClient();
-            wsClient.setExecutor(wsThreadPool);
+            case WEBSOCKET_JSR_356:
+                wsClientContainer = ContainerProvider.getWebSocketContainer();
+                httpClient.addBean(wsClientContainer, true);
+                break;
+            case WEBSOCKET_JETTY:
+                wsThreadPool = new QueuedThreadPool();
+                wsThreadPool.setName(wsThreadPool.getName() + "-client");
+                wsClient = new WebSocketClient();
+                wsClient.setExecutor(wsThreadPool);
+                httpClient.addBean(wsClient);
+                break;
+            default:
+                throw new IllegalArgumentException();
         }
-
-        startServer();
     }
 
     protected void startServer() throws Exception
@@ -141,13 +166,12 @@ public abstract class ClientServerWebSocketTest
         server.start();
         int port = connector.getLocalPort();
         cometdURL = "http://localhost:" + port + contextPath + cometdServletPath;
-
         bayeux = (BayeuxServerImpl)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+    }
 
+    protected void startClient() throws Exception
+    {
         httpClient.start();
-
-        if (WEBSOCKET_JETTY.equals(implementation))
-            wsClient.start();
     }
 
     protected BayeuxClient newBayeuxClient()
@@ -170,10 +194,10 @@ public abstract class ClientServerWebSocketTest
         switch (implementation)
         {
             case WEBSOCKET_JSR_356:
-                result = new org.cometd.websocket.client.WebSocketTransport.Factory().newClientTransport(options);
+                result = new org.cometd.websocket.client.WebSocketTransport(options, null, wsClientContainer);
                 break;
             case WEBSOCKET_JETTY:
-                result = new org.cometd.websocket.client.JettyWebSocketTransport.Factory(wsClient).newClientTransport(options);
+                result = new org.cometd.websocket.client.JettyWebSocketTransport(options, null, wsClient);
                 break;
             default:
                 throw new IllegalArgumentException();
@@ -188,17 +212,22 @@ public abstract class ClientServerWebSocketTest
     }
 
     @After
-    public void stopServer() throws Exception
+    public void stopAndDispose() throws Exception
     {
-        if (WEBSOCKET_JETTY.equals(implementation))
-            wsClient.stop();
+        stopClient();
+        stopServer();
+    }
 
-        httpClient.stop();
-
-        webSocketContainer.stop();
-
+    protected void stopServer() throws Exception
+    {
+        wsServerContainer.stop();
         server.stop();
         server.join();
+    }
+
+    protected void stopClient() throws Exception
+    {
+        httpClient.stop();
     }
 
     protected boolean debugTests()

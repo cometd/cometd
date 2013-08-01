@@ -265,20 +265,4 @@ public class LongPollingTransport extends HttpClientTransport
     protected void customize(Request request)
     {
     }
-
-    public static class Factory implements ClientTransport.Factory
-    {
-        private final HttpClient httpClient;
-
-        public Factory(HttpClient httpClient)
-        {
-            this.httpClient = httpClient;
-        }
-
-        @Override
-        public ClientTransport newClientTransport(Map<String, Object> options)
-        {
-            return new LongPollingTransport(options, httpClient);
-        }
-    }
 }

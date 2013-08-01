@@ -39,7 +39,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
     @Test
     public void testRequestHeaderIsCaseInsensitive() throws Exception
     {
-        runServer(null);
+        prepareAndStart(null);
 
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener()

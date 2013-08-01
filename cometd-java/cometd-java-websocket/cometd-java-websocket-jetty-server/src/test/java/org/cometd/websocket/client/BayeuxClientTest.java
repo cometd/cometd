@@ -70,7 +70,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     @Before
     public void setUp() throws Exception
     {
-        runServer(null);
+        prepareAndStart(null);
     }
 
     @Test

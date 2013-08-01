@@ -52,7 +52,7 @@ public class SimulatedNetworkFailureTest extends ClientServerWebSocketTest
         params.put("timeout", String.valueOf(timeout));
         params.put("maxInterval", String.valueOf(maxInterval));
         params.put("sweepIntervalMs", String.valueOf(sweepInterval));
-        runServer(params);
+        prepareAndStart(params);
     }
 
     @Test

@@ -37,8 +37,8 @@ public class SpringFrameworkConfigurationTest extends ClientServerWebSocketTest
     @Test
     public void testXMLSpringConfigurationWithWebSocket() throws Exception
     {
-        runServer(null);
-        stopServer();
+        prepareAndStart(null);
+        stopAndDispose();
         // Add Spring listener
         context.addEventListener(new ContextLoaderListener());
         String config = WEBSOCKET_JSR_356.equals(implementation) ?

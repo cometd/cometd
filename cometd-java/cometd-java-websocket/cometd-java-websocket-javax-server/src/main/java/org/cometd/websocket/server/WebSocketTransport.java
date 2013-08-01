@@ -64,7 +64,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             throw new IllegalArgumentException("Missing URL Mapping");
 
         ServerContainer container = (ServerContainer)context.getAttribute(ServerContainer.class.getName());
-        // JSR 356 does not support a buffer size option
+        // JSR 356 does not support a input buffer size option
         int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, container.getDefaultMaxTextMessageBufferSize());
         container.setDefaultMaxTextMessageBufferSize(maxMessageSize);
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, container.getDefaultMaxSessionIdleTimeout());
