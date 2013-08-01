@@ -18,11 +18,16 @@ package org.cometd.oort;
 
 import java.net.ConnectException;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
@@ -595,5 +600,61 @@ public class OortObserveCometTest extends OortTest
 
         Assert.assertTrue(joinedLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testConfigureMaxMessageSize() throws Exception
+    {
+        int maxMessageSize = 1024;
+        Map<String, String> options = new HashMap<String, String>();
+        options.put("ws.maxMessageSize", String.valueOf(maxMessageSize));
+        Server serverA = startServer(0, options);
+        Oort oortA = startOort(serverA);
+        Server serverB = startServer(0, options);
+        Oort oortB = startOort(serverB);
+
+        CountDownLatch latch = new CountDownLatch(2);
+        oortA.addCometListener(new CometJoinedListener(latch));
+        oortB.addCometListener(new CometJoinedListener(latch));
+
+        OortComet oortComet12 = oortA.observeComet(oortB.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        OortComet oortComet21 = oortB.findComet(oortA.getURL());
+        Assert.assertNotNull(oortComet21);
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        String channelName = "/foo";
+        oortA.observeChannel(channelName);
+        oortB.observeChannel(channelName);
+
+        BayeuxClient clientA = startClient(oortA, null);
+        BayeuxClient clientB = startClient(oortB, null);
+
+        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        clientB.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                messageLatch.get().countDown();
+            }
+        });
+
+        // Wait a while to be sure to be subscribed
+        Thread.sleep(1000);
+
+        char[] clob = new char[maxMessageSize / 2];
+        Arrays.fill(clob, 'w');
+        clientA.getChannel(channelName).publish(new String(clob));
+        Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
+
+        // Make the message larger than allowed
+        messageLatch.set(new CountDownLatch(1));
+        clob = new char[maxMessageSize * 2];
+        Arrays.fill(clob, 'z');
+        clientA.getChannel(channelName).publish(new String(clob));
+        Assert.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
     }
 }

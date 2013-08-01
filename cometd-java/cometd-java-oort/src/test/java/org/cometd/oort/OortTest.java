@@ -17,6 +17,7 @@
 package org.cometd.oort;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -58,6 +59,11 @@ public abstract class OortTest
 
     protected Server startServer(int port) throws Exception
     {
+        return startServer(port, Collections.<String, String>emptyMap());
+    }
+
+    protected Server startServer(int port, Map<String, String> options) throws Exception
+    {
         Server server = new Server();
         Connector connector = new SelectChannelConnector();
         connector.setPort(port);
@@ -72,6 +78,8 @@ public abstract class OortTest
         cometdServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
         if (Boolean.getBoolean("debugTests"))
             cometdServletHolder.setInitParameter("logLevel", "3");
+        for (Map.Entry<String, String> entry : options.entrySet())
+            cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         cometdServletHolder.setInitOrder(1);
 
         String cometdServletPath = "/cometd";
