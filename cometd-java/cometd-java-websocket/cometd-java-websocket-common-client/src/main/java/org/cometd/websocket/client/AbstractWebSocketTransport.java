@@ -46,7 +46,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
     private final Map<String, WebSocketExchange> _exchanges = new ConcurrentHashMap<>();
     private volatile ScheduledExecutorService _scheduler;
     private volatile boolean _shutdownScheduler;
-    private volatile String _protocol = "bayeux";
+    private volatile String _protocol = null;
     private volatile long _maxNetworkDelay = 15000L;
     private volatile long _connectTimeout = 30000L;
     private volatile int _idleTimeout = 60000;

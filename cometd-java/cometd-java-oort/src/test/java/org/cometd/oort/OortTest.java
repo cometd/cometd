@@ -18,6 +18,7 @@ package org.cometd.oort;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -70,6 +71,11 @@ public abstract class OortTest
 
     protected Server startServer(int port) throws Exception
     {
+        return startServer(port, Collections.<String, String>emptyMap());
+    }
+
+    protected Server startServer(int port, Map<String, String> options) throws Exception
+    {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(port);
@@ -84,6 +90,8 @@ public abstract class OortTest
         cometdServletHolder.setInitParameter("transports", serverTransport);
         if (Boolean.getBoolean("debugTests"))
             cometdServletHolder.setInitParameter("logLevel", "3");
+        for (Map.Entry<String, String> entry : options.entrySet())
+            cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         cometdServletHolder.setInitOrder(1);
 
         String cometdServletPath = "/cometd";
@@ -116,7 +124,6 @@ public abstract class OortTest
         BayeuxClient client = new BayeuxClient(oort.getURL(), new LongPollingTransport(null, oort.getHttpClient()));
         client.setDebugEnabled(Boolean.getBoolean("debugTests"));
         client.handshake(handshakeFields);
-        client.waitFor(5000, BayeuxClient.State.CONNECTED);
         clients.add(client);
         return client;
     }

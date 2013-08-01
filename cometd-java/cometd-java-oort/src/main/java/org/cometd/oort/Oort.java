@@ -55,6 +55,7 @@ import org.cometd.common.JSONContext;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
+import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -340,11 +341,7 @@ public class Oort extends ContainerLifeCycle
             return comet;
         }
 
-        Map<String, Object> options = new HashMap<>(1);
-        JSONContext.Client jsonContext = getJSONContextClient();
-        if (jsonContext != null)
-            options.put(ClientTransport.JSON_CONTEXT, jsonContext);
-        comet = newOortComet(cometURL, options);
+        comet = newOortComet(cometURL);
         configureOortComet(comet);
         OortComet existing = _pendingComets.putIfAbsent(cometURL, comet);
         if (existing != null)
@@ -371,9 +368,19 @@ public class Oort extends ContainerLifeCycle
         return comet;
     }
 
-    protected OortComet newOortComet(String cometURL, Map<String, Object> options)
+    protected OortComet newOortComet(String cometURL)
     {
-        // TODO: pass in a scheduler
+        Map<String, Object> options = new HashMap<>(2);
+        JSONContext.Client jsonContext = getJSONContextClient();
+        if (jsonContext != null)
+            options.put(ClientTransport.JSON_CONTEXT, jsonContext);
+        String maxMessageSizeOption = WebSocketTransport.PREFIX + "." + WebSocketTransport.MAX_MESSAGE_SIZE_OPTION;
+        Object option = _bayeux.getOption(maxMessageSizeOption);
+        if (option != null)
+        {
+            long value = option instanceof Number ? ((Number)option).longValue() : Long.parseLong(option.toString());
+            options.put(maxMessageSizeOption, value);
+        }
         return new OortComet(this, cometURL, null, options);
     }
 
@@ -878,6 +885,14 @@ public class Oort extends ContainerLifeCycle
             {
                 super(source);
                 this.cometURL = cometURL;
+            }
+
+            /**
+             * @return the local Oort object
+             */
+            public Oort getOort()
+            {
+                return (Oort)getSource();
             }
 
             /**
