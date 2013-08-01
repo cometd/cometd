@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -91,7 +92,9 @@ public class SetiTest extends OortTest
         new SetiService(seti2);
 
         BayeuxClient client1 = startClient(oort1, null);
+        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         BayeuxClient client2 = startClient(oort2, null);
+        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         LatchListener publishLatch = new LatchListener();
         String loginChannelName = "/service/login";
@@ -157,7 +160,9 @@ public class SetiTest extends OortTest
         new SetiService(seti2);
 
         BayeuxClient client1 = startClient(oort1, null);
+        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         BayeuxClient client2 = startClient(oort2, null);
+        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Map<String, Object> login1 = new HashMap<String, Object>();
         login1.put("user", "user1");
@@ -224,6 +229,7 @@ public class SetiTest extends OortTest
         new SetiService(seti2);
 
         BayeuxClient client1 = startClient(oort1, null);
+        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         Map<String, Object> login1 = new HashMap<String, Object>();
         login1.put("user", "user1");
         client1.getChannel("/service/login").publish(login1);
@@ -317,9 +323,13 @@ public class SetiTest extends OortTest
         new SetiService(seti3);
 
         BayeuxClient client1A = startClient(oort1, null);
+        Assert.assertTrue(client1A.waitFor(5000, BayeuxClient.State.CONNECTED));
         BayeuxClient client1B = startClient(oort1, null);
+        Assert.assertTrue(client1B.waitFor(5000, BayeuxClient.State.CONNECTED));
         BayeuxClient client1C = startClient(oort2, null);
+        Assert.assertTrue(client1C.waitFor(5000, BayeuxClient.State.CONNECTED));
         BayeuxClient client3 = startClient(oort3, null);
+        Assert.assertTrue(client3.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         LatchListener publishLatch = new LatchListener();
 
@@ -670,7 +680,7 @@ public class SetiTest extends OortTest
     }
 
     @Test
-    public void testStopDisassociatesAll() throws Exception
+    public void testStopRemovesAssociationsAndPresences() throws Exception
     {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
@@ -695,6 +705,10 @@ public class SetiTest extends OortTest
         Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         BayeuxClient client2 = startClient(oort2, null);
         Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        final CountDownLatch presenceAddedLatch = new CountDownLatch(4);
+        seti1.addPresenceListener(new UserPresentListener(presenceAddedLatch));
+        seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
 
         // Login user1
         final CountDownLatch loginLatch1 = new CountDownLatch(1);
@@ -726,13 +740,138 @@ public class SetiTest extends OortTest
         });
         Assert.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch presenceLatch = new CountDownLatch(1);
-        seti2.addPresenceListener(new UserAbsentListener(presenceLatch));
+        // Make sure all Setis see all users
+        Assert.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
+
+        final CountDownLatch presenceRemovedLatch = new CountDownLatch(1);
+        seti2.addPresenceListener(new UserAbsentListener(presenceRemovedLatch));
 
         // Stop Seti1
         stopSeti(seti1);
-        Assert.assertTrue(presenceLatch.await(5, TimeUnit.SECONDS));
+
+        Assert.assertTrue(presenceRemovedLatch.await(5, TimeUnit.SECONDS));
+
+        // Make sure Seti1 is cleared
+        Assert.assertFalse(seti1.isAssociated(userId1));
+        Assert.assertFalse(seti1.isPresent(userId2));
+
+        // Make sure user1 is gone from Seti2
+        Assert.assertTrue(seti2.isAssociated(userId2));
         Assert.assertFalse(seti2.isPresent(userId1));
+    }
+
+    @Test
+    public void testNetworkDisconnectAndReconnect() throws Exception
+    {
+        Server server1 = startServer(0);
+        Oort oort1 = startOort(server1);
+        Server server2 = startServer(0);
+        Oort oort2 = startOort(server2);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        oort2.addCometListener(new CometJoinedListener(latch));
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        OortComet oortComet21 = oort2.findComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Seti seti1 = startSeti(oort1);
+        Seti seti2 = startSeti(oort2);
+
+        new SetiService(seti1);
+        new SetiService(seti2);
+
+        BayeuxClient client1 = startClient(oort1, null);
+        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        BayeuxClient client2 = startClient(oort2, null);
+        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        CountDownLatch presenceAddedLatch = new CountDownLatch(4);
+        seti1.addPresenceListener(new UserPresentListener(presenceAddedLatch));
+        seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
+
+        // Login user1
+        final CountDownLatch loginLatch1 = new CountDownLatch(1);
+        Map<String, Object> login1 = new HashMap<String, Object>();
+        String userId1 = "user1";
+        login1.put("user", userId1);
+        ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
+        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                loginLatch1.countDown();
+            }
+        });
+        Assert.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
+
+        // Login user2
+        final CountDownLatch loginLatch2 = new CountDownLatch(1);
+        Map<String, Object> login2 = new HashMap<String, Object>();
+        String userId2 = "user2";
+        login2.put("user", userId2);
+        ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
+        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                loginLatch2.countDown();
+            }
+        });
+        Assert.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
+
+        // Make sure all Setis see all users
+        Assert.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
+
+        final CountDownLatch presenceLatch = new CountDownLatch(2);
+        seti1.addPresenceListener(new UserAbsentListener(presenceLatch));
+        seti2.addPresenceListener(new UserAbsentListener(presenceLatch));
+
+        // Simulate network crash
+        oortComet12.disconnect();
+        oortComet12.waitFor(5000, BayeuxClient.State.DISCONNECTED);
+        // The other OortComet is automatically disconnected
+        oortComet21.waitFor(5000, BayeuxClient.State.DISCONNECTED);
+
+        Assert.assertTrue(presenceLatch.await(5, TimeUnit.SECONDS));
+
+        // Make sure user1 is gone from Seti2
+        Assert.assertTrue(seti1.isAssociated(userId1));
+        Assert.assertFalse(seti2.isPresent(userId1));
+
+        // Make sure user2 is gone from Seti1
+        Assert.assertTrue(seti2.isAssociated(userId2));
+        Assert.assertFalse(seti2.isPresent(userId1));
+        Assert.assertEquals(1, seti2.getAssociationCount(userId2));
+
+        // Simulate network is up again
+        presenceAddedLatch = new CountDownLatch(2);
+        seti1.addPresenceListener(new UserPresentListener(presenceAddedLatch));
+        seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
+
+        latch = new CountDownLatch(1);
+        oort2.addCometListener(new CometJoinedListener(latch));
+        oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        oortComet21 = oort2.findComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Assert.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(seti1.isAssociated(userId1));
+        Assert.assertTrue(seti1.isPresent(userId2));
+        Assert.assertTrue(seti2.isAssociated(userId2));
+        Assert.assertTrue(seti2.isPresent(userId1));
+
+        Set<String> userIds = seti1.getUserIds();
+        Assert.assertEquals(2, userIds.size());
+        Assert.assertTrue(userIds.contains(userId1));
+        Assert.assertTrue(userIds.contains(userId2));
+        Assert.assertEquals(1, seti1.getAssociationCount(userId1));
+        Assert.assertEquals(0, seti1.getAssociationCount(userId2));
+        Assert.assertEquals(1, seti1.getPresenceCount(userId1));
+        Assert.assertEquals(1, seti1.getPresenceCount(userId2));
     }
 
     public static class SetiService extends AbstractService

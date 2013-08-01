@@ -334,6 +334,7 @@ public class OortObserveCometTest extends OortTest
         Assert.assertTrue(oortC.getKnownComets().contains(oortB.getURL()));
 
         BayeuxClient clientA = startClient(oortA, null);
+        Assert.assertTrue(clientA.waitFor(5000, BayeuxClient.State.CONNECTED));
         // Be sure that disconnecting clientA we do not mess with the known comets
         stopClient(clientA);
 
@@ -631,7 +632,9 @@ public class OortObserveCometTest extends OortTest
         oortB.observeChannel(channelName);
 
         BayeuxClient clientA = startClient(oortA, null);
+        Assert.assertTrue(clientA.waitFor(5000, BayeuxClient.State.CONNECTED));
         BayeuxClient clientB = startClient(oortB, null);
+        Assert.assertTrue(clientB.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         clientB.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()

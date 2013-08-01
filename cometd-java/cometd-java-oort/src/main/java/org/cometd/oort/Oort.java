@@ -873,6 +873,14 @@ public class Oort extends AggregateLifeCycle
             }
 
             /**
+             * @return the local Oort object
+             */
+            public Oort getOort()
+            {
+                return (Oort)getSource();
+            }
+
+            /**
              * @return the URL of the comet that generated the event
              */
             public String getCometURL()
