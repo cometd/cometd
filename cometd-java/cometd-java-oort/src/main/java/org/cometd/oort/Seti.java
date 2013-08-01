@@ -156,7 +156,7 @@ public class Seti extends AbstractLifeCycle
     protected void doStop() throws Exception
     {
         removeAssociationsAndPresences();
-        _listeners.clear();
+        _presenceListeners.clear();
         _setis.clear();
 
         _session.disconnect();
