@@ -48,7 +48,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest
         super.customizeContext(context);
         PublishThrowingFilter filter = new PublishThrowingFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test

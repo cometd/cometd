@@ -44,7 +44,7 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
         super.customizeContext(context);
         DelayingFilter filter = new DelayingFilter(longPollingPeriod + 2 * maxNetworkDelay);
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test

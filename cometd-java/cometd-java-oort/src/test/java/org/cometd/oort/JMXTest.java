@@ -27,7 +27,6 @@ import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.websocket.WebSocketContainer;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
@@ -59,8 +58,7 @@ public class JMXTest
         String contextPath = "";
         ServletContextHandler context = new ServletContextHandler(server, contextPath);
 
-        WebSocketContainer wsServerContainer = WebSocketConfiguration.configureContext(context);
-        server.addBean(wsServerContainer);
+        WebSocketConfiguration.configureContext(context);
 
         String value = BayeuxServerImpl.ATTRIBUTE + "," + Oort.OORT_ATTRIBUTE + "," + Seti.SETI_ATTRIBUTE;
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);
@@ -126,8 +124,7 @@ public class JMXTest
         String contextPath = "";
         ServletContextHandler context = new ServletContextHandler(server, contextPath);
 
-        WebSocketContainer wsServerContainer = WebSocketConfiguration.configureContext(context);
-        server.addBean(wsServerContainer);
+        WebSocketConfiguration.configureContext(context);
 
         String value = BayeuxServerImpl.ATTRIBUTE + "," + Oort.OORT_ATTRIBUTE + "," + Seti.SETI_ATTRIBUTE;
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);

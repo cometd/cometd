@@ -45,8 +45,8 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
     protected void customizeContext(ServletContextHandler context) throws Exception
     {
         super.customizeContext(context);
-        context.addFilter(new FilterHolder(new CrossOriginFilter()), cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
-        context.addFilter(new FilterHolder(new ConnectThrowingFilter()), cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(new FilterHolder(new CrossOriginFilter()), cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(new FilterHolder(new ConnectThrowingFilter()), cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test

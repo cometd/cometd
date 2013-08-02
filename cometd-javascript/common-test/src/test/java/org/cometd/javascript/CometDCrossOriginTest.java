@@ -33,7 +33,7 @@ public class CometDCrossOriginTest extends AbstractCometDTest
         super.customizeContext(context);
         CrossOriginFilter filter = new CrossOriginFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test

@@ -30,8 +30,10 @@ import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("The test filter is not called because the WSUpgradeFilter is added first")
 public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTest
 {
     @Test
@@ -67,7 +69,7 @@ public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTes
             public void destroy()
             {
             }
-        }), cometServletPath, EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        }), cometdServletPath, EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
         defineClass(Latch.class);
 

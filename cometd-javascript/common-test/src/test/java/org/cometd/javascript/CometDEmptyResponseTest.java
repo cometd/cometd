@@ -41,7 +41,7 @@ public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest
         super.customizeContext(context);
         EmptyResponseFilter filter = new EmptyResponseFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test

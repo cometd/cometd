@@ -72,8 +72,9 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, container.getDefaultMaxSessionIdleTimeout());
         container.setDefaultMaxSessionIdleTimeout(idleTimeout);
 
+        String protocol = getProtocol();
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(WebSocketScheduler.class, cometdURLMapping)
-                .subprotocols(Collections.singletonList(getProtocol()))
+                .subprotocols(protocol == null ? null : Collections.singletonList(protocol))
                 .configurator(new Configurator(context))
                 .build();
 
@@ -186,6 +187,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public void onMessage(String data)
         {
+            _logger.debug("WebSocket Text message on {}/{}", WebSocketTransport.this.hashCode(), hashCode());
             delegate.onMessage(_wsSession, data);
         }
     }
@@ -323,6 +325,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     {
         private final ServletContext servletContext;
         private WebSocketContext bayeuxContext;
+        private boolean protocolMatches;
 
         private Configurator(ServletContext servletContext)
         {
@@ -342,8 +345,19 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         }
 
         @Override
+        public String getNegotiatedSubprotocol(List<String> supported, List<String> requested)
+        {
+            if (protocolMatches = checkProtocol(supported, requested))
+                return super.getNegotiatedSubprotocol(supported, requested);
+            _logger.warn("Could not negotiate WebSocket SubProtocols: server{} != client[]", supported, requested);
+            return null;
+        }
+
+        @Override
         public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException
         {
+            if (!protocolMatches)
+                throw new InstantiationException("Could not negotiate WebSocket SubProtocols");
             return (T)new WebSocketScheduler(bayeuxContext);
         }
     }

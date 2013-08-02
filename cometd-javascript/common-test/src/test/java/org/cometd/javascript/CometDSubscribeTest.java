@@ -16,6 +16,8 @@
 
 package org.cometd.javascript;
 
+import java.util.HashMap;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -172,10 +174,10 @@ public class CometDSubscribeTest extends AbstractCometDTest
         Latch connectLatch = get("connectLatch");
 
         // Restart the server to trigger a re-handshake
-        startServer();
+        prepareAndStartServer(new HashMap<String, String>());
 
         // Wait until we are fully reconnected
-        Assert.assertTrue(connectLatch.await(5000));
+        Assert.assertTrue(connectLatch.await(555000));
 
         evaluateScript("" +
                 "cometd.batch(function()" +

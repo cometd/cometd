@@ -126,8 +126,9 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         try
         {
             ClientEndpointConfig.Configurator configurator = new Configurator();
+            String protocol = getProtocol();
             ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-                    .preferredSubprotocols(Collections.singletonList(getProtocol()))
+                    .preferredSubprotocols(protocol == null ? null : Collections.singletonList(protocol))
                     .configurator(configurator).build();
             return _webSocketContainer.connectToServer(_target, config, new URI(uri));
         }

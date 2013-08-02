@@ -41,7 +41,7 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
         super.customizeContext(context);
         SubscribeThrowingFilter filter = new SubscribeThrowingFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test

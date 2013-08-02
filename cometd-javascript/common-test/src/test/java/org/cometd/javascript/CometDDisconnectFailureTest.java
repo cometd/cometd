@@ -44,7 +44,7 @@ public class CometDDisconnectFailureTest extends AbstractCometDTest
         super.customizeContext(context);
         DisconnectThrowingFilter filter = new DisconnectThrowingFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test

@@ -36,6 +36,7 @@ import org.cometd.common.TransportException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
@@ -140,7 +141,11 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
     {
         try
         {
-            return _webSocketClient.connect(_target, new URI(uri)).get();
+            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            String protocol = getProtocol();
+            if (protocol != null)
+                request.setSubProtocols(protocol);
+            return _webSocketClient.connect(_target, new URI(uri), request).get();
         }
         catch (ExecutionException x)
         {

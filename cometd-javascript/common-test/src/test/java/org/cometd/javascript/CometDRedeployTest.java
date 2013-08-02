@@ -16,21 +16,11 @@
 
 package org.cometd.javascript;
 
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDRedeployTest extends AbstractCometDTest
 {
-    private ServletContextHandler context;
-
-    @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
-        super.customizeContext(context);
-        this.context = context;
-    }
-
     @Test
     public void testRedeploy() throws Exception
     {

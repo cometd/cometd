@@ -42,7 +42,7 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
         context.stop();
         TimeoutFilter filter = new TimeoutFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
         context.start();
 
         defineClass(Latch.class);

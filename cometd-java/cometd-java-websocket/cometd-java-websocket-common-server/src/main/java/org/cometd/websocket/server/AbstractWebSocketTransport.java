@@ -54,7 +54,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     private final ThreadLocal<BayeuxContext> _handshake = new ThreadLocal<>();
     private Executor _executor;
     private ScheduledExecutorService _scheduler;
-    private String _protocol = "bayeux";
+    private String _protocol = null;
     private int _messagesPerFrame = 1;
 
     protected AbstractWebSocketTransport(BayeuxServerImpl bayeux)
@@ -112,6 +112,19 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     public String getProtocol()
     {
         return _protocol;
+    }
+
+    protected boolean checkProtocol(List<String> serverProtocols, List<String> clientProtocols)
+    {
+        if (serverProtocols.isEmpty())
+            return true;
+
+        for (String clientProtocol : clientProtocols)
+        {
+            if (serverProtocols.contains(clientProtocol))
+                return true;
+        }
+        return false;
     }
 
     @Override

@@ -119,8 +119,7 @@ public abstract class ClientServerWebSocketTest
         context = new ServletContextHandler(server, contextPath, true, false);
 
         // WebSocket Filter
-        WebSocketContainer wsServerContainer = WebSocketConfiguration.configureContext(context);
-        server.addBean(wsServerContainer);
+        WebSocketConfiguration.configureContext(context);
 
         // CometD servlet
         cometdServletPath = "/cometd";

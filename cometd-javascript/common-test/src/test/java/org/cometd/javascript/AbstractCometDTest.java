@@ -32,6 +32,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -64,7 +65,7 @@ public abstract class AbstractCometDTest
     protected ServletContextHandler context;
     protected CometDServlet cometdServlet;
     protected int longPollingPeriod = 5000;
-    protected String cometServletPath = "/cometd";
+    protected String cometdServletPath = "/cometd";
     protected int port;
     protected String contextURL;
     protected String cometdURL;
@@ -83,6 +84,12 @@ public abstract class AbstractCometDTest
 
     protected void initCometDServer(Map<String, String> options) throws Exception
     {
+        prepareAndStartServer(options);
+        initPage();
+    }
+
+    protected void prepareAndStartServer(Map<String, String> options) throws Exception
+    {
         String providerClass = getProviderClassName();
         provider = (TestProvider)Thread.currentThread().getContextClassLoader().loadClass(providerClass).newInstance();
 
@@ -98,28 +105,30 @@ public abstract class AbstractCometDTest
         String contextPath = "/cometd";
         context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
 
+        WebSocketConfiguration.configureContext(context);
+
         // Setup default servlet to serve static files
         context.addServlet(DefaultServlet.class, "/");
 
         // Setup CometD servlet
+        String cometdURLMapping = cometdServletPath + "/*";
         cometdServlet = new CometDServlet();
-        ServletHolder cometServletHolder = new ServletHolder(cometdServlet);
+        ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
         for (Map.Entry<String, String> entry : options.entrySet())
-            cometServletHolder.setInitParameter(entry.getKey(), entry.getValue());
-        cometServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
-        cometServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
+            cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
+        cometdServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
+        cometdServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
+        cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
         if (Boolean.getBoolean("debugTests"))
-            cometServletHolder.setInitParameter("logLevel", "3");
-        context.addServlet(cometServletHolder, cometServletPath + "/*");
+            cometdServletHolder.setInitParameter("logLevel", "3");
+        context.addServlet(cometdServletHolder, cometdURLMapping);
 
         customizeContext(context);
 
         startServer();
 
         contextURL = "http://localhost:" + port + contextPath;
-        cometdURL = contextURL + cometServletPath;
-
-        initPage();
+        cometdURL = contextURL + cometdServletPath;
     }
 
     protected void startServer() throws Exception

@@ -41,7 +41,7 @@ public class CometDLongPollingUnsubscribeFailureTest extends AbstractCometDLongP
         super.customizeContext(context);
         UnsubscribeThrowingFilter filter = new UnsubscribeThrowingFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test
