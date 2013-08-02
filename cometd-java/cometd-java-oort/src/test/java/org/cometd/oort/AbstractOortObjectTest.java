@@ -30,7 +30,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 
-public class AbstractOortObjectTest extends OortTest
+public abstract class AbstractOortObjectTest extends OortTest
 {
     private final List<OortObject> oortObjects = new ArrayList<OortObject>();
     protected Oort oort1;

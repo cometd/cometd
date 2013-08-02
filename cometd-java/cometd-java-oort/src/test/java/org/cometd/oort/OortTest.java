@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.websocket.WebSocketContainer;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
@@ -84,18 +86,22 @@ public abstract class OortTest
         String contextPath = "";
         ServletContextHandler context = new ServletContextHandler(server, contextPath, ServletContextHandler.SESSIONS);
 
+        WebSocketContainer wsServerContainer = WebSocketConfiguration.configureContext(context);
+        server.addBean(wsServerContainer);
+
         // CometD servlet
+        String cometdServletPath = "/cometd";
+        String cometdURLMapping = cometdServletPath + "/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("transports", serverTransport);
+        cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
         if (Boolean.getBoolean("debugTests"))
             cometdServletHolder.setInitParameter("logLevel", "3");
         for (Map.Entry<String, String> entry : options.entrySet())
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         cometdServletHolder.setInitOrder(1);
-
-        String cometdServletPath = "/cometd";
-        context.addServlet(cometdServletHolder, cometdServletPath + "/*");
+        context.addServlet(cometdServletHolder, cometdURLMapping);
 
         server.start();
         String url = "http://localhost:" + connector.getLocalPort() + contextPath + cometdServletPath;

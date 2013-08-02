@@ -35,6 +35,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.AbstractService;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -925,6 +926,7 @@ public class SetiTest extends OortTest
 
         public void presenceAdded(Event event)
         {
+            Log.getLogger(SetiTest.class).info("UserPresentListener");
             latch.countDown();
         }
     }
@@ -940,6 +942,7 @@ public class SetiTest extends OortTest
 
         public void presenceRemoved(Event event)
         {
+            Log.getLogger(SetiTest.class).info("UserAbsentListener");
             latch.countDown();
         }
     }

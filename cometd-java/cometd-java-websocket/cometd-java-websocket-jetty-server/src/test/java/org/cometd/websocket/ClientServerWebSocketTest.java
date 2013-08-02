@@ -36,7 +36,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
 import org.junit.After;
 import org.junit.Rule;
@@ -84,7 +83,6 @@ public abstract class ClientServerWebSocketTest
     protected WebSocketClient wsClient;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
-    protected ServerContainer wsServerContainer;
 
     protected ClientServerWebSocketTest(String implementation)
     {
@@ -121,8 +119,8 @@ public abstract class ClientServerWebSocketTest
         context = new ServletContextHandler(server, contextPath, true, false);
 
         // WebSocket Filter
-        wsServerContainer = WebSocketConfiguration.configureContext(context);
-        wsServerContainer.start();
+        WebSocketContainer wsServerContainer = WebSocketConfiguration.configureContext(context);
+        server.addBean(wsServerContainer);
 
         // CometD servlet
         cometdServletPath = "/cometd";
@@ -225,7 +223,6 @@ public abstract class ClientServerWebSocketTest
 
     protected void stopServer() throws Exception
     {
-        wsServerContainer.stop();
         server.stop();
         server.join();
     }
