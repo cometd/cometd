@@ -678,6 +678,9 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         for (int i = 0; i < count; ++i)
             Assert.assertEquals("hello_" + i, messages.poll(5, TimeUnit.SECONDS).getData());
 
+        // Give time to the /meta/connect to tell the server what is the current ack number
+        Thread.sleep(1000);
+
         int port = connector.getLocalPort();
         connector.stop();
         Thread.sleep(1000);
