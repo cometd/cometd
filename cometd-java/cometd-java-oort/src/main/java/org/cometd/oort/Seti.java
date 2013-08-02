@@ -591,6 +591,7 @@ public class Seti extends AbstractLifeCycle
         else
         {
             String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
+            debug("Updating associations from {} for {}", oortURL, userIds);
             for (String userId : userIds)
             {
                 SetiLocation location = new SetiLocation(userId, oortURL);
@@ -976,11 +977,13 @@ public class Seti extends AbstractLifeCycle
         {
             String oortURL = event.getCometURL();
             _logger.debug("Comet joined: {}", oortURL);
-            OortComet oortComet = _oort.getComet(oortURL);
+            OortComet oortComet = _oort.findComet(oortURL);
             if (oortComet != null)
             {
                 ClientSessionChannel channel = oortComet.getChannel(generateSetiChannel(generateSetiId(oortURL)));
-                channel.publish(new SetiPresence(true, getAssociatedUserIds()));
+                Set<String> userIds = getAssociatedUserIds();
+                _logger.debug("Pushing associated {} to {}", userIds, oortURL);
+                channel.publish(new SetiPresence(true, userIds));
             }
         }
 
