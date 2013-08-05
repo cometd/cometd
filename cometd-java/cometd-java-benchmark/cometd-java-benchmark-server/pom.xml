@@ -44,6 +44,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
             <groupId>org.cometd.java</groupId>
             <artifactId>cometd-java-benchmark-common</artifactId>
             <version>${project.version}</version>
@@ -78,7 +83,7 @@
             <artifactId>websocket-server</artifactId>
             <version>${jetty-version}</version>
         </dependency>
-           <dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson2-version}</version>

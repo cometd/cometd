@@ -69,6 +69,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 
 public class BayeuxLoadServer
 {
@@ -191,11 +192,14 @@ public class BayeuxLoadServer
         String contextPath = "";
         ServletContextHandler context = new ServletContextHandler(handler, contextPath, ServletContextHandler.SESSIONS);
 
+        WebSocketUpgradeFilter.configureContext(context);
+
         // Setup default servlet to serve static files
         context.addServlet(DefaultServlet.class, "/");
 
         // Setup comet servlet
-        String cometServletPath = "/cometd";
+        String cometdServletPath = "/cometd";
+        String cometdURLMapping = cometdServletPath + "/*";
         CometDServlet cometServlet = new CometDServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometServlet);
         // Make sure the expiration timeout is large to avoid clients to timeout
@@ -207,7 +211,8 @@ public class BayeuxLoadServer
         cometdServletHolder.setInitParameter(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(30000));
         // Use the faster JSON parser/generator
         cometdServletHolder.setInitParameter(BayeuxServerImpl.JSON_CONTEXT, Jackson1JSONContextServer.class.getName());
-        context.addServlet(cometdServletHolder, cometServletPath + "/*");
+        cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
+        context.addServlet(cometdServletHolder, cometdURLMapping);
 
         server.start();
 
@@ -217,6 +222,7 @@ public class BayeuxLoadServer
 
         LoadWebSocketTransport webSocketTransport = new LoadWebSocketTransport(bayeux, websocketThreadPool);
         bayeux.addTransport(webSocketTransport);
+        webSocketTransport.init();
         bayeux.setAllowedTransports("websocket", "long-polling");
 
         new StatisticsService(bayeux, jettyThreadPool, websocketThreadPool, statisticsHandler, requestLatencyHandler);
@@ -566,6 +572,12 @@ public class BayeuxLoadServer
         protected Executor newExecutor()
         {
             return executor;
+        }
+
+        @Override
+        public void init()
+        {
+            super.init();
         }
     }
 }
