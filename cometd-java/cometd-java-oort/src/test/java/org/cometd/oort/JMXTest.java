@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -58,7 +59,7 @@ public class JMXTest
         String contextPath = "";
         ServletContextHandler context = new ServletContextHandler(server, contextPath);
 
-        WebSocketConfiguration.configureContext(context);
+        WebSocketUpgradeFilter.configureContext(context);
 
         String value = BayeuxServerImpl.ATTRIBUTE + "," + Oort.OORT_ATTRIBUTE + "," + Seti.SETI_ATTRIBUTE;
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);
