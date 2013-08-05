@@ -459,7 +459,7 @@ public class ServerSessionImpl implements ServerSession
                 size = _queue.size();
                 if (size > 0)
                 {
-                    copy = new ArrayList<ServerMessage>(size);
+                    copy = new ArrayList<>(size);
                     copy.addAll(_queue);
                     clearQueue();
                 }

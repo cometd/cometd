@@ -39,6 +39,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.thread.Timeout;
 
 public abstract class AsyncLongPollingTransport extends HttpTransport
 {
@@ -54,12 +55,11 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
     {
         AsyncContext asyncContext = request.startAsync();
         ServletInputStream input = request.getInputStream();
-        Context context = new Context(asyncContext);
-        input.setReadListener(context);
-        context.read(input);
+        Reader reader = new Reader(asyncContext);
+        input.setReadListener(reader);
     }
 
-    protected void processMessages(Context context, ServerMessage.Mutable[] messages)
+    protected void processMessages(AsyncContext asyncContext, ServerMessage.Mutable[] messages) throws IOException
     {
         boolean autoBatch = isAutoBatch();
         ServerSessionImpl session = null;
@@ -86,14 +86,14 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
                 {
                     case Channel.META_HANDSHAKE:
                     {
-                        ServerMessage.Mutable reply = messages[i] = processMetaHandshake(context, session, message);
+                        ServerMessage.Mutable reply = messages[i] = processMetaHandshake(asyncContext, session, message);
                         if (reply != null)
                             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
                         break;
                     }
                     case Channel.META_CONNECT:
                     {
-                        ServerMessage.Mutable reply = messages[i] = processMetaConnect(context, session, message);
+                        ServerMessage.Mutable reply = messages[i] = processMetaConnect(asyncContext, session, message);
                         metaConnect = true;
                         if (reply == null)
                             suspended = messages.length == 1;
@@ -109,7 +109,7 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
             }
 
             if (!suspended)
-                flush(context, session, metaConnect, messages);
+                flush(asyncContext, session, metaConnect, messages);
         }
         finally
         {
@@ -118,7 +118,7 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
         }
     }
 
-    protected ServerMessage.Mutable processMetaHandshake(Context context, ServerSessionImpl session, ServerMessage.Mutable message)
+    protected ServerMessage.Mutable processMetaHandshake(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable message)
     {
         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
         if (reply != null)
@@ -126,19 +126,19 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
             if (session != null)
             {
-                HttpServletRequest request = (HttpServletRequest)context.asyncContext.getRequest();
+                HttpServletRequest request = (HttpServletRequest)asyncContext.getRequest();
                 String userAgent = request.getHeader("User-Agent");
                 session.setUserAgent(userAgent);
 
                 String browserId = findBrowserId(request);
                 if (browserId == null)
-                    setBrowserId(request, (HttpServletResponse)context.asyncContext.getResponse());
+                    setBrowserId(request, (HttpServletResponse)asyncContext.getResponse());
             }
         }
         return processReply(session, reply);
     }
 
-    protected ServerMessage.Mutable processMetaConnect(Context context, ServerSessionImpl session, ServerMessage.Mutable message)
+    protected ServerMessage.Mutable processMetaConnect(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable message)
     {
         if (session != null)
         {
@@ -156,7 +156,7 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
                 // Detect if we have multiple sessions from the same browser
                 // Note that CORS requests do not send cookies, so we need to handle them specially
                 // CORS requests always have the Origin header
-                HttpServletRequest request = (HttpServletRequest)context.asyncContext.getRequest();
+                HttpServletRequest request = (HttpServletRequest)asyncContext.getRequest();
                 String browserId = findBrowserId(request);
                 boolean allowSuspendConnect;
                 if (browserId != null)
@@ -177,24 +177,15 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
                         // We will suspend anyway, but setting the scheduler on the
                         // session will decide atomically if we need to resume or not.
 
-                        // Set the timeout and wait for messages
-                        AsyncContext asyncContext = request.getAsyncContext();
-                        if (asyncContext == null)
-                            asyncContext = request.startAsync();
-                        asyncContext.setTimeout(timeout);
 
-                        // This scheduler is slightly different from the other in that
-                        // we don't dispatch timeouts but always write asynchronously
-                        Scheduler scheduler = new LongPollingScheduler(context, session, reply, browserId);
+                        LongPollingScheduler scheduler = new LongPollingScheduler(asyncContext, session, reply, browserId);
                         request.setAttribute(SCHEDULER_ATTRIBUTE, scheduler);
+                        getBayeux().startTimeout(scheduler, timeout);
 
-                        // TODO: perhaps best here to return bool to indicate the scheduler was set.
-                        // This would avoid a race condition between this thread trying to write the queue
-                        // and the scheduler resuming trying to write the queue... but perhaps scheduler.schedule()
-                        // won't dispatch so there is no race.
+                        metaConnectSuspended(asyncContext, session);
+                        // Setting the scheduler may resume the /meta/connect
                         session.setScheduler(scheduler);
                         reply = null;
-                        metaConnectSuspended(asyncContext, session);
                     }
                     else
                     {
@@ -242,27 +233,69 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
         return reply;
     }
 
-    protected void flush(Context context, ServerSessionImpl session, boolean startInterval, ServerMessage.Mutable... replies)
+    protected void flush(AsyncContext asyncContext, ServerSessionImpl session, boolean startInterval, ServerMessage.Mutable... replies)
     {
-        context.write(session, startInterval, replies);
+        try
+        {
+            List<ServerMessage> messages = Collections.emptyList();
+            if (session != null)
+            {
+                if (startInterval || !isMetaConnectDeliveryOnly() && !session.isMetaConnectDeliveryOnly())
+                    messages = session.takeQueue();
+            }
+
+            // Always write asynchronously
+            ServletResponse response = asyncContext.getResponse();
+            response.setContentType("application/json;charset=UTF-8");
+            ServletOutputStream output = response.getOutputStream();
+            output.setWriteListener(new Writer(asyncContext, session, startInterval, messages, replies));
+        }
+        catch (IOException x)
+        {
+            error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
     }
 
-    protected class Context implements ReadListener, WriteListener
+    private void error(AsyncContext asyncContext, int responseCode)
+    {
+        try
+        {
+            HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
+            if (!response.isCommitted())
+                response.sendError(responseCode);
+        }
+        catch (IOException x)
+        {
+            _logger.trace("Could not send " + responseCode + " response", x);
+        }
+
+        try
+        {
+            asyncContext.complete();
+        }
+        catch (Exception x)
+        {
+            _logger.trace("Could not complete " + responseCode + " response", x);
+        }
+    }
+
+    protected class Reader implements ReadListener
     {
         private static final int CAPACITY = 512;
 
         private final Utf8StringBuilder content = new Utf8StringBuilder(CAPACITY);
         private final byte[] buffer = new byte[CAPACITY];
         private final AsyncContext asyncContext;
-        private boolean writeComplete;
 
-        protected Context(AsyncContext asyncContext)
+        protected Reader(AsyncContext asyncContext)
         {
             this.asyncContext = asyncContext;
         }
 
-        protected void read(ServletInputStream input) throws IOException
+        @Override
+        public void onDataAvailable() throws IOException
         {
+            ServletInputStream input = asyncContext.getRequest().getInputStream();
             _logger.debug("Asynchronous read start from {}", input);
             while (input.isReady())
             {
@@ -270,28 +303,18 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
                 _logger.debug("Asynchronous read {} bytes from {}", read, input);
                 content.append(buffer, 0, read);
             }
-            if (input.isFinished())
-            {
-                String json = content.toString();
-                content.reset();
-                _logger.debug("Asynchronous read end from {}: {}", input, json);
-                process(json);
-            }
-            else
-            {
+            if (!input.isFinished())
                 _logger.debug("Asynchronous read pending from {}", input);
-            }
-        }
-
-        @Override
-        public void onDataAvailable() throws IOException
-        {
-            read(asyncContext.getRequest().getInputStream());
         }
 
         @Override
         public void onAllDataRead() throws IOException
         {
+            ServletInputStream input = asyncContext.getRequest().getInputStream();
+            String json = content.toString();
+            content.reset();
+            _logger.debug("Asynchronous read end from {}: {}", input, json);
+            process(json);
         }
 
         protected void process(String json) throws IOException
@@ -300,7 +323,7 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
             {
                 ServerMessage.Mutable[] messages = parseMessages(json);
                 _logger.debug("Parsed {} messages", messages.length);
-                processMessages(this, messages);
+                processMessages(asyncContext, messages);
             }
             catch (ParseException x)
             {
@@ -313,141 +336,102 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
         @Override
         public void onError(Throwable throwable)
         {
-            _logger.debug("", throwable);
-            asyncContext.complete();
+            error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
+    }
 
-        protected void write(ServerSessionImpl session, boolean startInterval, ServerMessage.Mutable[] replies)
+    protected class Writer implements WriteListener
+    {
+        private final StringBuilder buffer = new StringBuilder(512);
+        private final AsyncContext asyncContext;
+        private final ServerSessionImpl session;
+        private final boolean startInterval;
+        private final List<ServerMessage> messages;
+        private final ServerMessage.Mutable[] replies;
+        private int messageIndex = -1;
+        private int replyIndex;
+
+        public Writer(AsyncContext asyncContext, ServerSessionImpl session, boolean startInterval, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
         {
-            // TODO: handle isMetaConnectDeliveryOnly
-
-            List<ServerMessage> messages = Collections.emptyList();
-            if (session != null)
-                messages = session.takeQueue();
-            _logger.debug("Messages to write for session {}: {}", session, messages.size());
-
-            StringBuilder builder1 = new StringBuilder((messages.size() + replies.length) * 4 * 32);
-            for (int i = 0; i < messages.size(); ++i)
-            {
-                ServerMessage message = messages.get(i);
-                builder1.append(i == 0 ? "[" : ",");
-                builder1.append(message.getJSON());
-            }
-            _logger.debug("Messages to write for session {}: {}", session, builder1.toString());
-
-            StringBuilder builder2 = null;
-            if (startInterval)
-                builder2 = new StringBuilder(replies.length * 4 * 32);
-
-            StringBuilder builder = startInterval ? builder2 : builder1;
-            for (ServerMessage.Mutable reply : replies)
-            {
-                if (reply != null)
-                {
-                    builder.append(builder.length() == 0 ? "[" : ",");
-                    builder.append(reply.getJSON());
-                }
-            }
-            if (builder.length() > 0)
-                builder.append("]");
-            _logger.debug("Replies to write for session {}: {}", session, builder);
-
-            assert builder.length() > 0;
-
-            try
-            {
-                // Always write asynchronously
-                ServletResponse response = asyncContext.getResponse();
-                response.setContentType("application/json;charset=UTF-8");
-                ServletOutputStream output = response.getOutputStream();
-                output.setWriteListener(startInterval ? new RepliesWriter(session, builder2.toString()) : this);
-                if (writeComplete = write(output, builder1.toString()) && !startInterval)
-                    asyncContext.complete();
-            }
-            catch (IOException x)
-            {
-                onError(x);
-            }
-        }
-
-        private boolean write(ServletOutputStream output, String data) throws IOException
-        {
-            _logger.debug("Asynchronous write start on {}: {}", output, data);
-            if (output.isReady())
-            {
-                byte[] bytes = data.getBytes("UTF-8");
-                output.write(bytes);
-            }
-            boolean result = output.isReady();
-            _logger.debug("Asynchronous write end on {}: {}", output, result ? "complete" : "pending");
-            return result;
+            this.asyncContext = asyncContext;
+            this.session = session;
+            this.startInterval = startInterval;
+            this.messages = messages;
+            this.replies = replies;
         }
 
         @Override
         public void onWritePossible() throws IOException
         {
-            if (!writeComplete)
-                asyncContext.complete();
+            ServletOutputStream output = asyncContext.getResponse().getOutputStream();
+            if (messageIndex < 0)
+            {
+                messageIndex = 0;
+                buffer.append("[");
+            }
+
+            _logger.debug("Messages to write for session {}: {}", session, messages.size());
+            while (messageIndex < messages.size())
+            {
+                if (messageIndex > 0)
+                    buffer.append(",");
+
+                buffer.append(messages.get(messageIndex++).getJSON());
+                output.write(buffer.toString().getBytes("UTF-8"));
+                buffer.setLength(0);
+                if (!output.isReady())
+                    return;
+            }
+
+            if (replyIndex == 0 && startInterval && session != null && session.isConnected())
+                session.startIntervalTimeout(getInterval());
+
+            _logger.debug("Replies to write for session {}: {}", session, replies.length);
+            while (replyIndex < replies.length)
+            {
+                ServerMessage.Mutable reply = replies[replyIndex++];
+                if (reply == null)
+                    continue;
+
+                buffer.append(reply.getJSON());
+                if (replyIndex == replies.length)
+                    buffer.append("]");
+
+                output.write(buffer.toString().getBytes("UTF-8"));
+                buffer.setLength(0);
+                if (!output.isReady())
+                    return;
+            }
+
+            asyncContext.complete();
         }
 
-        private class RepliesWriter implements WriteListener
+        @Override
+        public void onError(Throwable throwable)
         {
-            private final ServerSessionImpl session;
-            private final String content;
-            private Boolean written;
-
-            private RepliesWriter(ServerSessionImpl session, String content)
-            {
-                this.session = session;
-                this.content = content;
-            }
-
-            @Override
-            public void onWritePossible() throws IOException
-            {
-                if (written == null)
-                {
-                    written = Boolean.FALSE;
-                    if (session != null && session.isConnected())
-                        session.startIntervalTimeout(getInterval());
-                    if (written = write(asyncContext.getResponse().getOutputStream(), content))
-                        asyncContext.complete();
-                }
-                else if (written == Boolean.FALSE)
-                {
-                    asyncContext.complete();
-                }
-            }
-
-            @Override
-            public void onError(Throwable throwable)
-            {
-                Context.this.onError(throwable);
-            }
+            error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
-    private class LongPollingScheduler implements OneTimeScheduler, AsyncListener
+    private class LongPollingScheduler extends Timeout.Task implements OneTimeScheduler, AsyncListener
     {
-        private final Context context;
+        private final AsyncContext asyncContext;
         private final ServerSessionImpl session;
         private final ServerMessage.Mutable reply;
         private final String browserId;
-        private boolean expired;
 
-        private LongPollingScheduler(Context context, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId)
+        private LongPollingScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId)
         {
-            this.context = context;
+            this.asyncContext = asyncContext;
             this.session = session;
             this.reply = reply;
             this.browserId = browserId;
-            context.asyncContext.addListener(this);
+            asyncContext.addListener(this);
         }
 
         @Override
         public void schedule()
         {
-            decBrowserId(browserId);
             _logger.debug("Resuming /meta/connect after schedule");
             resume();
         }
@@ -455,42 +439,16 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
         @Override
         public void cancel()
         {
-            if (expired || context.asyncContext.getRequest().getAttribute(SCHEDULER_ATTRIBUTE) == null)
+            if (asyncContext.getRequest().getAttribute(SCHEDULER_ATTRIBUTE) == null)
                 return;
-
             _logger.debug("Duplicate /meta/connect, cancelling {}", reply);
-
-            int responseCode = HttpServletResponse.SC_REQUEST_TIMEOUT;
-            try
-            {
-                HttpServletResponse response = (HttpServletResponse)context.asyncContext.getResponse();
-                if (!response.isCommitted())
-                    response.sendError(responseCode);
-            }
-            catch (IOException x)
-            {
-                _logger.trace("Could not send " + responseCode + " response", x);
-            }
-
-            try
-            {
-                context.asyncContext.complete();
-            }
-            catch (Exception x)
-            {
-                _logger.trace("Could not complete " + responseCode + " response", x);
-            }
+            error(asyncContext, HttpServletResponse.SC_REQUEST_TIMEOUT);
         }
 
         @Override
-        public void onStartAsync(AsyncEvent asyncEvent) throws IOException
+        public void expired()
         {
-        }
-
-        @Override
-        public void onTimeout(AsyncEvent asyncEvent) throws IOException
-        {
-            expired = true;
+            asyncContext.getRequest().removeAttribute(SCHEDULER_ATTRIBUTE);
             session.setScheduler(null);
             _logger.debug("Resuming /meta/connect after timeout");
             resume();
@@ -498,10 +456,20 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
 
         private void resume()
         {
-            metaConnectResumed(context.asyncContext, session);
+            metaConnectResumed(asyncContext, session);
             if (session.isDisconnected())
                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-            flush(context, session, true, processReply(session, reply));
+            flush(asyncContext, session, true, processReply(session, reply));
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+        }
+
+        @Override
+        public void onTimeout(AsyncEvent event) throws IOException
+        {
         }
 
         @Override
@@ -511,8 +479,9 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
         }
 
         @Override
-        public void onError(AsyncEvent asyncEvent) throws IOException
+        public void onError(AsyncEvent event) throws IOException
         {
+            error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 }
