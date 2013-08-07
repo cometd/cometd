@@ -16,10 +16,12 @@
 
 package org.cometd.oort;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.EventObject;
@@ -63,6 +65,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -457,7 +460,7 @@ public class Oort extends ContainerLifeCycle
     {
         Set<String> result = new HashSet<>();
         for (ClientCometInfo cometInfo : _clientComets.values())
-            result.add(cometInfo.getURL());
+            result.add(cometInfo.getOortURL());
         return result;
     }
 
@@ -569,6 +572,20 @@ public class Oort extends ContainerLifeCycle
         String b64RemoteSecret = (String)oortExt.get(EXT_OORT_SECRET_FIELD);
         String b64LocalSecret = encodeSecret(getSecret());
         return b64LocalSecret.equals(b64RemoteSecret);
+    }
+
+    /**
+     * @param oortURL the comet URL to check for connection
+     * @return whether the given comet is connected to this comet
+     */
+    protected boolean isCometConnected(String oortURL)
+    {
+        for (ServerCometInfo serverCometInfo : _serverComets.values())
+        {
+            if (serverCometInfo.getOortURL().equals(oortURL))
+                return true;
+        }
+        return false;
     }
 
     /**
@@ -715,9 +732,45 @@ public class Oort extends ContainerLifeCycle
         return replaced.replaceAll("(" + replacement + ")\\1+", "$1");
     }
 
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        super.dump(out, indent);
+        final String eol = System.getProperty("line.separator");
+        Dumpable comets = new Dumpable()
+        {
+            public String dump()
+            {
+                return null;
+            }
+
+            public void dump(Appendable out, String indent) throws IOException
+            {
+                Set<String> knownComets = getKnownComets();
+                out.append("Connected comets: ").append(String.valueOf(knownComets.size())).append(eol);
+                ContainerLifeCycle.dump(out, indent, knownComets);
+            }
+        };
+        Dumpable channels = new Dumpable()
+        {
+            public String dump()
+            {
+                return null;
+            }
+
+            public void dump(Appendable out, String indent) throws IOException
+            {
+                Set<String> observedChannels = getObservedChannels();
+                out.append("Observed channels: ").append(String.valueOf(observedChannels.size())).append(eol);
+                ContainerLifeCycle.dump(out, indent, observedChannels);
+            }
+        };
+        ContainerLifeCycle.dump(out, indent, Arrays.asList(comets, channels));
+    }
+
     public String toString()
     {
-        return _url;
+        return String.format("%s[%s]", getClass().getSimpleName(), getURL());
     }
 
     /**
@@ -929,7 +982,7 @@ public class Oort extends ContainerLifeCycle
                 if (serverCometInfo.getServerSession().getId().equals(session.getId()))
                 {
                     _logger.debug("Disconnected from comet {} with session {}", cometURL, session);
-                    assert remoteOortId.equals(serverCometInfo.getId());
+                    assert remoteOortId.equals(serverCometInfo.getOortId());
                     cometInfos.remove();
 
                     ClientCometInfo clientCometInfo = _clientComets.remove(remoteOortId);
@@ -939,7 +992,7 @@ public class Oort extends ContainerLifeCycle
                     // Do not notify if we are stopping
                     if (isRunning())
                     {
-                        String remoteOortURL = serverCometInfo.getURL();
+                        String remoteOortURL = serverCometInfo.getOortURL();
                         debug("Comet {} left", remoteOortURL);
                         notifyCometLeft(remoteOortURL);
                     }
@@ -1034,23 +1087,23 @@ public class Oort extends ContainerLifeCycle
 
     protected static abstract class CometInfo
     {
-        private final String id;
-        private final String url;
+        private final String oortId;
+        private final String oortURL;
 
-        protected CometInfo(String id, String url)
+        protected CometInfo(String oortId, String oortURL)
         {
-            this.id = id;
-            this.url = url;
+            this.oortId = oortId;
+            this.oortURL = oortURL;
         }
 
-        public String getId()
+        public String getOortId()
         {
-            return id;
+            return oortId;
         }
 
-        public String getURL()
+        public String getOortURL()
         {
-            return url;
+            return oortURL;
         }
     }
 
@@ -1058,9 +1111,9 @@ public class Oort extends ContainerLifeCycle
     {
         private final ServerSession session;
 
-        protected ServerCometInfo(String id, String url, ServerSession session)
+        protected ServerCometInfo(String oortId, String oortURL, ServerSession session)
         {
-            super(id, url);
+            super(oortId, oortURL);
             this.session = session;
         }
 
@@ -1075,9 +1128,9 @@ public class Oort extends ContainerLifeCycle
         private final OortComet comet;
         private final Map<String, Boolean> urls = new ConcurrentHashMap<>();
 
-        protected ClientCometInfo(String id, String url, OortComet comet)
+        protected ClientCometInfo(String oortId, String oortURL, OortComet comet)
         {
-            super(id, url);
+            super(oortId, oortURL);
             this.comet = comet;
         }
 
@@ -1093,7 +1146,7 @@ public class Oort extends ContainerLifeCycle
 
         public boolean matchesURL(String url)
         {
-            return getURL().equals(url) || urls.containsKey(url);
+            return getOortURL().equals(url) || urls.containsKey(url);
         }
     }
 }

@@ -880,6 +880,155 @@ public class SetiTest extends OortTest
         Assert.assertEquals(1, seti1.getPresenceCount(userId2));
     }
 
+    @Test
+    public void testMultipleServerCrashes() throws Exception
+    {
+        Server server1 = startServer(0);
+        Oort oort1 = startOort(server1);
+        Server server2 = startServer(0);
+        Oort oort2 = startOort(server2);
+
+        CountDownLatch oortLatch = new CountDownLatch(1);
+        oort2.addCometListener(new CometJoinedListener(oortLatch));
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(oortLatch.await(5, TimeUnit.SECONDS));
+        OortComet oortComet21 = oort2.findComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Seti seti1 = startSeti(oort1);
+        Seti seti2 = startSeti(oort2);
+
+        new SetiService(seti1);
+        new SetiService(seti2);
+
+        BayeuxClient client1 = startClient(oort1, null);
+        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        CountDownLatch presenceAddedLatch = new CountDownLatch(2);
+        seti1.addPresenceListener(new UserPresentListener(presenceAddedLatch));
+        seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
+
+        // Login user1
+        final CountDownLatch loginLatch1 = new CountDownLatch(1);
+        Map<String, Object> login1 = new HashMap<String, Object>();
+        String userId1 = "user1";
+        login1.put("user", userId1);
+        ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
+        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                loginLatch1.countDown();
+            }
+        });
+        Assert.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
+
+        int switches = 2;
+        for (int i = 0; i < switches; ++i)
+        {
+            // Simulate network crash
+            oortComet12.disconnect();
+            oortComet12.waitFor(5000, BayeuxClient.State.DISCONNECTED);
+            // The other OortComet is automatically disconnected
+            oortComet21.waitFor(5000, BayeuxClient.State.DISCONNECTED);
+
+            // Stop node1
+            int port1 = server1.getConnectors()[0].getLocalPort();
+            stopSeti(seti1);
+            stopOort(oort1);
+            stopServer(server1);
+
+            // Disconnect user and login it to node2
+            client1.disconnect();
+            Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+            client1 = startClient(oort2, null);
+            final CountDownLatch loginLatch2 = new CountDownLatch(1);
+            loginChannel1 = client1.getChannel("/service/login");
+            loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
+            {
+                public void onMessage(ClientSessionChannel channel, Message message)
+                {
+                    loginLatch2.countDown();
+                }
+            });
+            Assert.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
+
+            // Bring node1 back online
+            server1 = startServer(port1);
+            oort1 = startOort(server1);
+            oortLatch = new CountDownLatch(1);
+            oort2.addCometListener(new CometJoinedListener(oortLatch));
+            oortComet12 = oort1.observeComet(oort2.getURL());
+            Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+            Assert.assertTrue(oortLatch.await(5, TimeUnit.SECONDS));
+            oortComet21 = oort2.findComet(oort1.getURL());
+            Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+            seti1 = startSeti(oort1);
+            new SetiService(seti1);
+            // Wait for cloud/seti notifications to happen
+            Thread.sleep(1000);
+
+            System.err.println(seti1.dump());
+            System.err.println(seti2.dump());
+
+            Assert.assertFalse(seti1.isAssociated(userId1));
+            Assert.assertTrue(seti1.isPresent(userId1));
+            Assert.assertTrue(seti2.isAssociated(userId1));
+            Assert.assertTrue(seti2.isPresent(userId1));
+
+            // Simulate network crash
+            oortComet12.disconnect();
+            oortComet12.waitFor(5000, BayeuxClient.State.DISCONNECTED);
+            // The other OortComet is automatically disconnected
+            oortComet21.waitFor(5000, BayeuxClient.State.DISCONNECTED);
+
+            // Stop node2
+            int port2 = server2.getConnectors()[0].getLocalPort();
+            stopSeti(seti2);
+            stopOort(oort2);
+            stopServer(server2);
+
+            // Disconnect user and login it to node1
+            client1.disconnect();
+            Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+            client1 = startClient(oort1, null);
+            final CountDownLatch loginLatch3 = new CountDownLatch(1);
+            loginChannel1 = client1.getChannel("/service/login");
+            loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
+            {
+                public void onMessage(ClientSessionChannel channel, Message message)
+                {
+                    loginLatch3.countDown();
+                }
+            });
+            Assert.assertTrue(loginLatch3.await(5, TimeUnit.SECONDS));
+
+            // Bring node2 back online
+            server2 = startServer(port2);
+            oort2 = startOort(server2);
+            oortLatch = new CountDownLatch(1);
+            oort1.addCometListener(new CometJoinedListener(oortLatch));
+            oortComet21 = oort2.observeComet(oort1.getURL());
+            Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+            Assert.assertTrue(oortLatch.await(5, TimeUnit.SECONDS));
+            oortComet12 = oort1.findComet(oort2.getURL());
+            Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+            seti2 = startSeti(oort2);
+            new SetiService(seti2);
+            // Wait for cloud/seti notifications to happen
+            Thread.sleep(1000);
+
+            System.err.println(seti1.dump());
+            System.err.println(seti2.dump());
+
+            Assert.assertTrue(seti1.isAssociated(userId1));
+            Assert.assertTrue(seti1.isPresent(userId1));
+            Assert.assertFalse(seti2.isAssociated(userId1));
+            Assert.assertTrue(seti2.isPresent(userId1));
+        }
+    }
+
     public static class SetiService extends AbstractService
     {
         private final Seti seti;
