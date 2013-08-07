@@ -21,6 +21,8 @@ import java.io.InterruptedIOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -55,9 +57,9 @@ public class XMLHttpRequestExchange extends ScriptableObject
         return exchange.isAsynchronous();
     }
 
-    public void await() throws InterruptedException, ExecutionException
+    public void await() throws InterruptedException, ExecutionException, TimeoutException
     {
-        exchange.get();
+        exchange.get(60, TimeUnit.SECONDS);
         exchange.notifyReadyStateChange(false);
     }
 
@@ -276,30 +278,36 @@ public class XMLHttpRequestExchange extends ScriptableObject
         @Override
         public void onComplete(Result result)
         {
-            if (result.isSucceeded())
+            try
             {
-                Response response = result.getResponse();
-                log("Succeeded ({}) {}", response.getStatus(), this);
-                if (!aborted)
+                if (result.isSucceeded())
                 {
-                    responseText = getContentAsString();
-                    readyState = ReadyState.DONE;
+                    Response response = result.getResponse();
+                    log("Succeeded ({}) {}", response.getStatus(), this);
+                    if (!aborted)
+                    {
+                        responseText = getContentAsString();
+                        readyState = ReadyState.DONE;
+                        if (async)
+                            notifyReadyStateChange(true);
+                    }
+                }
+                else
+                {
+                    Throwable failure = result.getFailure();
+                    if (!(failure instanceof EOFException))
+                        log("Failed " + this, failure);
                     if (async)
+                    {
+                        readyState = ReadyState.DONE;
                         notifyReadyStateChange(true);
+                    }
                 }
             }
-            else
+            finally
             {
-                Throwable failure = result.getFailure();
-                if (!(failure instanceof EOFException))
-                    log("Failed " + this, failure);
-		        if (async)
-		        {
-		            readyState = ReadyState.DONE;
-		            notifyReadyStateChange(true);
-		        }
+                super.onComplete(result);
             }
-            super.onComplete(result);
         }
 
         private void log(String message, Object... args)
