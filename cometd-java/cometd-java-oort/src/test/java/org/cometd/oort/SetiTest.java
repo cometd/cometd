@@ -83,7 +83,7 @@ public class SetiTest extends OortTest
         Seti seti1 = startSeti(oort1);
         Seti seti2 = startSeti(oort2);
 
-        CountDownLatch presenceLatch = new CountDownLatch(2);
+        CountDownLatch presenceLatch = new CountDownLatch(4);
         UserPresentListener presenceListener = new UserPresentListener(presenceLatch);
         seti1.addPresenceListener(presenceListener);
         seti2.addPresenceListener(presenceListener);
@@ -151,7 +151,7 @@ public class SetiTest extends OortTest
         Seti seti1 = startSeti(oort1);
         Seti seti2 = startSeti(oort2);
 
-        CountDownLatch presenceLatch = new CountDownLatch(2);
+        CountDownLatch presenceLatch = new CountDownLatch(4);
         UserPresentListener presenceListener = new UserPresentListener(presenceLatch);
         seti1.addPresenceListener(presenceListener);
         seti2.addPresenceListener(presenceListener);
@@ -220,7 +220,7 @@ public class SetiTest extends OortTest
         Seti seti1 = startSeti(oort1);
         Seti seti2 = startSeti(oort2);
 
-        CountDownLatch presenceLatch = new CountDownLatch(2);
+        CountDownLatch presenceLatch = new CountDownLatch(4);
         UserPresentListener presenceListener = new UserPresentListener(presenceLatch);
         seti1.addPresenceListener(presenceListener);
         seti2.addPresenceListener(presenceListener);
@@ -824,9 +824,9 @@ public class SetiTest extends OortTest
         // Make sure all Setis see all users
         Assert.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch presenceLatch = new CountDownLatch(2);
-        seti1.addPresenceListener(new UserAbsentListener(presenceLatch));
-        seti2.addPresenceListener(new UserAbsentListener(presenceLatch));
+        final CountDownLatch presenceRemovedLatch = new CountDownLatch(2);
+        seti1.addPresenceListener(new UserAbsentListener(presenceRemovedLatch));
+        seti2.addPresenceListener(new UserAbsentListener(presenceRemovedLatch));
 
         // Simulate network crash
         oortComet12.disconnect();
@@ -834,7 +834,7 @@ public class SetiTest extends OortTest
         // The other OortComet is automatically disconnected
         oortComet21.waitFor(5000, BayeuxClient.State.DISCONNECTED);
 
-        Assert.assertTrue(presenceLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(presenceRemovedLatch.await(5, TimeUnit.SECONDS));
 
         // Make sure user1 is gone from Seti2
         Assert.assertTrue(seti1.isAssociated(userId1));
@@ -917,6 +917,7 @@ public class SetiTest extends OortTest
             }
         });
         Assert.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
 
         int switches = 2;
         for (int i = 0; i < switches; ++i)
