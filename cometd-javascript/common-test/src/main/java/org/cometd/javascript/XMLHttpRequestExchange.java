@@ -278,36 +278,30 @@ public class XMLHttpRequestExchange extends ScriptableObject
         @Override
         public void onComplete(Result result)
         {
-            try
+            if (result.isSucceeded())
             {
-                if (result.isSucceeded())
+                Response response = result.getResponse();
+                log("Succeeded ({}) {}", response.getStatus(), this);
+                if (!aborted)
                 {
-                    Response response = result.getResponse();
-                    log("Succeeded ({}) {}", response.getStatus(), this);
-                    if (!aborted)
-                    {
-                        responseText = getContentAsString();
-                        readyState = ReadyState.DONE;
-                        if (async)
-                            notifyReadyStateChange(true);
-                    }
-                }
-                else
-                {
-                    Throwable failure = result.getFailure();
-                    if (!(failure instanceof EOFException))
-                        log("Failed " + this, failure);
+                    responseText = getContentAsString();
+                    readyState = ReadyState.DONE;
                     if (async)
-                    {
-                        readyState = ReadyState.DONE;
                         notifyReadyStateChange(true);
-                    }
                 }
             }
-            finally
+            else
             {
-                super.onComplete(result);
+                Throwable failure = result.getFailure();
+                if (!(failure instanceof EOFException))
+                    log("Failed " + this, failure);
+                if (async)
+                {
+                    readyState = ReadyState.DONE;
+                    notifyReadyStateChange(true);
+                }
             }
+            super.onComplete(result);
         }
 
         private void log(String message, Object... args)
