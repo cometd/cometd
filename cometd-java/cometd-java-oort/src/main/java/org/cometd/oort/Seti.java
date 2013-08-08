@@ -619,11 +619,16 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         // Should we send our associations back ?
         if (!_oort.getURL().equals(presence.get(SetiPresence.PEER_OORT_URL_FIELD)))
         {
-            Set<String> associatedUserIds = getAssociatedUserIds();
-            debug("Pushing associated users {} to comet {}", associatedUserIds, oortURL);
-            SetiPresence peerPresence = new SetiPresence(true, associatedUserIds);
-            peerPresence.put(SetiPresence.PEER_OORT_URL_FIELD, oortURL);
-            _session.getChannel(generateSetiChannel(generateSetiId(oortURL))).publish(peerPresence);
+            OortComet oortComet = _oort.findComet(oortURL);
+            if (oortComet != null)
+            {
+                Set<String> associatedUserIds = getAssociatedUserIds();
+                SetiPresence peerPresence = new SetiPresence(true, associatedUserIds);
+                peerPresence.put(SetiPresence.PEER_OORT_URL_FIELD, oortURL);
+                ClientSessionChannel channel = oortComet.getChannel(generateSetiChannel(generateSetiId(oortURL)));
+                debug("Pushing associated users {} to comet {}", associatedUserIds, oortURL);
+                channel.publish(peerPresence);
+            }
         }
     }
 
