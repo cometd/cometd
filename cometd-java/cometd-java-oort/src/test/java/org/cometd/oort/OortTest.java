@@ -33,6 +33,7 @@ import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.CometDServlet;
 import org.cometd.websocket.server.JettyWebSocketTransport;
 import org.cometd.websocket.server.WebSocketTransport;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -123,9 +124,12 @@ public abstract class OortTest
         return oort;
     }
 
-    protected BayeuxClient startClient(Oort oort, Map<String, Object> handshakeFields)
+    protected BayeuxClient startClient(Oort oort, Map<String, Object> handshakeFields) throws Exception
     {
-        BayeuxClient client = new BayeuxClient(oort.getURL(), new LongPollingTransport(null, oort.getHttpClient()));
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+        BayeuxClient client = new BayeuxClient(oort.getURL(), new LongPollingTransport(null, httpClient));
+        client.setAttribute(HttpClient.class.getName(), httpClient);
         client.setDebugEnabled(Boolean.getBoolean("debugTests"));
         client.handshake(handshakeFields);
         clients.add(client);
@@ -140,15 +144,16 @@ public abstract class OortTest
         stopServers();
     }
 
-    protected void stopClients()
+    protected void stopClients() throws Exception
     {
         for (int i = clients.size() - 1; i >= 0; --i)
             stopClient(clients.get(i));
     }
 
-    protected void stopClient(BayeuxClient client)
+    protected void stopClient(BayeuxClient client) throws Exception
     {
         client.disconnect(1000);
+        ((HttpClient)client.getAttribute(HttpClient.class.getName())).stop();
     }
 
     protected void stopOorts() throws Exception
