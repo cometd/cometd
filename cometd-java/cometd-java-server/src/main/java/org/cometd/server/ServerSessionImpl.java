@@ -936,10 +936,10 @@ public class ServerSessionImpl implements ServerSession
 
         public boolean schedule(long lazyTimeout)
         {
-            cancel();
             long execution = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(lazyTimeout);
             if (_task == null || execution < _execution)
             {
+                cancel();
                 _execution = execution;
                 _task = _bayeux.schedule(this, lazyTimeout);
                 return true;
