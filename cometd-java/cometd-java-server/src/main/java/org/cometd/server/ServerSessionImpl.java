@@ -25,6 +25,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -42,8 +43,6 @@ import org.cometd.server.AbstractServerTransport.OneTimeScheduler;
 import org.cometd.server.AbstractServerTransport.Scheduler;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.thread.Timeout;
-import org.eclipse.jetty.util.thread.Timeout.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +62,7 @@ public class ServerSessionImpl implements ServerSession
     private final AtomicBoolean _disconnected = new AtomicBoolean();
     private final AtomicBoolean _handshook = new AtomicBoolean();
     private final Map<ServerChannelImpl, Boolean> _subscribedTo = new ConcurrentHashMap<>();
-    private final Task _lazyTask;
+    private final LazyTask _lazyTask = new LazyTask();
     private AbstractServerTransport.Scheduler _scheduler;
     private ServerTransport _advisedTransport;
     private int _maxQueue = -1;
@@ -73,7 +72,6 @@ public class ServerSessionImpl implements ServerSession
     private long _interval = -1;
     private long _maxInterval = -1;
     private long _maxServerInterval = -1;
-    private boolean _randomizeLazy = false;
     private long _maxLazy = -1;
     private boolean _metaConnectDelivery;
     private int _batch;
@@ -115,21 +113,6 @@ public class ServerSessionImpl implements ServerSession
         ServerTransport transport = _bayeux.getCurrentTransport();
         if (transport != null)
             _intervalTimestamp = System.currentTimeMillis() + transport.getMaxInterval();
-
-        _lazyTask = new Timeout.Task()
-        {
-            @Override
-            public void expired()
-            {
-                flush();
-            }
-
-            @Override
-            public String toString()
-            {
-                return "LazyTask@" + getId();
-            }
-        };
     }
 
     /**
@@ -330,7 +313,6 @@ public class ServerSessionImpl implements ServerSession
             _maxQueue = transport.getOption(AbstractServerTransport.MAX_QUEUE_OPTION, -1);
             _maxInterval = _interval >= 0 ? _interval + transport.getMaxInterval() : transport.getMaxInterval();
             _maxServerInterval = transport.getOption("maxServerInterval", -1);
-            _randomizeLazy = transport.getOption(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, false);
             _maxLazy = transport.getMaxLazyTimeout();
         }
     }
@@ -526,8 +508,7 @@ public class ServerSessionImpl implements ServerSession
         Scheduler scheduler;
         synchronized (_queue)
         {
-            if (_lazyTask.getTimestamp() > 0)
-                _bayeux.cancelTimeout(_lazyTask);
+            _lazyTask.cancel();
 
             scheduler = _scheduler;
 
@@ -565,17 +546,9 @@ public class ServerSessionImpl implements ServerSession
                 lazyTimeout = _maxLazy;
 
             if (lazyTimeout <= 0)
-            {
                 flush();
-            }
             else
-            {
-                long delay = _randomizeLazy ? _connectTimestamp % lazyTimeout : lazyTimeout;
-                long execution = System.currentTimeMillis() + delay;
-                long taskExecution = _lazyTask.getTimestamp();
-                if (taskExecution == 0 || execution < taskExecution)
-                    _bayeux.startTimeout(_lazyTask, delay);
-            }
+                _lazyTask.schedule(lazyTimeout);
         }
     }
 
@@ -940,5 +913,38 @@ public class ServerSessionImpl implements ServerSession
     public void updateTransientInterval(long interval)
     {
         _transientInterval = interval;
+    }
+
+    private class LazyTask implements Runnable
+    {
+        private long _execution;
+        private volatile org.eclipse.jetty.util.thread.Scheduler.Task _task;
+
+        @Override
+        public void run()
+        {
+            flush();
+            _execution = 0;
+            _task = null;
+        }
+
+        public boolean cancel()
+        {
+            org.eclipse.jetty.util.thread.Scheduler.Task task = _task;
+            return task != null && task.cancel();
+        }
+
+        public boolean schedule(long lazyTimeout)
+        {
+            cancel();
+            long execution = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(lazyTimeout);
+            if (_task == null || execution < _execution)
+            {
+                _execution = execution;
+                _task = _bayeux.schedule(this, lazyTimeout);
+                return true;
+            }
+            return false;
+        }
     }
 }

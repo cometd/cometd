@@ -30,7 +30,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.thread.Timeout;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -376,16 +376,15 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     private void startTimeout(Map<String, Object> ctx)
     {
         long contextId = (Long)ctx.get(ID_FIELD);
-        Timeout.Task timeoutTask = new TimeoutTask(contextId);
-        ctx.put(TIMEOUT_FIELD, timeoutTask);
-        ((BayeuxServerImpl)oort.getBayeuxServer()).startTimeout(timeoutTask, getTimeout());
+        TimeoutTask timeoutTask = new TimeoutTask(contextId);
+        ctx.put(TIMEOUT_FIELD, ((BayeuxServerImpl)oort.getBayeuxServer()).schedule(timeoutTask, getTimeout()));
     }
 
     private void cancelTimeout(Map<String, Object> ctx)
     {
-        Timeout.Task timeoutTask = (Timeout.Task)ctx.get(TIMEOUT_FIELD);
+        Scheduler.Task timeoutTask = (Scheduler.Task)ctx.get(TIMEOUT_FIELD);
         if (timeoutTask != null)
-            ((BayeuxServerImpl)oort.getBayeuxServer()).cancelTimeout(timeoutTask);
+            timeoutTask.cancel();
     }
 
     /**
@@ -619,7 +618,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         }
     }
 
-    private class TimeoutTask extends Timeout.Task
+    private class TimeoutTask implements Runnable
     {
         private final long contextId;
 
@@ -629,7 +628,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         }
 
         @Override
-        public void expired()
+        public void run()
         {
             Map<String, Object> data = new HashMap<>(3);
             data.put(ID_FIELD, contextId);

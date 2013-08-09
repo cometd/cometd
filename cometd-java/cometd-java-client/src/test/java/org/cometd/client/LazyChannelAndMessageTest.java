@@ -42,7 +42,6 @@ public class LazyChannelAndMessageTest extends ClientServerTest
     {
         final long globalLazyTimeout = 1000;
         startServer(new HashMap<String, String>(){{
-            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -105,7 +104,6 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         final long channelLazyTimeout = 1000;
         final long globalLazyTimeout = channelLazyTimeout * 4;
         startServer(new HashMap<String, String>(){{
-            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -169,7 +167,6 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         final long channelLazyTimeout = 1000;
         final long globalLazyTimeout = channelLazyTimeout * 4;
         startServer(new HashMap<String, String>(){{
-            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -251,7 +248,6 @@ public class LazyChannelAndMessageTest extends ClientServerTest
 
         final long globalLazyTimeout = 1000;
         startServer(new HashMap<String, String>(){{
-            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -323,7 +319,6 @@ public class LazyChannelAndMessageTest extends ClientServerTest
     {
         final long globalLazyTimeout = 1000;
         startServer(new HashMap<String, String>(){{
-            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -401,7 +396,6 @@ public class LazyChannelAndMessageTest extends ClientServerTest
     {
         final long globalLazyTimeout = 1000;
         startServer(new HashMap<String, String>(){{
-            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -476,7 +470,6 @@ public class LazyChannelAndMessageTest extends ClientServerTest
     {
         final long globalLazyTimeout = 1000;
         startServer(new HashMap<String, String>(){{
-            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -518,7 +511,6 @@ public class LazyChannelAndMessageTest extends ClientServerTest
     {
         final long globalLazyTimeout = 1000;
         startServer(new HashMap<String, String>(){{
-            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 

@@ -39,12 +39,9 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.thread.Timeout;
 
 public abstract class AsyncLongPollingTransport extends HttpTransport
 {
-    private static final String SCHEDULER_ATTRIBUTE = "org.cometd.scheduler";
-
     protected AsyncLongPollingTransport(BayeuxServerImpl bayeux, String name)
     {
         super(bayeux, name);
@@ -179,8 +176,7 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
 
 
                         LongPollingScheduler scheduler = new LongPollingScheduler(asyncContext, session, reply, browserId);
-                        request.setAttribute(SCHEDULER_ATTRIBUTE, scheduler);
-                        getBayeux().startTimeout(scheduler, timeout);
+                        scheduler.scheduleTimeout(timeout);
 
                         metaConnectSuspended(asyncContext, session);
                         // Setting the scheduler may resume the /meta/connect
@@ -413,12 +409,13 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
         }
     }
 
-    private class LongPollingScheduler extends Timeout.Task implements OneTimeScheduler, AsyncListener
+    private class LongPollingScheduler implements Runnable, OneTimeScheduler, AsyncListener
     {
         private final AsyncContext asyncContext;
         private final ServerSessionImpl session;
         private final ServerMessage.Mutable reply;
         private final String browserId;
+        private volatile org.eclipse.jetty.util.thread.Scheduler.Task task;
 
         private LongPollingScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId)
         {
@@ -432,23 +429,38 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
         @Override
         public void schedule()
         {
-            _logger.debug("Resuming /meta/connect after schedule");
-            resume();
+            if (cancelTimeout())
+            {
+                _logger.debug("Resuming /meta/connect after schedule");
+                resume();
+            }
         }
 
         @Override
         public void cancel()
         {
-            if (asyncContext.getRequest().getAttribute(SCHEDULER_ATTRIBUTE) == null)
-                return;
-            _logger.debug("Duplicate /meta/connect, cancelling {}", reply);
-            error(asyncContext, HttpServletResponse.SC_REQUEST_TIMEOUT);
+            if (cancelTimeout())
+            {
+                _logger.debug("Duplicate /meta/connect, cancelling {}", reply);
+                error(asyncContext, HttpServletResponse.SC_REQUEST_TIMEOUT);
+            }
+        }
+
+        private void scheduleTimeout(long timeout)
+        {
+            task = getBayeux().schedule(this, timeout);
+        }
+
+        private boolean cancelTimeout()
+        {
+            org.eclipse.jetty.util.thread.Scheduler.Task task = this.task;
+            return task != null && task.cancel();
         }
 
         @Override
-        public void expired()
+        public void run()
         {
-            asyncContext.getRequest().removeAttribute(SCHEDULER_ATTRIBUTE);
+            task = null;
             session.setScheduler(null);
             _logger.debug("Resuming /meta/connect after timeout");
             resume();

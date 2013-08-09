@@ -25,12 +25,11 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -57,7 +56,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.thread.Timeout;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,11 +88,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final List<String> _allowedTransports = new CopyOnWriteArrayList<>();
     private final ThreadLocal<AbstractServerTransport> _currentTransport = new ThreadLocal<>();
     private final Map<String, Object> _options = new TreeMap<>();
-    private final Timeout _timeout = new Timeout();
+    private final Scheduler _scheduler = new ScheduledExecutorScheduler("BayeuxServer" + hashCode() + " Scheduler", false);
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
     private int _logLevel = OFF_LOG_LEVEL;
     private JSONContext.Server _jsonContext;
-    private Timer _timer;
 
     public BayeuxServerImpl()
     {
@@ -154,32 +153,22 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 ((AbstractServerTransport)allowedTransport).init();
         }
 
-        _timer = new Timer("BayeuxServer@" + hashCode(), true);
-        long tick_interval = getOption("tickIntervalMs", 97);
-        if (tick_interval > 0)
-        {
-            _timer.schedule(new TimerTask()
-            {
-                @Override
-                public void run()
-                {
-                    _timeout.tick(System.currentTimeMillis());
-                }
-            }, tick_interval, tick_interval);
-        }
+        _scheduler.start();
 
-        long sweep_interval = getOption("sweepIntervalMs", 997);
-        if (sweep_interval > 0)
+        long defaultSweepPeriod = 997;
+        long sweepPeriodOption = getOption("sweepPeriod", defaultSweepPeriod);
+        if (sweepPeriodOption < 0)
+            sweepPeriodOption = defaultSweepPeriod;
+        final long sweepPeriod = sweepPeriodOption;
+        _scheduler.schedule(new Runnable()
         {
-            _timer.schedule(new TimerTask()
+            @Override
+            public void run()
             {
-                @Override
-                public void run()
-                {
-                    sweep();
-                }
-            }, sweep_interval, sweep_interval);
-        }
+                sweep();
+                _scheduler.schedule(this, sweepPeriod, TimeUnit.MILLISECONDS);
+            }
+        }, sweepPeriod, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -201,7 +190,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _transports.clear();
         _allowedTransports.clear();
         _options.clear();
-        _timer.cancel();
+        _scheduler.stop();
     }
 
     protected void initializeMetaChannels()
@@ -261,14 +250,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         debug("Allowed Transports: {}", _allowedTransports);
     }
 
-    public void startTimeout(Timeout.Task task, long interval)
+    public Scheduler.Task schedule(Runnable task, long delay)
     {
-        _timeout.schedule(task, interval);
-    }
-
-    public void cancelTimeout(Timeout.Task task)
-    {
-        task.cancel();
+        return _scheduler.schedule(task, delay, TimeUnit.MILLISECONDS);
     }
 
     public ChannelId newChannelId(String id)
