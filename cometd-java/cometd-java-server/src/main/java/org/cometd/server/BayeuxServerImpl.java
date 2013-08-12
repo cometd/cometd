@@ -49,6 +49,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.JSONContext;
+import org.cometd.server.transport.AsyncJSONTransport;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -95,7 +96,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public BayeuxServerImpl()
     {
-        addTransport(new JSONTransport(this));
+        addTransport(new AsyncJSONTransport(this));
+//        addTransport(new JSONTransport(this));
         addTransport(new JSONPTransport(this));
     }
 
@@ -1270,7 +1272,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             // Send advice
-            Map<String, Object> adviceOut = session.takeAdvice();
+            Map<String, Object> adviceOut = session.takeAdvice(getCurrentTransport());
             if (adviceOut != null)
                 reply.put(Message.ADVICE_FIELD, adviceOut);
 

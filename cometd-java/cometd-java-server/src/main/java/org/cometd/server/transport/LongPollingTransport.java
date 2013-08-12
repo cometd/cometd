@@ -60,6 +60,21 @@ public abstract class LongPollingTransport extends HttpTransport
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        getBayeux().setCurrentTransport(this);
+        setCurrentRequest(request);
+        try
+        {
+            process(request, response);
+        }
+        finally
+        {
+            setCurrentRequest(null);
+            getBayeux().setCurrentTransport(null);
+        }
+    }
+
+    protected void process(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    {
         // Is this a resumed connect?
         LongPollScheduler scheduler = (LongPollScheduler)request.getAttribute(LongPollScheduler.ATTRIBUTE);
         if (scheduler == null)
@@ -406,7 +421,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
         public ServerMessage.Mutable getReply()
         {
-            Map<String, Object> advice = _session.takeAdvice();
+            Map<String, Object> advice = _session.takeAdvice(LongPollingTransport.this);
             if (advice != null)
                 _reply.put(Message.ADVICE_FIELD, advice);
             return _reply;

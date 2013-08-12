@@ -30,6 +30,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.server.transport.HttpTransport;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -57,9 +58,9 @@ public class MultipleClientSessionsTest extends ClientServerTest
     @Test
     public void testMultipleClientSession_WithOneMaxSessionPerBrowser_WithNoMultiSessionInterval() throws Exception
     {
-        org.cometd.server.transport.LongPollingTransport transport = (org.cometd.server.transport.LongPollingTransport)bayeux.getTransport("long-polling");
-        transport.setOption(org.cometd.server.transport.LongPollingTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
-        transport.setOption(org.cometd.server.transport.LongPollingTransport.MULTI_SESSION_INTERVAL_OPTION, 0);
+        HttpTransport transport = (HttpTransport)bayeux.getTransport("long-polling");
+        transport.setOption(HttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
+        transport.setOption(HttpTransport.MULTI_SESSION_INTERVAL_OPTION, 0);
         // Force re-initialization
         Method init = transport.getClass().getDeclaredMethod("init");
         init.setAccessible(true);
@@ -123,9 +124,9 @@ public class MultipleClientSessionsTest extends ClientServerTest
     {
         long multiSessionInterval = 1500;
 
-        org.cometd.server.transport.LongPollingTransport transport = (org.cometd.server.transport.LongPollingTransport)bayeux.getTransport("long-polling");
-        transport.setOption(org.cometd.server.transport.LongPollingTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
-        transport.setOption(org.cometd.server.transport.LongPollingTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
+        HttpTransport transport = (HttpTransport)bayeux.getTransport("long-polling");
+        transport.setOption(HttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
+        transport.setOption(HttpTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
         // Force re-initialization
         Method init = transport.getClass().getDeclaredMethod("init");
         init.setAccessible(true);
@@ -266,9 +267,9 @@ public class MultipleClientSessionsTest extends ClientServerTest
     {
         long multiSessionInterval = 1500;
 
-        org.cometd.server.transport.LongPollingTransport transport = (org.cometd.server.transport.LongPollingTransport)bayeux.getTransport("long-polling");
-        transport.setOption(org.cometd.server.transport.LongPollingTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 2);
-        transport.setOption(org.cometd.server.transport.LongPollingTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
+        HttpTransport transport = (HttpTransport)bayeux.getTransport("long-polling");
+        transport.setOption(HttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 2);
+        transport.setOption(HttpTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
         // Force re-initialization
         Method init = transport.getClass().getDeclaredMethod("init");
         init.setAccessible(true);

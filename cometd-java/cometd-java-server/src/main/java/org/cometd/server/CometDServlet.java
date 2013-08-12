@@ -164,19 +164,7 @@ public class CometDServlet extends HttpServlet
         }
         else
         {
-            try
-            {
-                _bayeux.setCurrentTransport(transport);
-                transport.setCurrentRequest(request);
-                transport.handle(request, response);
-            }
-            finally
-            {
-                transport.setCurrentRequest(null);
-                BayeuxServerImpl bayeux = _bayeux;
-                if (bayeux != null)
-                    bayeux.setCurrentTransport(null);
-            }
+            transport.handle(request, response);
         }
     }
 

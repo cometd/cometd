@@ -17,6 +17,7 @@
 package org.cometd.server.transport;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.List;
@@ -50,9 +51,14 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        String encoding = request.getCharacterEncoding();
+        if (encoding == null)
+            encoding = "UTF-8";
+        request.setCharacterEncoding(encoding);
         AsyncContext asyncContext = request.startAsync();
+        Charset charset = Charset.forName(encoding);
+        ReadListener reader = "UTF-8".equals(charset.name()) ? new UTF8Reader(asyncContext) : new CharsetReader(asyncContext, charset);
         ServletInputStream input = request.getInputStream();
-        Reader reader = new Reader(asyncContext);
         input.setReadListener(reader);
     }
 
@@ -63,6 +69,7 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
         boolean batch = false;
         boolean metaConnect = false;
         boolean suspended = false;
+        boolean disconnected = false;
         try
         {
             for (int i = 0; i < messages.length; ++i)
@@ -70,13 +77,29 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
                 ServerMessage.Mutable message = messages[i];
                 _logger.debug("Processing message {}", message);
 
-                if (session == null)
+                if (session == null && !disconnected)
                     session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
 
-                if (session != null && autoBatch && !batch)
+                if (session != null)
                 {
-                    batch = true;
-                    session.startBatch();
+                    disconnected = !session.isHandshook();
+                    if (disconnected)
+                    {
+                        if (batch)
+                        {
+                            batch = false;
+                            session.endBatch();
+                        }
+                        session = null;
+                    }
+                    else
+                    {
+                        if (autoBatch && !batch)
+                        {
+                            batch = true;
+                            session.startBatch();
+                        }
+                    }
                 }
 
                 switch (message.getChannel())
@@ -275,15 +298,14 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
         }
     }
 
-    protected class Reader implements ReadListener
+    protected abstract class AbstractReader implements ReadListener
     {
-        private static final int CAPACITY = 512;
+        protected static final int CAPACITY = 512;
 
-        private final Utf8StringBuilder content = new Utf8StringBuilder(CAPACITY);
         private final byte[] buffer = new byte[CAPACITY];
-        private final AsyncContext asyncContext;
+        protected final AsyncContext asyncContext;
 
-        protected Reader(AsyncContext asyncContext)
+        protected AbstractReader(AsyncContext asyncContext)
         {
             this.asyncContext = asyncContext;
         }
@@ -297,24 +319,29 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
             {
                 int read = input.read(buffer);
                 _logger.debug("Asynchronous read {} bytes from {}", read, input);
-                content.append(buffer, 0, read);
+                append(buffer, 0, read);
             }
             if (!input.isFinished())
                 _logger.debug("Asynchronous read pending from {}", input);
         }
 
+        protected abstract void append(byte[] buffer, int offset, int length);
+
         @Override
         public void onAllDataRead() throws IOException
         {
             ServletInputStream input = asyncContext.getRequest().getInputStream();
-            String json = content.toString();
-            content.reset();
+            String json = finish();
             _logger.debug("Asynchronous read end from {}: {}", input, json);
             process(json);
         }
 
+        protected abstract String finish();
+
         protected void process(String json) throws IOException
         {
+            getBayeux().setCurrentTransport(AsyncLongPollingTransport.this);
+            setCurrentRequest((HttpServletRequest)asyncContext.getRequest());
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(json);
@@ -327,12 +354,80 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
                         (HttpServletResponse)asyncContext.getResponse(), json, x);
                 asyncContext.complete();
             }
+            finally
+            {
+                setCurrentRequest(null);
+                getBayeux().setCurrentTransport(null);
+            }
         }
 
         @Override
         public void onError(Throwable throwable)
         {
             error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    protected class UTF8Reader extends AbstractReader
+    {
+        private final Utf8StringBuilder content = new Utf8StringBuilder(CAPACITY);
+
+        protected UTF8Reader(AsyncContext asyncContext)
+        {
+            super(asyncContext);
+        }
+
+        @Override
+        protected void append(byte[] buffer, int offset, int length)
+        {
+            content.append(buffer, offset, length);
+        }
+
+        @Override
+        protected String finish()
+        {
+            return content.toString();
+        }
+    }
+
+    protected class CharsetReader extends AbstractReader
+    {
+        private byte[] content = new byte[CAPACITY];
+        private final Charset charset;
+        private int count;
+
+        public CharsetReader(AsyncContext asyncContext, Charset charset)
+        {
+            super(asyncContext);
+            this.charset = charset;
+        }
+
+        @Override
+        protected void append(byte[] buffer, int offset, int length)
+        {
+            int size = content.length;
+            int newSize = size;
+            while (newSize - count < length)
+                newSize <<= 1;
+
+            if (newSize < 0)
+                throw new IllegalArgumentException("Message too large");
+
+            if (newSize != size)
+            {
+                byte[] newContent = new byte[newSize];
+                System.arraycopy(content, 0, newContent, 0, count);
+                content = newContent;
+            }
+
+            System.arraycopy(buffer, offset, content, count, length);
+            count += length;
+        }
+
+        @Override
+        protected String finish()
+        {
+            return new String(content, 0, count, charset);
         }
     }
 
@@ -383,13 +478,19 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
                 session.startIntervalTimeout(getInterval());
 
             _logger.debug("Replies to write for session {}: {}", session, replies.length);
+            boolean needsComma = messageIndex > 0;
             while (replyIndex < replies.length)
             {
                 ServerMessage.Mutable reply = replies[replyIndex++];
                 if (reply == null)
                     continue;
 
+                if (needsComma)
+                    buffer.append(",");
+                needsComma = true;
+
                 buffer.append(reply.getJSON());
+
                 if (replyIndex == replies.length)
                     buffer.append("]");
 
@@ -469,6 +570,9 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
         private void resume()
         {
             metaConnectResumed(asyncContext, session);
+            Map<String, Object> advice = session.takeAdvice(AsyncLongPollingTransport.this);
+            if (advice != null)
+                reply.put(Message.ADVICE_FIELD, advice);
             if (session.isDisconnected())
                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
             flush(asyncContext, session, true, processReply(session, reply));

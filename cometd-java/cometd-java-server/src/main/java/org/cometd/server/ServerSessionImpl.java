@@ -733,10 +733,8 @@ public class ServerSessionImpl implements ServerSession
         _advisedTransport = null;
     }
 
-    public Map<String, Object> takeAdvice()
+    public Map<String, Object> takeAdvice(ServerTransport transport)
     {
-        final ServerTransport transport = _bayeux.getCurrentTransport();
-
         if (transport != null && transport != _advisedTransport)
         {
             _advisedTransport = transport;
