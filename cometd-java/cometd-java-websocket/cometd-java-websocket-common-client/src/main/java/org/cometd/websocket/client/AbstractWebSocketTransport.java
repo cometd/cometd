@@ -169,7 +169,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
         // The onSending() callback must be invoked before the actual send
         // otherwise we may have a race condition where the response is so
         // fast that it arrives before the onSending() is called.
-        debug("Sending messages {}", content);
+        logger.debug("Sending messages {}", content);
         listener.onSending(messages);
 
         send(session, content, listener, messages);
@@ -214,7 +214,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
                 long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 long delay = now - expiration;
                 if (delay > 5000) // TODO: make the max delay a parameter ?
-                    debug("Message {} expired {} ms too late", message, delay);
+                    logger.debug("Message {} expired {} ms too late", message, delay);
 
                 // Notify only if we won the race to deregister the message
                 WebSocketExchange exchange = deregisterMessage(message);
@@ -227,7 +227,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
         // Message responses must have the same messageId as the requests
 
         WebSocketExchange exchange = new WebSocketExchange(message, listener, task);
-        debug("Registering {}", exchange);
+        logger.debug("Registering {}", exchange);
         Object existing = _exchanges.put(message.getId(), exchange);
         // Paranoid check
         if (existing != null)
@@ -242,7 +242,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
         else if (Channel.META_DISCONNECT.equals(message.getChannel()))
             _disconnected = true;
 
-        debug("Deregistering {} for message {}", exchange, message);
+        logger.debug("Deregistering {} for message {}", exchange, message);
 
         if (exchange != null)
             exchange.task.cancel(false);
@@ -293,7 +293,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
                 else
                 {
                     // If the exchange is missing, then the message has expired, and we do not notify
-                    debug("Could not find request for reply {}", message);
+                    logger.debug("Could not find request for reply {}", message);
                 }
 
                 if (_disconnected && !_connected)

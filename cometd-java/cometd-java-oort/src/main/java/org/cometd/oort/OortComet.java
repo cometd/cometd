@@ -48,7 +48,6 @@ public class OortComet extends BayeuxClient
                 new LongPollingTransport(options, oort.getHttpClient()));
         _oort = oort;
         _cometURL = cometURL;
-        setDebugEnabled(oort.isClientDebugEnabled());
         // Add listener for handshake response
         getChannel(Channel.META_HANDSHAKE).addListener(new HandshakeListener());
     }
@@ -68,7 +67,7 @@ public class OortComet extends BayeuxClient
             {
                 public void onMessage(ClientSessionChannel channel, Message message)
                 {
-                    debug("Republishing message {} from {}", message, _cometURL);
+                    logger.debug("Republishing message {} from {}", message, _cometURL);
                     // BayeuxServer may sweep channels, so calling bayeux.getChannel(...)
                     // may return null, and therefore we use the client to send the message
                     _oort.getOortSession().getChannel(message.getChannel()).publish(message.getData());
@@ -78,11 +77,11 @@ public class OortComet extends BayeuxClient
             ClientSessionChannel.MessageListener existing = _subscriptions.putIfAbsent(channel, listener);
             if (existing == null)
             {
-                debug("Subscribing to messages on {} from {}", channel, _cometURL);
+                logger.debug("Subscribing to messages on {} from {}", channel, _cometURL);
                 getChannel(channel).subscribe(listener);
             }
         }
-        debug("Subscriptions to messages on {} from {}", _subscriptions, _cometURL);
+        logger.debug("Subscriptions to messages on {} from {}", _subscriptions, _cometURL);
     }
 
     protected void unsubscribe(String channel)
@@ -90,7 +89,7 @@ public class OortComet extends BayeuxClient
         ClientSessionChannel.MessageListener listener = _subscriptions.remove(channel);
         if (listener != null)
         {
-            debug("Unsubscribing to messages on {} from {}", channel, _cometURL);
+            logger.debug("Unsubscribing to messages on {} from {}", channel, _cometURL);
             getChannel(channel).unsubscribe(listener);
         }
     }
@@ -148,7 +147,7 @@ public class OortComet extends BayeuxClient
                     _subscriptionsAllowed = true;
 
                     Set<String> channels = _oort.getObservedChannels();
-                    debug("Handshake completed, observing channels {}", channels);
+                    logger.debug("Handshake completed, observing channels {}", channels);
                     subscribe(channels);
 
                     // Advertise the remote node that we have joined

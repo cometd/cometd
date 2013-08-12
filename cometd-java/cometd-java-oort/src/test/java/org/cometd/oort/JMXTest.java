@@ -71,14 +71,11 @@ public class JMXTest
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("transports", JettyWebSocketTransport.class.getName());
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
-        if (Boolean.getBoolean("debugTests"))
-            cometdServletHolder.setInitParameter("logLevel", "3");
         cometdServletHolder.setInitOrder(1);
         context.addServlet(cometdServletHolder, cometdURLMapping);
 
         ServletHolder oortServletHolder = new ServletHolder(OortStaticConfigServlet.class);
         oortServletHolder.setInitParameter(OortConfigServlet.OORT_URL_PARAM, "http://localhost" + contextPath + cometdServletPath);
-        oortServletHolder.setInitParameter(OortConfigServlet.OORT_CLIENT_DEBUG_PARAM, System.getProperty("debugTests"));
         oortServletHolder.setInitOrder(2);
         context.addServlet(oortServletHolder, "/oort");
 
@@ -137,8 +134,6 @@ public class JMXTest
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
-        if (Boolean.getBoolean("debugTests"))
-            cometdServletHolder.setInitParameter("logLevel", "3");
         cometdServletHolder.setInitOrder(1);
         context.addServlet(cometdServletHolder, cometdURLMapping);
 

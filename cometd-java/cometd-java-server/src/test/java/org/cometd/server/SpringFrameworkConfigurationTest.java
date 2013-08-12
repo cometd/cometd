@@ -52,12 +52,12 @@ public class SpringFrameworkConfigurationTest extends AbstractBayeuxClientServer
         WebApplicationContext applicationContext = WebApplicationContextUtils.getRequiredWebApplicationContext(context.getServletContext());
         assertNotNull(applicationContext);
 
-        String logLevel = (String)applicationContext.getBean("logLevel");
+        int sweepPeriod = (Integer)applicationContext.getBean("sweepPeriod");
 
         BayeuxServerImpl bayeuxServer = (BayeuxServerImpl)applicationContext.getBean("bayeux");
         assertNotNull(bayeuxServer);
         assertTrue(bayeuxServer.isStarted());
-        assertEquals(logLevel, bayeuxServer.getOption("logLevel"));
+        assertEquals(sweepPeriod, bayeuxServer.getOption("sweepPeriod"));
 
         assertSame(bayeuxServer, cometdServlet.getBayeux());
 

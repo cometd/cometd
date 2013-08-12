@@ -74,7 +74,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         ClientTransport webSocketTransport = newWebSocketTransport(null);
         ClientTransport longPollingTransport = newLongPollingTransport(null);
         final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport);
-        client.setDebugEnabled(debugTests());
 
         final CountDownLatch successLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
@@ -109,7 +108,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
 
         final CountDownLatch failedLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
@@ -152,7 +150,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
 
         final CountDownLatch failedLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
@@ -191,7 +188,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
         client.handshake();
 
         // Need to be sure that the second connect is sent otherwise
@@ -235,7 +231,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                 super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
 
         final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<>(new CountDownLatch(1));
         final AtomicReference<CountDownLatch> disconnectedLatch = new AtomicReference<>(new CountDownLatch(2));
@@ -308,7 +303,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
 
         // Expect 2 failed messages because the client backoffs and retries
         // This way we are sure that the late response from the first
@@ -607,7 +601,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
 
         bayeux.addExtension(new AcknowledgedMessagesExtension());
         client.addExtension(new AckExtension());
@@ -750,7 +743,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
             }
         };
         client.setOption(BayeuxClient.BACKOFF_INCREMENT_OPTION, backoffIncrement);
-        client.setDebugEnabled(debugTests());
 
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener()
         {
@@ -823,7 +815,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         clientOptions.put("ws.maxMessageSize", maxMessageSize);
         ClientTransport webSocketTransport = newWebSocketTransport(clientOptions);
         BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport);
-        client.setDebugEnabled(debugTests());
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -981,7 +972,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
@@ -1048,7 +1038,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));

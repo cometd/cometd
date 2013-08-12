@@ -60,7 +60,6 @@ public class ServerRestartTest extends ClientServerTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
         long backoffIncrement = 500;
         client.setOption(BayeuxClient.BACKOFF_INCREMENT_OPTION, backoffIncrement);
         client.handshake();

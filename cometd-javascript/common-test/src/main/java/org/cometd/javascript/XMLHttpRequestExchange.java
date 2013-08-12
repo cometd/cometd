@@ -188,14 +188,14 @@ public class XMLHttpRequestExchange extends ScriptableObject
 
         public void send() throws Exception
         {
-            log("Submitted {}", this);
+            logger.debug("Submitted {}", this);
             getRequest().send(this);
         }
 
         public void abort()
         {
             cancel(false);
-            log("Aborted {}", this);
+            logger.debug("Aborted {}", this);
             aborted = true;
             responseText = null;
             getRequest().getHeaders().clear();
@@ -281,7 +281,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
             if (result.isSucceeded())
             {
                 Response response = result.getResponse();
-                log("Succeeded ({}) {}", response.getStatus(), this);
+                logger.debug("Succeeded ({}) {}", response.getStatus(), this);
                 if (!aborted)
                 {
                     responseText = getContentAsString();
@@ -294,7 +294,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
             {
                 Throwable failure = result.getFailure();
                 if (!(failure instanceof EOFException))
-                    log("Failed " + this, failure);
+                    logger.debug("Failed " + this, failure);
                 if (async)
                 {
                     readyState = ReadyState.DONE;
@@ -302,14 +302,6 @@ public class XMLHttpRequestExchange extends ScriptableObject
                 }
             }
             super.onComplete(result);
-        }
-
-        private void log(String message, Object... args)
-        {
-            if (Boolean.getBoolean("debugTests"))
-                logger.info(message, args);
-            else
-                logger.debug(message, args);
         }
     }
 }

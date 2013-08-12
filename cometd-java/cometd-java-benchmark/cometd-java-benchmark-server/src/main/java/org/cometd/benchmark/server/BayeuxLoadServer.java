@@ -210,7 +210,7 @@ public class BayeuxLoadServer
         // Explicitly set the timeout value
         cometdServletHolder.setInitParameter(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(30000));
         // Use the faster JSON parser/generator
-        cometdServletHolder.setInitParameter(BayeuxServerImpl.JSON_CONTEXT, Jackson1JSONContextServer.class.getName());
+        cometdServletHolder.setInitParameter(AbstractServerTransport.JSON_CONTEXT_OPTION, Jackson1JSONContextServer.class.getName());
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
         context.addServlet(cometdServletHolder, cometdURLMapping);
 

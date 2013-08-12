@@ -45,6 +45,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     public static final String MAX_LAZY_TIMEOUT_OPTION = "maxLazyTimeout";
     public static final String META_CONNECT_DELIVERY_OPTION = "metaConnectDeliverOnly";
     public static final String MAX_QUEUE_OPTION = "maxQueue";
+    public static final String JSON_CONTEXT_OPTION = "jsonContext";
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass().getName());
     private final BayeuxServerImpl _bayeux;
@@ -138,7 +139,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _timeout = getOption(TIMEOUT_OPTION, _timeout);
         _maxLazyTimeout = getOption(MAX_LAZY_TIMEOUT_OPTION, _maxLazyTimeout);
         _metaConnectDeliveryOnly = getOption(META_CONNECT_DELIVERY_OPTION, _metaConnectDeliveryOnly);
-        jsonContext = (JSONContext.Server)getOption(BayeuxServerImpl.JSON_CONTEXT);
+        jsonContext = (JSONContext.Server)getOption(JSON_CONTEXT_OPTION);
     }
 
     protected void destroy()
@@ -223,14 +224,6 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
      */
     protected void sweep()
     {
-    }
-
-    protected void debug(String format, Object... args)
-    {
-        if (_bayeux.getLogLevel() >= BayeuxServerImpl.DEBUG_LOG_LEVEL)
-            _logger.info(format, args);
-        else
-            _logger.debug(format, args);
     }
 
     public interface Scheduler

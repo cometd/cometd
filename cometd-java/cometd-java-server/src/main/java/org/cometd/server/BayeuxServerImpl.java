@@ -51,7 +51,6 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.JSONContext;
 import org.cometd.server.transport.AsyncJSONTransport;
 import org.cometd.server.transport.JSONPTransport;
-import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -62,22 +61,10 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Options to configure the server are: <dl>
- * <tt>tickIntervalMs</tt><td>The time in milliseconds between ticks to check for timeouts etc</td>
- * <tt>sweepIntervalMs</tt><td>The time in milliseconds between sweeps of channels to remove
- * invalid subscribers and non-persistent channels</td>
- * </dl>
- */
 @ManagedObject("The CometD server")
 public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 {
-    public static final String LOG_LEVEL = "logLevel";
-    public static final int OFF_LOG_LEVEL = 0;
-    public static final int CONFIG_LOG_LEVEL = 1;
-    public static final int INFO_LOG_LEVEL = 2;
-    public static final int DEBUG_LOG_LEVEL = 3;
-    public static final String JSON_CONTEXT = "jsonContext";
+    public static final String SWEEP_PERIOD_OPTION = "sweepPeriod";
 
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName() + "." + Integer.toHexString(System.identityHashCode(this)));
     private final SecureRandom _random = new SecureRandom();
@@ -91,35 +78,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final Map<String, Object> _options = new TreeMap<>();
     private final Scheduler _scheduler = new ScheduledExecutorScheduler("BayeuxServer" + hashCode() + " Scheduler", false);
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
-    private int _logLevel = OFF_LOG_LEVEL;
     private JSONContext.Server _jsonContext;
 
     public BayeuxServerImpl()
     {
+        // TODO: consider making this module dependent on WebSocket and add the WS transport too ?
         addTransport(new AsyncJSONTransport(this));
-//        addTransport(new JSONTransport(this));
         addTransport(new JSONPTransport(this));
-    }
-
-    /**
-     * @return The Logger used by this BayeuxServer instance
-     */
-    public Logger getLogger()
-    {
-        return _logger;
-    }
-
-    private void debug(String message, Object... args)
-    {
-        if (_logLevel >= DEBUG_LOG_LEVEL)
-            _logger.info(message, args);
-        else
-            _logger.debug(message, args);
-    }
-
-    int getLogLevel()
-    {
-        return _logLevel;
     }
 
     @Override
@@ -127,22 +92,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         super.doStart();
 
-        _logLevel = OFF_LOG_LEVEL;
-        Object logLevelValue = getOption(LOG_LEVEL);
-        if (logLevelValue != null)
-            _logLevel = Integer.parseInt(String.valueOf(logLevelValue));
-
-        if (_logLevel >= CONFIG_LOG_LEVEL)
-        {
-            for (Map.Entry<String, Object> entry : getOptions().entrySet())
-                _logger.info("{}={}", entry.getKey(), entry.getValue());
-        }
-
         initializeMetaChannels();
-
         initializeJSONContext();
-
-        initializeDefaultTransports();
+        initializeAllowedTransports();
 
         List<String> allowedTransportNames = getAllowedTransports();
         if (allowedTransportNames.isEmpty())
@@ -158,7 +110,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _scheduler.start();
 
         long defaultSweepPeriod = 997;
-        long sweepPeriodOption = getOption("sweepPeriod", defaultSweepPeriod);
+        long sweepPeriodOption = getOption(SWEEP_PERIOD_OPTION, defaultSweepPeriod);
         if (sweepPeriodOption < 0)
             sweepPeriodOption = defaultSweepPeriod;
         final long sweepPeriod = sweepPeriodOption;
@@ -206,7 +158,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     protected void initializeJSONContext() throws Exception
     {
-        Object option = getOption(JSON_CONTEXT);
+        Object option = getOption(AbstractServerTransport.JSON_CONTEXT_OPTION);
         if (option == null)
         {
             _jsonContext = new JettyJSONContextServer();
@@ -217,13 +169,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             {
                 Class<?> jsonContextClass = Thread.currentThread().getContextClassLoader().loadClass((String)option);
                 if (JSONContext.Server.class.isAssignableFrom(jsonContextClass))
-                {
                     _jsonContext = (JSONContext.Server)jsonContextClass.newInstance();
-                }
                 else
-                {
                     throw new IllegalArgumentException("Invalid " + JSONContext.Server.class.getName() + " implementation class");
-                }
             }
             else if (option instanceof JSONContext.Server)
             {
@@ -234,22 +182,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 throw new IllegalArgumentException("Invalid " + JSONContext.Server.class.getName() + " implementation class");
             }
         }
-        _options.put(JSON_CONTEXT, _jsonContext);
+        _options.put(AbstractServerTransport.JSON_CONTEXT_OPTION, _jsonContext);
     }
 
-    /**
-     * Initialize the default transports.
-     * <p>This method creates  a {@link JSONTransport} and a {@link JSONPTransport}.
-     * If no allowed transport have been set then adds all known transports as allowed transports.
-     */
-    protected void initializeDefaultTransports()
+    protected void initializeAllowedTransports()
     {
         if (_allowedTransports.size() == 0)
         {
             for (ServerTransport t : _transports.values())
                 _allowedTransports.add(t.getName());
         }
-        debug("Allowed Transports: {}", _allowedTransports);
+        _logger.debug("Allowed Transports: {}", _allowedTransports);
     }
 
     public Scheduler.Task schedule(Runnable task, long delay)
@@ -270,9 +213,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _options;
     }
 
-    /**
-     * @see org.cometd.bayeux.Bayeux#getOption(java.lang.String)
-     */
     @ManagedOperation(value = "The value of the given configuration option", impact = "INFO")
     public Object getOption(@Name("optionName") String qualifiedName)
     {
@@ -296,17 +236,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return Long.parseLong(val.toString());
     }
 
-    /**
-     * @see org.cometd.bayeux.Bayeux#getOptionNames()
-     */
     public Set<String> getOptionNames()
     {
         return _options.keySet();
     }
 
-    /**
-     * @see org.cometd.bayeux.Bayeux#setOption(java.lang.String, java.lang.Object)
-     */
     public void setOption(String qualifiedName, Object value)
     {
         _options.put(qualifiedName, value);
@@ -343,12 +277,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _policy;
     }
 
-    @Deprecated
-    public boolean createIfAbsent(String channelName, Initializer... initializers)
-    {
-        return createChannelIfAbsent(channelName, initializers).isMarked();
-    }
-
     public MarkedReference<ServerChannel> createChannelIfAbsent(String channelName, Initializer... initializers)
     {
         boolean initialized = false;
@@ -375,7 +303,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 // My candidate channel was added to the map, so I'd better initialize it
 
                 channel = candidate;
-                debug("Added channel {}", channel);
+                _logger.debug("Added channel {}", channel);
 
                 try
                 {
@@ -481,7 +409,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      */
     public boolean removeServerSession(ServerSession session, boolean timedOut)
     {
-        debug("Removing session {}, timed out: {}", session, timedOut);
+        _logger.debug("Removing session {}, timed out: {}", session, timedOut);
 
         ServerSessionImpl removed = _sessions.remove(session.getId());
 
@@ -586,16 +514,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _listeners.remove(listener);
     }
 
-    /**
-     * Extend and handle in incoming message.
-     *
-     * @param session The session if known
-     * @param message The message.
-     * @return An unextended reply message
-     */
     public ServerMessage.Mutable handle(ServerSessionImpl session, ServerMessage.Mutable message)
     {
-        debug(">  {} {}", message, session);
+        _logger.debug(">  {} {}", message, session);
 
         Mutable reply = createReply(message);
         if (!extendRecv(session, message) || session != null && !session.extendRecv(message))
@@ -604,7 +525,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
         else
         {
-            debug(">> {}", message);
+            _logger.debug(">> {}", message);
 
             String channelName = message.getChannel();
 
@@ -677,7 +598,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         // Here the reply may be null if this instance is stopped concurrently
 
-        debug("<< {}", reply);
+        _logger.debug("<< {}", reply);
         return reply;
     }
 
@@ -732,7 +653,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             {
                 called = true;
                 Authorizer.Result authorization = authorizer.authorize(operation, channelId, session, message);
-                debug("Authorizer {} on channel {} {} {} for channel {}", authorizer, channel, authorization, operation, channelId);
+                _logger.debug("Authorizer {} on channel {} {} {} for channel {}", authorizer, channel, authorization, operation, channelId);
                 if (authorization instanceof Authorizer.Result.Denied)
                 {
                     result = authorization;
@@ -748,18 +669,18 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         if (!called)
         {
             result = Authorizer.Result.grant();
-            debug("No authorizers, {} for channel {} {}", operation, channelId, result);
+            _logger.debug("No authorizers, {} for channel {} {}", operation, channelId, result);
         }
         else
         {
             if (result instanceof Authorizer.Result.Ignored)
             {
                 result = Authorizer.Result.deny("denied_by_not_granting");
-                debug("No authorizer granted {} for channel {}, authorization {}", operation, channelId, result);
+                _logger.debug("No authorizer granted {} for channel {}, authorization {}", operation, channelId, result);
             }
             else if (result instanceof Authorizer.Result.Granted)
             {
-                debug("No authorizer denied {} for channel {}, authorization {}", operation, channelId, result);
+                _logger.debug("No authorizer denied {} for channel {}, authorization {}", operation, channelId, result);
             }
         }
 
@@ -957,7 +878,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 final Extension extension = i.previous();
                 if (!notifySendMeta(extension, to, message))
                 {
-                    debug("Extension {} interrupted message processing for {}", extension, message);
+                    _logger.debug("Extension {} interrupted message processing for {}", extension, message);
                     return false;
                 }
             }
@@ -972,13 +893,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 final Extension extension = i.previous();
                 if (!notifySend(extension, from, to, message))
                 {
-                    debug("Extension {} interrupted message processing for {}", extension, message);
+                    _logger.debug("Extension {} interrupted message processing for {}", extension, message);
                     return false;
                 }
             }
         }
 
-        debug("<  {}", message);
+        _logger.debug("<  {}", message);
         return true;
     }
 
@@ -1012,7 +933,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if (_channels.remove(channel.getId(), channel))
         {
-            debug("Removed channel {}", channel);
+            _logger.debug("Removed channel {}", channel);
             for (BayeuxServerListener listener : _listeners)
             {
                 if (listener instanceof BayeuxServer.ChannelListener)
@@ -1052,7 +973,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public void addTransport(ServerTransport transport)
     {
-        debug("addTransport {} from {}", transport.getName(), transport.getClass());
+        _logger.debug("addTransport {} from {}", transport.getName(), transport.getClass());
         _transports.put(transport.getName(), transport);
     }
 
@@ -1086,14 +1007,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public void setAllowedTransports(List<String> allowed)
     {
-        debug("setAllowedTransport {} of {}", allowed, _transports);
+        _logger.debug("setAllowedTransport {} of {}", allowed, _transports);
         _allowedTransports.clear();
         for (String transport : allowed)
         {
             if (_transports.containsKey(transport))
                 _allowedTransports.add(transport);
         }
-        debug("allowedTransports ", _allowedTransports);
+        _logger.debug("allowedTransports ", _allowedTransports);
     }
 
     protected void unknownSession(Mutable reply)

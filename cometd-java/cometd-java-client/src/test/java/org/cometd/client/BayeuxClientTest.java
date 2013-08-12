@@ -170,7 +170,6 @@ public class BayeuxClientTest extends ClientServerTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -216,7 +215,6 @@ public class BayeuxClientTest extends ClientServerTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -296,7 +294,6 @@ public class BayeuxClientTest extends ClientServerTest
                 return result;
             }
         };
-        client.setDebugEnabled(debugTests());
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -337,7 +334,6 @@ public class BayeuxClientTest extends ClientServerTest
                 queue.offer(problem);
             }
         };
-        client.setDebugEnabled(debugTests());
 
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -431,7 +427,6 @@ public class BayeuxClientTest extends ClientServerTest
                 return false;
             }
         };
-        client.setDebugEnabled(debugTests());
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(1));
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -658,7 +653,6 @@ public class BayeuxClientTest extends ClientServerTest
                 // Do not call super to suppress error logging
             }
         };
-        client.setDebugEnabled(debugTests());
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -696,7 +690,6 @@ public class BayeuxClientTest extends ClientServerTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
 
         final CountDownLatch connectLatch = new CountDownLatch(2);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
@@ -744,7 +737,6 @@ public class BayeuxClientTest extends ClientServerTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
         client.handshake();
 
         // Wait for connect
@@ -801,7 +793,6 @@ public class BayeuxClientTest extends ClientServerTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -863,7 +854,6 @@ public class BayeuxClientTest extends ClientServerTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -916,7 +906,6 @@ public class BayeuxClientTest extends ClientServerTest
                 super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
 
         final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<>(new CountDownLatch(1));
         final AtomicReference<CountDownLatch> disconnectedLatch = new AtomicReference<>(new CountDownLatch(2));
@@ -1118,7 +1107,6 @@ public class BayeuxClientTest extends ClientServerTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
 
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
         {
@@ -1259,7 +1247,6 @@ public class BayeuxClientTest extends ClientServerTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {

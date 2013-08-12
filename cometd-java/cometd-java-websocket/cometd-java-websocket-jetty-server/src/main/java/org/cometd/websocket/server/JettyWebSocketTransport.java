@@ -100,7 +100,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
 
     protected void send(Session wsSession, ServerSession session, String data) throws IOException
     {
-        debug("Sending {}", data);
+        _logger.debug("Sending {}", data);
 
         // First blocking version - but cannot be used for concurrent writes
 //        wsSession.getRemote().sendString(data);

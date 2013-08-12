@@ -95,8 +95,6 @@ public abstract class OortTest
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("transports", serverTransport);
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
-        if (Boolean.getBoolean("debugTests"))
-            cometdServletHolder.setInitParameter("logLevel", "3");
         for (Map.Entry<String, String> entry : options.entrySet())
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         cometdServletHolder.setInitOrder(1);
@@ -118,7 +116,6 @@ public abstract class OortTest
         String url = (String)server.getAttribute(OortConfigServlet.OORT_URL_PARAM);
         final BayeuxServer bayeuxServer = (BayeuxServer)server.getAttribute(BayeuxServer.ATTRIBUTE);
         Oort oort = new Oort(bayeuxServer, url);
-        oort.setClientDebugEnabled(Boolean.getBoolean("debugTests"));
         oort.start();
         oorts.add(oort);
         return oort;
@@ -130,7 +127,6 @@ public abstract class OortTest
         httpClient.start();
         BayeuxClient client = new BayeuxClient(oort.getURL(), new LongPollingTransport(null, httpClient));
         client.setAttribute(HttpClient.class.getName(), httpClient);
-        client.setDebugEnabled(Boolean.getBoolean("debugTests"));
         client.handshake(handshakeFields);
         clients.add(client);
         return client;

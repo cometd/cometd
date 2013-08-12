@@ -251,7 +251,6 @@ public class OortObserveCometTest extends OortTest
                 };
             }
         };
-        oort1.setClientDebugEnabled(Boolean.getBoolean("debugTests"));
         oort1.start();
 
         Server server2 = startServer(0);

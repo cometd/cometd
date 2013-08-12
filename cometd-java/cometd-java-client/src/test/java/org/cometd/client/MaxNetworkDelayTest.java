@@ -88,7 +88,6 @@ public class MaxNetworkDelayTest extends ClientServerTest
                     latch.countDown();
             }
         };
-        client.setDebugEnabled(debugTests());
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -150,7 +149,6 @@ public class MaxNetworkDelayTest extends ClientServerTest
                     latch.countDown();
             }
         };
-        client.setDebugEnabled(debugTests());
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             private AtomicInteger connects = new AtomicInteger();

@@ -30,7 +30,7 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
-import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.JettyJSONContextServer;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.Assert;
@@ -42,7 +42,7 @@ public class JettyCustomSerializationTest extends ClientServerTest
     public void testJettyCustomSerialization() throws Exception
     {
         Map<String, String> serverOptions = new HashMap<>();
-        serverOptions.put(BayeuxServerImpl.JSON_CONTEXT, TestJettyJSONContextServer.class.getName());
+        serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, TestJettyJSONContextServer.class.getName());
         Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put(ClientTransport.JSON_CONTEXT, new TestJettyJSONContextClient());
 
@@ -69,7 +69,6 @@ public class JettyCustomSerializationTest extends ClientServerTest
         });
 
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientOptions, httpClient));
-        client.setDebugEnabled(debugTests());
         client.addExtension(new ExtraExtension(content));
 
         client.handshake();

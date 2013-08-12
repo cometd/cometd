@@ -49,8 +49,6 @@ public class ServerChannelTest
         _bayeuxChannelListener = new BayeuxChannelListener();
         _bayeuxSubscriptionListener = new BayeuxSubscriptionListener();
         _bayeux = new BayeuxServerImpl();
-        if (Boolean.getBoolean("debugTests"))
-            _bayeux.setOption(BayeuxServerImpl.LOG_LEVEL, String.valueOf(BayeuxServerImpl.DEBUG_LOG_LEVEL));
         _bayeux.start();
         _bayeux.addListener(_bayeuxChannelListener);
         _bayeux.addListener(_bayeuxSubscriptionListener);

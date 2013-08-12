@@ -37,7 +37,6 @@ public class MissingContentTypeTest extends ClientServerTest
                 request.getHeaders().remove(HttpHeader.CONTENT_TYPE);
             }
         });
-        client.setDebugEnabled(debugTests());
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));

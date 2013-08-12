@@ -48,10 +48,6 @@
             <param-value>2000</param-value>
         </init-param>
         <init-param>
-            <param-name>logLevel</param-name>
-            <param-value>0</param-value>
-        </init-param>
-        <init-param>
             <param-name>transports</param-name>
             <param-value>org.cometd.websocket.server.JettyWebSocketTransport</param-value>
         </init-param>

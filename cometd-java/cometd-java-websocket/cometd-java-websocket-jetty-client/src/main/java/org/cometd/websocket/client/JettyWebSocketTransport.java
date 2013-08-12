@@ -76,7 +76,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         _wsSession = null;
         if (session != null && session.isOpen())
         {
-            debug("Closing websocket session {}", session);
+            logger.debug("Closing websocket session {}", session);
             session.close(1000, reason);
         }
     }
@@ -106,7 +106,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
 
         try
         {
-            debug("Opening websocket session to {}", uri);
+            logger.debug("Opening websocket session to {}", uri);
 
             session = connect(uri);
 
@@ -168,13 +168,13 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         public void onWebSocketConnect(Session session)
         {
             _wsSession = session;
-            debug("Opened websocket session {}", session);
+            logger.debug("Opened websocket session {}", session);
         }
 
         @Override
         public void onWebSocketClose(int closeCode, String reason)
         {
-            debug("Closed websocket connection with code {} {}: {} ", closeCode, reason, _wsSession);
+            logger.debug("Closed websocket connection with code {} {}: {} ", closeCode, reason, _wsSession);
             _wsSession = null;
             failMessages(new EOFException("Connection closed " + closeCode + " " + reason));
         }
@@ -185,7 +185,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
             try
             {
                 List<Mutable> messages = parseMessages(data);
-                debug("Received messages {}", data);
+                logger.debug("Received messages {}", data);
                 onMessages(messages);
             }
             catch (ParseException x)

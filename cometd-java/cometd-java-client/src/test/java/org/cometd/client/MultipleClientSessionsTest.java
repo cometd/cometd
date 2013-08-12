@@ -141,7 +141,6 @@ public class MultipleClientSessionsTest extends ClientServerTest
                     super.onFailure(x, messages);
             }
         };
-        client1.setDebugEnabled(debugTests());
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
         client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -284,7 +283,6 @@ public class MultipleClientSessionsTest extends ClientServerTest
                     super.onFailure(x, messages);
             }
         };
-        client1.setDebugEnabled(debugTests());
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
         client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {

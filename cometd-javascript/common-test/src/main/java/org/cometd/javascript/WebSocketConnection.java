@@ -57,7 +57,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
 //            wsClient.getUpgradeRequest().setCookieStore();
 //            wsClient.getCookies().putAll(((HttpCookieStore)cookieStore).getAll(uri));
 
-            log("Opening WebSocket session to {}", uri);
+            logger.debug("Opening WebSocket session to {}", uri);
             wsClient.connect(this, uri, request);
         }
         catch (final Exception x)
@@ -81,7 +81,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
 
     public void jsFunction_send(String data) throws IOException
     {
-        log("WebSocket sending data {}", data);
+        logger.debug("WebSocket sending data {}", data);
         session.getRemote().sendString(data);
     }
 
@@ -96,7 +96,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     public void onWebSocketConnect(Session session)
     {
         this.session = session;
-        log("WebSocket opened session {}", session);
+        logger.debug("WebSocket opened session {}", session);
         threads.invoke(false, thiz, thiz, "onopen");
     }
 
@@ -108,7 +108,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     @Override
     public void onWebSocketText(String data)
     {
-        log("WebSocket message data {}", data);
+        logger.debug("WebSocket message data {}", data);
         // Use single quotes so they do not mess up with quotes in the data string
         Object event = threads.evaluate("event", "({data:'" + data + "'})");
         threads.invoke(false, thiz, thiz, "onmessage", event);
@@ -117,7 +117,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     @Override
     public void onWebSocketClose(int closeCode, String reason)
     {
-        log("WebSocket closed with code {}/{}", closeCode, reason);
+        logger.debug("WebSocket closed with code {}/{}", closeCode, reason);
         // Use single quotes so they do not mess up with quotes in the reason string
         Object event = threads.evaluate("event", "({code:" + closeCode +",reason:'" + reason + "'})");
         threads.invoke(false, thiz, thiz, "onclose", event);
@@ -126,15 +126,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     @Override
     public void onWebSocketError(Throwable x)
     {
-        log("WebSocket exception {}", x);
+        logger.debug("WebSocket exception", x);
         threads.invoke(false, thiz, thiz, "onerror");
-    }
-
-    private void log(String message, Object... args)
-    {
-        if (Boolean.getBoolean("debugTests"))
-            logger.info(message, args);
-        else
-            logger.debug(message, args);
     }
 }

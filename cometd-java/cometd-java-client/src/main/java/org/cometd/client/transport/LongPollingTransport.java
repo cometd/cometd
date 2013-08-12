@@ -225,7 +225,7 @@ public class LongPollingTransport extends HttpClientTransport
                         try
                         {
                             List<Message.Mutable> messages = parseMessages(content);
-                            debug("Received messages {}", messages);
+                            logger.debug("Received messages {}", messages);
                             for (Message.Mutable message : messages)
                             {
                                 if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel()))

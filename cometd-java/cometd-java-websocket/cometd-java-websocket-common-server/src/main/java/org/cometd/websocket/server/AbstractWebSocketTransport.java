@@ -427,7 +427,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             {
                 if (session == null)
                 {
-                    debug("No session, skipping reply {}", expiredConnectReply);
+                    AbstractWebSocketTransport.this._logger.debug("No session, skipping reply {}", expiredConnectReply);
                     return;
                 }
 
@@ -535,7 +535,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 long delay = now - _connectExpiration;
                 if (delay > 5000) // TODO: make the max delay a parameter ?
-                    debug("/meta/connect {} expired {} ms too late", _connectReply, delay);
+                    AbstractWebSocketTransport.this._logger.debug("/meta/connect {} expired {} ms too late", _connectReply, delay);
 
                 // Send the meta connect response after timeout.
                 // We *must* execute the next schedule() otherwise

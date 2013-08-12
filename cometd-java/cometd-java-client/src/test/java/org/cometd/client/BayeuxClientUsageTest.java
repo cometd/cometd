@@ -33,7 +33,7 @@ import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.Jackson1JSONContextClient;
 import org.cometd.common.Jackson2JSONContextClient;
 import org.cometd.common.JettyJSONContextClient;
-import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.Jackson1JSONContextServer;
 import org.cometd.server.Jackson2JSONContextServer;
 import org.cometd.server.JettyJSONContextServer;
@@ -87,7 +87,7 @@ public class BayeuxClientUsageTest extends ClientServerTest
     public void testClientWithJackson() throws Exception
     {
         Map<String, String> serverOptions = new HashMap<>();
-        serverOptions.put(BayeuxServerImpl.JSON_CONTEXT, jacksonContextServerClassName);
+        serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, jacksonContextServerClassName);
         startServer(serverOptions);
 
         Map<String, Object> clientOptions = new HashMap<>();
@@ -150,8 +150,6 @@ public class BayeuxClientUsageTest extends ClientServerTest
 
     private void testClient(BayeuxClient client) throws Exception
     {
-        client.setDebugEnabled(debugTests());
-
         final AtomicBoolean connected = new AtomicBoolean();
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {

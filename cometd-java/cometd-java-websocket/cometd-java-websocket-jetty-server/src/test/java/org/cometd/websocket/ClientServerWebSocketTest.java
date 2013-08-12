@@ -130,8 +130,6 @@ public abstract class ClientServerWebSocketTest
         cometdServletHolder.setInitParameter("transports", serverTransport);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
-        if (debugTests())
-            cometdServletHolder.setInitParameter("logLevel", "3");
         if (eager)
             cometdServletHolder.setInitOrder(1);
         if (initParams != null)
@@ -178,16 +176,12 @@ public abstract class ClientServerWebSocketTest
 
     protected BayeuxClient newBayeuxClient()
     {
-        BayeuxClient client = new BayeuxClient(cometdURL, newWebSocketTransport(null));
-        client.setDebugEnabled(debugTests());
-        return client;
+        return new BayeuxClient(cometdURL, newWebSocketTransport(null));
     }
 
     protected ClientTransport newLongPollingTransport(Map<String, Object> options)
     {
-        LongPollingTransport transport = new LongPollingTransport(options, httpClient);
-        transport.setDebugEnabled(debugTests());
-        return transport;
+        return new LongPollingTransport(options, httpClient);
     }
 
     protected ClientTransport newWebSocketTransport(Map<String, Object> options)
@@ -204,7 +198,6 @@ public abstract class ClientServerWebSocketTest
             default:
                 throw new IllegalArgumentException();
         }
-        result.setDebugEnabled(debugTests());
         return result;
     }
 
@@ -229,10 +222,5 @@ public abstract class ClientServerWebSocketTest
     protected void stopClient() throws Exception
     {
         httpClient.stop();
-    }
-
-    protected boolean debugTests()
-    {
-        return Boolean.getBoolean("debugTests");
     }
 }

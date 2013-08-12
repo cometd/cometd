@@ -32,7 +32,7 @@ import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.JSONContext;
 import org.cometd.common.Jackson1JSONContextClient;
 import org.cometd.common.Jackson2JSONContextClient;
-import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.Jackson1JSONContextServer;
 import org.cometd.server.Jackson2JSONContextServer;
 import org.cometd.server.transport.HttpTransport;
@@ -68,7 +68,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest
     public void testJacksonCustomSerialization() throws Exception
     {
         Map<String, String> serverOptions = new HashMap<>();
-        serverOptions.put(BayeuxServerImpl.JSON_CONTEXT, jacksonContextServerClassName);
+        serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, jacksonContextServerClassName);
         serverOptions.put(HttpTransport.JSON_DEBUG_OPTION, "true");
         Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put(ClientTransport.JSON_CONTEXT, jacksonContextClientClassName);
@@ -97,7 +97,6 @@ public class JacksonCustomSerializationTest extends ClientServerTest
         });
 
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientOptions, httpClient));
-        client.setDebugEnabled(debugTests());
         client.addExtension(new ExtraExtension(extraContent));
 
         client.handshake();

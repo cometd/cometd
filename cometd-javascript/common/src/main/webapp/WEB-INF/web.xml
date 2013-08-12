@@ -20,12 +20,8 @@
             <param-value>10000</param-value>
         </init-param>
         <init-param>
-            <param-name>multiFrameInterval</param-name>
+            <param-name>multiSessionInterval</param-name>
             <param-value>2000</param-value>
-        </init-param>
-        <init-param>
-            <param-name>logLevel</param-name>
-            <param-value>0</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
         <async-supported>true</async-supported>

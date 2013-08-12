@@ -78,7 +78,6 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest
             }
         };
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
-        client.setDebugEnabled(debugTests());
 
         client.handshake();
 

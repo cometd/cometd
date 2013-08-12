@@ -19,6 +19,7 @@ package org.cometd.javascript;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.cometd.javascript.jquery.JQueryTestProvider;
@@ -119,8 +120,6 @@ public abstract class AbstractCometDTest
         cometdServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
         cometdServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
-        if (Boolean.getBoolean("debugTests"))
-            cometdServletHolder.setInitParameter("logLevel", "3");
         context.addServlet(cometdServletHolder, cometdURLMapping);
 
         customizeContext(context);
@@ -160,7 +159,8 @@ public abstract class AbstractCometDTest
 
     protected String getLogLevel()
     {
-        return Boolean.getBoolean("debugTests") ? "debug" : "info";
+        String property = System.getProperty("org.cometd.javascript.LEVEL", "info");
+        return property.toLowerCase(Locale.ENGLISH);
     }
 
     protected void customizeContext(ServletContextHandler context) throws Exception

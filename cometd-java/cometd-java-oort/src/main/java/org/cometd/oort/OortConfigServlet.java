@@ -51,7 +51,6 @@ public abstract class OortConfigServlet implements Servlet
     public static final String OORT_URL_PARAM = "oort.url";
     public static final String OORT_SECRET_PARAM = "oort.secret";
     public static final String OORT_CHANNELS_PARAM = "oort.channels";
-    public static final String OORT_CLIENT_DEBUG_PARAM = "clientDebug";
     public static final String OORT_ENABLE_ACK_EXTENSION_PARAM = "enableAckExtension";
     public static final String OORT_JSON_CONTEXT_PARAM = "jsonContext";
 
@@ -82,9 +81,6 @@ public abstract class OortConfigServlet implements Servlet
         try
         {
             Oort oort = newOort(bayeux, url);
-
-            boolean clientDebug = Boolean.parseBoolean(_config.getInitParameter(OORT_CLIENT_DEBUG_PARAM));
-            oort.setClientDebugEnabled(clientDebug);
 
             String secret = _config.getInitParameter(OORT_SECRET_PARAM);
             if (secret != null)

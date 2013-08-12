@@ -555,7 +555,6 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
                     super.onFailure(x, messages);
             }
         };
-        client.setDebugEnabled(debugTests());
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()

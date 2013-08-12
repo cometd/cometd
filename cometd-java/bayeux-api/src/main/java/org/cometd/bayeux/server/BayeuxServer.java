@@ -99,12 +99,6 @@ public interface BayeuxServer extends Bayeux
     List<ServerChannel> getChannels();
 
     /**
-     * @deprecated use {@link #createChannelIfAbsent(String, ConfigurableServerChannel.Initializer...)}
-     */
-    @Deprecated
-    boolean createIfAbsent(String channelId, ConfigurableServerChannel.Initializer... initializers);
-
-    /**
      * <p>Creates a {@link ServerChannel} and initializes it atomically if the
      * channel does not exist, or returns it if it already exists.</p>
      * <p>This method can be used instead of adding a {@link ChannelListener}

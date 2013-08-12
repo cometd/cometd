@@ -57,7 +57,6 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
                 return result;
             }
         };
-        client.setDebugEnabled(debugTests());
         client.handshake();
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -80,7 +79,6 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
                 return result;
             }
         };
-        client.setDebugEnabled(debugTests());
         client.handshake();
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -99,7 +97,6 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
                 super.enqueueSend(message);
             }
         };
-        client.setDebugEnabled(debugTests());
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -137,7 +134,6 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
                 super.enqueueSend(message);
             }
         };
-        client.setDebugEnabled(debugTests());
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -200,7 +196,6 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
                 return false;
             }
         };
-        client.setDebugEnabled(debugTests());
         final CountDownLatch publishLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.addListener(new ClientSessionChannel.MessageListener()
@@ -225,7 +220,6 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
     public void testHandshakeListenersAreNotifiedBeforeConnectListeners() throws Exception
     {
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
-        client.setDebugEnabled(debugTests());
         final int sleep = 1000;
         final AtomicBoolean handshaken = new AtomicBoolean();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
@@ -272,7 +266,6 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
                 return super.sendMessages(messages);
             }
         };
-        client.setDebugEnabled(debugTests());
 
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()

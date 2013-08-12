@@ -65,8 +65,6 @@ public class ClientServerTest
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
-        if (debugTests())
-            cometdServletHolder.setInitParameter("logLevel", "3");
         cometdServletHolder.setInitOrder(1);
         if (initParams != null)
         {
@@ -89,9 +87,7 @@ public class ClientServerTest
 
     protected BayeuxClient newBayeuxClient()
     {
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
-        client.setDebugEnabled(debugTests());
-        return client;
+        return new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
     }
 
     protected void disconnectBayeuxClient(BayeuxClient client)
@@ -110,10 +106,5 @@ public class ClientServerTest
             server.stop();
             server.join();
         }
-    }
-
-    protected boolean debugTests()
-    {
-        return Boolean.getBoolean("debugTests");
     }
 }

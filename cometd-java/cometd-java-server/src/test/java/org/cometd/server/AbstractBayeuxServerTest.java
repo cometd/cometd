@@ -68,11 +68,6 @@ public abstract class AbstractBayeuxServerTest
         if (options == null)
             options = new HashMap<>();
         options.put("timeout", String.valueOf(timeout));
-        if (Boolean.getBoolean("debugTests"))
-        {
-            options.put("logLevel", "3");
-            options.put("jsonDebug", "true");
-        }
         for (Map.Entry<String, String> entry : options.entrySet())
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         String cometdServletPath = "/cometd";

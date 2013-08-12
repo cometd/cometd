@@ -89,7 +89,6 @@ public class CometDDemo
         comet.setInitParameter("interval", "100");
         comet.setInitParameter("maxInterval", "10000");
         comet.setInitParameter("multiSessionInterval", "5000");
-        comet.setInitParameter("logLevel", "1");
         comet.setInitParameter("services", "org.cometd.examples.ChatService");
         comet.setInitParameter("transports", "org.cometd.websocket.server.WebSocketTransport");
         comet.setInitOrder(2);

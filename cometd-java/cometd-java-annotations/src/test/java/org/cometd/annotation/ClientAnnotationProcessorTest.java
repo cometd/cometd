@@ -71,9 +71,7 @@ public class ClientAnnotationProcessorTest
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
-        cometdServletHolder.setInitParameter("multiFrameInterval", "2000");
-        if (Boolean.getBoolean("debugTests"))
-            cometdServletHolder.setInitParameter("logLevel", "3");
+        cometdServletHolder.setInitParameter("multiSessionInterval", "2000");
         cometdServletHolder.setInitOrder(1);
 
         String cometdServletPath = "/cometd";
@@ -101,7 +99,6 @@ public class ClientAnnotationProcessorTest
     public void init()
     {
         bayeuxClient = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
-        bayeuxClient.setDebugEnabled(Boolean.getBoolean("debugTests"));
         processor = new ClientAnnotationProcessor(bayeuxClient);
     }
 

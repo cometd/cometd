@@ -97,7 +97,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     {
         // TODO: offer a switch to send sync or async
 
-        debug("Sending {}", data);
+        _logger.debug("Sending {}", data);
         // Blocking write.
         // We trade - for now - a blocked thread with the frame queue growing
         // and consequent increased message latency (messages sit in the queue).

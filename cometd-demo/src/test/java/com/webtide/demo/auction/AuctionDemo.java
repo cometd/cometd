@@ -70,7 +70,6 @@ public class AuctionDemo
         cometd_holder.setInitParameter("interval", "100");
         cometd_holder.setInitParameter("maxInterval", "100000");
         cometd_holder.setInitParameter("multiSessionInterval", "1500");
-        cometd_holder.setInitParameter("logLevel", "0");
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");
 

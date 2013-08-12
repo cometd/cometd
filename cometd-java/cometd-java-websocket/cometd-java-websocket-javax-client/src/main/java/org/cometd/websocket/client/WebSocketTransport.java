@@ -78,7 +78,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         _wsSession = null;
         if (wsSession != null && wsSession.isOpen())
         {
-            debug("Closing websocket session {}", wsSession);
+            logger.debug("Closing websocket session {}", wsSession);
             try
             {
                 wsSession.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
@@ -98,7 +98,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 
         try
         {
-            debug("Opening websocket session to {}", uri);
+            logger.debug("Opening websocket session to {}", uri);
 
             session = connect(uri);
 
@@ -164,13 +164,13 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         {
             _wsSession = session;
             _wsSession.addMessageHandler(this);
-            debug("Opened websocket session {}", session);
+            logger.debug("Opened websocket session {}", session);
         }
 
         @Override
         public void onClose(Session session, CloseReason closeReason)
         {
-            debug("Closed websocket connection with code {}: {} ", closeReason, _wsSession);
+            logger.debug("Closed websocket connection with code {}: {} ", closeReason, _wsSession);
             _wsSession = null;
             failMessages(new EOFException("Connection closed " + closeReason));
         }
@@ -181,7 +181,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             try
             {
                 List<Mutable> messages = parseMessages(data);
-                debug("Received messages {}", data);
+                logger.debug("Received messages {}", data);
                 onMessages(messages);
             }
             catch (ParseException x)

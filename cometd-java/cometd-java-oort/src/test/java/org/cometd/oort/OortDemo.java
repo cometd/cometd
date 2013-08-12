@@ -82,8 +82,7 @@ public class OortDemo
         cometd_holder.setInitParameter("timeout", "200000");
         cometd_holder.setInitParameter("interval", "100");
         cometd_holder.setInitParameter("maxInterval", "100000");
-        cometd_holder.setInitParameter("multiFrameInterval", "1500");
-        cometd_holder.setInitParameter("logLevel", "1");
+        cometd_holder.setInitParameter("multiSessionInterval", "1500");
         cometd_holder.setInitParameter("transports", JettyWebSocketTransport.class.getName());
         cometd_holder.setInitParameter("allowedTransports", JettyWebSocketTransport.NAME + "," + JSONTransport.NAME + "," + JSONPTransport.NAME);
         cometd_holder.setInitOrder(1);
@@ -92,7 +91,6 @@ public class OortDemo
         ServletHolder oort_holder = new ServletHolder(OortMulticastConfigServlet.class);
         oort_holder.setInitParameter(OortMulticastConfigServlet.OORT_URL_PARAM, "http://localhost:" + port + "/cometd");
         oort_holder.setInitParameter(OortMulticastConfigServlet.OORT_CHANNELS_PARAM, "/chat/**");
-        oort_holder.setInitParameter("clientLogLevel", "debug");
         oort_holder.setInitOrder(2);
         context.addServlet(oort_holder, "/oort/*");
 

@@ -35,7 +35,7 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
     public void testServiceWithCustomDataClass() throws Exception
     {
         Map<String, String> options = new HashMap<String, String>();
-        options.put(BayeuxServerImpl.JSON_CONTEXT, TestJettyJSONContextServer.class.getName());
+        options.put(AbstractServerTransport.JSON_CONTEXT_OPTION, TestJettyJSONContextServer.class.getName());
         startServer(options);
 
         String channelName = "/foo";
@@ -43,7 +43,7 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
         TestService service = new TestService(bayeux, latch);
         service.addService(channelName, "handle");
 
-        TestJettyJSONContextServer jsonContext = (TestJettyJSONContextServer)bayeux.getOption(BayeuxServerImpl.JSON_CONTEXT);
+        TestJettyJSONContextServer jsonContext = (TestJettyJSONContextServer)bayeux.getOption(AbstractServerTransport.JSON_CONTEXT_OPTION);
         jsonContext.getJSON().addConvertor(Holder.class, new HolderConvertor());
 
         Request handshake = newBayeuxRequest("[{" +

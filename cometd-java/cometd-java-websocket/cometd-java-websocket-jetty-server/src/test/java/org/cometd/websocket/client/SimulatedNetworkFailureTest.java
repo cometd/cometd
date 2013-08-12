@@ -237,7 +237,6 @@ public class SimulatedNetworkFailureTest extends ClientServerWebSocketTest
         private TestBayeuxClient()
         {
             super(cometdURL, newLongPollingTransport(null));
-            setDebugEnabled(debugTests());
         }
 
         public void setNetworkDown(long time)

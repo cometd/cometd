@@ -54,7 +54,6 @@ import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.common.JSONContext;
-import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.websocket.client.WebSocketTransport;
@@ -119,8 +118,6 @@ public class Oort extends ContainerLifeCycle
     private HttpClient _httpClient;
     private WebSocketContainer _wsContainer;
     private String _secret;
-    private boolean _debug;
-    private boolean _clientDebug;
     private boolean _ackExtensionEnabled;
     private Extension _ackExtension;
     private JSONContext.Client _jsonContext;
@@ -132,7 +129,6 @@ public class Oort extends ContainerLifeCycle
         _id = UUID.randomUUID().toString();
 
         _logger = LoggerFactory.getLogger(getClass().getName() + "." + replacePunctuation(_url, '_'));
-        _debug = String.valueOf(BayeuxServerImpl.DEBUG_LOG_LEVEL).equals(bayeux.getOption(BayeuxServerImpl.LOG_LEVEL));
 
         _oortSession = bayeux.newLocalSession("oort");
         _secret = Long.toHexString(new SecureRandom().nextLong());
@@ -252,38 +248,6 @@ public class Oort extends ContainerLifeCycle
         this._secret = secret;
     }
 
-    @ManagedAttribute("Whether log debugging for this Oort is enabled")
-    public boolean isDebugEnabled()
-    {
-        return _debug;
-    }
-
-    public void setDebugEnabled(boolean debug)
-    {
-        _debug = debug;
-    }
-
-    private void debug(String message, Object... args)
-    {
-        if (isDebugEnabled())
-            _logger.info(message, args);
-        else
-            _logger.debug(message, args);
-    }
-
-    @ManagedAttribute("Whether log debugging for CometD clients used by Oort is enabled")
-    public boolean isClientDebugEnabled()
-    {
-        return _clientDebug;
-    }
-
-    public void setClientDebugEnabled(boolean clientDebugEnabled)
-    {
-        _clientDebug = clientDebugEnabled;
-        for (ClientCometInfo cometInfo : _clientComets.values())
-            cometInfo.comet.setDebugEnabled(clientDebugEnabled);
-    }
-
     @ManagedAttribute("Whether the acknowledgement extension is enabled")
     public boolean isAckExtensionEnabled()
     {
@@ -320,7 +284,7 @@ public class Oort extends ContainerLifeCycle
 
     protected OortComet observeComet(String cometURL, String cometAliasURL)
     {
-        debug("Observing comet {}", cometURL);
+        _logger.debug("Observing comet {}", cometURL);
         try
         {
             URI uri = new URI(cometURL);
@@ -340,7 +304,7 @@ public class Oort extends ContainerLifeCycle
         OortComet comet = getComet(cometURL);
         if (comet != null)
         {
-            debug("Comet {} is already connected", cometURL);
+            _logger.debug("Comet {} is already connected", cometURL);
             return comet;
         }
 
@@ -349,13 +313,13 @@ public class Oort extends ContainerLifeCycle
         OortComet existing = _pendingComets.putIfAbsent(cometURL, comet);
         if (existing != null)
         {
-            debug("Comet {} is already connecting", cometURL);
+            _logger.debug("Comet {} is already connecting", cometURL);
             return existing;
         }
 
         comet.getChannel(Channel.META_HANDSHAKE).addListener(new HandshakeListener(cometURL, comet));
 
-        debug("Connecting to comet {}", cometURL);
+        _logger.debug("Connecting to comet {}", cometURL);
         String b64Secret = encodeSecret(getSecret());
         Message.Mutable fields = new HashMapMessage();
         Map<String, Object> ext = fields.getExt(true);
@@ -431,7 +395,7 @@ public class Oort extends ContainerLifeCycle
         OortComet comet = _pendingComets.remove(cometURL);
         if (comet != null)
         {
-            debug("Disconnecting pending comet {}", cometURL);
+            _logger.debug("Disconnecting pending comet {}", cometURL);
             comet.disconnect();
         }
 
@@ -441,7 +405,7 @@ public class Oort extends ContainerLifeCycle
             ClientCometInfo cometInfo = cometInfos.next();
             if (cometInfo.matchesURL(cometURL))
             {
-                debug("Disconnecting comet {}", cometURL);
+                _logger.debug("Disconnecting comet {}", cometURL);
                 comet = cometInfo.getOortComet();
                 comet.disconnect();
                 cometInfos.remove();
@@ -504,7 +468,7 @@ public class Oort extends ContainerLifeCycle
     @ManagedOperation(value = "Observes the given channel", impact = "ACTION")
     public void observeChannel(@Name(value = "channel", description = "The channel to observe") String channelName)
     {
-        debug("Observing channel {}", channelName);
+        _logger.debug("Observing channel {}", channelName);
 
         if (!ChannelId.isBroadcast(channelName))
             throw new IllegalArgumentException("Channel " + channelName + " cannot be observed because is not a broadcast channel");
@@ -598,14 +562,14 @@ public class Oort extends ContainerLifeCycle
     protected boolean incomingCometHandshake(Map<String, Object> oortExt, ServerSession session)
     {
         String remoteOortURL = (String)oortExt.get(EXT_OORT_URL_FIELD);
-        debug("Incoming comet handshake from comet {} with {}", remoteOortURL, session);
+        _logger.debug("Incoming comet handshake from comet {} with {}", remoteOortURL, session);
 
         String remoteOortId = (String)oortExt.get(EXT_OORT_ID_FIELD);
         ServerCometInfo serverCometInfo = new ServerCometInfo(remoteOortId, remoteOortURL, session);
         ServerCometInfo existing = _serverComets.putIfAbsent(remoteOortId, serverCometInfo);
         if (existing != null)
         {
-            debug("Comet {} is already known with {}", remoteOortURL, existing.getServerSession());
+            _logger.debug("Comet {} is already known with {}", remoteOortURL, existing.getServerSession());
             return false;
         }
 
@@ -705,11 +669,6 @@ public class Oort extends ContainerLifeCycle
     public void setWebSocketContainer(WebSocketContainer wsContainer)
     {
         _wsContainer = wsContainer;
-    }
-
-    protected Logger getLogger()
-    {
-        return _logger;
     }
 
     public Set<String> getObservedChannels()
@@ -832,11 +791,11 @@ public class Oort extends ContainerLifeCycle
                         {
                             // We are connecting to a comet that it is connecting back to us
                             // so there is not need to connect back again (just to be disconnected)
-                            debug("Comet {} is pending with alias {}, avoiding to establish connection", remoteOortURL, cometAliasURL);
+                            _logger.debug("Comet {} is pending with alias {}, avoiding to establish connection", remoteOortURL, cometAliasURL);
                         }
                         else
                         {
-                            debug("Comet {} is unknown, establishing connection", remoteOortURL);
+                            _logger.debug("Comet {} is unknown, establishing connection", remoteOortURL);
                             observeComet(remoteOortURL, cometURL);
                         }
                     }
@@ -883,7 +842,7 @@ public class Oort extends ContainerLifeCycle
             String remoteOortURL = (String)data.get(EXT_OORT_URL_FIELD);
             if (remoteOortURL != null)
             {
-                debug("Comet {} joined", remoteOortURL);
+                _logger.debug("Comet {} joined", remoteOortURL);
                 notifyCometJoined(remoteOortURL);
             }
             return true;
@@ -993,7 +952,7 @@ public class Oort extends ContainerLifeCycle
                     if (isRunning())
                     {
                         String remoteOortURL = serverCometInfo.getOortURL();
-                        debug("Comet {} left", remoteOortURL);
+                        _logger.debug("Comet {} left", remoteOortURL);
                         notifyCometLeft(remoteOortURL);
                     }
 
@@ -1010,10 +969,10 @@ public class Oort extends ContainerLifeCycle
             // Prevent loops by not delivering a message from self or Oort session to remote Oort comets
             if (to.getId().equals(from.getId()) || isOort(from))
             {
-                debug("{} --| {} {}", from, to, message);
+                _logger.debug("{} --| {} {}", from, to, message);
                 return false;
             }
-            debug("{} --> {} {}", from, to, message);
+            _logger.debug("{} --> {} {}", from, to, message);
             return true;
         }
     }
@@ -1036,11 +995,11 @@ public class Oort extends ContainerLifeCycle
             {
                 if (!message.isSuccessful())
                 {
-                    getLogger().warn("Failed to connect to comet {}, message {}", cometURL, message);
+                    _logger.warn("Failed to connect to comet {}, message {}", cometURL, message);
                     Map<String, Object> advice = message.getAdvice();
                     if (advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)))
                     {
-                        debug("Disconnecting pending comet {}", cometURL);
+                        _logger.debug("Disconnecting pending comet {}", cometURL);
                         comet.disconnect();
                         // Fall through to process an eventual extension:
                         // if it was an alias URL the message will have
@@ -1069,11 +1028,11 @@ public class Oort extends ContainerLifeCycle
                     if (!cometURL.equals(url))
                     {
                         cometInfo.addAliasURL(cometURL);
-                        debug("Adding alias to {}: {}", url, cometURL);
+                        _logger.debug("Adding alias to {}: {}", url, cometURL);
                     }
 
                     if (message.isSuccessful())
-                        getLogger().debug("Connected to comet {} as {} with {}/{}", url, cometURL, message.getClientId(), oortComet.getTransport());
+                        _logger.debug("Connected to comet {} as {} with {}/{}", url, cometURL, message.getClientId(), oortComet.getTransport());
                 }
             }
 

@@ -37,7 +37,6 @@ public abstract class ClientTransport extends AbstractTransport
     public static final String JSON_CONTEXT = "jsonContext";
 
     protected final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + System.identityHashCode(this));
-    private boolean debug;
     private JSONContext.Client jsonContext;
 
     protected ClientTransport(String name, Map<String, Object> options)
@@ -83,24 +82,6 @@ public abstract class ClientTransport extends AbstractTransport
             }
         }
         setOption(JSON_CONTEXT, jsonContext);
-    }
-
-    public boolean isDebugEnabled()
-    {
-        return debug;
-    }
-
-    public void setDebugEnabled(boolean enabled)
-    {
-        this.debug = enabled;
-    }
-
-    protected void debug(String message, Object... args)
-    {
-        if (isDebugEnabled())
-            logger.info(message, args);
-        else
-            logger.debug(message, args);
     }
 
     public abstract void abort();

@@ -33,8 +33,8 @@ import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.common.Jackson1JSONContextClient;
 import org.cometd.common.Jackson2JSONContextClient;
+import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.AbstractService;
-import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.Jackson1JSONContextServer;
 import org.cometd.server.Jackson2JSONContextServer;
 import org.cometd.server.ServerMessageImpl;
@@ -71,13 +71,12 @@ public class JacksonContextTest extends ClientServerTest
     public void testAllMessagesUseJackson() throws Exception
     {
         Map<String, String> serverParams = new HashMap<>();
-        serverParams.put(BayeuxServerImpl.JSON_CONTEXT, jacksonContextServerClassName);
+        serverParams.put(AbstractServerTransport.JSON_CONTEXT_OPTION, jacksonContextServerClassName);
         startServer(serverParams);
 
         Map<String, Object> clientParams = new HashMap<>();
         clientParams.put(ClientTransport.JSON_CONTEXT, jacksonContextClientClassName);
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientParams, httpClient));
-        client.setDebugEnabled(debugTests());
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
