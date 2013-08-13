@@ -189,8 +189,7 @@ public class BayeuxLoadServer
 
         // Add more handlers if needed
 
-        String contextPath = "";
-        ServletContextHandler context = new ServletContextHandler(handler, contextPath, ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(handler, "/", ServletContextHandler.SESSIONS);
 
         WebSocketUpgradeFilter.configureContext(context);
 
