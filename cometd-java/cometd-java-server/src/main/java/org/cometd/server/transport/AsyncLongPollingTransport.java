@@ -55,7 +55,9 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
         if (encoding == null)
             encoding = "UTF-8";
         request.setCharacterEncoding(encoding);
-        AsyncContext asyncContext = request.startAsync();
+        AsyncContext asyncContext = request.startAsync(request, response);
+        // Explicitly disable the timeout, we are handling it ourselves
+        asyncContext.setTimeout(0);
         Charset charset = Charset.forName(encoding);
         ReadListener reader = "UTF-8".equals(charset.name()) ? new UTF8Reader(asyncContext) : new CharsetReader(asyncContext, charset);
         ServletInputStream input = request.getInputStream();
@@ -196,7 +198,6 @@ public abstract class AsyncLongPollingTransport extends HttpTransport
                         // and now, messages may have been added to the queue.
                         // We will suspend anyway, but setting the scheduler on the
                         // session will decide atomically if we need to resume or not.
-
 
                         LongPollingScheduler scheduler = new LongPollingScheduler(asyncContext, session, reply, browserId);
                         scheduler.scheduleTimeout(timeout);
