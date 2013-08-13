@@ -84,6 +84,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         // TODO: consider making this module dependent on WebSocket and add the WS transport too ?
         addTransport(new AsyncJSONTransport(this));
+//        addTransport(new JSONTransport(this));
         addTransport(new JSONPTransport(this));
     }
 
