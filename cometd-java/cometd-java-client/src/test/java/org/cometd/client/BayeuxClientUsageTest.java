@@ -22,8 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -150,20 +150,13 @@ public class BayeuxClientUsageTest extends ClientServerTest
 
     private void testClient(BayeuxClient client) throws Exception
     {
-        final AtomicBoolean connected = new AtomicBoolean();
+        final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                connected.set(message.isSuccessful());
-            }
-        });
-
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                connected.set(false);
+                if (message.isSuccessful())
+                    latch.countDown();
             }
         });
 
@@ -172,22 +165,23 @@ public class BayeuxClientUsageTest extends ClientServerTest
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                metaMessages.offer(message);
+                // Skip /meta/connect messages because they arrive without notice
+                // and most likely fail the test that it is waiting for other messages
+                if (!Channel.META_CONNECT.equals(message.getChannel()))
+                    metaMessages.offer(message);
             }
         });
 
         client.handshake();
 
-        Message message = metaMessages.poll(1, TimeUnit.SECONDS);
+        Message message = metaMessages.poll(5, TimeUnit.SECONDS);
         Assert.assertNotNull(message);
         Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
         Assert.assertTrue(message.isSuccessful());
         String id = client.getId();
         Assert.assertNotNull(id);
 
-        message = metaMessages.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(Channel.META_CONNECT, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         final BlockingQueue<Message> messages = new ArrayBlockingQueue<>(16);
         ClientSessionChannel.MessageListener subscriber = new ClientSessionChannel.MessageListener()
@@ -200,17 +194,17 @@ public class BayeuxClientUsageTest extends ClientServerTest
         ClientSessionChannel aChannel = client.getChannel("/a/channel");
         aChannel.subscribe(subscriber);
 
-        message = metaMessages.poll(1, TimeUnit.SECONDS);
+        message = metaMessages.poll(5, TimeUnit.SECONDS);
         Assert.assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
         Assert.assertTrue(message.isSuccessful());
 
         String data = "data";
         aChannel.publish(data);
-        message = messages.poll(1, TimeUnit.SECONDS);
+        message = messages.poll(5, TimeUnit.SECONDS);
         Assert.assertEquals(data, message.getData());
 
         aChannel.unsubscribe(subscriber);
-        message = metaMessages.poll(1, TimeUnit.SECONDS);
+        message = metaMessages.poll(5, TimeUnit.SECONDS);
         Assert.assertEquals(Channel.META_UNSUBSCRIBE, message.getChannel());
         Assert.assertTrue(message.isSuccessful());
 

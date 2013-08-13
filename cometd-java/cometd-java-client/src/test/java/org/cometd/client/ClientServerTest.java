@@ -59,8 +59,7 @@ public class ClientServerTest
         connector.setIdleTimeout(30000);
         server.addConnector(connector);
 
-        String contextPath = "";
-        context = new ServletContextHandler(server, contextPath);
+        context = new ServletContextHandler(server, "/");
 
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
@@ -77,7 +76,7 @@ public class ClientServerTest
 
         server.start();
         int port = connector.getLocalPort();
-        cometdURL = "http://localhost:" + port + contextPath + cometdServletPath;
+        cometdURL = "http://localhost:" + port + cometdServletPath;
 
         bayeux = (BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
 
