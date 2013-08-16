@@ -17,9 +17,7 @@
 package org.cometd.server;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.Collections;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -28,29 +26,23 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.server.transport.HttpTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>The CometD Servlet maps HTTP requests to the {@link HttpTransport} of a {@link BayeuxServer} instance.</p>
- * <p>The {@link BayeuxServer} instance is searched in the servlet context under the {@link BayeuxServer#ATTRIBUTE}
+ * The CometD Servlet maps HTTP requests to the {@link HttpTransport} of a {@link BayeuxServer} instance.
+ * <p />
+ * The {@link BayeuxServer} instance is searched in the servlet context under the {@link BayeuxServer#ATTRIBUTE}
  * attribute; if it is found then it is used without further configuration, otherwise a new {@link BayeuxServer}
- * instance is created and configured using the init parameters of this servlet.</p>
- * <p>If the init parameter "transports" is present, it is treated as a comma separated list of class names, each a
- * {@link ServerTransport} to be added via {@link BayeuxServerImpl#addTransport(ServerTransport)} and by default will
- * be included in the {@link BayeuxServerImpl#setAllowedTransports(List)}.</p>
- * <p>If the init parameter "allowedTransports" is present, it is treated as a comma separated list of transport names
- * and will be passed to  {@link BayeuxServerImpl#setAllowedTransports(List)}.</p>
- * <p>All other init parameters are passed to {@link BayeuxServerImpl#setOption(String, Object)}.</p>
+ * instance is created and configured using the init parameters of this servlet.
  */
 public class CometDServlet extends HttpServlet
 {
     private static final long serialVersionUID = 3637310585741732936L;
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
-    private volatile BayeuxServerImpl _bayeux;
+    private BayeuxServerImpl _bayeux;
 
     @Override
     public void init() throws ServletException
@@ -64,50 +56,9 @@ public class CometDServlet extends HttpServlet
                 export = true;
                 _bayeux = newBayeuxServer();
 
-                String value=getInitParameter("transports");
-                if (value!=null)
-                {
-                    ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                    if (loader == null)
-                        loader = this.getClass().getClassLoader();
-                    for (String className : value.split(","))
-                    {
-                        className = className.trim();
-                        try
-                        {
-                            Class<? extends ServerTransport> transportClass = (Class<? extends ServerTransport>)loader.loadClass(className);
-                            Constructor<? extends ServerTransport> constructor = transportClass.getConstructor(BayeuxServerImpl.class);
-                            ServerTransport transport = constructor.newInstance(_bayeux);
-                            _bayeux.addTransport(transport);
-                        }
-                        catch (Throwable x)
-                        {
-                            _logger.warn("Failed to add transport " + className, x);
-                        }
-                    }
-                }
-
-                value=getInitParameter("allowedTransports");
-                if (value!=null)
-                {
-                    String[] allowedTransports = value.split(",");
-                    for (int i = 0; i < allowedTransports.length; ++i)
-                        allowedTransports[i] = allowedTransports[i].trim();
-                    _bayeux.setAllowedTransports(allowedTransports);
-                }
-
                 // Transfer all servlet init parameters to the BayeuxServer implementation
-                for (Enumeration<String> initParameterNames = getInitParameterNames(); initParameterNames.hasMoreElements();)
-                {
-                    String initParameterName = initParameterNames.nextElement();
-                    value = getInitParameter(initParameterName);
-
-                    if (!"transports".equals(initParameterName) &&
-                        !"allowedTransports".equalsIgnoreCase(initParameterName))
-                    {
-                        _bayeux.setOption(initParameterName, value);
-                    }
-                }
+                for (String initParamName : Collections.list(getInitParameterNames()))
+                    _bayeux.setOption(initParamName, getInitParameter(initParamName));
 
                 // Add the ServletContext to the options
                 _bayeux.setOption(ServletContext.class.getName(), getServletContext());
@@ -142,21 +93,7 @@ public class CometDServlet extends HttpServlet
             return;
         }
 
-        HttpTransport transport = null;
-        for (String transportName : _bayeux.getAllowedTransports())
-        {
-            ServerTransport serverTransport = _bayeux.getTransport(transportName);
-            if (serverTransport instanceof HttpTransport)
-            {
-                HttpTransport t = (HttpTransport)serverTransport;
-                if (t.accept(request))
-                {
-                    transport = t;
-                    break;
-                }
-            }
-        }
-
+        HttpTransport transport = _bayeux.findHttpTransport(request);
         if (transport == null)
         {
             if (!response.isCommitted())

@@ -27,6 +27,7 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
+import org.cometd.server.transport.JSONTransport;
 import org.cometd.websocket.server.JettyWebSocketTransport;
 import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
@@ -74,7 +75,6 @@ public abstract class ClientServerWebSocketTest
     protected final String implementation;
     protected ServerConnector connector;
     protected Server server;
-    protected String contextPath;
     protected ServletContextHandler context;
     protected String cometdServletPath;
     protected HttpClient httpClient;
@@ -115,8 +115,7 @@ public abstract class ClientServerWebSocketTest
         connector.setPort(port);
         server.addConnector(connector);
 
-        contextPath = "";
-        context = new ServletContextHandler(server, contextPath, true, false);
+        context = new ServletContextHandler(server, "/", true, false);
 
         // WebSocket Filter
         WebSocketConfiguration.configureContext(context);
@@ -127,7 +126,8 @@ public abstract class ClientServerWebSocketTest
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         String serverTransport = WEBSOCKET_JSR_356.equals(implementation) ?
                 WebSocketTransport.class.getName() : JettyWebSocketTransport.class.getName();
-        cometdServletHolder.setInitParameter("transports", serverTransport);
+        String transports = serverTransport + "," + JSONTransport.class.getName();
+        cometdServletHolder.setInitParameter("transports", transports);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
         if (eager)
@@ -165,7 +165,7 @@ public abstract class ClientServerWebSocketTest
     {
         server.start();
         int port = connector.getLocalPort();
-        cometdURL = "http://localhost:" + port + contextPath + cometdServletPath;
+        cometdURL = "http://localhost:" + port + cometdServletPath;
         bayeux = (BayeuxServerImpl)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
     }
 

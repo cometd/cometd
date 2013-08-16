@@ -43,6 +43,7 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
+import org.cometd.server.transport.JSONTransport;
 import org.cometd.websocket.ClientServerWebSocketTest;
 import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -720,10 +721,10 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         switch (implementation)
         {
             case WEBSOCKET_JSR_356:
-                initParams.put("transports", CloseLatchWebSocketTransport.class.getName());
+                initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
                 break;
             case WEBSOCKET_JETTY:
-                initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName());
+                initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
                 break;
             default:
                 throw new IllegalArgumentException();
@@ -847,10 +848,10 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         switch (implementation)
         {
             case WEBSOCKET_JSR_356:
-                initParams.put("transports", CloseLatchWebSocketTransport.class.getName());
+                initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
                 break;
             case WEBSOCKET_JETTY:
-                initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName());
+                initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
                 break;
             default:
                 throw new IllegalArgumentException();
@@ -888,10 +889,10 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         switch (implementation)
         {
             case WEBSOCKET_JSR_356:
-                initParams.put("transports", CloseLatchWebSocketTransport.class.getName());
+                initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
                 break;
             case WEBSOCKET_JETTY:
-                initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName());
+                initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
                 break;
             default:
                 throw new IllegalArgumentException();

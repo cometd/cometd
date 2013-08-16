@@ -31,6 +31,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.CometDServlet;
+import org.cometd.server.transport.JSONTransport;
 import org.cometd.websocket.server.JettyWebSocketTransport;
 import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
@@ -83,8 +84,7 @@ public abstract class OortTest
         connector.setPort(port);
         server.addConnector(connector);
 
-        String contextPath = "";
-        ServletContextHandler context = new ServletContextHandler(server, contextPath, ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
 
         WebSocketConfiguration.configureContext(context);
 
@@ -93,7 +93,8 @@ public abstract class OortTest
         String cometdURLMapping = cometdServletPath + "/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
-        cometdServletHolder.setInitParameter("transports", serverTransport);
+        String transports = serverTransport + "," + JSONTransport.class.getName();
+        cometdServletHolder.setInitParameter("transports", transports);
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
         for (Map.Entry<String, String> entry : options.entrySet())
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
@@ -101,7 +102,7 @@ public abstract class OortTest
         context.addServlet(cometdServletHolder, cometdURLMapping);
 
         server.start();
-        String url = "http://localhost:" + connector.getLocalPort() + contextPath + cometdServletPath;
+        String url = "http://localhost:" + connector.getLocalPort() + cometdServletPath;
         server.setAttribute(OortConfigServlet.OORT_URL_PARAM, url);
         BayeuxServer bayeux = (BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
         server.setAttribute(BayeuxServer.ATTRIBUTE, bayeux);

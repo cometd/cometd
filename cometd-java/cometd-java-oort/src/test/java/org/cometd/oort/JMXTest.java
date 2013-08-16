@@ -31,15 +31,12 @@ import javax.servlet.ServletResponse;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
-import org.cometd.websocket.server.JettyWebSocketTransport;
-import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -56,10 +53,9 @@ public class JMXTest
         MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
         server.addBean(mbeanContainer);
 
-        String contextPath = "";
-        ServletContextHandler context = new ServletContextHandler(server, contextPath);
+        ServletContextHandler context = new ServletContextHandler(server, "/");
 
-        WebSocketUpgradeFilter.configureContext(context);
+        WebSocketConfiguration.configureContext(context);
 
         String value = BayeuxServerImpl.ATTRIBUTE + "," + Oort.OORT_ATTRIBUTE + "," + Seti.SETI_ATTRIBUTE;
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);
@@ -69,13 +65,12 @@ public class JMXTest
         String cometdURLMapping = cometdServletPath + "/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
-        cometdServletHolder.setInitParameter("transports", JettyWebSocketTransport.class.getName());
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
         cometdServletHolder.setInitOrder(1);
         context.addServlet(cometdServletHolder, cometdURLMapping);
 
         ServletHolder oortServletHolder = new ServletHolder(OortStaticConfigServlet.class);
-        oortServletHolder.setInitParameter(OortConfigServlet.OORT_URL_PARAM, "http://localhost" + contextPath + cometdServletPath);
+        oortServletHolder.setInitParameter(OortConfigServlet.OORT_URL_PARAM, "http://localhost" + cometdServletPath);
         oortServletHolder.setInitOrder(2);
         context.addServlet(oortServletHolder, "/oort");
 
@@ -119,8 +114,7 @@ public class JMXTest
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        String contextPath = "";
-        ServletContextHandler context = new ServletContextHandler(server, contextPath);
+        ServletContextHandler context = new ServletContextHandler(server, "/");
 
         WebSocketConfiguration.configureContext(context);
 
@@ -132,7 +126,6 @@ public class JMXTest
         String cometdURLMapping = cometdServletPath + "/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
-        cometdServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
         cometdServletHolder.setInitOrder(1);
         context.addServlet(cometdServletHolder, cometdURLMapping);

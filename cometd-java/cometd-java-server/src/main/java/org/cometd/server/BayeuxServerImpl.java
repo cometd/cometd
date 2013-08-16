@@ -16,11 +16,13 @@
 
 package org.cometd.server;
 
+import java.lang.reflect.Constructor;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -30,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import javax.servlet.http.HttpServletRequest;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -49,8 +52,9 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.JSONContext;
-import org.cometd.server.transport.AsyncJSONTransport;
+import org.cometd.server.transport.HttpTransport;
 import org.cometd.server.transport.JSONPTransport;
+import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -64,7 +68,9 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("The CometD server")
 public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 {
+    public static final String ALLOWED_TRANSPORTS_OPTION = "allowedTransports";
     public static final String SWEEP_PERIOD_OPTION = "sweepPeriod";
+    public static final String TRANSPORTS_OPTION = "transports";
 
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName() + "." + Integer.toHexString(System.identityHashCode(this)));
     private final SecureRandom _random = new SecureRandom();
@@ -72,21 +78,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final List<Extension> _extensions = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<String, ServerSessionImpl> _sessions = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, ServerTransport> _transports = new ConcurrentHashMap<>();
-    private final List<String> _allowedTransports = new CopyOnWriteArrayList<>();
+    private final Map<String, ServerTransport> _transports = new LinkedHashMap<>(); // Order is important
+    private final List<String> _allowedTransports = new ArrayList<>();
     private final ThreadLocal<AbstractServerTransport> _currentTransport = new ThreadLocal<>();
     private final Map<String, Object> _options = new TreeMap<>();
     private final Scheduler _scheduler = new ScheduledExecutorScheduler("BayeuxServer" + hashCode() + " Scheduler", false);
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
     private JSONContext.Server _jsonContext;
-
-    public BayeuxServerImpl()
-    {
-        // TODO: consider making this module dependent on WebSocket and add the WS transport too ?
-        addTransport(new AsyncJSONTransport(this));
-//        addTransport(new JSONTransport(this));
-        addTransport(new JSONPTransport(this));
-    }
 
     @Override
     protected void doStart() throws Exception
@@ -95,18 +93,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         initializeMetaChannels();
         initializeJSONContext();
-        initializeAllowedTransports();
-
-        List<String> allowedTransportNames = getAllowedTransports();
-        if (allowedTransportNames.isEmpty())
-            throw new IllegalStateException("No allowed transport names are configured, there must be at least one");
-
-        for (String allowedTransportName : allowedTransportNames)
-        {
-            ServerTransport allowedTransport = getTransport(allowedTransportName);
-            if (allowedTransport instanceof AbstractServerTransport)
-                ((AbstractServerTransport)allowedTransport).init();
-        }
+        initializeServerTransports();
 
         _scheduler.start();
 
@@ -186,14 +173,92 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _options.put(AbstractServerTransport.JSON_CONTEXT_OPTION, _jsonContext);
     }
 
-    protected void initializeAllowedTransports()
+    protected void initializeServerTransports()
     {
-        if (_allowedTransports.size() == 0)
+        if (_transports.isEmpty())
         {
-            for (ServerTransport t : _transports.values())
-                _allowedTransports.add(t.getName());
+            String option = (String)getOption(TRANSPORTS_OPTION);
+            if (option == null)
+            {
+                // Order is important, see #findHttpTransport()
+                ServerTransport transport = newWebSocketTransport();
+                if (transport != null)
+                    addTransport(transport);
+                addTransport(new JSONTransport(this));
+                addTransport(new JSONPTransport(this));
+            }
+            else
+            {
+                for (String className : option.split(","))
+                {
+                    ServerTransport transport = newServerTransport(className.trim());
+                    if (transport != null)
+                        addTransport(transport);
+                }
+
+                if (_transports.isEmpty())
+                    throw new IllegalArgumentException("Option '" + TRANSPORTS_OPTION +
+                            "' does not contain a valid list of server transport class names");
+            }
         }
-        _logger.debug("Allowed Transports: {}", _allowedTransports);
+
+        if (_allowedTransports.isEmpty())
+        {
+            String option = (String)getOption(ALLOWED_TRANSPORTS_OPTION);
+            if (option == null)
+            {
+                _allowedTransports.addAll(_transports.keySet());
+            }
+            else
+            {
+                for (String transportName : option.split(","))
+                {
+                    if (_transports.containsKey(transportName))
+                        _allowedTransports.add(transportName);
+                }
+
+                if (_allowedTransports.isEmpty())
+                    throw new IllegalArgumentException("Option '" + ALLOWED_TRANSPORTS_OPTION +
+                            "' does not contain at least one configured server transport name");
+            }
+        }
+
+        for (String transportName : _allowedTransports)
+        {
+            ServerTransport serverTransport = getTransport(transportName);
+            if (serverTransport instanceof AbstractServerTransport)
+                ((AbstractServerTransport)serverTransport).init();
+        }
+    }
+
+    private ServerTransport newWebSocketTransport()
+    {
+        try
+        {
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            loader.loadClass("javax.websocket.server.ServerContainer");
+            return newServerTransport("org.cometd.websocket.server.WebSocketTransport");
+        }
+        catch (Exception x)
+        {
+            return null;
+        }
+    }
+
+    private ServerTransport newServerTransport(String className)
+    {
+        try
+        {
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            @SuppressWarnings("unchecked")
+            Class<? extends ServerTransport> klass = (Class<? extends ServerTransport>)loader.loadClass(className);
+            Constructor<? extends ServerTransport> constructor = klass.getConstructor(BayeuxServerImpl.class);
+            return constructor.newInstance(this);
+        }
+        catch (Exception x)
+        {
+            return null;
+        }
     }
 
     public Scheduler.Task schedule(Runnable task, long delay)
@@ -993,6 +1058,24 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public List<ServerTransport> getTransports()
     {
         return new ArrayList<>(_transports.values());
+    }
+
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    protected HttpTransport findHttpTransport(HttpServletRequest request)
+    {
+        // Avoid allocation of the Iterator
+        for (int i = 0; i < _allowedTransports.size(); ++i)
+        {
+            String transportName = _allowedTransports.get(i);
+            ServerTransport serverTransport = getTransport(transportName);
+            if (serverTransport instanceof HttpTransport)
+            {
+                HttpTransport transport = (HttpTransport)serverTransport;
+                if (transport.accept(request))
+                    return transport;
+            }
+        }
+        return null;
     }
 
     @ManagedAttribute(value = "The transports allowed by this server", readonly = true)

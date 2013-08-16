@@ -25,7 +25,6 @@ import java.util.Map;
 import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
-import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -118,7 +117,6 @@ public abstract class AbstractCometDTest
         for (Map.Entry<String, String> entry : options.entrySet())
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         cometdServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
-        cometdServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
         context.addServlet(cometdServletHolder, cometdURLMapping);
 

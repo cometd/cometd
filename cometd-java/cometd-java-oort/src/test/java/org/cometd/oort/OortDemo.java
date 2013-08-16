@@ -19,9 +19,6 @@ package org.cometd.oort;
 import java.lang.management.ManagementFactory;
 
 import org.cometd.server.CometDServlet;
-import org.cometd.server.transport.JSONPTransport;
-import org.cometd.server.transport.JSONTransport;
-import org.cometd.websocket.server.JettyWebSocketTransport;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -83,8 +80,6 @@ public class OortDemo
         cometd_holder.setInitParameter("interval", "100");
         cometd_holder.setInitParameter("maxInterval", "100000");
         cometd_holder.setInitParameter("multiSessionInterval", "1500");
-        cometd_holder.setInitParameter("transports", JettyWebSocketTransport.class.getName());
-        cometd_holder.setInitParameter("allowedTransports", JettyWebSocketTransport.NAME + "," + JSONTransport.NAME + "," + JSONPTransport.NAME);
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");
 
