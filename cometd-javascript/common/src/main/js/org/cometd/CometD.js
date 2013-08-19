@@ -849,17 +849,9 @@ org.cometd.CometD = function(name)
         }
     }
 
-    function _handshakeFailure(failure)
+    function _handshakeFailure(message)
     {
-        _failHandshake({
-            successful: false,
-            failure: failure,
-            channel: '/meta/handshake',
-            advice: {
-                reconnect: 'retry',
-                interval: _backoff
-            }
-        });
+        _failHandshake(message);
     }
 
     function _failConnect(message)
@@ -925,18 +917,10 @@ org.cometd.CometD = function(name)
         }
     }
 
-    function _connectFailure(failure)
+    function _connectFailure(message)
     {
         _connected = false;
-        _failConnect({
-            successful: false,
-            failure: failure,
-            channel: '/meta/connect',
-            advice: {
-                reconnect: 'retry',
-                interval: _backoff
-            }
-        });
+        _failConnect(message);
     }
 
     function _failDisconnect(message)
@@ -959,21 +943,27 @@ org.cometd.CometD = function(name)
         }
     }
 
-    function _disconnectFailure(failure)
+    function _disconnectFailure(message)
     {
-        _failDisconnect({
-            successful: false,
-            failure: failure,
-            channel: '/meta/disconnect',
-            advice: {
-                reconnect: 'none',
-                interval: 0
-            }
-        });
+        _failDisconnect(message);
     }
 
     function _failSubscribe(message)
     {
+        var subscriptions = _listeners[message.subscription];
+        if (subscriptions)
+        {
+            for (var i = subscriptions.length - 1; i >= 0; --i)
+            {
+                var subscription = subscriptions[i];
+                if (subscription && !subscription.listener)
+                {
+                    delete subscriptions[i];
+                    _cometd._debug('Removed failed subscription', subscription);
+                    break;
+                }
+            }
+        }
         _notifyListeners('/meta/subscribe', message);
         _notifyListeners('/meta/unsuccessful', message);
     }
@@ -990,17 +980,9 @@ org.cometd.CometD = function(name)
         }
     }
 
-    function _subscribeFailure(failure)
+    function _subscribeFailure(message)
     {
-        _failSubscribe({
-            successful: false,
-            failure: failure,
-            channel: '/meta/subscribe',
-            advice: {
-                reconnect: 'none',
-                interval: 0
-            }
-        });
+        _failSubscribe(message);
     }
 
     function _failUnsubscribe(message)
@@ -1021,17 +1003,9 @@ org.cometd.CometD = function(name)
         }
     }
 
-    function _unsubscribeFailure(failure)
+    function _unsubscribeFailure(message)
     {
-        _failUnsubscribe({
-            successful: false,
-            failure: failure,
-            channel: '/meta/unsubscribe',
-            advice: {
-                reconnect: 'none',
-                interval: 0
-            }
-        });
+        _failUnsubscribe(message);
     }
 
     function _handlePublishCallback(message)
@@ -1055,14 +1029,14 @@ org.cometd.CometD = function(name)
     {
         if (message.successful === undefined)
         {
-            if (message.data)
+            if (message.data !== undefined)
             {
                 // It is a plain message, and not a bayeux meta message
                 _notifyListeners(message.channel, message);
             }
             else
             {
-                _cometd._debug('Unknown message', message);
+                _cometd._warn('Unknown Bayeux Message', message);
             }
         }
         else
@@ -1079,17 +1053,9 @@ org.cometd.CometD = function(name)
         }
     }
 
-    function _messageFailure(message, failure)
+    function _messageFailure(failure)
     {
-        _failMessage({
-            successful: false,
-            failure: failure,
-            channel: message.channel,
-            advice: {
-                reconnect: 'none',
-                interval: 0
-            }
-        });
+        _failMessage(failure);
     }
 
     function _receive(message)
@@ -1148,30 +1114,42 @@ org.cometd.CometD = function(name)
     {
         _cometd._debug('handleFailure', conduit, messages, failure);
 
+        failure.transport = conduit;
         for (var i = 0; i < messages.length; ++i)
         {
             var message = messages[i];
-            var messageFailure = _cometd._mixin(false, { message: message, transport: conduit }, failure);
-            var channel = message.channel;
-            switch (channel)
+            var failureMessage = {
+                successful: false,
+                channel: message.channel,
+                failure: failure
+            };
+            failure.message = message;
+            switch (message.channel)
             {
                 case '/meta/handshake':
-                    _handshakeFailure(messageFailure);
+                    failureMessage.id = message.id;
+                    _handshakeFailure(failureMessage);
                     break;
                 case '/meta/connect':
-                    _connectFailure(messageFailure);
+                    failureMessage.id = message.id;
+                    _connectFailure(failureMessage);
                     break;
                 case '/meta/disconnect':
-                    _disconnectFailure(messageFailure);
+                    failureMessage.id = message.id;
+                    _disconnectFailure(failureMessage);
                     break;
                 case '/meta/subscribe':
-                    _subscribeFailure(messageFailure);
+                    failureMessage.id = message.id;
+                    failureMessage.subscription = message.subscription;
+                    _subscribeFailure(failureMessage);
                     break;
                 case '/meta/unsubscribe':
-                    _unsubscribeFailure(messageFailure);
+                    failureMessage.id = message.id;
+                    failureMessage.subscription = message.subscription;
+                    _unsubscribeFailure(failureMessage);
                     break;
                 default:
-                    _messageFailure(message, messageFailure);
+                    _messageFailure(failureMessage);
                     break;
             }
         }
