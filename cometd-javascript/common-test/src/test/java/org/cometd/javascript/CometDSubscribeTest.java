@@ -16,6 +16,13 @@
 
 package org.cometd.javascript;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.DefaultSecurityPolicy;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -186,5 +193,63 @@ public class CometDSubscribeTest extends AbstractCometDTest
                 "");
 
         Assert.assertTrue(latch.await(5000));
+    }
+
+    @Test
+    public void testSubscriptionDeniedRemovesListener() throws Exception
+    {
+        final AtomicBoolean subscriptionAllowed = new AtomicBoolean(false);
+        evaluateScript("var subscriptionAllowed = false;");
+        bayeuxServer.setSecurityPolicy(new DefaultSecurityPolicy()
+        {
+            @Override
+            public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
+            {
+                return subscriptionAllowed.get();
+            }
+        });
+
+        defineClass(Latch.class);
+        evaluateScript("var subscribeLatch = new Latch(1);");
+        Latch subscribeLatch = get("subscribeLatch");
+        evaluateScript("" +
+                "cometd.configure({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });" +
+                "" +
+                "cometd.addListener('/meta/subscribe', function(m)" +
+                "{" +
+                "    /* Either both false or both true should count down the latch */" +
+                "    if (subscriptionAllowed ^ !m.successful)" +
+                "        subscribeLatch.countDown();" +
+                "});" +
+                "" +
+                "cometd.handshake();" +
+                "");
+
+        // Wait for /meta/connect
+        Thread.sleep(1000);
+
+        String sessionId = evaluateScript("cometd.getClientId();");
+        
+        final String channelName = "/test";
+        evaluateScript("var messageLatch = new Latch(1);");
+        Latch messageLatch = get("messageLatch");
+        evaluateScript("cometd.subscribe('" + channelName + "', messageLatch, 'countDown');");
+        Assert.assertTrue(subscribeLatch.await(5000));
+        
+        // Verify that messages are not received
+        bayeuxServer.getSession(sessionId).deliver(null, channelName, "data", null);
+        Assert.assertFalse(messageLatch.await(1000));
+
+        // Reset and allow subscriptions
+        subscribeLatch.reset(1);
+        messageLatch.reset(1);
+        subscriptionAllowed.set(true);
+        evaluateScript("subscriptionAllowed = true");
+        evaluateScript("cometd.subscribe('" + channelName + "', messageLatch, 'countDown');");
+        Assert.assertTrue(subscribeLatch.await(5000));
+
+        // Verify that messages are received
+        bayeuxServer.getChannel(channelName).publish(null, "data", null);
+        Assert.assertTrue(messageLatch.await(1000));
     }
 }
