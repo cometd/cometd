@@ -39,7 +39,8 @@ org.cometd.WebSocketTransport = function()
             }, connectTimeout);
         }
 
-        var webSocket = new org.cometd.WebSocket(url, _cometd.getConfiguration().protocol);
+        var protocol = _cometd.getConfiguration().protocol;
+        var webSocket = protocol ? new org.cometd.WebSocket(url, protocol) : new org.cometd.WebSocket(url);
         var onopen = function()
         {
             self._debug('WebSocket opened', webSocket);
