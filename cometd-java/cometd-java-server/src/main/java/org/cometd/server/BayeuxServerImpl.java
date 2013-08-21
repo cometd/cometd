@@ -223,12 +223,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
         }
 
+        List<String> activeTransports = new ArrayList<>();
         for (String transportName : _allowedTransports)
         {
             ServerTransport serverTransport = getTransport(transportName);
             if (serverTransport instanceof AbstractServerTransport)
+            {
                 ((AbstractServerTransport)serverTransport).init();
+                activeTransports.add(serverTransport.getName());
+            }
         }
+        _logger.debug("Active transports: {}", activeTransports);
     }
 
     private ServerTransport newWebSocketTransport()
@@ -1037,10 +1042,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _transports.get(transport);
     }
 
-    public void addTransport(ServerTransport transport)
+    public ServerTransport addTransport(ServerTransport transport)
     {
-        _logger.debug("addTransport {} from {}", transport.getName(), transport.getClass());
-        _transports.put(transport.getName(), transport);
+        ServerTransport result = _transports.put(transport.getName(), transport);
+        _logger.debug("Added transport {} from {}", transport.getName(), transport.getClass());
+        return result;
     }
 
     public void setTransports(ServerTransport... transports)
