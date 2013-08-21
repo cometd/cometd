@@ -39,6 +39,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -55,7 +56,10 @@ import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.cometd.server.Jackson1JSONContextServer;
+import org.cometd.server.transport.AsyncJSONTransport;
+import org.cometd.server.transport.JSONTransport;
 import org.cometd.websocket.server.JettyWebSocketTransport;
+import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -69,7 +73,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
 
 public class BayeuxLoadServer
 {
@@ -111,6 +115,47 @@ public class BayeuxLoadServer
             value = String.valueOf(maxThreads);
         maxThreads = Integer.parseInt(value);
 
+        BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
+        // Make sure the expiration timeout is large to avoid clients to timeout
+        // This value must be several times larger than the client value
+        // (e.g. 60 s on server vs 5 s on client) so that it's guaranteed that
+        // it will be the client to dispose idle connections.
+        bayeuxServer.setOption(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(60000));
+        // Explicitly set the timeout value
+        bayeuxServer.setOption(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(30000));
+        // Use the faster JSON parser/generator
+        bayeuxServer.setOption(AbstractServerTransport.JSON_CONTEXT_OPTION, Jackson1JSONContextServer.class.getName());
+
+        MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(maxThreads);
+        MonitoringThreadPoolExecutor websocketThreadPool = new MonitoringThreadPoolExecutor(maxThreads, jettyThreadPool.getIdleTimeout(), TimeUnit.MILLISECONDS, new ThreadPoolExecutor.AbortPolicy());
+
+        String availableTransports = "jsr356,jettyws,http,httpasync";
+        String transports = "jsr356,http";
+        System.err.printf("transports (%s) [%s]: ", availableTransports, transports);
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = transports;
+        for (String token : value.split(","))
+        {
+            switch (token.trim())
+            {
+                case "jsr356":
+                    bayeuxServer.addTransport(new LoadWebSocketTransport(bayeuxServer, websocketThreadPool));
+                    break;
+                case "jettyws":
+                    bayeuxServer.addTransport(new LoadJettyWebSocketTransport(bayeuxServer, websocketThreadPool));
+                    break;
+                case "http":
+                    bayeuxServer.addTransport(new JSONTransport(bayeuxServer));
+                    break;
+                case "asynchttp":
+                    bayeuxServer.addTransport(new AsyncJSONTransport(bayeuxServer));
+                    break;
+                default:
+                    throw new IllegalArgumentException("Invalid transport: " + token);
+            }
+        }
+
         boolean stats = true;
         System.err.printf("record statistics [%b]: ", stats);
         value = console.readLine().trim();
@@ -132,8 +177,6 @@ public class BayeuxLoadServer
             value = String.valueOf(qos);
         qos = Boolean.parseBoolean(value);
 
-        MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(maxThreads);
-//        ExecutorThreadPool jettyThreadPool = new ExecutorThreadPool(maxThreads, maxThreads, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
         Server server = new Server(jettyThreadPool);
 
         // Setup JMX
@@ -190,8 +233,10 @@ public class BayeuxLoadServer
         // Add more handlers if needed
 
         ServletContextHandler context = new ServletContextHandler(handler, "/", ServletContextHandler.SESSIONS);
+        context.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
+        context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, BayeuxServer.ATTRIBUTE);
 
-        WebSocketUpgradeFilter.configureContext(context);
+        WebSocketConfiguration.configureContext(context);
 
         // Setup default servlet to serve static files
         context.addServlet(DefaultServlet.class, "/");
@@ -201,30 +246,13 @@ public class BayeuxLoadServer
         String cometdURLMapping = cometdServletPath + "/*";
         CometDServlet cometServlet = new CometDServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometServlet);
-        // Make sure the expiration timeout is large to avoid clients to timeout
-        // This value must be several times larger than the client value
-        // (e.g. 60 s on server vs 5 s on client) so that it's guaranteed that
-        // it will be the client to dispose idle connections.
-        cometdServletHolder.setInitParameter(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(60000));
-        // Explicitly set the timeout value
-        cometdServletHolder.setInitParameter(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(30000));
-        // Use the faster JSON parser/generator
-        cometdServletHolder.setInitParameter(AbstractServerTransport.JSON_CONTEXT_OPTION, Jackson1JSONContextServer.class.getName());
-        cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
         context.addServlet(cometdServletHolder, cometdURLMapping);
+        bayeuxServer.setOption("ws.cometdURLMapping", cometdURLMapping);
+        bayeuxServer.setOption(ServletContext.class.getName(), context.getServletContext());
 
         server.start();
 
-        BayeuxServerImpl bayeux = cometServlet.getBayeux();
-
-        MonitoringThreadPoolExecutor websocketThreadPool = new MonitoringThreadPoolExecutor(maxThreads, jettyThreadPool.getIdleTimeout(), TimeUnit.MILLISECONDS, new ThreadPoolExecutor.AbortPolicy());
-
-        LoadWebSocketTransport webSocketTransport = new LoadWebSocketTransport(bayeux, websocketThreadPool);
-        bayeux.addTransport(webSocketTransport);
-        webSocketTransport.init();
-        bayeux.setAllowedTransports("websocket", "long-polling");
-
-        new StatisticsService(bayeux, jettyThreadPool, websocketThreadPool, statisticsHandler, requestLatencyHandler);
+        new StatisticsService(bayeuxServer, jettyThreadPool, websocketThreadPool, statisticsHandler, requestLatencyHandler);
     }
 
     public static class StatisticsService extends AbstractService
@@ -557,7 +585,24 @@ public class BayeuxLoadServer
         }
     }
 
-    public static class LoadWebSocketTransport extends JettyWebSocketTransport
+    public static class LoadJettyWebSocketTransport extends JettyWebSocketTransport
+    {
+        private final Executor executor;
+
+        public LoadJettyWebSocketTransport(BayeuxServerImpl bayeux, Executor executor)
+        {
+            super(bayeux);
+            this.executor = executor;
+        }
+
+        @Override
+        protected Executor newExecutor()
+        {
+            return executor;
+        }
+    }
+
+    public static class LoadWebSocketTransport extends WebSocketTransport
     {
         private final Executor executor;
 
@@ -571,12 +616,6 @@ public class BayeuxLoadServer
         protected Executor newExecutor()
         {
             return executor;
-        }
-
-        @Override
-        public void init()
-        {
-            super.init();
         }
     }
 }
