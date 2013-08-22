@@ -46,7 +46,7 @@ public class AsyncJSONTransport extends HttpTransport
     private final static String PREFIX = "long-polling.json";
     private final static String NAME = "long-polling";
 
-    protected AsyncJSONTransport(BayeuxServerImpl bayeux)
+    public AsyncJSONTransport(BayeuxServerImpl bayeux)
     {
         super(bayeux, NAME);
         setOptionPrefix(PREFIX);
