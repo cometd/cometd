@@ -116,21 +116,12 @@ public class BayeuxLoadServer
         maxThreads = Integer.parseInt(value);
 
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
-        // Make sure the expiration timeout is large to avoid clients to timeout
-        // This value must be several times larger than the client value
-        // (e.g. 60 s on server vs 5 s on client) so that it's guaranteed that
-        // it will be the client to dispose idle connections.
-        bayeuxServer.setOption(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(60000));
-        // Explicitly set the timeout value
-        bayeuxServer.setOption(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(30000));
-        // Use the faster JSON parser/generator
-        bayeuxServer.setOption(AbstractServerTransport.JSON_CONTEXT_OPTION, Jackson1JSONContextServer.class.getName());
 
         MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(maxThreads);
         MonitoringThreadPoolExecutor websocketThreadPool = new MonitoringThreadPoolExecutor(maxThreads, jettyThreadPool.getIdleTimeout(), TimeUnit.MILLISECONDS, new ThreadPoolExecutor.AbortPolicy());
 
-        String availableTransports = "jsr356,jettyws,http,httpasync";
-        String transports = "jsr356,http";
+        String availableTransports = "jsrws,jettyws,http,asynchttp";
+        String transports = "jsrws,http";
         System.err.printf("transports (%s) [%s]: ", availableTransports, transports);
         value = console.readLine().trim();
         if (value.length() == 0)
@@ -139,7 +130,7 @@ public class BayeuxLoadServer
         {
             switch (token.trim())
             {
-                case "jsr356":
+                case "jsrws":
                     bayeuxServer.addTransport(new LoadWebSocketTransport(bayeuxServer, websocketThreadPool));
                     break;
                 case "jettyws":
@@ -247,6 +238,16 @@ public class BayeuxLoadServer
         CometDServlet cometServlet = new CometDServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometServlet);
         context.addServlet(cometdServletHolder, cometdURLMapping);
+
+        // Make sure the expiration timeout is large to avoid clients to timeout
+        // This value must be several times larger than the client value
+        // (e.g. 60 s on server vs 5 s on client) so that it's guaranteed that
+        // it will be the client to dispose idle connections.
+        bayeuxServer.setOption(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(60000));
+        // Explicitly set the timeout value
+        bayeuxServer.setOption(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(30000));
+        // Use the faster JSON parser/generator
+        bayeuxServer.setOption(AbstractServerTransport.JSON_CONTEXT_OPTION, Jackson1JSONContextServer.class.getName());
         bayeuxServer.setOption("ws.cometdURLMapping", cometdURLMapping);
         bayeuxServer.setOption(ServletContext.class.getName(), context.getServletContext());
 
@@ -328,7 +329,8 @@ public class BayeuxLoadServer
 
                     if (jettyThreadPool != null)
                     {
-                        System.err.printf("Jetty Thread Pool - Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+                        System.err.printf("Jetty Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+                                jettyThreadPool.getTasks(),
                                 jettyThreadPool.getMaxActiveThreads(),
                                 jettyThreadPool.getMaxQueueSize(),
                                 TimeUnit.NANOSECONDS.toMillis(jettyThreadPool.getAverageQueueLatency()),
@@ -336,7 +338,8 @@ public class BayeuxLoadServer
                     }
                     if (websocketThreadPool != null)
                     {
-                        System.err.printf("WebSocket Thread Pool - Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+                        System.err.printf("WebSocket Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+                                websocketThreadPool.getTasks(),
                                 websocketThreadPool.getMaxActiveThreads(),
                                 websocketThreadPool.getMaxQueueSize(),
                                 TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getAverageQueueLatency()),

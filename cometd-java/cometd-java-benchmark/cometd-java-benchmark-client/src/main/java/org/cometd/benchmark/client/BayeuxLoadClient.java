@@ -58,8 +58,13 @@ import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 
 public class BayeuxLoadClient
 {
+    private static final String ID_FIELD = "ID";
+    private static final String START_FIELD = "start";
+
+    private final SystemTimer systemTimer = SystemTimer.detect();
     private final Random random = new Random();
     private final BenchmarkHelper helper = new BenchmarkHelper();
+    private final AtomicLong ids = new AtomicLong();
     private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<LoadBayeuxClient>());
     private final ConcurrentMap<String, ChannelId> channelIds = new ConcurrentHashMap<>();
     private final ConcurrentMap<Integer, AtomicInteger> rooms = new ConcurrentHashMap<>();
@@ -100,7 +105,6 @@ public class BayeuxLoadClient
     public void run() throws Exception
     {
         System.err.println("detecting timer resolution...");
-        SystemTimer systemTimer = SystemTimer.detect();
         System.err.printf("native timer resolution: %d \u00B5s%n", systemTimer.getNativeResolution());
         System.err.printf("emulated timer resolution: %d \u00B5s%n", systemTimer.getEmulatedResolution());
         System.err.println();
@@ -213,8 +217,6 @@ public class BayeuxLoadClient
 
         LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(clientTransportType), null);
         statsClient.handshake();
-
-        AtomicLong ids = new AtomicLong();
 
         int clients = 100;
         int batchCount = 1000;
@@ -344,48 +346,7 @@ public class BayeuxLoadClient
             System.err.printf("Sending %d batches of %dx%d bytes messages every %d \u00B5s%n", batchCount, batchSize, messageSize, batchPause);
 
             long start = System.nanoTime();
-            int clientIndex = -1;
-            long expected = 0;
-            for (int i = 0; i < batchCount; ++i)
-            {
-                if (randomize)
-                {
-                    clientIndex = nextRandom(bayeuxClients.size());
-                }
-                else
-                {
-                    ++clientIndex;
-                    if (clientIndex >= bayeuxClients.size())
-                        clientIndex = 0;
-                }
-                LoadBayeuxClient client = bayeuxClients.get(clientIndex);
-
-                client.startBatch();
-                for (int b = 0; b < batchSize; ++b)
-                {
-                    int room = -1;
-                    AtomicInteger clientsPerRoom = null;
-                    while (clientsPerRoom == null || clientsPerRoom.get() == 0)
-                    {
-                        room = nextRandom(rooms);
-                        clientsPerRoom = this.rooms.get(room);
-                    }
-                    Map<String, Object> message = new HashMap<>(5);
-                    message.put("room", room);
-                    message.put("user", clientIndex);
-                    message.put("chat", chat);
-                    message.put("start", System.nanoTime());
-                    message.put("ID", String.valueOf(ids.incrementAndGet()));
-                    ClientSessionChannel clientChannel = client.getChannel(getChannelId(channel + "/" + room));
-                    clientChannel.publish(message);
-                    clientChannel.release();
-                    expected += clientsPerRoom.get();
-                }
-                client.endBatch();
-
-                if (batchPause > 0)
-                    systemTimer.sleep(batchPause);
-            }
+            long expected = runBatches(batchCount, batchSize, batchPause, chat, randomize, channel);
             long end = System.nanoTime();
 
             helper.stopStatistics();
@@ -421,6 +382,62 @@ public class BayeuxLoadClient
 
         scheduler.shutdown();
         scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
+    }
+
+    private long runBatches(int batchCount, int batchSize, long batchPause, String chat, boolean randomize, String channel)
+    {
+        int clientIndex = -1;
+        long expected = 0;
+        for (int i = 0; i < batchCount; ++i)
+        {
+            if (randomize)
+            {
+                clientIndex = nextRandom(bayeuxClients.size());
+            }
+            else
+            {
+                ++clientIndex;
+                if (clientIndex >= bayeuxClients.size())
+                    clientIndex = 0;
+            }
+            LoadBayeuxClient client = bayeuxClients.get(clientIndex);
+            expected += sendBatches(batchSize, batchPause, chat, channel, client);
+        }
+        return expected;
+    }
+
+    private long sendBatches(int batchSize, long batchPause, String chat, String channel, LoadBayeuxClient client)
+    {
+        long expected = 0;
+        client.startBatch();
+        for (int b = 0; b < batchSize; ++b)
+        {
+            int room = -1;
+            AtomicInteger clientsPerRoom = null;
+            while (clientsPerRoom == null || clientsPerRoom.get() == 0)
+            {
+                room = nextRandom(rooms.size());
+                clientsPerRoom = rooms.get(room);
+            }
+            Map<String, Object> message = new HashMap<>(5);
+            // Additional fields to simulate a chat message
+            message.put("room", room);
+            message.put("user", client.hashCode());
+            message.put("chat", chat);
+            // Mandatory fields to record latencies
+            message.put(START_FIELD, System.nanoTime());
+            message.put(ID_FIELD, String.valueOf(ids.incrementAndGet()));
+            ClientSessionChannel clientChannel = client.getChannel(getChannelId(channel + "/" + room));
+            clientChannel.publish(message);
+            clientChannel.release();
+            expected += clientsPerRoom.get();
+        }
+        client.endBatch();
+
+        if (batchPause > 0)
+            systemTimer.sleep(batchPause);
+
+        return expected;
     }
 
     private ClientTransport newClientTransport(ClientTransportType clientTransportType)
@@ -618,7 +635,8 @@ public class BayeuxLoadClient
                 messageCount == 0 ? -1 : TimeUnit.NANOSECONDS.toMillis(totLatency.get() / messageCount),
                 TimeUnit.NANOSECONDS.toMillis(maxLatency.get()));
 
-        System.err.printf("Thread Pool - Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+        System.err.printf("Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+                threadPool.getTasks(),
                 threadPool.getMaxActiveThreads(),
                 threadPool.getMaxQueueSize(),
                 TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageQueueLatency()),
@@ -721,35 +739,28 @@ public class BayeuxLoadClient
             Map<String, Object> data = message.getDataAsMap();
             if (data != null)
             {
-                Long startTime = ((Number)data.get("start")).longValue();
-                if (startTime != null)
-                {
-                    long endTime = System.nanoTime();
-                    if (start.get() == 0L)
-                        start.set(endTime);
-                    end.set(endTime);
-                    messages.incrementAndGet();
+                long startTime = ((Number)data.get(START_FIELD)).longValue();
+                long endTime = System.nanoTime();
+                if (start.get() == 0L)
+                    start.set(endTime);
+                end.set(endTime);
+                messages.incrementAndGet();
 
-                    String id = (String)data.get("ID");
+                String id = (String)data.get(ID_FIELD);
 
-                    AtomicStampedReference<Long> sendTimeRef = sendTimes.get(id);
-                    long sendTime = sendTimeRef.getReference();
-                    // Update count atomically
-                    if (Atomics.decrement(sendTimeRef) == 0)
-                        sendTimes.remove(id);
+                AtomicStampedReference<Long> sendTimeRef = sendTimes.get(id);
+                long sendTime = sendTimeRef.getReference();
+                // Update count atomically
+                if (Atomics.decrement(sendTimeRef) == 0)
+                    sendTimes.remove(id);
 
-                    AtomicStampedReference<List<Long>> arrivalTimeRef = arrivalTimes.get(id);
-                    long arrivalTime = arrivalTimeRef.getReference().remove(0);
-                    // Update count atomically
-                    if (Atomics.decrement(arrivalTimeRef) == 0)
-                        arrivalTimes.remove(id);
+                AtomicStampedReference<List<Long>> arrivalTimeRef = arrivalTimes.get(id);
+                long arrivalTime = arrivalTimeRef.getReference().remove(0);
+                // Update count atomically
+                if (Atomics.decrement(arrivalTimeRef) == 0)
+                    arrivalTimes.remove(id);
 
-                    updateLatencies(startTime, sendTime, arrivalTime, endTime, recordDetails);
-                }
-                else
-                {
-                    throw new IllegalStateException("No 'start' field in message " + message);
-                }
+                updateLatencies(startTime, sendTime, arrivalTime, endTime, recordDetails);
             }
             else
             {
@@ -832,7 +843,7 @@ public class BayeuxLoadClient
                 {
                     int room = (Integer)data.get("room");
                     int clientsInRoom = rooms.get(room).get();
-                    String id = (String)data.get("ID");
+                    String id = (String)data.get(ID_FIELD);
                     sendTimes.put(id, new AtomicStampedReference<>(now, clientsInRoom));
                     // There is no write-cheap concurrent list in JDK, so let's use a synchronized wrapper
                     arrivalTimes.put(id, new AtomicStampedReference<>(Collections.synchronizedList(new LinkedList<Long>()), clientsInRoom));
@@ -851,7 +862,7 @@ public class BayeuxLoadClient
                 if (data != null)
                 {
                     response = true;
-                    String id = (String)data.get("ID");
+                    String id = (String)data.get(ID_FIELD);
                     arrivalTimes.get(id).getReference().add(now);
                 }
             }

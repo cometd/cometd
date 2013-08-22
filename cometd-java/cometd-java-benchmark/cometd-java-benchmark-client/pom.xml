@@ -25,19 +25,9 @@
                         <argument>-Xms2g</argument>
                         <argument>-Xmn1g</argument>
                         <argument>-XX:+PrintCommandLineFlags</argument>
-                        <argument>-XX:-UseSplitVerifier</argument>
-                        <argument>-XX:+PrintGCDateStamps</argument>
                         <argument>-XX:+PrintGCTimeStamps</argument>
                         <argument>-XX:+PrintGCDetails</argument>
-                        <argument>-XX:+ParallelGCVerbose</argument>
-                        <!--<argument>-XX:+PrintGCTaskTimeStamps</argument>-->
                         <argument>-XX:+UseParallelOldGC</argument>
-                        <!--<argument>-XX:-UseAdaptiveSizePolicy</argument>-->
-                        <!--<argument>-XX:+UseNUMA</argument>-->
-                        <!--<argument>-XX:+AggressiveOpts</argument>-->
-                        <!--<argument>-XX:+PrintTenuringDistribution</argument>-->
-                        <!--<argument>-XX:+PrintGCApplicationStoppedTime</argument>-->
-                        <!--<argument>-XX:+PrintHeapAtGC</argument>-->
                         <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
                         <!--<argument>-XX:+UseG1GC</argument>-->
                         <argument>-cp</argument>
