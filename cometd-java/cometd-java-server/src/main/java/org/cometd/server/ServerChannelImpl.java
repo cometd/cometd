@@ -210,7 +210,12 @@ public class ServerChannelImpl implements ServerChannel
 
     public Set<ServerSession> getSubscribers()
     {
-        return Collections.unmodifiableSet(_subscribers);
+        return Collections.unmodifiableSet(subscribers());
+    }
+
+    public Set<ServerSession> subscribers()
+    {
+        return _subscribers;
     }
 
     public boolean isBroadcast()
@@ -275,7 +280,12 @@ public class ServerChannelImpl implements ServerChannel
 
     public List<ServerChannelListener> getListeners()
     {
-        return Collections.unmodifiableList(_listeners);
+        return Collections.unmodifiableList(listeners());
+    }
+
+    protected List<ServerChannelListener> listeners()
+    {
+        return _listeners;
     }
 
     public ChannelId getChannelId()
@@ -463,7 +473,12 @@ public class ServerChannelImpl implements ServerChannel
 
     public List<Authorizer> getAuthorizers()
     {
-        return Collections.unmodifiableList(_authorizers);
+        return Collections.unmodifiableList(authorizers());
+    }
+
+    protected List<Authorizer> authorizers()
+    {
+        return _authorizers;
     }
 
     @Override

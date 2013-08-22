@@ -720,7 +720,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         Authorizer.Result result = Authorizer.Result.ignore();
         for (ServerChannel channel : channels)
         {
-            for (Authorizer authorizer : channel.getAuthorizers())
+            for (Authorizer authorizer : ((ServerChannelImpl)channel).authorizers())
             {
                 called = true;
                 Authorizer.Result authorization = authorizer.authorize(operation, channelId, session, message);
@@ -778,14 +778,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 continue;
             if (wildChannel.isLazy())
                 mutable.setLazy(true);
-            for (ServerChannelListener listener : wildChannel.getListeners())
+            for (ServerChannelListener listener : wildChannel.listeners())
                 if (listener instanceof MessageListener)
                     if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
                         return;
         }
 
         // Call the leaf listeners
-        for (ServerChannelListener listener : to.getListeners())
+        for (ServerChannelListener listener : to.listeners())
             if (listener instanceof MessageListener)
                 if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
                     return;
@@ -813,7 +813,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             {
                 if (wildChannel == null)
                     continue;
-                for (ServerSession session : wildChannel.getSubscribers())
+                for (ServerSession session : wildChannel.subscribers())
                 {
                     if (wildSubscribers == null)
                         wildSubscribers = new HashSet<>();
@@ -824,7 +824,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
 
         // Call the leaf subscribers
-        for (ServerSession session : to.getSubscribers())
+        for (ServerSession session : to.subscribers())
         {
             if (wildSubscribers == null || !wildSubscribers.contains(session.getId()))
                 ((ServerSessionImpl)session).doDeliver(from, mutable);
