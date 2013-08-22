@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class MonitoringQueuedThreadPool extends QueuedThreadPool
 {
-    private final AtomicInteger jobs = new AtomicInteger();
+    private final AtomicLong tasks = new AtomicLong();
     private final AtomicLong maxLatency = new AtomicLong();
     private final AtomicLong totalLatency = new AtomicLong();
     private final AtomicInteger threads = new AtomicInteger();
@@ -51,7 +51,7 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
                 long latency = System.nanoTime() - begin;
                 Atomics.updateMax(maxLatency, latency);
                 totalLatency.addAndGet(latency);
-                jobs.incrementAndGet();
+                tasks.incrementAndGet();
                 Atomics.updateMax(maxThreads, threads.incrementAndGet());
                 try
                 {
@@ -68,11 +68,16 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
     public void reset()
     {
         queue.reset();
-        jobs.set(0);
+        tasks.set(0);
         maxLatency.set(0);
         totalLatency.set(0);
         threads.set(0);
         maxThreads.set(0);
+    }
+
+    public long getTasks()
+    {
+        return tasks.get();
     }
 
     public int getMaxActiveThreads()
@@ -87,7 +92,7 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
 
     public long getAverageQueueLatency()
     {
-        int count = jobs.get();
+        long count = tasks.get();
         return count == 0 ? -1 : totalLatency.get() / count;
     }
 

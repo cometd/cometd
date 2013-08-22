@@ -53,6 +53,11 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
         maxThreads.set(0);
     }
 
+    public long getTasks()
+    {
+        return tasks.get();
+    }
+
     public long getMaxQueueLatency()
     {
         return maxLatency.get();

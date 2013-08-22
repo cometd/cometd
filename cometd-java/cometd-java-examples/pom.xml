@@ -66,14 +66,10 @@
                                 <argument>-Xms2g</argument>
                                 <argument>-Xmn1g</argument>
                                 <argument>-XX:+PrintCommandLineFlags</argument>
-                                <argument>-XX:-UseSplitVerifier</argument>
+                                <argument>-XX:+PrintGCTimeStamps</argument>
                                 <argument>-XX:+PrintGCDetails</argument>
                                 <argument>-XX:+UseParallelOldGC</argument>
-                                <argument>-XX:-UseAdaptiveSizePolicy</argument>
-                                <argument>-XX:+UseNUMA</argument>
-                                <argument>-XX:+AggressiveOpts</argument>
                                 <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
-                                <!--<argument>-XX:+UnlockExperimentalVMOptions</argument>-->
                                 <!--<argument>-XX:+UseG1GC</argument>-->
                                 <argument>-cp</argument>
                                 <classpath />
@@ -113,14 +109,10 @@
                                 <argument>-Xms2g</argument>
                                 <argument>-Xmn1g</argument>
                                 <argument>-XX:+PrintCommandLineFlags</argument>
-                                <argument>-XX:-UseSplitVerifier</argument>
+                                <argument>-XX:+PrintGCTimeStamps</argument>
                                 <argument>-XX:+PrintGCDetails</argument>
                                 <argument>-XX:+UseParallelOldGC</argument>
-                                <argument>-XX:-UseAdaptiveSizePolicy</argument>
-                                <argument>-XX:+UseNUMA</argument>
-                                <argument>-XX:+AggressiveOpts</argument>
                                 <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
-                                <!--<argument>-XX:+UnlockExperimentalVMOptions</argument>-->
                                 <!--<argument>-XX:+UseG1GC</argument>-->
                                 <argument>-cp</argument>
                                 <classpath />

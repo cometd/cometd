@@ -611,7 +611,8 @@ public class BayeuxLoadClient
                 messageCount == 0 ? -1 : TimeUnit.NANOSECONDS.toMillis(totLatency.get() / messageCount),
                 TimeUnit.NANOSECONDS.toMillis(maxLatency.get()));
 
-        System.err.printf("Thread Pool - Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+        System.err.printf("Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+                threadPool.getTasks(),
                 threadPool.getMaxActiveThreads(),
                 threadPool.getMaxQueueSize(),
                 TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageQueueLatency()),
