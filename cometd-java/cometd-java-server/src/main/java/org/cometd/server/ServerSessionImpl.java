@@ -247,17 +247,21 @@ public class ServerSessionImpl implements ServerSession
         {
             queueSize = _queue.size();
         }
-        for (ServerSessionListener listener : _listeners)
+
+        if (!_listeners.isEmpty())
         {
-            if (maxQueueSize > 0 && queueSize > maxQueueSize && listener instanceof MaxQueueListener)
+            for (ServerSessionListener listener : _listeners)
             {
-                if (!notifyQueueMaxed((MaxQueueListener)listener, from, message))
-                    return;
-            }
-            if (listener instanceof MessageListener)
-            {
-                if (!notifyOnMessage((MessageListener)listener, from, message))
-                    return;
+                if (maxQueueSize > 0 && queueSize > maxQueueSize && listener instanceof MaxQueueListener)
+                {
+                    if (!notifyQueueMaxed((MaxQueueListener)listener, from, message))
+                        return;
+                }
+                if (listener instanceof MessageListener)
+                {
+                    if (!notifyOnMessage((MessageListener)listener, from, message))
+                        return;
+                }
             }
         }
 
@@ -680,9 +684,12 @@ public class ServerSessionImpl implements ServerSession
         if (!message.isMeta())
             throw new IllegalStateException();
 
-        for (Extension extension : _extensions)
-            if (!notifySendMeta(extension, message))
-                return false;
+        if (!_extensions.isEmpty())
+        {
+            for (Extension extension : _extensions)
+                if (!notifySendMeta(extension, message))
+                    return false;
+        }
 
         return true;
     }
@@ -705,11 +712,14 @@ public class ServerSessionImpl implements ServerSession
         if (message.isMeta())
             throw new IllegalStateException();
 
-        for (Extension extension : _extensions)
+        if (!_extensions.isEmpty())
         {
-            message = notifySend(extension, message);
-            if (message == null)
-                return null;
+            for (Extension extension : _extensions)
+            {
+                message = notifySend(extension, message);
+                if (message == null)
+                    return null;
+            }
         }
 
         return message;

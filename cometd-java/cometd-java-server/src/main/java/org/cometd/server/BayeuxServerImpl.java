@@ -720,19 +720,23 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         Authorizer.Result result = Authorizer.Result.ignore();
         for (ServerChannel channel : channels)
         {
-            for (Authorizer authorizer : ((ServerChannelImpl)channel).authorizers())
+            List<Authorizer> authorizers = ((ServerChannelImpl)channel).authorizers();
+            if (!authorizers.isEmpty())
             {
-                called = true;
-                Authorizer.Result authorization = authorizer.authorize(operation, channelId, session, message);
-                _logger.debug("Authorizer {} on channel {} {} {} for channel {}", authorizer, channel, authorization, operation, channelId);
-                if (authorization instanceof Authorizer.Result.Denied)
+                for (Authorizer authorizer : authorizers)
                 {
-                    result = authorization;
-                    break;
-                }
-                else if (authorization instanceof Authorizer.Result.Granted)
-                {
-                    result = authorization;
+                    called = true;
+                    Authorizer.Result authorization = authorizer.authorize(operation, channelId, session, message);
+                    _logger.debug("Authorizer {} on channel {} {} {} for channel {}", authorizer, channel, authorization, operation, channelId);
+                    if (authorization instanceof Authorizer.Result.Denied)
+                    {
+                        result = authorization;
+                        break;
+                    }
+                    else if (authorization instanceof Authorizer.Result.Granted)
+                    {
+                        result = authorization;
+                    }
                 }
             }
         }
@@ -778,17 +782,25 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 continue;
             if (wildChannel.isLazy())
                 mutable.setLazy(true);
-            for (ServerChannelListener listener : wildChannel.listeners())
+            List<ServerChannelListener> listeners = wildChannel.listeners();
+            if (!listeners.isEmpty())
+            {
+                for (ServerChannelListener listener : listeners)
+                    if (listener instanceof MessageListener)
+                        if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
+                            return;
+            }
+        }
+
+        // Call the leaf listeners
+        List<ServerChannelListener> listeners = to.listeners();
+        if (!listeners.isEmpty())
+        {
+            for (ServerChannelListener listener : listeners)
                 if (listener instanceof MessageListener)
                     if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
                         return;
         }
-
-        // Call the leaf listeners
-        for (ServerChannelListener listener : to.listeners())
-            if (listener instanceof MessageListener)
-                if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
-                    return;
 
         // Exactly at this point, we convert the message to JSON and therefore
         // any further modification will be lost.
@@ -813,29 +825,41 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             {
                 if (wildChannel == null)
                     continue;
-                for (ServerSession session : wildChannel.subscribers())
+                Set<ServerSession> subscribers = wildChannel.subscribers();
+                if (!subscribers.isEmpty())
                 {
-                    if (wildSubscribers == null)
-                        wildSubscribers = new HashSet<>();
-                    if (wildSubscribers.add(session.getId()))
-                        ((ServerSessionImpl)session).doDeliver(from, mutable);
+                    for (ServerSession session : subscribers)
+                    {
+                        if (wildSubscribers == null)
+                            wildSubscribers = new HashSet<>();
+                        if (wildSubscribers.add(session.getId()))
+                            ((ServerSessionImpl)session).doDeliver(from, mutable);
+                    }
                 }
             }
         }
 
         // Call the leaf subscribers
-        for (ServerSession session : to.subscribers())
+        Set<ServerSession> subscribers = to.subscribers();
+        if (!subscribers.isEmpty())
         {
-            if (wildSubscribers == null || !wildSubscribers.contains(session.getId()))
-                ((ServerSessionImpl)session).doDeliver(from, mutable);
+            for (ServerSession session : subscribers)
+            {
+                if (wildSubscribers == null || !wildSubscribers.contains(session.getId()))
+                    ((ServerSessionImpl)session).doDeliver(from, mutable);
+            }
         }
 
         // Meta handlers
         if (to.isMeta())
         {
-            for (ServerChannelListener listener : to.getListeners())
-                if (listener instanceof BayeuxServerImpl.HandlerListener)
-                    ((BayeuxServerImpl.HandlerListener)listener).onMessage(from, mutable);
+            listeners = to.listeners();
+            if (!listeners.isEmpty())
+            {
+                for (ServerChannelListener listener : listeners)
+                    if (listener instanceof BayeuxServerImpl.HandlerListener)
+                        ((BayeuxServerImpl.HandlerListener)listener).onMessage(from, mutable);
+            }
         }
     }
 
