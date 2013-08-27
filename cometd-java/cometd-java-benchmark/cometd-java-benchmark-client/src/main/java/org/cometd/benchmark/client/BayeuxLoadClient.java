@@ -164,7 +164,7 @@ public class BayeuxLoadClient
             value = channel;
         channel = value;
 
-        int rooms = 100;
+        int rooms = Integer.parseInt(System.getProperty("cometd.rooms", "100"));
         System.err.printf("rooms [%d]: ", rooms);
         value = console.readLine().trim();
         if (value.length() == 0)
