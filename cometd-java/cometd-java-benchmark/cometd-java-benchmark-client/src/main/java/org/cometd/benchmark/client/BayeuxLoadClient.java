@@ -111,14 +111,14 @@ public class BayeuxLoadClient
 
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
 
-        String host = "localhost";
+        String host = System.getProperty("cometd.server", "localhost");
         System.err.printf("server [%s]: ", host);
         String value = console.readLine().trim();
         if (value.length() == 0)
             value = host;
         host = value;
 
-        int port = 8080;
+        int port = Integer.parseInt(System.getProperty("cometd.port", "8080"));
         System.err.printf("port [%d]: ", port);
         value = console.readLine().trim();
         if (value.length() == 0)
@@ -157,7 +157,7 @@ public class BayeuxLoadClient
         String uri = value + "/cometd";
         String url = (ssl ? "https" : "http") + "://" + host + ":" + port + uri;
 
-        String channel = "/chat/demo";
+        String channel = System.getProperty("cometd.channel", "/chat/demo");
         System.err.printf("channel [%s]: ", channel);
         value = console.readLine().trim();
         if (value.length() == 0)
