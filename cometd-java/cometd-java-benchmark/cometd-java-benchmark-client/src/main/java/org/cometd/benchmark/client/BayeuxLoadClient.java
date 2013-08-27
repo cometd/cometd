@@ -142,7 +142,7 @@ public class BayeuxLoadClient
             value = String.valueOf(ssl);
         ssl = Boolean.parseBoolean(value);
 
-        int maxThreads = 256;
+        int maxThreads = Integer.parseInt(System.getProperty("cometd.threads", "256"));
         System.err.printf("max threads [%d]: ", maxThreads);
         value = console.readLine().trim();
         if (value.length() == 0)

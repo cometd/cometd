@@ -108,7 +108,7 @@ public class BayeuxLoadServer
             value = String.valueOf(selectors);
         selectors = Integer.parseInt(value);
 
-        int maxThreads = 256;
+        int maxThreads = Integer.parseInt(System.getProperty("cometd.threads", "256"));
         System.err.printf("max threads [%d]: ", maxThreads);
         value = console.readLine().trim();
         if (value.length() == 0)
