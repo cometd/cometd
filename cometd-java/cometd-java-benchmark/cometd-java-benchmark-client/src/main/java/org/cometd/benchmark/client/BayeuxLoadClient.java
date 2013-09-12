@@ -197,9 +197,10 @@ public class BayeuxLoadClient
 
         httpClient = new HttpClient();
         httpClient.addBean(mbeanContainer);
-        httpClient.setMaxConnectionsPerDestination(50000);
+        httpClient.setMaxConnectionsPerDestination(60000);
+        httpClient.setMaxRequestsQueuedPerDestination(10000);
         httpClient.setExecutor(threadPool);
-        httpClient.setIdleTimeout(5000);
+        httpClient.setIdleTimeout(8000);
         httpClient.start();
         mbeanContainer.beanAdded(null, httpClient);
 
@@ -448,13 +449,14 @@ public class BayeuxLoadClient
             {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT, new Jackson1JSONContextClient());
+                options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, httpClient.getIdleTimeout() * 3 / 4);
                 return new LongPollingTransport(options, httpClient);
             }
             case WEBSOCKET:
             {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT, new Jackson1JSONContextClient());
-                options.put(JettyWebSocketTransport.IDLE_TIMEOUT_OPTION, 35000);
+                options.put(JettyWebSocketTransport.IDLE_TIMEOUT_OPTION, httpClient.getIdleTimeout() * 3 / 4);
                 return new JettyWebSocketTransport(options, scheduler, webSocketClient);
             }
             default:
