@@ -140,7 +140,7 @@ public class LongPollingTransport extends HttpClientTransport
             _requests.add(request);
         }
 
-        request.listener(new Request.Listener.Empty()
+        request.listener(new Request.Listener.Adapter()
         {
             @Override
             public void onHeaders(Request request)

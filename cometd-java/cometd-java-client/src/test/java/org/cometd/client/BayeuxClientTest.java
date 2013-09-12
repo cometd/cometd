@@ -148,7 +148,7 @@ public class BayeuxClientTest extends ClientServerTest
             @Override
             protected void customize(Request request)
             {
-                request.listener(new Request.Listener.Empty()
+                request.listener(new Request.Listener.Adapter()
                 {
                     @Override
                     public void onBegin(Request request)
@@ -1086,7 +1086,7 @@ public class BayeuxClientTest extends ClientServerTest
             protected void customize(Request request)
             {
                 if (failHandShake.compareAndSet(true, false))
-                    request.listener(new Request.Listener.Empty()
+                    request.listener(new Request.Listener.Adapter()
                     {
                         @Override
                         public void onBegin(Request request)
