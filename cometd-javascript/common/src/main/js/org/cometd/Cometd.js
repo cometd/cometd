@@ -207,14 +207,15 @@ org.cometd.Cometd = function(name)
 
         _config = _cometd._mixin(false, _config, configuration);
 
-        if (!_config.url)
+        var url = _cometd.getURL();
+        if (!url)
         {
             throw 'Missing required configuration parameter \'url\' specifying the Bayeux server URL';
         }
 
         // Check if we're cross domain
         // [1] = protocol://, [2] = host:port, [3] = host, [4] = IPv6_host, [5] = IPv4_host, [6] = :port, [7] = port, [8] = uri, [9] = rest
-        var urlParts = /(^https?:\/\/)?(((\[[^\]]+\])|([^:\/\?#]+))(:(\d+))?)?([^\?#]*)(.*)?/.exec(_config.url);
+        var urlParts = /(^https?:\/\/)?(((\[[^\]]+\])|([^:\/\?#]+))(:(\d+))?)?([^\?#]*)(.*)?/.exec(url);
         var hostAndPort = urlParts[2];
         var uri = urlParts[8];
         var afterURI = urlParts[9];
@@ -499,7 +500,7 @@ org.cometd.Cometd = function(name)
             return;
         }
 
-        var url = _config.url;
+        var url = _cometd.getURL();
         if (_config.appendMessageTypeToURL)
         {
             // If url does not end with '/', then append it
@@ -728,7 +729,8 @@ org.cometd.Cometd = function(name)
         var version = '1.0';
 
         // Figure out the transports to send to the server
-        var transportTypes = _transports.findTransportTypes(version, _crossDomain, _config.url);
+        var url = _cometd.getURL();
+        var transportTypes = _transports.findTransportTypes(version, _crossDomain, url);
 
         var bayeuxMessage = {
             version: version,
@@ -746,7 +748,7 @@ org.cometd.Cometd = function(name)
 
         // Pick up the first available transport as initial transport
         // since we don't know if the server supports it
-        _transport = _transports.negotiateTransport(transportTypes, version, _crossDomain, _config.url);
+        _transport = _transports.negotiateTransport(transportTypes, version, _crossDomain, url);
         if (!_transport)
         {
             var error = 'Could not find initial transport among: ' + _transports.getTransportTypes();
@@ -804,11 +806,12 @@ org.cometd.Cometd = function(name)
             // Save clientId, figure out transport, then follow the advice to connect
             _clientId = message.clientId;
 
-            var newTransport = _transports.negotiateTransport(message.supportedConnectionTypes, message.version, _crossDomain, _config.url);
+            var url = _cometd.getURL();
+            var newTransport = _transports.negotiateTransport(message.supportedConnectionTypes, message.version, _crossDomain, url);
             if (newTransport === null)
             {
                 throw 'Could not negotiate transport with server; client ' +
-                      _transports.findTransportTypes(message.version, _crossDomain, _config.url) +
+                      _transports.findTransportTypes(message.version, _crossDomain, url) +
                       ', server ' + message.supportedConnectionTypes;
             }
             else if (_transport !== newTransport)
@@ -1816,6 +1819,14 @@ org.cometd.Cometd = function(name)
      */
     this.getURL = function()
     {
+        if (_transport && typeof _config.urls === 'object')
+        {
+            var url = _config.urls[_transport.getType()];
+            if (url)
+            {
+                return  url;
+            }
+        }
         return _config.url;
     };
 
