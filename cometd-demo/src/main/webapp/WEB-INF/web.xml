@@ -51,6 +51,10 @@
             <param-name>services</param-name>
             <param-value>org.cometd.examples.ChatService</param-value>
         </init-param>
+        <init-param>
+            <param-name>ws.cometdURLMapping</param-name>
+            <param-value>/cometd/*</param-value>
+        </init-param>
         <load-on-startup>1</load-on-startup>
         <async-supported>true</async-supported>
     </servlet>
