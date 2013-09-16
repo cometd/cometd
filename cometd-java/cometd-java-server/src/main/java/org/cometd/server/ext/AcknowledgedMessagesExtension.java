@@ -16,7 +16,6 @@
 
 package org.cometd.server.ext;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.cometd.bayeux.Channel;
@@ -32,7 +31,7 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>Installing this extension in a {@link BayeuxServer} provides support to
  * message acknowledgement if a client also supports it.</p>
- *
+ * <p/>
  * <p>The main role of this extension is to install the
  * {@link AcknowledgedMessagesClientExtension} on the {@link ServerSession} instances
  * created during handshake for clients that also support the ack extension.</p>
@@ -40,27 +39,16 @@ import org.slf4j.LoggerFactory;
 public class AcknowledgedMessagesExtension extends Extension.Adapter
 {
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName());
-    private final Map<String, Object> _replyExt;
-
-    public AcknowledgedMessagesExtension()
-    {
-        _replyExt = new HashMap<String, Object>(1);
-        _replyExt.put("ack", true);
-    }
 
     @Override
     public boolean sendMeta(ServerSession to, Mutable message)
     {
-        String channel = message.getChannel();
-        if (channel == null)
-            return true;
-
-        if (Channel.META_HANDSHAKE.equals(channel) && Boolean.TRUE.equals(message.get(Message.SUCCESSFUL_FIELD)))
+        if (Channel.META_HANDSHAKE.equals(message.getChannel()) && Boolean.TRUE.equals(message.get(Message.SUCCESSFUL_FIELD)))
         {
             Message rcv = message.getAssociated();
 
-            Map<String,Object> ext = rcv.getExt();
-            boolean clientRequestedAcks = ext != null && ext.get("ack") == Boolean.TRUE;
+            Map<String, Object> rcvExt = rcv.getExt();
+            boolean clientRequestedAcks = rcvExt != null && rcvExt.get("ack") == Boolean.TRUE;
 
             if (clientRequestedAcks && to != null)
             {
@@ -69,13 +57,9 @@ public class AcknowledgedMessagesExtension extends Extension.Adapter
                 ((ServerSessionImpl)to).setMetaConnectDeliveryOnly(true);
             }
 
-            Map<String,Object> mext=message.getExt();
-            if (mext!=null)
-                mext.put("ack",Boolean.TRUE);
-            else
-                message.put(Message.EXT_FIELD,_replyExt);
+            Map<String, Object> sndExt = message.getExt(true);
+            sndExt.put("ack", Boolean.TRUE);
         }
-
         return true;
     }
 }
