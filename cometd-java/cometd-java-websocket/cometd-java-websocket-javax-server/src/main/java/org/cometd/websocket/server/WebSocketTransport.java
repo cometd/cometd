@@ -27,6 +27,7 @@ import javax.websocket.CloseReason;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
+import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.MessageHandler;
 import javax.websocket.SendHandler;
@@ -354,6 +355,13 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         }
 
         @Override
+        public List<Extension> getNegotiatedExtensions(List<Extension> installed, List<Extension> requested)
+        {
+            return super.getNegotiatedExtensions(installed, requested);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
         public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException
         {
             if (!protocolMatches)
