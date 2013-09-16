@@ -21,7 +21,7 @@
         </repository>
         <repository>
             <id>jetty-staging</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-1021</url>
+            <url>https://oss.sonatype.org/content/repositories/jetty-1026</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
