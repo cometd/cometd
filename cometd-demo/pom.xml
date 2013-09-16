@@ -78,9 +78,10 @@
                         </connector>
                     </connectors>
                     <scanIntervalSeconds>1</scanIntervalSeconds>
-                    <webAppConfig>
+                    <webApp>
                         <contextPath>/</contextPath>
-                    </webAppConfig>
+                        <webInfIncludeJarPattern>none</webInfIncludeJarPattern>
+                    </webApp>
                 </configuration>
             </plugin>
         </plugins>
@@ -126,28 +127,20 @@
             <artifactId>cometd-java-oort</artifactId>
             <version>${project.version}</version>
         </dependency>
-<!-- TODO: udpate dependency
-        <dependency>
-            <groupId>org.cometd.java</groupId>
-            <artifactId>cometd-jetty-websocket-server</artifactId>
-            <version>${project.version}</version>
-        </dependency>
--->
         <dependency>
             <groupId>org.cometd.java</groupId>
             <artifactId>cometd-java-server</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.cometd.java</groupId>
+            <artifactId>cometd-java-websocket-javax-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlets</artifactId>
             <version>${jetty-version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.jetty</groupId>
-                    <artifactId>jetty-client</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
