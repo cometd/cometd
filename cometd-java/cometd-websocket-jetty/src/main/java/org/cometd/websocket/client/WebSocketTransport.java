@@ -22,6 +22,7 @@ import java.net.ConnectException;
 import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.nio.channels.UnresolvedAddressException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -243,6 +244,10 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                 listener.onException(new IOException("Aborted"), messages);
         }
         catch (ConnectException x)
+        {
+            listener.onConnectException(x, messages);
+        }
+        catch (UnresolvedAddressException x)
         {
             listener.onConnectException(x, messages);
         }
