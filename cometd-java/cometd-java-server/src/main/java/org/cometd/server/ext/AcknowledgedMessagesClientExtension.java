@@ -31,9 +31,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Acknowledged Message Client extension.
- *
+ * <p />
  * Tracks the batch id of messages sent to a client.
- *
  */
 public class AcknowledgedMessagesClientExtension implements Extension
 {
@@ -114,7 +113,6 @@ public class AcknowledgedMessagesClientExtension implements Extension
                 }
             }
         }
-
         return true;
     }
 

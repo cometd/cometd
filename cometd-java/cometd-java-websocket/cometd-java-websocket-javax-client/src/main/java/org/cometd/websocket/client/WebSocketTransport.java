@@ -22,6 +22,7 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.channels.UnresolvedAddressException;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.List;
@@ -107,7 +108,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 
             return _wsSession = session;
         }
-        catch (ConnectException | SocketTimeoutException x)
+        catch (ConnectException | SocketTimeoutException | UnresolvedAddressException x)
         {
             // Cannot connect, assume the server supports WebSocket until proved otherwise
             listener.onFailure(x, messages);
