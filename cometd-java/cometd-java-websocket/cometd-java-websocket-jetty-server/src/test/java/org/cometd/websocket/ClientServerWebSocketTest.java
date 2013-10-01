@@ -37,7 +37,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
@@ -117,8 +117,7 @@ public abstract class ClientServerWebSocketTest
 
         context = new ServletContextHandler(server, "/", true, false);
 
-        // WebSocket Filter
-        WebSocketConfiguration.configureContext(context);
+        WebSocketServerContainerInitializer.configureContext(context);
 
         // CometD servlet
         cometdServletPath = "/cometd";

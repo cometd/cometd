@@ -73,7 +73,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 
 public class BayeuxLoadServer
 {
@@ -227,7 +227,7 @@ public class BayeuxLoadServer
         context.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, BayeuxServer.ATTRIBUTE);
 
-        WebSocketConfiguration.configureContext(context);
+        WebSocketServerContainerInitializer.configureContext(context);
 
         // Setup default servlet to serve static files
         context.addServlet(DefaultServlet.class, "/");

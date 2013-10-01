@@ -40,7 +40,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.websocket.jsr356.server.WebSocketConfiguration;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
@@ -86,7 +86,7 @@ public abstract class OortTest
 
         ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
 
-        WebSocketConfiguration.configureContext(context);
+        WebSocketServerContainerInitializer.configureContext(context);
 
         // CometD servlet
         String cometdServletPath = "/cometd";
