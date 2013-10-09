@@ -969,7 +969,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     }
 
     @Test
-    public void testDisconnectWithPendingMetaConnectWithoutResponseDoesNotExpire() throws Exception
+    public void testDisconnectWithPendingMetaConnectWithoutResponseIsFailedOnClient() throws Exception
     {
         stopServer();
 
@@ -1025,6 +1025,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         client.disconnect();
 
-        Assert.assertFalse(latch.await(222 * maxNetworkDelay + timeout, TimeUnit.MILLISECONDS));
+        // Only wait for the maxNetworkDelay: when the /meta/disconnect response arrives,
+        // the connection is closed, so the /meta/connect is failed on the client side.
+        Assert.assertTrue(latch.await(2 * maxNetworkDelay, TimeUnit.MILLISECONDS));
     }
 }
