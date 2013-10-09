@@ -95,6 +95,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile boolean _disconnected;
     private volatile boolean _aborted;
     private volatile boolean _webSocketSupported = true;
+    private volatile boolean _supportsWebSocket= false;
     private volatile WebSocket.Connection _connection;
     private volatile TransportListener _listener;
     private volatile Map<String, Object> _advice;
@@ -150,20 +151,19 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     {
         _aborted = true;
         disconnect("Aborted");
-        reset();
+        shutdownScheduler();
     }
 
     @Override
     public void terminate()
     {
         disconnect("Terminated");
+        shutdownScheduler();
         super.terminate();
     }
 
-    @Override
-    protected void reset()
+    private void shutdownScheduler()
     {
-        super.reset();
         if (_shutdownScheduler)
         {
             _shutdownScheduler = false;
@@ -238,10 +238,15 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             client.setProtocol(_protocol);
             client.getCookies().putAll(cookies);
 
-            _connection = client.open(uri, _websocket, getConnectTimeout(), TimeUnit.MILLISECONDS);
+            _connection = connect(client, uri);
+            // Connection was successful
+            _supportsWebSocket = true;
 
             if (_aborted)
+            {
+                disconnect("Aborted");
                 listener.onException(new IOException("Aborted"), messages);
+            }
         }
         catch (ConnectException x)
         {
@@ -283,10 +288,15 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         }
         catch (Exception x)
         {
-            _webSocketSupported = false;
+            _webSocketSupported = _supportsWebSocket;
             listener.onException(x, messages);
         }
         return _connection;
+    }
+
+    protected Connection connect(WebSocketClient client, URI uri) throws IOException, InterruptedException, TimeoutException
+    {
+        return client.open(uri, _websocket, getConnectTimeout(), TimeUnit.MILLISECONDS);
     }
 
     protected WebSocketClient newWebSocketClient()

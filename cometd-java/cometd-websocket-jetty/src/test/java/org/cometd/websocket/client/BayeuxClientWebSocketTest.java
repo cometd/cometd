@@ -17,8 +17,10 @@
 package org.cometd.websocket.client;
 
 import java.io.EOFException;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.ProtocolException;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,6 +49,8 @@ import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.websocket.ClientServerWebSocketTest;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.WebSocketClient;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -241,6 +245,78 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         LongPollingTransport longPollingTransport = LongPollingTransport.create(null, httpClient);
         longPollingTransport.setDebugEnabled(debugTests());
         final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                // Suppress expected exceptions
+                if ((x instanceof EOFException) || (x instanceof ConnectException))
+                    return;
+                super.onFailure(x, messages);
+            }
+        };
+        client.setDebugEnabled(debugTests());
+
+        final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> disconnectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(2));
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isSuccessful() && "websocket".equals(client.getTransport().getName()))
+                    connectedLatch.get().countDown();
+                else
+                    disconnectedLatch.get().countDown();
+            }
+        });
+        client.handshake();
+
+        // Wait for connect
+        Assert.assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(client.isConnected());
+        Thread.sleep(1000);
+
+        // Stop server
+        int port = connector.getLocalPort();
+        server.stop();
+        Assert.assertTrue(disconnectedLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(!client.isConnected());
+
+        // restart server
+        connector.setPort(port);
+        connectedLatch.set(new CountDownLatch(1));
+        server.start();
+
+        // Wait for connect
+        Assert.assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(client.isConnected());
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testRestartAfterConnectWithFatalException() throws Exception
+    {
+        WebSocketTransport webSocketTransport = new WebSocketTransport(null, wsFactory, null)
+        {
+            @Override
+            protected WebSocket.Connection connect(WebSocketClient client, URI uri) throws IOException, InterruptedException, TimeoutException
+            {
+                try
+                {
+                    return super.connect(client, uri);
+                }
+                catch (ConnectException x)
+                {
+                    // ConnectException is a recoverable exception that does not disable the transport.
+                    // Convert it to a fatal exception so the transport would be disabled.
+                    // However, since it connected before this fatal exception, the transport is not disabled.
+                    throw new IOException(x);
+                }
+            }
+        };
+        webSocketTransport.setDebugEnabled(debugTests());
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport)
         {
             @Override
             public void onFailure(Throwable x, Message[] messages)

@@ -893,7 +893,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         {
             shutdownScheduler = false;
             scheduler.shutdownNow();
-            // TODO: await termination ?
             scheduler = null;
         }
     }
@@ -1470,7 +1469,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         protected void execute()
         {
             transport.abort();
-            super.execute();
+            terminate();
         }
     }
 

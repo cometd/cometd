@@ -74,14 +74,6 @@ public abstract class ClientTransport extends AbstractTransport
      */
     public void terminate()
     {
-        reset();
-    }
-
-    /**
-     * Resets the transport, usually after having {@link #terminate() terminated} or {@link #abort() aborted} it.
-     */
-    protected void reset()
-    {
     }
 
     public boolean isDebugEnabled()
