@@ -258,7 +258,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                     // ConnectException is a recoverable exception that does not disable the transport.
                     // Convert it to a fatal exception so the transport would be disabled.
                     // However, since it connected before this fatal exception, the transport is not disabled.
-                    throw new IOException(x);
+                    throw new IOException();
                 }
             }
         };
