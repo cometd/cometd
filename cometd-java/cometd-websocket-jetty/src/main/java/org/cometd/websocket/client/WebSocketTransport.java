@@ -154,7 +154,14 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     }
 
     @Override
-    public void reset()
+    public void terminate()
+    {
+        disconnect("Terminated");
+        super.terminate();
+    }
+
+    @Override
+    protected void reset()
     {
         super.reset();
         if (_shutdownScheduler)
@@ -163,13 +170,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             _scheduler.shutdownNow();
             _scheduler = null;
         }
-    }
-
-    @Override
-    public void terminate()
-    {
-        super.terminate();
-        disconnect("Terminated");
     }
 
     protected void disconnect(String reason)
@@ -378,8 +378,9 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         List<WebSocketExchange> exchanges = new ArrayList<WebSocketExchange>(_exchanges.values());
         for (WebSocketExchange exchange : exchanges)
         {
-            deregisterMessage(exchange.message);
-            exchange.listener.onException(cause, new Message[]{exchange.message});
+            Mutable message = exchange.message;
+            deregisterMessage(message);
+            exchange.listener.onException(cause, new Message[]{message});
         }
     }
 

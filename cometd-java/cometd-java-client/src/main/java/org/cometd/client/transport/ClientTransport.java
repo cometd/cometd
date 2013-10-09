@@ -29,6 +29,9 @@ import org.cometd.common.JettyJSONContextClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * {@link ClientTransport}s are used by {@link org.cometd.client.BayeuxClient} to send and receive Bayeux messages.
+ */
 public abstract class ClientTransport extends AbstractTransport
 {
     public static final String TIMEOUT_OPTION = "timeout";
@@ -45,11 +48,40 @@ public abstract class ClientTransport extends AbstractTransport
         super(name, options);
     }
 
+    /**
+     * Initializes this transport, usually by reading/defaulting parameters used by the transport
+     * from the options passed to the constructor.
+     */
     public void init()
     {
         jsonContext = (JSONContext.Client)getOption(JSON_CONTEXT);
         if (jsonContext == null)
             jsonContext = new JettyJSONContextClient();
+    }
+
+    /**
+     * Aborts this transport, usually by cancelling all pending Bayeux messages that require a response,
+     * such as {@code /meta/connect}s, without waiting for a response.
+     *
+     * @see {@link org.cometd.client.BayeuxClient#abort()}
+     */
+    public abstract void abort();
+
+    /**
+     * Terminates this transport, usually by closing network connections opened directly by this transport.
+     *
+     * @see {@link org.cometd.client.BayeuxClient#disconnect()}
+     */
+    public void terminate()
+    {
+        reset();
+    }
+
+    /**
+     * Resets the transport, usually after having {@link #terminate() terminated} or {@link #abort() aborted} it.
+     */
+    protected void reset()
+    {
     }
 
     public boolean isDebugEnabled()
@@ -68,16 +100,6 @@ public abstract class ClientTransport extends AbstractTransport
             logger.info(message, args);
         else
             logger.debug(message, args);
-    }
-
-    public abstract void abort();
-
-    public void reset()
-    {
-    }
-
-    public void terminate()
-    {
     }
 
     public abstract boolean accept(String version);

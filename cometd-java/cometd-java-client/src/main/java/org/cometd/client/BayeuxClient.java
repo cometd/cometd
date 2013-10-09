@@ -577,10 +577,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         getChannel(Channel.META_CONNECT).removeListener(lastConnectListener);
 
-        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
-        if (bayeuxClientState.type == State.DISCONNECTED)
-            if (bayeuxClientState.transport != null)
-                bayeuxClientState.transport.terminate();
+        // Force to DISCONNECTED state
+        updateBayeuxClientState(new BayeuxClientStateUpdater()
+        {
+            @Override
+            public BayeuxClientState create(BayeuxClientState oldState)
+            {
+                return new DisconnectedState(oldState.transport);
+            }
+        });
 
         return disconnected;
     }
@@ -1080,7 +1085,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private void prepareTransport(ClientTransport oldTransport, ClientTransport newTransport)
     {
         if (oldTransport != null)
-            oldTransport.reset();
+            oldTransport.terminate();
         newTransport.init();
         newTransport.setDebugEnabled(isDebugEnabled());
     }
@@ -1185,6 +1190,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     {
         protected void onFailure(Throwable x, Message[] messages)
         {
+            debug("Handshake failed: " + Arrays.toString(messages), x);
             updateBayeuxClientState(new BayeuxClientStateUpdater()
             {
                 public BayeuxClientState create(BayeuxClientState oldState)
@@ -1238,6 +1244,14 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 processConnect(message);
             else
                 super.processMessage(message);
+        }
+
+        @Override
+        public void onException(Throwable x, Message[] messages)
+        {
+            // Don't notify the last /meta/connect failure after disconnection
+            if (!isDisconnected())
+                super.onException(x, messages);
         }
     }
 
@@ -1440,7 +1454,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         @Override
         protected void execute()
         {
-            transport.reset();
+            transport.terminate();
             terminate();
         }
     }
