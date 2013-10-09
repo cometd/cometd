@@ -1008,14 +1008,14 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     /**
      * <p>Callback method invoked when the given messages have failed to be sent.</p>
-     * <p>The default implementation logs the failure at INFO level.</p>
+     * <p>The default implementation logs the failure at DEBUG level.</p>
      *
      * @param x        the exception that caused the failure
      * @param messages the messages being sent
      */
     public void onFailure(Throwable x, Message[] messages)
     {
-        logger.info("Messages failed " + Arrays.toString(messages), x);
+        debug("Messages failed " + Arrays.toString(messages), x);
     }
 
     private void updateBayeuxClientState(BayeuxClientStateUpdater updater)
@@ -1243,14 +1243,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 processConnect(message);
             else
                 super.processMessage(message);
-        }
-
-        @Override
-        public void onException(Throwable x, Message[] messages)
-        {
-            // Don't notify the last /meta/connect failure after disconnection
-            if (!isDisconnected())
-                super.onException(x, messages);
         }
     }
 

@@ -16,8 +16,6 @@
 
 package org.cometd.client.ext;
 
-import java.io.EOFException;
-import java.net.ConnectException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +26,6 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.ClientServerTest;
-import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
@@ -46,18 +43,7 @@ public class AckExtensionTest extends ClientServerTest
     @Test
     public void testAck() throws Exception
     {
-        LongPollingTransport transport = new LongPollingTransport(null, httpClient);
-        transport.setDebugEnabled(debugTests());
-        final BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                if (!(x instanceof EOFException || x instanceof ConnectException))
-                    super.onFailure(x, messages);
-            }
-        };
-        client.setDebugEnabled(debugTests());
+        final BayeuxClient client = newBayeuxClient();
 
         bayeux.addExtension(new AcknowledgedMessagesExtension());
         client.addExtension(new AckExtension());

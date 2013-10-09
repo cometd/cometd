@@ -90,7 +90,9 @@ public class ClientServerTest
 
     protected BayeuxClient newBayeuxClient()
     {
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
+        LongPollingTransport transport = new LongPollingTransport(null, httpClient);
+        transport.setDebugEnabled(debugTests());
+        BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.setDebugEnabled(debugTests());
         return client;
     }

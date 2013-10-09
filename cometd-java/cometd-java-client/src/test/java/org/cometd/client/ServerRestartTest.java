@@ -16,8 +16,6 @@
 
 package org.cometd.client;
 
-import java.io.EOFException;
-import java.net.ConnectException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,21 +41,15 @@ public class ServerRestartTest extends ClientServerTest
     public void testServerRestart() throws Exception
     {
         final AtomicReference<CountDownLatch> sendLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(3));
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        LongPollingTransport transport = LongPollingTransport.create(null, httpClient);
+        transport.setDebugEnabled(debugTests());
+        BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {
             @Override
             public void onSending(Message[] messages)
             {
                 super.onSending(messages);
                 sendLatch.get().countDown();
-            }
-
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Suppress expected exception logging
-                if (!(x instanceof ConnectException) && !(x instanceof EOFException))
-                    super.onFailure(x, messages);
             }
         };
         client.setDebugEnabled(debugTests());

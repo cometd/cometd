@@ -49,7 +49,6 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.HashMapMessage;
-import org.cometd.common.TransportException;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.cometd.websocket.ClientServerWebSocketTest;
 import org.eclipse.jetty.server.DispatcherType;
@@ -538,16 +537,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         webSocketTransport.setDebugEnabled(debugTests());
         LongPollingTransport longPollingTransport = LongPollingTransport.create(null, httpClient);
         longPollingTransport.setDebugEnabled(debugTests());
-        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Suppress expected exception
-                if (!(x instanceof TransportException))
-                    super.onFailure(x, messages);
-            }
-        };
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport);
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()

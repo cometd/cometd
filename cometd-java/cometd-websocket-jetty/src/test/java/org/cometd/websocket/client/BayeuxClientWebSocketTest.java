@@ -16,10 +16,8 @@
 
 package org.cometd.websocket.client;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.ProtocolException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,7 +41,6 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.common.TransportException;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -74,16 +71,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         webSocketTransport.setDebugEnabled(debugTests());
         LongPollingTransport longPollingTransport = LongPollingTransport.create(null, httpClient);
         longPollingTransport.setDebugEnabled(debugTests());
-        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Expect exception and suppress stack trace logging
-                if (!(x instanceof TransportException))
-                    super.onFailure(x, messages);
-            }
-        };
+        BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport);
         client.setDebugEnabled(debugTests());
 
         final CountDownLatch successLatch = new CountDownLatch(1);
@@ -112,19 +100,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     {
         bayeux.setAllowedTransports("long-polling");
 
-        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsFactory);
-        webSocketTransport.setDebugEnabled(debugTests());
-        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Expect exception and suppress stack trace logging
-                if (!(x instanceof ProtocolException))
-                    super.onFailure(x, messages);
-            }
-        };
-        client.setDebugEnabled(debugTests());
+        BayeuxClient client = newBayeuxClient();
 
         final CountDownLatch failedLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
@@ -160,14 +136,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                     connectLatch.countDown();
                 return super.sendConnect();
             }
-
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Expect exception and suppress stack trace logging
-                if (!(x instanceof IllegalStateException))
-                    super.onFailure(x, messages);
-            }
         };
         client.setDebugEnabled(debugTests());
 
@@ -199,18 +167,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     @Test
     public void testAbortThenRestart() throws Exception
     {
-        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsFactory);
-        webSocketTransport.setDebugEnabled(debugTests());
-        BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                if (!(x instanceof EOFException))
-                    super.onFailure(x, messages);
-            }
-        };
-        client.setDebugEnabled(debugTests());
+        BayeuxClient client = newBayeuxClient();
         client.handshake();
 
         // Need to be sure that the second connect is sent otherwise
@@ -244,17 +201,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         webSocketTransport.setDebugEnabled(debugTests());
         LongPollingTransport longPollingTransport = LongPollingTransport.create(null, httpClient);
         longPollingTransport.setDebugEnabled(debugTests());
-        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Suppress expected exceptions
-                if ((x instanceof EOFException) || (x instanceof ConnectException))
-                    return;
-                super.onFailure(x, messages);
-            }
-        };
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport);
         client.setDebugEnabled(debugTests());
 
         final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
@@ -316,17 +263,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
             }
         };
         webSocketTransport.setDebugEnabled(debugTests());
-        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Suppress expected exceptions
-                if ((x instanceof EOFException) || (x instanceof ConnectException))
-                    return;
-                super.onFailure(x, messages);
-            }
-        };
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport);
         client.setDebugEnabled(debugTests());
 
         final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
@@ -391,16 +328,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
         WebSocketTransport transport = WebSocketTransport.create(options, wsFactory);
         transport.setDebugEnabled(debugTests());
-        final BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Expect exception and suppress stack trace logging
-                if (!(x instanceof TimeoutException))
-                    super.onFailure(x, messages);
-            }
-        };
+        final BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.setDebugEnabled(debugTests());
 
         // Expect 2 failed messages because the client backoffs and retries
@@ -690,18 +618,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     @Test
     public void testWebSocketWithAckExtension() throws Exception
     {
-        WebSocketTransport transport = WebSocketTransport.create(null, wsFactory);
-        transport.setDebugEnabled(debugTests());
-        final BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                if (!(x instanceof EOFException || x instanceof ConnectException))
-                    super.onFailure(x, messages);
-            }
-        };
-        client.setDebugEnabled(debugTests());
+        final BayeuxClient client = newBayeuxClient();
 
         bayeux.addExtension(new AcknowledgedMessagesExtension());
         client.addExtension(new AckExtension());
@@ -817,15 +734,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         options.put("ws.maxNetworkDelay", maxNetworkDelay);
         WebSocketTransport transport = WebSocketTransport.create(options, wsFactory);
         transport.setDebugEnabled(debugTests());
-        BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                if (!(x instanceof TimeoutException))
-                    super.onFailure(x, messages);
-            }
-        };
+        BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.setOption(BayeuxClient.BACKOFF_INCREMENT_OPTION, backoffIncrement);
         client.setDebugEnabled(debugTests());
 
@@ -1037,18 +946,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
         runServer(options);
 
-        WebSocketTransport transport = WebSocketTransport.create(null, wsFactory);
-        transport.setDebugEnabled(debugTests());
-        BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                if (!(x instanceof EOFException))
-                    super.onFailure(x, messages);
-            }
-        };
-        client.setDebugEnabled(debugTests());
+        BayeuxClient client = newBayeuxClient();
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
@@ -1106,16 +1004,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         clientOptions.put("maxNetworkDelay", maxNetworkDelay);
         WebSocketTransport transport = WebSocketTransport.create(clientOptions, wsFactory);
         transport.setDebugEnabled(debugTests());
-        BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Suppress expected exceptions
-                if (!(x instanceof EOFException))
-                    super.onFailure(x, messages);
-            }
-        };
+        BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.setDebugEnabled(debugTests());
 
         client.handshake();
@@ -1136,6 +1025,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         client.disconnect();
 
-        Assert.assertFalse(latch.await(2 * maxNetworkDelay + timeout, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(latch.await(222 * maxNetworkDelay + timeout, TimeUnit.MILLISECONDS));
     }
 }
