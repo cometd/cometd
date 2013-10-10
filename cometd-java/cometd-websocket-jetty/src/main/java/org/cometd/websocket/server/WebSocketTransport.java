@@ -174,7 +174,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         if (sameProtocol)
         {
             WebSocketContext handshake = new WebSocketContext(request);
-            return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
+            return new WebSocketScheduler(handshake);
         }
 
         _logger.warn("WebSocket protocols do not match: server[{}] != client[{}]", _protocol, protocol);
@@ -258,16 +258,14 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     {
         private final AtomicBoolean _scheduling = new AtomicBoolean();
         private final WebSocketContext _context;
-        private final String _userAgent;
         private volatile ServerSessionImpl _session;
         private volatile Connection _connection;
         private ServerMessage.Mutable _connectReply;
         private ScheduledFuture _connectTask;
 
-        public WebSocketScheduler(WebSocketContext context, String userAgent)
+        public WebSocketScheduler(WebSocketContext context)
         {
             _context = context;
-            _userAgent = userAgent;
         }
 
         public void onOpen(Connection connection)
@@ -365,10 +363,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 {
                     session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
                     if (session != null)
-                    {
-                        session.setUserAgent(_userAgent);
                         session.setScheduler(this);
-                    }
                 }
 
                 List<ServerMessage> queue = null;

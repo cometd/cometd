@@ -1221,6 +1221,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (session == null)
                 session = newServerSession();
 
+            BayeuxContext context = getContext();
+            if (context != null)
+                session.setUserAgent(context.getHeader("User-Agent"));
+
             ServerMessage.Mutable reply = message.getAssociated();
             if (_policy != null && !_policy.canHandshake(BayeuxServerImpl.this, session, message))
             {
