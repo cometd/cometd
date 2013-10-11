@@ -140,12 +140,9 @@ public abstract class LongPollingTransport extends HttpTransport
                             // This must be a handshake, extract a session from the reply
                             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
 
-                            // Get the user agent while we are at it, and add the browser ID cookie
+                            // Add the browser ID cookie
                             if (session != null)
                             {
-                                String userAgent = request.getHeader("User-Agent");
-                                session.setUserAgent(userAgent);
-
                                 String browserId = findBrowserId(request);
                                 if (browserId == null)
                                     setBrowserId(request, response);

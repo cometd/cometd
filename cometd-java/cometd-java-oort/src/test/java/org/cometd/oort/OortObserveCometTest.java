@@ -16,7 +16,6 @@
 
 package org.cometd.oort;
 
-import java.net.ConnectException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -234,23 +233,7 @@ public class OortObserveCometTest extends OortTest
         Server server1 = startServer(0);
         String url = (String)server1.getAttribute(OortConfigServlet.OORT_URL_PARAM);
         final BayeuxServer bayeuxServer = (BayeuxServer)server1.getAttribute(BayeuxServer.ATTRIBUTE);
-        Oort oort1 = new Oort(bayeuxServer, url)
-        {
-            @Override
-            protected OortComet newOortComet(String cometURL)
-            {
-                return new OortComet(this, cometURL, null, null)
-                {
-                    @Override
-                    public void onFailure(Throwable x, Message[] messages)
-                    {
-                        // Suppress expected exceptions
-                        if (!(x instanceof ConnectException))
-                            super.onFailure(x, messages);
-                    }
-                };
-            }
-        };
+        Oort oort1 = new Oort(bayeuxServer, url);
         oort1.start();
 
         Server server2 = startServer(0);

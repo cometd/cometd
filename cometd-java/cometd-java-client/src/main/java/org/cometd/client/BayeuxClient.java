@@ -587,10 +587,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         getChannel(Channel.META_CONNECT).removeListener(lastConnectListener);
 
-        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
-        if (bayeuxClientState.type == State.DISCONNECTED)
-            if (bayeuxClientState.transport != null)
-                bayeuxClientState.transport.terminate();
+        // Force to DISCONNECTED state
+        updateBayeuxClientState(new BayeuxClientStateUpdater()
+        {
+            @Override
+            public BayeuxClientState create(BayeuxClientState oldState)
+            {
+                return new DisconnectedState(oldState.transport);
+            }
+        });
 
         return disconnected;
     }
@@ -872,7 +877,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         {
             shutdownScheduler = false;
             scheduler.shutdownNow();
-            // TODO: await termination ?
             scheduler = null;
         }
     }
@@ -910,8 +914,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         if (canSend())
         {
             boolean sent = sendMessages(message);
-            Object[] args = new Object[]{sent ? "Sent" : "Failed", message};
-            logger.debug("{} message {}", args);
+            logger.debug("{} message {}", sent ? "Sent" : "Failed", message);
         }
         else
         {
@@ -989,14 +992,14 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     /**
      * <p>Callback method invoked when the given messages have failed to be sent.</p>
-     * <p>The default implementation logs the failure at INFO level.</p>
+     * <p>The default implementation logs the failure at DEBUG level.</p>
      *
      * @param x        the exception that caused the failure
      * @param messages the messages being sent
      */
     public void onFailure(Throwable x, Message[] messages)
     {
-        logger.info("Messages failed " + Arrays.toString(messages), x);
+        logger.debug("Messages failed " + Arrays.toString(messages), x);
     }
 
     private void updateBayeuxClientState(BayeuxClientStateUpdater updater)
@@ -1028,8 +1031,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 }
 
                 updated = bayeuxClientState.compareAndSet(oldState, newState);
-                Object[] args = new Object[]{oldState, newState, updated ? "" : " failed (concurrent update)"};
-                logger.debug("State update: {} -> {}{}", args);
+                logger.debug("State update: {} -> {}{}", oldState, newState, updated ? "" : " failed (concurrent update)");
                 if (!updated)
                     oldState = bayeuxClientState.get();
             }
@@ -1066,7 +1068,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private void prepareTransport(ClientTransport oldTransport, ClientTransport newTransport)
     {
         if (oldTransport != null)
-            oldTransport.reset(); // TODO: must terminate here!
+            oldTransport.terminate();
         newTransport.init();
     }
 
@@ -1155,6 +1157,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     {
         public void onFailure(Throwable failure, Message[] messages)
         {
+            logger.debug("Handshake failed: " + Arrays.toString(messages), failure);
             updateBayeuxClientState(new BayeuxClientStateUpdater()
             {
                 public BayeuxClientState create(BayeuxClientState oldState)
@@ -1410,7 +1413,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         @Override
         protected void execute()
         {
-            transport.reset();
+            transport.terminate();
             terminate();
         }
     }
@@ -1426,7 +1429,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         protected void execute()
         {
             transport.abort();
-            super.execute();
+            terminate();
         }
     }
 

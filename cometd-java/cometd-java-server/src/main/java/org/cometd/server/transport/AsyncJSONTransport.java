@@ -159,9 +159,6 @@ public class AsyncJSONTransport extends HttpTransport
             if (session != null)
             {
                 HttpServletRequest request = (HttpServletRequest)asyncContext.getRequest();
-                String userAgent = request.getHeader("User-Agent");
-                session.setUserAgent(userAgent);
-
                 String browserId = findBrowserId(request);
                 if (browserId == null)
                     setBrowserId(request, (HttpServletResponse)asyncContext.getResponse());

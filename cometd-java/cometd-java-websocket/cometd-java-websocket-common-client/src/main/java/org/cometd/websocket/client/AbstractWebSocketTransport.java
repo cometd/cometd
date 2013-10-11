@@ -122,7 +122,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
     {
         _aborted = true;
         disconnect("Aborted");
-        reset();
+        shutdownScheduler();
     }
 
     public boolean isAborted()
@@ -131,22 +131,21 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
     }
 
     @Override
-    public void reset()
+    public void terminate()
     {
-        super.reset();
+        disconnect("Terminated");
+        shutdownScheduler();
+        super.terminate();
+    }
+
+    private void shutdownScheduler()
+    {
         if (_shutdownScheduler)
         {
             _shutdownScheduler = false;
             _scheduler.shutdownNow();
             _scheduler = null;
         }
-    }
-
-    @Override
-    public void terminate()
-    {
-        super.terminate();
-        disconnect("Terminated");
     }
 
     protected abstract void disconnect(String reason);

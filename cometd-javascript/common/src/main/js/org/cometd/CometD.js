@@ -1601,6 +1601,10 @@ org.cometd.CometD = function(name)
         {
             throw 'Illegal argument type: channel must be a string';
         }
+        if (/^\/meta\//.test(channel))
+        {
+            throw 'Illegal argument: cannot publish to meta channels';
+        }
         if (_isDisconnected())
         {
             throw 'Illegal state: already disconnected';

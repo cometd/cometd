@@ -51,14 +51,6 @@ public class ServerRestartTest extends ClientServerTest
                 super.onSending(messages);
                 sendLatch.get().countDown();
             }
-
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Suppress expected exception logging
-                if (!(x instanceof ConnectException) && !(x instanceof EOFException))
-                    super.onFailure(x, messages);
-            }
         };
         long backoffIncrement = 500;
         client.setOption(BayeuxClient.BACKOFF_INCREMENT_OPTION, backoffIncrement);

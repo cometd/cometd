@@ -130,9 +130,12 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         _oort.observeChannel(setiChannel);
 
         _oort.addCometListener(_cometListener);
+
         Set<String> associatedUserIds = getAssociatedUserIds();
         _logger.debug("Broadcasting associated users {}", associatedUserIds);
-        _session.getChannel(SETI_ALL_CHANNEL).publish(new SetiPresence(true, associatedUserIds));
+        SetiPresence presence = new SetiPresence(true, associatedUserIds);
+        presence.put(SetiPresence.ALIVE_FIELD, true);
+        _session.getChannel(SETI_ALL_CHANNEL).publish(presence);
     }
 
     @Override
@@ -383,7 +386,9 @@ public class Seti extends AbstractLifeCycle implements Dumpable
             _uid2Location.clear();
         }
         _logger.debug("Broadcasting association removal for users {}", userIds);
-        _session.getChannel(SETI_ALL_CHANNEL).publish(new SetiPresence(false, userIds));
+        SetiPresence presence = new SetiPresence(false, userIds);
+        presence.put(SetiPresence.ALIVE_FIELD, false);
+        _session.getChannel(SETI_ALL_CHANNEL).publish(presence);
     }
 
     protected void removePresences(String oortURL)
@@ -515,8 +520,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
     }
 
     /**
-     * <p>Receives messages broadcasted by other Setis in the cloud.</p>
-     * <p>Broadcasted messages may be presence messages, where another Seti advertises
+     * <p>Receives messages broadcast by other Setis in the cloud.</p>
+     * <p>Broadcast messages may be presence messages, where another Seti advertises
      * an association, or fallback messages. <br />
      * Fallback messages are messages that were sent to a particular Seti because the
      * sender thought the target userId was there, but the receiving Seti does not know
@@ -590,18 +595,16 @@ public class Seti extends AbstractLifeCycle implements Dumpable
             }
         }
 
-        // Should we send our associations back ?
-        if (!_oort.getURL().equals(presence.get(SetiPresence.PEER_OORT_URL_FIELD)))
+        if (presence.get(SetiPresence.ALIVE_FIELD) == Boolean.TRUE)
         {
+            // Message sent on startup by the remote Seti, push our associations
             OortComet oortComet = _oort.findComet(oortURL);
             if (oortComet != null)
             {
                 Set<String> associatedUserIds = getAssociatedUserIds();
-                SetiPresence peerPresence = new SetiPresence(true, associatedUserIds);
-                peerPresence.put(SetiPresence.PEER_OORT_URL_FIELD, oortURL);
-                ClientSessionChannel channel = oortComet.getChannel(generateSetiChannel(generateSetiId(oortURL)));
                 _logger.debug("Pushing associated users {} to comet {}", associatedUserIds, oortURL);
-                channel.publish(peerPresence);
+                ClientSessionChannel channel = oortComet.getChannel(generateSetiChannel(generateSetiId(oortURL)));
+                channel.publish(new SetiPresence(true, associatedUserIds));
             }
         }
     }
@@ -870,7 +873,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable
     {
         private static final String USER_IDS_FIELD = "userIds";
         private static final String OORT_URL_FIELD = "oortURL";
-        private static final String PEER_OORT_URL_FIELD = "peerOortURL";
+        private static final String ALIVE_FIELD = "alive";
         private static final String PRESENCE_FIELD = "presence";
 
         private SetiPresence(boolean present, String userId)

@@ -160,16 +160,7 @@ public class BayeuxClientTest extends ClientServerTest
             }
         };
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
-        BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Suppress logging of expected exception
-                if (!(x instanceof TransportException))
-                    super.onFailure(x, messages);
-            }
-        };
+        BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -205,16 +196,7 @@ public class BayeuxClientTest extends ClientServerTest
             }
         };
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
-        BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Suppress logging of expected exception
-                if (!(x instanceof TransportException))
-                    super.onFailure(x, messages);
-            }
-        };
+        BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -645,14 +627,7 @@ public class BayeuxClientTest extends ClientServerTest
         }
 
         final CountDownLatch latch = new CountDownLatch(1);
-        BayeuxClient client = new BayeuxClient("http://localhost/cometd", new LongPollingTransport(null, httpClient))
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Do not call super to suppress error logging
-            }
-        };
+        BayeuxClient client = new BayeuxClient("http://localhost/cometd", new LongPollingTransport(null, httpClient));
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -681,15 +656,7 @@ public class BayeuxClientTest extends ClientServerTest
     @Test
     public void testAbortNotifiesListeners() throws Exception
     {
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                if (x.getClass() != IOException.class)
-                    super.onFailure(x, messages);
-            }
-        };
+        BayeuxClient client = newBayeuxClient();
 
         final CountDownLatch connectLatch = new CountDownLatch(2);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
@@ -728,13 +695,6 @@ public class BayeuxClientTest extends ClientServerTest
                 super.onSending(messages);
                 if (messages.length == 1 && Channel.META_CONNECT.equals(messages[0].getChannel()))
                     connectLatch.get().countDown();
-            }
-
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                if (x.getClass() != IOException.class)
-                    super.onFailure(x, messages);
             }
         };
         client.handshake();
@@ -784,13 +744,6 @@ public class BayeuxClientTest extends ClientServerTest
                 if (result)
                     publishLatch.countDown();
                 return result;
-            }
-
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                if (x.getClass() != IOException.class)
-                    super.onFailure(x, messages);
             }
         };
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
@@ -846,13 +799,6 @@ public class BayeuxClientTest extends ClientServerTest
                 publishLatch.get().countDown();
                 return super.sendMessages(messages);
             }
-
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                if (x.getClass() != IOException.class)
-                    super.onFailure(x, messages);
-            }
         };
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -895,17 +841,7 @@ public class BayeuxClientTest extends ClientServerTest
     @Test
     public void testRestart() throws Exception
     {
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Suppress expected exceptions
-                if ((x instanceof EOFException) || (x instanceof ConnectException))
-                    return;
-                super.onFailure(x, messages);
-            }
-        };
+        BayeuxClient client = newBayeuxClient();
 
         final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<>(new CountDownLatch(1));
         final AtomicReference<CountDownLatch> disconnectedLatch = new AtomicReference<>(new CountDownLatch(2));
@@ -1086,6 +1022,7 @@ public class BayeuxClientTest extends ClientServerTest
             protected void customize(Request request)
             {
                 if (failHandShake.compareAndSet(true, false))
+                {
                     request.listener(new Request.Listener.Adapter()
                     {
                         @Override
@@ -1094,19 +1031,11 @@ public class BayeuxClientTest extends ClientServerTest
                             request.getHeaders().remove(HttpHeader.HOST);
                         }
                     });
+                }
             }
         };
 
-        BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Suppress expected exception logging
-                if (!(x instanceof UnknownHostException) && !(x instanceof EOFException))
-                    super.onFailure(x, messages);
-            }
-        };
+        BayeuxClient client = new BayeuxClient(cometdURL, transport);
 
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
         {
@@ -1237,16 +1166,7 @@ public class BayeuxClientTest extends ClientServerTest
         // No transports on server, to make the client fail
         ((BayeuxServerImpl)bayeux).setAllowedTransports();
 
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Suppress logging of expected exception
-                if (!(x instanceof TransportException))
-                    super.onFailure(x, messages);
-            }
-        };
+        BayeuxClient client = newBayeuxClient();
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {

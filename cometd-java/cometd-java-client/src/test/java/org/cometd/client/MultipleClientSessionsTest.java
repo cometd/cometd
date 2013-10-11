@@ -132,15 +132,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         init.setAccessible(true);
         init.invoke(transport);
 
-        BayeuxClient client1 = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                if (x.getClass() != IOException.class)
-                    super.onFailure(x, messages);
-            }
-        };
+        BayeuxClient client1 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
         client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -274,15 +266,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         init.setAccessible(true);
         init.invoke(transport);
 
-        BayeuxClient client1 = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                if (x.getClass() != IOException.class)
-                    super.onFailure(x, messages);
-            }
-        };
+        BayeuxClient client1 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
         client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {

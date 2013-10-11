@@ -29,6 +29,9 @@ import org.cometd.common.JettyJSONContextClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * {@link ClientTransport}s are used by {@link org.cometd.client.BayeuxClient} to send and receive Bayeux messages.
+ */
 public abstract class ClientTransport extends AbstractTransport
 {
     public static final String TIMEOUT_OPTION = "timeout";
@@ -84,12 +87,19 @@ public abstract class ClientTransport extends AbstractTransport
         setOption(JSON_CONTEXT, jsonContext);
     }
 
+    /**
+     * Aborts this transport, usually by cancelling all pending Bayeux messages that require a response,
+     * such as {@code /meta/connect}s, without waiting for a response.
+     *
+     * @see {@link org.cometd.client.BayeuxClient#abort()}
+     */
     public abstract void abort();
 
-    public void reset()
-    {
-    }
-
+    /**
+     * Terminates this transport, usually by closing network connections opened directly by this transport.
+     *
+     * @see {@link org.cometd.client.BayeuxClient#disconnect()}
+     */
     public void terminate()
     {
     }
@@ -100,7 +110,7 @@ public abstract class ClientTransport extends AbstractTransport
 
     protected List<Message.Mutable> parseMessages(String content) throws ParseException
     {
-        return new ArrayList<Message.Mutable>(Arrays.asList(jsonContext.parse(content)));
+        return new ArrayList<>(Arrays.asList(jsonContext.parse(content)));
     }
 
     protected String generateJSON(Message.Mutable[] messages)
