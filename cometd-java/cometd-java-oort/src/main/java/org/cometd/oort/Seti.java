@@ -861,7 +861,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         @Override
         public String toString()
         {
-            return String.format("%s[%s]", getClass().getSimpleName(), generateSetiId(_oortURL));
+            return String.format("%s[%s]", getClass().getSimpleName(), _setiChannel);
         }
     }
 
