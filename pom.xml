@@ -8,6 +8,7 @@
     <name>CometD</name>
     <version>3.0.0-SNAPSHOT</version>
 
+<!--
     <repositories>
         <repository>
             <id>jetty-snapshots</id>
@@ -42,6 +43,7 @@
             </snapshots>
         </pluginRepository>
     </pluginRepositories>
+-->
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
