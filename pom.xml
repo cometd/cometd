@@ -10,8 +10,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.6.13.v20130916</jetty-version>
-        <jetty8-version>8.1.13.v20130916</jetty8-version>
+        <jetty-version>7.6.14.v20131031</jetty-version>
+        <jetty8-version>8.1.14.v20131031</jetty8-version>
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
         <slf4j-version>1.7.5</slf4j-version>
         <spring-version>3.2.4.RELEASE</spring-version>
