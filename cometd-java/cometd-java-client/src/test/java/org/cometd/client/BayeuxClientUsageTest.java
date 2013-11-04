@@ -38,7 +38,7 @@ import org.cometd.server.Jackson1JSONContextServer;
 import org.cometd.server.Jackson2JSONContextServer;
 import org.cometd.server.JettyJSONContextServer;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ProxyConfiguration;
+import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.proxy.ConnectHandler;
 import org.eclipse.jetty.proxy.ProxyServlet;
 import org.eclipse.jetty.server.Server;
@@ -111,7 +111,7 @@ public class BayeuxClientUsageTest extends ClientServerTest
         context.addServlet(proxyServlet, "/*");
 
         proxy.start();
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyConnector.getLocalPort()));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
 
         testClient(newBayeuxClient());
     }
@@ -140,7 +140,7 @@ public class BayeuxClientUsageTest extends ClientServerTest
         proxy.start();
         httpClient.stop();
         httpClient = new HttpClient(sslContextFactory);
-        httpClient.setProxyConfiguration(new ProxyConfiguration("localhost", proxyConnector.getLocalPort()));
+        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         httpClient.start();
 
         String url = "https://localhost:" + sslConnector.getLocalPort() + cometdServletPath;

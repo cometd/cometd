@@ -16,47 +16,53 @@
 
 package org.cometd.server.ext;
 
+import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
-import org.eclipse.jetty.util.DateCache;
 
 public class TimestampExtension extends Extension.Adapter
 {
-    private final DateCache _dateCache;
+    private final String format;
+    private final TimeZone timezone;
 
     public TimestampExtension()
     {
-        _dateCache=new DateCache();
-        _dateCache.setTimeZone(TimeZone.getTimeZone("UTC"));
+        this("EEE MMM dd HH:mm:ss zzz yyyy");
     }
 
     public TimestampExtension(String format)
     {
-        _dateCache=new DateCache(format);
-        _dateCache.setTimeZone(TimeZone.getTimeZone("UTC"));
+        this(format, TimeZone.getDefault());
     }
 
     public TimestampExtension(String format, TimeZone tz)
     {
-        _dateCache=new DateCache(format);
-        _dateCache.setTimeZone(tz);
+        this.format = format;
+        this.timezone = tz;
     }
 
     @Override
     public boolean send(ServerSession from, ServerSession to, Mutable message)
     {
-        message.put(Message.TIMESTAMP_FIELD,_dateCache.format(System.currentTimeMillis()));
+        timestamp(message);
         return true;
     }
 
     @Override
     public boolean sendMeta(ServerSession to, Mutable message)
     {
-        message.put(Message.TIMESTAMP_FIELD,_dateCache.format(System.currentTimeMillis()));
+        timestamp(message);
         return true;
+    }
+
+    private void timestamp(Mutable message)
+    {
+        SimpleDateFormat formatter = new SimpleDateFormat(format);
+        formatter.setTimeZone(timezone);
+        message.put(Message.TIMESTAMP_FIELD, formatter.format(System.currentTimeMillis()));
     }
 }
