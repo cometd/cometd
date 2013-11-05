@@ -1202,6 +1202,23 @@ public class BayeuxClientTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
+    @Test
+    public void testCustomTransportURL() throws Exception
+    {
+        startServer(null);
+
+        LongPollingTransport transport = new LongPollingTransport(cometdURL, null, httpClient);
+        transport.setDebugEnabled(debugTests());
+        // Pass a bogus URL that must not be used
+        BayeuxClient client = new BayeuxClient("http://foo/bar", transport);
+        client.setDebugEnabled(debugTests());
+
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
+
+        disconnectBayeuxClient(client);
+    }
+
     private class DumpThread extends Thread
     {
         public void run()

@@ -104,7 +104,12 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     public WebSocketTransport(Map<String, Object> options, WebSocketClientFactory webSocketClientFactory, ScheduledExecutorService scheduler)
     {
-        super(NAME, options);
+        this(null, options, webSocketClientFactory, scheduler);
+    }
+
+    public WebSocketTransport(String url, Map<String, Object> options, WebSocketClientFactory webSocketClientFactory, ScheduledExecutorService scheduler)
+    {
+        super(NAME, url, options);
         _webSocketClientFactory = webSocketClientFactory;
         _scheduler = scheduler;
         setOptionPrefix(PREFIX);

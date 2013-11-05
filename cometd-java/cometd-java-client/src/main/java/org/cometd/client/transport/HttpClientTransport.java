@@ -27,9 +27,10 @@ public abstract class HttpClientTransport extends ClientTransport
     private volatile String url;
     private volatile CookieProvider cookieProvider;
 
-    protected HttpClientTransport(String name, Map<String, Object> options)
+    protected HttpClientTransport(String name, String url, Map<String, Object> options)
     {
         super(name, options);
+        this.url = url;
     }
 
     protected String getURL()
@@ -39,7 +40,8 @@ public abstract class HttpClientTransport extends ClientTransport
 
     public void setURL(String url)
     {
-        this.url = url;
+        if (this.url == null)
+            this.url = url;
     }
 
     protected CookieProvider getCookieProvider()
