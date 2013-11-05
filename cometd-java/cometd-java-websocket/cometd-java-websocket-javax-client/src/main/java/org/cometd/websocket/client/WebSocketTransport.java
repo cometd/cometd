@@ -53,7 +53,12 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 
     public WebSocketTransport(Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketContainer webSocketContainer)
     {
-        super(options, scheduler);
+        this(null, options, scheduler, webSocketContainer);
+    }
+
+    public WebSocketTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketContainer webSocketContainer)
+    {
+        super(url, options, scheduler);
         _webSocketContainer = webSocketContainer;
     }
 

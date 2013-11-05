@@ -185,14 +185,19 @@ public abstract class ClientServerWebSocketTest
 
     protected ClientTransport newWebSocketTransport(Map<String, Object> options)
     {
+        return newWebSocketTransport(null, options);
+    }
+
+    protected ClientTransport newWebSocketTransport(String url, Map<String, Object> options)
+    {
         ClientTransport result;
         switch (implementation)
         {
             case WEBSOCKET_JSR_356:
-                result = new org.cometd.websocket.client.WebSocketTransport(options, null, wsClientContainer);
+                result = new org.cometd.websocket.client.WebSocketTransport(url, options, null, wsClientContainer);
                 break;
             case WEBSOCKET_JETTY:
-                result = new org.cometd.websocket.client.JettyWebSocketTransport(options, null, wsClient);
+                result = new org.cometd.websocket.client.JettyWebSocketTransport(url, options, null, wsClient);
                 break;
             default:
                 throw new IllegalArgumentException();

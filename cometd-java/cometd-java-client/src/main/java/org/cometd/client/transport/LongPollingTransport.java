@@ -60,7 +60,12 @@ public class LongPollingTransport extends HttpClientTransport
 
     public LongPollingTransport(Map<String, Object> options, HttpClient httpClient)
     {
-        super(NAME, options);
+        this(null, options, httpClient);
+    }
+
+    public LongPollingTransport(String url, Map<String, Object> options, HttpClient httpClient)
+    {
+        super(NAME, url, options);
         _httpClient = httpClient;
         setOptionPrefix(PREFIX);
     }

@@ -16,11 +16,9 @@
 
 package org.cometd.client;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -1189,6 +1187,21 @@ public class BayeuxClientTest extends ClientServerTest
         client.handshake();
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testCustomTransportURL() throws Exception
+    {
+        startServer(null);
+
+        LongPollingTransport transport = new LongPollingTransport(cometdURL, null, httpClient);
+        // Pass a bogus URL that must not be used
+        BayeuxClient client = new BayeuxClient("http://foo/bar", transport);
+
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
 
         disconnectBayeuxClient(client);
     }

@@ -564,4 +564,17 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
 
         disconnectBayeuxClient(client);
     }
+
+    @Test
+    public void testCustomTransportURL() throws Exception
+    {
+        ClientTransport transport = newWebSocketTransport(cometdURL, null);
+        // Pass a bogus URL that must not be used
+        BayeuxClient client = new BayeuxClient("http://foo/bar", transport);
+
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
+
+        disconnectBayeuxClient(client);
+    }
 }

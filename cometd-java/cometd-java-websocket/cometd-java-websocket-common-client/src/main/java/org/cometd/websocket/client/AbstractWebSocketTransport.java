@@ -58,9 +58,9 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
     private volatile TransportListener _listener;
     private volatile Map<String, Object> _advice;
 
-    protected AbstractWebSocketTransport(Map<String, Object> options, ScheduledExecutorService scheduler)
+    protected AbstractWebSocketTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler)
     {
-        super(NAME, options);
+        super(NAME, url, options);
         _scheduler = scheduler;
         setOptionPrefix(PREFIX);
     }
@@ -164,7 +164,10 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
         if (_aborted)
             throw new IllegalStateException("Aborted");
 
-        S session = connect(getURL(), listener, messages);
+        // Mangle the URL
+        String url = getURL();
+        url = url.replaceFirst("^http", "ws");
+        S session = connect(url, listener, messages);
         if (session == null)
             return;
 

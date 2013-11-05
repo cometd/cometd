@@ -49,7 +49,12 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
 
     public JettyWebSocketTransport(Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketClient webSocketClient)
     {
-        super(options, scheduler);
+        this(null, options, scheduler, webSocketClient);
+    }
+
+    public JettyWebSocketTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketClient webSocketClient)
+    {
+        super(url, options, scheduler);
         _webSocketClient = webSocketClient;
     }
 
