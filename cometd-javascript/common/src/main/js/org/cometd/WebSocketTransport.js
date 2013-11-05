@@ -3,10 +3,11 @@ org.cometd.WebSocketTransport = function()
     var _super = new org.cometd.Transport();
     var _self = org.cometd.Transport.derive(_super);
     var _cometd;
-    // By default, support WebSocket
-    var _supportsWebSocket = true;
+    // By default WebSocket is supported
+    var _webSocketSupported = true;
     // Whether we were able to establish a WebSocket connection
-    var _webSocketSupported = false;
+    var _webSocketConnected = false;
+    var _stickyReconnect;
     // Envelopes that have been sent
     var _envelopes = {};
     // Timeouts for messages that have been sent
@@ -38,6 +39,9 @@ org.cometd.WebSocketTransport = function()
                 }
             }, connectTimeout);
         }
+
+        // By default use sticky reconnects
+        _stickyReconnect = _cometd.getConfiguration().stickyReconnect !== false;
 
         var protocol = _cometd.getConfiguration().protocol;
         var webSocket = protocol ? new org.cometd.WebSocket(url, protocol) : new org.cometd.WebSocket(url);
@@ -167,7 +171,7 @@ org.cometd.WebSocketTransport = function()
     {
         this._debug('Transport', this.getType(), 'opened', _webSocket);
         _opened = true;
-        _webSocketSupported = true;
+        _webSocketConnected = true;
 
         this._debug('Sending pending messages', _envelopes);
         for (var key in _envelopes)
@@ -265,7 +269,7 @@ org.cometd.WebSocketTransport = function()
 
         // Remember if we were able to connect
         // This close event could be due to server shutdown, and if it restarts we want to try websocket again
-        _supportsWebSocket = _webSocketSupported;
+        _webSocketSupported = _stickyReconnect && _webSocketConnected;
 
         for (var id in _timeouts)
         {
@@ -305,7 +309,7 @@ org.cometd.WebSocketTransport = function()
     _self.accept = function(version, crossDomain, url)
     {
         // Using !! to return a boolean (and not the WebSocket object)
-        return _supportsWebSocket && !!org.cometd.WebSocket && _cometd.websocketEnabled !== false;
+        return _webSocketSupported && !!org.cometd.WebSocket && _cometd.websocketEnabled !== false;
     };
 
     _self.send = function(envelope, metaConnect)
@@ -357,8 +361,8 @@ org.cometd.WebSocketTransport = function()
         {
             this.webSocketClose(_webSocket, 1000, 'Reset');
         }
-        _supportsWebSocket = true;
-        _webSocketSupported = false;
+        _webSocketSupported = true;
+        _webSocketConnected = false;
         _timeouts = {};
         _envelopes = {};
         _webSocket = null;

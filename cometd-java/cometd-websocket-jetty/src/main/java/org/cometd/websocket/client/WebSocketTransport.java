@@ -58,6 +58,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public final static String CONNECT_TIMEOUT_OPTION = "connectTimeout";
     public final static String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public final static String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
+    public final static String STICKY_RECONNECT_OPTION = "stickyReconnect";
 
     public static WebSocketTransport create(Map<String, Object> options, WebSocketClientFactory webSocketClientFactory)
     {
@@ -87,15 +88,16 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile ScheduledExecutorService _scheduler;
     private volatile boolean _shutdownScheduler;
     private volatile String _protocol = null;
-    private volatile long _maxNetworkDelay = 15000L;
-    private volatile long _connectTimeout = 30000L;
-    private volatile int _idleTimeout = 60000;
+    private volatile long _maxNetworkDelay;
+    private volatile long _connectTimeout;
+    private volatile int _idleTimeout;
     private volatile int _maxMessageSize;
+    private volatile boolean _stickyReconnect;
     private volatile boolean _connected;
     private volatile boolean _disconnected;
     private volatile boolean _aborted;
     private volatile boolean _webSocketSupported = true;
-    private volatile boolean _supportsWebSocket= false;
+    private volatile boolean _webSocketConnected = false;
     private volatile WebSocket.Connection _connection;
     private volatile TransportListener _listener;
     private volatile Map<String, Object> _advice;
@@ -125,10 +127,11 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _exchanges.clear();
         _aborted = false;
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
-        _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, _maxNetworkDelay);
-        _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, _connectTimeout);
-        _idleTimeout = getOption(IDLE_TIMEOUT_OPTION, _idleTimeout);
+        _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, 15000L);
+        _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, 30000L);
+        _idleTimeout = getOption(IDLE_TIMEOUT_OPTION, 60000);
         _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClientFactory.getBufferSize());
+        _stickyReconnect = getOption(STICKY_RECONNECT_OPTION, true);
         if (_scheduler == null)
         {
             _shutdownScheduler = true;
@@ -240,7 +243,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
             _connection = connect(client, uri);
             // Connection was successful
-            _supportsWebSocket = true;
+            _webSocketConnected = true;
 
             if (_aborted)
             {
@@ -288,7 +291,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         }
         catch (Exception x)
         {
-            _webSocketSupported = _supportsWebSocket;
+            _webSocketSupported = _stickyReconnect && _webSocketConnected;
             listener.onException(x, messages);
         }
         return _connection;
