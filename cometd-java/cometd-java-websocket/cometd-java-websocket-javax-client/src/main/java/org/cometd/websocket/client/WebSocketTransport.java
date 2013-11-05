@@ -48,7 +48,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     private final Endpoint _target = new CometDWebSocket();
     private final WebSocketContainer _webSocketContainer;
     private volatile boolean _webSocketSupported = true;
-    private volatile boolean _supportsWebSocket = false;
+    private volatile boolean _webSocketConnected = false;
     private volatile Session _wsSession;
 
     public WebSocketTransport(Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketContainer webSocketContainer)
@@ -103,7 +103,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             logger.debug("Opening websocket session to {}", uri);
 
             session = connect(uri);
-            _supportsWebSocket = true;
+            _webSocketConnected = true;
 
             if (isAborted())
                 listener.onFailure(new Exception("Aborted"), messages);
@@ -117,7 +117,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         }
         catch (Exception x)
         {
-            _webSocketSupported = _supportsWebSocket;
+            _webSocketSupported = isStickyReconnect() && _webSocketConnected;
             listener.onFailure(x, messages);
         }
 

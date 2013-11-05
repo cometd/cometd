@@ -42,14 +42,16 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
     public final static String CONNECT_TIMEOUT_OPTION = "connectTimeout";
     public final static String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public final static String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
+    public final static String STICKY_RECONNECT_OPTION = "stickyReconnect";
 
     private final Map<String, WebSocketExchange> _exchanges = new ConcurrentHashMap<>();
     private volatile ScheduledExecutorService _scheduler;
     private volatile boolean _shutdownScheduler;
     private volatile String _protocol = null;
-    private volatile long _maxNetworkDelay = 15000L;
-    private volatile long _connectTimeout = 30000L;
-    private volatile int _idleTimeout = 60000;
+    private volatile long _maxNetworkDelay;
+    private volatile long _connectTimeout;
+    private volatile long _idleTimeout;
+    private volatile boolean _stickyReconnect;
     private volatile boolean _connected;
     private volatile boolean _disconnected;
     private volatile boolean _aborted;
@@ -92,9 +94,10 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
         }
 
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
-        _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, _maxNetworkDelay);
-        _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, _connectTimeout);
-        _idleTimeout = getOption(IDLE_TIMEOUT_OPTION, _idleTimeout);
+        _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, 15000L);
+        _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, 30000L);
+        _idleTimeout = getOption(IDLE_TIMEOUT_OPTION, 60000L);
+        _stickyReconnect = getOption(STICKY_RECONNECT_OPTION, true);
     }
 
     public String getProtocol()
@@ -102,7 +105,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
         return _protocol;
     }
 
-    public int getIdleTimeout()
+    public long getIdleTimeout()
     {
         return _idleTimeout;
     }
@@ -115,6 +118,11 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
     public long getConnectTimeout()
     {
         return _connectTimeout;
+    }
+
+    public boolean isStickyReconnect()
+    {
+        return _stickyReconnect;
     }
 
     @Override
