@@ -41,10 +41,10 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
     }
 
     @Override
-    public boolean dispatch(final Runnable job)
+    public void execute(final Runnable job)
     {
         final long begin = System.nanoTime();
-        return super.dispatch(new Runnable()
+        super.execute(new Runnable()
         {
             public void run()
             {
