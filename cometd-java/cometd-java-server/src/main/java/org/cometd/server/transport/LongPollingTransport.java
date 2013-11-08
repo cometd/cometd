@@ -184,7 +184,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                                 // Suspend and wait for messages
                                                 AsyncContext asyncContext = request.startAsync();
                                                 asyncContext.setTimeout(timeout);
-                                                scheduler = new LongPollScheduler(session, asyncContext, reply, browserId);
+                                                scheduler = newLongPollScheduler(session, asyncContext, reply, browserId);
                                                 request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
                                                 session.setScheduler(scheduler);
                                                 reply = null;
@@ -300,6 +300,11 @@ public abstract class LongPollingTransport extends HttpTransport
         }
     }
 
+    protected LongPollScheduler newLongPollScheduler(ServerSessionImpl session, AsyncContext asyncContext, ServerMessage.Mutable metaConnectReply, String browserId)
+    {
+        return new LongPollScheduler(session, asyncContext, metaConnectReply, browserId);
+    }
+
     private PrintWriter writeQueueForMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer) throws IOException
     {
         try
@@ -359,14 +364,14 @@ public abstract class LongPollingTransport extends HttpTransport
 
     protected abstract void finishWrite(PrintWriter writer, ServerSessionImpl session) throws IOException;
 
-    private class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, AsyncListener
+    protected class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, AsyncListener
     {
         private static final String ATTRIBUTE = "org.cometd.scheduler";
 
         private final ServerSessionImpl _session;
         private final AsyncContext _asyncContext;
         private final ServerMessage.Mutable _reply;
-        private volatile String _browserId;
+        private final String _browserId;
         private volatile boolean _expired;
 
         public LongPollScheduler(ServerSessionImpl session, AsyncContext asyncContext, ServerMessage.Mutable reply, String browserId)
@@ -433,13 +438,13 @@ public abstract class LongPollingTransport extends HttpTransport
         @Override
         public void onComplete(AsyncEvent asyncEvent) throws IOException
         {
-            decBrowserId();
         }
 
         @Override
         public void onTimeout(AsyncEvent asyncEvent) throws IOException
         {
             _expired = true;
+            decBrowserId();
             _session.setScheduler(null);
             dispatch();
         }
@@ -465,7 +470,6 @@ public abstract class LongPollingTransport extends HttpTransport
         private void decBrowserId()
         {
             LongPollingTransport.this.decBrowserId(_browserId);
-            _browserId = null;
         }
     }
 }

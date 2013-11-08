@@ -551,7 +551,7 @@ public class AsyncJSONTransport extends HttpTransport
             if (cancelTimeout())
             {
                 _logger.debug("Duplicate /meta/connect, cancelling {}", reply);
-                error(asyncContext, HttpServletResponse.SC_REQUEST_TIMEOUT);
+                error();
             }
         }
 
@@ -583,6 +583,7 @@ public class AsyncJSONTransport extends HttpTransport
                 reply.put(Message.ADVICE_FIELD, advice);
             if (session.isDisconnected())
                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+            decBrowserId(browserId);
             flush(asyncContext, session, true, processReply(session, reply));
         }
 
@@ -599,13 +600,18 @@ public class AsyncJSONTransport extends HttpTransport
         @Override
         public void onComplete(AsyncEvent asyncEvent) throws IOException
         {
-            decBrowserId(browserId);
         }
 
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
-            error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            error();
+        }
+        
+        private void error()
+        {
+            decBrowserId(browserId);
+            AsyncJSONTransport.this.error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 }
