@@ -110,8 +110,8 @@ public class IdleLongPollTest extends AbstractBayeuxClientServerTest
                 "}]");
         connect2.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect2);
-
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
+        Assert.assertEquals(200, connect2.getResponseStatus());
 
         ContentExchange connect3 = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -120,8 +120,9 @@ public class IdleLongPollTest extends AbstractBayeuxClientServerTest
                 "}]");
         connect3.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect3);
-
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect3.waitForDone());
+        Assert.assertEquals(200, connect3.getResponseStatus());
+
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(connect3.getResponseContent());
         Assert.assertEquals(1, messages.length);

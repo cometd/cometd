@@ -523,7 +523,7 @@ public abstract class LongPollingTransport extends HttpTransport
         private final ServerSessionImpl _session;
         private final Continuation _continuation;
         private final ServerMessage.Mutable _reply;
-        private String _browserId;
+        private final String _browserId;
 
         public LongPollScheduler(ServerSessionImpl session, Continuation continuation, ServerMessage.Mutable reply, String browserId)
         {
