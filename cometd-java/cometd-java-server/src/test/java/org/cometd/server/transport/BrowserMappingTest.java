@@ -88,7 +88,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
         Assert.assertEquals(200, connect2.getResponseStatus());
         long elapsed = System.currentTimeMillis() - begin;
-        Assert.assertTrue("" + elapsed, elapsed >= timeout);
+        Assert.assertTrue("" + elapsed, elapsed >= (timeout - timeout / 10));
     }
 
     @Test
@@ -172,7 +172,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
         Assert.assertEquals(200, connect2.getResponseStatus());
         long elapsed = System.currentTimeMillis() - begin;
-        Assert.assertTrue("" + elapsed, elapsed >= timeout);
+        Assert.assertTrue("" + elapsed, elapsed >= (timeout - timeout / 10));
     }
 
     @Test
@@ -215,6 +215,6 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
         Assert.assertEquals(200, connect2.getResponseStatus());
         long elapsed = System.currentTimeMillis() - begin;
-        Assert.assertTrue("" + elapsed, elapsed >= timeout);
+        Assert.assertTrue("" + elapsed, elapsed >= (timeout - timeout / 10));
     }
 }
