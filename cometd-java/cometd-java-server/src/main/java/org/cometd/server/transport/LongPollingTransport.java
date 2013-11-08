@@ -284,7 +284,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                                 Continuation continuation = ContinuationSupport.getContinuation(request);
                                                 continuation.setTimeout(timeout);
                                                 continuation.suspend(response);
-                                                scheduler = new LongPollScheduler(session, continuation, reply, browserId);
+                                                scheduler = newLongPollScheduler(session, continuation, reply, browserId);
                                                 request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
                                                 session.setScheduler(scheduler);
                                                 reply = null;
@@ -399,6 +399,11 @@ public abstract class LongPollingTransport extends HttpTransport
         }
     }
 
+    protected LongPollScheduler newLongPollScheduler(ServerSessionImpl session, Continuation continuation, ServerMessage.Mutable metaConnectReply, String browserId)
+    {
+        return new LongPollScheduler(session, continuation, metaConnectReply, browserId);
+    }
+
     private PrintWriter writeQueueForMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer) throws IOException
     {
         try
@@ -511,7 +516,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
     protected abstract void finishWrite(PrintWriter writer, ServerSessionImpl session) throws IOException;
 
-    private class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, ContinuationListener
+    protected class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, ContinuationListener
     {
         private static final String ATTRIBUTE = "org.cometd.scheduler";
 
@@ -575,18 +580,17 @@ public abstract class LongPollingTransport extends HttpTransport
 
         public void onComplete(Continuation continuation)
         {
-            decBrowserId();
         }
 
         public void onTimeout(Continuation continuation)
         {
+            decBrowserId();
             _session.setScheduler(null);
         }
 
         private void decBrowserId()
         {
             LongPollingTransport.this.decBrowserId(_browserId);
-            _browserId = null;
         }
     }
 }
