@@ -615,8 +615,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             Object field = handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD);
             Object[] serverTransports = field instanceof List ? ((List)field).toArray() : (Object[])field;
             List<ClientTransport> negotiatedTransports = transportRegistry.negotiate(serverTransports, BAYEUX_VERSION);
-            final ClientTransport newTransport = negotiatedTransports.isEmpty() ? null : negotiatedTransports.get(0);
-            if (newTransport == null)
+            if (negotiatedTransports.isEmpty())
             {
                 // Signal the failure
                 String error = "405:c" +
@@ -627,12 +626,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
                 handshake.setSuccessful(false);
                 handshake.put(Message.ERROR_FIELD, error);
-                // TODO: also update the advice with reconnect=none for listeners ?
 
                 updateBayeuxClientState(new BayeuxClientStateUpdater()
                 {
                     public BayeuxClientState create(BayeuxClientState oldState)
                     {
+                        onTransportFailure(oldState.transport.getName(), null, new TransportException(null));
                         return new DisconnectedState(oldState.transport);
                     }
 
@@ -645,6 +644,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             }
             else
             {
+                final ClientTransport newTransport = negotiatedTransports.get(0);
                 updateBayeuxClientState(new BayeuxClientStateUpdater()
                 {
                     public BayeuxClientState create(BayeuxClientState oldState)
@@ -1089,6 +1089,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         newTransport.setDebugEnabled(isDebugEnabled());
     }
 
+    protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure)
+    {
+    }
+
     /**
      * The states that a {@link BayeuxClient} may assume
      */
@@ -1187,27 +1191,38 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private class HandshakeTransportListener extends PublishTransportListener
     {
-        protected void onFailure(Throwable x, Message[] messages)
+        protected void onFailure(final Throwable x, Message[] messages)
         {
             debug("Handshake failed: " + Arrays.toString(messages), x);
-            updateBayeuxClientState(new BayeuxClientStateUpdater()
+
+            List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
+            if (transports.isEmpty())
             {
-                public BayeuxClientState create(BayeuxClientState oldState)
+                updateBayeuxClientState(new BayeuxClientStateUpdater()
                 {
-                    List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
-                    if (transports.isEmpty())
+                    @Override
+                    public BayeuxClientState create(BayeuxClientState oldState)
                     {
+                        onTransportFailure(oldState.transport.getName(), null, x);
                         return new DisconnectedState(oldState.transport);
                     }
-                    else
+                });
+            }
+            else
+            {
+                final ClientTransport newTransport = transports.get(0);
+                updateBayeuxClientState(new BayeuxClientStateUpdater()
+                {
+                    @Override
+                    public BayeuxClientState create(BayeuxClientState oldState)
                     {
-                        ClientTransport newTransport = transports.get(0);
                         if (newTransport != oldState.transport)
                             prepareTransport(oldState.transport, newTransport);
+                        onTransportFailure(oldState.transport.getName(), newTransport.getName(), x);
                         return new RehandshakingState(oldState.handshakeFields, newTransport, oldState.nextBackoff());
                     }
-                }
-            });
+                });
+            }
             super.onFailure(x, messages);
         }
 
