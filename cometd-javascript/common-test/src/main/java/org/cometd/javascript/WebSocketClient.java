@@ -71,7 +71,8 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
 
     public void jsFunction_close(int code, String reason)
     {
-        connection.close(code, reason);
+        if (connection != null)
+            connection.close(code, reason);
     }
 
     public void onOpen(Connection connection)
