@@ -676,6 +676,7 @@ org.cometd.Cometd = function(name)
         _setStatus('disconnected');
         _batch = 0;
         _resetBackoff();
+        _transport = null;
 
         // Fail any existing queued message
         if (_messageQueue.length > 0)
@@ -684,6 +685,24 @@ org.cometd.Cometd = function(name)
                 reason: 'Disconnected'
             });
             _messageQueue = [];
+        }
+    }
+
+    function _notifyTransportFailure(oldTransport, newTransport, failure)
+    {
+        var callback = _cometd.onTransportFailure;
+        if (_isFunction(callback))
+        {
+            _cometd._debug('Invoking transport failure callback', oldTransport, newTransport, failure);
+            try
+            {
+                callback.call(_cometd, oldTransport, newTransport, failure);
+            }
+            catch (x)
+            {
+                _cometd._info('Exception during execution of transport failure callback', x);
+
+            }
         }
     }
 
@@ -734,7 +753,7 @@ org.cometd.Cometd = function(name)
 
         var bayeuxMessage = {
             version: version,
-            minimumVersion: '0.9',
+            minimumVersion: version,
             channel: '/meta/handshake',
             supportedConnectionTypes: transportTypes,
             advice: {
@@ -748,12 +767,15 @@ org.cometd.Cometd = function(name)
 
         // Pick up the first available transport as initial transport
         // since we don't know if the server supports it
-        _transport = _transports.negotiateTransport(transportTypes, version, _crossDomain, url);
         if (!_transport)
         {
-            var error = 'Could not find initial transport among: ' + _transports.getTransportTypes();
-            _cometd._warn(error);
-            throw error;
+            _transport = _transports.negotiateTransport(transportTypes, version, _crossDomain, url);
+            if (!_transport)
+            {
+                var failure = 'Could not find initial transport among: ' + _transports.getTransportTypes();
+                _cometd._warn(failure);
+                throw failure;
+            }
         }
 
         _cometd._debug('Initial transport is', _transport.getType());
@@ -810,13 +832,22 @@ org.cometd.Cometd = function(name)
             var newTransport = _transports.negotiateTransport(message.supportedConnectionTypes, message.version, _crossDomain, url);
             if (newTransport === null)
             {
-                throw 'Could not negotiate transport with server; client ' +
-                      _transports.findTransportTypes(message.version, _crossDomain, url) +
-                      ', server ' + message.supportedConnectionTypes;
+                var failure = 'Could not negotiate transport with server; client ' +
+                    _transports.findTransportTypes(message.version, _crossDomain, url) +
+                    ', server ' + message.supportedConnectionTypes;
+                var oldTransport = _cometd.getTransport();
+                _notifyTransportFailure(oldTransport.getType(), null, {
+                    reason: failure,
+                    connectionType: oldTransport.getType(),
+                    transport: oldTransport
+                });
+                _cometd._warn(failure);
+                _disconnect(true);
+                return;
             }
             else if (_transport !== newTransport)
             {
-                _cometd._debug('Transport', _transport, '->', newTransport);
+                _cometd._debug('Transport', _transport.getType(), '->', newTransport.getType());
                 _transport = newTransport;
             }
 
@@ -854,7 +885,25 @@ org.cometd.Cometd = function(name)
 
     function _handshakeFailure(message)
     {
-        _failHandshake(message);
+        var version = '1.0';
+        var url = _cometd.getURL();
+        var oldTransport = _cometd.getTransport();
+        var transportTypes = _transports.findTransportTypes(version, _crossDomain, url);
+        var newTransport = _transports.negotiateTransport(transportTypes, version, _crossDomain, url);
+        if (!newTransport)
+        {
+            _notifyTransportFailure(oldTransport.getType(), null, message.failure);
+            _cometd._warn('Could not negotiate transport; client ' + transportTypes);
+            _disconnect(true);
+            _failHandshake(message);
+        }
+        else
+        {
+            _cometd._debug('Transport', oldTransport.getType(), '->', newTransport.getType());
+            _notifyTransportFailure(oldTransport.getType(), newTransport.getType(), message.failure);
+            _failHandshake(message);
+            _transport = newTransport;
+        }
     }
 
     function _failConnect(message)
