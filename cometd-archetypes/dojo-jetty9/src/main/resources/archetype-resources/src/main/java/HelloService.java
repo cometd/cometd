@@ -40,7 +40,7 @@ public class HelloService extends AbstractService
         Map<String, Object> input = message.getDataAsMap();
         String name = (String)input.get("name");
 
-        Map<String, Object> output = new HashMap<String, Object>();
+        Map<String, Object> output = new HashMap<>();
         output.put("greeting", "Hello, " + name);
         remote.deliver(getServerSession(), "/hello", output, null);
     }

@@ -55,7 +55,7 @@ public class HelloService
         Map<String, Object> input = message.getDataAsMap();
         String name = (String)input.get("name");
 
-        Map<String, Object> output = new HashMap<String, Object>();
+        Map<String, Object> output = new HashMap<>();
         output.put("greeting", "Hello, " + name);
         remote.deliver(serverSession, "/hello", output, null);
     }

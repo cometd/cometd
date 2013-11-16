@@ -2,7 +2,7 @@
 <archetype>
     <id>cometd-archetype-dojo-jetty9</id>
     <sources>
-        <source>src/main/java/BayeuxInitializer.java</source>
+        <source>src/main/java/CometDInitializer.java</source>
         <source>src/main/java/HelloService.java</source>
     </sources>
     <resources>
