@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -1021,6 +1022,133 @@ public class SetiTest extends OortTest
             Assert.assertTrue(seti1.isPresent(userId1));
             Assert.assertFalse(seti2.isAssociated(userId1));
             Assert.assertTrue(seti2.isPresent(userId1));
+        }
+    }
+
+    @Test
+    public void testMessageToObservedChannelIsForwarded() throws Exception
+    {
+        testForwardBehaviour(true);
+    }
+
+    @Test
+    public void testMessageToNonObservedChannelIsNotForwarded() throws Exception
+    {
+        testForwardBehaviour(false);
+    }
+
+    private void testForwardBehaviour(boolean forward) throws Exception
+    {
+        Server server1 = startServer(0);
+        Oort oort1 = startOort(server1);
+        Server server2 = startServer(0);
+        Oort oort2 = startOort(server2);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        oort2.addCometListener(new CometJoinedListener(latch));
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        OortComet oortComet21 = oort2.findComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        final Seti seti1 = startSeti(oort1);
+        Seti seti2 = startSeti(oort2);
+
+        new SetiService(seti1);
+        new SetiService(seti2);
+
+        BayeuxClient client1 = startClient(oort1, null);
+        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        BayeuxClient client2 = startClient(oort2, null);
+        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        CountDownLatch presenceAddedLatch = new CountDownLatch(4);
+        seti1.addPresenceListener(new UserPresentListener(presenceAddedLatch));
+        seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
+
+        // Login user1
+        final CountDownLatch loginLatch1 = new CountDownLatch(1);
+        Map<String, Object> login1 = new HashMap<String, Object>();
+        String userId1 = "user1";
+        login1.put("user", userId1);
+        ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
+        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                loginLatch1.countDown();
+            }
+        });
+        Assert.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
+
+        // Login user2
+        final CountDownLatch loginLatch2 = new CountDownLatch(1);
+        Map<String, Object> login2 = new HashMap<String, Object>();
+        String userId2 = "user2";
+        login2.put("user", userId2);
+        ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
+        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                loginLatch2.countDown();
+            }
+        });
+        Assert.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
+
+        // Make sure all Setis see all users
+        Assert.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
+
+        // Setup test: register a service for the service channel
+        // that broadcasts to another channel that is not observed
+        final String serviceChannel = "/service/foo";
+        final String broadcastChannel = "/foo";
+
+        if (forward)
+        {
+            oort2.observeChannel(broadcastChannel);
+            // Give some time for the subscribe to happen
+            Thread.sleep(1000);
+        }
+
+        new BroadcastService(seti1, serviceChannel, broadcastChannel);
+
+        // Subscribe user2
+        LatchListener subscribeListener = new LatchListener(1);
+        final CountDownLatch messageLatch = new CountDownLatch(1);
+        client2.getChannel(Channel.META_SUBSCRIBE).addListener(subscribeListener);
+        client2.getChannel(broadcastChannel).subscribe(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                messageLatch.countDown();
+            }
+        });
+        Assert.assertTrue(subscribeListener.await(5, TimeUnit.SECONDS));
+
+        client1.getChannel(serviceChannel).publish("data1");
+
+        Assert.assertEquals(forward, messageLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    public static class BroadcastService extends AbstractService
+    {
+        private final Seti seti;
+        private final String broadcastChannel;
+
+        public BroadcastService(Seti seti, String channel, String broadcastChannel)
+        {
+            super(seti.getOort().getBayeuxServer(), seti.getId());
+            this.seti = seti;
+            this.broadcastChannel = broadcastChannel;
+            addService(channel, "process");
+        }
+
+        public void process(ServerSession session, ServerMessage message)
+        {
+//            seti.getOort().getOortSession().getChannel(broadcastChannel).publish("data2");
+            getLocalSession().getChannel(broadcastChannel).publish("data2");
         }
     }
 
