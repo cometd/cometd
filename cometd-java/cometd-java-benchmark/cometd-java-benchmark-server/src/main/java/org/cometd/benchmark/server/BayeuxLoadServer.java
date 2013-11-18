@@ -223,7 +223,7 @@ public class BayeuxLoadServer
 
         // Add more handlers if needed
 
-        ServletContextHandler context = new ServletContextHandler(handler, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(handler, "/cometd", ServletContextHandler.SESSIONS);
         context.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, BayeuxServer.ATTRIBUTE);
 
@@ -596,6 +596,7 @@ public class BayeuxLoadServer
         {
             super(bayeux);
             this.executor = executor;
+            setOption("idleTimeout","60000");
         }
 
         @Override
