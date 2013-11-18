@@ -456,7 +456,7 @@ public class BayeuxLoadClient
             {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT, new Jackson1JSONContextClient());
-                options.put(JettyWebSocketTransport.IDLE_TIMEOUT_OPTION, 60000);
+                options.put(JettyWebSocketTransport.IDLE_TIMEOUT_OPTION, httpClient.getIdleTimeout() * 3 / 4);
                 return new JettyWebSocketTransport(options, scheduler, webSocketClient);
             }
             default:

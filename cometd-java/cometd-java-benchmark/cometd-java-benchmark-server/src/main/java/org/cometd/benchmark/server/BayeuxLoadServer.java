@@ -596,7 +596,6 @@ public class BayeuxLoadServer
         {
             super(bayeux);
             this.executor = executor;
-            setOption("idleTimeout","60000");
         }
 
         @Override
