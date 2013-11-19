@@ -44,6 +44,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.benchmark.Atomics;
 import org.cometd.benchmark.BenchmarkHelper;
+import org.cometd.benchmark.Config;
 import org.cometd.benchmark.MonitoringQueuedThreadPool;
 import org.cometd.benchmark.SystemTimer;
 import org.cometd.client.BayeuxClient;
@@ -149,12 +150,12 @@ public class BayeuxLoadClient
             value = String.valueOf(maxThreads);
         maxThreads = Integer.parseInt(value);
 
-        String contextPath = "/cometd";
+        String contextPath = Config.CONTEXT_PATH;
         System.err.printf("context [%s]: ", contextPath);
         value = console.readLine().trim();
         if (value.length() == 0)
             value = contextPath;
-        String uri = value + "/cometd";
+        String uri = value + Config.SERVLET_PATH;
         String url = (ssl ? "https" : "http") + "://" + host + ":" + port + uri;
 
         String channel = System.getProperty("cometd.channel", "/chat/demo");
@@ -200,7 +201,7 @@ public class BayeuxLoadClient
         httpClient.setMaxConnectionsPerDestination(60000);
         httpClient.setMaxRequestsQueuedPerDestination(10000);
         httpClient.setExecutor(threadPool);
-        httpClient.setIdleTimeout(8000);
+        httpClient.setIdleTimeout(2 * Config.MAX_NETWORK_DELAY);
         httpClient.start();
         mbeanContainer.beanAdded(null, httpClient);
 
@@ -449,14 +450,17 @@ public class BayeuxLoadClient
             {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT, new Jackson1JSONContextClient());
-                options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, httpClient.getIdleTimeout() * 3 / 4);
+                options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
                 return new LongPollingTransport(options, httpClient);
             }
             case WEBSOCKET:
             {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT, new Jackson1JSONContextClient());
-                options.put(JettyWebSocketTransport.IDLE_TIMEOUT_OPTION, httpClient.getIdleTimeout() * 3 / 4);
+                options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
+                // Differently from HTTP where the idle timeout is adjusted if it is a /meta/connect
+                // for WebSocket we need an idle timeout that is longer than the /meta/connect timeout.
+                options.put(JettyWebSocketTransport.IDLE_TIMEOUT_OPTION, Config.META_CONNECT_TIMEOUT + httpClient.getIdleTimeout());
                 return new JettyWebSocketTransport(options, scheduler, webSocketClient);
             }
             default:

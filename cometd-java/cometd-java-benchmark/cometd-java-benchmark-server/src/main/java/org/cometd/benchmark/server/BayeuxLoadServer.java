@@ -49,6 +49,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.benchmark.Atomics;
 import org.cometd.benchmark.BenchmarkHelper;
+import org.cometd.benchmark.Config;
 import org.cometd.benchmark.MonitoringQueuedThreadPool;
 import org.cometd.benchmark.MonitoringThreadPoolExecutor;
 import org.cometd.server.AbstractServerTransport;
@@ -192,7 +193,7 @@ public class BayeuxLoadServer
         // see http://cometd.org/documentation/howtos/loadtesting
         connector.setAcceptQueueSize(2048);
         // Make sure the server timeout on a TCP connection is large
-        connector.setIdleTimeout(240000);
+        connector.setIdleTimeout(50 * Config.MAX_NETWORK_DELAY);
         connector.setPort(port);
         server.addConnector(connector);
 
@@ -223,7 +224,7 @@ public class BayeuxLoadServer
 
         // Add more handlers if needed
 
-        ServletContextHandler context = new ServletContextHandler(handler, "/cometd", ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(handler, Config.CONTEXT_PATH, ServletContextHandler.SESSIONS);
         context.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, BayeuxServer.ATTRIBUTE);
 
@@ -233,8 +234,7 @@ public class BayeuxLoadServer
         context.addServlet(DefaultServlet.class, "/");
 
         // Setup comet servlet
-        String cometdServletPath = "/cometd";
-        String cometdURLMapping = cometdServletPath + "/*";
+        String cometdURLMapping = Config.SERVLET_PATH + "/*";
         CometDServlet cometServlet = new CometDServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometServlet);
         context.addServlet(cometdServletHolder, cometdURLMapping);
@@ -243,9 +243,9 @@ public class BayeuxLoadServer
         // This value must be several times larger than the client value
         // (e.g. 60 s on server vs 5 s on client) so that it's guaranteed that
         // it will be the client to dispose idle connections.
-        bayeuxServer.setOption(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(60000));
+        bayeuxServer.setOption(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(10 * Config.MAX_NETWORK_DELAY));
         // Explicitly set the timeout value
-        bayeuxServer.setOption(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(30000));
+        bayeuxServer.setOption(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(Config.META_CONNECT_TIMEOUT));
         // Use the faster JSON parser/generator
         bayeuxServer.setOption(AbstractServerTransport.JSON_CONTEXT_OPTION, Jackson1JSONContextServer.class.getName());
         bayeuxServer.setOption("ws.cometdURLMapping", cometdURLMapping);
