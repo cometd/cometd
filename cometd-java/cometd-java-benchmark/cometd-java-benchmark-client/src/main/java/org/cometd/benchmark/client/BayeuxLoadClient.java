@@ -37,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicStampedReference;
+import javax.websocket.ContainerProvider;
+import javax.websocket.WebSocketContainer;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -52,6 +54,7 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.Jackson1JSONContextClient;
 import org.cometd.websocket.client.JettyWebSocketTransport;
+import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -85,6 +88,7 @@ public class BayeuxLoadClient
     private ScheduledExecutorService scheduler;
     private MonitoringQueuedThreadPool threadPool;
     private HttpClient httpClient;
+    private WebSocketContainer webSocketContainer;
     private WebSocketClient webSocketClient;
 
     public static void main(String[] args) throws Exception
@@ -205,6 +209,11 @@ public class BayeuxLoadClient
         httpClient.start();
         mbeanContainer.beanAdded(null, httpClient);
 
+        webSocketContainer = ContainerProvider.getWebSocketContainer();
+        // Make sure the container is stopped when the HttpClient is stopped
+        httpClient.addBean(webSocketContainer, true);
+        mbeanContainer.beanAdded(null, webSocketContainer);
+
         webSocketClient = new WebSocketClient();
         webSocketClient.setExecutor(threadPool);
         webSocketClient.setMasker(new ZeroMasker());
@@ -264,7 +273,7 @@ public class BayeuxLoadClient
                 for (int i = 0; i < currentClients - clients; ++i)
                 {
                     LoadBayeuxClient client = bayeuxClients.get(currentClients - i - 1);
-                    client.disconnect(1000);
+                    client.disconnect();
                 }
             }
 
@@ -302,7 +311,7 @@ public class BayeuxLoadClient
                     break;
                 }
 
-                System.err.println("Clients ready");
+                System.err.printf("Clients ready: %d%n", clients);
             }
 
             reset();
@@ -453,7 +462,17 @@ public class BayeuxLoadClient
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
                 return new LongPollingTransport(options, httpClient);
             }
-            case WEBSOCKET:
+            case JSR_WEBSOCKET:
+            {
+                Map<String, Object> options = new HashMap<>();
+                options.put(ClientTransport.JSON_CONTEXT, new Jackson1JSONContextClient());
+                options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
+                // Differently from HTTP where the idle timeout is adjusted if it is a /meta/connect
+                // for WebSocket we need an idle timeout that is longer than the /meta/connect timeout.
+                options.put(WebSocketTransport.IDLE_TIMEOUT_OPTION, Config.META_CONNECT_TIMEOUT + httpClient.getIdleTimeout());
+                return new WebSocketTransport(options, scheduler, webSocketContainer);
+            }
+            case JETTY_WEBSOCKET:
             {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT, new Jackson1JSONContextClient());
@@ -892,7 +911,7 @@ public class BayeuxLoadClient
 
     private enum ClientTransportType
     {
-        LONG_POLLING("long-polling"), WEBSOCKET("websocket");
+        LONG_POLLING("long-polling"), JSR_WEBSOCKET("jsr-websocket"), JETTY_WEBSOCKET("jetty-websocket");
 
         private final String name;
 
