@@ -17,7 +17,7 @@
 package org.cometd.oort;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -59,7 +59,7 @@ public abstract class OortTest
 
     protected Server startServer(int port) throws Exception
     {
-        return startServer(port, Collections.<String, String>emptyMap());
+        return startServer(port, new HashMap<String, String>());
     }
 
     protected Server startServer(int port, Map<String, String> options) throws Exception

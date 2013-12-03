@@ -375,7 +375,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
 
     private void startTimeout(Map<String, Object> ctx)
     {
-        long contextId = (Long)ctx.get(ID_FIELD);
+        long contextId = ((Number)ctx.get(ID_FIELD)).longValue();
         Timeout.Task timeoutTask = new TimeoutTask(contextId);
         ctx.put(TIMEOUT_FIELD, timeoutTask);
         ((BayeuxServerImpl)oort.getBayeuxServer()).startTimeout(timeoutTask, getTimeout());
