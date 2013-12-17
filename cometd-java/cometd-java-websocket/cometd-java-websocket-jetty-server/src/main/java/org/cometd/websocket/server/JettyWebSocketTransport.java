@@ -77,8 +77,20 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
                     origin = request.getHeader("Sec-WebSocket-Origin");
                 if (checkOrigin(request, origin))
                 {
-                    WebSocketContext handshake = new WebSocketContext(context, request);
-                    return new WebSocketScheduler(handshake);
+                    List<String> allowedTransports = getBayeux().getAllowedTransports();
+                    if (allowedTransports.contains(getName()))
+                    {
+                        WebSocketContext handshake = new WebSocketContext(context, request);
+                        return new WebSocketScheduler(handshake);
+                    }
+                    else
+                    {
+                        _logger.debug("Transport not those allowed: {}", allowedTransports);
+                    }
+                }
+                else
+                {
+                    _logger.debug("Origin check failed for origin {}", origin);
                 }
                 return null;
             }

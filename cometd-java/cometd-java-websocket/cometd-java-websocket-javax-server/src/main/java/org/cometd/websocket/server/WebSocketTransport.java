@@ -364,6 +364,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @SuppressWarnings("unchecked")
         public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException
         {
+            if (!getBayeux().getAllowedTransports().contains(getName()))
+                throw new InstantiationException("Transport not allowed");
             if (!protocolMatches)
                 throw new InstantiationException("Could not negotiate WebSocket SubProtocols");
             return (T)new WebSocketScheduler(bayeuxContext);

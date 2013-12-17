@@ -1128,7 +1128,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (_transports.containsKey(transport))
                 _allowedTransports.add(transport);
         }
-        _logger.debug("allowedTransports ", _allowedTransports);
+        _logger.debug("allowedTransports {}", _allowedTransports);
     }
 
     protected void unknownSession(Mutable reply)

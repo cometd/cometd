@@ -47,6 +47,8 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
 
         defineClass(Latch.class);
 
+        evaluateScript("var failureLatch = new Latch(1);");
+        Latch failureLatch = get("failureLatch");
         evaluateScript("var wsLatch = new Latch(1);");
         Latch wsLatch = get("wsLatch");
         evaluateScript("var lpLatch = new Latch(1);");
@@ -56,10 +58,10 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
         evaluateScript("cometd.registerTransport('long-polling', originalTransports['long-polling']);");
 
         evaluateScript("cometd.configure({" +
-                       "url: '" + cometdURL + "', " +
-                       "connectTimeout: " + timeout + ", " +
-                       "logLevel: '" + getLogLevel() + "'" +
-                       "});");
+                "url: '" + cometdURL + "', " +
+                "connectTimeout: " + timeout + ", " +
+                "logLevel: '" + getLogLevel() + "'" +
+                "});");
         evaluateScript("cometd.addListener('/meta/handshake', function(message)" +
                 "{" +
                 "   if (cometd.getTransport().getType() === 'websocket' && !message.successful)" +
@@ -71,8 +73,13 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
                 "       lpLatch.countDown();" +
                 "   }" +
                 "});");
+        evaluateScript("cometd.onTransportFailure = function(oldTransport, newTransport, failure)" +
+                "{" +
+                "    failureLatch.countDown();" +
+                "};");
 
         evaluateScript("cometd.handshake()");
+        Assert.assertTrue(failureLatch.await(2 * timeout));
         Assert.assertTrue(wsLatch.await(2 * timeout));
         Assert.assertTrue(lpLatch.await(2 * timeout));
 

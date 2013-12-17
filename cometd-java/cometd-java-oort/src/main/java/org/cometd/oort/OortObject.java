@@ -512,7 +512,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
         protected Info(String oortURL, Map<? extends String, ?> map)
         {
-            this((Long)map.get(VERSION_FIELD), oortURL);
+            this(((Number)map.get(VERSION_FIELD)).longValue(), oortURL);
             // Discard metadata, only keep data
             put(OORT_URL_FIELD, map.get(OORT_URL_FIELD));
             put(NAME_FIELD, map.get(NAME_FIELD));
@@ -521,7 +521,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
         protected long getId()
         {
-            return (Long)get(VERSION_FIELD);
+            return ((Number)get(VERSION_FIELD)).longValue();
         }
 
         /**

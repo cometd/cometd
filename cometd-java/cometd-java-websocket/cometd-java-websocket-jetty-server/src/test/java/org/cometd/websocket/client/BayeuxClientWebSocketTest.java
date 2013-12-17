@@ -71,22 +71,37 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     {
         bayeux.setAllowedTransports("long-polling");
 
-        ClientTransport webSocketTransport = newWebSocketTransport(null);
-        ClientTransport longPollingTransport = newLongPollingTransport(null);
-        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport);
+        final ClientTransport webSocketTransport = newWebSocketTransport(null);
+        final ClientTransport longPollingTransport = newLongPollingTransport(null);
+        final CountDownLatch failureLatch = new CountDownLatch(1);
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
+        {
+            @Override
+            protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure)
+            {
+                Assert.assertEquals(webSocketTransport.getName(), oldTransportName);
+                Assert.assertEquals(longPollingTransport.getName(), newTransportName);
+                failureLatch.countDown();
+            }
+        };
 
         final CountDownLatch successLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        final CountDownLatch failedLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                Assert.assertEquals("long-polling", client.getTransport().getName());
-                successLatch.countDown();
+                if (message.isSuccessful())
+                    successLatch.countDown();
+                else
+                    failedLatch.countDown();
             }
         });
 
         client.handshake();
 
+        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
@@ -97,7 +112,18 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     {
         bayeux.setAllowedTransports("long-polling");
 
-        BayeuxClient client = newBayeuxClient();
+        final ClientTransport webSocketTransport = newWebSocketTransport(null);
+        final CountDownLatch failureLatch = new CountDownLatch(1);
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport)
+        {
+            @Override
+            protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure)
+            {
+                Assert.assertEquals(webSocketTransport.getName(), oldTransportName);
+                Assert.assertNull(newTransportName);
+                failureLatch.countDown();
+            }
+        };
 
         final CountDownLatch failedLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
@@ -111,6 +137,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         client.handshake();
 
+        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
