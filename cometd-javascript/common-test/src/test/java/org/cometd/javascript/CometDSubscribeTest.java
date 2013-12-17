@@ -252,4 +252,71 @@ public class CometDSubscribeTest extends AbstractCometDTest
         bayeuxServer.getChannel(channelName).publish(null, "data", null);
         Assert.assertTrue(messageLatch.await(1000));
     }
+
+    @Test
+    public void testSubscriptionSuccessfulInvokesCallback() throws Exception
+    {
+        defineClass(Latch.class);
+
+        final String channelName = "/foo";
+
+        evaluateScript("var latch = new Latch(2);");
+        Latch latch = get("latch");
+
+        evaluateScript("cometd.configure({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
+        evaluateScript("cometd.addListener('/meta/handshake', function()" +
+                "{" +
+                "    var subscription = cometd.subscribe('" + channelName + "', function(){}, function(message)" +
+                "    {" +
+                "        latch.countDown();" +
+                "        cometd.unsubscribe(subscription, function(message)" +
+                "        {" +
+                "            latch.countDown();" +
+                "        });" +
+                "    });" +
+                "});");
+        evaluateScript("cometd.handshake();");
+
+        Assert.assertTrue(latch.await(5000));
+
+        evaluateScript("cometd.disconnect(true);");
+    }
+
+    @Test
+    public void testSubscriptionDeniedInvokesCallback() throws Exception
+    {
+        defineClass(Latch.class);
+
+        final String channelName = "/foo";
+        bayeuxServer.setSecurityPolicy(new DefaultSecurityPolicy()
+        {
+            @Override
+            public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
+            {
+                if (channelName.equals(channel.getId()))
+                    return false;
+                return super.canSubscribe(server, session, channel, message);
+            }
+        });
+
+        evaluateScript("var subscribeLatch = new Latch(1);");
+        Latch subscribeLatch = get("subscribeLatch");
+
+        evaluateScript("cometd.configure({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
+        evaluateScript("cometd.handshake(function()" +
+                "{" +
+                "    cometd.subscribe('" + channelName + "', function(){}, {}, function(message)" +
+                "    {" +
+                "        subscribeLatch.countDown();" +
+                "    });" +
+                "});");
+
+        Assert.assertTrue(subscribeLatch.await(5000));
+
+        evaluateScript("var disconnectLatch = new Latch(1);");
+        Latch disconnectLatch = get("disconnectLatch");
+        evaluateScript("cometd.disconnect(function(message){ disconnectLatch.countDown(); });");
+
+        Assert.assertTrue(disconnectLatch.await(5000));
+    }
 }

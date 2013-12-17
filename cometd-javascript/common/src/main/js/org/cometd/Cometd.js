@@ -39,7 +39,8 @@ org.cometd.Cometd = function(name)
     var _extensions = [];
     var _advice = {};
     var _handshakeProps;
-    var _publishCallbacks = {};
+    var _handshakeCallback;
+    var _callbacks = {};
     var _reestablish = false;
     var _connected = false;
     var _config = {
@@ -478,7 +479,7 @@ org.cometd.Cometd = function(name)
             if (_isFunction(message._callback))
             {
                 callback = message._callback;
-                // Remove the publish callback before calling the extensions
+                // Remove the callback before calling the extensions
                 delete message._callback;
             }
 
@@ -487,7 +488,7 @@ org.cometd.Cometd = function(name)
             {
                 messages[i] = message;
                 if (callback)
-                    _publishCallbacks[message.id] = callback;
+                    _callbacks[message.id] = callback;
             }
             else
             {
@@ -709,8 +710,14 @@ org.cometd.Cometd = function(name)
     /**
      * Sends the initial handshake message
      */
-    function _handshake(handshakeProps)
+    function _handshake(handshakeProps, handshakeCallback)
     {
+        if (_isFunction(handshakeProps))
+        {
+            handshakeCallback = handshakeProps;
+            handshakeProps = undefined;
+        }
+
         _clientId = null;
 
         _clearSubscriptions();
@@ -744,6 +751,7 @@ org.cometd.Cometd = function(name)
         // Save the properties provided by the user, so that
         // we can reuse them during automatic re-handshake
         _handshakeProps = handshakeProps;
+        _handshakeCallback = handshakeCallback;
 
         var version = '1.0';
 
@@ -756,6 +764,7 @@ org.cometd.Cometd = function(name)
             minimumVersion: version,
             channel: '/meta/handshake',
             supportedConnectionTypes: transportTypes,
+            _callback: handshakeCallback,
             advice: {
                 timeout: _advice.timeout,
                 interval: _advice.interval
@@ -798,12 +807,23 @@ org.cometd.Cometd = function(name)
 
         _delayedSend(function()
         {
-            _handshake(_handshakeProps);
+            _handshake(_handshakeProps, _handshakeCallback);
         });
+    }
+
+    function _handleCallback(message)
+    {
+        var callback = _callbacks[message.id];
+        if (_isFunction(callback))
+        {
+            delete _callbacks[message.id];
+            callback.call(_cometd, message);
+        }
     }
 
     function _failHandshake(message)
     {
+        _handleCallback(message);
         _notifyListeners('/meta/handshake', message);
         _notifyListeners('/meta/unsuccessful', message);
 
@@ -861,6 +881,8 @@ org.cometd.Cometd = function(name)
             // Notify the listeners before the connect below.
             message.reestablish = _reestablish;
             _reestablish = true;
+
+            _handleCallback(message);
             _notifyListeners('/meta/handshake', message);
 
             var action = _isDisconnected() ? 'none' : _advice.reconnect;
@@ -978,6 +1000,7 @@ org.cometd.Cometd = function(name)
     function _failDisconnect(message)
     {
         _disconnect(true);
+        _handleCallback(message);
         _notifyListeners('/meta/disconnect', message);
         _notifyListeners('/meta/unsuccessful', message);
     }
@@ -987,6 +1010,7 @@ org.cometd.Cometd = function(name)
         if (message.successful)
         {
             _disconnect(false);
+            _handleCallback(message);
             _notifyListeners('/meta/disconnect', message);
         }
         else
@@ -1016,6 +1040,7 @@ org.cometd.Cometd = function(name)
                 }
             }
         }
+        _handleCallback(message);
         _notifyListeners('/meta/subscribe', message);
         _notifyListeners('/meta/unsuccessful', message);
     }
@@ -1024,6 +1049,7 @@ org.cometd.Cometd = function(name)
     {
         if (message.successful)
         {
+            _handleCallback(message);
             _notifyListeners('/meta/subscribe', message);
         }
         else
@@ -1039,6 +1065,7 @@ org.cometd.Cometd = function(name)
 
     function _failUnsubscribe(message)
     {
+        _handleCallback(message);
         _notifyListeners('/meta/unsubscribe', message);
         _notifyListeners('/meta/unsuccessful', message);
     }
@@ -1047,6 +1074,7 @@ org.cometd.Cometd = function(name)
     {
         if (message.successful)
         {
+            _handleCallback(message);
             _notifyListeners('/meta/unsubscribe', message);
         }
         else
@@ -1060,19 +1088,9 @@ org.cometd.Cometd = function(name)
         _failUnsubscribe(message);
     }
 
-    function _handlePublishCallback(message)
-    {
-        var callback = _publishCallbacks[message.id];
-        if (_isFunction(callback))
-        {
-            delete _publishCallbacks[message.id];
-            callback.call(_cometd, message);
-        }
-    }
-
     function _failMessage(message)
     {
-        _handlePublishCallback(message);
+        _handleCallback(message);
         _notifyListeners('/meta/publish', message);
         _notifyListeners('/meta/unsuccessful', message);
     }
@@ -1095,7 +1113,7 @@ org.cometd.Cometd = function(name)
         {
             if (message.successful)
             {
-                _handlePublishCallback(message);
+                _handleCallback(message);
                 _notifyListeners('/meta/publish', message);
             }
             else
@@ -1393,12 +1411,13 @@ org.cometd.Cometd = function(name)
      * Establishes the Bayeux communication with the Bayeux server
      * via a handshake and a subsequent connect.
      * @param handshakeProps an object to be merged with the handshake message
+     * @param handshakeCallback a function to be invoked when the handshake is acknowledged
      */
-    this.handshake = function(handshakeProps)
+    this.handshake = function(handshakeProps, handshakeCallback)
     {
         _setStatus('disconnected');
         _reestablish = false;
-        _handshake(handshakeProps);
+        _handshake(handshakeProps, handshakeCallback);
     };
 
     /**
@@ -1408,25 +1427,30 @@ org.cometd.Cometd = function(name)
      * it, callback-polling certainly does not).
      * @param sync whether attempt to perform a synchronous disconnect
      * @param disconnectProps an object to be merged with the disconnect message
+     * @param disconnectCallback a function to be invoked when the disconnect is acknowledged
      */
-    this.disconnect = function(sync, disconnectProps)
+    this.disconnect = function(sync, disconnectProps, disconnectCallback)
     {
         if (_isDisconnected())
         {
             return;
         }
 
-        if (disconnectProps === undefined)
+        if (typeof sync !== 'boolean')
         {
-            if (typeof sync !== 'boolean')
-            {
-                disconnectProps = sync;
-                sync = false;
-            }
+            disconnectCallback = disconnectProps;
+            disconnectProps = sync;
+            sync = false;
+        }
+        if (_isFunction(disconnectProps))
+        {
+            disconnectCallback = disconnectProps;
+            disconnectProps = undefined;
         }
 
         var bayeuxMessage = {
-            channel: '/meta/disconnect'
+            channel: '/meta/disconnect',
+            _callback: disconnectCallback
         };
         var message = this._mixin(false, {}, disconnectProps, bayeuxMessage);
         _setStatus('disconnecting');
@@ -1535,9 +1559,10 @@ org.cometd.Cometd = function(name)
      * @param scope the scope of the callback, may be omitted
      * @param callback the callback to call when a message is sent to the channel
      * @param subscribeProps an object to be merged with the subscribe message
+     * @param subscribeCallback a function to be invoked when the subscription is acknowledged
      * @return the subscription handle to be passed to {@link #unsubscribe(object)}
      */
-    this.subscribe = function(channel, scope, callback, subscribeProps)
+    this.subscribe = function(channel, scope, callback, subscribeProps, subscribeCallback)
     {
         if (arguments.length < 2)
         {
@@ -1555,9 +1580,15 @@ org.cometd.Cometd = function(name)
         // Normalize arguments
         if (_isFunction(scope))
         {
+            subscribeCallback = subscribeProps;
             subscribeProps = callback;
             callback = scope;
             scope = undefined;
+        }
+        if (_isFunction(subscribeProps))
+        {
+            subscribeCallback = subscribeProps;
+            subscribeProps = undefined;
         }
 
         // Only send the message to the server if this client has not yet subscribed to the channel
@@ -1572,7 +1603,8 @@ org.cometd.Cometd = function(name)
             // on the client the subscription has not been added yet to the data structures
             var bayeuxMessage = {
                 channel: '/meta/subscribe',
-                subscription: channel
+                subscription: channel,
+                _callback: subscribeCallback
             };
             var message = this._mixin(false, {}, subscribeProps, bayeuxMessage);
             _queueSend(message);
@@ -1585,8 +1617,9 @@ org.cometd.Cometd = function(name)
      * Unsubscribes the subscription obtained with a call to {@link #subscribe(string, object, function)}.
      * @param subscription the subscription to unsubscribe.
      * @param unsubscribeProps an object to be merged with the unsubscribe message
+     * @param unsubscribeCallback a function to be invoked when the unsubscription is acknowledged
      */
-    this.unsubscribe = function(subscription, unsubscribeProps)
+    this.unsubscribe = function(subscription, unsubscribeProps, unsubscribeCallback)
     {
         if (arguments.length < 1)
         {
@@ -1595,6 +1628,12 @@ org.cometd.Cometd = function(name)
         if (_isDisconnected())
         {
             throw 'Illegal state: already disconnected';
+        }
+
+        if (_isFunction(unsubscribeProps))
+        {
+            unsubscribeCallback = unsubscribeProps;
+            unsubscribeProps = undefined;
         }
 
         // Remove the local listener before sending the message
@@ -1607,7 +1646,8 @@ org.cometd.Cometd = function(name)
         {
             var bayeuxMessage = {
                 channel: '/meta/unsubscribe',
-                subscription: channel
+                subscription: channel,
+                _callback: unsubscribeCallback
             };
             var message = this._mixin(false, {}, unsubscribeProps, bayeuxMessage);
             _queueSend(message);
