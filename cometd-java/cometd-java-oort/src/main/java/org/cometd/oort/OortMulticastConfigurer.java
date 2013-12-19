@@ -21,64 +21,158 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.client.BayeuxClient;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OortMulticastConfigurer
+public class OortMulticastConfigurer extends AbstractLifeCycle
 {
-    private static final int MTU = 1500;
+    private static final AtomicInteger ids = new AtomicInteger();
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger;
     private final Oort oort;
     private InetAddress bindAddress;
     private InetAddress groupAddress;
     private int groupPort = 5577;
     private int timeToLive = 1;
-    private long advertiseInterval = 1000;
+    private long advertiseInterval = 2000;
+    private long connectTimeout = 2000;
+    private int maxTransmissionLength = 1400;
     private Thread receiverThread;
     private Thread senderThread;
     private volatile boolean active;
 
     public OortMulticastConfigurer(Oort oort)
     {
+        this.logger = LoggerFactory.getLogger(getClass() + "." + Oort.replacePunctuation(oort.getURL(), '_'));
         this.oort = oort;
     }
 
+    /**
+     * @return the address to bind the receiver multicast socket to
+     */
+    public InetAddress getBindAddress()
+    {
+        return bindAddress;
+    }
+
+    /**
+     * @param bindAddress the address to bind the receiver multicast socket to
+     */
     public void setBindAddress(InetAddress bindAddress)
     {
         this.bindAddress = bindAddress;
     }
 
+    /**
+     * @return the multicast address onto which Oort URLs are advertised
+     */
+    public InetAddress getGroupAddress()
+    {
+        return groupAddress;
+    }
+
+    /**
+     * @param groupAddress the multicast address onto which Oort URLs are advertised
+     */
     public void setGroupAddress(InetAddress groupAddress)
     {
         this.groupAddress = groupAddress;
     }
 
+    /**
+     * @return the port the receiver multicast socket listens to
+     */
+    public int getGroupPort()
+    {
+        return groupPort;
+    }
+
+    /**
+     * @param groupPort the port the receiver multicast socket listens to
+     */
     public void setGroupPort(int groupPort)
     {
         this.groupPort = groupPort;
     }
 
+    /**
+     * @return the multicast time-to-live
+     */
+    public int getTimeToLive()
+    {
+        return timeToLive;
+    }
+
+    /**
+     * @param timeToLive the multicast time-to-live
+     */
     public void setTimeToLive(int timeToLive)
     {
         this.timeToLive = timeToLive;
     }
 
+    /**
+     * @return the advertisement interval in milliseconds
+     */
+    public long getAdvertiseInterval()
+    {
+        return advertiseInterval;
+    }
+
+    /**
+     * @param advertiseInterval the advertisement interval in milliseconds
+     */
     public void setAdvertiseInterval(long advertiseInterval)
     {
         this.advertiseInterval = advertiseInterval;
     }
 
-    public void start() throws Exception
+    /**
+     * @return the timeout to connect to another Oort node
+     */
+    public long getConnectTimeout()
+    {
+        return connectTimeout;
+    }
+
+    /**
+     * @param connectTimeout the timeout to connect to another Oort node
+     */
+    public void setConnectTimeout(long connectTimeout)
+    {
+        this.connectTimeout = connectTimeout;
+    }
+
+    /**
+     * @return the max Oort URL length (must be smaller than the max transmission unit)
+     */
+    public int getMaxTransmissionLength()
+    {
+        return maxTransmissionLength;
+    }
+
+    /**
+     * @param maxTransmissionLength the max Oort URL length (must be smaller than the max transmission unit)
+     */
+    public void setMaxTransmissionLength(int maxTransmissionLength)
+    {
+        this.maxTransmissionLength = maxTransmissionLength;
+    }
+
+    @Override
+    protected void doStart() throws Exception
     {
         // Bind sender to an ephemeral port and set the TTL
         MulticastSocket sender = new MulticastSocket();
-        sender.setTimeToLive(timeToLive);
+        sender.setTimeToLive(getTimeToLive());
 
         // Bind receiver to the given port and bind address
-        InetSocketAddress bindSocketAddress = bindAddress == null ? new InetSocketAddress(groupPort) : new InetSocketAddress(bindAddress, groupPort);
+        InetAddress bindTo = getBindAddress();
+        InetSocketAddress bindSocketAddress = bindTo == null ? new InetSocketAddress(groupPort) : new InetSocketAddress(bindTo, groupPort);
         MulticastSocket receiver = new MulticastSocket(bindSocketAddress);
         if (groupAddress == null)
             groupAddress = InetAddress.getByName("239.255.0.1");
@@ -86,16 +180,17 @@ public class OortMulticastConfigurer
 
         active = true;
 
-        senderThread = new Thread(new MulticastSender(sender), "Oort Multicast Sender");
+        senderThread = new Thread(new MulticastSender(sender), "Oort-Multicast-Sender-" + ids.incrementAndGet());
         senderThread.setDaemon(true);
         senderThread.start();
 
-        receiverThread = new Thread(new MulticastReceiver(receiver), "Oort Multicast Receiver");
+        receiverThread = new Thread(new MulticastReceiver(receiver), "Oort-Multicast-Receiver-" + ids.incrementAndGet());
         receiverThread.setDaemon(true);
         receiverThread.start();
     }
 
-    public void stop()
+    @Override
+    protected void doStop() throws Exception
     {
         active = false;
         senderThread.interrupt();
@@ -124,7 +219,15 @@ public class OortMulticastConfigurer
             logger.debug("Received comet URL via multicast: {}", cometURL);
             OortComet oortComet = oort.observeComet(cometURL);
             if (oortComet != null)
-                oortComet.waitFor(1000, BayeuxClient.State.CONNECTED, BayeuxClient.State.DISCONNECTED);
+            {
+                boolean elapsed = !oortComet.waitFor(getConnectTimeout(), BayeuxClient.State.CONNECTED, BayeuxClient.State.DISCONNECTED);
+                // If we could not connect, let's disconnect, we will be advertised again
+                if (elapsed)
+                {
+                    logger.debug("Interrupting attempts to connect to {}", cometURL);
+                    oort.deobserveComet(cometURL);
+                }
+            }
         }
     }
 
@@ -142,7 +245,7 @@ public class OortMulticastConfigurer
             logger.debug("Entering multicast receiver thread on {}", socket.getLocalSocketAddress());
             try
             {
-                byte[] buffer = new byte[MTU];
+                byte[] buffer = new byte[getMaxTransmissionLength()];
 
                 while (active)
                 {
@@ -181,7 +284,7 @@ public class OortMulticastConfigurer
             {
                 final String cometURL = oort.getURL();
                 byte[] cometURLBytes = cometURL.getBytes("UTF-8");
-                if (cometURLBytes.length > MTU)
+                if (cometURLBytes.length > getMaxTransmissionLength())
                 {
                     logger.warn("Oort URL {} exceeds max transmission unit and will not be advertised", cometURL);
                     return;
@@ -189,10 +292,10 @@ public class OortMulticastConfigurer
 
                 while (active)
                 {
-                    DatagramPacket packet = new DatagramPacket(cometURLBytes, 0, cometURLBytes.length, groupAddress, groupPort);
+                    DatagramPacket packet = new DatagramPacket(cometURLBytes, 0, cometURLBytes.length, getGroupAddress(), getGroupPort());
                     socket.send(packet);
 
-                    Thread.sleep(advertiseInterval);
+                    Thread.sleep(getAdvertiseInterval());
                 }
             }
             catch (IOException x)

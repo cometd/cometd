@@ -23,6 +23,7 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.cometd.bayeux.server.BayeuxServer;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
@@ -74,19 +75,19 @@ public class OortMulticastConfigurerTest extends OortTest
     {
         OortMulticastConfigurer configurer = new OortMulticastConfigurer(oort);
         configurer.setGroupPort(groupPort);
-        configurer.start();
         configurers.add(configurer);
+        configurer.start();
         return configurer;
     }
 
     @After
-    public void stopConfigurers()
+    public void stopConfigurers() throws Exception
     {
         for (int i = configurers.size() - 1; i >= 0; --i)
             stopConfigurer(configurers.get(i));
     }
 
-    private void stopConfigurer(OortMulticastConfigurer configurer)
+    private void stopConfigurer(OortMulticastConfigurer configurer) throws Exception
     {
         configurer.stop();
         configurer.join(1000);
@@ -152,5 +153,58 @@ public class OortMulticastConfigurerTest extends OortTest
         Assert.assertEquals(oort3.getURL(), oort1.getKnownComets().iterator().next());
         Assert.assertEquals(1, oort3.getKnownComets().size());
         Assert.assertEquals(oort1.getURL(), oort3.getKnownComets().iterator().next());
+    }
+
+    @Test
+    public void testTwoCometsOneWithWrongURL() throws Exception
+    {
+        long connectTimeout = 1000;
+
+        Server serverA = startServer(0);
+        int groupPort = ((NetworkConnector)serverA.getConnectors()[0]).getLocalPort();
+        Oort oortA = startOort(serverA);
+        OortMulticastConfigurer configurerA = new OortMulticastConfigurer(oortA);
+        configurerA.setGroupPort(groupPort);
+        configurerA.setConnectTimeout(connectTimeout);
+        configurers.add(configurerA);
+        configurerA.start();
+
+        Server serverB = startServer(0);
+        String wrongURL = "http://localhost:4/cometd";
+        BayeuxServer bayeuxServerB = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
+        Oort oortB = new Oort(bayeuxServerB, wrongURL);
+        oortB.start();
+
+        OortMulticastConfigurer configurerB = new OortMulticastConfigurer(oortB);
+        configurerB.setGroupPort(groupPort);
+        configurerB.start();
+
+        // Give some time to advertise
+        Thread.sleep(2 * connectTimeout);
+
+        // Stop configurerB to make sure it won't advertise again.
+        configurerB.stop();
+        Assert.assertTrue(configurerB.join(2 * connectTimeout));
+        // Node B may have send an advertisement just before being stopped,
+        // so wait to be sure that A does not try to connect anymore.
+        Thread.sleep(2 * connectTimeout);
+
+        // At this point, A has given up trying to connect to B.
+        // However, B was able to connect to A.
+        // Node A is still advertising, but node B is not.
+
+        Assert.assertEquals(0, oortA.getKnownComets().size());
+        Assert.assertEquals(1, oortB.getKnownComets().size());
+
+        // Now start nodeB with the right URL
+        oortB.stop();
+        oortB = startOort(serverB);
+        startConfigurer(oortB, groupPort);
+
+        // Give some time to advertise
+        Thread.sleep(2 * connectTimeout);
+
+        Assert.assertEquals(1, oortA.getKnownComets().size());
+        Assert.assertEquals(1, oortB.getKnownComets().size());
     }
 }

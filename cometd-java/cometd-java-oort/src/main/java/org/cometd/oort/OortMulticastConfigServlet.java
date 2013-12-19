@@ -43,7 +43,12 @@ import org.cometd.bayeux.server.BayeuxServer;
  * <li><code>oort.multicast.timeToLive</code>, to specify the time to live of advertisement packets;
  * defaults to 1 (1 = same subnet, 32 = same site, 255 = global)</li>
  * <li><code>oort.multicast.advertiseInterval</code>, to specify the interval in milliseconds
- * at which advertisements are sent; defaults to 1000 ms</li>
+ * at which advertisements are sent; defaults to 2000 ms</li>
+ * <li><code>oort.multicast.connectTimeout</code>, to specify the timeout in milliseconds
+ * that a node should wait to connect to another node; defaults to 2000 ms</li>
+ * <li><code>oort.multicast.maxTransmissionLength</code>, to specify the maximum length in bytes
+ * of the advertisement message, and should be smaller than the max transmission unit;
+ * defaults to 1400 bytes</li>
  * </ul>
  *
  * @see OortConfigServlet
@@ -56,6 +61,8 @@ public class OortMulticastConfigServlet extends OortConfigServlet
     public static final String OORT_MULTICAST_GROUP_PORT_PARAM = "oort.multicast.groupPort";
     public static final String OORT_MULTICAST_TIME_TO_LIVE_PARAM = "oort.multicast.timeToLive";
     public static final String OORT_MULTICAST_ADVERTISE_INTERVAL_PARAM = "oort.multicast.advertiseInterval";
+    public static final String OORT_MULTICAST_CONNECT_TIMEOUT_PARAM = "oort.multicast.connectTimeout";
+    public static final String OORT_MULTICAST_MAX_TRANSMISSION_LENGTH_PARAM = "oort.multicast.maxTransmissionLength";
 
     private OortMulticastConfigurer configurer;
 
@@ -84,6 +91,14 @@ public class OortMulticastConfigServlet extends OortConfigServlet
         if (advertiseInterval != null)
             configurer.setAdvertiseInterval(Long.parseLong(advertiseInterval));
 
+        String connectTimeout = config.getInitParameter(OORT_MULTICAST_CONNECT_TIMEOUT_PARAM);
+        if (connectTimeout != null)
+            configurer.setConnectTimeout(Long.parseLong(connectTimeout));
+
+        String maxTransmissionLength = config.getInitParameter(OORT_MULTICAST_MAX_TRANSMISSION_LENGTH_PARAM);
+        if (maxTransmissionLength != null)
+            configurer.setMaxTransmissionLength(Integer.parseInt(maxTransmissionLength));
+
         configurer.start();
     }
 
@@ -92,9 +107,21 @@ public class OortMulticastConfigServlet extends OortConfigServlet
     {
         if (configurer != null)
         {
-            configurer.stop();
+            stopConfigurer();
             configurer.join(1000);
         }
         super.destroy();
+    }
+
+    private void stopConfigurer()
+    {
+        try
+        {
+            configurer.stop();
+        }
+        catch (Exception x)
+        {
+            throw new RuntimeException(x);
+        }
     }
 }
