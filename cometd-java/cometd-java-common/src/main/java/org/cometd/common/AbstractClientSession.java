@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractClientSession implements ClientSession
 {
-    protected static final String PUBLISH_CALLBACK_KEY = "org.cometd.client.publishCallback";
+    protected static final String CALLBACK_KEY = "org.cometd.client.callback";
     protected static final Logger logger = LoggerFactory.getLogger(ClientSession.class);
     private static final AtomicLong _idGen = new AtomicLong(0);
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
@@ -309,19 +309,29 @@ public abstract class AbstractClientSession implements ClientSession
 
         public void subscribe(MessageListener listener)
         {
+            subscribe(listener, null);
+        }
+
+        public void subscribe(MessageListener listener, MessageListener callback)
+        {
             throwIfReleased();
             boolean added = _subscriptions.add(listener);
             if (added)
             {
                 int count = _subscriptionCount.incrementAndGet();
                 if (count == 1)
-                    sendSubscribe();
+                    sendSubscribe(callback);
             }
         }
 
-        protected abstract void sendSubscribe();
+        protected abstract void sendSubscribe(MessageListener callback);
 
         public void unsubscribe(MessageListener listener)
+        {
+            unsubscribe(listener, null);
+        }
+
+        public void unsubscribe(MessageListener listener, MessageListener callback)
         {
             throwIfReleased();
             boolean removed = _subscriptions.remove(listener);
@@ -329,11 +339,11 @@ public abstract class AbstractClientSession implements ClientSession
             {
                 int count = _subscriptionCount.decrementAndGet();
                 if (count == 0)
-                    sendUnSubscribe();
+                    sendUnSubscribe(callback);
             }
         }
 
-        protected abstract void sendUnSubscribe();
+        protected abstract void sendUnSubscribe(MessageListener callback);
 
         public void unsubscribe()
         {

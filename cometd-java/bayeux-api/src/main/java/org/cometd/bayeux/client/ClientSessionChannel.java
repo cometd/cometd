@@ -93,27 +93,49 @@ public interface ClientSessionChannel extends Channel
     public void publish(Object data, MessageListener listener);
 
     /**
+     * <p>Equivalent to {@link #subscribe(ClientSessionChannel.MessageListener, ClientSessionChannel.MessageListener)
+     * subscribe(listener, null)}.</p>
+     *
+     * @param listener the listener to register and invoke when a message arrives on this channel.
+     */
+    public void subscribe(MessageListener listener);
+
+    /**
      * <p>Subscribes the given {@code listener} to receive messages sent to this channel.</p>
      * <p>Subscription involves communication with the server only for the first listener
      * subscribed to this channel. Listeners registered after the first will not cause a message
      * being sent to the server.</p>
+     * <p>The callback parameter will be invoked upon acknowledgment of the subscription
+     * by the server, and therefore only for the first subscription to this channel.</p>
      *
      * @param listener the listener to register and invoke when a message arrives on this channel.
+     * @param callback the listener to notify of the subscribe result.
      * @see #unsubscribe(MessageListener)
      * @see #addListener(ClientSessionChannelListener)
      */
-    public void subscribe(MessageListener listener);
+    public void subscribe(MessageListener listener, MessageListener callback);
+
+    /**
+     * <p>Equivalent to {@link #unsubscribe(ClientSessionChannel.MessageListener, ClientSessionChannel.MessageListener)
+     * unsubscribe(listener, null)}.</p>
+     *
+     * @param listener the listener to unsubscribe
+     */
+    public void unsubscribe(MessageListener listener);
 
     /**
      * <p>Unsubscribes the given {@code listener} from receiving messages sent to this channel.</p>
      * <p>Unsubscription involves communication with the server only for the last listener
      * unsubscribed from this channel.</p>
+     * <p>The callback parameter will be invoked upon acknowledgment of the unsubscription
+     * by the server, and therefore only for the last unsubscription from this channel.</p>
      *
      * @param listener the listener to unsubscribe
+     * @param callback the listener to notify of the unsubscribe result.
      * @see #subscribe(MessageListener)
      * @see #unsubscribe()
      */
-    public void unsubscribe(MessageListener listener);
+    public void unsubscribe(MessageListener listener, MessageListener callback);
 
     /**
      * <p>Unsubscribes all subscribers registered on this channel.</p>

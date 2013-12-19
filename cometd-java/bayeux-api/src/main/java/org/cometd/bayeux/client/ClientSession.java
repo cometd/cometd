@@ -56,13 +56,28 @@ public interface ClientSession extends Session
     void handshake();
 
     /**
+     * <p>Equivalent to {@link #handshake(Map, ClientSessionChannel.MessageListener) handshake(template, null)}.</p>
+     *
+     * @param template additional fields to add to the handshake message.
+     */
+    void handshake(Map<String, Object> template);
+
+    /**
      * <p>Initiates the bayeux protocol handshake with the server(s).</p>
      * <p>The handshake initiated by this method is asynchronous and
      * does not wait for the handshake response.</p>
      *
      * @param template additional fields to add to the handshake message.
+     * @param callback the message listener to notify of the handshake result
      */
-    void handshake(Map<String, Object> template);
+    void handshake(Map<String, Object> template, ClientSessionChannel.MessageListener callback);
+
+    /**
+     * <p>Disconnects this session, ending the link between the client and the server peers.</p>
+     *
+     * @param callback the message listener to notify of the disconnect result
+     */
+    void disconnect(ClientSessionChannel.MessageListener callback);
 
     /**
      * <p>Returns a client side channel scoped by this session.</p>
