@@ -346,7 +346,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(200, connect1.getResponseStatus());
 
         // Send a server-side message so it gets written to the client
-        bayeux.getChannel(channelName).publish(null, "x", null);
+        bayeux.getChannel(channelName).publish(null, "x");
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();

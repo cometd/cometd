@@ -141,7 +141,7 @@ public class CometDAckExtensionTest extends AbstractCometDTest
 
         public void emit(String content)
         {
-            getBayeux().getChannel("/echo").publish(getServerSession(), content, null);
+            getBayeux().getChannel("/echo").publish(getServerSession(), content);
         }
     }
 }

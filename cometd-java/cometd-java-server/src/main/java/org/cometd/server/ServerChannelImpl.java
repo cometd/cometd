@@ -315,7 +315,20 @@ public class ServerChannelImpl implements ServerChannel
             _bayeux.doPublish(session, this, mutable);
     }
 
+    public void publish(Session from, Object data)
+    {
+        if (data instanceof ServerMessage.Mutable)
+            publish(from, (ServerMessage.Mutable)data);
+        else
+            _publish(from, data, null);
+    }
+
     public void publish(Session from, Object data, String id)
+    {
+        _publish(from, data, id);
+    }
+
+    private void _publish(Session from, Object data, String id)
     {
         ServerMessage.Mutable mutable = _bayeux.newMessage();
         mutable.setChannel(getId());

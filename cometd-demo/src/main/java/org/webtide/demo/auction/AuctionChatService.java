@@ -95,7 +95,7 @@ public class AuctionChatService extends AbstractService
             {
                 _logger.info("Members: {}", members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members);
             }
         }
         else if (data instanceof Map)
@@ -135,7 +135,7 @@ public class AuctionChatService extends AbstractService
                                 Map<String, Object> leave = new HashMap<String, Object>();
                                 leave.put("leave", Boolean.TRUE);
                                 leave.put("user", userName);
-                                channel.publish(null, leave, null);
+                                channel.publish(null, leave);
                             }
                         }
                     }
@@ -143,7 +143,7 @@ public class AuctionChatService extends AbstractService
 
                 _logger.info("Members: {}", members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members);
 
             }
 
@@ -163,7 +163,7 @@ public class AuctionChatService extends AbstractService
 
                 _logger.info("Members: {}", members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members);
             }
         }
     }

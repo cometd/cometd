@@ -118,7 +118,7 @@ public class OortList<E> extends OortObject<List<E>>
 
         logger.debug("Sharing list add {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
         return data.getResult();
     }
@@ -144,7 +144,7 @@ public class OortList<E> extends OortObject<List<E>>
 
         logger.debug("Sharing list remove {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
         return data.getResult();
     }

@@ -138,7 +138,7 @@ public class JacksonContextTest extends ClientServerTest
             Map<String, Object> data = message.getDataAsMap();
             Map<String, Object> republishData = new HashMap<String, Object>(data);
             republishData.put("republish", true);
-            getBayeux().getChannel(channelName).publish(getServerSession(), republishData, null);
+            getBayeux().getChannel(channelName).publish(getServerSession(), republishData);
             // Deliver
             Map<String, Object> deliverData = new HashMap<String, Object>(data);
             deliverData.put("deliver", true);

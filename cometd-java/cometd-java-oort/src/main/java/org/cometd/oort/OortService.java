@@ -222,7 +222,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
             // Application does not know where the entity is, broadcast
             logger.debug("Broadcasting action: {}", data);
             startTimeout(ctx);
-            oort.getBayeuxServer().getChannel(broadcastChannelName).publish(getLocalSession(), data, null);
+            oort.getBayeuxServer().getChannel(broadcastChannelName).publish(getLocalSession(), data);
             return true;
         }
         else

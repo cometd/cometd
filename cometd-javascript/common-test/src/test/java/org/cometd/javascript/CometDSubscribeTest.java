@@ -249,7 +249,7 @@ public class CometDSubscribeTest extends AbstractCometDTest
         Assert.assertTrue(subscribeLatch.await(5000));
 
         // Verify that messages are received
-        bayeuxServer.getChannel(channelName).publish(null, "data", null);
+        bayeuxServer.getChannel(channelName).publish(null, "data");
         Assert.assertTrue(messageLatch.await(1000));
     }
 

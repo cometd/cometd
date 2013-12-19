@@ -147,7 +147,7 @@ public class MessageFlowControlTest extends ClientServerTest
         // discard publish3 to publishN). We take this in account when asserting below.
 
         for (int i = 0; i < totalMessages; ++i)
-            bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), "msg_" +i);
+            bayeux.getChannel(channelName).publish(null, "msg_" +i);
         // Wait for all the message to be processed on server side,
         // to avoids a race to access variable keptMessages
         Assert.assertTrue(queuedMessages.await(5, TimeUnit.SECONDS));

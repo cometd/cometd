@@ -104,7 +104,7 @@ public class AckExtensionTest extends ClientServerTest
 
         // Send messages while client is offline
         for (int i = count; i < 2 * count; ++i)
-            chatChannel.publish(null, "hello_" + i, null);
+            chatChannel.publish(null, "hello_" + i);
 
         Thread.sleep(1000);
         Assert.assertEquals(0, messages.size());

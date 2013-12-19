@@ -71,19 +71,24 @@ public interface ServerChannel extends ConfigurableServerChannel
      *
      * @param from    the session from which the message originates
      * @param message the message to publish
-     * @see #publish(Session, Object, String)
+     * @see #publish(Session, Object)
      */
     public void publish(Session from, ServerMessage.Mutable message);
+
+    /**
+     * @deprecated Use {@link #publish(org.cometd.bayeux.Session, Object)}
+     */
+    @Deprecated
+    public void publish(Session from, Object data, String id);
 
     /**
      * <p>Publishes the given information to this channel.</p>
      *
      * @param from the session from which the message originates
      * @param data the data of the message
-     * @param id   the id of the message
      * @see #publish(Session, ServerMessage.Mutable)
      */
-    public void publish(Session from, Object data, String id);
+    public void publish(Session from, Object data);
 
     /**
      * <p>Removes this channel, and all the children channels.</p>

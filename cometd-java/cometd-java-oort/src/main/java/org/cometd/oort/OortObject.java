@@ -168,7 +168,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
         // Notify other nodes of our initial value.
         // Must be done after registering listeners, to avoid missing responses from other nodes.
-        channel.publish(getLocalSession(), info, null);
+        channel.publish(getLocalSession(), info);
 
         logger.debug("{} started", this);
     }
@@ -262,7 +262,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
         logger.debug("Sharing {}", data);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
         return data.getResult();
     }

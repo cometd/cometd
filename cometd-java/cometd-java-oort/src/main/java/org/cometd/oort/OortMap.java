@@ -114,7 +114,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
 
         logger.debug("Sharing map put {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
         return data.getResult();
     }
@@ -147,7 +147,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
 
         logger.debug("Sharing map putIfAbsent {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
         return data.getResult();
     }
@@ -177,7 +177,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
 
         logger.debug("Sharing map remove {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
         return data.getResult();
     }

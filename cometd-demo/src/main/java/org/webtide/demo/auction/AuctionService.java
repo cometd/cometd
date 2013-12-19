@@ -146,7 +146,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
                     bid.setAmount(amount);
                     bid.setBidder(bidder);
                     _auctionDao.saveAuctionBid(bid);
-                    getBayeux().getChannel(AUCTION_ROOT + "item" + itemId).publish(getServerSession(), bid, messageId);
+                    getBayeux().getChannel(AUCTION_ROOT + "item" + itemId).publish(getServerSession(), bid);
                 }
             }
         }

@@ -70,7 +70,7 @@ public class ActivityExtensionTest extends ClientServerTest
         {
             public void run()
             {
-                bayeux.getChannel(channelName).publish(null, "test", null);
+                bayeux.getChannel(channelName).publish(null, "test");
             }
         }, 0, timeout / 4, TimeUnit.MILLISECONDS);
 
@@ -171,7 +171,7 @@ public class ActivityExtensionTest extends ClientServerTest
         Assert.assertFalse(latch.get().await(maxInactivityPeriod / 2, TimeUnit.MILLISECONDS));
 
         // Do some server activity
-        bayeux.getChannel(channelName).publish(null, "test", null);
+        bayeux.getChannel(channelName).publish(null, "test");
 
         // Sleep for a while, we must still be connected
         Assert.assertFalse(latch.get().await(maxInactivityPeriod * 3 / 4, TimeUnit.MILLISECONDS));

@@ -417,7 +417,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         final LocalSession emitter = bayeux.newLocalSession("test_emitter");
         emitter.handshake();
         final String data = "test_data";
-        bayeux.getChannel(channelName).publish(emitter, data, null);
+        bayeux.getChannel(channelName).publish(emitter, data);
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is not responded
@@ -433,7 +433,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
-                bayeux.getChannel(channelName).publish(emitter, data, null);
+                bayeux.getChannel(channelName).publish(emitter, data);
                 return true;
             }
         });
@@ -493,7 +493,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         final LocalSession emitter = bayeux.newLocalSession("test_emitter");
         emitter.handshake();
         final String data = "test_data";
-        bayeux.getChannel(channelName).publish(emitter, data, null);
+        bayeux.getChannel(channelName).publish(emitter, data);
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
@@ -510,7 +510,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
-                bayeux.getChannel(channelName).publish(emitter, data, null);
+                bayeux.getChannel(channelName).publish(emitter, data);
                 return true;
             }
         });
@@ -577,7 +577,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         final LocalSession emitter = bayeux.newLocalSession("test_emitter");
         emitter.handshake();
         final String data = "test_data";
-        bayeux.getChannel(channelName).publish(emitter, data, null);
+        bayeux.getChannel(channelName).publish(emitter, data);
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
@@ -593,7 +593,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
-                bayeux.getChannel(channelName).publish(emitter, data, null);
+                bayeux.getChannel(channelName).publish(emitter, data);
                 return true;
             }
         });
@@ -707,7 +707,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         // Send messages while client is offline
         for (int i = count; i < 2 * count; ++i)
-            chatChannel.publish(null, "hello_" + i, null);
+            chatChannel.publish(null, "hello_" + i);
 
         Thread.sleep(1000);
         Assert.assertEquals(0, messages.size());
