@@ -103,7 +103,7 @@ define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/io/script', 
         {
             throw 'Deprecated function unsubscribe(string). Use unsubscribe(object) passing as argument the return value of subscribe()';
         }
-        cometd._unsubscribe(channelOrToken);
+        cometd._unsubscribe.apply(cometd, arguments);
     };
     cometd._metaHandshakeEvent = function(event)
     {
