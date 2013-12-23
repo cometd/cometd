@@ -24,8 +24,20 @@ org.cometd.WebSocketTransport = function()
         this._debug('Transport', this.getType(), 'connecting to URL', url);
 
         var self = this;
-        var connectTimer = null;
 
+        try
+        {
+            var protocol = _cometd.getConfiguration().protocol;
+            var webSocket = protocol ? new org.cometd.WebSocket(url, protocol) : new org.cometd.WebSocket(url);
+        }
+        catch (x)
+        {
+            _webSocketSupported = false;
+            this._debug('Exception while creating WebSocket object', x);
+            throw x;
+        }
+
+        var connectTimer = null;
         var connectTimeout = _cometd.getConfiguration().connectTimeout;
         if (connectTimeout > 0)
         {
@@ -42,18 +54,6 @@ org.cometd.WebSocketTransport = function()
 
         // By default use sticky reconnects
         _stickyReconnect = _cometd.getConfiguration().stickyReconnect !== false;
-
-        try
-        {
-            var protocol = _cometd.getConfiguration().protocol;
-            var webSocket = protocol ? new org.cometd.WebSocket(url, protocol) : new org.cometd.WebSocket(url);
-        }
-        catch (x)
-        {
-            _webSocketSupported = false;
-            this._debug('Exception while creating WebSocket object', x);
-            throw x;
-        }
 
         var onopen = function()
         {
