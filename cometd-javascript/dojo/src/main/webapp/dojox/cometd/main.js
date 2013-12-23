@@ -94,29 +94,5 @@ define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/io/script', 
     var cometd = new dojox.CometD();
     dojox.cometd = cometd;
 
-    // Create a compatibility API for dojox.cometd instance with the original API.
-    cometd._init = cometd.init;
-    cometd._unsubscribe = cometd.unsubscribe;
-    cometd.unsubscribe = function(channelOrToken, objOrFunc, funcName)
-    {
-        if (typeof channelOrToken === 'string')
-        {
-            throw 'Deprecated function unsubscribe(string). Use unsubscribe(object) passing as argument the return value of subscribe()';
-        }
-        cometd._unsubscribe.apply(cometd, arguments);
-    };
-    cometd._metaHandshakeEvent = function(event)
-    {
-        event.action = "handshake";
-        topic.publish("/cometd/meta", event);
-    };
-    cometd._metaConnectEvent = function(event)
-    {
-        event.action = "connect";
-        topic.publish("/cometd/meta", event);
-    };
-    cometd.addListener('/meta/handshake', cometd, cometd._metaHandshakeEvent);
-    cometd.addListener('/meta/connect', cometd, cometd._metaConnectEvent);
-
     return cometd;
 });
