@@ -34,7 +34,6 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,19 +48,14 @@ public class ServerChannelImpl implements ServerChannel
     private final List<Authorizer> _authorizers = new CopyOnWriteArrayList<>();
     private final CountDownLatch _initialized = new CountDownLatch(1);
     private final AtomicInteger _sweeperPasses = new AtomicInteger();
-    private final Set<ServerChannelImpl> _children = new ConcurrentHashSet<>();
-    private final ServerChannelImpl _parent;
     private boolean _lazy;
     private long _lazyTimeout = -1;
     private boolean _persistent;
 
-    protected ServerChannelImpl(BayeuxServerImpl bayeux, ChannelId id, ServerChannelImpl parent)
+    protected ServerChannelImpl(BayeuxServerImpl bayeux, ChannelId id)
     {
         _bayeux = bayeux;
         _id = id;
-        _parent = parent;
-        if (parent != null)
-            parent.addChild(this);
         setPersistent(!isBroadcast());
     }
 
@@ -358,13 +352,6 @@ public class ServerChannelImpl implements ServerChannel
         if (_authorizers.size() > 0)
             return;
 
-        if (!isWild())
-        {
-            // Not wild, then check if it has children
-            if (_children.size() > 0)
-                return;
-        }
-
         for (ServerChannelListener listener : _listeners)
             if (!(listener instanceof ServerChannelListener.Weak))
                 return;
@@ -377,12 +364,6 @@ public class ServerChannelImpl implements ServerChannel
 
     public void remove()
     {
-        if (_parent != null)
-            _parent.removeChild(this);
-
-        for (ServerChannelImpl child : _children)
-            child.remove();
-
         if (_bayeux.removeServerChannel(this))
         {
             for (ServerSession subscriber : _subscribers)
@@ -415,30 +396,14 @@ public class ServerChannelImpl implements ServerChannel
         return old;
     }
 
-    private void addChild(ServerChannelImpl child)
-    {
-        _children.add(child);
-    }
-
-    private void removeChild(ServerChannelImpl child)
-    {
-        _children.remove(child);
-    }
-
     protected void dump(StringBuilder b, String indent)
     {
         b.append(toString());
         b.append(isLazy() ? " lazy" : "");
         b.append('\n');
 
-        int leaves = _children.size() + _subscribers.size() + _listeners.size() + _authorizers.size();
+        int leaves = _subscribers.size() + _listeners.size() + _authorizers.size();
         int i = 0;
-        for (ServerChannelImpl child : _children)
-        {
-            b.append(indent);
-            b.append(" +-");
-            child.dump(b, indent + ((++i == leaves) ? "   " : " | "));
-        }
         for (ServerSession child : _subscribers)
         {
             b.append(indent);

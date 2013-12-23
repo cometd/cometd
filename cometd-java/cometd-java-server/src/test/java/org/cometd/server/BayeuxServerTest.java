@@ -80,8 +80,6 @@ public class BayeuxServerTest
         ServerChannelImpl wibble = (ServerChannelImpl)_bayeux.createChannelIfAbsent(channelName).getReference();
 
         Assert.assertEquals("channelAdded",_events.poll());
-        Assert.assertEquals(_bayeux.getChannel("/foo"),_events.poll());
-        Assert.assertEquals("channelAdded",_events.poll());
         Assert.assertEquals(foobar,_events.poll());
         Assert.assertEquals("channelAdded",_events.poll());
         Assert.assertEquals(foostar,_events.poll());

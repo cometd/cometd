@@ -355,19 +355,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         if (channel == null)
         {
             ChannelId channelId = new ChannelId(channelName);
-
-            // Be sure the parent is there
-            ServerChannel parentChannel = null;
-            if (channelId.depth() > 1)
-            {
-                String parentName = channelId.getParent();
-                // If the parent needs to be re-created, we are missing its initializers,
-                // but there is nothing we can do: in this case, the application needs
-                // to make the parent persistent through an initializer.
-                parentChannel = createChannelIfAbsent(parentName).getReference();
-            }
-
-            ServerChannelImpl candidate = new ServerChannelImpl(this, channelId, (ServerChannelImpl)parentChannel);
+            ServerChannelImpl candidate = new ServerChannelImpl(this, channelId);
             channel = _channels.putIfAbsent(channelName, candidate);
             if (channel == null)
             {
