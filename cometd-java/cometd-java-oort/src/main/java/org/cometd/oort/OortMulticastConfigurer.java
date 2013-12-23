@@ -21,6 +21,7 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.client.BayeuxClient;
@@ -245,16 +246,20 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
             logger.debug("Entering multicast receiver thread on {}", socket.getLocalSocketAddress());
             try
             {
-                byte[] buffer = new byte[getMaxTransmissionLength()];
+                // Set a timeout to avoid to wait forever
+                // and not notice that we've been stopped.
+                socket.setSoTimeout((int)(2 * advertiseInterval));
 
+                byte[] buffer = new byte[getMaxTransmissionLength()];
+                String url = null;
                 while (active)
                 {
-                    DatagramPacket packet = new DatagramPacket(buffer, 0, buffer.length);
-                    socket.receive(packet);
-                    String url = new String(buffer, packet.getOffset(), packet.getLength(), "UTF-8");
+                    if (url != null)
+                        OortMulticastConfigurer.this.receive(url);
+                    url = receive(buffer);
                     // Avoid to process our own URL
-                    if (!url.equals(oort.getURL()))
-                        receive(url);
+                    if (oort.getURL().equals(url))
+                        url = null;
                 }
             }
             catch (IOException x)
@@ -265,6 +270,20 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
             {
                 logger.debug("Exiting multicast receiver thread");
                 socket.close();
+            }
+        }
+
+        private String receive(byte[] buffer) throws IOException
+        {
+            try
+            {
+                DatagramPacket packet = new DatagramPacket(buffer, 0, buffer.length);
+                socket.receive(packet);
+                return new String(buffer, packet.getOffset(), packet.getLength(), "UTF-8");
+            }
+            catch (SocketTimeoutException x)
+            {
+                return null;
             }
         }
     }
@@ -294,7 +313,6 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
                 {
                     DatagramPacket packet = new DatagramPacket(cometURLBytes, 0, cometURLBytes.length, getGroupAddress(), getGroupPort());
                     socket.send(packet);
-
                     Thread.sleep(getAdvertiseInterval());
                 }
             }
