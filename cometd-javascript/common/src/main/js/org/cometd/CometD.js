@@ -1938,11 +1938,6 @@ org.cometd.CometD = function(name)
         return this._mixin(true, {}, _advice);
     };
 
-    // WebSocket handling for Firefox, which deploys WebSocket
-    // under the name of MozWebSocket in Firefox 6, 7, 8 and 9
+    // Use an alias to be less dependent on browser's quirks.
     org.cometd.WebSocket = window.WebSocket;
-    if (!org.cometd.WebSocket)
-    {
-        org.cometd.WebSocket = window.MozWebSocket;
-    }
 };
