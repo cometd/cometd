@@ -43,8 +43,18 @@ org.cometd.WebSocketTransport = function()
         // By default use sticky reconnects
         _stickyReconnect = _cometd.getConfiguration().stickyReconnect !== false;
 
-        var protocol = _cometd.getConfiguration().protocol;
-        var webSocket = protocol ? new org.cometd.WebSocket(url, protocol) : new org.cometd.WebSocket(url);
+        try
+        {
+            var protocol = _cometd.getConfiguration().protocol;
+            var webSocket = protocol ? new org.cometd.WebSocket(url, protocol) : new org.cometd.WebSocket(url);
+        }
+        catch (x)
+        {
+            _webSocketSupported = false;
+            this._debug('Exception while creating WebSocket object', x);
+            throw x;
+        }
+
         var onopen = function()
         {
             self._debug('WebSocket opened', webSocket);
