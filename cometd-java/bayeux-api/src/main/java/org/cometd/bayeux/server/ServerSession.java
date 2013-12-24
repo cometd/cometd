@@ -215,13 +215,15 @@ public interface ServerSession extends Session
         /**
          * <p>Callback invoked to notify when the message queue is exceeding the value
          * configured for the transport with the option "maxQueue".</p>
+         * <p>Implementers may modify the queue, for example by removing or merging messages.</p>
          *
          * @param session the session that will receive the message
-         * @param from the session that is sending the messages
+         * @param queue the session's message queue
+         * @param sender the session that is sending the message
          * @param message the message that exceeded the max queue capacity
          * @return true if the message should be added to the session queue
          */
-        public boolean queueMaxed(ServerSession session, Session from, Message message);
+        public boolean queueMaxed(ServerSession session, Queue<ServerMessage> queue, Session sender, Message message);
     }
 
     /**

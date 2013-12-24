@@ -223,7 +223,7 @@ public class ServerSessionImpl implements ServerSession
         deliver(from, message);
     }
 
-    protected void doDeliver(ServerSession from, ServerMessage.Mutable mutable)
+    protected void doDeliver(ServerSession sender, ServerMessage.Mutable mutable)
     {
         ServerMessage message = null;
         if (mutable.isMeta())
@@ -241,25 +241,25 @@ public class ServerSessionImpl implements ServerSession
 
         _bayeux.freeze((Mutable)message);
 
-        final int maxQueueSize = _maxQueue;
-        final int queueSize;
-        synchronized (_queue)
-        {
-            queueSize = _queue.size();
-        }
-
         if (!_listeners.isEmpty())
         {
             for (ServerSessionListener listener : _listeners)
             {
-                if (maxQueueSize > 0 && queueSize > maxQueueSize && listener instanceof MaxQueueListener)
+                if (listener instanceof MaxQueueListener)
                 {
-                    if (!notifyQueueMaxed((MaxQueueListener)listener, from, message))
-                        return;
+                    final int maxQueueSize = _maxQueue;
+                    synchronized (_queue)
+                    {
+                        if (maxQueueSize > 0 && _queue.size() > maxQueueSize)
+                        {
+                            if (!notifyQueueMaxed((MaxQueueListener)listener, this, _queue, sender, message))
+                                return;
+                        }
+                    }
                 }
                 if (listener instanceof MessageListener)
                 {
-                    if (!notifyOnMessage((MessageListener)listener, from, message))
+                    if (!notifyOnMessage((MessageListener)listener, sender, message))
                         return;
                 }
             }
@@ -281,11 +281,11 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    private boolean notifyQueueMaxed(MaxQueueListener listener, ServerSession from, ServerMessage message)
+    private boolean notifyQueueMaxed(MaxQueueListener listener, ServerSession session, Queue<ServerMessage> queue, ServerSession sender, ServerMessage message)
     {
         try
         {
-            return listener.queueMaxed(this, from, message);
+            return listener.queueMaxed(session, queue, sender, message);
         }
         catch (Exception x)
         {
