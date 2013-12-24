@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -273,7 +272,7 @@ public class SetiTest extends OortTest
         oort2.getBayeuxServer().getSession(session2.get()).addListener(new ServerSession.RemoveListener()
         {
             @Override
-            public void removed(ServerSession session, Queue<ServerMessage> queue, boolean timeout)
+            public void removed(ServerSession session, boolean timeout)
             {
                 removedLatch.countDown();
             }

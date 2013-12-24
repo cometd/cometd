@@ -25,7 +25,6 @@ import java.net.URI;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.DispatcherType;
@@ -352,7 +351,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         session.addListener(new ServerSession.RemoveListener()
         {
             @Override
-            public void removed(ServerSession session, Queue<ServerMessage> queue, boolean timeout)
+            public void removed(ServerSession session, boolean timeout)
             {
                 removeLatch.countDown();
             }

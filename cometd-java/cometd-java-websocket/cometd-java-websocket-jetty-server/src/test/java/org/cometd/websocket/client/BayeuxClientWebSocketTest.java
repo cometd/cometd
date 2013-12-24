@@ -21,7 +21,6 @@ import java.net.ConnectException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -1025,7 +1024,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         session.addListener(new ServerSession.RemoveListener()
         {
             @Override
-            public void removed(ServerSession session, Queue<ServerMessage> queue, boolean timeout)
+            public void removed(ServerSession session, boolean timeout)
             {
                 latch.countDown();
             }

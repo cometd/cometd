@@ -60,11 +60,11 @@ public class ServerSessionImpl implements ServerSession
     private final AttributesMap _attributes = new AttributesMap();
     private final AtomicBoolean _connected = new AtomicBoolean();
     private final AtomicBoolean _disconnected = new AtomicBoolean();
+    private final AtomicBoolean _handshook = new AtomicBoolean();
     private final Map<ServerChannelImpl, Boolean> _subscribedTo = new ConcurrentHashMap<>();
     private final LazyTask _lazyTask = new LazyTask();
     private AbstractServerTransport.Scheduler _scheduler;
     private ServerTransport _advisedTransport;
-    private boolean _handshaken;
     private int _maxQueue = -1;
     private long _transientTimeout = -1;
     private long _transientInterval = -1;
@@ -309,10 +309,8 @@ public class ServerSessionImpl implements ServerSession
 
     protected void handshake()
     {
-        synchronized (_queue)
-        {
-            _handshaken = true;
-        }
+        _handshook.set(true);
+
         AbstractServerTransport transport = (AbstractServerTransport)_bayeux.getCurrentTransport();
         if (transport != null)
         {
@@ -435,9 +433,7 @@ public class ServerSessionImpl implements ServerSession
         synchronized (_queue)
         {
             int size = _queue.size();
-            // Only return the queue if this session
-            // is not already removed, see removed().
-            if (size > 0 && _handshaken)
+            if (size > 0)
             {
                 for (ServerSessionListener listener : _listeners)
                 {
@@ -627,10 +623,7 @@ public class ServerSessionImpl implements ServerSession
 
     public boolean isHandshook()
     {
-        synchronized (_queue)
-        {
-            return _handshaken;
-        }
+        return _handshook.get();
     }
 
     public boolean isConnected()
@@ -805,16 +798,9 @@ public class ServerSessionImpl implements ServerSession
     {
         if (!timedOut)
             _disconnected.set(true);
-
-        boolean handshaken;
-        synchronized (_queue)
-        {
-            handshaken = _handshaken;
-            _handshaken = false;
-        }
-
         boolean connected = _connected.getAndSet(false);
-        if (connected || handshaken)
+        boolean handshook = _handshook.getAndSet(false);
+        if (connected || handshook)
         {
             for (ServerChannelImpl channel : _subscribedTo.keySet())
                 channel.unsubscribe(this);
@@ -822,17 +808,17 @@ public class ServerSessionImpl implements ServerSession
             for (ServerSessionListener listener : _listeners)
             {
                 if (listener instanceof ServerSession.RemoveListener)
-                    notifyRemoved((RemoveListener)listener, this, getQueue(), timedOut);
+                    notifyRemoved((RemoveListener)listener, this, timedOut);
             }
         }
         return connected;
     }
 
-    private void notifyRemoved(RemoveListener listener, ServerSession serverSession, Queue<ServerMessage> queue, boolean timedout)
+    private void notifyRemoved(RemoveListener listener, ServerSession serverSession, boolean timedout)
     {
         try
         {
-            listener.removed(serverSession, queue, timedout);
+            listener.removed(serverSession, timedout);
         }
         catch (Exception x)
         {

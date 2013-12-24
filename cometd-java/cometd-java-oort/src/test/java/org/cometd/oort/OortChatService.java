@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -128,7 +127,7 @@ public class OortChatService
             client.addListener(new ServerSession.RemoveListener()
             {
                 @Override
-                public void removed(ServerSession session, Queue<ServerMessage> queue, boolean timeout)
+                public void removed(ServerSession session, boolean timeout)
                 {
                     if (!_oort.isOort(client))
                         _seti.disassociate(userName, session);

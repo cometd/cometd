@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -368,7 +367,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
             }
 
             @Override
-            public void removed(ServerSession session, Queue<ServerMessage> queue, boolean timeout)
+            public void removed(ServerSession session, boolean timeout)
             {
                 sessionId.set(null);
             }

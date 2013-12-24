@@ -22,7 +22,6 @@ package org.cometd.examples;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -85,7 +84,7 @@ public class ChatService
         client.addListener(new ServerSession.RemoveListener()
         {
             @Override
-            public void removed(ServerSession session, Queue<ServerMessage> queue, boolean timeout)
+            public void removed(ServerSession session, boolean timeout)
             {
                 members.values().remove(session.getId());
                 broadcastMembers(room,members.keySet());

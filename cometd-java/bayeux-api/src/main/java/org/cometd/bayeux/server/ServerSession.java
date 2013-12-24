@@ -165,10 +165,9 @@ public interface ServerSession extends Session
          * <p>Callback invoked when the session is removed.</p>
          *
          * @param session the removed session
-         * @param queue the session's message queue, possibly containing undelivered messages
          * @param timeout whether the session has been removed because of a timeout
          */
-        public void removed(ServerSession session, Queue<ServerMessage> queue, boolean timeout);
+        public void removed(ServerSession session, boolean timeout);
     }
 
     /**
