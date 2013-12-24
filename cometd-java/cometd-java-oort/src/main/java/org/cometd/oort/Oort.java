@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -932,7 +933,8 @@ public class Oort extends ContainerLifeCycle
             this.remoteOortId = remoteOortId;
         }
 
-        public void removed(ServerSession session, boolean timeout)
+        @Override
+        public void removed(ServerSession session, Queue<ServerMessage> queue, boolean timeout)
         {
             Iterator<ServerCometInfo> cometInfos = _serverComets.values().iterator();
             while (cometInfos.hasNext())

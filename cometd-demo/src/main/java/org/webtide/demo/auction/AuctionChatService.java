@@ -23,6 +23,7 @@ package org.webtide.demo.auction;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,6 +32,7 @@ import javax.servlet.ServletContext;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
@@ -123,7 +125,8 @@ public class AuctionChatService extends AbstractService
 
                 joiner.addListener(new ServerSession.RemoveListener()
                 {
-                    public void removed(ServerSession session, boolean timeout)
+                    @Override
+                    public void removed(ServerSession session, Queue<ServerMessage> queue, boolean timeout)
                     {
                         if (!_oort.isOort(joiner))
                             _seti.disassociate(userName, session);

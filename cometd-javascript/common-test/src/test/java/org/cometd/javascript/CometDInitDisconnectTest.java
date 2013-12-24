@@ -16,6 +16,7 @@
 
 package org.cometd.javascript;
 
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -74,7 +75,8 @@ public class CometDInitDisconnectTest extends AbstractCometDTest
                 {
                     to.addListener(new ServerSession.RemoveListener()
                     {
-                        public void removed(ServerSession session, boolean timeout)
+                        @Override
+                        public void removed(ServerSession session, Queue<ServerMessage> queue, boolean timeout)
                         {
                             removeLatch.countDown();
                         }

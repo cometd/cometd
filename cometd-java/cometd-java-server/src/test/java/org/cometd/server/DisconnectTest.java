@@ -17,11 +17,13 @@
 package org.cometd.server;
 
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -79,7 +81,8 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         serverSession.addListener(new ServerSession.RemoveListener()
         {
-            public void removed(ServerSession session, boolean timeout)
+            @Override
+            public void removed(ServerSession session, Queue<ServerMessage> queue, boolean timeout)
             {
                 latch.countDown();
             }

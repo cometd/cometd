@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -35,6 +36,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -768,7 +770,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
             send(toUser, toChannel, data);
         }
 
-        public void removed(ServerSession session, boolean timeout)
+        @Override
+        public void removed(ServerSession session, Queue<ServerMessage> queue, boolean timeout)
         {
             disassociate(_userId, session);
         }
