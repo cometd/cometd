@@ -112,6 +112,48 @@
 
     <profiles>
         <profile>
+            <id>license-check</id>
+            <activation>
+                <jdk>[1.6,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.mycila</groupId>
+                        <artifactId>license-maven-plugin</artifactId>
+                        <inherited>false</inherited>
+                        <configuration>
+                            <header>copyright-header.txt</header>
+                            <aggregate>true</aggregate>
+                            <failIfMissing>true</failIfMissing>
+                            <strictCheck>true</strictCheck>
+                            <properties>
+                                <copyright-range>${project.inceptionYear}-2014</copyright-range>
+                            </properties>
+                            <mapping>
+                                <java>SLASHSTAR_STYLE</java>
+                            </mapping>
+                            <includes>
+                                <include>**/*.java</include>
+                            </includes>
+                            <excludes>
+                                <exclude>cometd-archetypes/**</exclude>
+                            </excludes>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>check-headers</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>osgi</id>
             <activation>
                 <jdk>[1.6,)</jdk>
@@ -239,38 +281,6 @@
                     <preparationGoals>clean install</preparationGoals>
                     <mavenExecutorId>forked-path</mavenExecutorId>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <inherited>false</inherited>
-                <configuration>
-                    <header>copyright-header.txt</header>
-                    <aggregate>true</aggregate>
-                    <failIfMissing>true</failIfMissing>
-                    <strictCheck>true</strictCheck>
-                    <properties>
-                        <copyright-range>${project.inceptionYear}-2014</copyright-range>
-                    </properties>
-                    <mapping>
-                        <java>SLASHSTAR_STYLE</java>
-                    </mapping>
-                    <includes>
-                        <include>**/*.java</include>
-                    </includes>
-                    <excludes>
-                        <exclude>cometd-archetypes/**</exclude>
-                    </excludes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>check-headers</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
         <pluginManagement>
