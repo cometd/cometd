@@ -50,7 +50,9 @@ public abstract class HttpTransport extends AbstractServerTransport
     public final static String PREFIX = "long-polling";
     public static final String JSON_DEBUG_OPTION = "jsonDebug";
     public static final String MESSAGE_PARAM = "message";
-    public final static String BROWSER_ID_OPTION = "browserId";
+    public final static String BROWSER_COOKIE_NAME_OPTION = "browserCookieName";
+    public final static String BROWSER_COOKIE_DOMAIN_OPTION = "browserCookieDomain";
+    public final static String BROWSER_COOKIE_PATH_OPTION = "browserCookiePath";
     public final static String MAX_SESSIONS_PER_BROWSER_OPTION = "maxSessionsPerBrowser";
     public final static String MULTI_SESSION_INTERVAL_OPTION = "multiSessionInterval";
     public final static String AUTOBATCH_OPTION = "autoBatch";
@@ -60,11 +62,13 @@ public abstract class HttpTransport extends AbstractServerTransport
     private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<>();
     private final ConcurrentHashMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<>();
     private final Map<String, AtomicInteger> _browserSweep = new ConcurrentHashMap<>();
-    private String _browserId = "BAYEUX_BROWSER";
-    private int _maxSessionsPerBrowser = 1;
-    private long _multiSessionInterval = 2000;
-    private boolean _autoBatch = true;
-    private boolean _allowMultiSessionsNoBrowser = false;
+    private String _browserCookieName;
+    private String _browserCookieDomain;
+    private String _browserCookiePath;
+    private int _maxSessionsPerBrowser;
+    private long _multiSessionInterval;
+    private boolean _autoBatch;
+    private boolean _allowMultiSessionsNoBrowser;
     private long _lastSweep;
 
     protected HttpTransport(BayeuxServerImpl bayeux, String name)
@@ -77,11 +81,13 @@ public abstract class HttpTransport extends AbstractServerTransport
     protected void init()
     {
         super.init();
-        _browserId = getOption(BROWSER_ID_OPTION, _browserId);
-        _maxSessionsPerBrowser = getOption(MAX_SESSIONS_PER_BROWSER_OPTION, _maxSessionsPerBrowser);
-        _multiSessionInterval = getOption(MULTI_SESSION_INTERVAL_OPTION, _multiSessionInterval);
-        _autoBatch = getOption(AUTOBATCH_OPTION, _autoBatch);
-        _allowMultiSessionsNoBrowser = getOption(ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION, _allowMultiSessionsNoBrowser);
+        _browserCookieName = getOption(BROWSER_COOKIE_NAME_OPTION, "BAYEUX_BROWSER");
+        _browserCookieDomain = getOption(BROWSER_COOKIE_DOMAIN_OPTION, null);
+        _browserCookiePath = getOption(BROWSER_COOKIE_PATH_OPTION, "/");
+        _maxSessionsPerBrowser = getOption(MAX_SESSIONS_PER_BROWSER_OPTION, 1);
+        _multiSessionInterval = getOption(MULTI_SESSION_INTERVAL_OPTION, 2000);
+        _autoBatch = getOption(AUTOBATCH_OPTION, true);
+        _allowMultiSessionsNoBrowser = getOption(ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION, false);
     }
 
     public abstract boolean accept(HttpServletRequest request);
@@ -128,7 +134,7 @@ public abstract class HttpTransport extends AbstractServerTransport
         {
             for (Cookie cookie : cookies)
             {
-                if (_browserId.equals(cookie.getName()))
+                if (_browserCookieName.equals(cookie.getName()))
                     return cookie.getValue();
             }
         }
@@ -137,15 +143,17 @@ public abstract class HttpTransport extends AbstractServerTransport
 
     protected String setBrowserId(HttpServletRequest request, HttpServletResponse response)
     {
-        String browser_id = Long.toHexString(request.getRemotePort()) +
+        String browserId = Long.toHexString(request.getRemotePort()) +
                 Long.toString(getBayeux().randomLong(), 36) +
                 Long.toString(System.currentTimeMillis(), 36) +
                 Long.toString(request.getRemotePort(), 36);
-        Cookie cookie = new Cookie(_browserId, browser_id);
-        cookie.setPath("/");
+        Cookie cookie = new Cookie(_browserCookieName, browserId);
+        if (_browserCookieDomain != null)
+            cookie.setDomain(_browserCookieDomain);
+        cookie.setPath(_browserCookiePath);
         cookie.setMaxAge(-1);
         response.addCookie(cookie);
-        return browser_id;
+        return browserId;
     }
 
     /**
@@ -165,10 +173,10 @@ public abstract class HttpTransport extends AbstractServerTransport
         AtomicInteger count = _browserMap.get(browserId);
         if (count == null)
         {
-            AtomicInteger new_count = new AtomicInteger();
-            count = _browserMap.putIfAbsent(browserId, new_count);
+            AtomicInteger newCount = new AtomicInteger();
+            count = _browserMap.putIfAbsent(browserId, newCount);
             if (count == null)
-                count = new_count;
+                count = newCount;
         }
 
         // Increment

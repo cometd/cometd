@@ -16,12 +16,14 @@
 package org.cometd.server.transport;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.AbstractServerTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Assert;
 import org.junit.Before;
@@ -203,5 +205,43 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(200, response.getStatus());
         long elapsed = System.currentTimeMillis() - begin;
         Assert.assertTrue("" + elapsed, elapsed >= (timeout - timeout / 10));
+    }
+
+    @Test
+    public void testCookieConfiguration() throws Exception
+    {
+        String cookieName = "cookie_name";
+        String cookieDomain = "cookie_domain";
+        String cookiePath = "cookie_path";
+
+        JSONTransport transport = new JSONTransport(bayeux);
+        transport.setOption(JSONTransport.BROWSER_COOKIE_NAME_OPTION, cookieName);
+        transport.setOption(JSONTransport.BROWSER_COOKIE_DOMAIN_OPTION, cookieDomain);
+        transport.setOption(JSONTransport.BROWSER_COOKIE_PATH_OPTION, cookiePath);
+        transport.init();
+        bayeux.setTransports(transport);
+
+        Request handshake = newBayeuxRequest("" +
+                "[{" +
+                "\"channel\": \"/meta/handshake\"," +
+                "\"version\": \"1.0\"," +
+                "\"minimumVersion\": \"1.0\"," +
+                "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                "}]");
+        ContentResponse response = handshake.send();
+        Assert.assertEquals(200, response.getStatus());
+
+        HttpFields headers = response.getHeaders();
+        String cookie = headers.get(HttpHeader.SET_COOKIE);
+        String[] parts = cookie.split(";");
+        boolean hasCookieName = false;
+        for (String part : parts)
+        {
+            if (part.startsWith(cookieName + "="))
+                hasCookieName = true;
+        }
+        Assert.assertTrue(hasCookieName);
+        Assert.assertTrue(Arrays.asList(parts).contains("Path=" + cookiePath));
+        Assert.assertTrue(Arrays.asList(parts).contains("Domain=" + cookieDomain));
     }
 }
