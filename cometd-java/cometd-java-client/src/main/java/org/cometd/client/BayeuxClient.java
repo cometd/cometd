@@ -382,8 +382,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 message.put(CALLBACK_KEY, bayeuxClientState.callback);
 
             debug("Handshaking on transport {}: {}", bayeuxClientState.transport, message);
-            bayeuxClientState.send(handshakeListener, message);
-            return true;
+            return bayeuxClientState.send(handshakeListener, message);
         }
         return false;
     }
@@ -459,8 +458,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 message.getAdvice(true).put("timeout", 0);
             }
             debug("Connecting, transport {}", bayeuxClientState.transport);
-            bayeuxClientState.send(connectListener, message);
-            return true;
+            return bayeuxClientState.send(connectListener, message);
         }
         return false;
     }
@@ -489,17 +487,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected boolean sendMessages(Message.Mutable... messages)
     {
-        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
-        if (isConnecting(bayeuxClientState) || isConnected(bayeuxClientState))
-        {
-            bayeuxClientState.send(publishListener, messages);
-            return true;
-        }
-        else
-        {
-            failMessages(null, messages);
-            return false;
-        }
+        return bayeuxClientState.get().send(publishListener, messages);
     }
 
     private Message.Mutable[] takeMessages()
@@ -979,7 +967,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             if (x != null)
                 failure.put("exception", x);
             if (x instanceof TransportException)
-                failure.putAll(((TransportException)x).getFields());
+            {
+                Map<String, Object> fields = ((TransportException)x).getFields();
+                if (fields != null)
+                    failure.putAll(fields);
+            }
             failure.put(Message.CONNECTION_TYPE_FIELD, getTransport().getName());
 
             receive(failed);
@@ -1391,7 +1383,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             return result;
         }
 
-        protected void send(TransportListener listener, Message.Mutable... messages)
+        protected boolean send(TransportListener listener, Message.Mutable... messages)
         {
             // Use ArrayList because Arrays.asList() does not support Iterator.remove()
             List<Message.Mutable> messageList = new ArrayList<Message.Mutable>(Arrays.asList(messages));
@@ -1422,11 +1414,16 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     iterator.remove();
                 }
             }
-            if (!messageList.isEmpty())
-            {
-                debug("Sending messages {}", messageList);
-                transport.send(listener, messageList.toArray(new Message.Mutable[messageList.size()]));
-            }
+            if (messageList.isEmpty())
+                return false;
+            debug("Sending messages {}", messageList);
+            return transportSend(listener, messageList.toArray(new Message.Mutable[messageList.size()]));
+        }
+
+        protected boolean transportSend(TransportListener listener, Message.Mutable[] messages)
+        {
+            transport.send(listener, messages);
+            return true;
         }
 
         private long nextBackoff()
@@ -1472,6 +1469,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         private DisconnectedState(ClientTransport transport)
         {
             super(State.DISCONNECTED, null, null, null, transport, null, 0);
+        }
+
+        @Override
+        protected boolean transportSend(TransportListener listener, Message.Mutable[] messages)
+        {
+            failMessages(new TransportException(null), messages);
+            return false;
         }
 
         @Override

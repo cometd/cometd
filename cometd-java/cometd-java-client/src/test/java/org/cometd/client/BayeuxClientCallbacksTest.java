@@ -310,6 +310,31 @@ public class BayeuxClientCallbacksTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
+    @Test
+    public void testPublishWithServerDownInvokesCallback() throws Exception
+    {
+        BayeuxClient client = newBayeuxClient();
+        client.handshake();
+        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        server.stop();
+
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        ClientSessionChannel channel = client.getChannel("/test");
+        channel.publish(new HashMap(), new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                Assert.assertFalse(message.isSuccessful());
+                latch.get().countDown();
+            }
+        });
+
+        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
     private class MessageListenerAdapter implements ClientSessionChannel.MessageListener
     {
         public void onMessage(ClientSessionChannel channel, Message message)
