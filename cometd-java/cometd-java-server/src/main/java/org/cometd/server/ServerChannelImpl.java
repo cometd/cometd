@@ -322,6 +322,7 @@ public class ServerChannelImpl implements ServerChannel
             _publish(from, data, null);
     }
 
+    @Deprecated
     public void publish(Session from, Object data, String id)
     {
         _publish(from, data, id);
