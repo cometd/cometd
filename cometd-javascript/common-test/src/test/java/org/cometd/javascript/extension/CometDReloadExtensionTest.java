@@ -238,7 +238,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         String newClientId = evaluateScript("cometd.getClientId();");
         Assert.assertEquals(clientId, newClientId);
 
-        String transportType = (String)evaluateScript("cometd.getTransport().getType();");
+        String transportType = evaluateScript("cometd.getTransport().getType();");
         Assert.assertEquals(transportName, transportType);
 
         evaluateScript("cometd.disconnect();");
@@ -250,11 +250,77 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     }
 
     @Test
+    public void testReloadAcrossServerRestart() throws Exception
+    {
+        defineClass(Latch.class);
+
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("var stopLatch = new Latch(1);");
+        Latch stopLatch = get("stopLatch");
+        evaluateScript("" +
+                "cometd.addListener('/meta/connect', function(message) " +
+                "{ " +
+                "    if (message.successful) " +
+                "        readyLatch.countDown();" +
+                "    else" +
+                "        stopLatch.countDown();" +
+                "});");
+        evaluateScript("cometd.handshake();");
+        Assert.assertTrue(readyLatch.await(5000));
+
+        // Get the clientId
+        String clientId = evaluateScript("cometd.getClientId();");
+
+        // Stop the server
+        int port = connector.getLocalPort();
+        server.stop();
+        Assert.assertTrue(stopLatch.await(5000));
+
+        // Disconnect
+        evaluateScript("cometd.disconnect();");
+
+        // Restart the server
+        connector.setPort(port);
+        server.start();
+
+        // Reload the page
+        evaluateScript("cometd.reload();");
+        destroyPage();
+        initPage();
+        initExtension();
+
+        defineClass(Latch.class);
+
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+
+        evaluateScript("var readyLatch = new Latch(1);");
+        readyLatch = get("readyLatch");
+        evaluateScript("" +
+                "var failures = 0;" +
+                "cometd.addListener('/meta/connect', function(message) " +
+                "{ " +
+                "    if (message.successful) " +
+                "        readyLatch.countDown();" +
+                "    else" +
+                "        ++failures;" +
+                "});");
+        evaluateScript("cometd.handshake();");
+        Assert.assertTrue(readyLatch.await(5000));
+        // Must not have failed with a 402::Unknown Client error
+        Assert.assertEquals(0, ((Number)get("failures")).intValue());
+
+        disconnect();
+    }
+
+    @Test
     public void testReloadWithSubscriptionAndPublish() throws Exception
     {
         defineClass(Latch.class);
         evaluateApplication();
-        Latch latch = (Latch)get("latch");
+        Latch latch = get("latch");
         Assert.assertTrue(latch.await(5000));
 
         // Calling reload() results in the cookie being written
@@ -267,7 +333,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
 
         defineClass(Latch.class);
         evaluateApplication();
-        latch = (Latch)get("latch");
+        latch = get("latch");
         Assert.assertTrue(latch.await(5000));
 
         // Check that handshake was faked
