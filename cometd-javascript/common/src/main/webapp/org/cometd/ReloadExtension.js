@@ -117,70 +117,82 @@
 
             this.outgoing = function(message)
             {
-                var channel = message.channel;
-
-                if (channel == '/meta/handshake')
+                switch (message.channel)
                 {
-                    _state = {};
-                    _state.url = _cometd.getURL();
-
-                    var cookie = org_cometd.COOKIE.get(_cookieName);
-                    _debug('Reload extension found cookie value', cookie);
-                    // Is there a saved handshake response from a prior load ?
-                    if (cookie)
+                    case '/meta/handshake':
                     {
-                        try
+                        _state = {};
+                        _state.url = _cometd.getURL();
+
+                        var cookie = org_cometd.COOKIE.get(_cookieName);
+                        _debug('Reload extension found cookie value', cookie);
+                        // Is there a saved handshake response from a prior load ?
+                        if (cookie)
                         {
-                            var oldState = org_cometd.JSON.fromJSON(cookie);
-
-                            // Remove the cookie, not needed anymore
-                            org_cometd.COOKIE.set(_cookieName, '', {
-                                'max-age': -1,
-                                path: oldState.cookiePath,
-                                expires: -1
-                            });
-
-                            if (oldState.handshakeResponse && _similarState(oldState))
+                            try
                             {
-                                _debug('Reload extension restoring state', oldState);
-                                setTimeout(function()
-                                {
-                                    _debug('Reload extension replaying handshake response', oldState.handshakeResponse);
-                                    _state.handshakeResponse = oldState.handshakeResponse;
-                                    _state.transportType = oldState.transportType;
-                                    _state.reloading = true;
-                                    var response = _cometd._mixin(true, {}, _state.handshakeResponse, {ext: {reload: true}});
-                                    response.supportedConnectionTypes = [_state.transportType];
-                                    _cometd.receive(response);
-                                    _debug('Reload extension replayed handshake response', response);
-                                }, 0);
+                                var oldState = org_cometd.JSON.fromJSON(cookie);
 
-                                // delay any sends until first connect is complete.
-                                if (!_batch)
+                                // Remove the cookie, not needed anymore
+                                org_cometd.COOKIE.set(_cookieName, '', {
+                                    'max-age': -1,
+                                    path: oldState.cookiePath,
+                                    expires: -1
+                                });
+
+                                if (oldState.handshakeResponse && _similarState(oldState))
                                 {
-                                    _batch = true;
-                                    _cometd.startBatch();
+                                    _debug('Reload extension restoring state', oldState);
+                                    setTimeout(function ()
+                                    {
+                                        _debug('Reload extension replaying handshake response', oldState.handshakeResponse);
+                                        _state.handshakeResponse = oldState.handshakeResponse;
+                                        _state.transportType = oldState.transportType;
+                                        _state.reloading = true;
+                                        var response = _cometd._mixin(true, {}, _state.handshakeResponse, {ext: {reload: true}});
+                                        response.supportedConnectionTypes = [_state.transportType];
+                                        _cometd.receive(response);
+                                        _debug('Reload extension replayed handshake response', response);
+                                    }, 0);
+
+                                    // delay any sends until first connect is complete.
+                                    if (!_batch)
+                                    {
+                                        _batch = true;
+                                        _cometd.startBatch();
+                                    }
+                                    // This handshake is aborted, as we will replay the prior handshake response
+                                    return null;
                                 }
-                                // This handshake is aborted, as we will replay the prior handshake response
-                                return null;
+                                else
+                                {
+                                    _debug('Reload extension could not restore state', oldState);
+                                }
                             }
-                            else
+                            catch (x)
                             {
-                                _debug('Reload extension could not restore state', oldState);
+                                _debug('Reload extension error while trying to restore cookie', x);
                             }
                         }
-                        catch(x)
-                        {
-                            _debug('Reload extension error while trying to restore cookie', x);
-                        }
+                        break;
                     }
-                }
-                else if (channel == '/meta/connect')
-                {
-                    if (!_state.transportType)
+                    case '/meta/connect':
                     {
-                        _state.transportType = message.connectionType;
-                        _debug('Reload extension tracked transport type', _state.transportType);
+                        if (!_state.transportType)
+                        {
+                            _state.transportType = message.connectionType;
+                            _debug('Reload extension tracked transport type', _state.transportType);
+                        }
+                        break;
+                    }
+                    case '/meta/disconnect':
+                    {
+                        _state = null;
+                        break;
+                    }
+                    default:
+                    {
+                        break;
                     }
                 }
                 return message;
@@ -193,6 +205,7 @@
                     switch (message.channel)
                     {
                         case '/meta/handshake':
+                        {
                             // If the handshake response is already present, then we're replaying it.
                             // Since the replay may have modified the handshake response, do not record it here.
                             if (!_state.handshakeResponse)
@@ -202,18 +215,25 @@
                                 _debug('Reload extension tracked handshake response', message);
                             }
                             break;
+                        }
                         case '/meta/disconnect':
+                        {
                             _state = null;
                             break;
+                        }
                         case '/meta/connect':
+                        {
                             if (_batch)
                             {
                                 _cometd.endBatch();
                                 _batch = false;
                             }
                             break;
+                        }
                         default:
+                        {
                             break;
+                        }
                     }
                 }
                 return message;
