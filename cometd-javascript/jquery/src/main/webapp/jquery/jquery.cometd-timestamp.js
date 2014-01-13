@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-(function($)
+(function()
 {
     function bind(TimeStampExtension, cometd)
     {
@@ -29,6 +28,6 @@
     }
     else
     {
-        bind(org.cometd.TimeStampExtension, $.cometd);
+        bind(org.cometd.TimeStampExtension, jQuery.cometd);
     }
-})(jQuery);
+})();

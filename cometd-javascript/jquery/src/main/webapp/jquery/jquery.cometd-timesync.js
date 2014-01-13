@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-(function($)
+(function()
 {
     function bind(TimeSyncExtension, cometd)
     {
@@ -29,6 +28,6 @@
     }
     else
     {
-        bind(org.cometd.TimeSyncExtension, $.cometd);
+        bind(org.cometd.TimeSyncExtension, jQuery.cometd);
     }
-})(jQuery);
+})();

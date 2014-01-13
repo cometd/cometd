@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-(function($)
+(function()
 {
     function bind(org_cometd, cookie, ReloadExtension, cometd)
     {
@@ -37,6 +36,6 @@
     }
     else
     {
-        bind(org.cometd, $.cookie, org.cometd.ReloadExtension, $.cometd);
+        bind(org.cometd, jQuery.cookie, org.cometd.ReloadExtension, jQuery.cometd);
     }
-})(jQuery);
+})();
