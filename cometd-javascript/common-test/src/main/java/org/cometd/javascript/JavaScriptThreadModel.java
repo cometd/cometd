@@ -31,12 +31,15 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The thread model object, that runs all javascript in a single thread to simulate browser's environment.
  */
 public class JavaScriptThreadModel extends ScriptableObject implements Runnable, ThreadModel
 {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Thread thread = new Thread(this);
     private final BlockingQueue<FutureTask<Object>> queue = new LinkedBlockingQueue<>();
     private final ScriptableObject rootScope;
@@ -186,6 +189,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
             public Object call() throws Exception
             {
                 Function function = (Function)ScriptableObject.getProperty(thiz, functionName);
+                logger.debug("Invoking function {}", functionName);
                 return function.call(context, scope, thiz, arguments);
             }
         };

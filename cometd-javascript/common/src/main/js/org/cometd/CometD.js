@@ -468,7 +468,8 @@ org.cometd.CometD = function(name)
         for (var i = 0; i < messages.length; ++i)
         {
             var message = messages[i];
-            message.id = '' + _nextMessageId();
+            var messageId = '' + _nextMessageId();
+            message.id = messageId;
 
             if (_clientId)
             {
@@ -486,9 +487,13 @@ org.cometd.CometD = function(name)
             message = _applyOutgoingExtensions(message);
             if (message !== undefined && message !== null)
             {
+                // Extensions may have modified the message id, but we need to own it.
+                message.id = messageId;
                 messages[i] = message;
                 if (callback)
-                    _callbacks[message.id] = callback;
+                {
+                    _callbacks[messageId] = callback;
+                }
             }
             else
             {
@@ -1189,6 +1194,7 @@ org.cometd.CometD = function(name)
         {
             var message = messages[i];
             var failureMessage = {
+                id: message.id,
                 successful: false,
                 channel: message.channel,
                 failure: failure
@@ -1197,24 +1203,19 @@ org.cometd.CometD = function(name)
             switch (message.channel)
             {
                 case '/meta/handshake':
-                    failureMessage.id = message.id;
                     _handshakeFailure(failureMessage);
                     break;
                 case '/meta/connect':
-                    failureMessage.id = message.id;
                     _connectFailure(failureMessage);
                     break;
                 case '/meta/disconnect':
-                    failureMessage.id = message.id;
                     _disconnectFailure(failureMessage);
                     break;
                 case '/meta/subscribe':
-                    failureMessage.id = message.id;
                     failureMessage.subscription = message.subscription;
                     _subscribeFailure(failureMessage);
                     break;
                 case '/meta/unsubscribe':
-                    failureMessage.id = message.id;
                     failureMessage.subscription = message.subscription;
                     _unsubscribeFailure(failureMessage);
                     break;

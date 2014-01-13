@@ -41,6 +41,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
     public void testBayeuxBrowserMapping() throws Exception
     {
         LongPollingTransport transport = new JSONTransport(bayeux);
+        transport.init();
 
         String browserId = "browser1";
         Assert.assertTrue(transport.incBrowserId(browserId));

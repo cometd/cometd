@@ -50,10 +50,9 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
             protected boolean sendHandshake()
             {
                 disconnect();
-                boolean result = super.sendHandshake();
-                assertFalse(result);
+                assertFalse(super.sendHandshake());
                 latch.countDown();
-                return result;
+                return false;
             }
         };
         client.handshake();
@@ -72,10 +71,9 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
             protected boolean sendConnect()
             {
                 disconnect();
-                boolean result = super.sendConnect();
-                assertFalse(result);
+                assertFalse(super.sendConnect());
                 latch.countDown();
-                return result;
+                return false;
             }
         };
         client.handshake();
@@ -93,6 +91,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
             protected void enqueueSend(Message.Mutable message)
             {
                 disconnect();
+                assertTrue(waitFor(5000, State.DISCONNECTED));
                 super.enqueueSend(message);
             }
         };
@@ -129,7 +128,10 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
             protected void enqueueSend(Message.Mutable message)
             {
                 if (channelName.equals(message.getChannel()))
+                {
                     disconnect();
+                    assertTrue(waitFor(5000, State.DISCONNECTED));
+                }
                 super.enqueueSend(message);
             }
         };
@@ -185,14 +187,16 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
             @Override
             protected boolean sendConnect()
             {
-                if (connects.incrementAndGet() < 2)
+                try
+                {
+                    if (connects.incrementAndGet() == 2)
+                        server.stop();
                     return super.sendConnect();
-
-                Message.Mutable connect = newMessage();
-                connect.setChannel(Channel.META_CONNECT);
-                connect.setSuccessful(false);
-                processConnect(connect);
-                return false;
+                }
+                catch (Exception x)
+                {
+                    return false;
+                }
             }
         };
         final CountDownLatch publishLatch = new CountDownLatch(1);

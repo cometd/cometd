@@ -148,6 +148,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         private final boolean async;
         private volatile boolean aborted;
         private volatile ReadyState readyState = ReadyState.UNSENT;
+        private volatile String requestText;
         private volatile String responseText;
         private volatile int responseStatus;
         private volatile String responseStatusText;
@@ -226,8 +227,9 @@ public class XMLHttpRequestExchange extends ScriptableObject
             return responseStatusText;
         }
 
-        public void setRequestContent(String content) throws UnsupportedEncodingException
+        public void setRequestContent(String content)
         {
+            requestText = content;
             getRequest().content(new StringContentProvider(content));
         }
 
@@ -301,6 +303,12 @@ public class XMLHttpRequestExchange extends ScriptableObject
                 }
             }
             super.onComplete(result);
+        }
+
+        @Override
+        public String toString()
+        {
+            return requestText == null ? getRequest().toString() : String.format("%s%n%s", getRequest(), requestText);
         }
     }
 }

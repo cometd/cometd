@@ -33,6 +33,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     private final Logger logger = LoggerFactory.getLogger(getClass().getName());
     private ThreadModel threads;
     private Scriptable thiz;
+    private WebSocketClient wsClient;
     private Session session;
 
     public WebSocketConnection()
@@ -43,7 +44,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     {
         this.threads = (ThreadModel)threadModel;
         this.thiz = thiz;
-        WebSocketClient wsClient = ((WebSocketConnector)connector).getWebSocketClient();
+        this.wsClient = ((WebSocketConnector)connector).getWebSocketClient();
         try
         {
             URI uri = new URI(url);
@@ -59,7 +60,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
             logger.debug("Opening WebSocket session to {}", uri);
             wsClient.connect(this, uri, request);
         }
-        catch (final Exception x)
+        catch (final Throwable x)
         {
             // This method is invoked from JavaScript, so we must fail asynchronously
             wsClient.getExecutor().execute(new Runnable()
@@ -80,8 +81,23 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
 
     public void jsFunction_send(String data) throws IOException
     {
-        logger.debug("WebSocket sending data {}", data);
-        session.getRemote().sendString(data);
+        try
+        {
+            logger.debug("WebSocket sending data {}", data);
+            session.getRemote().sendString(data);
+        }
+        catch (final Throwable x)
+        {
+            // This method is invoked from JavaScript, so we must fail asynchronously
+            wsClient.getExecutor().execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    onWebSocketError(x);
+                }
+            });
+        }
     }
 
     public void jsFunction_close(int code, String reason) throws IOException
