@@ -135,9 +135,14 @@
                             </mapping>
                             <includes>
                                 <include>**/*.java</include>
+                                <include>cometd-javascript/common/**/cometd-header.js</include>
+                                <include>cometd-javascript/dojo/**/*.js</include>
+                                <include>cometd-javascript/jquery/**/*.js</include>
                             </includes>
                             <excludes>
                                 <exclude>cometd-archetypes/**</exclude>
+                                <exclude>**/overlays/**</exclude>
+                                <exclude>cometd-javascript/jquery/**/jquery-*.js</exclude>
                             </excludes>
                         </configuration>
                         <executions>
