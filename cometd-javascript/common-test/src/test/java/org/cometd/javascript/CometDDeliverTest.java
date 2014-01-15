@@ -76,6 +76,7 @@ public class CometDDeliverTest extends AbstractCometDTest
 
         public void deliver(ServerSession remote, String channel, Object messageData, String messageId)
         {
+            @SuppressWarnings("unchecked")
             Map<String, Object> data = (Map<String, Object>)messageData;
             Boolean deliver = (Boolean) data.get("deliver");
             if (deliver)

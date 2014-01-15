@@ -87,6 +87,7 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
 
         public void jsFunction_handle(Object jsMessage)
         {
+            @SuppressWarnings("unchecked")
             Map<String, Object> message = (Map<String, Object>)Utils.jsToJava(jsMessage);
             if ((Boolean)message.get("successful"))
                 failures.get().add(new AssertionError("Publish"));

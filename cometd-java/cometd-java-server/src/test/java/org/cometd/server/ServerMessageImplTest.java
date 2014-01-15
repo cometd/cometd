@@ -138,6 +138,7 @@ public class ServerMessageImplTest
         }
 
         // Deep modifications after the message is frozen are discarded
+        @SuppressWarnings("unchecked")
         Map<String, Object> innerData = (Map<String, Object>)message.getDataAsMap().get("innerData");
         innerData.put("newContent", true);
 

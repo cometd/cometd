@@ -486,6 +486,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 // Verify the failure object is there
+                @SuppressWarnings("unchecked")
                 Map<String, Object> failure = (Map<String, Object>)message.get("failure");
                 Assert.assertNotNull(failure);
                 // Verify that the transport is there

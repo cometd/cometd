@@ -445,7 +445,9 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
         // Set the result
         if (data instanceof Data)
-            ((Data)data).setResult(oldInfo == null ? null : oldInfo.getObject());
+        {
+            ((Data<T>)data).setResult(oldInfo == null ? null : oldInfo.getObject());
+        }
     }
 
     protected MarkedReference<Info<T>> setInfo(Info<T> newInfo, Runnable action)

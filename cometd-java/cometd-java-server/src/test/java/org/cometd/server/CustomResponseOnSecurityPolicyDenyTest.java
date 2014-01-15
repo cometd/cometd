@@ -193,6 +193,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
         Assert.assertEquals(reconnectAdvice, advice.get(Message.RECONNECT_FIELD));
         Map<String, Object> ext = response.getExt();
         Assert.assertNotNull(ext);
+        @SuppressWarnings("unchecked")
         Map<String, Object> extra = (Map<String, Object>)ext.get("com.acme");
         Assert.assertNotNull(extra);
         Assert.assertEquals("test", extra.get("failure"));

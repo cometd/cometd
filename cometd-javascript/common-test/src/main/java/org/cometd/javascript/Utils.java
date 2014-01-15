@@ -78,6 +78,7 @@ public class Utils
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     private static Object convertObject(NativeObject jsObject, Map<Object, Boolean> identities)
     {
         Object[] ids = jsObject.getIds();

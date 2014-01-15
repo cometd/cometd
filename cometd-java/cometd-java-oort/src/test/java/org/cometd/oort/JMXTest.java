@@ -83,7 +83,8 @@ public class JMXTest
         Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*"), null);
         Assert.assertEquals(1, mbeanNames.size());
         ObjectName objectName = mbeanNames.iterator().next();
-        Set <String> channels = (Set<String>)mbeanServer.getAttribute(objectName, "channels");
+        @SuppressWarnings("unchecked")
+        Set<String> channels = (Set<String>)mbeanServer.getAttribute(objectName, "channels");
         Assert.assertTrue(channels.size() > 0);
 
         domain = Oort.class.getPackage().getName();
@@ -93,8 +94,9 @@ public class JMXTest
 
         String channel = "/foo";
         mbeanServer.invoke(objectName, "observeChannel", new Object[]{channel}, new String[]{String.class.getName()});
-        channels = (Set<String>)mbeanServer.getAttribute(objectName, "observedChannels");
-        Assert.assertTrue(channels.contains(channel));
+        @SuppressWarnings("unchecked")
+        Set<String> observedChannels = (Set<String>)mbeanServer.getAttribute(objectName, "observedChannels");
+        Assert.assertTrue(observedChannels.contains(channel));
 
         domain = Seti.class.getPackage().getName();
         mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*,type=seti"), null);
@@ -140,6 +142,7 @@ public class JMXTest
         Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*"), null);
         Assert.assertEquals(1, mbeanNames.size());
         ObjectName objectName = mbeanNames.iterator().next();
+        @SuppressWarnings("unchecked")
         Set <String> channels = (Set<String>)mbeanServer.getAttribute(objectName, "channels");
         Assert.assertTrue(channels.size() > 0);
 
