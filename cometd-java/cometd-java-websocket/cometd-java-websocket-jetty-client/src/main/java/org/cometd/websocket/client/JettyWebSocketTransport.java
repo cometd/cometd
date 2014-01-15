@@ -87,7 +87,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
     }
 
     @Override
-    protected void send(Session session, String content, TransportListener listener, Mutable... messages)
+    protected void send(Session session, String content, TransportListener listener, List<Mutable> messages)
     {
         try
         {
@@ -103,7 +103,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         }
     }
 
-    protected Session connect(String uri, TransportListener listener, Mutable[] messages)
+    protected Session connect(String uri, TransportListener listener, List<Mutable> messages)
     {
         Session session = _wsSession;
         if (session != null)

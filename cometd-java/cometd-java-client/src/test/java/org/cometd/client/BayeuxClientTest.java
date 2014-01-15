@@ -20,6 +20,7 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -305,11 +306,11 @@ public class BayeuxClientTest extends ClientServerTest
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
-            public void onFailure(Throwable x, Message[] messages)
+            public void onFailure(Throwable failure, List<? extends Message> messages)
             {
                 Message.Mutable problem = newMessage();
                 problem.setSuccessful(false);
-                problem.put("exception", x);
+                problem.put("exception", failure);
                 queue.offer(problem);
             }
         };
@@ -634,6 +635,7 @@ public class BayeuxClientTest extends ClientServerTest
                 // If port 80 is listening, it's probably some other HTTP server
                 // and a bayeux request will result in a 404, which is converted
                 // to a TransportException; if not listening, it will be a ConnectException
+                @SuppressWarnings("unchecked")
                 Map<String, Object> failure = (Map<String, Object>)message.get("failure");
                 Assert.assertNotNull(failure);
                 Object exception = failure.get("exception");
@@ -684,13 +686,13 @@ public class BayeuxClientTest extends ClientServerTest
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
-            public void onSending(Message[] messages)
+            public void onSending(List<? extends Message> messages)
             {
                 // Need to be sure that the second connect is sent otherwise
                 // the abort and rehandshake may happen before the second
                 // connect and the test will fail.
                 super.onSending(messages);
-                if (messages.length == 1 && Channel.META_CONNECT.equals(messages[0].getChannel()))
+                if (messages.size() == 1 && Channel.META_CONNECT.equals(messages.get(0).getChannel()))
                     connectLatch.get().countDown();
             }
         };
@@ -735,7 +737,7 @@ public class BayeuxClientTest extends ClientServerTest
             }
 
             @Override
-            protected boolean sendMessages(Message.Mutable... messages)
+            protected boolean sendMessages(List<Message.Mutable> messages)
             {
                 boolean result = super.sendMessages(messages);
                 if (result)
@@ -790,7 +792,7 @@ public class BayeuxClientTest extends ClientServerTest
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
-            protected boolean sendMessages(Message.Mutable... messages)
+            protected boolean sendMessages(List<Message.Mutable> messages)
             {
                 abort();
                 publishLatch.get().countDown();
@@ -1171,6 +1173,7 @@ public class BayeuxClientTest extends ClientServerTest
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 // Verify the failure object is there
+                @SuppressWarnings("unchecked")
                 Map<String, Object> failure = (Map<String, Object>)message.get("failure");
                 Assert.assertNotNull(failure);
                 // Verify that the transport is there

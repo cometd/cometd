@@ -105,14 +105,14 @@ public abstract class ClientTransport extends AbstractTransport
 
     public abstract boolean accept(String version);
 
-    public abstract void send(TransportListener listener, Message.Mutable... messages);
+    public abstract void send(TransportListener listener, List<Message.Mutable> messages);
 
     protected List<Message.Mutable> parseMessages(String content) throws ParseException
     {
         return new ArrayList<>(Arrays.asList(jsonContext.parse(content)));
     }
 
-    protected String generateJSON(Message.Mutable[] messages)
+    protected String generateJSON(List<Message.Mutable> messages)
     {
         return jsonContext.generate(messages);
     }

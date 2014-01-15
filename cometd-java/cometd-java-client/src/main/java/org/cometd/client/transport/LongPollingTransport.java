@@ -110,16 +110,20 @@ public class LongPollingTransport extends HttpClientTransport
     }
 
     @Override
-    public void send(final TransportListener listener, final Message.Mutable... messages)
+    public void send(final TransportListener listener, final List<Message.Mutable> messages)
     {
         String url = getURL();
         final URI uri = URI.create(url);
-        if (_appendMessageType && messages.length == 1 && messages[0].isMeta())
+        if (_appendMessageType && messages.size() == 1)
         {
-            String type = messages[0].getChannel().substring(Channel.META.length());
-            if (url.endsWith("/"))
-                url = url.substring(0, url.length() - 1);
-            url += type;
+            Message.Mutable message = messages.get(0);
+            if (message.isMeta())
+            {
+                String type = message.getChannel().substring(Channel.META.length());
+                if (url.endsWith("/"))
+                    url = url.substring(0, url.length() - 1);
+                url += type;
+            }
         }
 
         final Request request = _httpClient.newRequest(url).method(HttpMethod.POST);
@@ -154,18 +158,22 @@ public class LongPollingTransport extends HttpClientTransport
         });
 
         long maxNetworkDelay = _maxNetworkDelay;
-        if (messages.length == 1 && Channel.META_CONNECT.equals(messages[0].getChannel()))
+        if (messages.size() == 1)
         {
-            Map<String, Object> advice = messages[0].getAdvice();
-            if (advice == null)
-                advice = _advice;
-            if (advice != null)
+            Message.Mutable message = messages.get(0);
+            if (Channel.META_CONNECT.equals(message.getChannel()))
             {
-                Object timeout = advice.get("timeout");
-                if (timeout instanceof Number)
-                    maxNetworkDelay += ((Number)timeout).longValue();
-                else if (timeout != null)
-                    maxNetworkDelay += Long.parseLong(timeout.toString());
+                Map<String, Object> advice = message.getAdvice();
+                if (advice == null)
+                    advice = _advice;
+                if (advice != null)
+                {
+                    Object timeout = advice.get("timeout");
+                    if (timeout instanceof Number)
+                        maxNetworkDelay += ((Number)timeout).longValue();
+                    else if (timeout != null)
+                        maxNetworkDelay += Long.parseLong(timeout.toString());
+                }
             }
         }
         // Set the idle timeout for this request larger than the total timeout

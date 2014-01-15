@@ -392,7 +392,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 message.put(CALLBACK_KEY, bayeuxClientState.callback);
 
             logger.debug("Handshaking on transport {}: {}", bayeuxClientState.transport, message);
-            return bayeuxClientState.send(handshakeListener, message);
+            List<Message.Mutable> messages = new ArrayList<>(1);
+            messages.add(message);
+            return bayeuxClientState.send(handshakeListener, messages);
         }
         return false;
     }
@@ -468,7 +470,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 message.getAdvice(true).put("timeout", 0);
             }
             logger.debug("Connecting, transport {}", bayeuxClientState.transport);
-            return bayeuxClientState.send(connectListener, message);
+            List<Message.Mutable> messages = new ArrayList<>(1);
+            messages.add(message);
+            return bayeuxClientState.send(connectListener, messages);
         }
         return false;
     }
@@ -489,18 +493,18 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     {
         if (canSend())
         {
-            Message.Mutable[] messages = takeMessages();
-            if (messages.length > 0)
+            List<Message.Mutable> messages = takeMessages();
+            if (!messages.isEmpty())
                 sendMessages(messages);
         }
     }
 
-    protected boolean sendMessages(Message.Mutable... messages)
+    protected boolean sendMessages(List<Message.Mutable> messages)
     {
         return bayeuxClientState.get().send(publishListener, messages);
     }
 
-    private Message.Mutable[] takeMessages()
+    private List<Message.Mutable> takeMessages()
     {
         // Multiple threads can call this method concurrently (for example
         // a batched publish() is executed exactly when a message arrives
@@ -509,10 +513,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         // The queue must be drained atomically, otherwise we risk that the
         // same message is drained twice.
 
-        Message.Mutable[] messages;
+        List<Message.Mutable> messages;
         synchronized (messageQueue)
         {
-            messages = messageQueue.toArray(new Message.Mutable[messageQueue.size()]);
+            messages = new ArrayList<>(messageQueue);
             messageQueue.clear();
         }
         return messages;
@@ -872,7 +876,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void terminate()
     {
-        Message.Mutable[] messages = takeMessages();
+        List<Message.Mutable> messages = takeMessages();
         failMessages(null, messages);
 
         cookieStore.removeAll();
@@ -917,7 +921,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     {
         if (canSend())
         {
-            boolean sent = sendMessages(message);
+            List<Message.Mutable> messages = new ArrayList<>(1);
+            messages.add(message);
+            boolean sent = sendMessages(messages);
             logger.debug("{} message {}", sent ? "Sent" : "Failed", message);
         }
         else
@@ -935,7 +941,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return !isBatching() && !isHandshaking(bayeuxClientState.get());
     }
 
-    protected void failMessages(Throwable x, Message... messages)
+    protected void failMessages(Throwable x, List<? extends Message> messages)
     {
         for (Message message : messages)
         {
@@ -983,7 +989,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      *
      * @param messages the messages sent
      */
-    public void onSending(Message[] messages)
+    public void onSending(List<? extends Message> messages)
     {
     }
 
@@ -1002,12 +1008,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      * <p>Callback method invoked when the given messages have failed to be sent.</p>
      * <p>The default implementation logs the failure at DEBUG level.</p>
      *
-     * @param x        the exception that caused the failure
+     * @param failure        the exception that caused the failure
      * @param messages the messages being sent
      */
-    public void onFailure(Throwable x, Message[] messages)
+    public void onFailure(Throwable failure, List<? extends Message> messages)
     {
-        logger.debug("Messages failed " + Arrays.toString(messages), x);
+        logger.debug("Messages failed " + messages, failure);
     }
 
     private void updateBayeuxClientState(BayeuxClientStateUpdater updater)
@@ -1141,7 +1147,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private class PublishTransportListener implements TransportListener
     {
-        public void onSending(Message[] messages)
+        public void onSending(List<? extends Message> messages)
         {
             BayeuxClient.this.onSending(messages);
         }
@@ -1158,7 +1164,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             BayeuxClient.this.processMessage(message);
         }
 
-        public void onFailure(Throwable failure, Message[] messages)
+        public void onFailure(Throwable failure, List<? extends Message> messages)
         {
             BayeuxClient.this.onFailure(failure, messages);
             failMessages(failure, messages);
@@ -1167,9 +1173,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private class HandshakeTransportListener extends PublishTransportListener
     {
-        public void onFailure(final Throwable failure, Message[] messages)
+        public void onFailure(final Throwable failure, List<? extends Message> messages)
         {
-            logger.debug("Handshake failed: " + Arrays.toString(messages), failure);
+            logger.debug("Handshake failed: " + messages, failure);
 
             List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
             if (transports.isEmpty())
@@ -1215,7 +1221,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private class ConnectTransportListener extends PublishTransportListener
     {
         @Override
-        public void onFailure(Throwable failure, Message[] messages)
+        public void onFailure(Throwable failure, List<? extends Message> messages)
         {
             updateBayeuxClientState(new BayeuxClientStateUpdater()
             {
@@ -1240,7 +1246,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private class DisconnectTransportListener extends PublishTransportListener
     {
         @Override
-        public void onFailure(Throwable failure, Message[] messages)
+        public void onFailure(Throwable failure, List<? extends Message> messages)
         {
             updateBayeuxClientState(new BayeuxClientStateUpdater()
             {
@@ -1351,11 +1357,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             return result;
         }
 
-        protected boolean send(TransportListener listener, Message.Mutable... messages)
+        protected boolean send(TransportListener listener, List<Message.Mutable> messages)
         {
-            // Use ArrayList because Arrays.asList() does not support Iterator.remove()
-            List<Message.Mutable> messageList = new ArrayList<>(Arrays.asList(messages));
-            for (Iterator<Message.Mutable> iterator = messageList.iterator(); iterator.hasNext();)
+            for (Iterator<Message.Mutable> iterator = messages.iterator(); iterator.hasNext();)
             {
                 Message.Mutable message = iterator.next();
 
@@ -1382,13 +1386,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     iterator.remove();
                 }
             }
-            if (messageList.isEmpty())
+            if (messages.isEmpty())
                 return false;
-            logger.debug("Sending messages {}", messageList);
-            return transportSend(listener, messageList.toArray(new Message.Mutable[messageList.size()]));
+            logger.debug("Sending messages {}", messages);
+            return transportSend(listener, messages);
         }
 
-        protected boolean transportSend(TransportListener listener, Message.Mutable[] messages)
+        protected boolean transportSend(TransportListener listener, List<Message.Mutable> messages)
         {
             transport.send(listener, messages);
             return true;
@@ -1440,7 +1444,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         }
 
         @Override
-        protected boolean transportSend(TransportListener listener, Message.Mutable[] messages)
+        protected boolean transportSend(TransportListener listener, List<Message.Mutable> messages)
         {
             failMessages(new TransportException(null), messages);
             return false;
@@ -1631,7 +1635,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             message.setChannel(Channel.META_DISCONNECT);
             if (callback != null)
                 message.put(CALLBACK_KEY, callback);
-            send(disconnectListener, message);
+            List<Message.Mutable> messages = new ArrayList<>(1);
+            messages.add(message);
+            send(disconnectListener, messages);
         }
     }
 }

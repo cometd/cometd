@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.text.ParseException;
+import java.util.List;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -89,11 +90,13 @@ public abstract class Jackson2JSONContext<T extends Message.Mutable, I extends T
         }
     }
 
-    public String generate(T[] messages)
+    public String generate(List<T> messages)
     {
         try
         {
-            return getObjectMapper().writeValueAsString(messages);
+            Message.Mutable[] mutables = new Message.Mutable[messages.size()];
+            messages.toArray(mutables);
+            return getObjectMapper().writeValueAsString(mutables);
         }
         catch (IOException x)
         {

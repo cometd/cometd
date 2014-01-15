@@ -15,7 +15,9 @@
  */
 package org.cometd.websocket.client;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -275,9 +277,15 @@ public class SimulatedNetworkFailureTest extends ClientServerWebSocketTest
         protected void enqueueSend(Message.Mutable message)
         {
             if (networkDown > 0)
-                failMessages(null, message);
+            {
+                List<Message.Mutable> messages = new ArrayList<>(1);
+                messages.add(message);
+                failMessages(null, messages);
+            }
             else
+            {
                 super.enqueueSend(message);
+            }
         }
     }
 }

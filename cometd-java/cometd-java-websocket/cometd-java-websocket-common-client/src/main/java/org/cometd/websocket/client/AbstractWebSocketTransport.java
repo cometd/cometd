@@ -158,7 +158,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
     protected abstract void disconnect(String reason);
 
     @Override
-    public void send(TransportListener listener, Message.Mutable... messages)
+    public void send(TransportListener listener, List<Mutable> messages)
     {
         if (_aborted)
             throw new IllegalStateException("Aborted");
@@ -184,14 +184,18 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
         send(session, content, listener, messages);
     }
 
-    protected abstract S connect(String uri, TransportListener listener, Mutable[] messages);
+    protected abstract S connect(String uri, TransportListener listener, List<Mutable> messages);
 
-    protected abstract void send(S session, String content, TransportListener listener, Message.Mutable... messages);
+    protected abstract void send(S session, String content, TransportListener listener, List<Mutable> messages);
 
-    protected void complete(Message.Mutable[] messages)
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    protected void complete(List<Mutable> messages)
     {
-        for (Message.Mutable message : messages)
+        for (int i = 0; i < messages.size(); ++i)
+        {
+            Mutable message = messages.get(i);
             deregisterMessage(message);
+        }
     }
 
     protected void registerMessage(final Message.Mutable message, final TransportListener listener)
@@ -228,7 +232,11 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
                 // Notify only if we won the race to deregister the message
                 WebSocketExchange exchange = deregisterMessage(message);
                 if (exchange != null)
-                    listener.onFailure(new TimeoutException("Exchange expired"), new Message[]{message});
+                {
+                    List<Message.Mutable> messages = new ArrayList<>(1);
+                    messages.add(message);
+                    listener.onFailure(new TimeoutException("Exchange expired"), messages);
+                }
             }
         }, maxNetworkDelay, TimeUnit.MILLISECONDS);
 
@@ -270,7 +278,9 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
         for (WebSocketExchange exchange : exchanges)
         {
             deregisterMessage(exchange.message);
-            exchange.listener.onFailure(cause, new Message[]{exchange.message});
+            List<Message.Mutable> messages = new ArrayList<>(1);
+            messages.add(exchange.message);
+            exchange.listener.onFailure(cause, messages);
         }
     }
 

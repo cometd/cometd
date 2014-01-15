@@ -18,6 +18,7 @@ package org.cometd.common;
 import java.io.InputStream;
 import java.io.Reader;
 import java.text.ParseException;
+import java.util.List;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
@@ -53,7 +54,7 @@ interface JSONParserGenerator<T extends Message.Mutable>
 
     public String generate(T message);
 
-    public String generate(T[] messages);
+    public String generate(List<T> messages);
 
     public JSONContext.Parser getParser();
 

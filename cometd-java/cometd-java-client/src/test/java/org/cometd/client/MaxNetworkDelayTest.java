@@ -16,6 +16,7 @@
 package org.cometd.client;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -81,9 +82,9 @@ public class MaxNetworkDelayTest extends ClientServerTest
         BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {
             @Override
-            public void onFailure(Throwable x, Message[] messages)
+            public void onFailure(Throwable failure, List<? extends Message> messages)
             {
-                if (x instanceof TimeoutException)
+                if (failure instanceof TimeoutException)
                     latch.countDown();
             }
         };
@@ -142,9 +143,9 @@ public class MaxNetworkDelayTest extends ClientServerTest
         BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {
             @Override
-            public void onFailure(Throwable x, Message[] messages)
+            public void onFailure(Throwable failure, List<? extends Message> messages)
             {
-                if (x instanceof TimeoutException)
+                if (failure instanceof TimeoutException)
                     latch.countDown();
             }
         };

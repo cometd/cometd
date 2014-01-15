@@ -34,7 +34,7 @@ public interface TransportListener
      *
      * @param messages the batch of messages being sent
      */
-    void onSending(Message[] messages);
+    void onSending(List<? extends Message> messages);
 
     /**
      * Callback method invoked when a batch of message is received.
@@ -49,12 +49,12 @@ public interface TransportListener
      * @param failure the failure occurred
      * @param messages the batch of messages being sent
      */
-    void onFailure(Throwable failure, Message[] messages);
+    void onFailure(Throwable failure, List<? extends Message> messages);
 
     public static class Empty implements TransportListener
     {
         @Override
-        public void onSending(Message[] messages)
+        public void onSending(List<? extends Message> messages)
         {
         }
 
@@ -64,7 +64,7 @@ public interface TransportListener
         }
 
         @Override
-        public void onFailure(Throwable failure, Message[] messages)
+        public void onFailure(Throwable failure, List<? extends Message> messages)
         {
         }
     }

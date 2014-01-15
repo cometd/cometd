@@ -16,6 +16,7 @@
 package org.cometd.client;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -263,7 +264,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
-            protected boolean sendMessages(Message.Mutable... messages)
+            protected boolean sendMessages(List<Message.Mutable> messages)
             {
                 sendLatch.countDown();
                 return super.sendMessages(messages);

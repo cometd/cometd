@@ -96,7 +96,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         }
     }
 
-    protected Session connect(String uri, TransportListener listener, Mutable[] messages)
+    protected Session connect(String uri, TransportListener listener, List<Mutable> messages)
     {
         Session session = _wsSession;
         if (session != null)
@@ -146,7 +146,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     }
 
     @Override
-    protected void send(Session session, String content, final TransportListener listener, final Mutable... messages)
+    protected void send(Session session, String content, final TransportListener listener, final List<Mutable> messages)
     {
         session.getAsyncRemote().sendText(content, new SendHandler()
         {

@@ -857,7 +857,7 @@ public class BayeuxLoadClient
         }
 
         @Override
-        public void onSending(Message[] messages)
+        public void onSending(List<? extends Message> messages)
         {
             long now = System.nanoTime();
             for (Message message : messages)

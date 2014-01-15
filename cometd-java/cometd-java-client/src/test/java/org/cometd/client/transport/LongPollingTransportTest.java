@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -134,6 +135,8 @@ public class LongPollingTransportTest
                 transport.setCookieStore(new HttpCookieStore());
                 transport.init();
 
+                List<Message.Mutable> messages = new ArrayList<>(1);
+                messages.add(new HashMapMessage());
                 long start = System.nanoTime();
                 transport.send(new TransportListener.Empty()
                 {
@@ -142,7 +145,7 @@ public class LongPollingTransportTest
                     {
                         latch.countDown();
                     }
-                }, new HashMapMessage());
+                }, messages);
                 long end = System.nanoTime();
 
                 long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
@@ -218,12 +221,12 @@ public class LongPollingTransportTest
                 transport.send(new TransportListener.Empty()
                 {
                     @Override
-                    public void onFailure(Throwable failure, Message[] messages)
+                    public void onFailure(Throwable failure, List<? extends Message> messages)
                     {
                         if (failure instanceof TransportException)
                             latch.countDown();
                     }
-                });
+                }, new ArrayList<Message.Mutable>());
                 long end = System.nanoTime();
 
                 long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
@@ -264,12 +267,12 @@ public class LongPollingTransportTest
             transport.send(new TransportListener.Empty()
             {
                 @Override
-                public void onFailure(Throwable failure, Message[] messages)
+                public void onFailure(Throwable failure, List<? extends Message> messages)
                 {
                     if (failure instanceof ConnectException)
                         latch.countDown();
                 }
-            });
+            }, new ArrayList<Message.Mutable>());
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
@@ -324,11 +327,11 @@ public class LongPollingTransportTest
                 transport.send(new TransportListener.Empty()
                 {
                     @Override
-                    public void onFailure(Throwable failure, Message[] messages)
+                    public void onFailure(Throwable failure, List<? extends Message> messages)
                     {
                         latch.countDown();
                     }
-                });
+                }, new ArrayList<Message.Mutable>());
                 long end = System.nanoTime();
 
                 long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
@@ -405,12 +408,12 @@ public class LongPollingTransportTest
                 transport.send(new TransportListener.Empty()
                 {
                     @Override
-                    public void onFailure(Throwable failure, Message[] messages)
+                    public void onFailure(Throwable failure, List<? extends Message> messages)
                     {
                         if (failure instanceof TimeoutException)
                             latch.countDown();
                     }
-                });
+                }, new ArrayList<Message.Mutable>());
 
                 assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
             }

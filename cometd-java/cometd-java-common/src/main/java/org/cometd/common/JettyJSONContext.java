@@ -20,6 +20,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.text.ParseException;
+import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
@@ -92,7 +93,7 @@ public abstract class JettyJSONContext<T extends Message.Mutable>
         return _messageParser.toJSON(message);
     }
 
-    public String generate(T[] messages)
+    public String generate(List<T> messages)
     {
         return _messagesParser.toJSON(messages);
     }
@@ -175,6 +176,7 @@ public abstract class JettyJSONContext<T extends Message.Mutable>
 
     private class JSONParser implements JSONContext.Parser
     {
+        @SuppressWarnings("unchecked")
         public <T> T parse(Reader reader, Class<T> type) throws ParseException
         {
             return (T)getJSON().parse(new JSON.ReaderSource(reader));
