@@ -34,6 +34,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -147,13 +148,18 @@ public class Seti extends AbstractLifeCycle implements Dumpable
 
         _oort.removeCometListener(_cometListener);
 
+        String setiChannel = generateSetiChannel(_setiId);
+        _oort.deobserveChannel(setiChannel);
+
         BayeuxServer bayeux = _oort.getBayeuxServer();
-        String channel = generateSetiChannel(_setiId);
-        _oort.deobserveChannel(channel);
-        bayeux.getChannel(channel).setPersistent(false);
+        ServerChannel channel = bayeux.getChannel(setiChannel);
+        if (channel != null)
+            channel.setPersistent(false);
 
         _oort.deobserveChannel(SETI_ALL_CHANNEL);
-        bayeux.getChannel(SETI_ALL_CHANNEL).setPersistent(false);
+        channel = bayeux.getChannel(SETI_ALL_CHANNEL);
+        if (channel != null)
+            channel.setPersistent(false);
     }
 
     protected String generateSetiId(String oortURL)

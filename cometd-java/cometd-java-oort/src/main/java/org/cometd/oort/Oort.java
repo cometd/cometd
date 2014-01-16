@@ -199,11 +199,16 @@ public class Oort extends ContainerLifeCycle
         _serverComets.clear();
         _channels.clear();
 
-        _bayeux.getChannel(OORT_SERVICE_CHANNEL).removeListener(_joinListener);
+        ServerChannel channel = _bayeux.getChannel(OORT_SERVICE_CHANNEL);
+        if (channel != null)
+            channel.removeListener(_joinListener);
 
-        ServerChannel oortCloudChannel = _bayeux.getChannel(OORT_CLOUD_CHANNEL);
-        oortCloudChannel.removeListener(_cloudListener);
-        oortCloudChannel.removeAuthorizer(GrantAuthorizer.GRANT_ALL);
+        channel = _bayeux.getChannel(OORT_CLOUD_CHANNEL);
+        if (channel != null)
+        {
+            channel.removeListener(_cloudListener);
+            channel.removeAuthorizer(GrantAuthorizer.GRANT_ALL);
+        }
 
         Extension ackExtension = _ackExtension;
         _ackExtension = null;

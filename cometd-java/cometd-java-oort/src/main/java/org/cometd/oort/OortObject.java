@@ -176,7 +176,9 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     protected void doStop() throws Exception
     {
         oort.deobserveChannel(channelName);
-        oort.getBayeuxServer().getChannel(channelName).removeListener(messageListener);
+        ServerChannel channel = oort.getBayeuxServer().getChannel(channelName);
+        if (channel != null)
+            channel.removeListener(messageListener);
         oort.removeCometListener(this);
         sender.disconnect();
         infos.remove(oort.getURL());
