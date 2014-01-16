@@ -30,6 +30,8 @@ import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.MessageHandler;
+import javax.websocket.SendHandler;
+import javax.websocket.SendResult;
 import javax.websocket.Session;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerContainer;
@@ -114,14 +116,23 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     protected void send(final Session wsSession, final ServerSession session, String data) throws IOException
     {
         // This method may be called concurrently.
-        // The WebSocket specification makes no guarantees that async writes may be
-        // invoked concurrently, so we must stay conservative and rely on blocking writes,
-        // in case different implementation do not support async concurrent invocations.
+        // The WebSocket specification specifically forbids concurrent calls in case of
+        // blocking writes, so we rely on async writes.
+        // In Jetty this is guaranteed to work, while for other implementation who knows.
 
         _logger.debug("Sending {}", data);
 
-        // Blocking write.
-        wsSession.getBasicRemote().sendText(data);
+        // Async write.
+        wsSession.getAsyncRemote().sendText(data, new SendHandler()
+        {
+            @Override
+            public void onResult(SendResult result)
+            {
+                Throwable failure = result.getException();
+                if (failure != null)
+                    handleException(wsSession, session, failure);
+            }
+        });
     }
 
     private class WebSocketScheduler extends Endpoint implements AbstractServerTransport.Scheduler, Runnable, MessageHandler.Whole<String>
