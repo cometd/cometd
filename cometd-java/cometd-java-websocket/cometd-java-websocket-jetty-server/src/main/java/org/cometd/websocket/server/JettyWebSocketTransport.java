@@ -16,13 +16,11 @@
 package org.cometd.websocket.server;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.concurrent.Executor;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 
@@ -30,9 +28,11 @@ import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
@@ -104,54 +104,72 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         policy.setIdleTimeout((int)idleTimeout);
     }
 
+    @Override
+    protected void destroy()
+    {
+        Executor threadPool = getExecutor();
+        if (threadPool instanceof LifeCycle)
+        {
+            try
+            {
+                ((LifeCycle)threadPool).stop();
+            }
+            catch (Exception x)
+            {
+                _logger.trace("", x);
+            }
+        }
+        super.destroy();
+    }
+
     protected boolean checkOrigin(ServletUpgradeRequest request, String origin)
     {
         return true;
     }
 
-    protected void send(Session wsSession, ServerSession session, String data) throws IOException
+    protected void send(final Session wsSession, final ServerSession session, String data) throws IOException
     {
         _logger.debug("Sending {}", data);
 
-        // First blocking version - but cannot be used for concurrent writes
+        // First blocking version - but cannot be used for concurrent writes.
 //        wsSession.getRemote().sendString(data);
 
-        // Second blocking version - uses Futures
-        Future<Void> future = wsSession.getRemote().sendStringByFuture(data);
-        try
-        {
-            future.get();
-        }
-        catch (InterruptedException x)
-        {
-            throw new InterruptedIOException();
-        }
-        catch (ExecutionException x)
-        {
-            Throwable cause = x.getCause();
-            if (cause instanceof RuntimeException)
-                throw (RuntimeException)cause;
-            if (cause instanceof Error)
-                throw (Error)cause;
-            if (cause instanceof IOException)
-                throw (IOException)cause;
-            throw new IOException(cause);
-        }
-
-        // Async version
-//        wsSession.getRemote().sendString(data, new WriteCallback()
+        // Second blocking version - uses Futures, supports concurrent writes.
+//        Future<Void> future = wsSession.getRemote().sendStringByFuture(data);
+//        try
 //        {
-//            @Override
-//            public void writeSuccess()
-//            {
-//            }
-//
-//            @Override
-//            public void writeFailed(Throwable x)
-//            {
-//                // TODO: log failure
-//            }
-//        });
+//            future.get();
+//        }
+//        catch (InterruptedException x)
+//        {
+//            throw new InterruptedIOException();
+//        }
+//        catch (ExecutionException x)
+//        {
+//            Throwable cause = x.getCause();
+//            if (cause instanceof RuntimeException)
+//                throw (RuntimeException)cause;
+//            if (cause instanceof Error)
+//                throw (Error)cause;
+//            if (cause instanceof IOException)
+//                throw (IOException)cause;
+//            throw new IOException(cause);
+//        }
+
+        // Async version.
+        wsSession.getRemote().sendString(data, new WriteCallback()
+        {
+            @Override
+            public void writeSuccess()
+            {
+            }
+
+            @Override
+            public void writeFailed(Throwable x)
+            {
+                handleException(wsSession, session, x);
+            }
+        });
     }
 
     private class WebSocketScheduler extends AbstractWebSocketScheduler implements WebSocketListener
@@ -168,6 +186,16 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
             _wsSession = session;
         }
 
+        @Override
+        public void onWebSocketBinary(byte[] payload, int offset, int len)
+        {
+        }
+
+        public void onWebSocketText(String data)
+        {
+            onMessage(_wsSession, data);
+        }
+
         public void onWebSocketClose(int code, String reason)
         {
             onClose(code, reason);
@@ -178,16 +206,6 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         {
             onError(failure);
             // TODO: more to do ?
-        }
-
-        @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len)
-        {
-        }
-
-        public void onWebSocketText(String data)
-        {
-            onMessage(_wsSession, data);
         }
 
         @Override
@@ -278,21 +296,21 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public String getHttpSessionId()
         {
-            HttpSession session = (HttpSession)_request.getSession();
+            HttpSession session = _request.getSession();
             return session == null ? null : session.getId();
         }
 
         @Override
         public Object getHttpSessionAttribute(String name)
         {
-            HttpSession session = (HttpSession)_request.getSession();
+            HttpSession session = _request.getSession();
             return session == null ? null : session.getAttribute(name);
         }
 
         @Override
         public void setHttpSessionAttribute(String name, Object value)
         {
-            HttpSession session = (HttpSession)_request.getSession();
+            HttpSession session = _request.getSession();
             if (session != null)
                 session.setAttribute(name, value);
         }
@@ -300,7 +318,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public void invalidateHttpSession()
         {
-            HttpSession session = (HttpSession)_request.getSession();
+            HttpSession session = _request.getSession();
             if (session != null)
                 session.invalidate();
         }

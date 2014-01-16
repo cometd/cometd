@@ -34,7 +34,6 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,11 +49,11 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
     public static final String COMETD_URL_MAPPING = "cometdURLMapping";
 
-    private final ThreadLocal<BayeuxContext> _handshake = new ThreadLocal<>();
+    private final ThreadLocal<BayeuxContext> _bayeuxContext = new ThreadLocal<>();
     private Executor _executor;
     private ScheduledExecutorService _scheduler;
-    private String _protocol = null;
-    private int _messagesPerFrame = 1;
+    private String _protocol;
+    private int _messagesPerFrame;
 
     protected AbstractWebSocketTransport(BayeuxServerImpl bayeux)
     {
@@ -68,8 +67,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         super.init();
         _executor = newExecutor();
         _scheduler = newScheduledExecutor();
-        _protocol = getOption(PROTOCOL_OPTION, _protocol);
-        _messagesPerFrame = getOption(MESSAGES_PER_FRAME_OPTION, _messagesPerFrame);
+        _protocol = getOption(PROTOCOL_OPTION, null);
+        _messagesPerFrame = getOption(MESSAGES_PER_FRAME_OPTION, 1);
     }
 
     @Override
@@ -79,20 +78,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
         Executor threadPool = _executor;
         if (threadPool instanceof ExecutorService)
-        {
             ((ExecutorService)threadPool).shutdown();
-        }
-        else if (threadPool instanceof LifeCycle)
-        {
-            try
-            {
-                ((LifeCycle)threadPool).stop();
-            }
-            catch (Exception x)
-            {
-                _logger.trace("", x);
-            }
-        }
 
         super.destroy();
     }
@@ -108,9 +94,24 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         return Executors.newSingleThreadScheduledExecutor();
     }
 
+    public Executor getExecutor()
+    {
+        return _executor;
+    }
+
+    public ScheduledExecutorService getScheduler()
+    {
+        return _scheduler;
+    }
+
     public String getProtocol()
     {
         return _protocol;
+    }
+
+    public int getMessagesPerFrame()
+    {
+        return _messagesPerFrame;
     }
 
     protected boolean checkProtocol(List<String> serverProtocols, List<String> clientProtocols)
@@ -129,7 +130,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     @Override
     public BayeuxContext getContext()
     {
-        return _handshake.get();
+        return _bayeuxContext.get();
     }
 
     protected void handleJSONParseException(S wsSession, ServerSession session, String json, Throwable exception)
@@ -172,7 +173,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             // could not handle, so we need to split the messages into batches.
 
             int count = messages.size();
-            int batchSize = _messagesPerFrame > 0 ? Math.min(_messagesPerFrame, count) : count;
+            int messagesPerFrame = getMessagesPerFrame();
+            int batchSize = messagesPerFrame > 0 ? Math.min(messagesPerFrame, count) : count;
             // Assume 4 fields of 32 chars per message
             int capacity = batchSize * 4 * 32;
             StringBuilder builder = new StringBuilder(capacity);
@@ -196,11 +198,11 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
         }
 
-        protected void send(S session, ServerMessage message) throws IOException
+        protected void send(S wsSession, ServerMessage message) throws IOException
         {
             StringBuilder builder = new StringBuilder(message.size() * 32);
             builder.append("[").append(message.getJSON()).append("]");
-            AbstractWebSocketTransport.this.send(session, _session, builder.toString());
+            AbstractWebSocketTransport.this.send(wsSession, _session, builder.toString());
         }
 
         protected void onClose(int code, String reason)
@@ -224,7 +226,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             _logger.info("WebSocket Error", failure);
         }
 
-        private boolean cancelMetaConnectTask(ServerSessionImpl session)
+        protected boolean cancelMetaConnectTask(ServerSessionImpl session)
         {
             final ScheduledFuture<?> connectTask;
             synchronized (session.getLock())
@@ -241,7 +243,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
         protected void onMessage(S wsSession, String data)
         {
-            _handshake.set(_context);
+            _bayeuxContext.set(_context);
             getBayeux().setCurrentTransport(AbstractWebSocketTransport.this);
             try
             {
@@ -260,7 +262,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
             finally
             {
-                _handshake.set(null);
+                _bayeuxContext.set(null);
                 getBayeux().setCurrentTransport(null);
             }
         }
@@ -274,17 +276,11 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             ServerSessionImpl session = _session;
             String clientId = message.getClientId();
             if (session == null || !session.getId().equals(clientId))
-            {
-                session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
-                _session = session;
-            }
+                _session = session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
 
             // Session expired concurrently ?
             if (session != null && !session.isHandshook())
-            {
-                session = null;
-                _session = session;
-            }
+                _session = session = null;
 
             // Remember the connected status
             boolean wasConnected = session != null && session.isConnected();
@@ -340,7 +336,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
                                     // Delay the connect reply until timeout.
                                     long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + timeout;
-                                    _connectTask = _scheduler.schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
+                                    _connectTask = getScheduler().schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
                                     _logger.debug("Scheduled meta connect {}", _connectTask);
                                     reply = null;
                                 }
@@ -426,7 +422,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             {
                 if (session == null)
                 {
-                    AbstractWebSocketTransport.this._logger.debug("No session, skipping reply {}", expiredConnectReply);
+                    _logger.debug("No session, skipping reply {}", expiredConnectReply);
                     return;
                 }
 
@@ -534,7 +530,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 long delay = now - _connectExpiration;
                 if (delay > 5000) // TODO: make the max delay a parameter ?
-                    AbstractWebSocketTransport.this._logger.debug("/meta/connect {} expired {} ms too late", _connectReply, delay);
+                    _logger.debug("/meta/connect {} expired {} ms too late", _connectReply, delay);
 
                 // Send the meta connect response after timeout.
                 // We *must* execute the next schedule() otherwise

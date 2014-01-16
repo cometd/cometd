@@ -20,6 +20,7 @@ import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executor;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 import javax.websocket.CloseReason;
@@ -29,8 +30,6 @@ import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.MessageHandler;
-import javax.websocket.SendHandler;
-import javax.websocket.SendResult;
 import javax.websocket.Session;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerContainer;
@@ -41,6 +40,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
+import org.eclipse.jetty.util.component.LifeCycle;
 
 public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 {
@@ -88,6 +88,24 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         }
     }
 
+    @Override
+    protected void destroy()
+    {
+        Executor threadPool = getExecutor();
+        if (threadPool instanceof LifeCycle)
+        {
+            try
+            {
+                ((LifeCycle)threadPool).stop();
+            }
+            catch (Exception x)
+            {
+                _logger.trace("", x);
+            }
+        }
+        super.destroy();
+    }
+
     protected boolean checkOrigin(HandshakeRequest request, String origin)
     {
         return true;
@@ -95,25 +113,15 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 
     protected void send(final Session wsSession, final ServerSession session, String data) throws IOException
     {
-        // TODO: offer a switch to send sync or async
+        // This method may be called concurrently.
+        // The WebSocket specification makes no guarantees that async writes may be
+        // invoked concurrently, so we must stay conservative and rely on blocking writes,
+        // in case different implementation do not support async concurrent invocations.
 
         _logger.debug("Sending {}", data);
-        // Blocking write.
-        // We trade - for now - a blocked thread with the frame queue growing
-        // and consequent increased message latency (messages sit in the queue).
-//        session.getBasicRemote().sendText(data);
 
-        // Async write.
-        wsSession.getAsyncRemote().sendText(data, new SendHandler()
-        {
-            @Override
-            public void onResult(SendResult result)
-            {
-                Throwable failure = result.getException();
-                if (failure != null)
-                    handleException(wsSession, session, failure);
-            }
-        });
+        // Blocking write.
+        wsSession.getBasicRemote().sendText(data);
     }
 
     private class WebSocketScheduler extends Endpoint implements AbstractServerTransport.Scheduler, Runnable, MessageHandler.Whole<String>
@@ -349,7 +357,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         {
             if (protocolMatches = checkProtocol(supported, requested))
                 return super.getNegotiatedSubprotocol(supported, requested);
-            _logger.warn("Could not negotiate WebSocket SubProtocols: server{} != client[]", supported, requested);
+            _logger.warn("Could not negotiate WebSocket SubProtocols: server{} != client{}", supported, requested);
             return null;
         }
 
