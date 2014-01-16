@@ -338,6 +338,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         private Configurator(ServletContext servletContext)
         {
             this.servletContext = servletContext;
+            // Use a sensible default in case getNegotiatedSubprotocol() is not invoked.
+            this.protocolMatches = true;
         }
 
         @Override
@@ -349,7 +351,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public boolean checkOrigin(String originHeaderValue)
         {
-            return WebSocketTransport.this.checkOrigin(bayeuxContext.request, originHeaderValue);
+            HandshakeRequest request = bayeuxContext == null ? null : bayeuxContext.request;
+            return WebSocketTransport.this.checkOrigin(request, originHeaderValue);
         }
 
         @Override
