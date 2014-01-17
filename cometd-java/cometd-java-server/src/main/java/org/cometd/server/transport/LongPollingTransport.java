@@ -163,7 +163,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                         String browserId = findBrowserId(request);
                                         boolean allowSuspendConnect;
                                         if (browserId != null)
-                                            allowSuspendConnect = incBrowserId(browserId);
+                                            allowSuspendConnect = incBrowserId(browserId, session);
                                         else
                                             allowSuspendConnect = isAllowMultiSessionsNoBrowser() || request.getHeader("Origin") != null;
 
@@ -191,7 +191,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                             }
                                             else
                                             {
-                                                decBrowserId(browserId);
+                                                decBrowserId(browserId, session);
                                             }
                                         }
                                         else
@@ -468,7 +468,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
         private void decBrowserId()
         {
-            LongPollingTransport.this.decBrowserId(_browserId);
+            LongPollingTransport.this.decBrowserId(_browserId, getSession());
         }
     }
 }

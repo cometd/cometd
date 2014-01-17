@@ -44,11 +44,11 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         transport.init();
 
         String browserId = "browser1";
-        Assert.assertTrue(transport.incBrowserId(browserId));
-        Assert.assertFalse(transport.incBrowserId(browserId));
-        transport.decBrowserId(browserId);
-        Assert.assertTrue(transport.incBrowserId(browserId));
-        transport.decBrowserId(browserId);
+        Assert.assertTrue(transport.incBrowserId(browserId, null));
+        Assert.assertFalse(transport.incBrowserId(browserId, null));
+        transport.decBrowserId(browserId, null);
+        Assert.assertTrue(transport.incBrowserId(browserId, null));
+        transport.decBrowserId(browserId, null);
     }
 
     @Test

@@ -159,11 +159,13 @@ public abstract class HttpTransport extends AbstractServerTransport
     /**
      * Increment the browser ID count.
      *
+     *
      * @param browserId the browser ID to increment the count for
+     * @param session the session that cause the browser ID increment
      * @return true if the browser ID count is below the max sessions per browser value.
      * If false is returned, the count is not incremented.
      */
-    protected boolean incBrowserId(String browserId)
+    protected boolean incBrowserId(String browserId, ServerSession session)
     {
         if (_maxSessionsPerBrowser < 0)
             return true;
@@ -186,25 +188,32 @@ public abstract class HttpTransport extends AbstractServerTransport
         if (sessions == 1)
             _browserSweep.remove(browserId);
 
+        boolean result = true;
         if (sessions > _maxSessionsPerBrowser)
         {
-            count.decrementAndGet();
-            return false;
+            sessions = count.decrementAndGet();
+            result = false;
         }
 
-        return true;
+        _logger.debug("> client {} {} sessions from {}", browserId, sessions, session);
+
+        return result;
     }
 
-    protected void decBrowserId(String browserId)
+    protected void decBrowserId(String browserId, ServerSession session)
     {
         if (browserId == null)
             return;
 
+        int sessions = -1;
         AtomicInteger count = _browserMap.get(browserId);
-        if (count != null && count.decrementAndGet() == 0)
-        {
+        if (count != null)
+            sessions = count.decrementAndGet();
+
+        if (sessions == 0)
             _browserSweep.put(browserId, new AtomicInteger(0));
-        }
+
+        _logger.debug("< client {} {} sessions for {}", browserId, sessions, session);
     }
 
     protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws IOException

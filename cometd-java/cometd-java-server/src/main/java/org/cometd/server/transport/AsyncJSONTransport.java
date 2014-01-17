@@ -188,7 +188,7 @@ public class AsyncJSONTransport extends HttpTransport
                 String browserId = findBrowserId(request);
                 boolean allowSuspendConnect;
                 if (browserId != null)
-                    allowSuspendConnect = incBrowserId(browserId);
+                    allowSuspendConnect = incBrowserId(browserId, session);
                 else
                     allowSuspendConnect = isAllowMultiSessionsNoBrowser() || request.getHeader("Origin") != null;
 
@@ -215,7 +215,7 @@ public class AsyncJSONTransport extends HttpTransport
                     }
                     else
                     {
-                        decBrowserId(browserId);
+                        decBrowserId(browserId, session);
                     }
                 }
                 else
@@ -582,7 +582,7 @@ public class AsyncJSONTransport extends HttpTransport
                 reply.put(Message.ADVICE_FIELD, advice);
             if (session.isDisconnected())
                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-            decBrowserId(browserId);
+            decBrowserId(browserId, session);
             flush(asyncContext, session, true, processReply(session, reply));
         }
 
@@ -609,7 +609,7 @@ public class AsyncJSONTransport extends HttpTransport
         
         private void error()
         {
-            decBrowserId(browserId);
+            decBrowserId(browserId, session);
             AsyncJSONTransport.this.error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
