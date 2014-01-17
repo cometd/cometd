@@ -66,17 +66,8 @@
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
                 <configuration>
-                    <connectors>
-                        <connector implementation="org.eclipse.jetty.server.nio.SelectChannelConnector">
-                            <port>8080</port>
-                        </connector>
-                        <connector implementation="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
-                            <port>8443</port>
-                            <keystore>src/main/resources/keystore.jks</keystore>
-                            <password>storepwd</password>
-                            <keyPassword>keypwd</keyPassword>
-                        </connector>
-                    </connectors>
+                    <stopPort>8989</stopPort>
+                    <stopKey>QUIT</stopKey>
                     <scanIntervalSeconds>1</scanIntervalSeconds>
                     <webApp>
                         <contextPath>/</contextPath>
