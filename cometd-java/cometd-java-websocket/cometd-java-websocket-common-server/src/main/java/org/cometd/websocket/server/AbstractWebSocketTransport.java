@@ -39,8 +39,8 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransport
 {
-    public static final String PREFIX = "ws";
     public static final String NAME = "websocket";
+    public static final String PREFIX = "ws";
     public static final String PROTOCOL_OPTION = "protocol";
     public static final String MESSAGES_PER_FRAME_OPTION = "messagesPerFrame";
     public static final String BUFFER_SIZE_OPTION = "bufferSize";
