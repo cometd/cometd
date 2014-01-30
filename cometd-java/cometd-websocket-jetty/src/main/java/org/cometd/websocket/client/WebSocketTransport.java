@@ -354,7 +354,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                 // Notify only if we won the race to deregister the message
                 WebSocketExchange exchange = deregisterMessage(message);
                 if (exchange != null && _webSocketClientFactory.isRunning())
-                    listener.onExpire(new Message[]{message});
+                    onExpired(_connection, listener, message);
             }
         }, maxNetworkDelay, TimeUnit.MILLISECONDS);
 
@@ -367,6 +367,11 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         // Paranoid check
         if (existing != null)
             throw new IllegalStateException();
+    }
+
+    protected void onExpired(Connection connection, TransportListener listener, Message... messages)
+    {
+        listener.onExpire(messages);
     }
 
     private WebSocketExchange deregisterMessage(Message message)
