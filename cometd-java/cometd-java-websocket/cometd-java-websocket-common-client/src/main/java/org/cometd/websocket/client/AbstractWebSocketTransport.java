@@ -24,7 +24,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -235,7 +234,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
                 {
                     List<Message.Mutable> messages = new ArrayList<>(1);
                     messages.add(message);
-                    listener.onFailure(new TimeoutException("Exchange expired"), messages);
+                    onExpired( listener, messages);
                 }
             }
         }, maxNetworkDelay, TimeUnit.MILLISECONDS);
@@ -250,6 +249,8 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
         if (existing != null)
             throw new IllegalStateException();
     }
+
+    protected abstract void onExpired(TransportListener listener, List<Mutable> messages);
 
     protected WebSocketExchange deregisterMessage(Message message)
     {

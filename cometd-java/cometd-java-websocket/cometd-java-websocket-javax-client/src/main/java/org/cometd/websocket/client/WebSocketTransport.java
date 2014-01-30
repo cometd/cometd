@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
 import javax.websocket.DeploymentException;
@@ -162,6 +163,23 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
                 }
             }
         });
+    }
+
+    @Override
+    protected final void onExpired(TransportListener listener, List<Mutable> messages)
+    {
+        try
+        {
+            onExpired(_wsSession, listener, messages);
+        }
+        finally
+        {
+            listener.onFailure(new TimeoutException("Exchange expired"), messages);
+        }
+    }
+
+    protected void onExpired(Session wsSession, TransportListener listener, List<Mutable> messages)
+    {
     }
 
     private class CometDWebSocket extends Endpoint implements MessageHandler.Whole<String>

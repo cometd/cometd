@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
 
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.TransportListener;
@@ -101,6 +102,23 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
             disconnect("Exception");
             listener.onFailure(x, messages);
         }
+    }
+
+    @Override
+    protected final void onExpired(TransportListener listener, List<Mutable> messages)
+    {
+        try
+        {
+            onExpired(_wsSession, listener, messages);
+        }
+        finally
+        {
+            listener.onFailure(new TimeoutException("Exchange expired"), messages);
+        }
+    }
+
+    protected void onExpired(Session wsSession, TransportListener listener, List<Mutable> messages)
+    {
     }
 
     protected Session connect(String uri, TransportListener listener, List<Mutable> messages)
