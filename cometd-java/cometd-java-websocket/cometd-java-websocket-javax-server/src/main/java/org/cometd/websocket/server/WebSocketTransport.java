@@ -108,7 +108,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         super.destroy();
     }
 
-    protected boolean checkOrigin(HandshakeRequest request, String origin)
+    protected boolean checkOrigin(String origin)
     {
         return true;
     }
@@ -362,8 +362,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public boolean checkOrigin(String originHeaderValue)
         {
-            HandshakeRequest request = bayeuxContext == null ? null : bayeuxContext.request;
-            return WebSocketTransport.this.checkOrigin(request, originHeaderValue);
+            return WebSocketTransport.this.checkOrigin(originHeaderValue);
         }
 
         @Override
