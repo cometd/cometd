@@ -27,7 +27,7 @@ public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocket
     @Test
     public void testSubscribeFailure() throws Exception
     {
-        bayeuxServer.addExtension(new SubscribeThrowingExtension());
+        bayeuxServer.addExtension(new DeleteMetaSubscribeExtension());
 
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
@@ -43,43 +43,21 @@ public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocket
         Latch subscribeLatch = get("subscribeLatch");
         evaluateScript("var failureLatch = new Latch(1);");
         Latch failureLatch = get("failureLatch");
-        evaluateScript("var connectFailureLatch = new Latch(1);");
-        Latch connectFailureLatch = get("connectFailureLatch");
-        evaluateScript("var connectRestoredLatch = new Latch(1);");
-        Latch connectRestoredLatch = get("connectRestoredLatch");
         evaluateScript("cometd.addListener('/meta/subscribe', subscribeLatch, subscribeLatch.countDown);");
         evaluateScript("cometd.addListener('/meta/unsuccessful', failureLatch, failureLatch.countDown);");
-        evaluateScript("cometd.addListener('/meta/connect', function(message)" +
-                "{" +
-                "    if (message.successful === true)" +
-                "        connectRestoredLatch.countDown();" +
-                "    else if (message.successful === false)" +
-                "        connectFailureLatch.countDown();" +
-                "});");
         evaluateScript("cometd.subscribe('/echo', subscribeLatch, subscribeLatch.countDown);");
         Assert.assertTrue(subscribeLatch.await(5000));
         Assert.assertTrue(failureLatch.await(5000));
-        // WebSocket uses only one connection, therefore also the connect fails
-        Assert.assertTrue(connectFailureLatch.await(5000));
-        // Be sure there is a new connect issued
-        Assert.assertTrue(connectRestoredLatch.await(5000));
-
-        // Be sure the backoff has been reset
-        evaluateScript("var backoff = cometd.getBackoffPeriod();");
-        int backoff = ((Number)get("backoff")).intValue();
-        Assert.assertEquals(0, backoff);
 
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class SubscribeThrowingExtension extends BayeuxServer.Extension.Adapter
+    private static class DeleteMetaSubscribeExtension extends BayeuxServer.Extension.Adapter
     {
         @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
-            if (Channel.META_SUBSCRIBE.equals(message.getChannel()))
-                throw new Error("explicitly_thrown_by_test");
-            return true;
+            return !Channel.META_SUBSCRIBE.equals(message.getChannel());
         }
     }
 }

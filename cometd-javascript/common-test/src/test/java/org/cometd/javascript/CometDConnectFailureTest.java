@@ -27,7 +27,7 @@ public class CometDConnectFailureTest extends AbstractCometDTest
     @Test
     public void testConnectFailure() throws Exception
     {
-        bayeuxServer.addExtension(new ConnectThrowingExtension());
+        bayeuxServer.addExtension(new DeleteMetaConnectExtension());
 
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -90,14 +90,12 @@ public class CometDConnectFailureTest extends AbstractCometDTest
         Assert.assertFalse(connectLatch.await(4 * backoffIncrement));
     }
 
-    public static class ConnectThrowingExtension extends BayeuxServer.Extension.Adapter
+    private static class DeleteMetaConnectExtension extends BayeuxServer.Extension.Adapter
     {
         @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
-            if (Channel.META_CONNECT.equals(message.getChannel()))
-                throw new Error("explicitly_thrown_by_test");
-            return true;
+            return !Channel.META_CONNECT.equals(message.getChannel());
         }
     }
 }

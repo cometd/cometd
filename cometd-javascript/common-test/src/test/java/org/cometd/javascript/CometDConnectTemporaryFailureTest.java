@@ -27,7 +27,7 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest
     @Test
     public void testConnectTemporaryFailure() throws Exception
     {
-        bayeuxServer.addExtension(new ConnectThrowingExtension());
+        bayeuxServer.addExtension(new DeleteMetaConnectExtension());
 
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -77,7 +77,7 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class ConnectThrowingExtension extends BayeuxServer.Extension.Adapter
+    private static class DeleteMetaConnectExtension extends BayeuxServer.Extension.Adapter
     {
         private int connects;
 
@@ -88,7 +88,7 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest
             {
                 ++connects;
                 if (connects == 3)
-                    throw new Error("explicitly_thrown_by_test");
+                    return false;
             }
             return true;
         }

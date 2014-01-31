@@ -30,7 +30,7 @@ public class CometDHandshakeFailureTest extends AbstractCometDTest
     @Test
     public void testHandshakeFailure() throws Exception
     {
-        bayeuxServer.addExtension(new HandshakeThrowingExtension());
+        bayeuxServer.addExtension(new DeleteMetaHandshakeExtension());
 
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -90,14 +90,12 @@ public class CometDHandshakeFailureTest extends AbstractCometDTest
         Assert.assertFalse(handshakeLatch.await(4 * backoffIncrement));
     }
 
-    public static class HandshakeThrowingExtension extends BayeuxServer.Extension.Adapter
+    private static class DeleteMetaHandshakeExtension extends BayeuxServer.Extension.Adapter
     {
         @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
-            if (Channel.META_HANDSHAKE.equals(message.getChannel()))
-                throw new Error("explicitly_thrown_by_test");
-            return true;
+            return !Channel.META_HANDSHAKE.equals(message.getChannel());
         }
     }
 }

@@ -24,9 +24,9 @@ import org.junit.Test;
 public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTest
 {
     @Test
-    public void testPublishFailures() throws Exception
+    public void testPublishFailure() throws Exception
     {
-        bayeuxServer.addExtension(new PublishThrowingExtension());
+        bayeuxServer.addExtension(new DeletePublishExtension());
 
         defineClass(Latch.class);
 
@@ -49,31 +49,11 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
         Latch publishLatch = get("publishLatch");
         evaluateScript("var failureLatch = new Latch(1);");
         Latch failureLatch = get("failureLatch");
-        evaluateScript("var connectFailureLatch = new Latch(1);");
-        Latch connectFailureLatch = get("connectFailureLatch");
-        evaluateScript("var connectRestoredLatch = new Latch(1);");
-        Latch connectRestoredLatch = get("connectRestoredLatch");
         evaluateScript("cometd.addListener('/meta/publish', publishLatch, publishLatch.countDown);");
         evaluateScript("cometd.addListener('/meta/unsuccessful', failureLatch, failureLatch.countDown);");
-        evaluateScript("cometd.addListener('/meta/connect', function(message)" +
-                "{" +
-                "    if (message.successful === true)" +
-                "        connectRestoredLatch.countDown();" +
-                "    else if (message.successful === false)" +
-                "        connectFailureLatch.countDown();" +
-                "});");
         evaluateScript("cometd.publish('/echo', 'test');");
         Assert.assertTrue(publishLatch.await(5000));
         Assert.assertTrue(failureLatch.await(5000));
-        // WebSocket uses only one connection, therefore also the connect fails
-        Assert.assertTrue(connectFailureLatch.await(5000));
-        // Be sure there is a new connect issued
-        Assert.assertTrue(connectRestoredLatch.await(5000));
-
-        // Be sure the backoff has been reset
-        evaluateScript("var backoff = cometd.getBackoffPeriod();");
-        int backoff = ((Number)get("backoff")).intValue();
-        Assert.assertEquals(0, backoff);
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = get("disconnectLatch");
@@ -84,13 +64,13 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
         Assert.assertEquals("disconnected", status);
     }
 
-    public static class PublishThrowingExtension extends BayeuxServer.Extension.Adapter
+    private static class DeletePublishExtension extends BayeuxServer.Extension.Adapter
     {
         @Override
         public boolean rcv(ServerSession from, ServerMessage.Mutable message)
         {
-            // The publish will arrive here, just throw
-            throw new Error("explicitly_thrown_by_test");
+            // The publish will arrive here, just delete it
+            return false;
         }
     }
 }
