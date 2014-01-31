@@ -119,7 +119,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             // Cannot connect, assume the server supports WebSocket until proved otherwise
             listener.onFailure(x, messages);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _webSocketSupported = isStickyReconnect() && _webSocketConnected;
             listener.onFailure(x, messages);

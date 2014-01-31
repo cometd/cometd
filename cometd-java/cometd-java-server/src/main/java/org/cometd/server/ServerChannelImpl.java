@@ -129,7 +129,7 @@ public class ServerChannelImpl implements ServerChannel
         {
             listener.subscribed(session, channel);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
         }
@@ -141,7 +141,7 @@ public class ServerChannelImpl implements ServerChannel
         {
             listener.subscribed(session, channel);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
         }
@@ -183,7 +183,7 @@ public class ServerChannelImpl implements ServerChannel
         {
             listener.unsubscribed(session, channel);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
         }
@@ -195,7 +195,7 @@ public class ServerChannelImpl implements ServerChannel
         {
             listener.unsubscribed(session, channel);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
         }

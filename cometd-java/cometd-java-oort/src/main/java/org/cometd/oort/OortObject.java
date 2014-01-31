@@ -382,7 +382,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             {
                 listener.onUpdated(oldInfo, newInfo);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 logger.info("Exception while invoking listener " + listener, x);
             }
@@ -397,7 +397,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             {
                 listener.onRemoved(info);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 logger.info("Exception while invoking listener " + listener, x);
             }

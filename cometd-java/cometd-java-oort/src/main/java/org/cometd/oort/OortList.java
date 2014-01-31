@@ -221,7 +221,7 @@ public class OortList<E> extends OortObject<List<E>>
             {
                 listener.onAdded(info, elements);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 logger.info("Exception while invoking listener " + listener, x);
             }
@@ -236,7 +236,7 @@ public class OortList<E> extends OortObject<List<E>>
             {
                 listener.onRemoved(info, elements);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 logger.info("Exception while invoking listener " + listener, x);
             }

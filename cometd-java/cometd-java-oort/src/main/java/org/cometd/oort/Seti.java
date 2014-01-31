@@ -633,7 +633,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable
             {
                 listener.presenceAdded(event);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 _logger.info("Exception while invoking listener " + listener, x);
             }
@@ -649,7 +649,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable
             {
                 listener.presenceRemoved(event);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 _logger.info("Exception while invoking listener " + listener, x);
             }

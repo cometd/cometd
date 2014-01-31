@@ -452,7 +452,7 @@ public abstract class AbstractClientSession implements ClientSession
             {
                 listener.onMessage(this, message);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 logger.info("Exception while invoking listener " + listener, x);
             }

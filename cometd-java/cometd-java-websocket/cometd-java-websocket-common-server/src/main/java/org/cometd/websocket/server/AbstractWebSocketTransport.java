@@ -256,7 +256,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             {
                 handleJSONParseException(wsSession, _session, data, x);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 handleException(wsSession, _session, x);
             }
@@ -500,7 +500,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     }
                 }
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 handleException(wsSession, session, x);
             }

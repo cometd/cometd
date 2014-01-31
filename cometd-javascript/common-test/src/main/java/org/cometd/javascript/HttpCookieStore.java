@@ -27,7 +27,7 @@ import org.mozilla.javascript.ScriptableObject;
 
 public class HttpCookieStore extends ScriptableObject
 {
-    private Map<String, Map<String, Cookie>> allCookies = new HashMap<String, Map<String, Cookie>>();
+    private Map<String, Map<String, Cookie>> allCookies = new HashMap<>();
 
     public String getClassName()
     {
@@ -124,7 +124,7 @@ public class HttpCookieStore extends ScriptableObject
                         {
                             if (cookies == null)
                             {
-                                cookies = new HashMap<String, Cookie>();
+                                cookies = new HashMap<>();
                                 allCookies.put(cookieKey, cookies);
                             }
                             cookies.put(key, cookie);
@@ -142,7 +142,7 @@ public class HttpCookieStore extends ScriptableObject
 
     public Map<String, String> getAll(URI uri)
     {
-        Map<String, String> result = new HashMap<String, String>();
+        Map<String, String> result = new HashMap<>();
         String cookieKey = uri.getHost() + ":" + uri.getPort() + uri.getPath();
         Map<String, Cookie> cookies = allCookies.get(cookieKey);
         if (cookies != null)

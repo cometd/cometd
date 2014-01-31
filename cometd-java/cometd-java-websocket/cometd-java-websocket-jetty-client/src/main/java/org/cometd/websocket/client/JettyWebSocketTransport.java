@@ -134,7 +134,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
             failure.put("httpCode", x.getResponseStatusCode());
             listener.onFailure(new TransportException(x, failure), messages);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _webSocketSupported = isStickyReconnect() && _webSocketConnected;
             listener.onFailure(x, messages);

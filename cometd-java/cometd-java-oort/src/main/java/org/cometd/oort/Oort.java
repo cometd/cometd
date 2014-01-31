@@ -614,7 +614,7 @@ public class Oort extends ContainerLifeCycle
             {
                 cometListener.cometJoined(event);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 _logger.info("Exception while invoking listener " + cometListener, x);
             }
@@ -630,7 +630,7 @@ public class Oort extends ContainerLifeCycle
             {
                 cometListener.cometLeft(event);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 _logger.info("Exception while invoking listener " + cometListener, x);
             }

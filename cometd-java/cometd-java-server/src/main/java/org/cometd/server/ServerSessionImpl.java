@@ -286,7 +286,7 @@ public class ServerSessionImpl implements ServerSession
         {
             return listener.queueMaxed(session, queue, sender, message);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
             return true;
@@ -299,7 +299,7 @@ public class ServerSessionImpl implements ServerSession
         {
             return listener.onMessage(this, from, message);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
             return true;
@@ -459,7 +459,7 @@ public class ServerSessionImpl implements ServerSession
         {
             listener.deQueue(serverSession, queue);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
         }
@@ -658,7 +658,7 @@ public class ServerSessionImpl implements ServerSession
         {
             return extension.rcvMeta(this, message);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking extension " + extension, x);
             return true;
@@ -671,7 +671,7 @@ public class ServerSessionImpl implements ServerSession
         {
             return extension.rcv(this, message);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking extension " + extension, x);
             return true;
@@ -699,7 +699,7 @@ public class ServerSessionImpl implements ServerSession
         {
             return extension.sendMeta(this, message);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking extension " + extension, x);
             return true;
@@ -730,7 +730,7 @@ public class ServerSessionImpl implements ServerSession
         {
             return extension.send(this, message);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking extension " + extension, x);
             return message;
@@ -819,7 +819,7 @@ public class ServerSessionImpl implements ServerSession
         {
             listener.removed(serverSession, timedout);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
         }

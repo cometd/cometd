@@ -308,7 +308,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
             {
                 listener.onPut(info, entry);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 logger.info("Exception while invoking listener " + listener, x);
             }
@@ -323,7 +323,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
             {
                 listener.onRemoved(info, elements);
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 logger.info("Exception while invoking listener " + listener, x);
             }

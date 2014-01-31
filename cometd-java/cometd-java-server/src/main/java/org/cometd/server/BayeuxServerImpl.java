@@ -408,7 +408,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             listener.configureChannel(channel);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
         }
@@ -420,7 +420,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             listener.channelAdded(channel);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
         }
@@ -454,7 +454,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             listener.sessionAdded(session);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
         }
@@ -492,7 +492,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             listener.sessionRemoved(session, timedout);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
         }
@@ -865,7 +865,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             return listener.onMessage(from, to, mutable);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
             return true;
@@ -927,7 +927,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             return extension.rcvMeta(from, message);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking extension " + extension, x);
             return true;
@@ -940,7 +940,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             return extension.rcv(from, message);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking extension " + extension, x);
             return true;
@@ -991,7 +991,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             return extension.sendMeta(to, message);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking extension " + extension, x);
             return true;
@@ -1004,7 +1004,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             return extension.send(from, to, message);
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking extension " + extension, x);
             return true;
@@ -1032,7 +1032,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             listener.channelRemoved(channel.getId());
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             _logger.info("Exception while invoking listener " + listener, x);
         }

@@ -62,11 +62,7 @@ public class DataFilterMessageListener implements ServerChannel.MessageListener
         catch (DataFilter.Abort a)
         {
             _logger.debug("", a);
+            return false;
         }
-        catch (Exception e)
-        {
-            _logger.warn("", e);
-        }
-        return false;
     }
 }

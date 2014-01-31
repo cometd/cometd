@@ -314,7 +314,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
                 }
             }
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             if (broadcast)
                 return;
