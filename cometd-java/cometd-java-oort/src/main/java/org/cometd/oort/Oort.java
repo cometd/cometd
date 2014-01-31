@@ -34,6 +34,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
@@ -114,6 +116,7 @@ public class Oort extends ContainerLifeCycle
     private final Logger _logger;
     private final LocalSession _oortSession;
     private ThreadPool _threadPool;
+    private ScheduledExecutorService _scheduler;
     private HttpClient _httpClient;
     private WebSocketContainer _wsContainer;
     private String _secret;
@@ -142,6 +145,10 @@ public class Oort extends ContainerLifeCycle
         // Start the pool to avoid that HttpClient manages it
         if (_threadPool instanceof LifeCycle)
             ((LifeCycle)_threadPool).start();
+
+        ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(1);
+        scheduler.setRemoveOnCancelPolicy(true);
+        _scheduler = scheduler;
 
         if (_httpClient == null)
         {
@@ -216,6 +223,8 @@ public class Oort extends ContainerLifeCycle
             _bayeux.removeExtension(ackExtension);
 
         _bayeux.removeExtension(_oortExtension);
+
+        _scheduler.shutdownNow();
 
         super.doStop();
     }
@@ -352,7 +361,7 @@ public class Oort extends ContainerLifeCycle
             long value = option instanceof Number ? ((Number)option).longValue() : Long.parseLong(option.toString());
             options.put(maxMessageSizeOption, value);
         }
-        return new OortComet(this, cometURL, null, options);
+        return new OortComet(this, cometURL, _scheduler, options);
     }
 
     protected void configureOortComet(OortComet oortComet)
