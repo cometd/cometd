@@ -18,11 +18,14 @@ package org.cometd.websocket.client;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.CookieStore;
+import java.net.HttpCookie;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.UnresolvedAddressException;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -210,6 +213,18 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public void beforeRequest(Map<String, List<String>> headers)
         {
+            CookieStore cookieStore = getCookieStore();
+            List<HttpCookie> cookies = cookieStore.get(URI.create(getURL()));
+            if (!cookies.isEmpty())
+            {
+                List<String> cookieHeader = headers.get("Cookie");
+                if (cookieHeader == null)
+                    cookieHeader = headers.get("cookie");
+                if (cookieHeader == null)
+                    headers.put("Cookie", cookieHeader = new ArrayList<>());
+                for (HttpCookie cookie : cookies)
+                    cookieHeader.add(cookie.getName() + "=" + cookie.getValue());
+            }
         }
 
         @Override

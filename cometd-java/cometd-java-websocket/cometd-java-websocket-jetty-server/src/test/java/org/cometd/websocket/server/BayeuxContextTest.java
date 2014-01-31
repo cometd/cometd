@@ -15,6 +15,7 @@
  */
 package org.cometd.websocket.server;
 
+import java.net.HttpCookie;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -54,6 +55,34 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
         });
 
         BayeuxClient client = newBayeuxClient();
+        client.handshake();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testCookiesSentToServer() throws Exception
+    {
+        prepareAndStart(null);
+
+        final String cookieName = "name";
+        final String cookieValue = "value";
+        final CountDownLatch latch = new CountDownLatch(1);
+        bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener()
+        {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+            {
+                BayeuxContext context = bayeux.getContext();
+                Assert.assertEquals(cookieValue, context.getCookie(cookieName));
+                latch.countDown();
+                return true;
+            }
+        });
+
+        BayeuxClient client = newBayeuxClient();
+        client.putCookie(new HttpCookie(cookieName, cookieValue));
         client.handshake();
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
