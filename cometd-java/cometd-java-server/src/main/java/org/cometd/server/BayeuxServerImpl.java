@@ -1433,10 +1433,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 return;
             }
 
-            removeServerSession(session, false);
-            session.flush();
-
             reply.setSuccessful(true);
+            removeServerSession(session, false);
+            // Wake up the possibly pending /meta/connect
+            session.flush();
         }
     }
 }
