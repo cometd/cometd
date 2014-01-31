@@ -90,7 +90,7 @@ public class BayeuxClientUsageTest extends ClientServerTest
         startServer(serverOptions);
 
         Map<String, Object> clientOptions = new HashMap<>();
-        clientOptions.put(ClientTransport.JSON_CONTEXT, jacksonContextClientClassName);
+        clientOptions.put(ClientTransport.JSON_CONTEXT_OPTION, jacksonContextClientClassName);
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientOptions, httpClient));
 
         testClient(client);

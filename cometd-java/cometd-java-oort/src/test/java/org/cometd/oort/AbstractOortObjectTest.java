@@ -31,7 +31,7 @@ import org.junit.Before;
 
 public abstract class AbstractOortObjectTest extends OortTest
 {
-    private final List<OortObject> oortObjects = new ArrayList<OortObject>();
+    private final List<OortObject<?>> oortObjects = new ArrayList<>();
     protected Oort oort1;
     protected Oort oort2;
 
@@ -74,7 +74,7 @@ public abstract class AbstractOortObjectTest extends OortTest
         oort1.getBayeuxServer().addListener(listener1);
         CometSubscriptionListener listener2 = new CometSubscriptionListener(channelName, 1);
         oort2.getBayeuxServer().addListener(listener2);
-        OortObjectInitialListener<T> initialListener = new OortObjectInitialListener<T>(2);
+        OortObjectInitialListener<T> initialListener = new OortObjectInitialListener<>(2);
         oortObject1.addListener(initialListener);
         oortObject2.addListener(initialListener);
         oortObject1.start();

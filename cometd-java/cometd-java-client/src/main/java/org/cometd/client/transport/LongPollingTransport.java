@@ -43,6 +43,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public class LongPollingTransport extends HttpClientTransport
 {
@@ -276,5 +277,22 @@ public class LongPollingTransport extends HttpClientTransport
 
     protected void customize(Request request)
     {
+    }
+
+    public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory
+    {
+        private HttpClient httpClient;
+
+        public Factory(HttpClient httpClient)
+        {
+            this.httpClient = httpClient;
+            addBean(httpClient);
+        }
+
+        @Override
+        public ClientTransport newClientTransport(String url, Map<String, Object> options)
+        {
+            return new LongPollingTransport(url, options, httpClient);
+        }
     }
 }

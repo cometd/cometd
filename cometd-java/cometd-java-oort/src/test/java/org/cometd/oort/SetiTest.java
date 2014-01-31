@@ -34,6 +34,7 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.AbstractService;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
@@ -240,7 +241,9 @@ public class SetiTest extends OortTest
         client1.getChannel("/service/login").publish(login1);
 
         final AtomicReference<String> session2 = new AtomicReference<>();
-        BayeuxClient client2 = new BayeuxClient(oort2.getURL(), new LongPollingTransport(null, oort2.getHttpClient()))
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+        BayeuxClient client2 = new BayeuxClient(oort2.getURL(), new LongPollingTransport(null, httpClient))
         {
             @Override
             protected void processConnect(Message.Mutable connect)
@@ -260,6 +263,7 @@ public class SetiTest extends OortTest
         };
         client2.handshake();
         Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        httpClient.stop();
 
         Assert.assertTrue(presenceLatch.await(5, TimeUnit.SECONDS));
 

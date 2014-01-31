@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
+import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -43,7 +44,9 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.cometd.bayeux.Message.Mutable;
+import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 {
@@ -242,6 +245,24 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
                 }
             }
             // TODO: cookie handling
+        }
+    }
+
+    public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory
+    {
+        private final WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+
+        public Factory()
+        {
+            // The WebSocketContainer is already started, so we must explicitly manage it.
+            addBean(container, true);
+        }
+
+        @Override
+        public ClientTransport newClientTransport(String url, Map<String, Object> options)
+        {
+            ScheduledExecutorService scheduler = (ScheduledExecutorService)options.get(ClientTransport.SCHEDULER_OPTION);
+            return new WebSocketTransport(url, options, scheduler, container);
         }
     }
 }

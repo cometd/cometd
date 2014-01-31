@@ -30,8 +30,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.cometd.bayeux.Message.Mutable;
+import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.common.TransportException;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -210,6 +212,24 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         public void onWebSocketError(Throwable failure)
         {
             failMessages(failure);
+        }
+    }
+
+    public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory
+    {
+        private final WebSocketClient wsClient;
+
+        public Factory(WebSocketClient wsClient)
+        {
+            this.wsClient = wsClient;
+            addBean(wsClient);
+        }
+
+        @Override
+        public ClientTransport newClientTransport(String url, Map<String, Object> options)
+        {
+            ScheduledExecutorService scheduler = (ScheduledExecutorService)options.get(ClientTransport.SCHEDULER_OPTION);
+            return new JettyWebSocketTransport(url, options, scheduler, wsClient);
         }
     }
 }

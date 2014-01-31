@@ -70,7 +70,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest
         serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, jacksonContextServerClassName);
         serverOptions.put(HttpTransport.JSON_DEBUG_OPTION, "true");
         Map<String, Object> clientOptions = new HashMap<>();
-        clientOptions.put(ClientTransport.JSON_CONTEXT, jacksonContextClientClassName);
+        clientOptions.put(ClientTransport.JSON_CONTEXT_OPTION, jacksonContextClientClassName);
 
         startServer(serverOptions);
 

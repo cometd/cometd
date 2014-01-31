@@ -27,8 +27,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
-import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.websocket.client.WebSocketTransport;
+import org.cometd.client.transport.ClientTransport;
 
 /**
  * <p>The Oort comet client connects a local Oort comet server to a remote Oort comet server.</p>
@@ -41,10 +40,9 @@ public class OortComet extends BayeuxClient
     private final String _cometURL;
     private volatile boolean _subscriptionsAllowed;
 
-    public OortComet(Oort oort, String cometURL, ScheduledExecutorService scheduler, Map<String, Object> options)
+    public OortComet(Oort oort, String cometURL, ScheduledExecutorService scheduler, ClientTransport transport, ClientTransport... transports)
     {
-        super(cometURL, scheduler, new WebSocketTransport(options, scheduler, oort.getWebSocketContainer()),
-                new LongPollingTransport(options, oort.getHttpClient()));
+        super(cometURL, scheduler, transport, transports);
         _oort = oort;
         _cometURL = cometURL;
         // Add listener for handshake response

@@ -457,14 +457,14 @@ public class BayeuxLoadClient
             case LONG_POLLING:
             {
                 Map<String, Object> options = new HashMap<>();
-                options.put(ClientTransport.JSON_CONTEXT, new Jackson1JSONContextClient());
+                options.put(ClientTransport.JSON_CONTEXT_OPTION, new Jackson1JSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
                 return new LongPollingTransport(options, httpClient);
             }
             case JSR_WEBSOCKET:
             {
                 Map<String, Object> options = new HashMap<>();
-                options.put(ClientTransport.JSON_CONTEXT, new Jackson1JSONContextClient());
+                options.put(ClientTransport.JSON_CONTEXT_OPTION, new Jackson1JSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
                 // Differently from HTTP where the idle timeout is adjusted if it is a /meta/connect
                 // for WebSocket we need an idle timeout that is longer than the /meta/connect timeout.
@@ -474,7 +474,7 @@ public class BayeuxLoadClient
             case JETTY_WEBSOCKET:
             {
                 Map<String, Object> options = new HashMap<>();
-                options.put(ClientTransport.JSON_CONTEXT, new Jackson1JSONContextClient());
+                options.put(ClientTransport.JSON_CONTEXT_OPTION, new Jackson1JSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
                 // Differently from HTTP where the idle timeout is adjusted if it is a /meta/connect
                 // for WebSocket we need an idle timeout that is longer than the /meta/connect timeout.

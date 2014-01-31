@@ -74,7 +74,7 @@ public class JacksonContextTest extends ClientServerTest
         startServer(serverParams);
 
         Map<String, Object> clientParams = new HashMap<>();
-        clientParams.put(ClientTransport.JSON_CONTEXT, jacksonContextClientClassName);
+        clientParams.put(ClientTransport.JSON_CONTEXT_OPTION, jacksonContextClientClassName);
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientParams, httpClient));
 
         client.handshake();

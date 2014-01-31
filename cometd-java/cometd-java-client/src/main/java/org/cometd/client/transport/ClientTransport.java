@@ -33,10 +33,9 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class ClientTransport extends AbstractTransport
 {
-    public static final String TIMEOUT_OPTION = "timeout";
-    public static final String INTERVAL_OPTION = "interval";
     public static final String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
-    public static final String JSON_CONTEXT = "jsonContext";
+    public static final String JSON_CONTEXT_OPTION = "jsonContext";
+    public static final String SCHEDULER_OPTION = "scheduler";
 
     protected final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + System.identityHashCode(this));
     private JSONContext.Client jsonContext;
@@ -48,7 +47,7 @@ public abstract class ClientTransport extends AbstractTransport
 
     public void init()
     {
-        Object option = getOption(JSON_CONTEXT);
+        Object option = getOption(JSON_CONTEXT_OPTION);
         if (option == null)
         {
             jsonContext = new JettyJSONContextClient();
@@ -83,7 +82,7 @@ public abstract class ClientTransport extends AbstractTransport
                 throw new IllegalArgumentException("Invalid implementation of " + JSONContext.Client.class.getName() + " provided: " + option);
             }
         }
-        setOption(JSON_CONTEXT, jsonContext);
+        setOption(JSON_CONTEXT_OPTION, jsonContext);
     }
 
     /**
@@ -115,5 +114,10 @@ public abstract class ClientTransport extends AbstractTransport
     protected String generateJSON(List<Message.Mutable> messages)
     {
         return jsonContext.generate(messages);
+    }
+
+    public interface Factory
+    {
+        public ClientTransport newClientTransport(String url, Map<String, Object> options);
     }
 }

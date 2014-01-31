@@ -43,7 +43,7 @@ public class JettyCustomSerializationTest extends ClientServerTest
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, TestJettyJSONContextServer.class.getName());
         Map<String, Object> clientOptions = new HashMap<>();
-        clientOptions.put(ClientTransport.JSON_CONTEXT, new TestJettyJSONContextClient());
+        clientOptions.put(ClientTransport.JSON_CONTEXT_OPTION, new TestJettyJSONContextClient());
 
         startServer(serverOptions);
 

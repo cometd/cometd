@@ -20,6 +20,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventListener;
@@ -36,8 +37,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import javax.websocket.ContainerProvider;
-import javax.websocket.WebSocketContainer;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -53,6 +52,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
+import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.common.JSONContext;
 import org.cometd.server.authorizer.GrantAuthorizer;
@@ -66,9 +66,6 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,15 +107,13 @@ public class Oort extends ContainerLifeCycle
     private final Extension _oortExtension = new OortExtension();
     private final ServerChannel.MessageListener _cloudListener = new CloudListener();
     private final ServerChannel.MessageListener _joinListener = new JoinListener();
+    private final List<ClientTransport.Factory> _transportFactories = new ArrayList<>();
     private final BayeuxServer _bayeux;
     private final String _url;
     private final String _id;
     private final Logger _logger;
     private final LocalSession _oortSession;
-    private ThreadPool _threadPool;
     private ScheduledExecutorService _scheduler;
-    private HttpClient _httpClient;
-    private WebSocketContainer _wsContainer;
     private String _secret;
     private boolean _ackExtensionEnabled;
     private Extension _ackExtension;
@@ -139,27 +134,17 @@ public class Oort extends ContainerLifeCycle
     @Override
     protected void doStart() throws Exception
     {
-        if (_threadPool == null)
-            _threadPool = new QueuedThreadPool();
-        addBean(_threadPool);
-        // Start the pool to avoid that HttpClient manages it
-        if (_threadPool instanceof LifeCycle)
-            ((LifeCycle)_threadPool).start();
-
         ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(1);
         scheduler.setRemoveOnCancelPolicy(true);
         _scheduler = scheduler;
 
-        if (_httpClient == null)
+        if (_transportFactories.isEmpty())
         {
-            _httpClient = new HttpClient();
-            _httpClient.setExecutor(_threadPool);
+            _transportFactories.add(new WebSocketTransport.Factory());
+            _transportFactories.add(new LongPollingTransport.Factory(new HttpClient()));
         }
-        addBean(_httpClient);
-
-        if (_wsContainer == null)
-            _wsContainer = ContainerProvider.getWebSocketContainer();
-        addBean(_wsContainer, true);
+        for (ClientTransport.Factory factory : _transportFactories)
+            addBean(factory);
 
         super.doStart();
 
@@ -282,6 +267,11 @@ public class Oort extends ContainerLifeCycle
         _jsonContext = jsonContext;
     }
 
+    public List<ClientTransport.Factory> getClientTransportFactories()
+    {
+        return _transportFactories;
+    }
+
     /**
      * <p>Connects (if not already connected) and observes another Oort instance
      * (identified by the given URL) via a {@link OortComet} instance.</p>
@@ -353,7 +343,7 @@ public class Oort extends ContainerLifeCycle
         Map<String, Object> options = new HashMap<>(2);
         JSONContext.Client jsonContext = getJSONContextClient();
         if (jsonContext != null)
-            options.put(ClientTransport.JSON_CONTEXT, jsonContext);
+            options.put(ClientTransport.JSON_CONTEXT_OPTION, jsonContext);
         String maxMessageSizeOption = WebSocketTransport.PREFIX + "." + WebSocketTransport.MAX_MESSAGE_SIZE_OPTION;
         Object option = _bayeux.getOption(maxMessageSizeOption);
         if (option != null)
@@ -361,7 +351,17 @@ public class Oort extends ContainerLifeCycle
             long value = option instanceof Number ? ((Number)option).longValue() : Long.parseLong(option.toString());
             options.put(maxMessageSizeOption, value);
         }
-        return new OortComet(this, cometURL, _scheduler, options);
+        options.put(ClientTransport.SCHEDULER_OPTION, _scheduler);
+
+        List<ClientTransport> transports = new ArrayList<>();
+        for (ClientTransport.Factory factory : getClientTransportFactories())
+            transports.add(factory.newClientTransport(cometURL, options));
+
+        ClientTransport transport = transports.get(0);
+        int size = transports.size();
+        ClientTransport[] otherTransports = transports.subList(1, size).toArray(new ClientTransport[size - 1]);
+
+        return new OortComet(this, cometURL, _scheduler, transport, otherTransports);
     }
 
     protected void configureOortComet(OortComet oortComet)
@@ -652,36 +652,6 @@ public class Oort extends ContainerLifeCycle
         Object[] array = data instanceof List ? ((List)data).toArray() : (Object[])data;
         for (Object element : array)
             observeComet((String)element);
-    }
-
-    public void setThreadPool(ThreadPool threadPool)
-    {
-        _threadPool = threadPool;
-    }
-
-    public ThreadPool getThreadPool()
-    {
-        return _threadPool;
-    }
-
-    public HttpClient getHttpClient()
-    {
-        return _httpClient;
-    }
-
-    public void setHttpClient(HttpClient httpClient)
-    {
-        this._httpClient = httpClient;
-    }
-
-    public WebSocketContainer getWebSocketContainer()
-    {
-        return _wsContainer;
-    }
-
-    public void setWebSocketContainer(WebSocketContainer wsContainer)
-    {
-        _wsContainer = wsContainer;
     }
 
     public Set<String> getObservedChannels()
