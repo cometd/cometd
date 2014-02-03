@@ -265,7 +265,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         // Convert it to a fatal exception so the transport would be disabled.
         // However, since it connected before this fatal exception, the transport is not disabled.
         ClientTransport webSocketTransport;
-        switch (implementation)
+        switch (wsTransportType)
         {
             case WEBSOCKET_JSR_356:
                 webSocketTransport = new org.cometd.websocket.client.WebSocketTransport(null, null, wsClientContainer)
@@ -774,7 +774,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         Map<String, String> initParams = new HashMap<>();
         long timeout = 5000;
         initParams.put("timeout", String.valueOf(timeout));
-        switch (implementation)
+        switch (wsTransportType)
         {
             case WEBSOCKET_JSR_356:
                 initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
@@ -893,7 +893,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         stopAndDispose();
 
         Map<String, String> initParams = new HashMap<>();
-        switch (implementation)
+        switch (wsTransportType)
         {
             case WEBSOCKET_JSR_356:
                 initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
@@ -913,7 +913,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         client.disconnect();
 
-        switch (implementation)
+        switch (wsTransportType)
         {
             case WEBSOCKET_JSR_356:
                 CloseLatchWebSocketTransport jsrTransport = (CloseLatchWebSocketTransport)bayeux.getTransport("websocket");
@@ -934,7 +934,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         stopAndDispose();
 
         Map<String, String> initParams = new HashMap<>();
-        switch (implementation)
+        switch (wsTransportType)
         {
             case WEBSOCKET_JSR_356:
                 initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
@@ -954,7 +954,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         client.disconnect(1000);
 
-        switch (implementation)
+        switch (wsTransportType)
         {
             case WEBSOCKET_JSR_356:
                 CloseLatchWebSocketTransport jsrTransport = (CloseLatchWebSocketTransport)bayeux.getTransport("websocket");

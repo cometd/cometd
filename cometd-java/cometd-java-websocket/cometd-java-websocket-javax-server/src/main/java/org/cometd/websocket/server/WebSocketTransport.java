@@ -16,10 +16,13 @@
 package org.cometd.websocket.server;
 
 import java.io.IOException;
+import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.Executor;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -113,6 +116,10 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         return true;
     }
 
+    protected void modifyHandshake(HandshakeRequest request, HandshakeResponse  response)
+    {
+    }
+
     protected void send(final Session wsSession, final ServerSession session, String data) throws IOException
     {
         // This method may be called concurrently.
@@ -182,7 +189,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         public void onError(Session wsSession, Throwable failure)
         {
             delegate.onError(failure);
-            // TODO: more to do ?
         }
 
         @Override
@@ -214,24 +220,39 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     private class WebSocketContext implements BayeuxContext
     {
         private final ServletContext context;
-        private final HandshakeRequest request;
+        private final String url;
+        private final Principal principal;
+        private final Map<String, List<String>> headers;
+        private final Map<String, List<String>> parameters;
+        private final HttpSession session;
 
         private WebSocketContext(ServletContext context, HandshakeRequest request)
         {
             this.context = context;
-            this.request = request;
+            // Must copy everything from the request, it may be gone afterwards.
+            String uri = request.getRequestURI().toString();
+            String query = request.getQueryString();
+            if (query != null)
+                uri += "?" + query;
+            this.url = uri;
+            this.principal = request.getUserPrincipal();
+            this.headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            this.headers.putAll(request.getHeaders());
+            this.parameters = request.getParameterMap();
+            // Assume the HttpSession does not go away immediately after the upgrade.
+            this.session = (HttpSession)request.getHttpSession();
         }
 
         @Override
         public Principal getUserPrincipal()
         {
-            return request.getUserPrincipal();
+            return principal;
         }
 
         @Override
         public boolean isUserInRole(String role)
         {
-            return request.isUserInRole(role);
+            return false;
         }
 
         @Override
@@ -251,53 +272,61 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public String getHeader(String name)
         {
-            List<String> headers = request.getHeaders().get(name);
-            return headers != null && headers.size() > 0 ? headers.get(0) : null;
+            List<String> values = headers.get(name);
+            return values != null && values.size() > 0 ? values.get(0) : null;
         }
 
         @Override
         public List<String> getHeaderValues(String name)
         {
-            return request.getHeaders().get(name);
+            return headers.get(name);
         }
 
         public String getParameter(String name)
         {
-            List<String> params = request.getParameterMap().get(name);
-            return params != null && params.size() > 0 ? params.get(0) : null;
+            List<String> values = parameters.get(name);
+            return values != null && values.size() > 0 ? values.get(0) : null;
         }
 
         @Override
         public List<String> getParameterValues(String name)
         {
-            return request.getParameterMap().get(name);
+            return parameters.get(name);
         }
 
         @Override
         public String getCookie(String name)
         {
-            // TODO:
+            List<String> values = headers.get("Cookie");
+            if (values != null)
+            {
+                for (String value : values)
+                {
+                    for (HttpCookie cookie : HttpCookie.parse(value))
+                    {
+                        if (cookie.getName().equals(name))
+                            return cookie.getValue();
+                    }
+                }
+            }
             return null;
         }
 
         @Override
         public String getHttpSessionId()
         {
-            HttpSession session = (HttpSession)request.getHttpSession();
             return session == null ? null : session.getId();
         }
 
         @Override
         public Object getHttpSessionAttribute(String name)
         {
-            HttpSession session = (HttpSession)request.getHttpSession();
             return session == null ? null : session.getAttribute(name);
         }
 
         @Override
         public void setHttpSessionAttribute(String name, Object value)
         {
-            HttpSession session = (HttpSession)request.getHttpSession();
             if (session != null)
                 session.setAttribute(name, value);
         }
@@ -305,7 +334,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public void invalidateHttpSession()
         {
-            HttpSession session = (HttpSession)request.getHttpSession();
             if (session != null)
                 session.invalidate();
         }
@@ -332,10 +360,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public String getURL()
         {
-            String url = request.getRequestURI().toString();
-            String query = request.getQueryString();
-            if (query != null)
-                url += "?" + query;
             return url;
         }
     }
@@ -357,6 +381,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
             this.bayeuxContext = new WebSocketContext(servletContext, request);
+            WebSocketTransport.this.modifyHandshake(request, response);
         }
 
         @Override

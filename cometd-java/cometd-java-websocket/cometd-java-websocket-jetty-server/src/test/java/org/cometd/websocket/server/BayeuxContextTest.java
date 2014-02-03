@@ -16,8 +16,11 @@
 package org.cometd.websocket.server;
 
 import java.net.HttpCookie;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.server.HandshakeRequest;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxContext;
@@ -25,7 +28,10 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.websocket.ClientServerWebSocketTest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -88,5 +94,68 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testCookiesSentToClient() throws Exception
+    {
+        String wsTransportClass;
+        switch (wsTransportType)
+        {
+            case WEBSOCKET_JSR_356:
+                wsTransportClass = CookieWebSocketTransport.class.getName();
+                break;
+            case WEBSOCKET_JETTY:
+                wsTransportClass = CookieJettyWebSocketTransport.class.getName();
+                break;
+            default:
+                throw new IllegalArgumentException();
+        }
+        prepareServer(0, null, true, wsTransportClass);
+        startServer();
+        prepareClient();
+        startClient();
+
+        BayeuxClient client = newBayeuxClient();
+        client.handshake();
+
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        HttpCookie cookie = client.getCookie(CookieConstants.COOKIE_NAME);
+        Assert.assertEquals(CookieConstants.COOKIE_VALUE, cookie.getValue());
+    }
+
+    public interface CookieConstants
+    {
+        public static final String COOKIE_NAME = "name";
+        public static final String COOKIE_VALUE = "value";
+    }
+
+    public static class CookieWebSocketTransport extends WebSocketTransport implements CookieConstants
+    {
+        public CookieWebSocketTransport(BayeuxServerImpl bayeux)
+        {
+            super(bayeux);
+        }
+
+        @Override
+        protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response)
+        {
+            response.getHeaders().put("Set-Cookie", Collections.singletonList(COOKIE_NAME + "=" + COOKIE_VALUE));
+        }
+    }
+
+    public static class CookieJettyWebSocketTransport extends JettyWebSocketTransport implements CookieConstants
+    {
+        public CookieJettyWebSocketTransport(BayeuxServerImpl bayeux)
+        {
+            super(bayeux);
+        }
+
+        @Override
+        protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response)
+        {
+            response.setHeader("Set-Cookie", COOKIE_NAME + "=" + COOKIE_VALUE);
+        }
     }
 }

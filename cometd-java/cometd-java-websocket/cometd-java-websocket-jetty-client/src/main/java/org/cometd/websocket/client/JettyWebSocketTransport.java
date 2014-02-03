@@ -36,11 +36,14 @@ import org.cometd.common.TransportException;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 
-public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
+public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session> implements UpgradeListener
 {
     private final Object _target = new CometDWebSocket();
     private final WebSocketClient _webSocketClient;
@@ -153,7 +156,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
             String protocol = getProtocol();
             if (protocol != null)
                 request.setSubProtocols(protocol);
-            return _webSocketClient.connect(_target, new URI(uri), request).get();
+            return _webSocketClient.connect(_target, new URI(uri), request, this).get();
         }
         catch (ExecutionException x)
         {
@@ -168,6 +171,17 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         {
             throw new IOException(x);
         }
+    }
+
+    @Override
+    public void onHandshakeRequest(UpgradeRequest request)
+    {
+    }
+
+    @Override
+    public void onHandshakeResponse(UpgradeResponse response)
+    {
+        storeCookies(response.getHeaders());
     }
 
     private class CometDWebSocket implements WebSocketListener

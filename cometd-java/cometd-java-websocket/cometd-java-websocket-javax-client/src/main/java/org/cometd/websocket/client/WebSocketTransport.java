@@ -233,9 +233,12 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public void afterResponse(HandshakeResponse hr)
         {
-            _webSocketSupported = false;
             Map<String, List<String>> headers = hr.getHeaders();
-            // Must do case-insensitive search
+
+            storeCookies(headers);
+
+            _webSocketSupported = false;
+            // Must do case-insensitive search.
             for (String name : headers.keySet())
             {
                 if (HandshakeResponse.SEC_WEBSOCKET_ACCEPT.equalsIgnoreCase(name))
@@ -244,7 +247,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
                     break;
                 }
             }
-            // TODO: cookie handling
         }
     }
 

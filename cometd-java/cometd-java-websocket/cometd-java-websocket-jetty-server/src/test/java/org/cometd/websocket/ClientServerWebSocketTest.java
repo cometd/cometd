@@ -71,7 +71,7 @@ public abstract class ClientServerWebSocketTest
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
     };
-    protected final String implementation;
+    protected final String wsTransportType;
     protected ServerConnector connector;
     protected Server server;
     protected ServletContextHandler context;
@@ -83,9 +83,9 @@ public abstract class ClientServerWebSocketTest
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
 
-    protected ClientServerWebSocketTest(String implementation)
+    protected ClientServerWebSocketTest(String wsTransportType)
     {
-        this.implementation = implementation;
+        this.wsTransportType = wsTransportType;
     }
 
     protected void prepareAndStart(Map<String, String> initParams) throws Exception
@@ -108,6 +108,23 @@ public abstract class ClientServerWebSocketTest
 
     protected void prepareServer(int port, Map<String, String> initParams, boolean eager) throws Exception
     {
+        String wsTransportClass;
+        switch (wsTransportType)
+        {
+            case WEBSOCKET_JSR_356:
+                wsTransportClass = WebSocketTransport.class.getName();
+                break;
+            case WEBSOCKET_JETTY:
+                wsTransportClass = JettyWebSocketTransport.class.getName();
+                break;
+            default:
+                throw new IllegalArgumentException();
+        }
+        prepareServer(port, initParams, eager, wsTransportClass);
+    }
+
+    protected void prepareServer(int port, Map<String, String> initParams, boolean eager, String wsTransportClass) throws Exception
+    {
         server = new Server();
 
         connector = new ServerConnector(server);
@@ -122,9 +139,7 @@ public abstract class ClientServerWebSocketTest
         cometdServletPath = "/cometd";
         String cometdURLMapping = cometdServletPath + "/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
-        String serverTransport = WEBSOCKET_JSR_356.equals(implementation) ?
-                WebSocketTransport.class.getName() : JettyWebSocketTransport.class.getName();
-        String transports = serverTransport + "," + JSONTransport.class.getName();
+        String transports = wsTransportClass + "," + JSONTransport.class.getName();
         cometdServletHolder.setInitParameter("transports", transports);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
@@ -141,7 +156,7 @@ public abstract class ClientServerWebSocketTest
     protected void prepareClient()
     {
         httpClient = new HttpClient();
-        switch (implementation)
+        switch (wsTransportType)
         {
             case WEBSOCKET_JSR_356:
                 wsClientContainer = ContainerProvider.getWebSocketContainer();
@@ -190,7 +205,7 @@ public abstract class ClientServerWebSocketTest
     protected ClientTransport newWebSocketTransport(String url, Map<String, Object> options)
     {
         ClientTransport result;
-        switch (implementation)
+        switch (wsTransportType)
         {
             case WEBSOCKET_JSR_356:
                 result = new org.cometd.websocket.client.WebSocketTransport(url, options, null, wsClientContainer);

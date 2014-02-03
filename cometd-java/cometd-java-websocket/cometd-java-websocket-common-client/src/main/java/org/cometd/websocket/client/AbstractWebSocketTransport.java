@@ -15,6 +15,10 @@
  */
 package org.cometd.websocket.client;
 
+import java.io.IOException;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -327,6 +331,19 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
             {
                 _listener.onMessages(Collections.singletonList(message));
             }
+        }
+    }
+
+    protected void storeCookies(Map<String, List<String>> headers)
+    {
+        try
+        {
+            CookieManager cookieManager = new CookieManager(getCookieStore(), CookiePolicy.ACCEPT_ALL);
+            cookieManager.put(URI.create(getURL()), headers);
+        }
+        catch (IOException x)
+        {
+            logger.debug("Could not parse cookies", x);
         }
     }
 
