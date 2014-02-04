@@ -45,6 +45,7 @@ org.cometd.Cometd = function(name)
     var _connected = false;
     var _config = {
         protocol: null,
+        stickyReconnect: true,
         connectTimeout: 0,
         maxConnections: 2,
         backoffIncrement: 1000,
