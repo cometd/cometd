@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.After;
@@ -156,7 +157,7 @@ public abstract class AbstractCometDTest
 
     protected String getLogLevel()
     {
-        String property = System.getProperty("org.cometd.javascript.LEVEL", "info");
+        String property = Log.getLogger("org.cometd.javascript").isDebugEnabled() ? "debug" : "info";
         return property.toLowerCase(Locale.ENGLISH);
     }
 
