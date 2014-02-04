@@ -858,9 +858,9 @@ org.cometd.Cometd = function(name)
             var newTransport = _transports.negotiateTransport(message.supportedConnectionTypes, message.version, _crossDomain, url);
             if (newTransport === null)
             {
-                var failure = 'Could not negotiate transport with server; client ' +
+                var failure = 'Could not negotiate transport with server; client=[' +
                     _transports.findTransportTypes(message.version, _crossDomain, url) +
-                    ', server ' + message.supportedConnectionTypes;
+                    '], server=[' + message.supportedConnectionTypes + ']';
                 var oldTransport = _cometd.getTransport();
                 _notifyTransportFailure(oldTransport.getType(), null, {
                     reason: failure,
@@ -921,7 +921,7 @@ org.cometd.Cometd = function(name)
         if (!newTransport)
         {
             _notifyTransportFailure(oldTransport.getType(), null, message.failure);
-            _cometd._warn('Could not negotiate transport; client ' + transportTypes);
+            _cometd._warn('Could not negotiate transport; client=[' + transportTypes + ']');
             _disconnect(true);
             _failHandshake(message);
         }
