@@ -43,7 +43,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.ProxyServlet;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class BayeuxClientUsageTest extends ClientServerTest
@@ -98,7 +97,6 @@ public class BayeuxClientUsageTest extends ClientServerTest
         testClient(newBayeuxClient());
     }
 
-    @Ignore // TODO: un-ignore when using Jetty 7.6.12 (which fixes https://bugs.eclipse.org/bugs/show_bug.cgi?id=411135)
     @Test
     public void testClientWithProxyTunnel() throws Exception
     {
