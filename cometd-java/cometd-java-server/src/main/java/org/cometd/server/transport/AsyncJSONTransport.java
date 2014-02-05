@@ -290,18 +290,20 @@ public class AsyncJSONTransport extends HttpTransport
             if (!response.isCommitted())
                 response.sendError(responseCode);
         }
-        catch (IOException x)
+        catch (Exception x)
         {
             _logger.trace("Could not send " + responseCode + " response", x);
         }
-
-        try
+        finally
         {
-            asyncContext.complete();
-        }
-        catch (Exception x)
-        {
-            _logger.trace("Could not complete " + responseCode + " response", x);
+            try
+            {
+                asyncContext.complete();
+            }
+            catch (Exception x)
+            {
+                _logger.trace("Could not complete " + responseCode + " response", x);
+            }
         }
     }
 
@@ -322,11 +324,14 @@ public class AsyncJSONTransport extends HttpTransport
         {
             ServletInputStream input = asyncContext.getRequest().getInputStream();
             _logger.debug("Asynchronous read start from {}", input);
-            while (input.isReady())
+            // First check for isReady() because it has
+            // side effects, and then for isFinished().
+            while (input.isReady() && !input.isFinished())
             {
                 int read = input.read(buffer);
                 _logger.debug("Asynchronous read {} bytes from {}", read, input);
-                append(buffer, 0, read);
+                if (read >= 0)
+                    append(buffer, 0, read);
             }
             if (!input.isFinished())
                 _logger.debug("Asynchronous read pending from {}", input);
