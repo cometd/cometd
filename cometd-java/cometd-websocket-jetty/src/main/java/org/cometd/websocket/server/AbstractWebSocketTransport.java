@@ -206,7 +206,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
                 session.startIntervalTimeout(getInterval());
                 cancelMetaConnectTask(session);
             }
-            debug("Closing {}/{}", code, reason);
+            debug("Closing {}/{} - {}", code, reason, session);
             AbstractWebSocketTransport.this.onClose(code, reason);
         }
 
