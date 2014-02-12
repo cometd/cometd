@@ -42,6 +42,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  * create a {@link LocalSession} that can subscribe and publish
  * like a client-side Bayeux session.</p>
  */
+@SuppressWarnings("JavadocReference")
 public interface BayeuxServer extends Bayeux
 {
     /** ServletContext attribute name used to obtain the Bayeux object */
@@ -103,8 +104,7 @@ public interface BayeuxServer extends Bayeux
      * <p>This method can be used instead of adding a {@link ChannelListener}
      * to atomically initialize a channel. The {@code initializers} will be
      * called before any other thread can access the new channel instance.</p>
-     * <p>Method {@link #createChannelIfAbsent(String, ConfigurableServerChannel.Initializer...)}
-     * should be used when a channel needs to be
+     * <p>This method should be used when a channel needs to be
      * initialized (e.g. by adding listeners) before any publish or subscribes
      * can occur on the channel, or before any other thread may concurrently
      * create the same channel.</p>
@@ -233,7 +233,7 @@ public interface BayeuxServer extends Bayeux
      * occurs for any channel known to the {@link BayeuxServer}.</p>
      * <p>This interface the correspondent of the {@link ServerChannel.SubscriptionListener}
      * interface, but it is invoked for any session and any channel known to the
-     * {@link BayeuxServer}.</p>
+     * {@link BayeuxServer}, <em>after</em> having invoked the {@link ServerChannel.SubscriptionListener}.</p>
      */
     public interface SubscriptionListener extends BayeuxServerListener
     {
@@ -242,16 +242,20 @@ public interface BayeuxServer extends Bayeux
          *
          * @param session the session that subscribes
          * @param channel the channel to subscribe to
+         * @param message the subscription message sent by the client, or null in case of
+         *                server-side subscription via {@link ServerChannel#subscribe(ServerSession)}
          */
-        public void subscribed(ServerSession session, ServerChannel channel);
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message);
 
         /**
          * <p>Callback invoked when a {@link ServerSession} unsubscribes from a {@link ServerChannel}.</p>
          *
          * @param session the session that unsubscribes
          * @param channel the channel to unsubscribe from
+         * @param message the unsubscription message sent by the client, or null in case of
+         *                server-side unsubscription via {@link ServerChannel#unsubscribe(ServerSession)}
          */
-        public void unsubscribed(ServerSession session, ServerChannel channel);
+        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message);
     }
 
     /**

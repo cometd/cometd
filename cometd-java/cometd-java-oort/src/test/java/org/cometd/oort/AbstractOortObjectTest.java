@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.server.Server;
@@ -104,13 +105,13 @@ public abstract class AbstractOortObjectTest extends OortTest
             this.latch = new CountDownLatch(parties);
         }
 
-        public void subscribed(ServerSession session, ServerChannel channel)
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)
         {
             if (channelName.equals(channel.getId()))
                 latch.countDown();
         }
 
-        public void unsubscribed(ServerSession session, ServerChannel channel)
+        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message)
         {
         }
 

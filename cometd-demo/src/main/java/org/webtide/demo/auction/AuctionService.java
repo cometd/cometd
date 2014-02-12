@@ -29,6 +29,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
@@ -183,7 +184,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         }
     }
 
-    public void subscribed(ServerSession session, ServerChannel channel)
+    public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)
     {
         if (!session.isLocalSession() && channel.getId().startsWith(AUCTION_ROOT + "item"))
         {
@@ -198,7 +199,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         }
     }
 
-    public void unsubscribed(ServerSession session, ServerChannel channel)
+    public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message)
     {
     }
 

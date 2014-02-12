@@ -545,14 +545,14 @@ public class ServerChannelTest
             _channel = null;
         }
 
-        public void subscribed(ServerSession session, ServerChannel channel)
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)
         {
             _method = "subscribed";
             _session = session;
             _channel = channel;
         }
 
-        public void unsubscribed(ServerSession session, ServerChannel channel)
+        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message)
         {
             _method = "unsubscribed";
             _session = session;
@@ -573,14 +573,14 @@ public class ServerChannelTest
             _channel = null;
         }
 
-        public void subscribed(ServerSession session, ServerChannel channel)
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)
         {
             _method = "subscribed";
             _session = session;
             _channel = channel;
         }
 
-        public void unsubscribed(ServerSession session, ServerChannel channel)
+        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message)
         {
             _method = "unsubscribed";
             _session = session;

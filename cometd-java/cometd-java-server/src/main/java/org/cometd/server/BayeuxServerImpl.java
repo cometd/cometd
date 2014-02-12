@@ -550,6 +550,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public ServerChannel getChannel(String channelId)
     {
+        return getServerChannel(channelId);
+    }
+
+    private ServerChannelImpl getServerChannel(String channelId)
+    {
         ServerChannelImpl channel = _channels.get(channelId);
         if (channel != null)
             channel.waitForInitialized();
@@ -587,14 +592,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             String channelName = message.getChannel();
 
-            ServerChannel channel;
+            ServerChannelImpl channel;
             if (channelName == null)
             {
                 error(reply, "400::channel missing");
             }
             else
             {
-                channel = getChannel(channelName);
+                channel = getServerChannel(channelName);
                 if (channel == null)
                 {
                     if (session == null)
@@ -611,7 +616,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                         }
                         else
                         {
-                            channel = createChannelIfAbsent(channelName).getReference();
+                            channel = (ServerChannelImpl)createChannelIfAbsent(channelName).getReference();
                         }
                     }
                 }
@@ -626,7 +631,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                         }
                         else
                         {
-                            doPublish(session, (ServerChannelImpl)channel, message);
+                            doPublish(session, channel, message);
                         }
                     }
                     else
@@ -692,7 +697,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     private Authorizer.Result isOperationAuthorized(Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId)
     {
-        List<ServerChannel> channels = new ArrayList<>();
+        List<ServerChannelImpl> channels = new ArrayList<>();
         for (String wildName : channelId.getWilds())
         {
             ServerChannelImpl channel = _channels.get(wildName);
@@ -705,9 +710,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         boolean called = false;
         Authorizer.Result result = Authorizer.Result.ignore();
-        for (ServerChannel channel : channels)
+        for (ServerChannelImpl channel : channels)
         {
-            List<Authorizer> authorizers = ((ServerChannelImpl)channel).authorizers();
+            List<Authorizer> authorizers = channel.authorizers();
             if (!authorizers.isEmpty())
             {
                 for (Authorizer authorizer : authorizers)
@@ -1335,7 +1340,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             for (String subscription : subscriptions)
             {
-                ServerChannel channel = getChannel(subscription);
+                ServerChannelImpl channel = getServerChannel(subscription);
                 if (channel == null)
                 {
                     Authorizer.Result creationResult = isCreationAuthorized(from, message, subscription);
@@ -1347,7 +1352,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     }
                     else
                     {
-                        channel = createChannelIfAbsent(subscription).getReference();
+                        channel = (ServerChannelImpl)createChannelIfAbsent(subscription).getReference();
                     }
                 }
 
@@ -1368,7 +1373,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                         // fact that the channel references it.
                         if (!isSessionUnknown(from))
                         {
-                            if (channel.subscribe(from))
+                            if (channel.subscribe(from, message))
                             {
                                 reply.setSuccessful(true);
                             }
@@ -1418,7 +1423,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             for (String subscription : subscriptions)
             {
-                ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscription);
+                ServerChannelImpl channel = getServerChannel(subscription);
                 if (channel == null)
                 {
                     error(reply, "400::channel_missing");
@@ -1426,7 +1431,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 }
                 else
                 {
-                    if (channel.unsubscribe(from))
+                    if (channel.unsubscribe(from, message))
                     {
                         reply.setSuccessful(true);
                     }

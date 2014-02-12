@@ -104,10 +104,10 @@ public class ServerChannelImpl implements ServerChannel
         if (isMeta())
             return false;
 
-        return subscribe((ServerSessionImpl)session);
+        return subscribe((ServerSessionImpl)session, null);
     }
 
-    private boolean subscribe(ServerSessionImpl session)
+    protected boolean subscribe(ServerSessionImpl session, ServerMessage message)
     {
         resetSweeperPasses();
         if (_subscribers.add(session))
@@ -115,19 +115,19 @@ public class ServerChannelImpl implements ServerChannel
             session.subscribedTo(this);
             for (ServerChannelListener listener : _listeners)
                 if (listener instanceof SubscriptionListener)
-                    notifySubscribed((SubscriptionListener)listener, session, this);
+                    notifySubscribed((SubscriptionListener)listener, session, this, message);
             for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
                 if (listener instanceof BayeuxServer.SubscriptionListener)
-                    notifySubscribed((BayeuxServer.SubscriptionListener)listener, session, this);
+                    notifySubscribed((BayeuxServer.SubscriptionListener)listener, session, this, message);
         }
         return true;
     }
 
-    private void notifySubscribed(SubscriptionListener listener, ServerSession session, ServerChannel channel)
+    private void notifySubscribed(SubscriptionListener listener, ServerSession session, ServerChannel channel, ServerMessage message)
     {
         try
         {
-            listener.subscribed(session, channel);
+            listener.subscribed(session, channel, message);
         }
         catch (Throwable x)
         {
@@ -135,11 +135,11 @@ public class ServerChannelImpl implements ServerChannel
         }
     }
 
-    private void notifySubscribed(BayeuxServer.SubscriptionListener listener, ServerSession session, ServerChannel channel)
+    private void notifySubscribed(BayeuxServer.SubscriptionListener listener, ServerSession session, ServerChannel channel, ServerMessage message)
     {
         try
         {
-            listener.subscribed(session, channel);
+            listener.subscribed(session, channel, message);
         }
         catch (Throwable x)
         {
@@ -159,29 +159,29 @@ public class ServerChannelImpl implements ServerChannel
         if (isMeta())
             return false;
 
-        return unsubscribe((ServerSessionImpl)session);
+        return unsubscribe((ServerSessionImpl)session, null);
     }
 
-    private boolean unsubscribe(ServerSessionImpl session)
+    protected boolean unsubscribe(ServerSessionImpl session, ServerMessage message)
     {
         if (_subscribers.remove(session))
         {
             session.unsubscribedFrom(this);
             for (ServerChannelListener listener : _listeners)
                 if (listener instanceof SubscriptionListener)
-                    notifyUnsubscribed((SubscriptionListener)listener, session, this);
+                    notifyUnsubscribed((SubscriptionListener)listener, session, this, message);
             for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
                 if (listener instanceof BayeuxServer.SubscriptionListener)
-                    notifyUnsubscribed((BayeuxServer.SubscriptionListener)listener, session, this);
+                    notifyUnsubscribed((BayeuxServer.SubscriptionListener)listener, session, this, message);
         }
         return true;
     }
 
-    private void notifyUnsubscribed(BayeuxServer.SubscriptionListener listener, ServerSession session, ServerChannel channel)
+    private void notifyUnsubscribed(BayeuxServer.SubscriptionListener listener, ServerSession session, ServerChannel channel, ServerMessage message)
     {
         try
         {
-            listener.unsubscribed(session, channel);
+            listener.unsubscribed(session, channel, message);
         }
         catch (Throwable x)
         {
@@ -189,11 +189,11 @@ public class ServerChannelImpl implements ServerChannel
         }
     }
 
-    private void notifyUnsubscribed(SubscriptionListener listener, ServerSession session, ServerChannel channel)
+    private void notifyUnsubscribed(SubscriptionListener listener, ServerSession session, ServerChannel channel, ServerMessage message)
     {
         try
         {
-            listener.unsubscribed(session, channel);
+            listener.unsubscribed(session, channel, message);
         }
         catch (Throwable x)
         {

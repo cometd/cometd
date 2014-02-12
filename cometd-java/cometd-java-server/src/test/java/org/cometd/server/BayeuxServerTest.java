@@ -399,14 +399,14 @@ public class BayeuxServerTest
 
     class SubListener implements BayeuxServer.SubscriptionListener
     {
-        public void subscribed(ServerSession session, ServerChannel channel)
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)
         {
             _events.add("subscribed");
             _events.add(session);
             _events.add(channel);
         }
 
-        public void unsubscribed(ServerSession session, ServerChannel channel)
+        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message)
         {
             _events.add("unsubscribed");
             _events.add(session);

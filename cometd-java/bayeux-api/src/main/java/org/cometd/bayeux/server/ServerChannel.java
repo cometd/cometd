@@ -112,7 +112,9 @@ public interface ServerChannel extends ConfigurableServerChannel
     }
 
     /**
-     * <p>Listeners object that implement this interface will be notified of subscription events.</p>
+     * <p>Listener objects that implement this interface will be notified of subscription events.</p>
+     * <p>Instances of this listener class will be invoked <em>before</em>
+     * {@link BayeuxServer.SubscriptionListener}</p> instances.
      */
     public interface SubscriptionListener extends ServerChannelListener
     {
@@ -121,15 +123,19 @@ public interface ServerChannel extends ConfigurableServerChannel
          *
          * @param session the session that subscribes
          * @param channel the channel the session subscribes to
+         * @param message the subscription message sent by the client, or null in case of
+         *                server-side subscription via {@link ServerChannel#subscribe(ServerSession)}
          */
-        public void subscribed(ServerSession session, ServerChannel channel);
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message);
 
         /**
          * <p>Callback invoked when the given {@link ServerSession} unsubscribes from the given {@link ServerChannel}.</p>
          *
          * @param session the session that unsubscribes
          * @param channel the channel the session unsubscribes from
+         * @param message the unsubscription message sent by the client, or null in case of
+         *                server-side unsubscription via {@link ServerChannel#unsubscribe(ServerSession)}
          */
-        public void unsubscribed(ServerSession session, ServerChannel channel);
+        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message);
     }
 }
