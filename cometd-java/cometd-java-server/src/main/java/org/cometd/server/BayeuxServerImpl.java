@@ -51,6 +51,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.JSONContext;
+import org.cometd.server.transport.AsyncJSONTransport;
 import org.cometd.server.transport.HttpTransport;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
@@ -183,7 +184,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 ServerTransport transport = newWebSocketTransport();
                 if (transport != null)
                     addTransport(transport);
-                addTransport(new JSONTransport(this));
+                addTransport(newJSONTransport());
                 addTransport(new JSONPTransport(this));
             }
             else
@@ -246,6 +247,20 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         catch (Exception x)
         {
             return null;
+        }
+    }
+
+    private ServerTransport newJSONTransport()
+    {
+        try
+        {
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            loader.loadClass("javax.servlet.ReadListener");
+            return new AsyncJSONTransport(this);
+        }
+        catch (Exception x)
+        {
+            return new JSONTransport(this);
         }
     }
 
