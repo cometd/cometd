@@ -28,6 +28,11 @@ import org.junit.Test;
 
 public class BadJSONTest extends AbstractBayeuxClientServerTest
 {
+    public BadJSONTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {
@@ -37,12 +42,8 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
     @Test
     public void testBadJSON() throws Exception
     {
-        bayeux.setTransports(new JSONTransport(bayeux)
+        JSONTransport transport = new JSONTransport(bayeux)
         {
-            {
-                init();
-            }
-
             @Override
             protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws IOException
             {
@@ -50,7 +51,9 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 if (!response.isCommitted())
                     response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             }
-        });
+        };
+        transport.init();
+        bayeux.setTransports(transport);
 
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +

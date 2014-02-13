@@ -25,12 +25,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.transport.HttpTransport;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The CometD Servlet maps HTTP requests to the {@link HttpTransport} of a {@link BayeuxServer} instance.
+ * The CometD Servlet maps HTTP requests to the {@link org.cometd.server.transport.AbstractHttpTransport} of a {@link BayeuxServer} instance.
  * <p />
  * The {@link BayeuxServer} instance is searched in the servlet context under the {@link BayeuxServer#ATTRIBUTE}
  * attribute; if it is found then it is used without further configuration, otherwise a new {@link BayeuxServer}
@@ -92,7 +92,7 @@ public class CometDServlet extends HttpServlet
             return;
         }
 
-        HttpTransport transport = _bayeux.findHttpTransport(request);
+        AbstractHttpTransport transport = _bayeux.findHttpTransport(request);
         if (transport == null)
         {
             if (!response.isCommitted())

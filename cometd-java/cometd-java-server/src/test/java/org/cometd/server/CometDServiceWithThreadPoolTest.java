@@ -30,6 +30,11 @@ import org.junit.Test;
 
 public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerTest
 {
+    public CometDServiceWithThreadPoolTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

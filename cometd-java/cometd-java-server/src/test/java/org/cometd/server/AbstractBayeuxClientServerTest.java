@@ -34,6 +34,11 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
 {
     protected HttpClient httpClient;
 
+    protected AbstractBayeuxClientServerTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void startHttpClient() throws Exception
     {

@@ -15,8 +15,6 @@
  */
 package org.cometd.client;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
 import java.net.HttpCookie;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -28,8 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.server.transport.HttpTransport;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -57,13 +54,11 @@ public class MultipleClientSessionsTest extends ClientServerTest
     @Test
     public void testMultipleClientSession_WithOneMaxSessionPerBrowser_WithNoMultiSessionInterval() throws Exception
     {
-        HttpTransport transport = (HttpTransport)bayeux.getTransport("long-polling");
-        transport.setOption(HttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
-        transport.setOption(HttpTransport.MULTI_SESSION_INTERVAL_OPTION, 0);
+        AbstractHttpTransport transport = (AbstractHttpTransport)bayeux.getTransport("long-polling");
+        transport.setOption(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
+        transport.setOption(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, 0);
         // Force re-initialization
-        Method init = transport.getClass().getDeclaredMethod("init");
-        init.setAccessible(true);
-        init.invoke(transport);
+        transport.init();
 
         BayeuxClient client1 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
@@ -123,13 +118,11 @@ public class MultipleClientSessionsTest extends ClientServerTest
     {
         long multiSessionInterval = 1500;
 
-        HttpTransport transport = (HttpTransport)bayeux.getTransport("long-polling");
-        transport.setOption(HttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
-        transport.setOption(HttpTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
+        AbstractHttpTransport transport = (AbstractHttpTransport)bayeux.getTransport("long-polling");
+        transport.setOption(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
+        transport.setOption(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
         // Force re-initialization
-        Method init = transport.getClass().getDeclaredMethod("init");
-        init.setAccessible(true);
-        init.invoke(transport);
+        transport.init();
 
         BayeuxClient client1 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
@@ -257,13 +250,11 @@ public class MultipleClientSessionsTest extends ClientServerTest
     {
         long multiSessionInterval = 1500;
 
-        HttpTransport transport = (HttpTransport)bayeux.getTransport("long-polling");
-        transport.setOption(HttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 2);
-        transport.setOption(HttpTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
+        AbstractHttpTransport transport = (AbstractHttpTransport)bayeux.getTransport("long-polling");
+        transport.setOption(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 2);
+        transport.setOption(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
         // Force re-initialization
-        Method init = transport.getClass().getDeclaredMethod("init");
-        init.setAccessible(true);
-        init.invoke(transport);
+        transport.init();
 
         BayeuxClient client1 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();

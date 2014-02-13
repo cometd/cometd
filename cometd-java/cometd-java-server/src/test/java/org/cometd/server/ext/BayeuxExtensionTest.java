@@ -49,6 +49,11 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
     private static final String CLIENT_INFO = "fromClient";
     private static final String SERVICE_INFO = "fromService";
 
+    public BayeuxExtensionTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

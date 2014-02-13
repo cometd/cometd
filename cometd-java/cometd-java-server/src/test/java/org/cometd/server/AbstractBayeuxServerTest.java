@@ -15,9 +15,12 @@
  */
 package org.cometd.server;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.cometd.server.transport.AsyncJSONTransport;
+import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -27,9 +30,19 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public abstract class AbstractBayeuxServerTest
 {
+    @Parameterized.Parameters(name= "{0}")
+    public static Iterable<Object[]> data()
+    {
+        Object[][] data = {{JSONTransport.class.getName()}, {AsyncJSONTransport.class.getName()}};
+        return Arrays.asList(data);
+    }
+
     @Rule
     public final TestWatcher testName = new TestWatcher()
     {
@@ -40,6 +53,8 @@ public abstract class AbstractBayeuxServerTest
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
     };
+
+    protected final String serverTransport;
     protected Server server;
     protected ServerConnector connector;
     protected int port;
@@ -48,6 +63,11 @@ public abstract class AbstractBayeuxServerTest
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
     protected long timeout = 2000;
+
+    protected AbstractBayeuxServerTest(String serverTransport)
+    {
+        this.serverTransport = serverTransport;
+    }
 
     public void startServer(Map<String, String> options) throws Exception
     {
@@ -67,6 +87,7 @@ public abstract class AbstractBayeuxServerTest
         if (options == null)
             options = new HashMap<>();
         options.put("timeout", String.valueOf(timeout));
+        options.put("transports", serverTransport);
         for (Map.Entry<String, String> entry : options.entrySet())
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         String cometdServletPath = "/cometd";

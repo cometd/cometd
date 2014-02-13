@@ -34,6 +34,11 @@ public class ExtensionDisconnectTest extends AbstractBayeuxClientServerTest
 {
     private CountingExtension extension = new CountingExtension();
 
+    public ExtensionDisconnectTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

@@ -34,6 +34,11 @@ import org.junit.Test;
 
 public class IdleLongPollTest extends AbstractBayeuxClientServerTest
 {
+    public IdleLongPollTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Test
     public void testIdleLongPollDoesNotCauseMultipleClientsAdvice() throws Exception
     {
@@ -41,17 +46,12 @@ public class IdleLongPollTest extends AbstractBayeuxClientServerTest
 
         final long timeout = 2000;
         final long sleep = 500;
-        bayeux.setTransports(new JSONTransport(bayeux)
+        JSONTransport transport = new JSONTransport(bayeux)
         {
-            {
-                setOption(TIMEOUT_OPTION, timeout);
-                init();
-            }
-
             @Override
-            protected LongPollScheduler newLongPollScheduler(ServerSessionImpl session, AsyncContext asyncContext, ServerMessage.Mutable metaConnectReply, String browserId)
+            protected HttpScheduler newHttpScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
             {
-                return new LongPollScheduler(session, asyncContext, metaConnectReply, browserId)
+                return new DispatchingLongPollScheduler(asyncContext, session, reply, browserId, timeout)
                 {
                     private final AtomicInteger decrements = new AtomicInteger();
 
@@ -91,7 +91,10 @@ public class IdleLongPollTest extends AbstractBayeuxClientServerTest
                     }
                 };
             }
-        });
+        };
+        transport.setOption(AbstractServerTransport.TIMEOUT_OPTION, timeout);
+        transport.init();
+        bayeux.setTransports(transport);
 
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +

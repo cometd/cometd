@@ -34,6 +34,11 @@ public class ExtensionConnectTest extends AbstractBayeuxClientServerTest
 {
     private CountingExtension extension = new CountingExtension();
 
+    public ExtensionConnectTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

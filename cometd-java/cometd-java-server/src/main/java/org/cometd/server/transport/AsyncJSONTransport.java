@@ -18,29 +18,22 @@ package org.cometd.server.transport;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletResponse;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
-public class AsyncJSONTransport extends HttpTransport
+public class AsyncJSONTransport extends AbstractHttpTransport
 {
     private final static String PREFIX = "long-polling.json";
     private final static String NAME = "long-polling";
@@ -65,7 +58,8 @@ public class AsyncJSONTransport extends HttpTransport
             encoding = "UTF-8";
         request.setCharacterEncoding(encoding);
         AsyncContext asyncContext = request.startAsync(request, response);
-        // Explicitly disable the timeout, we are handling it ourselves
+        // Explicitly disable the timeout, to prevent
+        // that the timeout fires in case of slow reads.
         asyncContext.setTimeout(0);
         Charset charset = Charset.forName(encoding);
         ReadListener reader = "UTF-8".equals(charset.name()) ? new UTF8Reader(asyncContext) : new CharsetReader(asyncContext, charset);
@@ -73,238 +67,38 @@ public class AsyncJSONTransport extends HttpTransport
         input.setReadListener(reader);
     }
 
-    protected void processMessages(AsyncContext asyncContext, ServerMessage.Mutable[] messages) throws IOException
+    protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
     {
-        boolean autoBatch = isAutoBatch();
-        ServerSessionImpl session = null;
-        boolean batch = false;
-        boolean metaConnect = false;
-        boolean suspended = false;
-        boolean disconnected = false;
+        AsyncContext asyncContext = request.getAsyncContext();
+        return newHttpScheduler(asyncContext, session, reply, browserId, timeout);
+    }
+
+    protected HttpScheduler newHttpScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
+    {
+        return new AsyncLongPollScheduler(asyncContext, session, reply, browserId, timeout);
+    }
+
+    @Override
+    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean startInterval, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
+    {
+        AsyncContext asyncContext = request.getAsyncContext();
         try
         {
-            for (int i = 0; i < messages.length; ++i)
-            {
-                ServerMessage.Mutable message = messages[i];
-                _logger.debug("Processing message {}", message);
-
-                if (session == null && !disconnected)
-                    session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
-
-                if (session != null)
-                {
-                    disconnected = !session.isHandshook();
-                    if (disconnected)
-                    {
-                        if (batch)
-                        {
-                            batch = false;
-                            session.endBatch();
-                        }
-                        session = null;
-                    }
-                    else
-                    {
-                        if (autoBatch && !batch)
-                        {
-                            batch = true;
-                            session.startBatch();
-                        }
-                    }
-                }
-
-                switch (message.getChannel())
-                {
-                    case Channel.META_HANDSHAKE:
-                    {
-                        ServerMessage.Mutable reply = messages[i] = processMetaHandshake(asyncContext, session, message);
-                        if (reply != null)
-                            session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-                        break;
-                    }
-                    case Channel.META_CONNECT:
-                    {
-                        ServerMessage.Mutable reply = messages[i] = processMetaConnect(asyncContext, session, message);
-                        metaConnect = true;
-                        if (reply == null)
-                            suspended = messages.length == 1;
-                        break;
-                    }
-                    default:
-                    {
-                        ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-                        messages[i] = processReply(session, reply);
-                        break;
-                    }
-                }
-            }
-
-            if (!suspended)
-                flush(asyncContext, session, metaConnect, messages);
-        }
-        finally
-        {
-            if (batch)
-                session.endBatch();
-        }
-    }
-
-    protected ServerMessage.Mutable processMetaHandshake(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable message)
-    {
-        ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-        if (reply != null)
-        {
-            session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-            if (session != null)
-            {
-                HttpServletRequest request = (HttpServletRequest)asyncContext.getRequest();
-                String browserId = findBrowserId(request);
-                if (browserId == null)
-                    setBrowserId(request, (HttpServletResponse)asyncContext.getResponse());
-            }
-        }
-        return processReply(session, reply);
-    }
-
-    protected ServerMessage.Mutable processMetaConnect(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable message)
-    {
-        if (session != null)
-        {
-            // Cancel the previous scheduler to cancel any prior waiting long poll.
-            // This should also decrement the browser ID.
-            session.setScheduler(null);
-        }
-
-        boolean wasConnected = session != null && session.isConnected();
-        ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-        if (reply != null && session != null)
-        {
-            if (!session.hasNonLazyMessages() && reply.isSuccessful())
-            {
-                // Detect if we have multiple sessions from the same browser
-                // Note that CORS requests do not send cookies, so we need to handle them specially
-                // CORS requests always have the Origin header
-                HttpServletRequest request = (HttpServletRequest)asyncContext.getRequest();
-                String browserId = findBrowserId(request);
-                boolean allowSuspendConnect;
-                if (browserId != null)
-                    allowSuspendConnect = incBrowserId(browserId, session);
-                else
-                    allowSuspendConnect = isAllowMultiSessionsNoBrowser() || request.getHeader("Origin") != null;
-
-                if (allowSuspendConnect)
-                {
-                    long timeout = session.calculateTimeout(getTimeout());
-
-                    // Support old clients that do not send advice:{timeout:0} on the first connect
-                    if (timeout > 0 && wasConnected && session.isConnected())
-                    {
-                        // Between the last time we checked for messages in the queue
-                        // (which was false, otherwise we would not be in this branch)
-                        // and now, messages may have been added to the queue.
-                        // We will suspend anyway, but setting the scheduler on the
-                        // session will decide atomically if we need to resume or not.
-
-                        LongPollingScheduler scheduler = new LongPollingScheduler(asyncContext, session, reply, browserId);
-                        scheduler.scheduleTimeout(timeout);
-
-                        metaConnectSuspended(asyncContext, session);
-                        // Setting the scheduler may resume the /meta/connect
-                        session.setScheduler(scheduler);
-                        reply = null;
-                    }
-                    else
-                    {
-                        decBrowserId(browserId, session);
-                    }
-                }
-                else
-                {
-                    // There are multiple sessions from the same browser
-                    Map<String, Object> advice = reply.getAdvice(true);
-
-                    if (browserId != null)
-                        advice.put("multiple-clients", true);
-
-                    long multiSessionInterval = getMultiSessionInterval();
-                    if (multiSessionInterval > 0)
-                    {
-                        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
-                        advice.put(Message.INTERVAL_FIELD, multiSessionInterval);
-                    }
-                    else
-                    {
-                        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                        reply.setSuccessful(false);
-                    }
-                    session.reAdvise();
-                }
-            }
-
-            if (reply != null && session.isDisconnected())
-                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-        }
-
-        return processReply(session, reply);
-    }
-
-    protected ServerMessage.Mutable processReply(ServerSessionImpl session, ServerMessage.Mutable reply)
-    {
-        if (reply != null)
-        {
-            reply = getBayeux().extendReply(session, session, reply);
-            if (reply != null)
-                getBayeux().freeze(reply);
-        }
-        return reply;
-    }
-
-    protected void flush(AsyncContext asyncContext, ServerSessionImpl session, boolean startInterval, ServerMessage.Mutable... replies)
-    {
-        try
-        {
-            List<ServerMessage> messages = Collections.emptyList();
-            if (session != null)
-            {
-                if (startInterval || !isMetaConnectDeliveryOnly() && !session.isMetaConnectDeliveryOnly())
-                    messages = session.takeQueue();
-            }
-
             // Always write asynchronously
-            ServletResponse response = asyncContext.getResponse();
             response.setContentType("application/json;charset=UTF-8");
             ServletOutputStream output = response.getOutputStream();
             output.setWriteListener(new Writer(asyncContext, session, startInterval, messages, replies));
         }
-        catch (IOException x)
+        catch (Exception x)
         {
+            _logger.debug("Exception while writing messages", x);
             error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
     private void error(AsyncContext asyncContext, int responseCode)
     {
-        try
-        {
-            HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
-            if (!response.isCommitted())
-                response.sendError(responseCode);
-        }
-        catch (Exception x)
-        {
-            _logger.trace("Could not send " + responseCode + " response", x);
-        }
-        finally
-        {
-            try
-            {
-                asyncContext.complete();
-            }
-            catch (Exception x)
-            {
-                _logger.trace("Could not complete " + responseCode + " response", x);
-            }
-        }
+        error(asyncContext, (HttpServletResponse)asyncContext.getResponse(), responseCode);
     }
 
     protected abstract class AbstractReader implements ReadListener
@@ -352,18 +146,19 @@ public class AsyncJSONTransport extends HttpTransport
 
         protected void process(String json) throws IOException
         {
+            HttpServletRequest request = (HttpServletRequest)asyncContext.getRequest();
+            HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
             getBayeux().setCurrentTransport(AsyncJSONTransport.this);
-            setCurrentRequest((HttpServletRequest)asyncContext.getRequest());
+            setCurrentRequest(request);
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(json);
                 _logger.debug("Parsed {} messages", messages.length);
-                processMessages(asyncContext, messages);
+                processMessages(request, response, messages);
             }
             catch (ParseException x)
             {
-                handleJSONParseException((HttpServletRequest)asyncContext.getRequest(),
-                        (HttpServletResponse)asyncContext.getResponse(), json, x);
+                handleJSONParseException(request, response, json, x);
                 asyncContext.complete();
             }
             finally
@@ -466,28 +261,38 @@ public class AsyncJSONTransport extends HttpTransport
         @Override
         public void onWritePossible() throws IOException
         {
-            ServletOutputStream output = asyncContext.getResponse().getOutputStream();
-            if (messageIndex < 0)
+            ServletOutputStream output;
+            try
             {
-                messageIndex = 0;
-                buffer.append("[");
-            }
+                output = asyncContext.getResponse().getOutputStream();
 
-            _logger.debug("Messages to write for session {}: {}", session, messages.size());
-            while (messageIndex < messages.size())
+                if (messageIndex < 0)
+                {
+                    messageIndex = 0;
+                    buffer.append("[");
+                }
+
+                _logger.debug("Messages to write for session {}: {}", session, messages.size());
+                while (messageIndex < messages.size())
+                {
+                    if (messageIndex > 0)
+                        buffer.append(",");
+
+                    buffer.append(messages.get(messageIndex++).getJSON());
+                    output.write(buffer.toString().getBytes("UTF-8"));
+                    buffer.setLength(0);
+                    if (!output.isReady())
+                        return;
+                }
+            }
+            finally
             {
-                if (messageIndex > 0)
-                    buffer.append(",");
-
-                buffer.append(messages.get(messageIndex++).getJSON());
-                output.write(buffer.toString().getBytes("UTF-8"));
-                buffer.setLength(0);
-                if (!output.isReady())
-                    return;
+                // Start the interval timeout after writing the messages
+                // since they may take time to be written, even in case
+                // of exceptions to make sure the session can be swept.
+                if (replyIndex == 0 && startInterval && session != null && session.isConnected())
+                    session.startIntervalTimeout(getInterval());
             }
-
-            if (replyIndex == 0 && startInterval && session != null && session.isConnected())
-                session.startIntervalTimeout(getInterval());
 
             _logger.debug("Replies to write for session {}: {}", session, replies.length);
             boolean needsComma = messageIndex > 0;
@@ -522,100 +327,25 @@ public class AsyncJSONTransport extends HttpTransport
         }
     }
 
-    private class LongPollingScheduler implements Runnable, OneTimeScheduler, AsyncListener
+    private class AsyncLongPollScheduler extends LongPollScheduler
     {
-        private final AsyncContext asyncContext;
-        private final ServerSessionImpl session;
-        private final ServerMessage.Mutable reply;
-        private final String browserId;
-        private volatile org.eclipse.jetty.util.thread.Scheduler.Task task;
-
-        private LongPollingScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId)
+        private AsyncLongPollScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
         {
-            this.asyncContext = asyncContext;
-            this.session = session;
-            this.reply = reply;
-            this.browserId = browserId;
-            asyncContext.addListener(this);
+            super(asyncContext, session, reply, browserId, timeout);
         }
 
         @Override
-        public void schedule()
+        protected void dispatch()
         {
-            if (cancelTimeout())
-            {
-                _logger.debug("Resuming /meta/connect after schedule");
-                resume();
-            }
+            // Direct call to resume() to write the messages in the queue and the replies.
+            // Since the write is async, we will never block here and thus never delay other sessions.
+            resume(getAsyncContext(), getServerSession(), getMetaConnectReply());
         }
 
         @Override
-        public void cancel()
+        protected void error(int code)
         {
-            if (cancelTimeout())
-            {
-                _logger.debug("Duplicate /meta/connect, cancelling {}", reply);
-                error();
-            }
-        }
-
-        private void scheduleTimeout(long timeout)
-        {
-            task = getBayeux().schedule(this, timeout);
-        }
-
-        private boolean cancelTimeout()
-        {
-            org.eclipse.jetty.util.thread.Scheduler.Task task = this.task;
-            return task != null && task.cancel();
-        }
-
-        @Override
-        public void run()
-        {
-            task = null;
-            session.setScheduler(null);
-            _logger.debug("Resuming /meta/connect after timeout");
-            resume();
-        }
-
-        private void resume()
-        {
-            metaConnectResumed(asyncContext, session);
-            Map<String, Object> advice = session.takeAdvice(AsyncJSONTransport.this);
-            if (advice != null)
-                reply.put(Message.ADVICE_FIELD, advice);
-            if (session.isDisconnected())
-                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-            decBrowserId(browserId, session);
-            flush(asyncContext, session, true, processReply(session, reply));
-        }
-
-        @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
-        {
-        }
-
-        @Override
-        public void onTimeout(AsyncEvent event) throws IOException
-        {
-        }
-
-        @Override
-        public void onComplete(AsyncEvent asyncEvent) throws IOException
-        {
-        }
-
-        @Override
-        public void onError(AsyncEvent event) throws IOException
-        {
-            error();
-        }
-        
-        private void error()
-        {
-            decBrowserId(browserId, session);
-            AsyncJSONTransport.this.error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            AsyncJSONTransport.this.error(getAsyncContext(), code);
         }
     }
 }

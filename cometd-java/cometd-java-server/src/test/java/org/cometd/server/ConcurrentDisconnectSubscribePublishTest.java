@@ -32,6 +32,11 @@ import org.junit.Test;
 
 public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClientServerTest
 {
+    public ConcurrentDisconnectSubscribePublishTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

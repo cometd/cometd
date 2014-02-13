@@ -15,7 +15,6 @@
  */
 package org.cometd.server.transport;
 
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +30,11 @@ import org.junit.Test;
 
 public class BrowserMappingTest extends AbstractBayeuxClientServerTest
 {
+    public BrowserMappingTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {
@@ -40,7 +44,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
     @Test
     public void testBayeuxBrowserMapping() throws Exception
     {
-        LongPollingTransport transport = new JSONTransport(bayeux);
+        AbstractHttpTransport transport = new JSONTransport(bayeux);
         transport.init();
 
         String browserId = "browser1";
@@ -140,10 +144,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(200, response.getStatus());
 
         AbstractServerTransport transport = (AbstractServerTransport)bayeux.getTransport("long-polling");
-        transport.setOption(LongPollingTransport.ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION, true);
-        Method init = transport.getClass().getDeclaredMethod("init");
-        init.setAccessible(true);
-        init.invoke(transport);
+        transport.setOption(AbstractHttpTransport.ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION, true);
+        transport.init();
 
         String clientId = extractClientId(response);
 

@@ -29,6 +29,11 @@ import org.junit.Test;
 
 public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServerTest
 {
+    public CometDServiceMetaNotificationsTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

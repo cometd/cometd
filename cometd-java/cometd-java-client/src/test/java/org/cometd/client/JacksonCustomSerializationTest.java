@@ -34,7 +34,7 @@ import org.cometd.common.Jackson2JSONContextClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.Jackson1JSONContextServer;
 import org.cometd.server.Jackson2JSONContextServer;
-import org.cometd.server.transport.HttpTransport;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,7 +68,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest
     {
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, jacksonContextServerClassName);
-        serverOptions.put(HttpTransport.JSON_DEBUG_OPTION, "true");
+        serverOptions.put(AbstractHttpTransport.JSON_DEBUG_OPTION, "true");
         Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put(ClientTransport.JSON_CONTEXT_OPTION, jacksonContextClientClassName);
 

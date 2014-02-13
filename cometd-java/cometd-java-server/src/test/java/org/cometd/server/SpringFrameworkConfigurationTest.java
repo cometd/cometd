@@ -31,6 +31,11 @@ import static org.junit.Assert.assertTrue;
 
 public class SpringFrameworkConfigurationTest extends AbstractBayeuxClientServerTest
 {
+    public SpringFrameworkConfigurationTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

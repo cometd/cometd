@@ -40,6 +40,11 @@ import org.junit.Test;
 
 public class BayeuxContextTest extends AbstractBayeuxClientServerTest
 {
+    public BayeuxContextTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

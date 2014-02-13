@@ -34,6 +34,11 @@ public class ExtensionUnsubscribeTest extends AbstractBayeuxClientServerTest
 {
     private CountingExtension extension = new CountingExtension();
 
+    public ExtensionUnsubscribeTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

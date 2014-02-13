@@ -131,7 +131,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     /**
      * Initialise the transport, resolving default and direct options.
      */
-    protected void init()
+    public void init()
     {
         _interval = getOption(INTERVAL_OPTION, _interval);
         _maxInterval = getOption(MAX_INTERVAL_OPTION, _maxInterval);
@@ -141,7 +141,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         jsonContext = (JSONContext.Server)getOption(JSON_CONTEXT_OPTION);
     }
 
-    protected void destroy()
+    public void destroy()
     {
     }
 
@@ -230,9 +230,5 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         void cancel();
 
         void schedule();
-    }
-
-    public interface OneTimeScheduler extends Scheduler
-    {
     }
 }

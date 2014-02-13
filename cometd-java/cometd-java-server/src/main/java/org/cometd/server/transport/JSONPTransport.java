@@ -16,16 +16,15 @@
 package org.cometd.server.transport;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.text.ParseException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerSessionImpl;
 
-public class JSONPTransport extends LongPollingTransport
+public class JSONPTransport extends AbstractStreamHttpTransport
 {
     public final static String PREFIX = "long-polling.jsonp";
     public final static String NAME = "callback-polling";
@@ -41,20 +40,8 @@ public class JSONPTransport extends LongPollingTransport
         setOptionPrefix(PREFIX);
     }
 
-    /**
-     * @see org.cometd.server.transport.LongPollingTransport#isAlwaysFlushingAfterHandle()
-     */
     @Override
-    protected boolean isAlwaysFlushingAfterHandle()
-    {
-        return true;
-    }
-
-    /**
-     * @see org.cometd.server.transport.JSONTransport#init()
-     */
-    @Override
-    protected void init()
+    public void init()
     {
         super.init();
         _callbackParam = getOption(CALLBACK_PARAMETER_OPTION, _callbackParam);
@@ -72,7 +59,7 @@ public class JSONPTransport extends LongPollingTransport
     @Override
     protected ServerMessage.Mutable[] parseMessages(HttpServletRequest request) throws IOException, ParseException
     {
-        return super.parseMessages(request.getParameterValues(MESSAGE_PARAM));
+        return parseMessages(request.getParameterValues(MESSAGE_PARAM));
     }
 
     public String getCallbackParameter()
@@ -81,27 +68,20 @@ public class JSONPTransport extends LongPollingTransport
     }
 
     @Override
-    protected PrintWriter writeMessage(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerSessionImpl session, ServerMessage message) throws IOException
+    protected ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        if (writer == null)
-        {
-            response.setContentType(_mimeType);
-
-            String callback = request.getParameter(_callbackParam);
-            writer = response.getWriter();
-            writer.append(callback);
-            writer.append("([");
-        }
-        else
-            writer.append(',');
-        writer.append(message.getJSON());
-        return writer;
+        response.setContentType(_mimeType);
+        String callback = request.getParameter(_callbackParam);
+        ServletOutputStream output = response.getOutputStream();
+        output.print(callback);
+        output.print("([");
+        return output;
     }
 
     @Override
-    protected void finishWrite(PrintWriter writer, ServerSessionImpl session) throws IOException
+    protected void endWrite(ServletOutputStream output) throws IOException
     {
-        writer.append("])");
-        writer.close();
+        output.print("])");
+        output.close();
     }
 }

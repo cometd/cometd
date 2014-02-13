@@ -29,6 +29,11 @@ import org.junit.Test;
 
 public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientServerTest
 {
+    public JSONTransportMetaConnectDeliveryTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Test
     public void testJSONTransportMetaConnectDelivery() throws Exception
     {

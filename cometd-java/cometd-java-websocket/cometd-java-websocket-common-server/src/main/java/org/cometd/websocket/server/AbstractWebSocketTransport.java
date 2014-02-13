@@ -62,7 +62,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     }
 
     @Override
-    protected void init()
+    public void init()
     {
         super.init();
         _executor = newExecutor();
@@ -72,7 +72,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     }
 
     @Override
-    protected void destroy()
+    public void destroy()
     {
         _scheduler.shutdownNow();
 

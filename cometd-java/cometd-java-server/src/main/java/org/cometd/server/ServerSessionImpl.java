@@ -38,8 +38,8 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.HashMapMessage;
-import org.cometd.server.AbstractServerTransport.OneTimeScheduler;
 import org.cometd.server.AbstractServerTransport.Scheduler;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
 import org.slf4j.Logger;
@@ -495,7 +495,7 @@ public class ServerSessionImpl implements ServerSession
                 if (hasNonLazyMessages() && _batch == 0)
                 {
                     schedule = true;
-                    if (newScheduler instanceof OneTimeScheduler)
+                    if (newScheduler instanceof AbstractHttpTransport.HttpScheduler)
                         _scheduler = null;
                 }
             }
@@ -517,7 +517,7 @@ public class ServerSessionImpl implements ServerSession
 
             if (scheduler != null)
             {
-                if (_scheduler instanceof OneTimeScheduler)
+                if (scheduler instanceof AbstractHttpTransport.HttpScheduler)
                     _scheduler = null;
             }
         }

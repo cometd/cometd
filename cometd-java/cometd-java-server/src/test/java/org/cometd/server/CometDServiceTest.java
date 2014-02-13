@@ -29,6 +29,11 @@ import org.junit.Test;
 
 public class CometDServiceTest extends AbstractBayeuxClientServerTest
 {
+    public CometDServiceTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

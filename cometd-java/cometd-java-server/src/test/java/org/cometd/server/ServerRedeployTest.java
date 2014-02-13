@@ -27,6 +27,11 @@ import org.junit.Test;
 
 public class ServerRedeployTest extends AbstractBayeuxClientServerTest
 {
+    public ServerRedeployTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

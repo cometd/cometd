@@ -35,6 +35,11 @@ import org.junit.Test;
 
 public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClientServerTest
 {
+    public CustomResponseOnSecurityPolicyDenyTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

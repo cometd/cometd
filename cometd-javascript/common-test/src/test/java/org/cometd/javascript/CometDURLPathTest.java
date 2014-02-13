@@ -22,7 +22,7 @@ import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.transport.HttpTransport;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -195,7 +195,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
                 Channel.META_CONNECT.equals(message.getChannel()) ||
                 Channel.META_DISCONNECT.equals(message.getChannel()))
             {
-                HttpTransport transport = (HttpTransport)bayeux.getCurrentTransport();
+                AbstractHttpTransport transport = (AbstractHttpTransport)bayeux.getCurrentTransport();
                 HttpServletRequest request = transport.getCurrentRequest();
                 if (request != null)
                 {

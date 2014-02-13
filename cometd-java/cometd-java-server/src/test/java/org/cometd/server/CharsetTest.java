@@ -27,6 +27,11 @@ import org.junit.Test;
 
 public class CharsetTest extends AbstractBayeuxClientServerTest
 {
+    public CharsetTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

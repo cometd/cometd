@@ -36,6 +36,11 @@ import org.junit.Test;
 
 public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerTest
 {
+    public ConcurrentConnectDisconnectTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {
@@ -143,12 +148,8 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         final CountDownLatch connectLatch = new CountDownLatch(2);
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
         final CountDownLatch suspendLatch = new CountDownLatch(1);
-        bayeux.setTransports(new JSONTransport(bayeux)
+        JSONTransport transport = new JSONTransport(bayeux)
         {
-            {
-                init();
-            }
-
             @Override
             protected ServerMessage.Mutable bayeuxServerHandle(ServerSessionImpl session, ServerMessage.Mutable message)
             {
@@ -167,7 +168,9 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
             {
                 suspendLatch.countDown();
             }
-        });
+        };
+        transport.init();
+        bayeux.setTransports(transport);
 
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +

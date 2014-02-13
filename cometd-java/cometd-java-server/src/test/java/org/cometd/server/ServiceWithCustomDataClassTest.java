@@ -30,6 +30,11 @@ import org.junit.Test;
 
 public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTest
 {
+    public ServiceWithCustomDataClassTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Test
     public void testServiceWithCustomDataClass() throws Exception
     {

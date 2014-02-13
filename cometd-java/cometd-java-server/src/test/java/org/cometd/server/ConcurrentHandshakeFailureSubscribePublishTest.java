@@ -33,6 +33,11 @@ import org.junit.Test;
 
 public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBayeuxClientServerTest
 {
+    public ConcurrentHandshakeFailureSubscribePublishTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {

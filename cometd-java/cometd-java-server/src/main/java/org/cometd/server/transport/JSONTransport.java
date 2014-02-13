@@ -16,16 +16,15 @@
 package org.cometd.server.transport;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.text.ParseException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerSessionImpl;
 
-public class JSONTransport extends LongPollingTransport
+public class JSONTransport extends AbstractStreamHttpTransport
 {
     public final static String PREFIX = "long-polling.json";
     public final static String NAME = "long-polling";
@@ -41,13 +40,7 @@ public class JSONTransport extends LongPollingTransport
     }
 
     @Override
-    protected boolean isAlwaysFlushingAfterHandle()
-    {
-        return false;
-    }
-
-    @Override
-    protected void init()
+    public void init()
     {
         super.init();
         _jsonDebug = getOption(JSON_DEBUG_OPTION, _jsonDebug);
@@ -76,26 +69,18 @@ public class JSONTransport extends LongPollingTransport
     }
 
     @Override
-    protected PrintWriter writeMessage(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerSessionImpl session, ServerMessage message) throws IOException
+    protected ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        if (writer == null)
-        {
-            response.setContentType(_mimeType);
-            writer = response.getWriter();
-            writer.append('[');
-        }
-        else
-        {
-            writer.append(',');
-        }
-        writer.append(message.getJSON());
-        return writer;
+        response.setContentType(_mimeType);
+        ServletOutputStream output = response.getOutputStream();
+        output.write('[');
+        return output;
     }
 
     @Override
-    protected void finishWrite(PrintWriter writer, ServerSessionImpl session) throws IOException
+    protected void endWrite(ServletOutputStream output) throws IOException
     {
-        writer.append("]");
-        writer.close();
+        output.write(']');
+        output.close();
     }
 }

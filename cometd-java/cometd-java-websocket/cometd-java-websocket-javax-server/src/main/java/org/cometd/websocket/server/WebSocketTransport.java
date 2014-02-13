@@ -55,7 +55,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     }
 
     @Override
-    protected void init()
+    public void init()
     {
         super.init();
 
@@ -94,7 +94,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     }
 
     @Override
-    protected void destroy()
+    public void destroy()
     {
         Executor threadPool = getExecutor();
         if (threadPool instanceof LifeCycle)

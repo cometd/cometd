@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -32,6 +34,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -45,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * <p>HTTP ServerTransport base class, used by ServerTransports that use
  * HTTP as transport or to initiate a transport connection.</p>
  */
-public abstract class HttpTransport extends AbstractServerTransport
+public abstract class AbstractHttpTransport extends AbstractServerTransport
 {
     public final static String PREFIX = "long-polling";
     public static final String JSON_DEBUG_OPTION = "jsonDebug";
@@ -71,14 +75,14 @@ public abstract class HttpTransport extends AbstractServerTransport
     private boolean _allowMultiSessionsNoBrowser;
     private long _lastSweep;
 
-    protected HttpTransport(BayeuxServerImpl bayeux, String name)
+    protected AbstractHttpTransport(BayeuxServerImpl bayeux, String name)
     {
         super(bayeux, name);
         setOptionPrefix(PREFIX);
     }
 
     @Override
-    protected void init()
+    public void init()
     {
         super.init();
         _browserCookieName = getOption(BROWSER_COOKIE_NAME_OPTION, "BAYEUX_BROWSER");
@@ -89,10 +93,6 @@ public abstract class HttpTransport extends AbstractServerTransport
         _autoBatch = getOption(AUTOBATCH_OPTION, true);
         _allowMultiSessionsNoBrowser = getOption(ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION, false);
     }
-
-    public abstract boolean accept(HttpServletRequest request);
-
-    public abstract void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
 
     protected long getMultiSessionInterval()
     {
@@ -117,6 +117,222 @@ public abstract class HttpTransport extends AbstractServerTransport
     public HttpServletRequest getCurrentRequest()
     {
         return _currentRequest.get();
+    }
+
+    public abstract boolean accept(HttpServletRequest request);
+
+    public abstract void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
+
+    protected abstract HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout);
+
+    protected abstract void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean startInterval, List<ServerMessage> messages, ServerMessage.Mutable[] replies);
+
+    protected void processMessages(HttpServletRequest request, HttpServletResponse response, ServerMessage.Mutable[] messages) throws IOException
+    {
+        boolean autoBatch = isAutoBatch();
+        ServerSessionImpl session = null;
+        boolean batch = false;
+        boolean metaConnect = false;
+        boolean suspended = false;
+        boolean disconnected = false;
+        try
+        {
+            for (int i = 0; i < messages.length; ++i)
+            {
+                ServerMessage.Mutable message = messages[i];
+                _logger.debug("Processing message {}", message);
+
+                if (session == null && !disconnected)
+                    session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
+
+                if (session != null)
+                {
+                    disconnected = !session.isHandshook();
+                    if (disconnected)
+                    {
+                        if (batch)
+                        {
+                            batch = false;
+                            session.endBatch();
+                        }
+                        session = null;
+                    }
+                    else
+                    {
+                        if (autoBatch && !batch)
+                        {
+                            batch = true;
+                            session.startBatch();
+                        }
+                    }
+                }
+
+                switch (message.getChannel())
+                {
+                    case Channel.META_HANDSHAKE:
+                    {
+                        ServerMessage.Mutable reply = messages[i] = processMetaHandshake(request, response, session, message);
+                        if (reply != null)
+                            session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+                        break;
+                    }
+                    case Channel.META_CONNECT:
+                    {
+                        ServerMessage.Mutable reply = messages[i] = processMetaConnect(request, response, session, message);
+                        metaConnect = true;
+                        if (reply == null)
+                            suspended = messages.length == 1;
+                        break;
+                    }
+                    default:
+                    {
+                        ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
+                        messages[i] = processReply(session, reply);
+                        break;
+                    }
+                }
+            }
+
+            if (!suspended)
+                flush(request, response, session, metaConnect, messages);
+        }
+        finally
+        {
+            if (batch)
+                session.endBatch();
+        }
+    }
+
+    protected ServerMessage.Mutable processMetaHandshake(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message)
+    {
+        ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
+        if (reply != null)
+        {
+            session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+            if (session != null)
+            {
+                String browserId = findBrowserId(request);
+                if (browserId == null)
+                    setBrowserId(request, response);
+            }
+        }
+        return processReply(session, reply);
+    }
+
+    protected ServerMessage.Mutable processMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message)
+    {
+        if (session != null)
+        {
+            // Cancel the previous scheduler to cancel any prior waiting long poll.
+            // This should also decrement the browser ID.
+            session.setScheduler(null);
+        }
+
+        boolean wasConnected = session != null && session.isConnected();
+        ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
+        if (reply != null && session != null)
+        {
+            if (!session.hasNonLazyMessages() && reply.isSuccessful())
+            {
+                // Detect if we have multiple sessions from the same browser
+                // Note that CORS requests do not send cookies, so we need to handle them specially
+                // CORS requests always have the Origin header
+                String browserId = findBrowserId(request);
+                boolean allowSuspendConnect;
+                if (browserId != null)
+                    allowSuspendConnect = incBrowserId(browserId, session);
+                else
+                    allowSuspendConnect = isAllowMultiSessionsNoBrowser() || request.getHeader("Origin") != null;
+
+                if (allowSuspendConnect)
+                {
+                    long timeout = session.calculateTimeout(getTimeout());
+
+                    // Support old clients that do not send advice:{timeout:0} on the first connect
+                    if (timeout > 0 && wasConnected && session.isConnected())
+                    {
+                        // Between the last time we checked for messages in the queue
+                        // (which was false, otherwise we would not be in this branch)
+                        // and now, messages may have been added to the queue.
+                        // We will suspend anyway, but setting the scheduler on the
+                        // session will decide atomically if we need to resume or not.
+
+                        HttpScheduler scheduler = suspend(request, response, session, reply, browserId, timeout);
+                        metaConnectSuspended(scheduler.getAsyncContext(), session);
+                        // Setting the scheduler may resume the /meta/connect
+                        session.setScheduler(scheduler);
+                        reply = null;
+                    }
+                    else
+                    {
+                        decBrowserId(browserId, session);
+                    }
+                }
+                else
+                {
+                    // There are multiple sessions from the same browser
+                    Map<String, Object> advice = reply.getAdvice(true);
+
+                    if (browserId != null)
+                        advice.put("multiple-clients", true);
+
+                    long multiSessionInterval = getMultiSessionInterval();
+                    if (multiSessionInterval > 0)
+                    {
+                        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
+                        advice.put(Message.INTERVAL_FIELD, multiSessionInterval);
+                    }
+                    else
+                    {
+                        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                        reply.setSuccessful(false);
+                    }
+                    session.reAdvise();
+                }
+            }
+
+            if (reply != null && session.isDisconnected())
+                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+        }
+
+        return processReply(session, reply);
+    }
+
+    protected ServerMessage.Mutable processReply(ServerSessionImpl session, ServerMessage.Mutable reply)
+    {
+        if (reply != null)
+        {
+            reply = getBayeux().extendReply(session, session, reply);
+            if (reply != null)
+                getBayeux().freeze(reply);
+        }
+        return reply;
+    }
+
+    protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean startInterval, ServerMessage.Mutable... replies)
+    {
+        List<ServerMessage> messages = Collections.emptyList();
+        if (session != null)
+        {
+            if (startInterval || !isMetaConnectDeliveryOnly() && !session.isMetaConnectDeliveryOnly())
+                messages = session.takeQueue();
+        }
+
+        write(request, response, session, startInterval, messages, replies);
+    }
+
+    protected void resume(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply)
+    {
+        metaConnectResumed(asyncContext, session);
+        Map<String, Object> advice = session.takeAdvice(this);
+        if (advice != null)
+            reply.put(Message.ADVICE_FIELD, advice);
+        if (session.isDisconnected())
+            reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+
+        HttpServletRequest request = (HttpServletRequest)asyncContext.getRequest();
+        HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
+        flush(request, response, session, true, processReply(session, reply));
     }
 
     public BayeuxContext getContext()
@@ -227,6 +443,31 @@ public abstract class HttpTransport extends AbstractServerTransport
         catch (IOException x)
         {
             _logger.trace("Could not send response error", x);
+        }
+    }
+
+    protected void error(AsyncContext asyncContext, HttpServletResponse response, int responseCode)
+    {
+        try
+        {
+            if (!response.isCommitted())
+                response.sendError(responseCode);
+        }
+        catch (Exception x)
+        {
+            _logger.trace("Could not send " + responseCode + " response", x);
+        }
+        finally
+        {
+            try
+            {
+                if (asyncContext != null)
+                    asyncContext.complete();
+            }
+            catch (Exception x)
+            {
+                _logger.trace("Could not complete " + responseCode + " response", x);
+            }
         }
     }
 
@@ -409,5 +650,111 @@ public abstract class HttpTransport extends AbstractServerTransport
                 url.append("?").append(query);
             return url.toString();
         }
+    }
+
+    public interface HttpScheduler extends Scheduler
+    {
+        public AsyncContext getAsyncContext();
+    }
+
+    protected abstract class LongPollScheduler implements Runnable, HttpScheduler, AsyncListener
+    {
+        private final AsyncContext asyncContext;
+        private final ServerSessionImpl session;
+        private final ServerMessage.Mutable reply;
+        private final String browserId;
+        private final org.eclipse.jetty.util.thread.Scheduler.Task task;
+
+        protected LongPollScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
+        {
+            this.asyncContext = asyncContext;
+            this.session = session;
+            this.reply = reply;
+            this.browserId = browserId;
+            asyncContext.addListener(this);
+            this.task = getBayeux().schedule(this, timeout);
+        }
+
+        @Override
+        public AsyncContext getAsyncContext()
+        {
+            return asyncContext;
+        }
+
+        public ServerSessionImpl getServerSession()
+        {
+            return session;
+        }
+
+        public ServerMessage.Mutable getMetaConnectReply()
+        {
+            return reply;
+        }
+
+        @Override
+        public void schedule()
+        {
+            if (cancelTimeout())
+            {
+                _logger.debug("Resuming /meta/connect after schedule");
+                resume();
+            }
+        }
+
+        @Override
+        public void cancel()
+        {
+            if (cancelTimeout())
+            {
+                _logger.debug("Duplicate /meta/connect, cancelling {}", reply);
+                error(HttpServletResponse.SC_REQUEST_TIMEOUT);
+            }
+        }
+
+        private boolean cancelTimeout()
+        {
+            return task.cancel();
+        }
+
+        @Override
+        public void run()
+        {
+            cancelTimeout();
+            session.setScheduler(null);
+            _logger.debug("Resuming /meta/connect after timeout");
+            resume();
+        }
+
+        private void resume()
+        {
+            decBrowserId(browserId, session);
+            dispatch();
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+        }
+
+        @Override
+        public void onTimeout(AsyncEvent event) throws IOException
+        {
+        }
+
+        @Override
+        public void onComplete(AsyncEvent asyncEvent) throws IOException
+        {
+        }
+
+        @Override
+        public void onError(AsyncEvent event) throws IOException
+        {
+            decBrowserId(browserId, session);
+            error(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+
+        protected abstract void dispatch();
+
+        protected abstract void error(int code);
     }
 }

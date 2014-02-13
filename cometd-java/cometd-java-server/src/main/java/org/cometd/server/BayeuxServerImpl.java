@@ -51,8 +51,8 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.JSONContext;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.cometd.server.transport.AsyncJSONTransport;
-import org.cometd.server.transport.HttpTransport;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -1098,16 +1098,16 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    protected HttpTransport findHttpTransport(HttpServletRequest request)
+    protected AbstractHttpTransport findHttpTransport(HttpServletRequest request)
     {
         // Avoid allocation of the Iterator
         for (int i = 0; i < _allowedTransports.size(); ++i)
         {
             String transportName = _allowedTransports.get(i);
             ServerTransport serverTransport = getTransport(transportName);
-            if (serverTransport instanceof HttpTransport)
+            if (serverTransport instanceof AbstractHttpTransport)
             {
-                HttpTransport transport = (HttpTransport)serverTransport;
+                AbstractHttpTransport transport = (AbstractHttpTransport)serverTransport;
                 if (transport.accept(request))
                     return transport;
             }

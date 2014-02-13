@@ -34,6 +34,11 @@ public class ExtensionHandshakeTest extends AbstractBayeuxClientServerTest
 {
     private CountingExtension extension = new CountingExtension();
 
+    public ExtensionHandshakeTest(String serverTransport)
+    {
+        super(serverTransport);
+    }
+
     @Before
     public void prepare() throws Exception
     {
