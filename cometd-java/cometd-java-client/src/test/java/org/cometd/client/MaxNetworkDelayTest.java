@@ -200,18 +200,17 @@ public class MaxNetworkDelayTest extends ClientServerTest
         });
 
         final CountDownLatch latch = new CountDownLatch(3);
-        LongPollingTransport transport = LongPollingTransport.create(null, httpClient);
+        LongPollingTransport transport = new LongPollingTransport(null, httpClient);
         transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay1);
         final BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {
             @Override
-            public void onFailure(Throwable x, Message[] messages)
+            public void onFailure(Throwable failure, List<? extends Message> messages)
             {
-                if (x instanceof TimeoutException)
+                if (failure instanceof TimeoutException)
                     latch.countDown();
             }
         };
-        client.setDebugEnabled(debugTests());
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             private AtomicInteger connects = new AtomicInteger();
