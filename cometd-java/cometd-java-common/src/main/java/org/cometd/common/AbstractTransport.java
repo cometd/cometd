@@ -27,7 +27,7 @@ public class AbstractTransport implements Transport
     private final String _name;
     private final Map<String, Object> _options;
     private String[] _prefix = new String[0];
-    private String _optionPrefix="";
+    private String _optionPrefix = "";
 
     protected AbstractTransport(String name, Map<String, Object> options)
     {
@@ -35,27 +35,27 @@ public class AbstractTransport implements Transport
         _options = options == null ? new HashMap<String, Object>(1) : options;
     }
 
-    /* ------------------------------------------------------------ */
     public String getName()
     {
         return _name;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get an option value.
-     * Get an option value by searching the option name tree.  The option
-     * map obtained by calling {@link BayeuxServerImpl#getOptions()} is
-     * searched for the option name with the most specific prefix.
-     * If this transport was initialised with calls: <pre>
-     *   addPrefix("long-polling");
-     *   addPrefix("jsonp");
+    /**
+     * Returns an option value for the given option name, searching the option name tree.
+     * The option map is searched for the option name with the most specific prefix.
+     * If this transport was initialized with a call to:
+     * <pre>
+     *   setOptionPrefix("long-polling.jsonp");
      * </pre>
      * then a call to getOption("foobar") will look for the
-     * most specific value with names:<pre>
+     * most specific value with names:
+     * <pre>
      *   long-polling.json.foobar
      *   long-polling.foobar
      *   foobar
      * </pre>
+     *
+     * @param name the option name to return the value for.
      */
     public Object getOption(String name)
     {
@@ -71,25 +71,28 @@ public class AbstractTransport implements Transport
         return value;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param name
-     * @param value
+     * Sets the option value with the given name.
+     * The option name is inspected to see whether it starts with the {@link #getOptionPrefix() option prefix};
+     * if it does not, the option prefix is prepended to the given name.
+     * @param name the option name to set the value for.
+     * @param value the value of the option.
      */
     public void setOption(String name, Object value)
     {
         String prefix = getOptionPrefix();
-        _options.put(prefix == null ? name : (prefix + "." + name), value);
+        if (prefix != null && prefix.length() > 0 && !name.startsWith(prefix))
+            name = prefix + "." + name;
+        _options.put(name, value);
     }
 
-    /* ------------------------------------------------------------ */
     public String getOptionPrefix()
     {
         return _optionPrefix;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Set the option name prefix segment.
+    /**
+     * Set the option name prefix segment.
      * <p> Normally this is called by the super class constructors to establish
      * a naming hierarchy for options and iteracts with the {@link #setOption(String, Object)}
      * method to create a naming hierarchy for options.
@@ -114,21 +117,17 @@ public class AbstractTransport implements Transport
      * The various {@link #getOption(String)} methods will search this
      * name tree for the most specific match.
      *
-     * @param segment name
+     * @param prefix the prefix name
      * @throws IllegalArgumentException if the new prefix is not prefixed by the old prefix.
      */
     public void setOptionPrefix(String prefix)
     {
         if (!prefix.startsWith(_optionPrefix))
-            throw new IllegalArgumentException(_optionPrefix+" not prefix of "+prefix);
-        _optionPrefix=prefix;
+            throw new IllegalArgumentException(_optionPrefix + " not prefix of " + prefix);
+        _optionPrefix = prefix;
         _prefix = prefix.split("\\.");
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.common.AbstractTransport#getOptionNames()
-     */
     public Set<String> getOptionNames()
     {
         Set<String> names = new HashSet<String>();
@@ -142,12 +141,13 @@ public class AbstractTransport implements Transport
         return names;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get option or default value.
-     * @see #getOption(String)
-     * @param option The option name.
+    /**
+     * Get option or default value.
+     *
+     * @param option   The option name.
      * @param dftValue The default value.
      * @return option or default value
+     * @see #getOption(String)
      */
     public String getOption(String option, String dftValue)
     {
@@ -155,12 +155,13 @@ public class AbstractTransport implements Transport
         return (value == null) ? dftValue : value.toString();
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get option or default value.
-     * @see #getOption(String)
-     * @param option The option name.
+    /**
+     * Get option or default value.
+     *
+     * @param option   The option name.
      * @param dftValue The default value.
      * @return option or default value
+     * @see #getOption(String)
      */
     public long getOption(String option, long dftValue)
     {
@@ -172,12 +173,13 @@ public class AbstractTransport implements Transport
         return Long.parseLong(value.toString());
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get option or default value.
-     * @see #getOption(String)
-     * @param option The option name.
+    /**
+     * Get option or default value.
+     *
+     * @param option   The option name.
      * @param dftValue The default value.
      * @return option or default value
+     * @see #getOption(String)
      */
     public int getOption(String option, int dftValue)
     {
@@ -189,12 +191,13 @@ public class AbstractTransport implements Transport
         return Integer.parseInt(value.toString());
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get option or default value.
-     * @see #getOption(String)
-     * @param option The option name.
+    /**
+     * Get option or default value.
+     *
+     * @param option   The option name.
      * @param dftValue The default value.
      * @return option or default value
+     * @see #getOption(String)
      */
     public boolean getOption(String option, boolean dftValue)
     {

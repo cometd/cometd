@@ -33,13 +33,12 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class ClientTransport extends AbstractTransport
 {
-    public static final String TIMEOUT_OPTION = "timeout";
-    public static final String INTERVAL_OPTION = "interval";
     public static final String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
     public static final String JSON_CONTEXT = "jsonContext";
 
     protected final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + System.identityHashCode(this));
     private boolean debug;
+    private long maxNetworkDelay;
     private JSONContext.Client jsonContext;
 
     protected ClientTransport(String name, Map<String, Object> options)
@@ -105,5 +104,15 @@ public abstract class ClientTransport extends AbstractTransport
     protected String generateJSON(Message.Mutable[] messages)
     {
         return jsonContext.generate(messages);
+    }
+
+    public long getMaxNetworkDelay()
+    {
+        return maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
+    }
+
+    protected void setMaxNetworkDelay(long maxNetworkDelay)
+    {
+        this.maxNetworkDelay = maxNetworkDelay;
     }
 }

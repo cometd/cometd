@@ -172,4 +172,70 @@ public class MaxNetworkDelayTest extends ClientServerTest
 
         disconnectBayeuxClient(client);
     }
+
+    @Test
+    public void testDynamicMaxNetworkDelay() throws Exception
+    {
+        final long maxNetworkDelay1 = 2000;
+        final long maxNetworkDelay2 = 4000;
+        final long sleep = (maxNetworkDelay1 + maxNetworkDelay2) / 2;
+
+        bayeux.addExtension(new BayeuxServer.Extension.Adapter()
+        {
+            @Override
+            public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
+            {
+                if (Channel.META_CONNECT.equals(message.getChannel()))
+                {
+                    try
+                    {
+                        Thread.sleep(sleep);
+                    }
+                    catch (InterruptedException x)
+                    {
+                        // Ignore
+                    }
+                }
+                return true;
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(3);
+        LongPollingTransport transport = LongPollingTransport.create(null, httpClient);
+        transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay1);
+        final BayeuxClient client = new BayeuxClient(cometdURL, transport)
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                if (x instanceof TimeoutException)
+                    latch.countDown();
+            }
+        };
+        client.setDebugEnabled(debugTests());
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            private AtomicInteger connects = new AtomicInteger();
+
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                int c = connects.incrementAndGet();
+                if (c == 1 && !message.isSuccessful())
+                {
+                    latch.countDown();
+                    // Change dynamically the max network delay.
+                    client.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay2);
+                }
+                else if (c == 2 && message.isSuccessful())
+                {
+                    latch.countDown();
+                }
+            }
+        });
+
+        client.handshake();
+        assertTrue(latch.await(3 * sleep, TimeUnit.MILLISECONDS));
+
+        disconnectBayeuxClient(client);
+    }
 }

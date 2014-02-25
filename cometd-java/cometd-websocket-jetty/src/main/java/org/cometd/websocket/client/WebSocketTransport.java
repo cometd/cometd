@@ -87,7 +87,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile ScheduledExecutorService _scheduler;
     private volatile boolean _shutdownScheduler;
     private volatile String _protocol = null;
-    private volatile long _maxNetworkDelay;
     private volatile long _connectTimeout;
     private volatile int _idleTimeout;
     private volatile int _maxMessageSize;
@@ -131,9 +130,9 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _exchanges.clear();
         _aborted = false;
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
-        _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, 15000L);
-        _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, 30000L);
-        _idleTimeout = getOption(IDLE_TIMEOUT_OPTION, 60000);
+        setMaxNetworkDelay(15000L);
+        _connectTimeout = 30000L;
+        _idleTimeout = 60000;
         _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClientFactory.getBufferSize());
         _stickyReconnect = getOption(STICKY_RECONNECT_OPTION, true);
         if (_scheduler == null)
@@ -143,14 +142,14 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         }
     }
 
-    private long getMaxNetworkDelay()
-    {
-        return _maxNetworkDelay;
-    }
-
     private long getConnectTimeout()
     {
-        return _connectTimeout;
+        return _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, _connectTimeout);
+    }
+
+    private int getIdleTimeout()
+    {
+        return _idleTimeout = getOption(IDLE_TIMEOUT_OPTION, _idleTimeout);
     }
 
     @Override
@@ -310,7 +309,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     {
         WebSocketClient result = _webSocketClientFactory.newWebSocketClient();
         result.setMaxTextMessageSize(_maxMessageSize);
-        result.setMaxIdleTime(_idleTimeout);
+        result.setMaxIdleTime(getIdleTimeout());
         return result;
     }
 

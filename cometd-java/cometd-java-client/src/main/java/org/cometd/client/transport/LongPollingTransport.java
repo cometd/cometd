@@ -73,7 +73,6 @@ public class LongPollingTransport extends HttpClientTransport
     private final HttpClient _httpClient;
     private final List<TransportExchange> _exchanges = new ArrayList<TransportExchange>();
     private volatile boolean _aborted;
-    private volatile long _maxNetworkDelay;
     private volatile boolean _appendMessageType;
     private volatile Map<String, Object> _advice;
 
@@ -99,7 +98,7 @@ public class LongPollingTransport extends HttpClientTransport
     {
         super.init();
         _aborted = false;
-        _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, _httpClient.getTimeout());
+        setMaxNetworkDelay(_httpClient.getTimeout());
         Pattern uriRegexp = Pattern.compile("(^https?://(((\\[[^\\]]+\\])|([^:/\\?#]+))(:(\\d+))?))?([^\\?#]*)(.*)?");
         Matcher uriMatcher = uriRegexp.matcher(getURL());
         if (uriMatcher.matches())
@@ -158,7 +157,7 @@ public class LongPollingTransport extends HttpClientTransport
                 _exchanges.add(httpExchange);
             }
 
-            long maxNetworkDelay = _maxNetworkDelay;
+            long maxNetworkDelay = getMaxNetworkDelay();
             if (messages.length == 1 && Channel.META_CONNECT.equals(messages[0].getChannel()))
             {
                 Map<String, Object> advice = messages[0].getAdvice();
