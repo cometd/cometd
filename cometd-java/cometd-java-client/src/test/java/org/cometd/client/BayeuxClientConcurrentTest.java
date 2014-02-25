@@ -149,7 +149,8 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
             }
         });
         final CountDownLatch failLatch = new CountDownLatch(1);
-        client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener()
+        ClientSessionChannel channel = client.getChannel(channelName);
+        channel.addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
@@ -161,7 +162,6 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
         assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch publishLatch = new CountDownLatch(1);
-        ClientSessionChannel channel = client.getChannel(channelName);
         channel.subscribe(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)

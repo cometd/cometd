@@ -17,7 +17,6 @@ package org.cometd.server;
 
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.cometd.bayeux.Channel;
@@ -38,7 +37,6 @@ import org.cometd.common.AbstractClientSession;
 public class LocalSessionImpl extends AbstractClientSession implements LocalSession
 {
     private final Queue<ServerMessage.Mutable> _queue = new ConcurrentLinkedQueue<ServerMessage.Mutable>();
-    private final Map<String, ClientSessionChannel.MessageListener> callbacks = new ConcurrentHashMap<String, ClientSessionChannel.MessageListener>();
     private final BayeuxServerImpl _bayeux;
     private final String _idHint;
     private ServerSessionImpl _session;
@@ -65,7 +63,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         if (message.isMeta() || message.isPublishReply())
         {
             String messageId = message.getId();
-            callback = messageId == null ? callback : callbacks.remove(messageId);
+            callback = messageId == null ? callback : unregisterCallback(messageId);
             if (callback != null)
                 notifyListener(callback, message);
         }
@@ -218,7 +216,8 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         String messageId = newMessageId();
         message.setId(messageId);
 
-        // Remove the publish callback before calling the extensions
+        // Remove the synthetic fields before calling the extensions
+        ClientSessionChannel.MessageListener subscriber = (ClientSessionChannel.MessageListener)message.remove(SUBSCRIBER_KEY);
         ClientSessionChannel.MessageListener callback = (ClientSessionChannel.MessageListener)message.remove(CALLBACK_KEY);
 
         if (!extendSend(message))
@@ -230,8 +229,8 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             reply = _bayeux.extendReply(from, _session, reply);
             if (reply != null)
             {
-                if (callback != null)
-                    callbacks.put(messageId, callback);
+                registerSubscriber(messageId, subscriber);
+                registerCallback(messageId, callback);
                 receive(reply);
             }
         }
@@ -266,12 +265,14 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         }
 
         @Override
-        protected void sendSubscribe(MessageListener callback)
+        protected void sendSubscribe(MessageListener listener, MessageListener callback)
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(Channel.META_SUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD, getId());
             message.setClientId(LocalSessionImpl.this.getId());
+            if (listener != null)
+                message.put(SUBSCRIBER_KEY, listener);
             if (callback != null)
                 message.put(CALLBACK_KEY, callback);
             send(_session, message);

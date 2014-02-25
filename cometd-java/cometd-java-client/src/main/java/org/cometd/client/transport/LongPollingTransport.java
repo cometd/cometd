@@ -304,7 +304,7 @@ public class LongPollingTransport extends HttpClientTransport
                     try
                     {
                         List<Message.Mutable> messages = parseMessages(getResponseContent());
-                        debug("Received messages {}", messages);
+                        debug("Received exchange {} with messages {}", this, messages);
                         for (Message.Mutable message : messages)
                         {
                             if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel()))
@@ -364,7 +364,10 @@ public class LongPollingTransport extends HttpClientTransport
         {
             synchronized (LongPollingTransport.this)
             {
-                return _exchanges.remove(this);
+                boolean removed = _exchanges.remove(this);
+                if (!removed)
+                    debug("Discarded exchange {} with messages {}", this, _messages);
+                return removed;
             }
         }
     }
