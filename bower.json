@@ -1,14 +1,14 @@
 {
   "name": "cometd-jquery",
    "main":[
+       "./cometd-javascript/common/src/main/js/org/cometd/cometd-namespace.js",
+       "./cometd-javascript/common/src/main/js/org/cometd/cometd-amd.js",
+       "./cometd-javascript/common/src/main/js/org/cometd/cometd-header.js",
        "./cometd-javascript/common/src/main/js/org/cometd/CometD.js", 
        "./cometd-javascript/common/src/main/js/org/cometd/Utils.js",
        "./cometd-javascript/common/src/main/js/org/cometd/Transport.js",
        "./cometd-javascript/common/src/main/js/org/cometd/CallbackPollingTransport.js",
-       "./cometd-javascript/common/src/main/js/org/cometd/cometd-amd.js",
-       "./cometd-javascript/common/src/main/js/org/cometd/cometd-header.js",
        "./cometd-javascript/common/src/main/js/org/cometd/cometd-json.js",
-       "./cometd-javascript/common/src/main/js/org/cometd/cometd-namespace.js",
        "./cometd-javascript/common/src/main/js/org/cometd/LongPollingTransport.js",
        "./cometd-javascript/common/src/main/js/org/cometd/RequestTransport.js",
        "./cometd-javascript/common/src/main/js/org/cometd/TransportRegistry.js",
