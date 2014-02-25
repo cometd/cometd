@@ -138,6 +138,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     {
         try
         {
+            _webSocketContainer.setDefaultMaxSessionIdleTimeout(getIdleTimeout());
             ClientEndpointConfig.Configurator configurator = new Configurator();
             String protocol = getProtocol();
             ClientEndpointConfig config = ClientEndpointConfig.Builder.create()

@@ -51,7 +51,6 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
     private volatile ScheduledExecutorService _scheduler;
     private volatile boolean _shutdownScheduler;
     private volatile String _protocol = null;
-    private volatile long _maxNetworkDelay;
     private volatile long _connectTimeout;
     private volatile long _idleTimeout;
     private volatile boolean _stickyReconnect;
@@ -97,9 +96,9 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
         }
 
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
-        _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, 15000L);
-        _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, 30000L);
-        _idleTimeout = getOption(IDLE_TIMEOUT_OPTION, 60000L);
+        setMaxNetworkDelay(15000L);
+        _connectTimeout = 30000L;
+        _idleTimeout = 60000L;
         _stickyReconnect = getOption(STICKY_RECONNECT_OPTION, true);
     }
 
@@ -110,17 +109,12 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
 
     public long getIdleTimeout()
     {
-        return _idleTimeout;
-    }
-
-    public long getMaxNetworkDelay()
-    {
-        return _maxNetworkDelay;
+        return _idleTimeout = getOption(IDLE_TIMEOUT_OPTION, _idleTimeout);
     }
 
     public long getConnectTimeout()
     {
-        return _connectTimeout;
+        return _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, _connectTimeout);
     }
 
     public boolean isStickyReconnect()

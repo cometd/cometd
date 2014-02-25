@@ -53,7 +53,6 @@ public class LongPollingTransport extends HttpClientTransport
     private final HttpClient _httpClient;
     private final List<Request> _requests = new ArrayList<>();
     private volatile boolean _aborted;
-    private volatile long _maxNetworkDelay;
     private volatile boolean _appendMessageType;
     private volatile CookieManager _cookieManager;
     private volatile Map<String, Object> _advice;
@@ -83,7 +82,7 @@ public class LongPollingTransport extends HttpClientTransport
         long defaultMaxNetworkDelay = _httpClient.getIdleTimeout();
         if (defaultMaxNetworkDelay <= 0)
             defaultMaxNetworkDelay = 10000;
-        _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, defaultMaxNetworkDelay);
+        setMaxNetworkDelay(defaultMaxNetworkDelay);
         Pattern uriRegexp = Pattern.compile("(^https?://(((\\[[^\\]]+\\])|([^:/\\?#]+))(:(\\d+))?))?([^\\?#]*)(.*)?");
         Matcher uriMatcher = uriRegexp.matcher(getURL());
         if (uriMatcher.matches())
@@ -158,7 +157,7 @@ public class LongPollingTransport extends HttpClientTransport
             }
         });
 
-        long maxNetworkDelay = _maxNetworkDelay;
+        long maxNetworkDelay = getMaxNetworkDelay();
         if (messages.size() == 1)
         {
             Message.Mutable message = messages.get(0);

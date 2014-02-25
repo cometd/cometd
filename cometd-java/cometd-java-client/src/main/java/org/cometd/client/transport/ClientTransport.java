@@ -38,6 +38,7 @@ public abstract class ClientTransport extends AbstractTransport
     public static final String SCHEDULER_OPTION = "scheduler";
 
     protected final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + System.identityHashCode(this));
+    private long maxNetworkDelay;
     private JSONContext.Client jsonContext;
 
     protected ClientTransport(String name, Map<String, Object> options)
@@ -114,6 +115,16 @@ public abstract class ClientTransport extends AbstractTransport
     protected String generateJSON(List<Message.Mutable> messages)
     {
         return jsonContext.generate(messages);
+    }
+
+    public long getMaxNetworkDelay()
+    {
+        return maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
+    }
+
+    protected void setMaxNetworkDelay(long maxNetworkDelay)
+    {
+        this.maxNetworkDelay = maxNetworkDelay;
     }
 
     public interface Factory

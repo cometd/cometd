@@ -897,6 +897,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     public void setOption(String qualifiedName, Object value)
     {
         options.put(qualifiedName, value);
+        // Forward the option to the transports.
+        for (String name : transportRegistry.getKnownTransports())
+        {
+            ClientTransport transport = transportRegistry.getTransport(name);
+            transport.setOption(qualifiedName, value);
+        }
     }
 
     public Set<String> getOptionNames()

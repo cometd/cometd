@@ -152,6 +152,8 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
     {
         try
         {
+            _webSocketClient.setConnectTimeout(getConnectTimeout());
+            _webSocketClient.getPolicy().setIdleTimeout(getIdleTimeout());
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             String protocol = getProtocol();
             if (protocol != null)
