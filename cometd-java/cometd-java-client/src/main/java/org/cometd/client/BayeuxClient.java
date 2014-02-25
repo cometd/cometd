@@ -112,7 +112,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private final TransportListener connectListener = new ConnectTransportListener();
     private final TransportListener disconnectListener = new DisconnectTransportListener();
     private final TransportListener publishListener = new PublishTransportListener();
-    private final Map<String, ClientSessionChannel.MessageListener> callbacks = new ConcurrentHashMap<>();
     private final String url;
     private volatile ScheduledExecutorService scheduler;
     private volatile boolean shutdownScheduler;
@@ -950,28 +949,32 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     protected void failMessages(Throwable x, List<? extends Message> messages)
     {
         for (Message message : messages)
+            failMessage(message, x);
+    }
+
+    protected void failMessage(Message message, Throwable x)
+    {
+        Message.Mutable failed = newMessage();
+        failed.setId(message.getId());
+        failed.setSuccessful(false);
+        failed.setChannel(message.getChannel());
+        failed.put(Message.SUBSCRIPTION_FIELD, message.get(Message.SUBSCRIPTION_FIELD));
+        failed.put(CALLBACK_KEY, message.remove(CALLBACK_KEY));
+
+        Map<String, Object> failure = new HashMap<>();
+        failed.put("failure", failure);
+        failure.put("message", message);
+        if (x != null)
+            failure.put("exception", x);
+        if (x instanceof TransportException)
         {
-            Message.Mutable failed = newMessage();
-            failed.setId(message.getId());
-            failed.setSuccessful(false);
-            failed.setChannel(message.getChannel());
-            failed.put(CALLBACK_KEY, message.remove(CALLBACK_KEY));
-
-            Map<String, Object> failure = new HashMap<>();
-            failed.put("failure", failure);
-            failure.put("message", message);
-            if (x != null)
-                failure.put("exception", x);
-            if (x instanceof TransportException)
-            {
-                Map<String, Object> fields = ((TransportException)x).getFields();
-                if (fields != null)
-                    failure.putAll(fields);
-            }
-            failure.put(Message.CONNECTION_TYPE_FIELD, getTransport().getName());
-
-            receive(failed);
+            Map<String, Object> fields = ((TransportException)x).getFields();
+            if (fields != null)
+                failure.putAll(fields);
         }
+        failure.put(Message.CONNECTION_TYPE_FIELD, getTransport().getName());
+
+        receive(failed);
     }
 
     @Override
@@ -981,7 +984,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         if (message.isMeta() || message.isPublishReply())
         {
             String messageId = message.getId();
-            callback = messageId == null ? callback : callbacks.remove(messageId);
+            callback = messageId == null ? callback : unregisterCallback(messageId);
             if (callback != null)
                 notifyListener(callback, message);
         }
@@ -1298,11 +1301,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             enqueueSend(message);
         }
 
-        protected void sendSubscribe(MessageListener callback)
+        protected void sendSubscribe(MessageListener listener, MessageListener callback)
         {
             Message.Mutable message = newMessage();
             message.setChannel(Channel.META_SUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD, getId());
+            if (listener != null)
+                message.put(SUBSCRIBER_KEY, listener);
             if (callback != null)
                 message.put(CALLBACK_KEY, callback);
             enqueueSend(message);
@@ -1375,7 +1380,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 if (clientId != null)
                     message.setClientId(clientId);
 
-                // Remove the publish callback before calling the extensions
+                // Remove the synthetic fields before calling the extensions
+                ClientSessionChannel.MessageListener subscriber = (ClientSessionChannel.MessageListener)message.remove(SUBSCRIBER_KEY);
                 ClientSessionChannel.MessageListener callback = (ClientSessionChannel.MessageListener)message.remove(CALLBACK_KEY);
 
                 if (extendSend(message))
@@ -1384,8 +1390,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     // the messageId in case of meta messages to link request/response
                     // in non request/response transports such as websocket
                     message.setId(messageId);
-                    if (callback != null)
-                        callbacks.put(messageId, callback);
+
+                    registerSubscriber(messageId, subscriber);
+                    registerCallback(messageId, callback);
                 }
                 else
                 {

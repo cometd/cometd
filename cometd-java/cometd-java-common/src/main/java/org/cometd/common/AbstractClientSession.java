@@ -17,6 +17,7 @@ package org.cometd.common;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -24,6 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
@@ -39,12 +41,16 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractClientSession implements ClientSession
 {
+    protected static final String SUBSCRIBER_KEY = "org.cometd.client.subscriber";
     protected static final String CALLBACK_KEY = "org.cometd.client.callback";
-    protected static final Logger logger = LoggerFactory.getLogger(ClientSession.class);
+    private static final Logger logger = LoggerFactory.getLogger(ClientSession.class);
     private static final AtomicLong _idGen = new AtomicLong(0);
+
     private final List<Extension> _extensions = new CopyOnWriteArrayList<>();
     private final AttributesMap _attributes = new AttributesMap();
     private final ConcurrentMap<String, AbstractSessionChannel> _channels = new ConcurrentHashMap<>();
+    private final Map<String, ClientSessionChannel.MessageListener> _callbacks = new ConcurrentHashMap<>();
+    private final Map<String, ClientSessionChannel.MessageListener> _subscribers = new ConcurrentHashMap<>();
     private final AtomicInteger _batch = new AtomicInteger();
 
     protected AbstractClientSession()
@@ -211,8 +217,23 @@ public abstract class AbstractClientSession implements ClientSession
      */
     public void receive(final Message.Mutable message)
     {
-        if (message.getChannel() == null)
+        String channelName = message.getChannel();
+        if (channelName == null)
             throw new IllegalArgumentException("Bayeux messages must have a channel, " + message);
+
+        if (Channel.META_SUBSCRIBE.equals(channelName))
+        {
+            ClientSessionChannel.MessageListener subscriber = unregisterSubscriber(message.getId());
+            if (!message.isSuccessful())
+            {
+                String subscription = (String)message.get(Message.SUBSCRIPTION_FIELD);
+                MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(subscription);
+                AbstractSessionChannel channel = channelRef.getReference();
+                channel.removeSubscription(subscriber);
+                if (channelRef.isMarked())
+                    channel.release();
+            }
+        }
 
         if (!extendRcv(message))
             return;
@@ -257,6 +278,28 @@ public abstract class AbstractClientSession implements ClientSession
         if (channel != null)
             return new MarkedReference<>(channel, false);
         return new MarkedReference<>(newChannel(newChannelId(id)), true);
+    }
+
+    protected void registerCallback(String messageId, ClientSessionChannel.MessageListener callback)
+    {
+        if (callback != null)
+            _callbacks.put(messageId, callback);
+    }
+
+    protected ClientSessionChannel.MessageListener unregisterCallback(String messageId)
+    {
+        return _callbacks.remove(messageId);
+    }
+
+    protected void registerSubscriber(String messageId, ClientSessionChannel.MessageListener subscriber)
+    {
+        if (subscriber != null)
+            _subscribers.put(messageId, subscriber);
+    }
+
+    protected ClientSessionChannel.MessageListener unregisterSubscriber(String messageId)
+    {
+        return _subscribers.remove(messageId);
     }
 
     public void dump(StringBuilder b, String indent)
@@ -331,11 +374,11 @@ public abstract class AbstractClientSession implements ClientSession
             {
                 int count = _subscriptionCount.incrementAndGet();
                 if (count == 1)
-                    sendSubscribe(callback);
+                    sendSubscribe(listener, callback);
             }
         }
 
-        protected abstract void sendSubscribe(MessageListener callback);
+        protected abstract void sendSubscribe(MessageListener listener, MessageListener callback);
 
         public void unsubscribe(MessageListener listener)
         {
@@ -344,14 +387,19 @@ public abstract class AbstractClientSession implements ClientSession
 
         public void unsubscribe(MessageListener listener, MessageListener callback)
         {
-            throwIfReleased();
-            boolean removed = _subscriptions.remove(listener);
+            boolean removed = removeSubscription(listener);
             if (removed)
             {
                 int count = _subscriptionCount.decrementAndGet();
                 if (count == 0)
                     sendUnSubscribe(callback);
             }
+        }
+
+        private boolean removeSubscription(MessageListener listener)
+        {
+            throwIfReleased();
+            return _subscriptions.remove(listener);
         }
 
         protected abstract void sendUnSubscribe(MessageListener callback);
