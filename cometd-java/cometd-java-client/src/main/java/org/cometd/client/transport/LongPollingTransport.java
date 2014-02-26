@@ -178,7 +178,7 @@ public class LongPollingTransport extends HttpClientTransport
         }
         catch (Exception x)
         {
-            listener.onException(x, messages);
+            httpExchange.onException(x);
         }
     }
 
