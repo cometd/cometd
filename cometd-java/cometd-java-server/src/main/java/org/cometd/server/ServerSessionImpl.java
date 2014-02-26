@@ -56,7 +56,7 @@ public class ServerSessionImpl implements ServerSession
     private final String _id;
     private final List<ServerSessionListener> _listeners = new CopyOnWriteArrayList<ServerSessionListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
-    private final ArrayQueue<ServerMessage> _queue = new ArrayQueue<ServerMessage>(8, 16, this);
+    private final ArrayQueue<ServerMessage> _queue = new ArrayQueue<ServerMessage>(8, 16);
     private final LocalSessionImpl _localSession;
     private final AttributesMap _attributes = new AttributesMap();
     private final AtomicBoolean _connected = new AtomicBoolean();

@@ -16,7 +16,6 @@
 package org.cometd.server.ext;
 
 import java.util.Map;
-import java.util.Queue;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -35,7 +34,8 @@ import org.slf4j.LoggerFactory;
  */
 public class AcknowledgedMessagesClientExtension implements Extension
 {
-    private final Logger _logger = LoggerFactory.getLogger(getClass().getName());
+    private static final Logger _logger = LoggerFactory.getLogger(AcknowledgedMessagesClientExtension.class);
+
     private final ServerSessionImpl _session;
     private final Object _lock;
     private final ArrayIdQueue<ServerMessage> _unackedQueue;
@@ -47,8 +47,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
         _lock = _session.getLock();
         synchronized (_lock)
         {
-            Queue<ServerMessage> queue = _session.getQueue();
-            _unackedQueue = new ArrayIdQueue<ServerMessage>(16, 32, queue);
+            _unackedQueue = new ArrayIdQueue<ServerMessage>(16, 32, _lock);
             _unackedQueue.setCurrentId(1);
         }
     }
@@ -82,19 +81,18 @@ public class AcknowledgedMessagesClientExtension implements Extension
                         {
                             _lastAck = acked;
 
-                            // We have received an ack ID, so delete the acked
-                            // messages.
+                            // We have received an ack ID, so delete the acked messages.
                             final int s = _unackedQueue.size();
                             if (s > 0)
                             {
                                 if (_unackedQueue.getAssociatedIdUnsafe(s - 1) <= acked)
                                 {
-                                    // we can just clear the queue
+                                    // We can just clear the queue.
                                     _unackedQueue.clear();
                                 }
                                 else
                                 {
-                                    // we need to remove elements until we see unacked
+                                    // We need to remove elements until we see unacked.
                                     for (int i = 0; i < s; ++i)
                                     {
                                         final long a = _unackedQueue.getAssociatedIdUnsafe(0);
