@@ -16,9 +16,9 @@
 package org.cometd.server.ext;
 
 import java.util.Map;
+import java.util.Queue;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
@@ -29,27 +29,24 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Acknowledged Message Client extension.
- * <p />
+ * <p/>
  * Tracks the batch id of messages sent to a client.
  */
-public class AcknowledgedMessagesClientExtension implements Extension
+public class AcknowledgedMessagesClientExtension implements Extension, ServerSession.DeQueueListener, ServerSession.QueueListener
 {
     private static final Logger _logger = LoggerFactory.getLogger(AcknowledgedMessagesClientExtension.class);
 
     private final ServerSessionImpl _session;
-    private final Object _lock;
-    private final ArrayIdQueue<ServerMessage> _unackedQueue;
-    private long _lastAck;
+    private final BatchArrayQueue<ServerMessage> _queue;
+    private long _batch;
 
     public AcknowledgedMessagesClientExtension(ServerSession session)
     {
         _session = (ServerSessionImpl)session;
-        _lock = _session.getLock();
-        synchronized (_lock)
-        {
-            _unackedQueue = new ArrayIdQueue<ServerMessage>(16, 32, _lock);
-            _unackedQueue.setCurrentId(1);
-        }
+        _session.addListener(this);
+        _session.setMetaConnectDeliveryOnly(true);
+        _queue = new BatchArrayQueue<ServerMessage>(16, 32, _session.getLock());
+        _batch = _queue.getBatch();
     }
 
     public boolean rcv(ServerSession from, Mutable message)
@@ -61,83 +58,67 @@ public class AcknowledgedMessagesClientExtension implements Extension
     {
         if (Channel.META_CONNECT.equals(message.getChannel()))
         {
-            Map<String,Object> ext = message.getExt(false);
+            Map<String, Object> ext = message.getExt(false);
             if (ext != null)
             {
-                assert session == _session;
-
-                synchronized(_lock)
-                {
-                    Number ackValue = (Number)ext.get("ack");
-                    _logger.debug("Session {} received ack {}, lastAck {}", session, ackValue, _lastAck);
-                    if (ackValue != null)
-                    {
-                        long acked = ackValue.longValue();
-                        if (acked <=_lastAck)
-                        {
-                            _session.replaceQueue(_unackedQueue);
-                        }
-                        else
-                        {
-                            _lastAck = acked;
-
-                            // We have received an ack ID, so delete the acked messages.
-                            final int s = _unackedQueue.size();
-                            if (s > 0)
-                            {
-                                if (_unackedQueue.getAssociatedIdUnsafe(s - 1) <= acked)
-                                {
-                                    // We can just clear the queue.
-                                    _unackedQueue.clear();
-                                }
-                                else
-                                {
-                                    // We need to remove elements until we see unacked.
-                                    for (int i = 0; i < s; ++i)
-                                    {
-                                        final long a = _unackedQueue.getAssociatedIdUnsafe(0);
-                                        if (a <= acked)
-                                        {
-                                            _unackedQueue.remove();
-                                            continue;
-                                        }
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                Number batchValue = (Number)ext.get("ack");
+                if (batchValue != null)
+                    processBatch(batchValue.longValue());
             }
         }
         return true;
     }
 
-    public ServerMessage send(ServerSession to, ServerMessage message)
+    protected void processBatch(long batch)
     {
-        if (message.containsKey(Message.DATA_FIELD))
+        synchronized (_session.getLock())
         {
-            synchronized (_lock)
-            {
-                _unackedQueue.add(message);
-            }
+            _logger.debug("Processing batch: client={}, server={} for {}", batch, _queue.getBatch(), _session);
+            _queue.clearToBatch(batch);
         }
+    }
+
+    public ServerMessage send(ServerSession session, ServerMessage message)
+    {
+        // Too early to do anything with the message.
+        // Other extensions and/or listener may modify/veto it.
         return message;
+    }
+
+    public void queued(ServerSession sender, ServerMessage message)
+    {
+        // This method is called after all the extensions and the other
+        // listeners, so only here are sure that the message is not vetoed.
+        synchronized (_session.getLock())
+        {
+            _queue.offer(message);
+            _logger.debug("Stored {} at batch {} for {}", message, _queue.getBatch(), _session);
+        }
+    }
+
+    public void deQueue(ServerSession session, Queue<ServerMessage> queue)
+    {
+        synchronized (_session.getLock())
+        {
+            _logger.debug("Dequeuing {}/{} messages at batch {}..{} for {}", queue.size(), _queue.size(), _batch, _queue.getBatch(), _session);
+            queue.clear();
+            if (!_queue.isEmpty())
+                queue.addAll(_queue);
+            _batch = _queue.getAndIncrementBatch();
+        }
     }
 
     public boolean sendMeta(ServerSession to, Mutable message)
     {
         if (message.getChannel().equals(Channel.META_CONNECT))
         {
-            synchronized (_lock)
+            synchronized (_session.getLock())
             {
-                Map<String,Object> ext = message.getExt(true);
-                ext.put("ack", _unackedQueue.getCurrentId());
-                _unackedQueue.incrementCurrentId();
+                Map<String, Object> ext = message.getExt(true);
+                ext.put("ack", _batch);
+                _logger.debug("Sending batch {} for {}", _batch, _session);
             }
         }
         return true;
     }
 }
-
-

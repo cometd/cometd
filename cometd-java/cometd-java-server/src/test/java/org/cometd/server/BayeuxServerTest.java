@@ -321,7 +321,7 @@ public class BayeuxServerTest
             }
 
             @Override
-            public ServerMessage send(ServerSession to, ServerMessage message)
+            public ServerMessage send(ServerSession session, ServerMessage message)
             {
                 if (message.isMeta())
                     new Throwable().printStackTrace();
