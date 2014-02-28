@@ -18,14 +18,13 @@ package org.cometd.client.ext;
 import java.util.Map;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSession.Extension;
 
 /**
  * AckExtension
- *
+ * <p/>
  * This client-side extension enables the client to acknowledge to the server
  * the messages that the client has received.
  * For the acknowledgement to work, the server must be configured with the
@@ -41,47 +40,44 @@ import org.cometd.bayeux.client.ClientSession.Extension;
  */
 public class AckExtension extends Extension.Adapter
 {
-    public static final String EXT_FIELD = "ack";
+    public static final String ACK_FIELD = "ack";
 
     private volatile boolean _serverSupportsAcks = false;
-    private volatile int _ackId = -1;
+    private volatile long _ackId = -1;
 
     @Override
     public boolean rcvMeta(ClientSession session, Mutable message)
     {
-        if(Channel.META_HANDSHAKE.equals(message.getChannel()))
+        if (Channel.META_HANDSHAKE.equals(message.getChannel()))
         {
-            Map<String,Object> ext = message.getExt(false);
-            _serverSupportsAcks = ext!=null && Boolean.TRUE.equals(ext.get(EXT_FIELD));
+            Map<String, Object> ext = message.getExt(false);
+            _serverSupportsAcks = ext != null && Boolean.TRUE.equals(ext.get(ACK_FIELD));
         }
-        else if(_serverSupportsAcks && Boolean.TRUE.equals(message.get(Message.SUCCESSFUL_FIELD))
-                && Channel.META_CONNECT.equals(message.getChannel()))
+        else if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful() && _serverSupportsAcks)
         {
-            Map<String,Object> ext = message.getExt(false);
-            if(ext!=null)
+            Map<String, Object> ext = message.getExt(false);
+            if (ext != null)
             {
-                Object ack = ext.get(EXT_FIELD);
-                if(ack instanceof Number)
-                    _ackId = ((Number)ack).intValue();
+                Object ack = ext.get(ACK_FIELD);
+                if (ack instanceof Number)
+                    _ackId = ((Number)ack).longValue();
             }
         }
-
         return true;
     }
 
     @Override
     public boolean sendMeta(ClientSession session, Mutable message)
     {
-        if(Channel.META_HANDSHAKE.equals(message.getChannel()))
+        if (Channel.META_HANDSHAKE.equals(message.getChannel()))
         {
-            message.getExt(true).put(EXT_FIELD, Boolean.TRUE);
+            message.getExt(true).put(ACK_FIELD, Boolean.TRUE);
             _ackId = -1;
         }
-        else if(_serverSupportsAcks && Channel.META_CONNECT.equals(message.getChannel()))
+        else if (Channel.META_CONNECT.equals(message.getChannel()) && _serverSupportsAcks)
         {
-            message.getExt(true).put(EXT_FIELD, _ackId);
+            message.getExt(true).put(ACK_FIELD, _ackId);
         }
-
         return true;
     }
 }

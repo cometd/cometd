@@ -137,7 +137,7 @@ public class ServerSessionImpl implements ServerSession
 
         boolean remove = false;
         Scheduler scheduler = null;
-        synchronized (_queue)
+        synchronized (getLock())
         {
             if (_intervalTimestamp == 0)
             {
@@ -199,13 +199,13 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    public void deliver(Session from, Mutable message)
+    public void deliver(Session sender, Mutable message)
     {
         ServerSession session = null;
-        if (from instanceof ServerSession)
-            session = (ServerSession)from;
-        else if (from instanceof LocalSession)
-            session = ((LocalSession)from).getServerSession();
+        if (sender instanceof ServerSession)
+            session = (ServerSession)sender;
+        else if (sender instanceof LocalSession)
+            session = ((LocalSession)sender).getServerSession();
 
         if (!_bayeux.extendSend(session, this, message))
             return;
@@ -213,13 +213,13 @@ public class ServerSessionImpl implements ServerSession
         doDeliver(session, message);
     }
 
-    public void deliver(Session from, String channelId, Object data, String id)
+    public void deliver(Session sender, String channelId, Object data, String id)
     {
         ServerMessage.Mutable message = _bayeux.newMessage();
         message.setChannel(channelId);
         message.setData(data);
         message.setId(id);
-        deliver(from, message);
+        deliver(sender, message);
     }
 
     protected void doDeliver(ServerSession sender, ServerMessage.Mutable mutable)
@@ -265,9 +265,17 @@ public class ServerSessionImpl implements ServerSession
         }
 
         boolean wakeup;
-        synchronized (_queue)
+        synchronized (getLock())
         {
             addMessage(message);
+            if (!_listeners.isEmpty())
+            {
+                for (ServerSessionListener listener : _listeners)
+                {
+                    if (listener instanceof QueueListener)
+                        notifyQueued((QueueListener)listener, sender, message);
+                }
+            }
             wakeup = _batch == 0;
         }
 
@@ -306,6 +314,18 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
+    private void notifyQueued(QueueListener listener, ServerSession session, ServerMessage message)
+    {
+        try
+        {
+            listener.queued(session, message);
+        }
+        catch (Throwable x)
+        {
+            _logger.info("Exception while invoking listener " + listener, x);
+        }
+    }
+
     protected void handshake()
     {
         _handshook.set(true);
@@ -341,7 +361,7 @@ public class ServerSessionImpl implements ServerSession
 
     public boolean endBatch()
     {
-        synchronized (_queue)
+        synchronized (getLock())
         {
             if (--_batch == 0 && _nonLazyMessages)
             {
@@ -364,7 +384,7 @@ public class ServerSessionImpl implements ServerSession
 
     public void startBatch()
     {
-        synchronized (_queue)
+        synchronized (getLock())
         {
             ++_batch;
         }
@@ -382,7 +402,7 @@ public class ServerSessionImpl implements ServerSession
 
     public Object getLock()
     {
-        return _queue;
+        return this;
     }
 
     public Queue<ServerMessage> getQueue()
@@ -392,22 +412,9 @@ public class ServerSessionImpl implements ServerSession
 
     public boolean hasNonLazyMessages()
     {
-        synchronized (_queue)
+        synchronized (getLock())
         {
             return _nonLazyMessages;
-        }
-    }
-
-    public void replaceQueue(List<ServerMessage> queue)
-    {
-        synchronized (_queue)
-        {
-            // Calling clear() + addAll() works because we never queue meta responses.
-            // If we queue meta responses, then we would need to retain them, removing all
-            // messages that are in both queues, and adding all messages from the new queue.
-            clearQueue();
-            for (ServerMessage message : queue)
-                addMessage(message);
         }
     }
 
@@ -419,7 +426,7 @@ public class ServerSessionImpl implements ServerSession
 
     protected void addMessage(ServerMessage message)
     {
-        synchronized (_queue)
+        synchronized (getLock())
         {
             _queue.add(message);
             _nonLazyMessages |= !message.isLazy();
@@ -429,26 +436,23 @@ public class ServerSessionImpl implements ServerSession
     public List<ServerMessage> takeQueue()
     {
         List<ServerMessage> copy = Collections.emptyList();
-        synchronized (_queue)
+        synchronized (getLock())
         {
+            // Always call listeners, even if the queue is
+            // empty since they may add messages to the queue.
+            for (ServerSessionListener listener : _listeners)
+            {
+                if (listener instanceof DeQueueListener)
+                    notifyDeQueue((DeQueueListener)listener, this, _queue);
+            }
+
             int size = _queue.size();
             if (size > 0)
             {
-                for (ServerSessionListener listener : _listeners)
-                {
-                    if (listener instanceof DeQueueListener)
-                        notifyDeQueue((DeQueueListener)listener, this, _queue);
-                }
-
-                // The queue may have changed by the listeners, re-read the size
-                size = _queue.size();
-                if (size > 0)
-                {
-                    copy = new ArrayList<>(size);
-                    copy.addAll(_queue);
-                    clearQueue();
-                }
+                copy = new ArrayList<>(size);
+                copy.addAll(_queue);
             }
+            clearQueue();
         }
         return copy;
     }
@@ -475,7 +479,7 @@ public class ServerSessionImpl implements ServerSession
         if (newScheduler == null)
         {
             Scheduler oldScheduler;
-            synchronized (_queue)
+            synchronized (getLock())
             {
                 oldScheduler = _scheduler;
                 if (oldScheduler != null)
@@ -488,7 +492,7 @@ public class ServerSessionImpl implements ServerSession
         {
             Scheduler oldScheduler;
             boolean schedule = false;
-            synchronized (_queue)
+            synchronized (getLock())
             {
                 oldScheduler = _scheduler;
                 _scheduler = newScheduler;
@@ -509,7 +513,7 @@ public class ServerSessionImpl implements ServerSession
     public void flush()
     {
         Scheduler scheduler;
-        synchronized (_queue)
+        synchronized (getLock())
         {
             _lazyTask.cancel();
 
@@ -539,7 +543,7 @@ public class ServerSessionImpl implements ServerSession
 
     private void flushLazy(ServerMessage message)
     {
-        synchronized (_queue)
+        synchronized (getLock())
         {
             ServerChannel channel = _bayeux.getChannel(message.getChannel());
             long lazyTimeout = -1;
@@ -558,7 +562,7 @@ public class ServerSessionImpl implements ServerSession
     public void cancelSchedule()
     {
         Scheduler scheduler;
-        synchronized (_queue)
+        synchronized (getLock())
         {
             scheduler = _scheduler;
             if (scheduler != null)
@@ -571,7 +575,7 @@ public class ServerSessionImpl implements ServerSession
     public void cancelIntervalTimeout()
     {
         long now = System.currentTimeMillis();
-        synchronized (_queue)
+        synchronized (getLock())
         {
             _connectTimestamp = now;
             _intervalTimestamp = 0;
@@ -582,7 +586,7 @@ public class ServerSessionImpl implements ServerSession
     {
         long interval = calculateInterval(defaultInterval);
         long now = System.currentTimeMillis();
-        synchronized (_queue)
+        synchronized (getLock())
         {
             _intervalTimestamp = now + interval + _maxInterval;
         }

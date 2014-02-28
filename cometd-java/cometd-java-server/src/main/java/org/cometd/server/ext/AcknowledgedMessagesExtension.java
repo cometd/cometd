@@ -28,32 +28,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>Installing this extension in a {@link BayeuxServer} provides support to
- * message acknowledgement if a client also supports it.</p>
- *
+ * <p>Installing this extension in a {@link BayeuxServer} provides support for
+ * server-to-client message acknowledgement if a client also supports it.</p>
  * <p>The main role of this extension is to install the
- * {@link AcknowledgedMessagesClientExtension} on the {@link ServerSession} instances
- * created during handshake for clients that also support the ack extension.</p>
+ * {@link AcknowledgedMessagesClientExtension} on the {@link ServerSession}
+ * instances created during successful handshakes.</p>
  */
 public class AcknowledgedMessagesExtension extends Extension.Adapter
 {
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName());
 
     @Override
-    public boolean sendMeta(ServerSession to, Mutable message)
+    public boolean sendMeta(ServerSession remote, Mutable message)
     {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel()) && Boolean.TRUE.equals(message.get(Message.SUCCESSFUL_FIELD)))
+        if (Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful())
         {
             Message rcv = message.getAssociated();
 
             Map<String, Object> rcvExt = rcv.getExt();
             boolean clientRequestedAcks = rcvExt != null && rcvExt.get("ack") == Boolean.TRUE;
 
-            if (clientRequestedAcks && to != null)
+            if (clientRequestedAcks && remote != null)
             {
-                _logger.debug("Enabled message acknowledgement for client {}", to);
-                to.addExtension(new AcknowledgedMessagesClientExtension(to));
-                ((ServerSessionImpl)to).setMetaConnectDeliveryOnly(true);
+                ServerSessionImpl session = (ServerSessionImpl)remote;
+                _logger.debug("Enabled message acknowledgement for session {}", session);
+                session.addExtension(new AcknowledgedMessagesClientExtension(session));
             }
 
             Map<String, Object> sndExt = message.getExt(true);

@@ -856,13 +856,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void initialize()
     {
-        Long backoffIncrement = (Long)getOption(BACKOFF_INCREMENT_OPTION);
-        if (backoffIncrement == null || backoffIncrement <= 0)
+        Number value = (Number)getOption(BACKOFF_INCREMENT_OPTION);
+        long backoffIncrement = value == null ? -1 : value.longValue();
+        if (backoffIncrement < 0)
             backoffIncrement = 1000L;
         this.backoffIncrement = backoffIncrement;
 
-        Long maxBackoff = (Long)getOption(MAX_BACKOFF_OPTION);
-        if (maxBackoff == null || maxBackoff <= 0)
+        value = (Number)getOption(MAX_BACKOFF_OPTION);
+        long maxBackoff = value == null ? -1 : value.longValue();
+        if (maxBackoff <= 0)
             maxBackoff = 30000L;
         this.maxBackoff = maxBackoff;
 

@@ -948,15 +948,15 @@ public class Oort extends ContainerLifeCycle
 
     private class OortCometLoopListener implements ServerSession.MessageListener
     {
-        public boolean onMessage(ServerSession to, ServerSession from, ServerMessage message)
+        public boolean onMessage(ServerSession session, ServerSession sender, ServerMessage message)
         {
             // Prevent loops by not delivering a message from self or Oort session to remote Oort comets
-            if (to.getId().equals(from.getId()) || isOort(from))
+            if (session.getId().equals(sender.getId()) || isOort(sender))
             {
-                _logger.debug("{} --| {} {}", from, to, message);
+                _logger.debug("{} --| {} {}", sender, session, message);
                 return false;
             }
-            _logger.debug("{} --> {} {}", from, to, message);
+            _logger.debug("{} --> {} {}", sender, session, message);
             return true;
         }
     }

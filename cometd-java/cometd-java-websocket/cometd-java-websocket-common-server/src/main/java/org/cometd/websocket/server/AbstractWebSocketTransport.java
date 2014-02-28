@@ -341,9 +341,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                                     reply = null;
                                 }
                             }
-                            if (reply != null)
-                                queue = session.takeQueue();
                         }
+                        if (reply != null)
+                            queue = session.takeQueue();
                     }
                 }
 

@@ -92,22 +92,22 @@ public interface ServerSession extends Session
      * <p>The message should still have a channel id specified, so that the ClientSession
      * may identify the listeners the message should be delivered to.</p>
      *
-     * @param from the session delivering the message
+     * @param sender  the session delivering the message
      * @param message the message to deliver
      * @see #deliver(Session, String, Object, String)
      */
-    public void deliver(Session from, ServerMessage.Mutable message);
+    public void deliver(Session sender, ServerMessage.Mutable message);
 
     /**
      * <p>Delivers the given information to this session.</p>
      *
-     * @param from the session delivering the message
+     * @param sender  the session delivering the message
      * @param channel the channel of the message
-     * @param data the data of the message
-     * @param id the id of the message, or null to let the implementation choose an id
+     * @param data    the data of the message
+     * @param id      the id of the message, or null to let the implementation choose an id
      * @see #deliver(Session, Mutable)
      */
-    public void deliver(Session from, String channel, Object data, String id);
+    public void deliver(Session sender, String channel, Object data, String id);
 
     /**
      * @return the set of channels to which this session is subscribed to
@@ -129,7 +129,7 @@ public interface ServerSession extends Session
 
     /**
      * @param interval the period of time, in milliseconds, that the client
-     * associated with this session will wait before issuing a connect message
+     *                 associated with this session will wait before issuing a connect message
      */
     public void setInterval(long interval);
 
@@ -141,9 +141,8 @@ public interface ServerSession extends Session
     public long getTimeout();
 
     /**
-     *
      * @param timeout the period of time, in milliseconds, that the server will hold connect
-     * messages for this session
+     *                messages for this session
      */
     public void setTimeout(long timeout);
 
@@ -180,12 +179,27 @@ public interface ServerSession extends Session
          * processed, meaning that other listeners will not be notified and that the message
          * will be discarded.</p>
          *
-         * @param to the session that received the message
-         * @param from the session that sent the message
+         * @param session the session that received the message
+         * @param sender  the session that sent the message
          * @param message the message sent
          * @return whether the processing of the message should continue
          */
-        public boolean onMessage(ServerSession to, ServerSession from, ServerMessage message);
+        public boolean onMessage(ServerSession session, ServerSession sender, ServerMessage message);
+    }
+
+    /**
+     * <p>Listener objects that implement this interface will be notified when a message
+     * is queued in the session queue.</p>
+     */
+    public interface QueueListener extends ServerSessionListener
+    {
+        /**
+         * <p>Callback invoked when a message is queued in the session queue.</p>
+         *
+         * @param sender  the ServerSession that sends the message, may be null.
+         * @param message the message being queued
+         */
+        public void queued(ServerSession sender, ServerMessage message);
     }
 
     /**
@@ -200,7 +214,7 @@ public interface ServerSession extends Session
          * <p>This is the last chance to process the queue and remove duplicates or merge messages.</p>
          *
          * @param session the session whose messages are being sent
-         * @param queue the queue of messages to send
+         * @param queue   the queue of messages to send
          */
         public void deQueue(ServerSession session, Queue<ServerMessage> queue);
     }
@@ -217,7 +231,7 @@ public interface ServerSession extends Session
          *
          * @param session the session that will receive the message
          * @param queue the session's message queue
-         * @param sender the session that is sending the message
+         * @param sender the session that is sending the messages
          * @param message the message that exceeded the max queue capacity
          * @return true if the message should be added to the session queue
          */
@@ -259,11 +273,11 @@ public interface ServerSession extends Session
         /**
          * <p>Callback method invoked every time a normal message is outgoing.</p>
          *
-         * @param to the session receiving the message, or null for a publish
+         * @param session the session receiving the message
          * @param message the outgoing message
          * @return The message to send or null to not send the message
          */
-        public ServerMessage send(ServerSession to, ServerMessage message);
+        public ServerMessage send(ServerSession session, ServerMessage message);
 
         /**
          * <p>Callback method invoked every time a meta message is outgoing.</p>
@@ -289,7 +303,7 @@ public interface ServerSession extends Session
                 return true;
             }
 
-            public ServerMessage send(ServerSession to, ServerMessage message)
+            public ServerMessage send(ServerSession session, ServerMessage message)
             {
                 return message;
             }
