@@ -370,6 +370,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     protected void onExpired(TransportListener listener, Message... messages)
     {
+        disconnect("Expired");
         listener.onExpire(messages);
     }
 
