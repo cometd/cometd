@@ -92,8 +92,8 @@ public class MetaConnectFailureWithAckExtensionTest extends ClientServerWebSocke
                 else if (connect == 2)
                 {
                     // When the second connect arrives, maxNetworkDelay has elapsed.
-                    // We need to wait one delay to allow the first connect to return
-                    // and then some more to ensure no races.
+                    // We need to wait at least one delay to allow the first connect
+                    // to return and then some more to ensure no races.
                     sleep(2 * delay);
                 }
                 return true;
@@ -140,7 +140,7 @@ public class MetaConnectFailureWithAckExtensionTest extends ClientServerWebSocke
 
         Assert.assertTrue(clientSubscribeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(messageLatch1.await(2 * maxNetworkDelay, TimeUnit.MILLISECONDS));
-        Assert.assertFalse(messageLatch2.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(messageLatch2.await(2 * delay, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }

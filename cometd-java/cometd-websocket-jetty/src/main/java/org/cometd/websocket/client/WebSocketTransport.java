@@ -81,7 +81,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         return transport;
     }
 
-    private final WebSocket _websocket = new CometDWebSocket();
     private final Map<String, WebSocketExchange> _exchanges = new ConcurrentHashMap<String, WebSocketExchange>();
     private final WebSocketClientFactory _webSocketClientFactory;
     private volatile ScheduledExecutorService _scheduler;
@@ -96,7 +95,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile boolean _aborted;
     private volatile boolean _webSocketSupported = true;
     private volatile boolean _webSocketConnected = false;
-    private volatile WebSocket.Connection _connection;
+    private volatile WebSocket.Connection _activeConnection;
     private volatile TransportListener _listener;
     private volatile Map<String, Object> _advice;
 
@@ -180,8 +179,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     protected void disconnect(String reason)
     {
-        Connection connection = _connection;
-        _connection = null;
+        Connection connection = _activeConnection;
+        _activeConnection = null;
         if (connection != null && connection.isOpen())
         {
             debug("Closing websocket connection {}", connection);
@@ -223,7 +222,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     private Connection connect(TransportListener listener, Mutable[] messages)
     {
-        Connection connection = _connection;
+        Connection connection = _activeConnection;
         if (connection != null)
             return connection;
 
@@ -244,7 +243,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             client.setProtocol(_protocol);
             client.getCookies().putAll(cookies);
 
-            _connection = connect(client, uri);
+            _activeConnection = connect(client, uri);
             // Connection was successful
             _webSocketConnected = true;
 
@@ -297,12 +296,12 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             _webSocketSupported = _stickyReconnect && _webSocketConnected;
             listener.onException(x, messages);
         }
-        return _connection;
+        return _activeConnection;
     }
 
     protected Connection connect(WebSocketClient client, URI uri) throws IOException, InterruptedException, TimeoutException
     {
-        return client.open(uri, _websocket, getConnectTimeout(), TimeUnit.MILLISECONDS);
+        return client.open(uri, new CometDWebSocket(), getConnectTimeout(), TimeUnit.MILLISECONDS);
     }
 
     protected WebSocketClient newWebSocketClient()
@@ -449,17 +448,23 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     protected class CometDWebSocket implements WebSocket.OnTextMessage
     {
+        private volatile Connection _connection;
+
         public void onOpen(Connection connection)
         {
             debug("Opened websocket connection {}", connection);
+            _connection = connection;
         }
 
         public void onClose(int closeCode, String message)
         {
-            Connection connection = _connection;
-            _connection = null;
-            debug("Closed websocket connection with code {} {}: {} ", closeCode, message, connection);
-            failMessages(new EOFException("Connection closed " + closeCode + " " + message));
+            Connection connection = _activeConnection;
+            if (connection == _connection)
+            {
+                _activeConnection = null;
+                debug("Closed websocket connection with code {} {}: {} ", closeCode, message, connection);
+                failMessages(new EOFException("Connection closed " + closeCode + " " + message));
+            }
         }
 
         public void onMessage(String data)
@@ -467,13 +472,20 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             try
             {
                 List<Mutable> messages = parseMessages(data);
-                debug("Received messages {}", data);
-                onMessages(messages);
+                if (_activeConnection == _connection)
+                {
+                    debug("Received messages {}", data);
+                    onMessages(messages);
+                }
+                else
+                {
+                    debug("Discarding messages {}", messages);
+                }
             }
             catch (ParseException x)
             {
-                failMessages(x);
                 disconnect("Exception");
+                failMessages(x);
             }
         }
     }
