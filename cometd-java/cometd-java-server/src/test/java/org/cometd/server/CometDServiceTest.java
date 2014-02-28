@@ -134,12 +134,12 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
             addService(channel2, "two");
         }
 
-        public void one(ServerSession remote, ServerMessage.Mutable message)
+        public void one(ServerSession remote, ServerMessage message)
         {
             publishLatch1.get().countDown();
         }
 
-        public void two(ServerSession remote, ServerMessage.Mutable message)
+        public void two(ServerSession remote, ServerMessage message)
         {
             publishLatch2.get().countDown();
         }

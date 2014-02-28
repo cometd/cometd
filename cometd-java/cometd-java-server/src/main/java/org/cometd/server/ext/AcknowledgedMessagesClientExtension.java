@@ -45,7 +45,7 @@ public class AcknowledgedMessagesClientExtension implements Extension, ServerSes
         _session = (ServerSessionImpl)session;
         _session.addListener(this);
         _session.setMetaConnectDeliveryOnly(true);
-        _queue = new BatchArrayQueue<ServerMessage>(16, 32, _session.getLock());
+        _queue = new BatchArrayQueue<>(16, 32, _session.getLock());
         _batch = _queue.getBatch();
     }
 

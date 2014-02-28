@@ -218,7 +218,6 @@ public class ServerSessionImpl implements ServerSession
         ServerMessage.Mutable message = _bayeux.newMessage();
         message.setChannel(channelId);
         message.setData(data);
-        message.setId(id);
         deliver(sender, message);
     }
 
@@ -440,10 +439,13 @@ public class ServerSessionImpl implements ServerSession
         {
             // Always call listeners, even if the queue is
             // empty since they may add messages to the queue.
-            for (ServerSessionListener listener : _listeners)
+            if (!_listeners.isEmpty())
             {
-                if (listener instanceof DeQueueListener)
-                    notifyDeQueue((DeQueueListener)listener, this, _queue);
+                for (ServerSessionListener listener : _listeners)
+                {
+                    if (listener instanceof DeQueueListener)
+                        notifyDeQueue((DeQueueListener)listener, this, _queue);
+                }
             }
 
             int size = _queue.size();

@@ -95,13 +95,13 @@ public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
         }
 
         @Override
-        protected void doInvoke(Method method, ServerSession fromClient, ServerMessage msg)
+        protected void doInvoke(Method method, ServerSession session, ServerMessage message)
         {
             // Sleep for a while to simulate a slow dispatch
             sleep(500);
             // Save a copy of the message to test it later
-            message = msg;
-            super.doInvoke(method, fromClient, msg);
+            this.message = message;
+            super.doInvoke(method, session, message);
             latch.countDown();
         }
 
@@ -117,7 +117,7 @@ public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
             }
         }
 
-        public void handle(ServerSession remote, Message message)
+        public void handle(ServerSession remote, ServerMessage message)
         {
         }
 

@@ -15,8 +15,6 @@
  */
 package org.cometd.client.ext;
 
-import java.io.EOFException;
-import java.net.ConnectException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +25,6 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.ClientServerTest;
-import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;

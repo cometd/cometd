@@ -19,7 +19,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -123,27 +123,27 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
             addService(Channel.META_DISCONNECT, "metaDisconnect");
         }
 
-        public void metaHandshake(ServerSession remote, Message message)
+        public void metaHandshake(ServerSession remote, ServerMessage message)
         {
             handshakeLatch.countDown();
         }
 
-        public void metaConnect(ServerSession remote, Message message)
+        public void metaConnect(ServerSession remote, ServerMessage message)
         {
             connectLatch.countDown();
         }
 
-        public void metaSubscribe(ServerSession remote, Message message)
+        public void metaSubscribe(ServerSession remote, ServerMessage message)
         {
             subscribeLatch.countDown();
         }
 
-        public void metaUnsubscribe(ServerSession remote, Message message)
+        public void metaUnsubscribe(ServerSession remote, ServerMessage message)
         {
             unsubscribeLatch.countDown();
         }
 
-        public void metaDisconnect(ServerSession remote, Message message)
+        public void metaDisconnect(ServerSession remote, ServerMessage message)
         {
             disconnectLatch.countDown();
         }

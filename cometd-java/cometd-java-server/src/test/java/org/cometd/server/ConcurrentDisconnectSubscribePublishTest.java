@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -165,7 +164,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
             addService(Channel.META_SUBSCRIBE, "metaSubscribe");
         }
 
-        public void metaSubscribe(ServerSession remote, Message message)
+        public void metaSubscribe(ServerSession remote, ServerMessage message)
         {
             serviced.set(remote!=null && remote.isHandshook());
         }
@@ -182,7 +181,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
             addService(channel, "handle");
         }
 
-        public void handle(ServerSession remote, Message message)
+        public void handle(ServerSession remote, ServerMessage message)
         {
             publishes.incrementAndGet();
         }

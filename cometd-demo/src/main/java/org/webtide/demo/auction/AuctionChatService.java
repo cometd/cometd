@@ -30,6 +30,7 @@ import javax.servlet.ServletContext;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
@@ -75,8 +76,10 @@ public class AuctionChatService extends AbstractService
         addService("/service/auction/chat", "privateChat");
     }
 
-    public void trackMembers(final ServerSession joiner, final String channelName, Object data, final String messageId)
+    public void trackMembers(final ServerSession joiner, ServerMessage message)
     {
+        final String channelName = message.getChannel();
+        Object data = message.getData();
         if (data instanceof Object[])
         {
             Set<String> members = _members.get(channelName);
@@ -168,8 +171,9 @@ public class AuctionChatService extends AbstractService
         }
     }
 
-    public void privateChat(ServerSession source, String channel, Map<String, Object> data, String messageId)
+    public void privateChat(ServerSession source, ServerMessage message)
     {
+        Map<String, Object> data = message.getDataAsMap();
         String toUid = (String)data.get("peer");
         String toChannel = (String)data.get("room");
         source.deliver(source, toChannel, data);

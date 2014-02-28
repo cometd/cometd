@@ -43,8 +43,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.benchmark.Atomics;
 import org.cometd.benchmark.BenchmarkHelper;
@@ -274,7 +274,7 @@ public class BayeuxLoadServer
             addService("/service/statistics/stop", "stopStatistics");
         }
 
-        public void startStatistics(ServerSession remote, Message message)
+        public void startStatistics(ServerSession remote, ServerMessage message)
         {
             // Multiple nodes must wait that initialization is completed
             synchronized (this)
@@ -299,7 +299,7 @@ public class BayeuxLoadServer
             }
         }
 
-        public void stopStatistics(ServerSession remote, Message message) throws Exception
+        public void stopStatistics(ServerSession remote, ServerMessage message) throws Exception
         {
             synchronized (this)
             {

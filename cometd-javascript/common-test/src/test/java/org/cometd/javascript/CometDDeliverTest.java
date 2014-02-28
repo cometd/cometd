@@ -17,6 +17,7 @@ package org.cometd.javascript;
 
 import java.util.Map;
 
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
@@ -74,15 +75,14 @@ public class CometDDeliverTest extends AbstractCometDTest
             addService("/service/deliver", "deliver");
         }
 
-        public void deliver(ServerSession remote, String channel, Object messageData, String messageId)
+        public void deliver(ServerSession remote, ServerMessage message)
         {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> data = (Map<String, Object>)messageData;
-            Boolean deliver = (Boolean) data.get("deliver");
+            Map<String, Object> data = message.getDataAsMap();
+            Boolean deliver = (Boolean)data.get("deliver");
             if (deliver)
             {
                 data.put("echo", true);
-                remote.deliver(getServerSession(), channel, data);
+                remote.deliver(getServerSession(), message.getChannel(), data);
             }
         }
     }

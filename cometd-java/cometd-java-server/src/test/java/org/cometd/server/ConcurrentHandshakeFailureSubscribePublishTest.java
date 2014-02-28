@@ -159,7 +159,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
             addService(Channel.META_SUBSCRIBE, "metaSubscribe");
         }
 
-        public void metaSubscribe(ServerSession remote, Message message)
+        public void metaSubscribe(ServerSession remote, ServerMessage message)
         {
             subscribe.set(true);
         }
@@ -176,7 +176,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
             addService(channelName, "process");
         }
 
-        public void process(ServerSession remote, Message message)
+        public void process(ServerSession remote, ServerMessage message)
         {
             publish.set(true);
         }

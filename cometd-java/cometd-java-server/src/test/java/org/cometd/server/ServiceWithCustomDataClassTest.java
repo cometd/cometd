@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -112,9 +113,9 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
             this.latch = latch;
         }
 
-        public void handle(ServerSession remote, Holder data)
+        public void handle(ServerSession remote, ServerMessage message)
         {
-            holder = data;
+            holder = (Holder)message.getData();
             latch.countDown();
         }
     }

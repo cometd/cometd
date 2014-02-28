@@ -20,7 +20,6 @@ import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
@@ -182,24 +181,16 @@ public abstract class AbstractService
      * {@link ServerChannel.MessageListener} on the given channel, so that the method
      * is invoked for each message received on the channel.</p>
      * <p>The channel name may be a {@link ServerChannel#isWild() wildcard channel name}.</p>
-     * <p>The method must have a unique name and one of the following signatures:</p>
+     * <p>The method must have a unique name and the following signature:</p>
      * <ul>
-     * <li><code>myMethod(ServerSession from, Object data)</code></li>
-     * <li><code>myMethod(ServerSession from, Object data, String messageId)</code></li>
-     * <li><code>myMethod(ServerSession from, String channel, Object data, String messageId)</code></li>
+     * <li><code>myMethod(ServerSession from, ServerMessage message)</code></li>
      * </ul>
-     * <p>The <code>data</code> parameter can be a specific type if the type of
-     * the data object published by the client is known by the server.
-     * If it is not known will be Map&lt;String, Object&gt;.</p>
-     * <p>If the type of the data parameter is {@link Message} (or a subinterface
-     * such as {@link ServerMessage.Mutable} then the message object itself is
-     * passed rather than just the message's data.</p>
      * <p>Typically a service will be used to a channel in the <code>/service/**</code>
      * space which is not a broadcast channel.</p>
      * <p>Any object returned by a mapped method is delivered back to the
      * client that sent the message and not broadcast. If the method returns void or null,
      * then no response is sent.</p>
-     * <p>A mapped method may also call {@link #send(ServerSession, String, Object, String)}
+     * <p>A mapped method may also call {@link #send(org.cometd.bayeux.server.ServerSession, String, Object)}
      * to deliver message(s) to specific clients and/or channels.</p>
      * <p>A mapped method may also publish to different channels via
      * {@link ServerChannel#publish(Session, Mutable)}.</p>
@@ -213,37 +204,38 @@ public abstract class AbstractService
     {
         _logger.debug("Mapping {}#{} to {}", _name, methodName, channelName);
 
-        Method method = null;
+        Method candidate = null;
         Class<?> c = this.getClass();
-        while (c != null && c != Object.class)
+        while (c != null && c != AbstractService.class)
         {
             Method[] methods = c.getDeclaredMethods();
             for (int i = methods.length; i-- > 0; )
             {
-                if (methodName.equals(methods[i].getName()))
+                Method method = methods[i];
+                if (methodName.equals(method.getName()) && Modifier.isPublic(method.getModifiers()))
                 {
-                    if (method != null)
+                    if (candidate != null)
                         throw new IllegalArgumentException("Multiple service methods called '" + methodName + "'");
-                    method = methods[i];
+                    candidate = method;
                 }
             }
             c = c.getSuperclass();
         }
 
-        if (method == null)
-            throw new NoSuchMethodError(methodName);
-        int params = method.getParameterTypes().length;
-        if (params < 2 || params > 4)
-            throw new IllegalArgumentException("Service method '" + methodName + "' does not have 2, 3 or 4 parameters");
-        if (!ServerSession.class.isAssignableFrom(method.getParameterTypes()[0]))
+        if (candidate == null)
+            throw new NoSuchMethodError("Cannot find public service method '" + methodName + "'");
+        int params = candidate.getParameterTypes().length;
+        if (params != 2)
+            throw new IllegalArgumentException("Service method '" + methodName + "' must have 2 parameters");
+        if (!ServerSession.class.isAssignableFrom(candidate.getParameterTypes()[0]))
             throw new IllegalArgumentException("Service method '" + methodName + "' does not have " + ServerSession.class.getName() + " as first parameter");
-        if (!Modifier.isPublic(method.getModifiers()))
-            throw new IllegalArgumentException("Service method '" + methodName + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+        if (!ServerMessage.class.isAssignableFrom(candidate.getParameterTypes()[1]))
+            throw new IllegalArgumentException("Service method '" + methodName + "' does not have " + ServerMessage.class.getName() + " as second parameter");
 
         ServerChannel channel = _bayeux.createChannelIfAbsent(channelName).getReference();
-        Invoker invoker = new Invoker(channelName, method);
-        invokers.put(methodName, invoker);
+        Invoker invoker = new Invoker(channelName, candidate);
         channel.addListener(invoker);
+        invokers.put(methodName, invoker);
     }
 
     /**
@@ -287,7 +279,7 @@ public abstract class AbstractService
     /**
      * <p>Sends data to an individual remote client.</p>
      * <p>The data passed is sent to the client
-     * as the "data" member of a message with the given channel and id. The
+     * as the "data" member of a message with the given channel. The
      * message is not published on the channel and is thus not broadcast to all
      * channel subscribers, but instead delivered directly to the target client.</p>
      * <p>Typically this method is only required if a service method sends
@@ -298,9 +290,8 @@ public abstract class AbstractService
      * @param toClient  The target client
      * @param onChannel The channel of the message
      * @param data      The data of the message
-     * @param id        The id of the message (or null for a random id).
      */
-    protected void send(ServerSession toClient, String onChannel, Object data, String id)
+    protected void send(ServerSession toClient, String onChannel, Object data)
     {
         toClient.deliver(_session.getServerSession(), onChannel, data);
     }
@@ -310,14 +301,14 @@ public abstract class AbstractService
      * <p>This method is called when a mapped method throws and exception while handling a message.</p>
      *
      * @param method     the name of the method invoked that threw an exception
-     * @param fromClient the remote session that sent the message
-     * @param toClient   the local session associated to this service
-     * @param msg        the message sent by the remote session
+     * @param session the remote session that sent the message
+     * @param local   the local session associated to this service
+     * @param message        the message sent by the remote session
      * @param x          the exception thrown
      */
-    protected void exception(String method, ServerSession fromClient, LocalSession toClient, ServerMessage msg, Throwable x)
+    protected void exception(String method, ServerSession session, LocalSession local, ServerMessage message, Throwable x)
     {
-        _logger.info("Exception while invoking " + _name + "#" + method + " from " + fromClient + " with " + msg, x);
+        _logger.info("Exception while invoking " + _name + "#" + method + " from " + session + " with " + message, x);
     }
 
     private void invoke(final Method method, final ServerSession fromClient, final ServerMessage msg)
@@ -341,43 +332,17 @@ public abstract class AbstractService
         }
     }
 
-    protected void doInvoke(Method method, ServerSession fromClient, ServerMessage msg)
+    protected void doInvoke(Method method, ServerSession session, ServerMessage message)
     {
-        String channel = msg.getChannel();
-        Object data = msg.getData();
-        String id = msg.getId();
-
-        if (method != null)
+        try
         {
-            try
-            {
-                Class<?>[] parameterTypes = method.getParameterTypes();
-                int messageParameterIndex = parameterTypes.length == 4 ? 2 : 1;
-                Object messageArgument = data;
-                if (Message.class.isAssignableFrom(parameterTypes[messageParameterIndex]))
-                    messageArgument = msg;
-
-                Object reply = null;
-                switch (method.getParameterTypes().length)
-                {
-                    case 2:
-                        reply = method.invoke(this, fromClient, messageArgument);
-                        break;
-                    case 3:
-                        reply = method.invoke(this, fromClient, messageArgument, id);
-                        break;
-                    case 4:
-                        reply = method.invoke(this, fromClient, channel, messageArgument, id);
-                        break;
-                }
-
-                if (reply != null)
-                    send(fromClient, channel, reply, id);
-            }
-            catch (Throwable e)
-            {
-                exception(method.toString(), fromClient, _session, msg, e);
-            }
+            Object reply = method.invoke(this, session, message);
+            if (reply != null)
+                send(session, message.getChannel(), reply);
+        }
+        catch (Throwable x)
+        {
+            exception(method.toString(), session, _session, message, x);
         }
     }
 

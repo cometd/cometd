@@ -92,41 +92,41 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         addService("/service" + AUCTION_ROOT + "categories", "categories");
     }
 
-    public Bidder bidder(ServerSession source, String channel, String bidder, String messageId)
+    public synchronized void bids(ServerSession source, ServerMessage message)
     {
-        Integer id = _bidders.incrementAndGet();
+        // TODO Other half of the non atomic bid hack when used in Oort
+        Map<String, Object> bidMap = message.getDataAsMap();
+        Integer itemId = ((Number)bidMap.get("itemId")).intValue();
+        Double amount = Double.parseDouble(bidMap.get("amount").toString());
+        Map<String, Object> bidderMap = (Map<String, Object>)bidMap.get("bidder");
+        String username = (String)bidderMap.get("username");
+        Bidder bidder = _bidderDao.getBidder(username);
+        if (bidder == null)
+        {
+            bidder = new Bidder();
+            bidder.setUsername(username);
+            bidder.setName((String)bidderMap.get("name"));
+            _bidderDao.addBidder(bidder);
+            bidder = _bidderDao.getBidder(username);
+        }
 
-        // TODO this is not atomic, but will do for the demo
-        String username = bidder.toLowerCase().replace(" ", "");
-        while (_bidderDao.getBidder(username) != null)
-            username = bidder.toLowerCase().replace(" ", "") + "-" + _bidders.incrementAndGet();
-        Bidder b = new Bidder();
-        b.setName(bidder);
-        b.setUsername(username);
-        _bidderDao.addBidder(b);
-        _seti.associate(b.getUsername(), source);
-        return b;
+        Bid bid = new Bid();
+        bid.setItemId(itemId);
+        bid.setAmount(amount);
+        bid.setBidder(bidder);
+
+        Bid highest = _auctionDao.getHighestBid(itemId);
+        if (highest == null || amount > highest.getAmount())
+        {
+            _auctionDao.saveAuctionBid(bid);
+        }
     }
 
-    public List<Category> categories(ServerSession source, String channel, String bidder, String messageId)
-    {
-        return _categoryDao.getAllCategories();
-    }
-
-    public List<Item> search(ServerSession source, String channel, String search, String messageId)
-    {
-        return _categoryDao.findItems(search);
-    }
-
-    public List<Item> category(ServerSession source, String channel, Number categoryId, String messageId)
-    {
-        return _categoryDao.getItemsInCategory(categoryId.intValue());
-    }
-
-    public synchronized void bid(ServerSession source, String channel, Map<String, Object> bidMap, String messageId)
+    public synchronized void bid(ServerSession source, ServerMessage message)
     {
         try
         {
+            Map<String, Object> bidMap = message.getDataAsMap();
             Integer itemId = ((Number)bidMap.get("itemId")).intValue();
             Double amount = Double.parseDouble(bidMap.get("amount").toString());
             String username = (String)bidMap.get("username");
@@ -155,33 +155,37 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         }
     }
 
-    public synchronized void bids(ServerSession source, String channel, Map<String, Object> bidMap, String messageId)
+    public Bidder bidder(ServerSession source, ServerMessage message)
     {
-        // TODO Other half of the non atomic bid hack when used in Oort
-        Integer itemId = ((Number)bidMap.get("itemId")).intValue();
-        Double amount = Double.parseDouble(bidMap.get("amount").toString());
-        Map<String, Object> bidderMap = (Map<String, Object>)bidMap.get("bidder");
-        String username = (String)bidderMap.get("username");
-        Bidder bidder = _bidderDao.getBidder(username);
-        if (bidder == null)
-        {
-            bidder = new Bidder();
-            bidder.setUsername(username);
-            bidder.setName((String)bidderMap.get("name"));
-            _bidderDao.addBidder(bidder);
-            bidder = _bidderDao.getBidder(username);
-        }
+        String bidder = (String)message.getData();
+        Integer id = _bidders.incrementAndGet();
 
-        Bid bid = new Bid();
-        bid.setItemId(itemId);
-        bid.setAmount(amount);
-        bid.setBidder(bidder);
+        // TODO this is not atomic, but will do for the demo
+        String username = bidder.toLowerCase().replace(" ", "");
+        while (_bidderDao.getBidder(username) != null)
+            username = bidder.toLowerCase().replace(" ", "") + "-" + _bidders.incrementAndGet();
+        Bidder b = new Bidder();
+        b.setName(bidder);
+        b.setUsername(username);
+        _bidderDao.addBidder(b);
+        _seti.associate(b.getUsername(), source);
+        return b;
+    }
 
-        Bid highest = _auctionDao.getHighestBid(itemId);
-        if (highest == null || amount > highest.getAmount())
-        {
-            _auctionDao.saveAuctionBid(bid);
-        }
+    public List<Item> search(ServerSession source, ServerMessage message)
+    {
+        return _categoryDao.findItems((String)message.getData());
+    }
+
+    public List<Item> category(ServerSession source, ServerMessage message)
+    {
+        Number categoryId = (Number)message.getData();
+        return _categoryDao.getItemsInCategory(categoryId.intValue());
+    }
+
+    public List<Category> categories(ServerSession source, ServerMessage message)
+    {
+        return _categoryDao.getAllCategories();
     }
 
     public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)

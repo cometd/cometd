@@ -119,7 +119,7 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
             addService(Channel.META_SUBSCRIBE, "emit");
         }
 
-        public void emit(ServerSession remote, Message message)
+        public void emit(ServerSession remote, ServerMessage message)
         {
             HashMap<String, Object> data = new HashMap<>();
             data.put("emitted", true);
