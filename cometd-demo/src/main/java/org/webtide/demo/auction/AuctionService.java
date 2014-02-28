@@ -194,7 +194,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
                 Integer itemId = Integer.decode(itemIdS);
                 Bid highest = _auctionDao.getHighestBid(itemId);
                 if (highest != null)
-                    session.deliver(getServerSession(), channel.getId(), highest, null);
+                    session.deliver(getServerSession(), channel.getId(), highest);
             }
         }
     }

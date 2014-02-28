@@ -302,7 +302,7 @@ public abstract class AbstractService
      */
     protected void send(ServerSession toClient, String onChannel, Object data, String id)
     {
-        toClient.deliver(_session.getServerSession(), onChannel, data, id);
+        toClient.deliver(_session.getServerSession(), onChannel, data);
     }
 
     /**

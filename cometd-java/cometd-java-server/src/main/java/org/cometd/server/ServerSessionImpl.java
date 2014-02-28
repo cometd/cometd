@@ -213,7 +213,7 @@ public class ServerSessionImpl implements ServerSession
         doDeliver(session, message);
     }
 
-    public void deliver(Session sender, String channelId, Object data, String id)
+    public void deliver(Session sender, String channelId, Object data)
     {
         ServerMessage.Mutable message = _bayeux.newMessage();
         message.setChannel(channelId);

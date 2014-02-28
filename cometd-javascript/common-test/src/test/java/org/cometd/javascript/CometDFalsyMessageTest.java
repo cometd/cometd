@@ -58,7 +58,7 @@ public class CometDFalsyMessageTest extends AbstractCometDTest
 
         String sessionId = evaluateScript("cometd.getClientId();");
         ServerSession session = bayeuxServer.getSession(sessionId);
-        session.deliver(null, channelName, content, null);
+        session.deliver(null, channelName, content);
 
         Assert.assertTrue(messageLatch.await(5000));
     }

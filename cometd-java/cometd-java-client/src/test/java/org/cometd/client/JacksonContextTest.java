@@ -167,7 +167,7 @@ public class JacksonContextTest extends ClientServerTest
             // Deliver
             Map<String, Object> deliverData = new HashMap<>(data);
             deliverData.put("deliver", true);
-            session.deliver(getServerSession(), channelName, deliverData, null);
+            session.deliver(getServerSession(), channelName, deliverData);
         }
     }
 }

@@ -82,7 +82,7 @@ public class CometDDeliverTest extends AbstractCometDTest
             if (deliver)
             {
                 data.put("echo", true);
-                remote.deliver(getServerSession(), channel, data, messageId);
+                remote.deliver(getServerSession(), channel, data);
             }
         }
     }

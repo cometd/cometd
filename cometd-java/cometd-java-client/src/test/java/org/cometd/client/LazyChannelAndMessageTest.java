@@ -261,7 +261,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
                     public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
                     {
                         for (ServerSession subscriber : channel.getSubscribers())
-                            subscriber.deliver(from, message.getChannel(), message.getData(), null);
+                            subscriber.deliver(from, message.getChannel(), message.getData());
                         return false;
                     }
                 });

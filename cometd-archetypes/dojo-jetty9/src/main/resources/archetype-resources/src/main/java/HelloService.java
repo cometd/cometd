@@ -27,6 +27,6 @@ public class HelloService extends AbstractService
 
         Map<String, Object> output = new HashMap<>();
         output.put("greeting", "Hello, " + name);
-        remote.deliver(getServerSession(), "/hello", output, null);
+        remote.deliver(getServerSession(), "/hello", output);
     }
 }

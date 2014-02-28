@@ -177,7 +177,7 @@ public class OortChatService
         String toChannel = (String)data.get("room");
         data.put("scope", "private");
         data.put("user", data.get("user") + "->" + toUid);
-        client.deliver(client, toChannel, data, message.getId());
+        client.deliver(client, toChannel, data);
         _seti.sendMessage(toUid, toChannel, data);
     }
 

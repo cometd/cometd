@@ -123,7 +123,7 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
         {
             HashMap<String, Object> data = new HashMap<>();
             data.put("emitted", true);
-            remote.deliver(getServerSession(), "/test", data, null);
+            remote.deliver(getServerSession(), "/test", data);
         }
     }
 }

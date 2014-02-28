@@ -765,7 +765,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable
 
         public void send(String toUser, String toChannel, Object data)
         {
-            _session.deliver(Seti.this._session.getServerSession(), toChannel, data, null);
+            _session.deliver(Seti.this._session.getServerSession(), toChannel, data);
         }
 
         public void receive(String toUser, String toChannel, Object data)

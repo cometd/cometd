@@ -237,7 +237,7 @@ public class CometDSubscribeTest extends AbstractCometDTest
         Assert.assertTrue(subscribeLatch.await(5000));
         
         // Verify that messages are not received
-        bayeuxServer.getSession(sessionId).deliver(null, channelName, "data", null);
+        bayeuxServer.getSession(sessionId).deliver(null, channelName, "data");
         Assert.assertFalse(messageLatch.await(1000));
 
         // Reset and allow subscriptions

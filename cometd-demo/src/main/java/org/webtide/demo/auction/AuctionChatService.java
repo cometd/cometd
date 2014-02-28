@@ -172,7 +172,7 @@ public class AuctionChatService extends AbstractService
     {
         String toUid = (String)data.get("peer");
         String toChannel = (String)data.get("room");
-        source.deliver(source, toChannel, data, messageId);
+        source.deliver(source, toChannel, data);
         _seti.sendMessage(toUid, toChannel, data);
     }
 }

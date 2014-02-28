@@ -106,7 +106,7 @@ public class CometDDemoServlet extends GenericServlet
         {
             Map<String,Object> data = message.getDataAsMap();
             logger.info("ECHO from "+session+" "+data);
-            session.deliver(_session, message.getChannel(), data, null);
+            session.deliver(_session, message.getChannel(), data);
         }
     }
 

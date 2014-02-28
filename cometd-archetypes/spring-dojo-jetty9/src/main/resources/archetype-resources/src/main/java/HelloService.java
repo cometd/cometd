@@ -42,6 +42,6 @@ public class HelloService
 
         Map<String, Object> output = new HashMap<>();
         output.put("greeting", "Hello, " + name);
-        remote.deliver(serverSession, "/hello", output, null);
+        remote.deliver(serverSession, "/hello", output);
     }
 }
