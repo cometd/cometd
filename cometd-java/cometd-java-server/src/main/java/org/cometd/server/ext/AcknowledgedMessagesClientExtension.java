@@ -38,7 +38,7 @@ public class AcknowledgedMessagesClientExtension implements Extension, ServerSes
 
     private final ServerSessionImpl _session;
     private final BatchArrayQueue<ServerMessage> _queue;
-    private long _batch;
+    private final ThreadLocal<Long> _batch = new ThreadLocal<Long>();
 
     public AcknowledgedMessagesClientExtension(ServerSession session)
     {
@@ -46,7 +46,6 @@ public class AcknowledgedMessagesClientExtension implements Extension, ServerSes
         _session.addListener(this);
         _session.setMetaConnectDeliveryOnly(true);
         _queue = new BatchArrayQueue<>(16, 32, _session.getLock());
-        _batch = _queue.getBatch();
     }
 
     public boolean rcv(ServerSession from, Mutable message)
@@ -104,7 +103,8 @@ public class AcknowledgedMessagesClientExtension implements Extension, ServerSes
             queue.clear();
             if (!_queue.isEmpty())
                 queue.addAll(_queue);
-            _batch = _queue.getAndIncrementBatch();
+            _batch.set(_queue.getBatch());
+            _queue.nextBatch();
         }
     }
 
@@ -115,8 +115,10 @@ public class AcknowledgedMessagesClientExtension implements Extension, ServerSes
             synchronized (_session.getLock())
             {
                 Map<String, Object> ext = message.getExt(true);
-                ext.put("ack", _batch);
-                _logger.debug("Sending batch {} for {}", _batch, _session);
+                Long batch = _batch.get();
+                _logger.debug("Sending batch {} for {}", batch, _session);
+                if (batch != null)
+                    ext.put("ack", batch);
             }
         }
         return true;

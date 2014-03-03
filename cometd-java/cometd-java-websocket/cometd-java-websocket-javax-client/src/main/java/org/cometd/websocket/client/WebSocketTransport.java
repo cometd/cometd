@@ -50,11 +50,10 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 {
-    private final Endpoint _target = new CometDWebSocket();
     private final WebSocketContainer _webSocketContainer;
     private volatile boolean _webSocketSupported = true;
     private volatile boolean _webSocketConnected = false;
-    private volatile Session _wsSession;
+    private volatile Session _activeSession;
 
     public WebSocketTransport(Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketContainer webSocketContainer)
     {
@@ -86,8 +85,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 
     protected void disconnect(String reason)
     {
-        Session wsSession = _wsSession;
-        _wsSession = null;
+        Session wsSession = _activeSession;
+        _activeSession = null;
         if (wsSession != null && wsSession.isOpen())
         {
             logger.debug("Closing websocket session {}", wsSession);
@@ -104,7 +103,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 
     protected Session connect(String uri, TransportListener listener, List<Mutable> messages)
     {
-        Session session = _wsSession;
+        Session session = _activeSession;
         if (session != null)
             return session;
 
@@ -118,7 +117,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             if (isAborted())
                 listener.onFailure(new Exception("Aborted"), messages);
 
-            return _wsSession = session;
+            return _activeSession = session;
         }
         catch (ConnectException | SocketTimeoutException | UnresolvedAddressException x)
         {
@@ -144,7 +143,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
                     .preferredSubprotocols(protocol == null ? null : Collections.singletonList(protocol))
                     .configurator(configurator).build();
-            return _webSocketContainer.connectToServer(_target, config, new URI(uri));
+            return _webSocketContainer.connectToServer(new CometDWebSocket(), config, new URI(uri));
         }
         catch (DeploymentException | URISyntaxException x)
         {
@@ -173,20 +172,25 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 
     private class CometDWebSocket extends Endpoint implements MessageHandler.Whole<String>
     {
+        private volatile Session _session;
+
         @Override
         public void onOpen(Session session, EndpointConfig config)
         {
-            _wsSession = session;
-            _wsSession.addMessageHandler(this);
+            session.addMessageHandler(this);
+            _session = session;
             logger.debug("Opened websocket session {}", session);
         }
 
         @Override
         public void onClose(Session session, CloseReason closeReason)
         {
-            logger.debug("Closed websocket connection with code {}: {} ", closeReason, _wsSession);
-            _wsSession = null;
-            failMessages(new EOFException("Connection closed " + closeReason));
+            if (_activeSession == session)
+            {
+                _activeSession = null;
+                logger.debug("Closed websocket connection with code {}: {} ", closeReason, session);
+                failMessages(new EOFException("Connection closed " + closeReason));
+            }
         }
 
         @Override
@@ -195,13 +199,20 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             try
             {
                 List<Mutable> messages = parseMessages(data);
-                logger.debug("Received messages {}", data);
-                onMessages(messages);
+                if (_activeSession == _session)
+                {
+                    logger.debug("Received messages {}", data);
+                    onMessages(messages);
+                }
+                else
+                {
+                    logger.debug("Discarded messages {}", data);
+                }
             }
             catch (ParseException x)
             {
-                failMessages(x);
                 disconnect("Exception");
+                failMessages(x);
             }
         }
 

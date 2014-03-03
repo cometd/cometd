@@ -45,11 +45,10 @@ import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 
 public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session> implements UpgradeListener
 {
-    private final Object _target = new CometDWebSocket();
     private final WebSocketClient _webSocketClient;
     private volatile boolean _webSocketSupported = true;
     private volatile boolean _webSocketConnected = false;
-    private volatile Session _wsSession;
+    private volatile Session _activeSession;
 
     public JettyWebSocketTransport(Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketClient webSocketClient)
     {
@@ -82,8 +81,8 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
 
     protected void disconnect(String reason)
     {
-        Session session = _wsSession;
-        _wsSession = null;
+        Session session = _activeSession;
+        _activeSession = null;
         if (session != null && session.isOpen())
         {
             logger.debug("Closing websocket session {}", session);
@@ -110,7 +109,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
 
     protected Session connect(String uri, TransportListener listener, List<Mutable> messages)
     {
-        Session session = _wsSession;
+        Session session = _activeSession;
         if (session != null)
             return session;
 
@@ -124,7 +123,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
             if (isAborted())
                 listener.onFailure(new Exception("Aborted"), messages);
 
-            return _wsSession = session;
+            return _activeSession = session;
         }
         catch (ConnectException | SocketTimeoutException | UnresolvedAddressException x)
         {
@@ -158,7 +157,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
             String protocol = getProtocol();
             if (protocol != null)
                 request.setSubProtocols(protocol);
-            return _webSocketClient.connect(_target, new URI(uri), request, this).get();
+            return _webSocketClient.connect(new CometDWebSocket(), new URI(uri), request, this).get();
         }
         catch (ExecutionException x)
         {
@@ -188,19 +187,25 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
 
     private class CometDWebSocket implements WebSocketListener
     {
+        private volatile Session _session;
+
         @Override
         public void onWebSocketConnect(Session session)
         {
-            _wsSession = session;
+            _session = session;
             logger.debug("Opened websocket session {}", session);
         }
 
         @Override
         public void onWebSocketClose(int closeCode, String reason)
         {
-            logger.debug("Closed websocket connection with code {} {}: {} ", closeCode, reason, _wsSession);
-            _wsSession = null;
-            failMessages(new EOFException("Connection closed " + closeCode + " " + reason));
+            final Session session = _activeSession;
+            if (session == _session)
+            {
+                _activeSession = null;
+                logger.debug("Closed websocket connection with code {} {}: {} ", closeCode, reason, session);
+                failMessages(new EOFException("Connection closed " + closeCode + " " + reason));
+            }
         }
 
         @Override
@@ -209,13 +214,20 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
             try
             {
                 List<Mutable> messages = parseMessages(data);
-                logger.debug("Received messages {}", data);
-                onMessages(messages);
+                if (_activeSession == _session)
+                {
+                    logger.debug("Received messages {}", data);
+                    onMessages(messages);
+                }
+                else
+                {
+                    logger.debug("Discarded messages {}", data);
+                }
             }
             catch (ParseException x)
             {
-                failMessages(x);
                 disconnect("Exception");
+                failMessages(x);
             }
         }
 

@@ -19,13 +19,13 @@ import org.eclipse.jetty.util.ArrayQueue;
 
 public class BatchArrayQueue<T> extends ArrayQueue<T>
 {
-    private long[] batchIds;
+    private long[] batches;
     private long batch;
 
     public BatchArrayQueue(int initial, int growBy, Object lock)
     {
         super(initial, growBy, lock);
-        batchIds = new long[initial];
+        batches = new long[initial];
         batch = 1;
     }
 
@@ -37,7 +37,7 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
             int tail = _nextSlot;
             boolean result = super.offer(t);
             if (result)
-                batchIds[tail] = batch;
+                batches[tail] = batch;
             return result;
         }
     }
@@ -73,7 +73,8 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
         {
             int head = _nextE;
             T result = super.poll();
-            batchIds[head] = 0;
+            if (result != null)
+                batches[head] = 0;
             return result;
         }
     }
@@ -104,13 +105,11 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
         }
     }
 
-    public long getAndIncrementBatch()
+    public void nextBatch()
     {
         synchronized (_lock)
         {
-            long result = batch;
             ++batch;
-            return result;
         }
     }
 
@@ -121,7 +120,7 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
             while (true)
             {
                 int head = _nextE;
-                if (batchIds[head] > batch)
+                if (batches[head] > batch)
                     break;
                 if (poll() == null)
                     break;
@@ -141,14 +140,14 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
                 return false;
 
             long[] newIds = new long[_elements.length];
-            int length = batchIds.length - head;
+            int length = batches.length - head;
             // Copy from head to end of array.
             if (length > 0)
-                System.arraycopy(batchIds, head, newIds, 0, length);
+                System.arraycopy(batches, head, newIds, 0, length);
             // Copy from 0 to tail if we have not done it yet.
             if (head != 0)
-                System.arraycopy(batchIds, 0, newIds, length, tail);
-            batchIds = newIds;
+                System.arraycopy(batches, 0, newIds, length, tail);
+            batches = newIds;
             return true;
         }
     }
