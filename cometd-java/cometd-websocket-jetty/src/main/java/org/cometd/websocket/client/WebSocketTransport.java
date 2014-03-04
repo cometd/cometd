@@ -111,11 +111,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _listener = listener;
     }
 
-    public boolean accept(String version)
-    {
-        return _webSocketSupported;
-    }
-
     @Override
     public void init()
     {
@@ -133,6 +128,11 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _stickyReconnect = getOption(STICKY_RECONNECT_OPTION, true);
         _webSocketSupported = true;
         _webSocketConnected = false;
+    }
+
+    public boolean accept(String version)
+    {
+        return _webSocketSupported;
     }
 
     private long getConnectTimeout()
@@ -185,11 +185,16 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     @Override
     public void send(TransportListener listener, Message.Mutable... messages)
     {
-        Delegate delegate = connect(listener, messages);
+        Delegate delegate = getDelegate();
         if (delegate == null)
-            return;
+        {
+            delegate = connect(listener, messages);
+            if (delegate == null)
+                return;
+        }
 
         delegate.registerMessages(listener, messages);
+
         try
         {
             String json = generateJSON(messages);
@@ -211,10 +216,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     {
         try
         {
-            Delegate delegate = getDelegate();
-            if (delegate != null)
-                return delegate;
-
             // Mangle the URL
             String url = getURL();
             url = url.replaceFirst("^http", "ws");
@@ -230,7 +231,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             client.setProtocol(_protocol);
             client.getCookies().putAll(cookies);
 
-            delegate = connect(client, uri);
+            Delegate delegate = connect(client, uri);
             synchronized (this)
             {
                 if (_delegate != null)
@@ -319,8 +320,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         public void onOpen(Connection connection)
         {
-            debug("Opened websocket connection {}", connection);
             _connection = connection;
+            debug("Opened websocket connection {}", connection);
         }
 
         public void onClose(int closeCode, String message)
@@ -367,6 +368,52 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             {
                 fail(x, "Exception");
             }
+        }
+
+        private void onMessages(List<Mutable> messages)
+        {
+            for (Mutable message : messages)
+            {
+                if (isReply(message))
+                {
+                    // Remembering the advice must be done before we notify listeners
+                    // otherwise we risk that listeners send a connect message that does
+                    // not take into account the timeout to calculate the maxNetworkDelay
+                    if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful())
+                    {
+                        Map<String, Object> advice = message.getAdvice();
+                        if (advice != null)
+                        {
+                            // Remember the advice so that we can properly calculate the max network delay
+                            if (advice.get(Message.TIMEOUT_FIELD) != null)
+                                _advice = advice;
+                        }
+                    }
+
+                    WebSocketExchange exchange = deregisterMessage(message);
+                    if (exchange != null)
+                    {
+                        exchange.listener.onMessages(Collections.singletonList(message));
+                    }
+                    else
+                    {
+                        // If the exchange is missing, then the message has expired, and we do not notify
+                        debug("Could not find request for reply {}", message);
+                    }
+
+                    if (_disconnected && !_connected)
+                        disconnect("Disconnect");
+                }
+                else
+                {
+                    _listener.onMessages(Collections.singletonList(message));
+                }
+            }
+        }
+
+        private boolean isReply(Message message)
+        {
+            return message.isMeta() || message.isPublishReply();
         }
 
         private void registerMessages(TransportListener listener, Mutable[] messages)
@@ -453,52 +500,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             if (connection == null)
                 throw new IOException("Could not send " + text);
             connection.sendMessage(text);
-        }
-
-        private void onMessages(List<Mutable> messages)
-        {
-            for (Mutable message : messages)
-            {
-                if (isReply(message))
-                {
-                    // Remembering the advice must be done before we notify listeners
-                    // otherwise we risk that listeners send a connect message that does
-                    // not take into account the timeout to calculate the maxNetworkDelay
-                    if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful())
-                    {
-                        Map<String, Object> advice = message.getAdvice();
-                        if (advice != null)
-                        {
-                            // Remember the advice so that we can properly calculate the max network delay
-                            if (advice.get(Message.TIMEOUT_FIELD) != null)
-                                _advice = advice;
-                        }
-                    }
-
-                    WebSocketExchange exchange = deregisterMessage(message);
-                    if (exchange != null)
-                    {
-                        exchange.listener.onMessages(Collections.singletonList(message));
-                    }
-                    else
-                    {
-                        // If the exchange is missing, then the message has expired, and we do not notify
-                        debug("Could not find request for reply {}", message);
-                    }
-
-                    if (_disconnected && !_connected)
-                        disconnect("Disconnect");
-                }
-                else
-                {
-                    _listener.onMessages(Collections.singletonList(message));
-                }
-            }
-        }
-
-        private boolean isReply(Message message)
-        {
-            return message.isMeta() || message.isPublishReply();
         }
 
         private void fail(Exception failure, String reason)
