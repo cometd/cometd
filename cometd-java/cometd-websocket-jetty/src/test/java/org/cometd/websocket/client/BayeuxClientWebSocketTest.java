@@ -45,7 +45,6 @@ import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.websocket.ClientServerWebSocketTest;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketClient;
 import org.junit.Assert;
 import org.junit.Before;
@@ -271,7 +270,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         WebSocketTransport webSocketTransport = new WebSocketTransport(null, wsFactory, null)
         {
             @Override
-            protected WebSocket.Connection connect(WebSocketClient client, URI uri) throws IOException, InterruptedException, TimeoutException
+            protected Delegate connect(WebSocketClient client, URI uri) throws IOException, InterruptedException, TimeoutException
             {
                 try
                 {
@@ -348,7 +347,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
             }
         });
 
-        Map<String,Object> options = new HashMap<String, Object>();
+        Map<String, Object> options = new HashMap<String, Object>();
         options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
         WebSocketTransport transport = WebSocketTransport.create(options, wsFactory);
         transport.setDebugEnabled(debugTests());
@@ -772,6 +771,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener()
         {
             private final AtomicInteger connects = new AtomicInteger();
+
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
                 int connects = this.connects.incrementAndGet();
@@ -799,6 +799,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         {
             private final AtomicInteger connects = new AtomicInteger();
             public String failedId;
+
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 int connects = this.connects.incrementAndGet();
