@@ -270,7 +270,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             }
         }
 
-        protected void onMessages(List<Mutable> messages)
+        private void onMessages(List<Mutable> messages)
         {
             for (Mutable message : messages)
             {
@@ -378,7 +378,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
                 throw new IllegalStateException();
         }
 
-        protected WebSocketExchange deregisterMessage(Message message)
+        private WebSocketExchange deregisterMessage(Message message)
         {
             WebSocketExchange exchange = _exchanges.remove(message.getId());
             if (Channel.META_CONNECT.equals(message.getChannel()))
@@ -394,9 +394,9 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             return exchange;
         }
 
-        public abstract void send(String content);
+        protected abstract void send(String content);
 
-        public void fail(Throwable failure, String reason)
+        protected void fail(Throwable failure, String reason)
         {
             disconnect(reason);
             failMessages(failure);
@@ -422,7 +422,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             }
         }
 
-        public void abort()
+        private void abort()
         {
             synchronized (this)
             {
@@ -446,7 +446,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
         protected abstract void close(String reason);
 
-        public void terminate()
+        private void terminate()
         {
             fail(new EOFException(), "Terminate");
         }
