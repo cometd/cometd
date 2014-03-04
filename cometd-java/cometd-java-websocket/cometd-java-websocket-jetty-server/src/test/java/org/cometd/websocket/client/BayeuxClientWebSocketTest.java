@@ -25,7 +25,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.websocket.Session;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.WebSocketContainer;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -46,6 +47,8 @@ import org.cometd.server.transport.JSONTransport;
 import org.cometd.websocket.ClientServerWebSocketTest;
 import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -271,14 +274,15 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                 webSocketTransport = new org.cometd.websocket.client.WebSocketTransport(null, null, wsClientContainer)
                 {
                     @Override
-                    protected Session connect(String uri) throws IOException
+                    protected Delegate connect(WebSocketContainer container, ClientEndpointConfig configuration, String uri) throws IOException
                     {
                         try
                         {
-                            return super.connect(uri);
+                            return super.connect(container, configuration, uri);
                         }
                         catch (ConnectException x)
                         {
+                            // Convert recoverable exception to unrecoverable.
                             throw new IOException(x);
                         }
                     }
@@ -288,14 +292,15 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                 webSocketTransport = new JettyWebSocketTransport(null, null, wsClient)
                 {
                     @Override
-                    protected org.eclipse.jetty.websocket.api.Session connect(String uri) throws IOException, InterruptedException
+                    protected Delegate connect(WebSocketClient client, ClientUpgradeRequest request, String uri) throws IOException, InterruptedException
                     {
                         try
                         {
-                            return super.connect(uri);
+                            return super.connect(client, request, uri);
                         }
                         catch (ConnectException x)
                         {
+                            // Convert recoverable exception to unrecoverable.
                             throw new IOException(x);
                         }
                     }
@@ -796,6 +801,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener()
         {
             private final AtomicInteger connects = new AtomicInteger();
+
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
                 int connects = this.connects.incrementAndGet();
@@ -823,6 +829,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         {
             private final AtomicInteger connects = new AtomicInteger();
             public String failedId;
+
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 int connects = this.connects.incrementAndGet();

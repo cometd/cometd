@@ -15,10 +15,12 @@
  */
 package org.cometd.websocket.client;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.URI;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +39,7 @@ import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
 
-public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport implements MessageClientTransport
+public abstract class AbstractWebSocketTransport extends HttpClientTransport implements MessageClientTransport
 {
     public final static String PREFIX = "ws";
     public final static String NAME = "websocket";
@@ -47,18 +49,14 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
     public final static String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public final static String STICKY_RECONNECT_OPTION = "stickyReconnect";
 
-    private final Map<String, WebSocketExchange> _exchanges = new ConcurrentHashMap<>();
-    private volatile ScheduledExecutorService _scheduler;
-    private volatile boolean _shutdownScheduler;
-    private volatile String _protocol = null;
-    private volatile long _connectTimeout;
-    private volatile long _idleTimeout;
-    private volatile boolean _stickyReconnect;
-    private volatile boolean _connected;
-    private volatile boolean _disconnected;
-    private volatile boolean _aborted;
-    private volatile TransportListener _listener;
-    private volatile Map<String, Object> _advice;
+    private ScheduledExecutorService _scheduler;
+    private boolean _shutdownScheduler;
+    private String _protocol;
+    private long _connectTimeout;
+    private long _idleTimeout;
+    private boolean _stickyReconnect;
+    private Delegate _delegate;
+    private TransportListener _listener;
 
     protected AbstractWebSocketTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler)
     {
@@ -83,8 +81,6 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
     public void init()
     {
         super.init();
-        _exchanges.clear();
-        _aborted = false;
 
         if (_scheduler == null)
         {
@@ -125,20 +121,18 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
     @Override
     public void abort()
     {
-        _aborted = true;
-        disconnect("Aborted");
+        Delegate delegate = getDelegate();
+        if (delegate != null)
+            delegate.abort();
         shutdownScheduler();
-    }
-
-    public boolean isAborted()
-    {
-        return _aborted;
     }
 
     @Override
     public void terminate()
     {
-        disconnect("Terminated");
+        Delegate delegate = getDelegate();
+        if (delegate != null)
+            delegate.terminate();
         shutdownScheduler();
         super.terminate();
     }
@@ -153,180 +147,62 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
         }
     }
 
-    protected abstract void disconnect(String reason);
+    protected Delegate getDelegate()
+    {
+        synchronized (this)
+        {
+            return _delegate;
+        }
+    }
 
     @Override
     public void send(TransportListener listener, List<Mutable> messages)
     {
-        if (_aborted)
-            throw new IllegalStateException("Aborted");
-
-        // Mangle the URL
-        String url = getURL();
-        url = url.replaceFirst("^http", "ws");
-        S session = connect(url, listener, messages);
-        if (session == null)
-            return;
-
-        for (Message.Mutable message : messages)
-            registerMessage(message, listener);
-
-        String content = generateJSON(messages);
-
-        // The onSending() callback must be invoked before the actual send
-        // otherwise we may have a race condition where the response is so
-        // fast that it arrives before the onSending() is called.
-        logger.debug("Sending messages {}", content);
-        listener.onSending(messages);
-
-        send(session, content, listener, messages);
-    }
-
-    protected abstract S connect(String uri, TransportListener listener, List<Mutable> messages);
-
-    protected abstract void send(S session, String content, TransportListener listener, List<Mutable> messages);
-
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    protected void complete(List<Mutable> messages)
-    {
-        for (int i = 0; i < messages.size(); ++i)
+        Delegate delegate = getDelegate();
+        if (delegate == null)
         {
-            Mutable message = messages.get(i);
-            deregisterMessage(message);
+            // Mangle the URL
+            String url = getURL();
+            url = url.replaceFirst("^http", "ws");
+
+            delegate = connect(url, listener, messages);
+
+            if (delegate == null)
+                return;
+
+            synchronized (this)
+            {
+                if (_delegate != null)
+                {
+                    // We connected concurrently, keep only one.
+                    delegate.close("Extra");
+                    delegate = _delegate;
+                }
+                _delegate = delegate;
+            }
+        }
+
+        delegate.registerMessages(listener, messages);
+
+        try
+        {
+            String content = generateJSON(messages);
+
+            // The onSending() callback must be invoked before the actual send
+            // otherwise we may have a race condition where the response is so
+            // fast that it arrives before the onSending() is called.
+            logger.debug("Sending messages {}", content);
+            listener.onSending(messages);
+
+            delegate.send(content);
+        }
+        catch (Throwable x)
+        {
+            delegate.fail(x, "Exception");
         }
     }
 
-    protected void registerMessage(final Message.Mutable message, final TransportListener listener)
-    {
-        // Calculate max network delay
-        long maxNetworkDelay = getMaxNetworkDelay();
-        if (Channel.META_CONNECT.equals(message.getChannel()))
-        {
-            Map<String, Object> advice = message.getAdvice();
-            if (advice == null)
-                advice = _advice;
-            if (advice != null)
-            {
-                Object timeout = advice.get("timeout");
-                if (timeout instanceof Number)
-                    maxNetworkDelay += ((Number)timeout).intValue();
-                else if (timeout != null)
-                    maxNetworkDelay += Integer.parseInt(timeout.toString());
-            }
-            _connected = true;
-        }
-
-        // Schedule a task to expire if the maxNetworkDelay elapses
-        final long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + maxNetworkDelay;
-        ScheduledFuture<?> task = _scheduler.schedule(new Runnable()
-        {
-            public void run()
-            {
-                long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                long delay = now - expiration;
-                if (delay > 5000) // TODO: make the max delay a parameter ?
-                    logger.debug("Message {} expired {} ms too late", message, delay);
-
-                // Notify only if we won the race to deregister the message
-                WebSocketExchange exchange = deregisterMessage(message);
-                if (exchange != null)
-                {
-                    List<Message.Mutable> messages = new ArrayList<>(1);
-                    messages.add(message);
-                    onExpired( listener, messages);
-                }
-            }
-        }, maxNetworkDelay, TimeUnit.MILLISECONDS);
-
-        // Register the exchange
-        // Message responses must have the same messageId as the requests
-
-        WebSocketExchange exchange = new WebSocketExchange(message, listener, task);
-        logger.debug("Registering {}", exchange);
-        Object existing = _exchanges.put(message.getId(), exchange);
-        // Paranoid check
-        if (existing != null)
-            throw new IllegalStateException();
-    }
-
-    protected void onExpired(TransportListener listener, List<Mutable> messages)
-    {
-        listener.onFailure(new TimeoutException("Exchange expired"), messages);
-    }
-
-    protected WebSocketExchange deregisterMessage(Message message)
-    {
-        WebSocketExchange exchange = _exchanges.remove(message.getId());
-        if (Channel.META_CONNECT.equals(message.getChannel()))
-            _connected = false;
-        else if (Channel.META_DISCONNECT.equals(message.getChannel()))
-            _disconnected = true;
-
-        logger.debug("Deregistering {} for message {}", exchange, message);
-
-        if (exchange != null)
-            exchange.task.cancel(false);
-
-        return exchange;
-    }
-
-    private boolean isReply(Message message)
-    {
-        return message.isMeta() || message.isPublishReply();
-    }
-
-    protected void failMessages(Throwable cause)
-    {
-        List<WebSocketExchange> exchanges = new ArrayList<>(_exchanges.values());
-        for (WebSocketExchange exchange : exchanges)
-        {
-            deregisterMessage(exchange.message);
-            List<Message.Mutable> messages = new ArrayList<>(1);
-            messages.add(exchange.message);
-            exchange.listener.onFailure(cause, messages);
-        }
-    }
-
-    protected void onMessages(List<Mutable> messages)
-    {
-        for (Mutable message : messages)
-        {
-            if (isReply(message))
-            {
-                // Remembering the advice must be done before we notify listeners
-                // otherwise we risk that listeners send a connect message that does
-                // not take into account the timeout to calculate the maxNetworkDelay
-                if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful())
-                {
-                    Map<String, Object> advice = message.getAdvice();
-                    if (advice != null)
-                    {
-                        // Remember the advice so that we can properly calculate the max network delay
-                        if (advice.get(Message.TIMEOUT_FIELD) != null)
-                            _advice = advice;
-                    }
-                }
-
-                WebSocketExchange exchange = deregisterMessage(message);
-                if (exchange != null)
-                {
-                    exchange.listener.onMessages(Collections.singletonList(message));
-                }
-                else
-                {
-                    // If the exchange is missing, then the message has expired, and we do not notify
-                    logger.debug("Could not find request for reply {}", message);
-                }
-
-                if (_disconnected && !_connected)
-                    disconnect("Disconnect");
-            }
-            else
-            {
-                _listener.onMessages(Collections.singletonList(message));
-            }
-        }
-    }
+    protected abstract Delegate connect(String uri, TransportListener listener, List<Mutable> messages);
 
     protected void storeCookies(Map<String, List<String>> headers)
     {
@@ -338,6 +214,241 @@ public abstract class AbstractWebSocketTransport<S> extends HttpClientTransport 
         catch (IOException x)
         {
             logger.debug("Could not parse cookies", x);
+        }
+    }
+
+    protected abstract class Delegate
+    {
+        private final Map<String, WebSocketExchange> _exchanges = new ConcurrentHashMap<>();
+        private boolean _aborted;
+        private boolean _connected;
+        private boolean _disconnected;
+        private Map<String, Object> _advice;
+
+        protected void onClose(int code, String reason)
+        {
+            boolean proceed = false;
+            synchronized (AbstractWebSocketTransport.this)
+            {
+                if (this == _delegate)
+                {
+                    _delegate = null;
+                    proceed = true;
+                }
+            }
+
+            if (proceed)
+            {
+                logger.debug("Closed websocket connection {}/{}", code, reason);
+                failMessages(new EOFException("Connection closed " + code + " " + reason));
+            }
+        }
+
+        protected void onData(String data)
+        {
+            try
+            {
+                List<Mutable> messages = parseMessages(data);
+                boolean proceed;
+                synchronized (AbstractWebSocketTransport.this)
+                {
+                    proceed = this == _delegate;
+                }
+                if (proceed)
+                {
+                    logger.debug("Received messages {}", data);
+                    onMessages(messages);
+                }
+                else
+                {
+                    logger.debug("Discarded messages {}", data);
+                }
+            }
+            catch (ParseException x)
+            {
+                fail(x, "Exception");
+            }
+        }
+
+        protected void onMessages(List<Mutable> messages)
+        {
+            for (Mutable message : messages)
+            {
+                if (isReply(message))
+                {
+                    // Remembering the advice must be done before we notify listeners
+                    // otherwise we risk that listeners send a connect message that does
+                    // not take into account the timeout to calculate the maxNetworkDelay
+                    if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful())
+                    {
+                        Map<String, Object> advice = message.getAdvice();
+                        if (advice != null)
+                        {
+                            // Remember the advice so that we can properly calculate the max network delay
+                            if (advice.get(Message.TIMEOUT_FIELD) != null)
+                                _advice = advice;
+                        }
+                    }
+
+                    WebSocketExchange exchange = deregisterMessage(message);
+                    if (exchange != null)
+                    {
+                        exchange.listener.onMessages(Collections.singletonList(message));
+                    }
+                    else
+                    {
+                        // If the exchange is missing, then the message has expired, and we do not notify
+                        logger.debug("Could not find request for reply {}", message);
+                    }
+
+                    if (_disconnected && !_connected)
+                        disconnect("Disconnect");
+                }
+                else
+                {
+                    _listener.onMessages(Collections.singletonList(message));
+                }
+            }
+        }
+
+        private boolean isReply(Message message)
+        {
+            return message.isMeta() || message.isPublishReply();
+        }
+
+        private void registerMessages(TransportListener listener, List<Mutable> messages)
+        {
+            boolean aborted;
+            synchronized (this)
+            {
+                aborted = _aborted;
+                if (!aborted)
+                {
+                    for (Mutable message : messages)
+                        registerMessage(message, listener);
+                }
+            }
+            if (aborted)
+                listener.onFailure(new IOException("Aborted"), messages);
+        }
+
+        private void registerMessage(final Message.Mutable message, final TransportListener listener)
+        {
+            // Calculate max network delay
+            long maxNetworkDelay = getMaxNetworkDelay();
+            if (Channel.META_CONNECT.equals(message.getChannel()))
+            {
+                Map<String, Object> advice = message.getAdvice();
+                if (advice == null)
+                    advice = _advice;
+                if (advice != null)
+                {
+                    Object timeout = advice.get("timeout");
+                    if (timeout instanceof Number)
+                        maxNetworkDelay += ((Number)timeout).intValue();
+                    else if (timeout != null)
+                        maxNetworkDelay += Integer.parseInt(timeout.toString());
+                }
+                _connected = true;
+            }
+
+            // Schedule a task to expire if the maxNetworkDelay elapses
+            final long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + maxNetworkDelay;
+            ScheduledFuture<?> task = _scheduler.schedule(new Runnable()
+            {
+                public void run()
+                {
+                    long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                    long delay = now - expiration;
+                    if (delay > 5000) // TODO: make the max delay a parameter ?
+                        logger.debug("Message {} expired {} ms too late", message, delay);
+                    logger.debug("Expiring message {}", message);
+                    fail(new TimeoutException(), "Expired");
+                }
+            }, maxNetworkDelay, TimeUnit.MILLISECONDS);
+
+            // Register the exchange
+            // Message responses must have the same messageId as the requests
+
+            WebSocketExchange exchange = new WebSocketExchange(message, listener, task);
+            logger.debug("Registering {}", exchange);
+            Object existing = _exchanges.put(message.getId(), exchange);
+            // Paranoid check
+            if (existing != null)
+                throw new IllegalStateException();
+        }
+
+        protected WebSocketExchange deregisterMessage(Message message)
+        {
+            WebSocketExchange exchange = _exchanges.remove(message.getId());
+            if (Channel.META_CONNECT.equals(message.getChannel()))
+                _connected = false;
+            else if (Channel.META_DISCONNECT.equals(message.getChannel()))
+                _disconnected = true;
+
+            logger.debug("Deregistering {} for message {}", exchange, message);
+
+            if (exchange != null)
+                exchange.task.cancel(false);
+
+            return exchange;
+        }
+
+        public abstract void send(String content);
+
+        public void fail(Throwable failure, String reason)
+        {
+            disconnect(reason);
+            failMessages(failure);
+        }
+
+        protected void failMessages(Throwable cause)
+        {
+            List<WebSocketExchange> exchanges;
+            synchronized (this)
+            {
+                exchanges = new ArrayList<>(_exchanges.values());
+            }
+            List<Message.Mutable> messages = new ArrayList<>(1);
+            for (WebSocketExchange exchange : exchanges)
+            {
+                Mutable message = exchange.message;
+                if (deregisterMessage(message) == exchange)
+                {
+                    messages.add(message);
+                    exchange.listener.onFailure(cause, messages);
+                    messages.clear();
+                }
+            }
+        }
+
+        public void abort()
+        {
+            synchronized (this)
+            {
+                _aborted = true;
+            }
+            fail(new IOException("Aborted"), "Aborted");
+        }
+
+        private void disconnect(String reason)
+        {
+            boolean close;
+            synchronized (AbstractWebSocketTransport.this)
+            {
+                close = this == _delegate;
+                if (close)
+                    _delegate = null;
+            }
+            if (close)
+                close(reason);
+        }
+
+        protected abstract void close(String reason);
+
+        public void terminate()
+        {
+            fail(new EOFException(), "Terminate");
         }
     }
 

@@ -15,7 +15,6 @@
  */
 package org.cometd.websocket.client;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.CookieStore;
@@ -24,7 +23,6 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.UnresolvedAddressException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -48,12 +46,11 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public class WebSocketTransport extends AbstractWebSocketTransport<Session>
+public class WebSocketTransport extends AbstractWebSocketTransport
 {
     private final WebSocketContainer _webSocketContainer;
-    private volatile boolean _webSocketSupported = true;
-    private volatile boolean _webSocketConnected = false;
-    private volatile Session _activeSession;
+    private boolean _webSocketSupported;
+    private boolean _webSocketConnected;
 
     public WebSocketTransport(Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketContainer webSocketContainer)
     {
@@ -67,12 +64,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     }
 
     @Override
-    public boolean accept(String version)
-    {
-        return _webSocketSupported;
-    }
-
-    @Override
     public void init()
     {
         super.init();
@@ -81,43 +72,31 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         _webSocketContainer.setDefaultMaxSessionIdleTimeout(getIdleTimeout());
         int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketContainer.getDefaultMaxTextMessageBufferSize());
         _webSocketContainer.setDefaultMaxTextMessageBufferSize(maxMessageSize);
+
+        _webSocketSupported = true;
+        _webSocketConnected = false;
     }
 
-    protected void disconnect(String reason)
+    @Override
+    public boolean accept(String version)
     {
-        Session wsSession = _activeSession;
-        _activeSession = null;
-        if (wsSession != null && wsSession.isOpen())
-        {
-            logger.debug("Closing websocket session {}", wsSession);
-            try
-            {
-                wsSession.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
-            }
-            catch (IOException x)
-            {
-                logger.trace("Could not close websocket session " + wsSession, x);
-            }
-        }
+        return _webSocketSupported;
     }
 
-    protected Session connect(String uri, TransportListener listener, List<Mutable> messages)
+    protected Delegate connect(String uri, TransportListener listener, List<Mutable> messages)
     {
-        Session session = _activeSession;
-        if (session != null)
-            return session;
-
         try
         {
             logger.debug("Opening websocket session to {}", uri);
-
-            session = connect(uri);
+            _webSocketContainer.setDefaultMaxSessionIdleTimeout(getIdleTimeout());
+            ClientEndpointConfig.Configurator configurator = new Configurator();
+            String protocol = getProtocol();
+            ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
+                    .preferredSubprotocols(protocol == null ? null : Collections.singletonList(protocol))
+                    .configurator(configurator).build();
+            Delegate delegate = connect(_webSocketContainer, config, uri);
             _webSocketConnected = true;
-
-            if (isAborted())
-                listener.onFailure(new Exception("Aborted"), messages);
-
-            return _activeSession = session;
+            return delegate;
         }
         catch (ConnectException | SocketTimeoutException | UnresolvedAddressException x)
         {
@@ -129,21 +108,16 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             _webSocketSupported = isStickyReconnect() && _webSocketConnected;
             listener.onFailure(x, messages);
         }
-
         return null;
     }
 
-    protected Session connect(String uri) throws IOException
+    protected Delegate connect(WebSocketContainer container, ClientEndpointConfig configuration, String uri) throws IOException
     {
         try
         {
-            _webSocketContainer.setDefaultMaxSessionIdleTimeout(getIdleTimeout());
-            ClientEndpointConfig.Configurator configurator = new Configurator();
-            String protocol = getProtocol();
-            ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-                    .preferredSubprotocols(protocol == null ? null : Collections.singletonList(protocol))
-                    .configurator(configurator).build();
-            return _webSocketContainer.connectToServer(new CometDWebSocket(), config, new URI(uri));
+            WebSocketDelegate delegate = new WebSocketDelegate();
+            container.connectToServer(delegate._endpoint, configuration, new URI(uri));
+            return delegate;
         }
         catch (DeploymentException | URISyntaxException x)
         {
@@ -151,31 +125,12 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         }
     }
 
-    @Override
-    protected void send(Session session, String content, final TransportListener listener, final List<Mutable> messages)
+    protected class WebSocketDelegate extends Delegate implements MessageHandler.Whole<String>
     {
-        session.getAsyncRemote().sendText(content, new SendHandler()
-        {
-            @Override
-            public void onResult(SendResult result)
-            {
-                Throwable failure = result.getException();
-                if (failure != null)
-                {
-                    complete(messages);
-                    disconnect("Exception");
-                    listener.onFailure(failure, messages);
-                }
-            }
-        });
-    }
-
-    private class CometDWebSocket extends Endpoint implements MessageHandler.Whole<String>
-    {
+        private final Endpoint _endpoint = new WebSocketEndpoint();
         private volatile Session _session;
 
-        @Override
-        public void onOpen(Session session, EndpointConfig config)
+        private void onOpen(Session session)
         {
             session.addMessageHandler(this);
             _session = session;
@@ -183,43 +138,63 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         }
 
         @Override
-        public void onClose(Session session, CloseReason closeReason)
-        {
-            if (_activeSession == session)
-            {
-                _activeSession = null;
-                logger.debug("Closed websocket connection with code {}: {} ", closeReason, session);
-                failMessages(new EOFException("Connection closed " + closeReason));
-            }
-        }
-
-        @Override
         public void onMessage(String data)
         {
-            try
-            {
-                List<Mutable> messages = parseMessages(data);
-                if (_activeSession == _session)
-                {
-                    logger.debug("Received messages {}", data);
-                    onMessages(messages);
-                }
-                else
-                {
-                    logger.debug("Discarded messages {}", data);
-                }
-            }
-            catch (ParseException x)
-            {
-                disconnect("Exception");
-                failMessages(x);
-            }
+            onData(data);
         }
 
         @Override
-        public void onError(Session session, Throwable failure)
+        public void send(String content)
         {
-            failMessages(failure);
+            _session.getAsyncRemote().sendText(content, new SendHandler()
+            {
+                @Override
+                public void onResult(SendResult result)
+                {
+                    Throwable failure = result.getException();
+                    if (failure != null)
+                        fail(failure, "Exception");
+                }
+            });
+        }
+
+        @Override
+        protected void close(String reason)
+        {
+            Session session = _session;
+            if (session != null && session.isOpen())
+            {
+                logger.debug("Closing ({}) websocket session {}", reason, session);
+                try
+                {
+                    session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
+                }
+                catch (IOException x)
+                {
+                    logger.trace("Could not close websocket session " + session, x);
+                }
+            }
+        }
+
+        private class WebSocketEndpoint extends Endpoint
+        {
+            @Override
+            public void onOpen(Session session, EndpointConfig config)
+            {
+                WebSocketDelegate.this.onOpen(session);
+            }
+
+            @Override
+            public void onClose(Session session, CloseReason closeReason)
+            {
+                WebSocketDelegate.this.onClose(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());
+            }
+
+            @Override
+            public void onError(Session session, Throwable failure)
+            {
+                failMessages(failure);
+            }
         }
     }
 
