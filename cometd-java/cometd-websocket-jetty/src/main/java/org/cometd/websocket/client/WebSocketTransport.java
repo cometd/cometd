@@ -104,11 +104,17 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _webSocketClientFactory = webSocketClientFactory;
         _scheduler = scheduler;
         setOptionPrefix(PREFIX);
+        _webSocketSupported = true;
     }
 
     public void setMessageTransportListener(TransportListener listener)
     {
         _listener = listener;
+    }
+
+    public boolean accept(String version)
+    {
+        return _webSocketSupported;
     }
 
     @Override
@@ -126,13 +132,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _idleTimeout = 60000;
         _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClientFactory.getBufferSize());
         _stickyReconnect = getOption(STICKY_RECONNECT_OPTION, true);
-        _webSocketSupported = true;
-        _webSocketConnected = false;
-    }
-
-    public boolean accept(String version)
-    {
-        return _webSocketSupported;
     }
 
     private long getConnectTimeout()
