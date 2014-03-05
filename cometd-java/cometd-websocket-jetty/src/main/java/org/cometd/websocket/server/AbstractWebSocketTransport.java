@@ -297,11 +297,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
                     boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
                     boolean hasMessages = session.hasNonLazyMessages();
                     boolean replyToMetaConnect = hasMessages && metaConnectDelivery;
-                    if (replyToMetaConnect)
-                    {
-                        queue = session.takeQueue();
-                    }
-                    else
+                    if (!replyToMetaConnect)
                     {
                         long timeout = session.calculateTimeout(getTimeout());
                         boolean holdMetaConnect = timeout > 0 && wasConnected;
@@ -326,9 +322,9 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
                                 }
                             }
                         }
-                        if (reply != null)
-                            queue = session.takeQueue();
                     }
+                    if (reply != null && metaConnectDelivery)
+                        queue = session.takeQueue();
                 }
 
                 // Send the reply
