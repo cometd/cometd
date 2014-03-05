@@ -132,7 +132,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         boolean autoBatch = isAutoBatch();
         ServerSessionImpl session = null;
         boolean batch = false;
-        boolean metaConnect = false;
+        boolean startInterval = false;
         boolean suspended = false;
         boolean disconnected = false;
         try
@@ -140,7 +140,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
             for (int i = 0; i < messages.length; ++i)
             {
                 ServerMessage.Mutable message = messages[i];
-                _logger.debug("Processing message {}", message);
+                _logger.debug("Processing {}", message);
 
                 if (session == null && !disconnected)
                     session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
@@ -171,17 +171,19 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                 {
                     case Channel.META_HANDSHAKE:
                     {
-                        ServerMessage.Mutable reply = messages[i] = processMetaHandshake(request, response, session, message);
+                        ServerMessage.Mutable reply = processMetaHandshake(request, response, session, message);
                         if (reply != null)
                             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+                        messages[i] = processReply(session, reply);
                         break;
                     }
                     case Channel.META_CONNECT:
                     {
-                        ServerMessage.Mutable reply = messages[i] = processMetaConnect(request, response, session, message);
-                        metaConnect = true;
+                        ServerMessage.Mutable reply = processMetaConnect(request, response, session, message);
+                        startInterval = reply != null;
                         if (reply == null)
                             suspended = messages.length == 1;
+                        messages[i] = processReply(session, reply);
                         break;
                     }
                     default:
@@ -194,7 +196,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
             }
 
             if (!suspended)
-                flush(request, response, session, metaConnect, messages);
+                flush(request, response, session, startInterval, messages);
         }
         finally
         {
@@ -216,7 +218,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                     setBrowserId(request, response);
             }
         }
-        return processReply(session, reply);
+        return reply;
     }
 
     protected ServerMessage.Mutable processMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message)
@@ -295,7 +297,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
         }
 
-        return processReply(session, reply);
+        return reply;
     }
 
     protected ServerMessage.Mutable processReply(ServerSessionImpl session, ServerMessage.Mutable reply)

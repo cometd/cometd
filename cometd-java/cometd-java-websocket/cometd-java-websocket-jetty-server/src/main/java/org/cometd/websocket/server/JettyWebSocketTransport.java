@@ -15,7 +15,6 @@
  */
 package org.cometd.websocket.server;
 
-import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.security.Principal;
@@ -135,7 +134,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         return true;
     }
 
-    protected void send(final Session wsSession, final ServerSession session, String data) throws IOException
+    protected void send(final Session wsSession, final ServerSession session, String data)
     {
         _logger.debug("Sending {}", data);
 

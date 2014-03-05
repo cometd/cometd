@@ -120,7 +120,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     {
     }
 
-    protected void send(final Session wsSession, final ServerSession session, String data) throws IOException
+    protected void send(final Session wsSession, final ServerSession session, String data)
     {
         // This method may be called concurrently.
         // The WebSocket specification specifically forbids concurrent calls in case of
