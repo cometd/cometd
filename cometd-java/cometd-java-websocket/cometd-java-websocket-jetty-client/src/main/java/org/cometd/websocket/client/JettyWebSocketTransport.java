@@ -56,6 +56,13 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
     {
         super(url, options, scheduler);
         _webSocketClient = webSocketClient;
+        _webSocketSupported = true;
+    }
+
+    @Override
+    public boolean accept(String version)
+    {
+        return _webSocketSupported;
     }
 
     @Override
@@ -71,12 +78,6 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
 
         _webSocketSupported = true;
         _webSocketConnected = false;
-    }
-
-    @Override
-    public boolean accept(String version)
-    {
-        return _webSocketSupported;
     }
 
     protected Delegate connect(String uri, TransportListener listener, List<Mutable> messages)

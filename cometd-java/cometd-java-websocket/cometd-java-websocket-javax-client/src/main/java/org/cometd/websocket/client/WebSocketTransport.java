@@ -61,6 +61,13 @@ public class WebSocketTransport extends AbstractWebSocketTransport
     {
         super(url, options, scheduler);
         _webSocketContainer = webSocketContainer;
+        _webSocketSupported = true;
+    }
+
+    @Override
+    public boolean accept(String version)
+    {
+        return _webSocketSupported;
     }
 
     @Override
@@ -75,12 +82,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport
 
         _webSocketSupported = true;
         _webSocketConnected = false;
-    }
-
-    @Override
-    public boolean accept(String version)
-    {
-        return _webSocketSupported;
     }
 
     protected Delegate connect(String uri, TransportListener listener, List<Mutable> messages)
