@@ -524,11 +524,14 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         public void abort()
         {
+            boolean aborted;
             synchronized (this)
             {
+                aborted = !_aborted;
                 _aborted = true;
             }
-            fail(new IOException("Aborted"), "Aborted");
+            if (aborted)
+                fail(new IOException("Aborted"), "Aborted");
         }
 
         private void disconnect(String reason)
