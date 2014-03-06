@@ -15,7 +15,6 @@
  */
 package org.cometd.websocket.server;
 
-import java.io.IOException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.List;
@@ -49,6 +48,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
     public static final String COMETD_URL_MAPPING = "cometdURLMapping";
+
+    private static final ServerMessage[] EMPTY_MESSAGES = new ServerMessage[0];
 
     private final ThreadLocal<BayeuxContext> _bayeuxContext = new ThreadLocal<>();
     private Executor _executor;
@@ -141,7 +142,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
     protected void handleException(S wsSession, ServerSession session, Throwable exception)
     {
-        _logger.warn("", exception);
+        _logger.debug("", exception);
     }
 
     protected abstract void send(S wsSession, ServerSession session, String data);
@@ -207,13 +208,6 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 index += batch;
                 AbstractWebSocketTransport.this.send(wsSession, _session, builder.toString());
             }
-        }
-
-        protected void send(S wsSession, ServerMessage message) throws IOException
-        {
-            StringBuilder builder = new StringBuilder(message.size() * 32);
-            builder.append("[").append(message.getJSON()).append("]");
-            AbstractWebSocketTransport.this.send(wsSession, _session, builder.toString());
         }
 
         protected void onClose(int code, String reason)
@@ -282,6 +276,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             ServerSessionImpl session = _session;
 
             boolean startInterval = false;
+            boolean suspended = false;
             List<ServerMessage> queue = null;
             for (int i = 0; i < messages.length; ++i)
             {
@@ -312,6 +307,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         ServerMessage.Mutable reply = processMetaConnect(session, message);
                         messages[i] = processReply(session, reply);
                         startInterval = reply != null;
+                        suspended = reply == null && messages.length == 1;
                         if (reply != null && session != null)
                         {
                             if (isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly())
@@ -328,7 +324,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 }
             }
 
-            flush(wsSession, session, startInterval, queue, messages);
+            if (!suspended)
+                flush(wsSession, session, startInterval, queue, messages);
         }
 
         private ServerMessage.Mutable processMetaHandshake(ServerSessionImpl session, ServerMessage.Mutable message)
@@ -357,7 +354,6 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     session.setScheduler(this);
 
                     // If we deliver only via meta connect and we have messages, then reply.
-                    // TODO: review this logic... does not seem we need to check for MCDO.
                     boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
                     boolean hasMessages = session.hasNonLazyMessages();
                     boolean replyToMetaConnect = hasMessages && metaConnectDelivery;
@@ -380,7 +376,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
                                     // Delay the connect reply until timeout.
                                     long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + timeout;
-                                    _connectTask = _scheduler.schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
+                                    _connectTask = getScheduler().schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
                                     _logger.debug("Scheduled meta connect {}", _connectTask);
                                     reply = null;
                                 }
@@ -405,7 +401,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             return reply;
         }
 
-        private void flush(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, ServerMessage... replies)
+        private void flush(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, ServerMessage[] replies)
         {
             try
             {
@@ -511,18 +507,20 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     }
                 }
 
+                ServerMessage[] replies = EMPTY_MESSAGES;
                 if (reply)
                 {
                     if (session.isDisconnected())
                         connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                    processReply(session, connectReply);
+                    connectReply = processReply(session, connectReply);
+                    replies = new ServerMessage[]{connectReply};
                 }
 
                 reschedule = true;
                 List<ServerMessage> queue = session.takeQueue();
 
-                _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, reply, queue);
-                flush(wsSession, session, reply, queue, connectReply);
+                _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, connectReply, queue);
+                flush(wsSession, session, reply, queue, replies);
             }
             catch (Throwable x)
             {

@@ -120,7 +120,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
     {
         try
         {
-            Delegate delegate = new JettyWebSocketDelegate();
+            Delegate delegate = newDelegate();
             client.connect(delegate, new URI(uri), request, this).get();
             return delegate;
         }
@@ -139,6 +139,11 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         }
     }
 
+    protected Delegate newDelegate()
+    {
+        return new JettyWebSocketDelegate();
+    }
+
     @Override
     public void onHandshakeRequest(UpgradeRequest request)
     {
@@ -150,7 +155,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         storeCookies(response.getHeaders());
     }
 
-    private class JettyWebSocketDelegate extends Delegate implements WebSocketListener
+    protected class JettyWebSocketDelegate extends Delegate implements WebSocketListener
     {
         private volatile Session _session;
 

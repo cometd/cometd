@@ -270,7 +270,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             }
         }
 
-        private void onMessages(List<Mutable> messages)
+        protected void onMessages(List<Mutable> messages)
         {
             for (Mutable message : messages)
             {

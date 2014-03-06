@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * <p>Installing this extension in a {@link BayeuxServer} provides support for
  * server-to-client message acknowledgement if a client also supports it.</p>
  * <p>The main role of this extension is to install the
- * {@link AcknowledgedMessagesClientExtension} on the {@link ServerSession}
+ * {@link AcknowledgedMessagesSessionExtension} on the {@link ServerSession}
  * instances created during successful handshakes.</p>
  */
 public class AcknowledgedMessagesExtension extends Extension.Adapter
@@ -52,7 +52,7 @@ public class AcknowledgedMessagesExtension extends Extension.Adapter
             {
                 ServerSessionImpl session = (ServerSessionImpl)remote;
                 _logger.debug("Enabled message acknowledgement for session {}", session);
-                session.addExtension(new AcknowledgedMessagesClientExtension(session));
+                session.addExtension(new AcknowledgedMessagesSessionExtension(session));
             }
 
             Map<String, Object> sndExt = message.getExt(true);

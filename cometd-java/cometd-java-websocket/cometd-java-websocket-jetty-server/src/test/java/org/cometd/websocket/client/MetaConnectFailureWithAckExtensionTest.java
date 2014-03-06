@@ -36,10 +36,15 @@ import org.junit.Test;
 
 public class MetaConnectFailureWithAckExtensionTest extends ClientServerWebSocketTest
 {
+    public MetaConnectFailureWithAckExtensionTest(String wsTransportType)
+    {
+        super(wsTransportType);
+    }
+
     @Test
     public void testMetaConnectFailureWithAckExtension() throws Exception
     {
-        runServer(null);
+        prepareAndStart(null);
         bayeux.addExtension(new AcknowledgedMessagesExtension());
 
         final String channelName = "/test";
@@ -47,13 +52,15 @@ public class MetaConnectFailureWithAckExtensionTest extends ClientServerWebSocke
         final CountDownLatch serverSubscribeLatch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SubscriptionListener()
         {
-            public void subscribed(ServerSession session, ServerChannel channel)
+            @Override
+            public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)
             {
                 if (channelName.equals(channel.getId()))
                     serverSubscribeLatch.countDown();
             }
 
-            public void unsubscribed(ServerSession session, ServerChannel channel)
+            @Override
+            public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message)
             {
             }
         });

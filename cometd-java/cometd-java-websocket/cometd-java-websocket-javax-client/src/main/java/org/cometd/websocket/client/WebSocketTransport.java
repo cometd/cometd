@@ -116,7 +116,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport
     {
         try
         {
-            WebSocketDelegate delegate = new WebSocketDelegate();
+            WebSocketDelegate delegate = newDelegate();
             container.connectToServer(delegate._endpoint, configuration, new URI(uri));
             return delegate;
         }
@@ -124,6 +124,11 @@ public class WebSocketTransport extends AbstractWebSocketTransport
         {
             throw new IOException(x);
         }
+    }
+
+    protected WebSocketDelegate newDelegate()
+    {
+        return new WebSocketDelegate();
     }
 
     protected class WebSocketDelegate extends Delegate implements MessageHandler.Whole<String>
