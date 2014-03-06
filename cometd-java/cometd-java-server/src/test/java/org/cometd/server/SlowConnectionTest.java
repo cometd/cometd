@@ -18,21 +18,13 @@ package org.cometd.server;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.ServletOutputStream;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -46,8 +38,6 @@ import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -206,7 +196,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
             }
 
             @Override
-            protected PrintWriter writeMessage(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerSessionImpl session, ServerMessage message) throws IOException
+            protected void writeMessage(ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException
             {
                 try
                 {
@@ -215,7 +205,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
                         session.startIntervalTimeout(0);
                         TimeUnit.MILLISECONDS.sleep(2 * maxInterval);
                     }
-                    return super.writeMessage(request, response, writer, session, message);
+                    super.writeMessage(output, session, message);
                 }
                 catch (InterruptedException x)
                 {
@@ -279,12 +269,6 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
     public void testSlowConnection() throws Exception
     {
         startServer(null);
-        context.stop();
-        CountDownLatch exceptionLatch = new CountDownLatch(1);
-        Filter filter = new ExceptionDetectorFilter(exceptionLatch);
-        context.addFilter(new FilterHolder(filter), "/*", FilterMapping.DEFAULT);
-        context.start();
-        bayeux = cometdServlet.getBayeux();
 
         final CountDownLatch sendLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
@@ -295,7 +279,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
             }
 
             @Override
-            protected PrintWriter writeMessage(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerSessionImpl session, ServerMessage message) throws IOException
+            protected void writeMessage(ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException
             {
                 if (message.getData() != null)
                 {
@@ -304,7 +288,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
                     // Simulate that an exception is being thrown while writing
                     throw new EofException("test_exception");
                 }
-                return super.writeMessage(request, response, writer, session, message);
+                super.writeMessage(output, session, message);
             }
         };
         bayeux.setTransports(transport);
@@ -379,9 +363,6 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         socket.close();
         closeLatch.countDown();
 
-        // Wait for the exception to be thrown while writing to a closed connection
-        Assert.assertTrue(exceptionLatch.await(5, TimeUnit.SECONDS));
-
         // The session must be swept even if the server could not write a response
         // to the connect because of the exception.
         Assert.assertTrue(removeLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
@@ -396,37 +377,6 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         catch (InterruptedException x)
         {
             Thread.currentThread().interrupt();
-        }
-    }
-
-    public static class ExceptionDetectorFilter implements Filter
-    {
-        private final CountDownLatch exceptionLatch;
-
-        public ExceptionDetectorFilter(CountDownLatch exceptionLatch)
-        {
-            this.exceptionLatch = exceptionLatch;
-        }
-
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
-        }
-
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
-            try
-            {
-                chain.doFilter(request, response);
-            }
-            catch (EofException x)
-            {
-                exceptionLatch.countDown();
-                throw x;
-            }
-        }
-
-        public void destroy()
-        {
         }
     }
 }

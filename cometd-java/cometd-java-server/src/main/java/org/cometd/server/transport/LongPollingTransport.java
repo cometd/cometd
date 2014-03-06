@@ -16,15 +16,16 @@
 package org.cometd.server.transport;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -43,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /* ------------------------------------------------------------ */
+
 /**
  * Abstract Long Polling Transport.
  * <p/>
@@ -182,255 +184,301 @@ public abstract class LongPollingTransport extends HttpTransport
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        // Is this a resumed connect?
         LongPollScheduler scheduler = (LongPollScheduler)request.getAttribute(LongPollScheduler.ATTRIBUTE);
         if (scheduler == null)
         {
-            // No - process messages
-
-            // Remember if we start a batch
-            boolean batch = false;
-
-            // Don't know the session until first message or handshake response.
-            ServerSessionImpl session = null;
-            boolean connect = false;
-
+            // Not a resumed /meta/connect, process messages.
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(request);
-                if (messages == null)
-                    return;
-
-                PrintWriter writer = null;
-                for (ServerMessage.Mutable message : messages)
-                {
-                    // Is this a connect?
-                    connect = Channel.META_CONNECT.equals(message.getChannel());
-
-                    // Get the session from the message
-                    String client_id = message.getClientId();
-                    if (session == null || client_id != null && !client_id.equals(session.getId()))
-                    {
-                        session = (ServerSessionImpl)getBayeux().getSession(client_id);
-                        if (_autoBatch && !batch && session != null && !connect && !message.isMeta())
-                        {
-                            // start a batch to group all resulting messages into a single response.
-                            batch = true;
-                            session.startBatch();
-                        }
-                    }
-                    else if (!session.isHandshook())
-                    {
-                        batch = false;
-                        session = null;
-                    }
-
-                    if (connect && session != null)
-                    {
-                        // cancel previous scheduler to cancel any prior waiting long poll
-                        // this should also dec the browser ID
-                        session.setScheduler(null);
-                    }
-
-                    boolean wasConnected = session != null && session.isConnected();
-
-                    // Forward handling of the message.
-                    // The actual reply is return from the call, but other messages may
-                    // also be queued on the session.
-                    ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-
-                    // Do we have a reply ?
-                    if (reply != null)
-                    {
-                        if (session == null)
-                        {
-                            // This must be a handshake, extract a session from the reply
-                            session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-
-                            // Add the browser ID cookie
-                            if (session != null)
-                            {
-                                String browserId = findBrowserId(request);
-                                if (browserId == null)
-                                    setBrowserId(request, response);
-                            }
-                        }
-                        else
-                        {
-                            // Special handling for connect
-                            if (connect)
-                            {
-                                try
-                                {
-                                    if (!session.hasNonLazyMessages() && reply.isSuccessful())
-                                    {
-                                        // Detect if we have multiple sessions from the same browser
-                                        // Note that CORS requests do not send cookies, so we need to handle them specially
-                                        // CORS requests always have the Origin header
-
-                                        String browserId = findBrowserId(request);
-                                        boolean allowSuspendConnect;
-                                        if (browserId != null)
-                                            allowSuspendConnect = incBrowserId(browserId);
-                                        else
-                                            allowSuspendConnect = _allowMultiSessionsNoBrowser || request.getHeader("Origin") != null;
-
-                                        if (allowSuspendConnect)
-                                        {
-                                            long timeout = session.calculateTimeout(getTimeout());
-
-                                            // Support old clients that do not send advice:{timeout:0} on the first connect
-                                            if (timeout > 0 && wasConnected && session.isConnected())
-                                            {
-                                                // Between the last time we checked for messages in the queue
-                                                // (which was false, otherwise we would not be in this branch)
-                                                // and now, messages may have been added to the queue.
-                                                // We will suspend anyway, but setting the scheduler on the
-                                                // session will decide atomically if we need to resume or not.
-
-                                                // Suspend and wait for messages
-                                                Continuation continuation = ContinuationSupport.getContinuation(request);
-                                                continuation.setTimeout(timeout);
-                                                continuation.suspend(response);
-                                                scheduler = newLongPollScheduler(session, continuation, reply, browserId);
-                                                request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
-                                                session.setScheduler(scheduler);
-                                                reply = null;
-                                                metaConnectSuspended(request, session, timeout);
-                                            }
-                                            else
-                                            {
-                                                decBrowserId(browserId);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            // There are multiple sessions from the same browser
-                                            Map<String, Object> advice = reply.getAdvice(true);
-
-                                            if (browserId != null)
-                                                advice.put("multiple-clients", true);
-
-                                            if (_multiSessionInterval > 0)
-                                            {
-                                                advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
-                                                advice.put(Message.INTERVAL_FIELD, _multiSessionInterval);
-                                            }
-                                            else
-                                            {
-                                                advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                                                reply.setSuccessful(false);
-                                            }
-                                            session.reAdvise();
-                                        }
-                                    }
-                                }
-                                finally
-                                {
-                                    if (reply != null)
-                                        writer = writeQueueForMetaConnect(request, response, session, writer);
-                                }
-                            }
-                            else
-                            {
-                                if (!isMetaConnectDeliveryOnly() && !session.isMetaConnectDeliveryOnly())
-                                {
-                                    writer = writeQueue(request, response, session, writer);
-                                }
-                            }
-                        }
-
-                        // If the reply has not been otherwise handled, send it
-                        if (reply != null)
-                        {
-                            if (connect && session != null && session.isDisconnected())
-                                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-
-                            reply = getBayeux().extendReply(session, session, reply);
-
-                            if (reply != null)
-                            {
-                                getBayeux().freeze(reply);
-                                writer = writeMessage(request, response, writer, session, reply);
-                            }
-                        }
-                    }
-
-                    // Disassociate the reply
-                    message.setAssociated(null);
-                }
-                if (writer != null)
-                    finishWrite(writer, session);
+                processMessages(request, response, messages);
             }
             catch (ParseException x)
             {
                 handleJSONParseException(request, response, x.getMessage(), x.getCause());
             }
-            finally
-            {
-                // If we started a batch, end it now
-                if (batch)
-                {
-                    // Flush session if not done by the batch, since some browser order <script> requests
-                    if (!session.endBatch() && isAlwaysFlushingAfterHandle())
-                        session.flush();
-                }
-                else if (session != null && !connect && isAlwaysFlushingAfterHandle())
-                {
-                    session.flush();
-                }
-            }
         }
         else
         {
-            // Get the resumed session
-            ServerSessionImpl session = scheduler.getSession();
-            metaConnectResumed(request, session);
-
-            PrintWriter writer = writeQueueForMetaConnect(request, response, session, null);
-
-            // Send the connect reply
-            ServerMessage.Mutable reply = scheduler.getReply();
-
-            if (session.isDisconnected())
-                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-
-            reply = getBayeux().extendReply(session, session, reply);
-
-            if (reply != null)
-            {
-                getBayeux().freeze(reply);
-                writer = writeMessage(request, response, writer, session, reply);
-            }
-
-            finishWrite(writer, session);
+            resume(request, response, scheduler.getSession(), scheduler.getReply());
         }
     }
+
+    protected void processMessages(HttpServletRequest request, HttpServletResponse response, ServerMessage.Mutable[] messages) throws IOException
+    {
+        boolean autoBatch = _autoBatch;
+        ServerSessionImpl session = null;
+        boolean batch = false;
+        boolean startInterval = false;
+        boolean suspended = false;
+        boolean disconnected = false;
+        try
+        {
+            for (int i = 0; i < messages.length; ++i)
+            {
+                ServerMessage.Mutable message = messages[i];
+                _logger.debug("Processing {}", message);
+
+                if (session == null && !disconnected)
+                    session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
+
+                if (session != null)
+                {
+                    disconnected = !session.isHandshook();
+                    if (disconnected)
+                    {
+                        if (batch)
+                        {
+                            batch = false;
+                            session.endBatch();
+                        }
+                        session = null;
+                    }
+                    else
+                    {
+                        if (autoBatch && !batch)
+                        {
+                            batch = true;
+                            session.startBatch();
+                        }
+                    }
+                }
+
+                String channelName = message.getChannel();
+                if (channelName.equals(Channel.META_HANDSHAKE))
+                {
+                    ServerMessage.Mutable reply = processMetaHandshake(request, response, session, message);
+                    if (reply != null)
+                        session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+                    messages[i] = processReply(session, reply);
+                }
+                else if (channelName.equals(Channel.META_CONNECT))
+                {
+                    ServerMessage.Mutable reply = processMetaConnect(request, response, session, message);
+                    startInterval = reply != null;
+                    if (reply == null)
+                        suspended = messages.length == 1;
+                    messages[i] = processReply(session, reply);
+                }
+                else
+                {
+                    ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
+                    messages[i] = processReply(session, reply);
+                }
+            }
+
+            if (!suspended)
+                flush(request, response, session, startInterval, messages);
+        }
+        finally
+        {
+            if (batch)
+                session.endBatch();
+        }
+    }
+
+    protected ServerMessage.Mutable processMetaHandshake(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message)
+    {
+        ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
+        if (reply != null)
+        {
+            session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+            if (session != null)
+            {
+                String browserId = findBrowserId(request);
+                if (browserId == null)
+                    setBrowserId(request, response);
+            }
+        }
+        return reply;
+    }
+
+    protected ServerMessage.Mutable processMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message)
+    {
+        if (session != null)
+        {
+            // Cancel the previous scheduler to cancel any prior waiting long poll.
+            // This should also decrement the browser ID.
+            session.setScheduler(null);
+        }
+
+        boolean wasConnected = session != null && session.isConnected();
+        ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
+        if (reply != null && session != null)
+        {
+            if (!session.hasNonLazyMessages() && reply.isSuccessful())
+            {
+                // Detect if we have multiple sessions from the same browser
+                // Note that CORS requests do not send cookies, so we need to handle them specially
+                // CORS requests always have the Origin header
+                String browserId = findBrowserId(request);
+                boolean allowSuspendConnect;
+                if (browserId != null)
+                    allowSuspendConnect = incBrowserId(browserId);
+                else
+                    allowSuspendConnect = _allowMultiSessionsNoBrowser || request.getHeader("Origin") != null;
+
+                if (allowSuspendConnect)
+                {
+                    long timeout = session.calculateTimeout(getTimeout());
+
+                    // Support old clients that do not send advice:{timeout:0} on the first connect
+                    if (timeout > 0 && wasConnected && session.isConnected())
+                    {
+                        // Between the last time we checked for messages in the queue
+                        // (which was false, otherwise we would not be in this branch)
+                        // and now, messages may have been added to the queue.
+                        // We will suspend anyway, but setting the scheduler on the
+                        // session will decide atomically if we need to resume or not.
+
+                        Continuation continuation = ContinuationSupport.getContinuation(request);
+                        continuation.setTimeout(timeout);
+                        continuation.suspend(response);
+                        LongPollScheduler scheduler = newLongPollScheduler(session, continuation, reply, browserId);
+                        request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
+                        metaConnectSuspended(request, session, timeout);
+                        // Setting the scheduler may resume the /meta/connect
+                        session.setScheduler(scheduler);
+                        reply = null;
+                    }
+                    else
+                    {
+                        decBrowserId(browserId);
+                    }
+                }
+                else
+                {
+                    // There are multiple sessions from the same browser
+                    Map<String, Object> advice = reply.getAdvice(true);
+
+                    if (browserId != null)
+                        advice.put("multiple-clients", true);
+
+                    long multiSessionInterval = _multiSessionInterval;
+                    if (multiSessionInterval > 0)
+                    {
+                        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
+                        advice.put(Message.INTERVAL_FIELD, multiSessionInterval);
+                    }
+                    else
+                    {
+                        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                        reply.setSuccessful(false);
+                    }
+                    session.reAdvise();
+                }
+            }
+
+            if (reply != null && session.isDisconnected())
+                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+        }
+
+        return reply;
+    }
+
+    protected ServerMessage.Mutable processReply(ServerSessionImpl session, ServerMessage.Mutable reply)
+    {
+        if (reply != null)
+        {
+            reply = getBayeux().extendReply(session, session, reply);
+            if (reply != null)
+                getBayeux().freeze(reply);
+        }
+        return reply;
+    }
+
+    protected void resume(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply)
+    {
+        metaConnectResumed(request, session);
+        Map<String, Object> advice = session.takeAdvice();
+        if (advice != null)
+            reply.put(Message.ADVICE_FIELD, advice);
+        if (session.isDisconnected())
+            reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+
+        flush(request, response, session, true, processReply(session, reply));
+    }
+
+    protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean startInterval, ServerMessage.Mutable... replies)
+    {
+        List<ServerMessage> messages = Collections.emptyList();
+        if (session != null)
+        {
+            if (startInterval || !isMetaConnectDeliveryOnly() && !session.isMetaConnectDeliveryOnly())
+                messages = session.takeQueue();
+        }
+
+        write(request, response, session, startInterval, messages, replies);
+    }
+
+    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean startInterval, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
+    {
+        try
+        {
+            ServletOutputStream output;
+            try
+            {
+                output = beginWrite(request, response, session);
+
+                // Write the messages first.
+                for (int i = 0; i < messages.size(); ++i)
+                {
+                    ServerMessage message = messages.get(i);
+                    if (i > 0)
+                        output.write(',');
+                    writeMessage(output, session, message);
+                }
+            }
+            finally
+            {
+                // Start the interval timeout after writing the messages
+                // since they may take time to be written, even in case
+                // of exceptions to make sure the session can be swept.
+                if (startInterval && session != null && session.isConnected())
+                    session.startIntervalTimeout(getInterval());
+            }
+
+            // Write the replies, if any.
+            boolean needsComma = !messages.isEmpty();
+            for (int i = 0; i < replies.length; ++i)
+            {
+                ServerMessage reply = replies[i];
+                if (reply == null)
+                    continue;
+                if (needsComma)
+                    output.write(',');
+                needsComma = true;
+                writeMessage(output, session, reply);
+            }
+
+            endWrite(output, session);
+        }
+        catch (Exception x)
+        {
+            try
+            {
+                if (!response.isCommitted())
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
+            catch (Exception xx)
+            {
+                _logger.trace("Could not send " + HttpServletResponse.SC_INTERNAL_SERVER_ERROR + " response", xx);
+            }
+        }
+    }
+
+    protected void writeMessage(ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException
+    {
+        output.write(message.getJSON().getBytes("UTF-8"));
+    }
+
+    protected abstract ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session) throws IOException;
+
+    protected abstract void endWrite(ServletOutputStream output, ServerSessionImpl session) throws IOException;
 
     protected LongPollScheduler newLongPollScheduler(ServerSessionImpl session, Continuation continuation, ServerMessage.Mutable metaConnectReply, String browserId)
     {
         return new LongPollScheduler(session, continuation, metaConnectReply, browserId);
-    }
-
-    private PrintWriter writeQueueForMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer) throws IOException
-    {
-        try
-        {
-            return writeQueue(request, response, session, writer);
-        }
-        finally
-        {
-            // We need to start the interval timeout after we sent the queue
-            // (which may take time) but before sending the connect reply
-            // otherwise we open up a race condition where the client receives
-            // the connect reply and sends a new connect request before we start
-            // the interval timeout, which will be wrong.
-            // We need to put this into a finally block in case sending the queue
-            // throws an exception (for example because the client is gone), so that
-            // we start the interval timeout that is important to sweep the session
-            if (session.isConnected())
-                session.startIntervalTimeout(getInterval());
-        }
     }
 
     protected ServerMessage.Mutable bayeuxServerHandle(ServerSessionImpl session, ServerMessage.Mutable message)
@@ -471,7 +519,7 @@ public abstract class LongPollingTransport extends HttpTransport
             {
                 AtomicInteger count = entry.getValue();
                 // if the ID has been in the sweep map for 3 sweeps
-                if (count!=null && count.incrementAndGet() > maxSweeps)
+                if (count != null && count.incrementAndGet() > maxSweeps)
                 {
                     String key = entry.getKey();
                     // remove it from both browser Maps
@@ -484,15 +532,6 @@ public abstract class LongPollingTransport extends HttpTransport
             }
         }
         _lastSweep = now;
-    }
-
-    private PrintWriter writeQueue(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer)
-            throws IOException
-    {
-        List<ServerMessage> queue = session.takeQueue();
-        for (ServerMessage m : queue)
-            writer = writeMessage(request, response, writer, session, m);
-        return writer;
     }
 
     protected ServerMessage.Mutable[] parseMessages(String[] requestParameters) throws IOException, ParseException
@@ -519,10 +558,6 @@ public abstract class LongPollingTransport extends HttpTransport
      * @return true if the transport always flushes at the end of a call to {@link #handle(HttpServletRequest, HttpServletResponse)}.
      */
     protected abstract boolean isAlwaysFlushingAfterHandle();
-
-    protected abstract PrintWriter writeMessage(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerSessionImpl session, ServerMessage message) throws IOException;
-
-    protected abstract void finishWrite(PrintWriter writer, ServerSessionImpl session) throws IOException;
 
     protected class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, ContinuationListener
     {

@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Acknowledged Message Client extension.
+ * Acknowledged Message Session extension.
  * <p/>
  * Tracks the batch id of messages sent to a client.
  */
@@ -95,19 +95,6 @@ public class AcknowledgedMessagesClientExtension implements Extension, ServerSes
         }
     }
 
-    public void deQueue(ServerSession session, Queue<ServerMessage> queue)
-    {
-        synchronized (_session.getLock())
-        {
-            _logger.debug("Dequeuing {}/{} messages at batch {}..{} for {}", queue.size(), _queue.size(), _batch, _queue.getBatch(), _session);
-            queue.clear();
-            if (!_queue.isEmpty())
-                queue.addAll(_queue);
-            _batch.set(_queue.getBatch());
-            _queue.nextBatch();
-        }
-    }
-
     public boolean sendMeta(ServerSession to, Mutable message)
     {
         if (message.getChannel().equals(Channel.META_CONNECT))
@@ -115,12 +102,24 @@ public class AcknowledgedMessagesClientExtension implements Extension, ServerSes
             synchronized (_session.getLock())
             {
                 Map<String, Object> ext = message.getExt(true);
-                Long batch = _batch.get();
+                long batch = _queue.getBatch();
+                _batch.set(batch);
                 _logger.debug("Sending batch {} for {}", batch, _session);
-                if (batch != null)
-                    ext.put("ack", batch);
+                ext.put("ack", batch);
+                _queue.nextBatch();
             }
         }
         return true;
+    }
+
+    public void deQueue(ServerSession session, Queue<ServerMessage> queue)
+    {
+        synchronized (_session.getLock())
+        {
+            long batch = _batch.get();
+            _logger.debug("Dequeuing {}/{} messages until batch {} for {}", queue.size(), _queue.size(), batch, _session);
+            queue.clear();
+            _queue.copyToBatch(queue, batch);
+        }
     }
 }

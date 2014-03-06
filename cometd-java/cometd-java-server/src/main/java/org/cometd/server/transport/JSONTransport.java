@@ -16,8 +16,8 @@
 package org.cometd.server.transport;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.text.ParseException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -76,26 +76,18 @@ public class JSONTransport extends LongPollingTransport
     }
 
     @Override
-    protected PrintWriter writeMessage(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerSessionImpl session, ServerMessage message) throws IOException
+    protected ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session) throws IOException
     {
-        if (writer == null)
-        {
-            response.setContentType(_mimeType);
-            writer = response.getWriter();
-            writer.append('[');
-        }
-        else
-        {
-            writer.append(',');
-        }
-        writer.append(message.getJSON());
-        return writer;
+        response.setContentType(_mimeType);
+        ServletOutputStream output = response.getOutputStream();
+        output.write('[');
+        return output;
     }
 
     @Override
-    protected void finishWrite(PrintWriter writer, ServerSessionImpl session) throws IOException
+    protected void endWrite(ServletOutputStream output, ServerSessionImpl session) throws IOException
     {
-        writer.append("]");
-        writer.close();
+        output.write(']');
+        output.close();
     }
 }

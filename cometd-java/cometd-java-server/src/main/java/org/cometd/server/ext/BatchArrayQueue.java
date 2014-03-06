@@ -15,6 +15,8 @@
  */
 package org.cometd.server.ext;
 
+import java.util.Queue;
+
 import org.eclipse.jetty.util.ArrayQueue;
 
 public class BatchArrayQueue<T> extends ArrayQueue<T>
@@ -124,6 +126,27 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
                     break;
                 if (poll() == null)
                     break;
+            }
+        }
+    }
+
+    public void copyToBatch(Queue<T> target, long batch)
+    {
+        synchronized (_lock)
+        {
+            if (isEmpty())
+                return;
+            int index = 0;
+            while (true)
+            {
+                int cursor = (_nextE + index) % getCapacity();
+                if (batches[cursor] > batch)
+                    break;
+                T element = getUnsafe(index);
+                if (element == null)
+                    break;
+                target.offer(element);
+                ++index;
             }
         }
     }
