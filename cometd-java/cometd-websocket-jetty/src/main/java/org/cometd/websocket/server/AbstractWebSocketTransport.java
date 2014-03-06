@@ -15,8 +15,8 @@
  */
 package org.cometd.websocket.server;
 
-import java.io.IOException;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -46,6 +46,8 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
+
+    private static final ServerMessage[] EMPTY_MESSAGES = new ServerMessage[0];
 
     private final ThreadLocal<BayeuxContext> _bayeuxContext = new ThreadLocal<BayeuxContext>();
     private Executor _executor;
@@ -131,10 +133,10 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
 
     protected void handleException(S wsSession, ServerSession session, Throwable exception)
     {
-        _logger.warn("", exception);
+        _logger.debug("", exception);
     }
 
-    protected abstract void send(S wsSession, ServerSession session, String data) throws IOException;
+    protected abstract void send(S wsSession, ServerSession session, String data);
 
     protected void onClose(int code, String reason)
     {
@@ -153,17 +155,24 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
             _context = context;
         }
 
-        protected void send(S wsSession, List<ServerMessage> messages) throws IOException
+        protected void send(S wsSession, List<ServerMessage> messages)
         {
-            if (messages.isEmpty())
-                return;
-
             // Under load, it is possible that we have many bayeux messages and
             // that these would generate a large websocket message that the client
             // could not handle, so we need to split the messages into batches.
 
             int count = messages.size();
-            int batchSize = _messagesPerFrame > 0 ? Math.min(_messagesPerFrame, count) : count;
+            int messagesPerFrame = getMessagesPerFrame();
+            int batchSize = messagesPerFrame > 0 ? Math.min(messagesPerFrame, count) : count;
+            send(wsSession, messages, batchSize);
+        }
+
+        protected void send(S wsSession, List<ServerMessage> messages, int batchSize)
+        {
+            if (messages.isEmpty())
+                return;
+
+            int count = messages.size();
             // Assume 4 fields of 32 chars per message
             int capacity = batchSize * 4 * 32;
             StringBuilder builder = new StringBuilder(capacity);
@@ -174,24 +183,21 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
                 builder.setLength(0);
                 builder.append("[");
                 int batch = Math.min(batchSize, count - index);
+                boolean comma = false;
                 for (int b = 0; b < batch; ++b)
                 {
-                    if (b > 0)
-                        builder.append(",");
                     ServerMessage serverMessage = messages.get(index + b);
+                    if (serverMessage == null)
+                        continue;
+                    if (comma)
+                        builder.append(",");
+                    comma = true;
                     builder.append(serverMessage.getJSON());
                 }
                 builder.append("]");
                 index += batch;
                 AbstractWebSocketTransport.this.send(wsSession, _session, builder.toString());
             }
-        }
-
-        protected void send(S wsSession, ServerMessage message) throws IOException
-        {
-            StringBuilder builder = new StringBuilder(message.size() * 32);
-            builder.append("[").append(message.getJSON()).append("]");
-            AbstractWebSocketTransport.this.send(wsSession, _session, builder.toString());
         }
 
         protected void onClose(int code, String reason)
@@ -232,9 +238,8 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(data);
-                debug("Received messages {}", data);
-                for (ServerMessage.Mutable message : messages)
-                    onMessage(wsSession, message);
+                debug("Received {}", data);
+                processMessages(wsSession, messages);
             }
             catch (ParseException x)
             {
@@ -251,49 +256,84 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
             }
         }
 
-        protected void onMessage(S wsSession, ServerMessage.Mutable message) throws IOException
+        private void processMessages(S wsSession, ServerMessage.Mutable[] messages)
         {
-            debug("Received {}", message);
-            boolean connect = Channel.META_CONNECT.equals(message.getChannel());
-
-            // Get the session from the message
             ServerSessionImpl session = _session;
-            String clientId = message.getClientId();
-            if (session == null || !session.getId().equals(clientId))
-                _session = session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
 
-            // Session expired concurrently ?
-            if (session != null && !session.isHandshook())
-                _session = session = null;
-
-            // Remember the connected status
-            boolean wasConnected = session != null && session.isConnected();
-
-            // Delegate to BayeuxServer to handle the message.
-            // This may trigger server-side listeners that may add messages
-            // to the queue, which will trigger a schedule() via flush()
-
-            ServerMessage.Mutable reply = getBayeux().handle(session, message);
-            if (reply != null)
+            boolean startInterval = false;
+            boolean suspended = false;
+            List<ServerMessage> queue = null;
+            for (int i = 0; i < messages.length; ++i)
             {
-                if (session == null)
+                ServerMessage.Mutable message = messages[i];
+                _logger.debug("Processing {}", message);
+
+                // Get the session from the message
+                String clientId = message.getClientId();
+                if (session == null || !session.getId().equals(clientId))
+                    _session = session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
+
+                // Session expired concurrently ?
+                if (session != null && !session.isHandshook())
+                    _session = session = null;
+
+                String channelName = message.getChannel();
+                if (channelName.equals(Channel.META_HANDSHAKE))
                 {
-                    session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-                    if (session != null)
-                        session.setScheduler(this);
+                    ServerMessage.Mutable reply = processMetaHandshake(session, message);
+                    if (reply != null)
+                        session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+                    messages[i] = processReply(session, reply);
                 }
+                else if (channelName.equals(Channel.META_CONNECT))
+                {
+                    ServerMessage.Mutable reply = processMetaConnect(session, message);
+                    messages[i] = processReply(session, reply);
+                    startInterval = reply != null;
+                    suspended = reply == null && messages.length == 1;
+                    if (reply != null && session != null)
+                    {
+                        if (isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly())
+                            queue = session.takeQueue();
+                    }
+                }
+                else
+                {
+                    ServerMessage.Mutable reply = getBayeux().handle(session, message);
+                    messages[i] = processReply(session, reply);
+                }
+            }
 
-                List<ServerMessage> queue = null;
+            if (!suspended)
+                flush(wsSession, session, startInterval, queue, messages);
+        }
 
-                // Check again if session is connected, BayeuxServer.handle() may have caused a disconnection
-                if (connect && reply.isSuccessful() && session != null && session.isConnected())
+        private ServerMessage.Mutable processMetaHandshake(ServerSessionImpl session, ServerMessage.Mutable message)
+        {
+            ServerMessage.Mutable reply = getBayeux().handle(session, message);
+            if (reply != null && reply.isSuccessful())
+            {
+                session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+                if (session != null)
+                    session.setScheduler(this);
+            }
+            return reply;
+        }
+
+        private ServerMessage.Mutable processMetaConnect(ServerSessionImpl session, ServerMessage.Mutable message)
+        {
+            // Remember the connected status before handling the message.
+            boolean wasConnected = session != null && session.isConnected();
+            ServerMessage.Mutable reply = getBayeux().handle(session, message);
+            if (reply != null && session != null)
+            {
+                if (reply.isSuccessful() && session.isConnected())
                 {
                     // We need to set the scheduler again, in case the connection
-                    // has temporarily broken and we have created a new scheduler
+                    // has temporarily broken and we have created a new scheduler.
                     session.setScheduler(this);
 
-                    // If we deliver only via meta connect, and we have messages,
-                    // we need to send the queue and the meta connect reply
+                    // If we deliver only via meta connect and we have messages, then reply.
                     boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
                     boolean hasMessages = session.hasNonLazyMessages();
                     boolean replyToMetaConnect = hasMessages && metaConnectDelivery;
@@ -304,60 +344,60 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
                         if (holdMetaConnect)
                         {
                             // Decide atomically if we need to hold the meta connect or not
-                            // In schedule() we decide atomically if reply to the meta connect
+                            // In schedule() we decide atomically if reply to the meta connect.
                             synchronized (session.getLock())
                             {
                                 if (!session.hasNonLazyMessages())
                                 {
                                     if (cancelMetaConnectTask(session))
-                                        debug("Cancelled unresponded meta connect {}", _connectReply);
+                                        _logger.debug("Cancelled unresponded meta connect {}", _connectReply);
 
                                     _connectReply = reply;
 
                                     // Delay the connect reply until timeout.
                                     long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + timeout;
-                                    _connectTask = _scheduler.schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
-                                    debug("Scheduled meta connect {}", _connectTask);
+                                    _connectTask = getScheduler().schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
+                                    _logger.debug("Scheduled meta connect {}", _connectTask);
                                     reply = null;
                                 }
                             }
                         }
                     }
-                    if (reply != null && metaConnectDelivery)
-                        queue = session.takeQueue();
                 }
-
-                // Send the reply
-                if (reply != null)
-                {
-                    try
-                    {
-                        if (queue != null)
-                            send(wsSession, queue);
-                    }
-                    finally
-                    {
-                        // Start the interval timeout before sending the reply to
-                        // avoid race conditions, and even if sending the queue
-                        // throws an exception so that we can sweep the session
-                        if (connect && session != null)
-                        {
-                            if (session.isConnected())
-                                session.startIntervalTimeout(getInterval());
-                            else if (session.isDisconnected())
-                                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                        }
-                    }
-
-                    reply = getBayeux().extendReply(session, session, reply);
-
-                    if (reply != null)
-                    {
-                        getBayeux().freeze(reply);
-                        send(wsSession, reply);
-                    }
-                }
+                if (reply != null && session.isDisconnected())
+                    reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
             }
+            return reply;
+        }
+
+        private ServerMessage.Mutable processReply(ServerSessionImpl session, ServerMessage.Mutable reply)
+        {
+            if (reply != null)
+            {
+                reply = getBayeux().extendReply(session, session, reply);
+                if (reply != null)
+                    getBayeux().freeze(reply);
+            }
+            return reply;
+        }
+
+        private void flush(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, ServerMessage[] replies)
+        {
+            try
+            {
+                if (queue != null)
+                    send(wsSession, queue);
+            }
+            finally
+            {
+                // Start the interval timeout after writing the messages
+                // since they may take time to be written, even in case
+                // of exceptions to make sure the session can be swept.
+                if (startInterval && session != null && session.isConnected())
+                    session.startIntervalTimeout(getInterval());
+            }
+
+            send(wsSession, Arrays.asList(replies), replies.length);
         }
 
         protected abstract void close(int code, String reason);
@@ -447,38 +487,20 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
                     }
                 }
 
+                ServerMessage[] replies = EMPTY_MESSAGES;
+                if (reply)
+                {
+                    if (session.isDisconnected())
+                        connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                    connectReply = processReply(session, connectReply);
+                    replies = new ServerMessage[]{connectReply};
+                }
+
                 reschedule = true;
                 List<ServerMessage> queue = session.takeQueue();
 
-                try
-                {
-                    debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, reply, queue);
-                    send(wsSession, queue);
-                }
-                finally
-                {
-                    if (reply)
-                    {
-                        // Start the interval timeout before sending the reply to
-                        // avoid race conditions, and even if sending the queue
-                        // throws an exception so that we can sweep the session
-                        if (session.isConnected())
-                            session.startIntervalTimeout(getInterval());
-                        else if (session.isDisconnected())
-                            connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                    }
-                }
-
-                if (reply)
-                {
-                    connectReply = getBayeux().extendReply(session, session, connectReply);
-
-                    if (connectReply != null)
-                    {
-                        getBayeux().freeze(connectReply);
-                        send(wsSession, connectReply);
-                    }
-                }
+                _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, connectReply, queue);
+                flush(wsSession, session, reply, queue, replies);
             }
             catch (Exception x)
             {

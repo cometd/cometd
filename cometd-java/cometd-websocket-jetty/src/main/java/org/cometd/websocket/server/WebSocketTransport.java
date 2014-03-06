@@ -137,10 +137,17 @@ public class WebSocketTransport extends AbstractWebSocketTransport<WebSocket.Con
     }
 
     @Override
-    protected void send(WebSocket.Connection wsSession, ServerSession session, String data) throws IOException
+    protected void send(WebSocket.Connection wsSession, ServerSession session, String data)
     {
-        debug("Sending {}", data);
-        wsSession.sendMessage(data);
+        try
+        {
+            debug("Sending {}", data);
+            wsSession.sendMessage(data);
+        }
+        catch (Exception x)
+        {
+            handleException(wsSession, session, x);
+        }
     }
 
     private class WebSocketScheduler extends AbstractWebSocketScheduler implements WebSocket.OnTextMessage

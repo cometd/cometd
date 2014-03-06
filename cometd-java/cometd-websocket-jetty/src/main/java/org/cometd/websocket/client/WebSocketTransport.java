@@ -295,7 +295,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     protected Delegate connect(WebSocketClient client, URI uri) throws IOException, InterruptedException, TimeoutException
     {
-        Delegate result = new Delegate();
+        Delegate result = newDelegate();
         client.open(uri, result, getConnectTimeout(), TimeUnit.MILLISECONDS);
         return result;
     }
@@ -306,6 +306,11 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         result.setMaxTextMessageSize(_maxMessageSize);
         result.setMaxIdleTime(getIdleTimeout());
         return result;
+    }
+
+    protected Delegate newDelegate()
+    {
+        return new Delegate();
     }
 
     protected class Delegate implements WebSocket.OnTextMessage
@@ -369,7 +374,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             }
         }
 
-        private void onMessages(List<Mutable> messages)
+        protected void onMessages(List<Mutable> messages)
         {
             for (Mutable message : messages)
             {
