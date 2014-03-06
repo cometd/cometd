@@ -401,7 +401,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             return reply;
         }
 
-        private void flush(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, ServerMessage[] replies)
+        protected void flush(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, ServerMessage[] replies)
         {
             try
             {

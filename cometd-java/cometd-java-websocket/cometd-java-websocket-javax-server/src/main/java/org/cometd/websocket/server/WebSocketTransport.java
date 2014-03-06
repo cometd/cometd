@@ -45,10 +45,15 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 {
+    public static final String BATCH_WRITES_OPTION = "batchWrites";
+
+    private boolean _batchWrites;
+
     public WebSocketTransport(BayeuxServerImpl bayeux)
     {
         super(bayeux);
@@ -76,6 +81,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         container.setDefaultMaxTextMessageBufferSize(maxMessageSize);
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, container.getDefaultMaxSessionIdleTimeout());
         container.setDefaultMaxSessionIdleTimeout(idleTimeout);
+
+        _batchWrites = getOption(BATCH_WRITES_OPTION, true);
 
         String protocol = getProtocol();
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(WebSocketScheduler.class, cometdURLMapping)
@@ -152,6 +159,26 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             delegate = new AbstractWebSocketScheduler(context)
             {
                 @Override
+                protected void flush(Session wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, ServerMessage[] replies)
+                {
+                    super.flush(wsSession, session, startInterval, queue, replies);
+                    flushBatchedWrites(wsSession, session);
+                }
+
+                private void flushBatchedWrites(Session wsSession, ServerSessionImpl session)
+                {
+                    try
+                    {
+                        if (_batchWrites)
+                            wsSession.getAsyncRemote().flushBatch();
+                    }
+                    catch (IOException x)
+                    {
+                        handleException(wsSession, session, x);
+                    }
+                }
+
+                @Override
                 protected void close(final int code, String reason)
                 {
                     try
@@ -177,6 +204,19 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         {
             _wsSession = wsSession;
             wsSession.addMessageHandler(this);
+            configureBatchWrites(wsSession);
+        }
+
+        private void configureBatchWrites(Session wsSession)
+        {
+            try
+            {
+                wsSession.getAsyncRemote().setBatchingAllowed(_batchWrites);
+            }
+            catch (IOException x)
+            {
+                _logger.debug("Could not configure batch writes", x);
+            }
         }
 
         @Override
