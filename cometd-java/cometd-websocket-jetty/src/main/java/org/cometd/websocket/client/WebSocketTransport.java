@@ -331,7 +331,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         {
             if (detach())
             {
-                debug("Closed websocket connection with code {} {}: {} ", closeCode, message, _connection);
+                debug("Closed websocket connection {}/{}", closeCode, message);
                 setConnection(null);
                 failMessages(new EOFException("Connection closed " + closeCode + " " + message));
             }
@@ -493,7 +493,11 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         private void send(String text) throws IOException
         {
-            Connection connection = _connection;
+            Connection connection;
+            synchronized (this)
+            {
+                connection = _connection;
+            }
             if (connection == null)
                 throw new IOException("Could not send " + text);
             connection.sendMessage(text);
@@ -553,7 +557,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                 connection = _connection;
                 setConnection(null);
             }
-            if (connection != null && connection.isOpen())
+            if (connection != null)
             {
                 debug("Closing ({}) websocket connection {}", reason, connection);
                 connection.close(1000, reason);
