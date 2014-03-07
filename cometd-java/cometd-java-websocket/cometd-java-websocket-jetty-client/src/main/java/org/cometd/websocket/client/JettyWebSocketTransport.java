@@ -157,12 +157,15 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
 
     protected class JettyWebSocketDelegate extends Delegate implements WebSocketListener
     {
-        private volatile Session _session;
+        private Session _session;
 
         @Override
         public void onWebSocketConnect(Session session)
         {
-            _session = session;
+            synchronized (this)
+            {
+                _session = session;
+            }
             logger.debug("Opened websocket session {}", session);
         }
 
@@ -192,9 +195,21 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         @Override
         public void send(String content)
         {
+            Session session;
+            synchronized (this)
+            {
+                session = _session;
+            }
             try
             {
-                _session.getRemote().sendStringByFuture(content).get();
+                if (session != null)
+                {
+                   session.getRemote().sendStringByFuture(content).get();
+                }
+                else
+                {
+                    fail(new IOException("Unconnected"), "Unconnected");
+                }
             }
             catch (Throwable x)
             {
@@ -203,13 +218,36 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         }
 
         @Override
-        protected void close(String reason)
+        protected void shutdown(String reason)
         {
-            Session session = _session;
-            if (session != null && session.isOpen())
+            Session session;
+            synchronized (this)
+            {
+                session = _session;
+                close();
+            }
+            if (session != null)
             {
                 logger.debug("Closing websocket session {}", session);
                 session.close(1000, reason);
+            }
+        }
+
+        @Override
+        protected boolean isOpen()
+        {
+            synchronized (this)
+            {
+                return _session != null;
+            }
+        }
+
+        @Override
+        protected void close()
+        {
+            synchronized (this)
+            {
+                _session = null;
             }
         }
     }

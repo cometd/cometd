@@ -175,7 +175,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
                 if (_delegate != null)
                 {
                     // We connected concurrently, keep only one.
-                    delegate.close("Extra");
+                    delegate.shutdown("Extra");
                     delegate = _delegate;
                 }
                 _delegate = delegate;
@@ -220,26 +220,16 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     protected abstract class Delegate
     {
         private final Map<String, WebSocketExchange> _exchanges = new ConcurrentHashMap<>();
-        private boolean _aborted;
         private boolean _connected;
         private boolean _disconnected;
         private Map<String, Object> _advice;
 
         protected void onClose(int code, String reason)
         {
-            boolean proceed = false;
-            synchronized (AbstractWebSocketTransport.this)
-            {
-                if (this == _delegate)
-                {
-                    _delegate = null;
-                    proceed = true;
-                }
-            }
-
-            if (proceed)
+            if (detach())
             {
                 logger.debug("Closed websocket connection {}/{}", code, reason);
+                close();
                 failMessages(new EOFException("Connection closed " + code + " " + reason));
             }
         }
@@ -249,12 +239,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             try
             {
                 List<Mutable> messages = parseMessages(data);
-                boolean proceed;
-                synchronized (AbstractWebSocketTransport.this)
-                {
-                    proceed = this == _delegate;
-                }
-                if (proceed)
+                if (isAttached())
                 {
                     logger.debug("Received messages {}", data);
                     onMessages(messages);
@@ -318,18 +303,19 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
         private void registerMessages(TransportListener listener, List<Mutable> messages)
         {
-            boolean aborted;
+            boolean open;
             synchronized (this)
             {
-                aborted = _aborted;
-                if (!aborted)
+                // Check whether it is active and register messages atomically.
+                open = isOpen();
+                if (open)
                 {
                     for (Mutable message : messages)
                         registerMessage(message, listener);
                 }
             }
-            if (aborted)
-                listener.onFailure(new IOException("Aborted"), messages);
+            if (!open)
+                listener.onFailure(new IOException("Unconnected"), messages);
         }
 
         private void registerMessage(final Message.Mutable message, final TransportListener listener)
@@ -404,13 +390,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
         protected void failMessages(Throwable cause)
         {
-            List<WebSocketExchange> exchanges;
-            synchronized (this)
-            {
-                exchanges = new ArrayList<>(_exchanges.values());
-            }
             List<Message.Mutable> messages = new ArrayList<>(1);
-            for (WebSocketExchange exchange : exchanges)
+            for (WebSocketExchange exchange : new ArrayList<>(_exchanges.values()))
             {
                 Mutable message = exchange.message;
                 if (deregisterMessage(message) == exchange)
@@ -424,27 +405,39 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
         private void abort()
         {
-            synchronized (this)
-            {
-                _aborted = true;
-            }
             fail(new IOException("Aborted"), "Aborted");
         }
 
         private void disconnect(String reason)
         {
-            boolean close;
-            synchronized (AbstractWebSocketTransport.this)
-            {
-                close = this == _delegate;
-                if (close)
-                    _delegate = null;
-            }
-            if (close)
-                close(reason);
+            if (detach())
+                shutdown(reason);
         }
 
-        protected abstract void close(String reason);
+        private boolean isAttached()
+        {
+            synchronized (AbstractWebSocketTransport.this)
+            {
+                return this == _delegate;
+            }
+        }
+
+        private boolean detach()
+        {
+            synchronized (AbstractWebSocketTransport.this)
+            {
+                boolean attached = this == _delegate;
+                if (attached)
+                    _delegate = null;
+                return attached;
+            }
+        }
+
+        protected abstract boolean isOpen();
+
+        protected abstract void close();
+
+        protected abstract void shutdown(String reason);
 
         private void terminate()
         {

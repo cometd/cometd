@@ -81,6 +81,7 @@ public class BayeuxLoadClient
     private final AtomicLong minLatency = new AtomicLong();
     private final AtomicLong maxLatency = new AtomicLong();
     private final AtomicLong totLatency = new AtomicLong();
+    private final AtomicStampedReference<String> maxTime = new AtomicStampedReference<String>(null, 0);
     private final ConcurrentMap<Long, AtomicLong> wallLatencies = new ConcurrentHashMap<>();
     private final Map<String, AtomicStampedReference<Long>> sendTimes = new ConcurrentHashMap<>();
     private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<>();
@@ -643,6 +644,7 @@ public class BayeuxLoadClient
                     System.err.print(" ^99.9%");
                 System.err.println();
             }
+            System.err.printf("Slowest Message ID = %s time = %d ms%n", maxTime.getReference(), maxTime.getStamp());
 
             System.err.printf("Messages - Wall Latency 50th%%/99th%% = %d/%d ms%n",
                     TimeUnit.NANOSECONDS.toMillis(latencyAt50thPercentile),
@@ -659,12 +661,14 @@ public class BayeuxLoadClient
                 messageCount == 0 ? -1 : TimeUnit.NANOSECONDS.toMillis(totLatency.get() / messageCount),
                 TimeUnit.NANOSECONDS.toMillis(maxLatency.get()));
 
-        System.err.printf("Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+        System.err.printf("Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms | Task Latency avg/max = %d/%d ms%n",
                 threadPool.getTasks(),
                 threadPool.getMaxActiveThreads(),
                 threadPool.getMaxQueueSize(),
                 TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageQueueLatency()),
-                TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxQueueLatency()));
+                TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxQueueLatency()),
+                TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageTaskLatency()),
+                TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxTaskLatency()));
     }
 
     private void reset()
@@ -680,6 +684,7 @@ public class BayeuxLoadClient
         minLatency.set(Long.MAX_VALUE);
         maxLatency.set(0L);
         totLatency.set(0L);
+        maxTime.set(null, 0);
         wallLatencies.clear();
         sendTimes.clear();
         arrivalTimes.clear();
@@ -783,6 +788,9 @@ public class BayeuxLoadClient
                 // Update count atomically
                 if (Atomics.decrement(arrivalTimeRef) == 0)
                     arrivalTimes.remove(id);
+
+                long delayMs = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
+                Atomics.updateMax(maxTime, id, (int)delayMs);
 
                 updateLatencies(startTime, sendTime, arrivalTime, endTime, recordDetails);
             }

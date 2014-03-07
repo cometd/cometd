@@ -25,11 +25,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
 {
     private final AtomicLong tasks = new AtomicLong();
-    private final AtomicLong maxLatency = new AtomicLong();
-    private final AtomicLong totalLatency = new AtomicLong();
+    private final AtomicLong maxTaskLatency = new AtomicLong();
+    private final AtomicLong totalTaskLatency = new AtomicLong();
+    private final MonitoringLinkedBlockingQueue queue;
+    private final AtomicLong maxQueueLatency = new AtomicLong();
+    private final AtomicLong totalQueueLatency = new AtomicLong();
     private final AtomicInteger threads = new AtomicInteger();
     private final AtomicInteger maxThreads = new AtomicInteger();
-    private final MonitoringLinkedBlockingQueue queue;
 
     public MonitoringThreadPoolExecutor(int maximumPoolSize, long keepAliveTime, TimeUnit unit)
     {
@@ -44,10 +46,12 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
 
     public void reset()
     {
-        queue.reset();
         tasks.set(0);
-        maxLatency.set(0);
-        totalLatency.set(0);
+        maxTaskLatency.set(0);
+        totalTaskLatency.set(0);
+        queue.reset();
+        maxQueueLatency.set(0);
+        totalQueueLatency.set(0);
         threads.set(0);
         maxThreads.set(0);
     }
@@ -57,15 +61,26 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
         return tasks.get();
     }
 
+    public long getMaxTaskLatency()
+    {
+        return maxTaskLatency.get();
+    }
+
+    public long getAverageTaskLatency()
+    {
+        long count = tasks.get();
+        return count == 0 ? -1 : totalTaskLatency.get() / count;
+    }
+
     public long getMaxQueueLatency()
     {
-        return maxLatency.get();
+        return maxQueueLatency.get();
     }
 
     public long getAverageQueueLatency()
     {
-        long count = this.tasks.get();
-        return count == 0 ? -1 : totalLatency.get() / count;
+        long count = tasks.get();
+        return count == 0 ? -1 : totalQueueLatency.get() / count;
     }
 
     public int getMaxQueueSize()
@@ -87,17 +102,21 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
             public void run()
             {
                 long latency = System.nanoTime() - begin;
-                Atomics.updateMax(maxLatency, latency);
-                totalLatency.addAndGet(latency);
                 tasks.incrementAndGet();
+                Atomics.updateMax(maxQueueLatency, latency);
+                totalQueueLatency.addAndGet(latency);
                 Atomics.updateMax(maxThreads, threads.incrementAndGet());
+                long start = System.nanoTime();
                 try
                 {
                     task.run();
                 }
                 finally
                 {
+                    long taskLatency = System.nanoTime() - start;
                     threads.decrementAndGet();
+                    Atomics.updateMax(maxTaskLatency, taskLatency);
+                    totalTaskLatency.addAndGet(taskLatency);
                 }
             }
         });

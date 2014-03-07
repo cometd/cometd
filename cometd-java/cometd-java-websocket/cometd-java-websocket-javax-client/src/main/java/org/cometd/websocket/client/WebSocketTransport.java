@@ -134,12 +134,15 @@ public class WebSocketTransport extends AbstractWebSocketTransport
     protected class WebSocketDelegate extends Delegate implements MessageHandler.Whole<String>
     {
         private final Endpoint _endpoint = new WebSocketEndpoint();
-        private volatile Session _session;
+        private Session _session;
 
         private void onOpen(Session session)
         {
+            synchronized (this)
+            {
+                _session = session;
+            }
             session.addMessageHandler(this);
-            _session = session;
             logger.debug("Opened websocket session {}", session);
         }
 
@@ -152,23 +155,40 @@ public class WebSocketTransport extends AbstractWebSocketTransport
         @Override
         public void send(String content)
         {
-            _session.getAsyncRemote().sendText(content, new SendHandler()
+            Session session;
+            synchronized (this)
             {
-                @Override
-                public void onResult(SendResult result)
+                session = _session;
+            }
+            if (session != null)
+            {
+                session.getAsyncRemote().sendText(content, new SendHandler()
                 {
-                    Throwable failure = result.getException();
-                    if (failure != null)
-                        fail(failure, "Exception");
-                }
-            });
+                    @Override
+                    public void onResult(SendResult result)
+                    {
+                        Throwable failure = result.getException();
+                        if (failure != null)
+                            fail(failure, "Exception");
+                    }
+                });
+            }
+            else
+            {
+                fail(new IOException("Unconnected"), "Unconnected");
+            }
         }
 
         @Override
-        protected void close(String reason)
+        protected void shutdown(String reason)
         {
-            Session session = _session;
-            if (session != null && session.isOpen())
+            Session session;
+            synchronized (this)
+            {
+                session = _session;
+                close();
+            }
+            if (session != null)
             {
                 logger.debug("Closing ({}) websocket session {}", reason, session);
                 try
@@ -179,6 +199,23 @@ public class WebSocketTransport extends AbstractWebSocketTransport
                 {
                     logger.trace("Could not close websocket session " + session, x);
                 }
+            }
+        }
+
+        @Override
+        protected boolean isOpen()
+        {
+            synchronized (this)
+            {
+                return _session != null;
+            }
+        }
+
+        protected void close()
+        {
+            synchronized (this)
+            {
+                _session = null;
             }
         }
 

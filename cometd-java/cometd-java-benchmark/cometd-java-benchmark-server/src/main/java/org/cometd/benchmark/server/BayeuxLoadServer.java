@@ -328,21 +328,25 @@ public class BayeuxLoadServer
 
                     if (jettyThreadPool != null)
                     {
-                        System.err.printf("Jetty Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+                        System.err.printf("Jetty Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms | Task Latency avg/max = %d/%d ms%n",
                                 jettyThreadPool.getTasks(),
                                 jettyThreadPool.getMaxActiveThreads(),
                                 jettyThreadPool.getMaxQueueSize(),
                                 TimeUnit.NANOSECONDS.toMillis(jettyThreadPool.getAverageQueueLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(jettyThreadPool.getMaxQueueLatency()));
+                                TimeUnit.NANOSECONDS.toMillis(jettyThreadPool.getMaxQueueLatency()),
+                                TimeUnit.NANOSECONDS.toMillis(jettyThreadPool.getAverageTaskLatency()),
+                                TimeUnit.NANOSECONDS.toMillis(jettyThreadPool.getMaxTaskLatency()));
                     }
                     if (websocketThreadPool != null)
                     {
-                        System.err.printf("WebSocket Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+                        System.err.printf("WebSocket Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms | Task Latency avg/max = %d/%d ms%n",
                                 websocketThreadPool.getTasks(),
                                 websocketThreadPool.getMaxActiveThreads(),
                                 websocketThreadPool.getMaxQueueSize(),
                                 TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getAverageQueueLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getMaxQueueLatency()));
+                                TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getMaxQueueLatency()),
+                                TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getAverageTaskLatency()),
+                                TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getMaxTaskLatency()));
                     }
                 }
             }

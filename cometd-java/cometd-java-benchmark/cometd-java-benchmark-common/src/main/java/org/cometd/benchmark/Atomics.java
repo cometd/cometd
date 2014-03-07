@@ -67,9 +67,21 @@ public class Atomics
 
     public static <T> int decrement(AtomicStampedReference<T> reference)
     {
-        int oldCount = reference.getStamp();
-        while (!reference.attemptStamp(reference.getReference(), oldCount - 1))
-            oldCount = reference.getStamp();
-        return oldCount - 1;
+        int oldStamp = reference.getStamp();
+        while (!reference.attemptStamp(reference.getReference(), oldStamp - 1))
+            oldStamp = reference.getStamp();
+        return oldStamp - 1;
+    }
+
+    public static <T> boolean updateMax(AtomicStampedReference<T> reference, T value, int stamp)
+    {
+        int oldStamp = reference.getStamp();
+        while (stamp > oldStamp)
+        {
+            if (reference.compareAndSet(reference.getReference(), value, oldStamp, stamp))
+                return true;
+            oldStamp = reference.getStamp();
+        }
+        return false;
     }
 }

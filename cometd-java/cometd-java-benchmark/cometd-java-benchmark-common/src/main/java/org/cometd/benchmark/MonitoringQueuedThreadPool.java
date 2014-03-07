@@ -25,11 +25,13 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 public class MonitoringQueuedThreadPool extends QueuedThreadPool
 {
     private final AtomicLong tasks = new AtomicLong();
-    private final AtomicLong maxLatency = new AtomicLong();
-    private final AtomicLong totalLatency = new AtomicLong();
+    private final AtomicLong maxTaskLatency = new AtomicLong();
+    private final AtomicLong totalTaskLatency = new AtomicLong();
+    private final MonitoringBlockingArrayQueue queue;
+    private final AtomicLong maxQueueLatency = new AtomicLong();
+    private final AtomicLong totalQueueLatency = new AtomicLong();
     private final AtomicInteger threads = new AtomicInteger();
     private final AtomicInteger maxThreads = new AtomicInteger();
-    private final MonitoringBlockingArrayQueue queue;
 
     public MonitoringQueuedThreadPool(int maxThreads)
     {
@@ -47,18 +49,22 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
         {
             public void run()
             {
-                long latency = System.nanoTime() - begin;
-                Atomics.updateMax(maxLatency, latency);
-                totalLatency.addAndGet(latency);
+                long queueLatency = System.nanoTime() - begin;
                 tasks.incrementAndGet();
+                Atomics.updateMax(maxQueueLatency, queueLatency);
+                totalQueueLatency.addAndGet(queueLatency);
                 Atomics.updateMax(maxThreads, threads.incrementAndGet());
+                long start = System.nanoTime();
                 try
                 {
                     job.run();
                 }
                 finally
                 {
+                    long taskLatency = System.nanoTime() - start;
                     threads.decrementAndGet();
+                    Atomics.updateMax(maxTaskLatency, taskLatency);
+                    totalTaskLatency.addAndGet(taskLatency);
                 }
             }
         });
@@ -66,10 +72,12 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
 
     public void reset()
     {
-        queue.reset();
         tasks.set(0);
-        maxLatency.set(0);
-        totalLatency.set(0);
+        maxTaskLatency.set(0);
+        totalTaskLatency.set(0);
+        queue.reset();
+        maxQueueLatency.set(0);
+        totalQueueLatency.set(0);
         threads.set(0);
         maxThreads.set(0);
     }
@@ -92,12 +100,23 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
     public long getAverageQueueLatency()
     {
         long count = tasks.get();
-        return count == 0 ? -1 : totalLatency.get() / count;
+        return count == 0 ? -1 : totalQueueLatency.get() / count;
     }
 
     public long getMaxQueueLatency()
     {
-        return maxLatency.get();
+        return maxQueueLatency.get();
+    }
+
+    public long getMaxTaskLatency()
+    {
+        return maxTaskLatency.get();
+    }
+
+    public long getAverageTaskLatency()
+    {
+        long count = tasks.get();
+        return count == 0 ? -1 : totalTaskLatency.get() / count;
     }
 
     public static class MonitoringBlockingArrayQueue extends BlockingArrayQueue<Runnable>
