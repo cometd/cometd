@@ -906,7 +906,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         Arrays.fill(data, 'x');
         channel.publish(new String(data));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(20, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

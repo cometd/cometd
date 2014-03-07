@@ -99,7 +99,7 @@ public class OortMulticastConfigurerTest extends OortTest
         startConfigurer(oort2, groupPort);
 
         // Give some time to advertise
-        Thread.sleep(1000);
+        Thread.sleep(2000);
 
         Assert.assertEquals(1, oort1.getKnownComets().size());
         Assert.assertEquals(1, oort2.getKnownComets().size());
@@ -118,7 +118,7 @@ public class OortMulticastConfigurerTest extends OortTest
         final OortMulticastConfigurer configurer2 = startConfigurer(oort2, groupPort);
 
         // Give some time to advertise
-        Thread.sleep(1000);
+        Thread.sleep(2000);
 
         Assert.assertEquals(1, oort1.getKnownComets().size());
         Assert.assertEquals(1, oort2.getKnownComets().size());
@@ -129,7 +129,7 @@ public class OortMulticastConfigurerTest extends OortTest
         startConfigurer(oort3, groupPort);
 
         // Give some time to advertise
-        Thread.sleep(1000);
+        Thread.sleep(2000);
 
         Assert.assertEquals(2, oort1.getKnownComets().size());
         Assert.assertEquals(2, oort2.getKnownComets().size());
@@ -140,7 +140,7 @@ public class OortMulticastConfigurerTest extends OortTest
         stopServer(server2);
 
         // Give some time to advertise
-        Thread.sleep(1000);
+        Thread.sleep(2000);
 
         Assert.assertEquals(1, oort1.getKnownComets().size());
         Assert.assertEquals(oort3.getURL(), oort1.getKnownComets().iterator().next());
@@ -151,7 +151,7 @@ public class OortMulticastConfigurerTest extends OortTest
     @Test
     public void testTwoCometsOneWithWrongURL() throws Exception
     {
-        long connectTimeout = 1000;
+        long connectTimeout = 2000;
 
         Server serverA = startServer(0);
         int groupPort = serverA.getConnectors()[0].getLocalPort();

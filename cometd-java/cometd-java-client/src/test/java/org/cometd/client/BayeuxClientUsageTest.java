@@ -158,14 +158,14 @@ public class BayeuxClientUsageTest extends ClientServerTest
 
         client.handshake();
 
-        Message message = metaMessages.poll(1, TimeUnit.SECONDS);
+        Message message = metaMessages.poll(5, TimeUnit.SECONDS);
         Assert.assertNotNull(message);
         Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
         Assert.assertTrue(message.isSuccessful());
         String id = client.getId();
         Assert.assertNotNull(id);
 
-        message = metaMessages.poll(1, TimeUnit.SECONDS);
+        message = metaMessages.poll(5, TimeUnit.SECONDS);
         Assert.assertEquals(Channel.META_CONNECT, message.getChannel());
         Assert.assertTrue(message.isSuccessful());
 
@@ -180,17 +180,17 @@ public class BayeuxClientUsageTest extends ClientServerTest
         ClientSessionChannel aChannel = client.getChannel("/a/channel");
         aChannel.subscribe(subscriber);
 
-        message = metaMessages.poll(1, TimeUnit.SECONDS);
+        message = metaMessages.poll(5, TimeUnit.SECONDS);
         Assert.assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
         Assert.assertTrue(message.isSuccessful());
 
         String data = "data";
         aChannel.publish(data);
-        message = messages.poll(1, TimeUnit.SECONDS);
+        message = messages.poll(5, TimeUnit.SECONDS);
         Assert.assertEquals(data, message.getData());
 
         aChannel.unsubscribe(subscriber);
-        message = metaMessages.poll(1, TimeUnit.SECONDS);
+        message = metaMessages.poll(5, TimeUnit.SECONDS);
         Assert.assertEquals(Channel.META_UNSUBSCRIBE, message.getChannel());
         Assert.assertTrue(message.isSuccessful());
 
