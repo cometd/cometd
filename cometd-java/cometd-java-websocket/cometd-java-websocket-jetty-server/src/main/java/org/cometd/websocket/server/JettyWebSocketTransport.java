@@ -134,7 +134,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         return true;
     }
 
-    protected void send(final Session wsSession, final ServerSession session, String data)
+    protected void send(final Session wsSession, final ServerSession session, String data, final SendCallback callback)
     {
         _logger.debug("Sending {}", data);
 
@@ -169,12 +169,16 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
             @Override
             public void writeSuccess()
             {
+                if (callback != null)
+                    callback.onResult(null);
             }
 
             @Override
             public void writeFailed(Throwable x)
             {
                 handleException(wsSession, session, x);
+                if (callback != null)
+                    callback.onResult(x);
             }
         });
     }

@@ -145,10 +145,15 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         _logger.debug("", exception);
     }
 
-    protected abstract void send(S wsSession, ServerSession session, String data);
+    protected abstract void send(S wsSession, ServerSession session, String data, SendCallback callback);
 
     protected void onClose(int code, String reason)
     {
+    }
+
+    protected interface SendCallback
+    {
+        public void onResult(Throwable failure);
     }
 
     protected abstract class AbstractWebSocketScheduler implements AbstractServerTransport.Scheduler, Runnable
@@ -165,7 +170,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             _context = context;
         }
 
-        protected void send(S wsSession, List<ServerMessage> messages)
+        protected void send(S wsSession, List<ServerMessage> messages, SendCallback callback)
         {
             // Under load, it is possible that we have many bayeux messages and
             // that these would generate a large websocket message that the client
@@ -174,10 +179,10 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             int count = messages.size();
             int messagesPerFrame = getMessagesPerFrame();
             int batchSize = messagesPerFrame > 0 ? Math.min(messagesPerFrame, count) : count;
-            send(wsSession, messages, batchSize);
+            send(wsSession, messages, batchSize, callback);
         }
 
-        protected void send(S wsSession, List<ServerMessage> messages, int batchSize)
+        protected void send(S wsSession, List<ServerMessage> messages, int batchSize, SendCallback callback)
         {
             if (messages.isEmpty())
                 return;
@@ -206,7 +211,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 }
                 builder.append("]");
                 index += batch;
-                AbstractWebSocketTransport.this.send(wsSession, _session, builder.toString());
+                AbstractWebSocketTransport.this.send(wsSession, _session, builder.toString(), callback);
             }
         }
 
@@ -401,23 +406,29 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             return reply;
         }
 
-        protected void flush(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, ServerMessage[] replies)
+        protected void flush(final S wsSession, final ServerSessionImpl session, final boolean startInterval, List<ServerMessage> queue, final ServerMessage[] replies)
         {
-            try
+            if (queue != null)
             {
-                if (queue != null)
-                    send(wsSession, queue);
-            }
-            finally
-            {
-                // Start the interval timeout after writing the messages
-                // since they may take time to be written, even in case
-                // of exceptions to make sure the session can be swept.
-                if (startInterval && session != null && session.isConnected())
-                    session.startIntervalTimeout(getInterval());
-            }
+                send(wsSession, queue, new SendCallback()
+                {
+                    public void onResult(Throwable failure)
+                    {
+                        // Start the interval timeout after writing the messages
+                        // since they may take time to be written, even in case
+                        // of exceptions to make sure the session can be swept.
+                        if (startInterval && session != null && session.isConnected())
+                            session.startIntervalTimeout(getInterval());
 
-            send(wsSession, Arrays.asList(replies), replies.length);
+                        if (failure == null)
+                            send(wsSession, Arrays.asList(replies), replies.length, null);
+                    }
+                });
+            }
+            else
+            {
+                send(wsSession, Arrays.asList(replies), replies.length, null);
+            }
         }
 
         protected abstract void close(int code, String reason);

@@ -127,7 +127,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     {
     }
 
-    protected void send(final Session wsSession, final ServerSession session, String data)
+    protected void send(final Session wsSession, final ServerSession session, String data, final SendCallback callback)
     {
         // This method may be called concurrently.
         // The WebSocket specification specifically forbids concurrent calls in case of
@@ -145,6 +145,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
                 Throwable failure = result.getException();
                 if (failure != null)
                     handleException(wsSession, session, failure);
+                if (callback != null)
+                    callback.onResult(failure);
             }
         });
     }
