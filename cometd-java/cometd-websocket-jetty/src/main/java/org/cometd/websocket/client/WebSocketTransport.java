@@ -316,34 +316,32 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     protected class Delegate implements WebSocket.OnTextMessage
     {
         private final Map<String, WebSocketExchange> _exchanges = new ConcurrentHashMap<String, WebSocketExchange>();
-        private volatile Connection _connection;
-        private volatile boolean _aborted;
+        private Connection _connection;
         private volatile boolean _connected;
         private volatile boolean _disconnected;
         private volatile Map<String, Object> _advice;
 
         public void onOpen(Connection connection)
         {
-            _connection = connection;
+            setConnection(connection);
             debug("Opened websocket connection {}", connection);
         }
 
         public void onClose(int closeCode, String message)
         {
-            boolean proceed = false;
-            synchronized (WebSocketTransport.this)
-            {
-                if (this == _delegate)
-                {
-                    _delegate = null;
-                    proceed = true;
-                }
-            }
-
-            if (proceed)
+            if (detach())
             {
                 debug("Closed websocket connection with code {} {}: {} ", closeCode, message, _connection);
+                setConnection(null);
                 failMessages(new EOFException("Connection closed " + closeCode + " " + message));
+            }
+        }
+
+        private void setConnection(Connection connection)
+        {
+            synchronized (this)
+            {
+                _connection = connection;
             }
         }
 
@@ -352,13 +350,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             try
             {
                 List<Mutable> messages = parseMessages(data);
-
-                boolean proceed;
-                synchronized (WebSocketTransport.this)
-                {
-                    proceed = this == _delegate;
-                }
-                if (proceed)
+                if (isAttached())
                 {
                     debug("Received messages {}", data);
                     onMessages(messages);
@@ -422,17 +414,18 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         private void registerMessages(TransportListener listener, Mutable[] messages)
         {
-            boolean aborted;
+            boolean active;
             synchronized (this)
             {
-                aborted = _aborted;
-                if (!aborted)
+                // Check whether it is active and register messages atomically.
+                active = _connection != null;
+                if (active)
                 {
                     for (Mutable message : messages)
                         registerMessage(message, listener);
                 }
             }
-            if (aborted)
+            if (!active)
                 listener.onException(new IOException("Aborted"), messages);
         }
 
@@ -514,12 +507,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         private void failMessages(Throwable cause)
         {
-            List<WebSocketExchange> exchanges;
-            synchronized (this)
-            {
-                exchanges = new ArrayList<WebSocketExchange>(_exchanges.values());
-            }
-            for (WebSocketExchange exchange : exchanges)
+            for (WebSocketExchange exchange : new ArrayList<WebSocketExchange>(_exchanges.values()))
             {
                 Mutable message = exchange.message;
                 if (deregisterMessage(message) == exchange)
@@ -529,32 +517,42 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         public void abort()
         {
-            boolean aborted;
-            synchronized (this)
-            {
-                aborted = !_aborted;
-                _aborted = true;
-            }
-            if (aborted)
-                fail(new IOException("Aborted"), "Aborted");
+            fail(new IOException("Aborted"), "Aborted");
         }
 
         private void disconnect(String reason)
         {
-            boolean close;
+            if (detach())
+                close(reason);
+        }
+
+        private boolean isAttached()
+        {
             synchronized (WebSocketTransport.this)
             {
-                close = this == _delegate;
-                if (close)
-                    _delegate = null;
+                return this == _delegate;
             }
-            if (close)
-                close(reason);
+        }
+
+        private boolean detach()
+        {
+            synchronized (WebSocketTransport.this)
+            {
+                boolean attached = this == _delegate;
+                if (attached)
+                    _delegate = null;
+                return attached;
+            }
         }
 
         private void close(String reason)
         {
-            Connection connection = _connection;
+            Connection connection;
+            synchronized (this)
+            {
+                connection = _connection;
+                setConnection(null);
+            }
             if (connection != null && connection.isOpen())
             {
                 debug("Closing ({}) websocket connection {}", reason, connection);
