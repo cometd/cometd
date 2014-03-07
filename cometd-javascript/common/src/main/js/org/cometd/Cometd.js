@@ -540,7 +540,8 @@ org.cometd.Cometd = function(name)
             {
                 try
                 {
-                    failure.connectionType = _cometd.getTransport().getType();
+                    var transport = _cometd.getTransport();
+                    failure.connectionType = transport ? transport.getType() : "unknown";
                     _handleFailure.call(_cometd, conduit, messages, failure);
                 }
                 catch (x)
@@ -675,7 +676,7 @@ org.cometd.Cometd = function(name)
     function _disconnect(abort)
     {
         _cancelDelayedSend();
-        if (abort)
+        if (abort && _transport)
         {
             _transport.abort();
         }
