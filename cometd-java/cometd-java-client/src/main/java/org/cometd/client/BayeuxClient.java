@@ -557,7 +557,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 final Map<String, Object> advice = message.getAdvice();
-                if (advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)))
+                if (!message.isSuccessful() ||
+                        advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)))
                     latch.countDown();
             }
         };
