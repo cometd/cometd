@@ -36,8 +36,6 @@ import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.MessageHandler;
-import javax.websocket.SendHandler;
-import javax.websocket.SendResult;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
@@ -160,22 +158,18 @@ public class WebSocketTransport extends AbstractWebSocketTransport
             {
                 session = _session;
             }
-            if (session != null)
+            try
             {
-                session.getAsyncRemote().sendText(content, new SendHandler()
-                {
-                    @Override
-                    public void onResult(SendResult result)
-                    {
-                        Throwable failure = result.getException();
-                        if (failure != null)
-                            fail(failure, "Exception");
-                    }
-                });
+                if (session == null)
+                    throw new IOException("Unconnected");
+
+                // Blocking sends for the client, using
+                // AsyncRemote to allow concurrent sends.
+                session.getAsyncRemote().sendText(content).get();
             }
-            else
+            catch (Throwable x)
             {
-                fail(new IOException("Unconnected"), "Unconnected");
+                fail(x, "Exception");
             }
         }
 

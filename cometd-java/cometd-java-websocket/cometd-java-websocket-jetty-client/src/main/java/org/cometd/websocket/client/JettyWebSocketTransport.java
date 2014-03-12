@@ -202,14 +202,11 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
             }
             try
             {
-                if (session != null)
-                {
-                   session.getRemote().sendStringByFuture(content).get();
-                }
-                else
-                {
-                    fail(new IOException("Unconnected"), "Unconnected");
-                }
+                if (session == null)
+                    throw new IOException("Unconnected");
+
+                // Blocking async sends for the client to allow concurrent sends.
+               session.getRemote().sendStringByFuture(content).get();
             }
             catch (Throwable x)
             {
