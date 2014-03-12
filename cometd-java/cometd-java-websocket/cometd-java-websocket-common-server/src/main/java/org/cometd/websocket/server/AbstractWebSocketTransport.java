@@ -185,7 +185,11 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         protected void send(S wsSession, List<ServerMessage> messages, int batchSize, SendCallback callback)
         {
             if (messages.isEmpty())
+            {
+                if (callback != null)
+                    callback.onResult(null);
                 return;
+            }
 
             int count = messages.size();
             // Assume 4 fields of 32 chars per message
@@ -408,6 +412,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
         protected void flush(final S wsSession, final ServerSessionImpl session, final boolean startInterval, List<ServerMessage> queue, final ServerMessage[] replies)
         {
+            if (_logger.isDebugEnabled())
+                _logger.debug("Flushing {}, replies={}, messages={}", session, Arrays.asList(replies), queue);
+
             if (queue != null)
             {
                 send(wsSession, queue, new SendCallback()
@@ -422,6 +429,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
                         if (failure == null)
                             send(wsSession, Arrays.asList(replies), replies.length, null);
+                        else
+                            handleException(wsSession, session, failure);
                     }
                 });
             }
@@ -452,7 +461,14 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             // is skipped and the queue may remain full; to avoid this situation,
             // we reschedule at the end of schedule(boolean, ServerMessage.Mutable).
             if (_scheduling.compareAndSet(false, true))
+            {
+                _logger.debug("Performing scheduling of {}", this);
                 _executor.execute(this);
+            }
+            else
+            {
+                _logger.debug("Skipping scheduling of {}", this);
+            }
         }
 
         public void run()
@@ -542,7 +558,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 if (!timeout)
                     _scheduling.compareAndSet(true, false);
 
-                if (reschedule && session.hasNonLazyMessages())
+                boolean hasMessages = session != null && session.hasNonLazyMessages();
+                _logger.debug("Rescheduling = {}, has messages = {}", reschedule, hasMessages);
+                if (reschedule && hasMessages)
                     schedule();
             }
         }
