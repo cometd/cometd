@@ -46,6 +46,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 public class WebSocketTransport extends AbstractWebSocketTransport<Session>
@@ -127,7 +128,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     {
     }
 
-    protected void send(final Session wsSession, final ServerSession session, String data, final SendCallback callback)
+    protected void send(final Session wsSession, final ServerSession session, String data, final Callback callback)
     {
         // This method may be called concurrently.
         // The WebSocket specification specifically forbids concurrent calls in case of
@@ -143,15 +144,20 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             public void onResult(SendResult result)
             {
                 Throwable failure = result.getException();
-                if (failure != null)
+                if (failure == null)
+                {
+                    callback.succeeded();
+                }
+                else
+                {
                     handleException(wsSession, session, failure);
-                if (callback != null)
-                    callback.onResult(failure);
+                    callback.failed(failure);
+                }
             }
         });
     }
 
-    private class WebSocketScheduler extends Endpoint implements AbstractServerTransport.Scheduler, Runnable, MessageHandler.Whole<String>
+    private class WebSocketScheduler extends Endpoint implements AbstractServerTransport.Scheduler, MessageHandler.Whole<String>
     {
         private final AbstractWebSocketScheduler delegate;
         private volatile Session _wsSession;
@@ -161,9 +167,12 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             delegate = new AbstractWebSocketScheduler(context)
             {
                 @Override
-                protected void flush(Session wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, ServerMessage[] replies)
+                protected void send(final Session wsSession, final ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage> replies)
                 {
-                    super.flush(wsSession, session, startInterval, queue, replies);
+                    // TODO: if we are batching writes, we should send the queue and the replies
+                    // TODO: using blocking API, and then call flushBatch() which is also blocking.
+                    // TODO: The code below will work in Jetty, but who knows in other implementations.
+                    super.send(wsSession, session, startInterval, queue, replies);
                     flushBatchedWrites(wsSession, session);
                 }
 
@@ -172,7 +181,10 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
                     try
                     {
                         if (_batchWrites)
+                        {
+                            _logger.debug("Flushing batched messages for {}", session);
                             wsSession.getAsyncRemote().flushBatch();
+                        }
                     }
                     catch (IOException x)
                     {
@@ -243,12 +255,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         public void schedule()
         {
             delegate.schedule();
-        }
-
-        @Override
-        public void run()
-        {
-            delegate.run();
         }
 
         @Override

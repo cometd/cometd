@@ -16,15 +16,16 @@
 package org.cometd.websocket.server;
 
 import java.text.ParseException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -34,6 +35,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ConcurrentArrayQueue;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,8 +52,6 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
     public static final String COMETD_URL_MAPPING = "cometdURLMapping";
-
-    private static final ServerMessage[] EMPTY_MESSAGES = new ServerMessage[0];
 
     private final ThreadLocal<BayeuxContext> _bayeuxContext = new ThreadLocal<>();
     private Executor _executor;
@@ -145,21 +147,16 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         _logger.debug("", exception);
     }
 
-    protected abstract void send(S wsSession, ServerSession session, String data, SendCallback callback);
+    protected abstract void send(S wsSession, ServerSession session, String data, Callback callback);
 
     protected void onClose(int code, String reason)
     {
     }
 
-    protected interface SendCallback
-    {
-        public void onResult(Throwable failure);
-    }
-
-    protected abstract class AbstractWebSocketScheduler implements AbstractServerTransport.Scheduler, Runnable
+    protected abstract class AbstractWebSocketScheduler implements AbstractServerTransport.Scheduler
     {
         protected final Logger _logger = LoggerFactory.getLogger(getClass().getName() + "." + Integer.toHexString(System.identityHashCode(this)));
-        private final AtomicBoolean _scheduling = new AtomicBoolean();
+        private final Flusher flusher = new Flusher();
         private final BayeuxContext _context;
         private volatile ServerSessionImpl _session;
         private ServerMessage.Mutable _connectReply;
@@ -170,53 +167,44 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             _context = context;
         }
 
-        protected void send(S wsSession, List<ServerMessage> messages, SendCallback callback)
-        {
-            // Under load, it is possible that we have many bayeux messages and
-            // that these would generate a large websocket message that the client
-            // could not handle, so we need to split the messages into batches.
-
-            int count = messages.size();
-            int messagesPerFrame = getMessagesPerFrame();
-            int batchSize = messagesPerFrame > 0 ? Math.min(messagesPerFrame, count) : count;
-            send(wsSession, messages, batchSize, callback);
-        }
-
-        protected void send(S wsSession, List<ServerMessage> messages, int batchSize, SendCallback callback)
+        protected void send(S wsSession, List<ServerMessage> messages, int batchSize, Callback callback)
         {
             if (messages.isEmpty())
             {
-                if (callback != null)
-                    callback.onResult(null);
+                callback.succeeded();
                 return;
             }
 
-            int count = messages.size();
-            // Assume 4 fields of 32 chars per message
-            int capacity = batchSize * 4 * 32;
+            int size = messages.size();
+            int batch = Math.min(batchSize, size);
+            // Assume 4 fields of 48 chars per message
+            int capacity = batch * 4 * 48;
             StringBuilder builder = new StringBuilder(capacity);
-
-            int index = 0;
-            while (index < count)
+            builder.append("[");
+            if (batch == 1)
             {
-                builder.setLength(0);
-                builder.append("[");
-                int batch = Math.min(batchSize, count - index);
+                // Common path.
+                ServerMessage serverMessage = messages.remove(0);
+                builder.append(serverMessage.getJSON());
+            }
+            else
+            {
                 boolean comma = false;
                 for (int b = 0; b < batch; ++b)
                 {
-                    ServerMessage serverMessage = messages.get(index + b);
-                    if (serverMessage == null)
-                        continue;
+                    ServerMessage serverMessage = messages.get(b);
                     if (comma)
                         builder.append(",");
                     comma = true;
                     builder.append(serverMessage.getJSON());
                 }
-                builder.append("]");
-                index += batch;
-                AbstractWebSocketTransport.this.send(wsSession, _session, builder.toString(), callback);
+                if (batch == size)
+                    messages.clear();
+                else
+                    messages.subList(0, batch).clear();
             }
+            builder.append("]");
+            AbstractWebSocketTransport.this.send(wsSession, _session, builder.toString(), callback);
         }
 
         protected void onClose(int code, String reason)
@@ -286,10 +274,10 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
             boolean startInterval = false;
             boolean suspended = false;
-            List<ServerMessage> queue = null;
-            for (int i = 0; i < messages.length; ++i)
+            List<ServerMessage> queue = Collections.emptyList();
+            List<ServerMessage> replies = new ArrayList<>(messages.length);
+            for (ServerMessage.Mutable message : messages)
             {
-                ServerMessage.Mutable message = messages[i];
                 _logger.debug("Processing {}", message);
 
                 // Get the session from the message
@@ -308,13 +296,13 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         ServerMessage.Mutable reply = processMetaHandshake(session, message);
                         if (reply != null)
                             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-                        messages[i] = processReply(session, reply);
+                        replies.add(processReply(session, reply));
                         break;
                     }
                     case Channel.META_CONNECT:
                     {
                         ServerMessage.Mutable reply = processMetaConnect(session, message);
-                        messages[i] = processReply(session, reply);
+                        replies.add(processReply(session, reply));
                         startInterval = reply != null;
                         suspended = reply == null && messages.length == 1;
                         if (reply != null && session != null)
@@ -327,14 +315,14 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     default:
                     {
                         ServerMessage.Mutable reply = getBayeux().handle(session, message);
-                        messages[i] = processReply(session, reply);
+                        replies.add(processReply(session, reply));
                         break;
                     }
                 }
             }
 
             if (!suspended)
-                flush(wsSession, session, startInterval, queue, messages);
+                send(wsSession, session, startInterval, queue, replies);
         }
 
         private ServerMessage.Mutable processMetaHandshake(ServerSessionImpl session, ServerMessage.Mutable message)
@@ -410,38 +398,16 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             return reply;
         }
 
-        protected void flush(final S wsSession, final ServerSessionImpl session, final boolean startInterval, List<ServerMessage> queue, final ServerMessage[] replies)
+        protected void send(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage> replies)
         {
-            if (_logger.isDebugEnabled())
-                _logger.debug("Flushing {}, replies={}, messages={}", session, Arrays.asList(replies), queue);
-
-            if (queue != null)
-            {
-                send(wsSession, queue, new SendCallback()
-                {
-                    public void onResult(Throwable failure)
-                    {
-                        // Start the interval timeout after writing the messages
-                        // since they may take time to be written, even in case
-                        // of exceptions to make sure the session can be swept.
-                        if (startInterval && session != null && session.isConnected())
-                            session.startIntervalTimeout(getInterval());
-
-                        if (failure == null)
-                            send(wsSession, Arrays.asList(replies), replies.length, null);
-                        else
-                            handleException(wsSession, session, failure);
-                    }
-                });
-            }
-            else
-            {
-                send(wsSession, Arrays.asList(replies), replies.length, null);
-            }
+            _logger.debug("Sending {}, replies={}, messages={}", session, replies, queue);
+            flusher.queue(new Entry<>(wsSession, session, startInterval, queue, replies));
+            flusher.iterate();
         }
 
         protected abstract void close(int code, String reason);
 
+        @Override
         public void cancel()
         {
             final ServerSessionImpl session = _session;
@@ -452,27 +418,11 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
         }
 
+        @Override
         public void schedule()
         {
-            // This method may be called concurrently, for example when 2 clients
-            // publish concurrently on the same channel.
-            // We must avoid to dispatch multiple times, to save threads.
-            // However, the CAS operation introduces a window where a schedule()
-            // is skipped and the queue may remain full; to avoid this situation,
-            // we reschedule at the end of schedule(boolean, ServerMessage.Mutable).
-            if (_scheduling.compareAndSet(false, true))
-            {
-                _logger.debug("Performing scheduling of {}", this);
-                _executor.execute(this);
-            }
-            else
-            {
-                _logger.debug("Skipping scheduling of {}", this);
-            }
-        }
-
-        public void run()
-        {
+            // This method may be called concurrently, for example when
+            // two clients publish concurrently on the same channel.
             schedule(false, null);
         }
 
@@ -480,10 +430,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
         protected void schedule(S wsSession, boolean timeout, ServerMessage.Mutable expiredConnectReply)
         {
-            // This method may be executed concurrently by a thread triggered by
+            // This method may be executed concurrently by threads triggered by
             // schedule() and by the timeout thread that replies to the meta connect.
 
-            boolean reschedule = false;
             ServerSessionImpl session = _session;
             try
             {
@@ -534,34 +483,25 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     }
                 }
 
-                ServerMessage[] replies = EMPTY_MESSAGES;
+                List<ServerMessage> replies = Collections.emptyList();
                 if (reply)
                 {
                     if (session.isDisconnected())
                         connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                     connectReply = processReply(session, connectReply);
-                    replies = new ServerMessage[]{connectReply};
+                    replies = new ArrayList<>(1);
+                    replies.add(connectReply);
                 }
 
-                reschedule = true;
                 List<ServerMessage> queue = session.takeQueue();
 
                 _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, connectReply, queue);
-                flush(wsSession, session, reply, queue, replies);
+                send(wsSession, session, reply, queue, replies);
             }
             catch (Throwable x)
             {
+                // TODO: close connection ? or it's already closed ?
                 handleException(wsSession, session, x);
-            }
-            finally
-            {
-                if (!timeout)
-                    _scheduling.compareAndSet(true, false);
-
-                boolean hasMessages = session != null && session.hasNonLazyMessages();
-                _logger.debug("Rescheduling = {}, has messages = {}", reschedule, hasMessages);
-                if (reschedule && hasMessages)
-                    schedule();
             }
         }
 
@@ -576,6 +516,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 this._connectExpiration = connectExpiration;
             }
 
+            @Override
             public void run()
             {
                 long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
@@ -588,6 +529,95 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 // the client will timeout the meta connect, so we
                 // do not care about flipping the _scheduling field.
                 schedule(true, _connectReply);
+            }
+        }
+
+        private class Flusher extends IteratingCallback
+        {
+            private Queue<Entry<S>> _entries = new ConcurrentArrayQueue<>();
+
+            private boolean queue(Entry<S> entry)
+            {
+                return _entries.offer(entry);
+            }
+
+            @Override
+            protected Action process() throws Exception
+            {
+                Entry<S> entry = _entries.peek();
+                _logger.debug("Processing {}", entry);
+
+                if (entry == null)
+                    return Action.IDLE;
+
+                S wsSession = entry._wsSession;
+
+                List<ServerMessage> queue = entry._queue;
+                if (!queue.isEmpty())
+                {
+                    // Under load, it is possible that we have many bayeux messages and
+                    // that these would generate a large websocket message that the client
+                    // could not handle, so we need to split the messages into batches.
+                    int size = queue.size();
+                    int messagesPerFrame = getMessagesPerFrame();
+                    int batchSize = messagesPerFrame > 0 ? Math.min(messagesPerFrame, size) : size;
+                    if (_logger.isDebugEnabled())
+                        _logger.debug("Processing queue, batch size {}: {}", batchSize, queue);
+                    send(wsSession, queue, batchSize, this);
+                    return Action.SCHEDULED;
+                }
+
+                _entries.poll();
+
+                // Start the interval timeout after writing the messages
+                // since they may take time to be written, even in case
+                // of exceptions to make sure the session can be swept.
+                if (entry._startInterval)
+                {
+                    ServerSessionImpl session = entry._session;
+                    if (session != null)
+                        session.startIntervalTimeout(getInterval());
+                }
+
+                List<ServerMessage> replies = entry._replies;
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Processing replies {}", replies);
+                send(wsSession, replies, replies.size(), this);
+                return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void completed()
+            {
+                // This IteratingCallback never completes.
+            }
+        }
+
+        private class Entry<S>
+        {
+            private final S _wsSession;
+            private final ServerSessionImpl _session;
+            private final boolean _startInterval;
+            private final List<ServerMessage> _queue;
+            private final List<ServerMessage> _replies;
+
+            private Entry(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage> replies)
+            {
+                this._wsSession = wsSession;
+                this._session = session;
+                this._startInterval = startInterval;
+                this._queue = queue;
+                this._replies = replies;
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format("%s@%x[messages=%d,replies=%d]",
+                        getClass().getSimpleName(),
+                        hashCode(),
+                        _queue.size(),
+                        _replies.size());
             }
         }
     }
