@@ -1218,6 +1218,45 @@ public class BayeuxClientTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
+    @Test
+    public void testDeliver() throws Exception
+    {
+        startServer(null);
+
+        BayeuxClient client = newBayeuxClient();
+
+        final String channelName = "/service/deliver";
+        ClientSessionChannel channel = client.getChannel(channelName);
+        final CountDownLatch latch = new CountDownLatch(1);
+        channel.addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (!message.isPublishReply())
+                    latch.countDown();
+            }
+        });
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
+
+        channel.publish("data");
+        Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
+
+        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener()
+        {
+            public boolean onMessage(ServerSession session, ServerChannel channel, Mutable message)
+            {
+                session.deliver(null, channelName, message.getData(), null);
+                return true;
+            }
+        });
+
+        channel.publish("data");
+        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
     private class DumpThread extends Thread
     {
         public void run()
