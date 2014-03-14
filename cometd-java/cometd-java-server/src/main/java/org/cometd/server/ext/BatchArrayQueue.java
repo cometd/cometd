@@ -15,6 +15,8 @@
  */
 package org.cometd.server.ext;
 
+import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 
 import org.eclipse.jetty.util.ArrayQueue;
@@ -47,7 +49,7 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
     @Override
     public boolean add(T t)
     {
-        throw new UnsupportedOperationException();
+        return offer(t);
     }
 
     @Override
@@ -84,13 +86,21 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
     @Override
     public T remove()
     {
-        throw new UnsupportedOperationException();
+        T result = poll();
+        if (result == null)
+            throw new NoSuchElementException();
+        return result;
     }
 
     @Override
     public void clear()
     {
-        throw new UnsupportedOperationException();
+        synchronized (_lock)
+        {
+            super.clear();
+            Arrays.fill(batches, 0);
+            batch = 1;
+        }
     }
 
     @Override
@@ -130,7 +140,7 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
         }
     }
 
-    public void copyToBatch(Queue<T> target, long batch)
+    public void exportMessagesToBatch(Queue<T> target, long batch)
     {
         synchronized (_lock)
         {

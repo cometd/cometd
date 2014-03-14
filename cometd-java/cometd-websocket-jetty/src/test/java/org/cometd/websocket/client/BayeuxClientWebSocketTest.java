@@ -1054,4 +1054,81 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         // the connection is closed, so the /meta/connect is failed on the client side.
         Assert.assertTrue(latch.await(2 * maxNetworkDelay, TimeUnit.MILLISECONDS));
     }
+
+    @Test
+    public void testDeliverDuringHandshakeProcessing() throws Exception
+    {
+        final String channelName = "/service/test";
+        BayeuxClient client = newBayeuxClient();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (!message.isPublishReply())
+                    latch.countDown();
+            }
+        });
+
+        // SessionListener is the first listener notified after the ServerSession is created.
+        bayeux.addListener(new BayeuxServer.SessionListener()
+        {
+            public void sessionAdded(ServerSession session)
+            {
+                session.deliver(null, channelName, "data", null);
+            }
+
+            public void sessionRemoved(ServerSession session, boolean timedout)
+            {
+            }
+        });
+
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testDeliverDuringHandshakeProcessingWithAckExtension() throws Exception
+    {
+        bayeux.addExtension(new AcknowledgedMessagesExtension());
+
+        final String channelName = "/service/test";
+        BayeuxClient client = newBayeuxClient();
+        client.addExtension(new AckExtension());
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (!message.isPublishReply())
+                    latch.countDown();
+            }
+        });
+
+        // SessionListener is the first listener notified after the ServerSession is created.
+        bayeux.addListener(new BayeuxServer.SessionListener()
+        {
+            public void sessionAdded(ServerSession session)
+            {
+                session.deliver(null, channelName, "data", null);
+            }
+
+            public void sessionRemoved(ServerSession session, boolean timedout)
+            {
+            }
+        });
+
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
 }
