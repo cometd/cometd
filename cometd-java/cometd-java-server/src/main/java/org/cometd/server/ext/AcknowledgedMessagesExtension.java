@@ -52,7 +52,15 @@ public class AcknowledgedMessagesExtension extends Extension.Adapter
             {
                 ServerSessionImpl session = (ServerSessionImpl)remote;
                 _logger.debug("Enabled message acknowledgement for session {}", session);
-                session.addExtension(new AcknowledgedMessagesSessionExtension(session));
+
+                AcknowledgedMessagesSessionExtension extension = new AcknowledgedMessagesSessionExtension(session);
+
+                // Make sure that adding the extension and importing the queue is atomic.
+                synchronized (session.getLock())
+                {
+                    session.addExtension(extension);
+                    extension.importMessages(session);
+                }
             }
 
             Map<String, Object> sndExt = message.getExt(true);

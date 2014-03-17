@@ -119,7 +119,15 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
             long batch = _batch.get();
             _logger.debug("Dequeuing {}/{} messages until batch {} for {}", queue.size(), _queue.size(), batch, _session);
             queue.clear();
-            _queue.copyToBatch(queue, batch);
+            _queue.exportMessagesToBatch(queue, batch);
+        }
+    }
+
+    protected void importMessages(ServerSessionImpl session)
+    {
+        synchronized (_session.getLock())
+        {
+            _queue.addAll(session.getQueue());
         }
     }
 }
