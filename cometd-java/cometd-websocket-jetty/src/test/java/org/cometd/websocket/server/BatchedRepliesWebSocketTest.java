@@ -37,6 +37,7 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest
         runServer(null);
 
         final AtomicReference<List<Message.Mutable>> batch = new AtomicReference<List<Message.Mutable>>();
+        final CountDownLatch repliesLatch = new CountDownLatch(1);
         ClientTransport transport = new org.cometd.websocket.client.WebSocketTransport(null, wsFactory, null)
         {
             @Override
@@ -47,9 +48,12 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest
                     @Override
                     protected void onMessages(List<Message.Mutable> messages)
                     {
-                        if (messages.size() > 1)
-                            batch.set(messages);
                         super.onMessages(messages);
+                        if (messages.size() > 1)
+                        {
+                            batch.set(messages);
+                            repliesLatch.countDown();
+                        }
                     }
                 };
             }
@@ -79,6 +83,7 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest
         });
 
         Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(repliesLatch.await(5, TimeUnit.SECONDS));
         List<Message.Mutable> messages = batch.get();
         Assert.assertNotNull(messages);
         // List must contain subscribe reply and message reply
