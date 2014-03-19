@@ -64,14 +64,20 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
 
     public void jsFunction_send(String data) throws IOException
     {
-        log("WebSocket sending data {}", data);
-        connection.sendMessage(data);
+        if (connection != null)
+        {
+            log("WebSocket sending data {}", data);
+            connection.sendMessage(data);
+        }
     }
 
     public void jsFunction_close(int code, String reason)
     {
         if (connection != null)
+        {
             connection.close(code, reason);
+            connection = null;
+        }
     }
 
     public void onOpen(Connection connection)
