@@ -83,8 +83,12 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     {
         try
         {
-            logger.debug("WebSocket sending data {}", data);
-            session.getRemote().sendString(data);
+            Session session = this.session;
+            if (session != null)
+            {
+                logger.debug("WebSocket sending data {}", data);
+                session.getRemote().sendString(data);
+            }
         }
         catch (final Throwable x)
         {
@@ -104,7 +108,10 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     {
         Session session = this.session;
         if (session != null)
+        {
             session.close(code, reason);
+            this.session = null;
+        }
     }
 
     @Override
