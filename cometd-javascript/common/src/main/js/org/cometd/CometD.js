@@ -689,10 +689,11 @@ org.cometd.CometD = function(name)
         // Fail any existing queued message
         if (_messageQueue.length > 0)
         {
-            _handleFailure.call(_cometd, undefined, _messageQueue, {
+            var messages = _messageQueue;
+            _messageQueue = [];
+            _handleFailure.call(_cometd, undefined, messages, {
                 reason: 'Disconnected'
             });
-            _messageQueue = [];
         }
     }
 
