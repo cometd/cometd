@@ -39,13 +39,14 @@ public class AcknowledgedMessagesClientExtension implements Extension, ServerSes
     private final ServerSessionImpl _session;
     private final BatchArrayQueue<ServerMessage> _queue;
     private final ThreadLocal<Long> _batch = new ThreadLocal<Long>();
+    private long _lastBatch = -1;
 
     public AcknowledgedMessagesClientExtension(ServerSession session)
     {
         _session = (ServerSessionImpl)session;
         _session.addListener(this);
         _session.setMetaConnectDeliveryOnly(true);
-        _queue = new BatchArrayQueue<ServerMessage>(16, 32, _session.getLock());
+        _queue = new BatchArrayQueue<ServerMessage>(16, _session.getLock());
     }
 
     public boolean rcv(ServerSession from, Mutable message)
@@ -72,7 +73,9 @@ public class AcknowledgedMessagesClientExtension implements Extension, ServerSes
     {
         synchronized (_session.getLock())
         {
-            _logger.debug("Processing batch: client={}, server={} for {}", batch, _queue.getBatch(), _session);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Processing batch: last={}, client={}, server={} for {}", _lastBatch, batch, _queue.getBatch(), _session);
+            _lastBatch = batch;
             _queue.clearToBatch(batch);
         }
     }
@@ -91,7 +94,8 @@ public class AcknowledgedMessagesClientExtension implements Extension, ServerSes
         synchronized (_session.getLock())
         {
             _queue.offer(message);
-            _logger.debug("Stored {} at batch {} for {}", message, _queue.getBatch(), _session);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Stored at batch {} {} for {}", _queue.getBatch(), message, _session);
         }
     }
 
@@ -104,7 +108,8 @@ public class AcknowledgedMessagesClientExtension implements Extension, ServerSes
                 Map<String, Object> ext = message.getExt(true);
                 long batch = _queue.getBatch();
                 _batch.set(batch);
-                _logger.debug("Sending batch {} for {}", batch, _session);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Sending batch {} for {}", batch, _session);
                 ext.put("ack", batch);
                 _queue.nextBatch();
             }
@@ -117,7 +122,8 @@ public class AcknowledgedMessagesClientExtension implements Extension, ServerSes
         synchronized (_session.getLock())
         {
             long batch = _batch.get();
-            _logger.debug("Dequeuing {}/{} messages until batch {} for {}", queue.size(), _queue.size(), batch, _session);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Dequeuing {}/{} messages until batch {} for {}", queue.size(), _queue.size(), batch, _session);
             queue.clear();
             _queue.exportMessagesToBatch(queue, batch);
         }
