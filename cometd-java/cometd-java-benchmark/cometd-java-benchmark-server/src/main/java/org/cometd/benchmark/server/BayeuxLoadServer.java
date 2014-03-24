@@ -56,6 +56,7 @@ import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.cometd.server.Jackson1JSONContextServer;
+import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.transport.AsyncJSONTransport;
 import org.cometd.server.transport.JSONTransport;
 import org.cometd.websocket.server.JettyWebSocketTransport;
@@ -116,6 +117,7 @@ public class BayeuxLoadServer
         maxThreads = Integer.parseInt(value);
 
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
 
         MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(maxThreads);
         MonitoringThreadPoolExecutor websocketThreadPool = new MonitoringThreadPoolExecutor(maxThreads, jettyThreadPool.getIdleTimeout(), TimeUnit.MILLISECONDS, new ThreadPoolExecutor.AbortPolicy());

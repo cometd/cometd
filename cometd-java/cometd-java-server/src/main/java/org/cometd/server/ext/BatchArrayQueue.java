@@ -26,9 +26,9 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
     private long[] batches;
     private long batch;
 
-    public BatchArrayQueue(int initial, int growBy, Object lock)
+    public BatchArrayQueue(int initial, Object lock)
     {
-        super(initial, growBy, lock);
+        super(initial, initial, lock);
         batches = new long[initial];
         batch = 1;
     }
@@ -38,10 +38,15 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
     {
         synchronized (_lock)
         {
-            int tail = _nextSlot;
             boolean result = super.offer(t);
             if (result)
-                batches[tail] = batch;
+            {
+                // We need to access the old tail to assign the batch to the given element.
+                int newHead = _nextE; // May have changed by super.offer() because of grow().
+                int newSize = _size; // Surely changed by super.offer().
+                int oldTail = (newHead + newSize - 1) % getCapacity();
+                batches[oldTail] = batch;
+            }
             return result;
         }
     }
@@ -49,6 +54,7 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
     @Override
     public boolean add(T t)
     {
+        // This queue is unbounded.
         return offer(t);
     }
 
@@ -147,14 +153,12 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
             if (isEmpty())
                 return;
             int index = 0;
-            while (true)
+            while (index < _size)
             {
                 int cursor = (_nextE + index) % getCapacity();
                 if (batches[cursor] > batch)
                     break;
                 T element = getUnsafe(index);
-                if (element == null)
-                    break;
                 target.offer(element);
                 ++index;
             }
@@ -182,6 +186,16 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
                 System.arraycopy(batches, 0, newIds, length, tail);
             batches = newIds;
             return true;
+        }
+    }
+
+    // Used only in tests.
+    long batchOf(int index)
+    {
+        synchronized (_lock)
+        {
+            int cursor = (_nextE + index) % getCapacity();
+            return batches[cursor];
         }
     }
 }

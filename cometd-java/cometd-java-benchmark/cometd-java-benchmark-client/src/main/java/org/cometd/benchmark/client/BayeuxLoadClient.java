@@ -49,6 +49,7 @@ import org.cometd.benchmark.Config;
 import org.cometd.benchmark.MonitoringQueuedThreadPool;
 import org.cometd.benchmark.SystemTimer;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.Jackson1JSONContextClient;
@@ -81,7 +82,7 @@ public class BayeuxLoadClient
     private final AtomicLong minLatency = new AtomicLong();
     private final AtomicLong maxLatency = new AtomicLong();
     private final AtomicLong totLatency = new AtomicLong();
-    private final AtomicStampedReference<String> maxTime = new AtomicStampedReference<String>(null, 0);
+    private final AtomicStampedReference<String> maxTime = new AtomicStampedReference<>(null, 0);
     private final ConcurrentMap<Long, AtomicLong> wallLatencies = new ConcurrentHashMap<>();
     private final Map<String, AtomicStampedReference<Long>> sendTimes = new ConcurrentHashMap<>();
     private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<>();
@@ -190,6 +191,13 @@ public class BayeuxLoadClient
             value = String.valueOf(recordLatencyDetails);
         recordLatencyDetails = Boolean.parseBoolean(value);
 
+        boolean enableAckExtension = false;
+        System.err.printf("enable ack extension [%b]: ", enableAckExtension);
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = String.valueOf(enableAckExtension);
+        enableAckExtension = Boolean.parseBoolean(value);
+
         scheduler = Executors.newScheduledThreadPool(8);
 
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
@@ -226,7 +234,7 @@ public class BayeuxLoadClient
         DisconnectListener disconnectListener = new DisconnectListener();
         LatencyListener latencyListener = new LatencyListener(recordLatencyDetails);
 
-        LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(clientTransportType), null);
+        LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(clientTransportType), null, false);
         statsClient.handshake();
 
         int clients = 100;
@@ -257,7 +265,7 @@ public class BayeuxLoadClient
             {
                 for (int i = 0; i < clients - currentClients; ++i)
                 {
-                    LoadBayeuxClient client = new LoadBayeuxClient(url, scheduler, newClientTransport(clientTransportType), latencyListener);
+                    LoadBayeuxClient client = new LoadBayeuxClient(url, scheduler, newClientTransport(clientTransportType), latencyListener, enableAckExtension);
                     client.getChannel(Channel.META_HANDSHAKE).addListener(handshakeListener);
                     client.getChannel(Channel.META_DISCONNECT).addListener(disconnectListener);
                     client.handshake();
@@ -806,10 +814,12 @@ public class BayeuxLoadClient
         private final List<Integer> subscriptions = new ArrayList<>();
         private final ClientSessionChannel.MessageListener latencyListener;
 
-        private LoadBayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport, ClientSessionChannel.MessageListener listener)
+        private LoadBayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport, ClientSessionChannel.MessageListener listener, boolean enableAckExtension)
         {
             super(url, scheduler, transport);
             this.latencyListener = listener;
+            if (enableAckExtension)
+                addExtension(new AckExtension());
         }
 
         public void init(String channel, int room)
