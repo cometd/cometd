@@ -215,8 +215,9 @@ public interface BayeuxServer extends Bayeux
          * <p>Callback invoked when a {@link ServerSession} has been added to a {@link BayeuxServer} object.</p>
          *
          * @param session the session that has been added
+         * @param message the handshake message from the client
          */
-        public void sessionAdded(ServerSession session);
+        public void sessionAdded(ServerSession session, ServerMessage message);
 
         /**
          * <p>Callback invoked when a {@link ServerSession} has been removed from a {@link BayeuxServer} object.</p>

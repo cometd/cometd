@@ -453,21 +453,21 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _sessions.get(clientId);
     }
 
-    protected void addServerSession(ServerSessionImpl session)
+    protected void addServerSession(ServerSessionImpl session, ServerMessage message)
     {
         _sessions.put(session.getId(), session);
         for (BayeuxServerListener listener : _listeners)
         {
             if (listener instanceof BayeuxServer.SessionListener)
-                notifySessionAdded((SessionListener)listener, session);
+                notifySessionAdded((SessionListener)listener, session, message);
         }
     }
 
-    private void notifySessionAdded(SessionListener listener, ServerSession session)
+    private void notifySessionAdded(SessionListener listener, ServerSession session, ServerMessage message)
     {
         try
         {
-            listener.sessionAdded(session);
+            listener.sessionAdded(session, message);
         }
         catch (Throwable x)
         {
@@ -1274,7 +1274,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             session.handshake();
-            addServerSession(session);
+            addServerSession(session, message);
 
             reply.setSuccessful(true);
             reply.put(Message.CLIENT_ID_FIELD, session.getId());

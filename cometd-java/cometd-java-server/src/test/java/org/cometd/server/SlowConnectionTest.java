@@ -58,7 +58,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         final CountDownLatch sweeperLatch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener()
         {
-            public void sessionAdded(ServerSession session)
+            public void sessionAdded(ServerSession session, ServerMessage message)
             {
             }
 
@@ -118,7 +118,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         final CountDownLatch sweeperLatch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener()
         {
-            public void sessionAdded(ServerSession session)
+            public void sessionAdded(ServerSession session, ServerMessage message)
             {
             }
 
@@ -209,12 +209,12 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         final CountDownLatch sweeperLatch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener()
         {
-            public void sessionAdded(ServerSession session)
+            public void sessionAdded(ServerSession session, ServerMessage message)
             {
-                ServerMessage.Mutable message = bayeux.newMessage();
-                message.setChannel(channelName);
-                message.setData("test");
-                ((ServerSessionImpl)session).addMessage(message);
+                ServerMessage.Mutable msg = bayeux.newMessage();
+                msg.setChannel(channelName);
+                msg.setData("test");
+                ((ServerSessionImpl)session).addMessage(msg);
             }
 
             public void sessionRemoved(ServerSession session, boolean timedout)

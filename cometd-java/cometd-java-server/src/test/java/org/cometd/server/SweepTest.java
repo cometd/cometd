@@ -94,7 +94,7 @@ public class SweepTest
         int count = 25000;
         for (int i = 0; i < count; ++i)
         {
-            bayeuxServer.addServerSession(bayeuxServer.newServerSession());
+            bayeuxServer.addServerSession(bayeuxServer.newServerSession(), bayeuxServer.newMessage());
         }
 
         long start = System.nanoTime();

@@ -1120,7 +1120,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         // SessionListener is the first listener notified after the ServerSession is created.
         bayeux.addListener(new BayeuxServer.SessionListener()
         {
-            public void sessionAdded(ServerSession session)
+            public void sessionAdded(ServerSession session, ServerMessage message)
             {
                 session.deliver(null, channelName, "data");
             }
@@ -1160,7 +1160,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         // SessionListener is the first listener notified after the ServerSession is created.
         bayeux.addListener(new BayeuxServer.SessionListener()
         {
-            public void sessionAdded(ServerSession session)
+            public void sessionAdded(ServerSession session, ServerMessage message)
             {
                 session.deliver(null, channelName, "data");
             }

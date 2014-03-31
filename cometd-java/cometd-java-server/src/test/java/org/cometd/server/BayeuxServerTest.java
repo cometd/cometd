@@ -41,7 +41,7 @@ public class BayeuxServerTest
     private ServerSessionImpl newServerSession()
     {
         ServerSessionImpl session = _bayeux.newServerSession();
-        _bayeux.addServerSession(session);
+        _bayeux.addServerSession(session, _bayeux.newMessage());
         session.handshake();
         session.connected();
         return session;
@@ -383,7 +383,7 @@ public class BayeuxServerTest
 
     class SessListener implements BayeuxServer.SessionListener
     {
-        public void sessionAdded(ServerSession session)
+        public void sessionAdded(ServerSession session, ServerMessage message)
         {
             _events.add("sessionAdded");
             _events.add(session);

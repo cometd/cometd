@@ -189,7 +189,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener()
         {
-            public void sessionAdded(ServerSession session)
+            public void sessionAdded(ServerSession session, ServerMessage message)
             {
                 Assert.assertNotNull(bayeux.getContext().getHttpSessionId());
                 Assert.assertEquals(SessionConstants.ATTRIBUTE_VALUE, bayeux.getContext().getHttpSessionAttribute(SessionConstants.ATTRIBUTE_NAME));
@@ -219,7 +219,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener()
         {
-            public void sessionAdded(ServerSession session)
+            public void sessionAdded(ServerSession session, ServerMessage message)
             {
                 Assert.assertSame(bayeux, bayeux.getContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
                 latch.countDown();

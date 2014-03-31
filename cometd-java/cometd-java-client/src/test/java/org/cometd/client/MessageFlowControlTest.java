@@ -76,7 +76,7 @@ public class MessageFlowControlTest extends ClientServerTest
         final AtomicInteger keptMessages = new AtomicInteger();
         bayeux.addListener(new BayeuxServer.SessionListener()
         {
-            public void sessionAdded(ServerSession session)
+            public void sessionAdded(ServerSession session, ServerMessage message)
             {
                 session.addListener(new ServerSession.DeQueueListener()
                 {
