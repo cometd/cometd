@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
@@ -1128,6 +1129,66 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testExtensionIsInvokedAfterNetworkFailure() throws Exception
+    {
+        bayeux.addExtension(new AcknowledgedMessagesExtension());
+
+        final BayeuxClient client = newBayeuxClient();
+        final String channelName = "/test";
+        final AtomicReference<CountDownLatch> rcv = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        client.addExtension(new AckExtension());
+        client.addExtension(new ClientSession.Extension.Adapter()
+        {
+            @Override
+            public boolean rcv(ClientSession session, Message.Mutable message)
+            {
+                if (channelName.equals(message.getChannel()))
+                    rcv.get().countDown();
+                return true;
+            }
+
+            @Override
+            public boolean rcvMeta(ClientSession session, Message.Mutable message)
+            {
+                return true;
+            }
+        });
+        client.handshake(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+                {
+                    public void onMessage(ClientSessionChannel channel, Message message)
+                    {
+                    }
+                });
+            }
+        });
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // This message will be delivered via /meta/connect.
+        bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data1");
+        Assert.assertTrue(rcv.get().await(5, TimeUnit.SECONDS));
+        // Wait for the /meta/connect to be established again.
+        Thread.sleep(1000);
+
+        wsFactory.stop();
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
+
+        // Send a message while disconnected.
+        bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data2");
+
+        rcv.set(new CountDownLatch(1));
+        wsFactory.start();
+
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(rcv.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
