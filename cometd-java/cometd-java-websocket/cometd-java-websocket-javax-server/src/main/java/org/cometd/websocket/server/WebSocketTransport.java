@@ -77,6 +77,9 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             cometdURLMapping = cometdURLMapping.substring(0, cometdURLMapping.length() - 2);
 
         ServerContainer container = (ServerContainer)context.getAttribute(ServerContainer.class.getName());
+        if (container == null)
+            throw new IllegalArgumentException("Missing WebSocket ServerContainer");
+
         // JSR 356 does not support a input buffer size option
         int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, container.getDefaultMaxTextMessageBufferSize());
         container.setDefaultMaxTextMessageBufferSize(maxMessageSize);
