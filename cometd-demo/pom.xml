@@ -71,7 +71,6 @@
                     <scanIntervalSeconds>1</scanIntervalSeconds>
                     <webApp>
                         <contextPath>/</contextPath>
-                        <webInfIncludeJarPattern>none</webInfIncludeJarPattern>
                     </webApp>
                 </configuration>
             </plugin>
@@ -140,6 +139,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>javax-websocket-server-impl</artifactId>
+            <version>${jetty-version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-webapp</artifactId>
