@@ -1224,14 +1224,15 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         // Wait for the /meta/connect to be established again.
         Thread.sleep(1000);
 
-        wsFactory.stop();
+        // Stopping HttpClient will also stop the WebSocketClients (both Jetty's and JSR's).
+        httpClient.stop();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
 
         // Send a message while disconnected.
         bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data2");
 
         rcv.set(new CountDownLatch(1));
-        wsFactory.start();
+        httpClient.start();
 
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         Assert.assertTrue(rcv.get().await(5, TimeUnit.SECONDS));
