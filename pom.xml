@@ -8,15 +8,60 @@
     <name>CometD</name>
     <version>2.9.0-SNAPSHOT</version>
 
+    <repositories>
+        <repository>
+            <id>jetty-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>jetty-staging</id>
+            <url>https://oss.sonatype.org/content/repositories/jetty-1064</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>jetty-plugin-staging-1</id>
+            <url>https://oss.sonatype.org/content/repositories/jetty-1064</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+        <pluginRepository>
+            <id>jetty-plugin-staging-2</id>
+            <url>https://oss.sonatype.org/content/repositories/jetty-1069</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.6.14.v20131031</jetty-version>
-        <jetty8-version>8.1.14.v20131031</jetty8-version>
+        <jetty-version>7.6.15.v20140411</jetty-version>
+        <jetty8-version>8.1.15.v20140411</jetty8-version>
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
-        <slf4j-version>1.7.6</slf4j-version>
-        <spring-version>3.2.7.RELEASE</spring-version>
+        <slf4j-version>1.7.7</slf4j-version>
+        <spring-version>3.2.8.RELEASE</spring-version>
         <jackson-version>1.9.13</jackson-version>
-        <dojo-version>1.9.2</dojo-version>
+        <dojo-version>1.9.3</dojo-version>
         <rhino-version>1.6R7</rhino-version>
     </properties>
 
@@ -333,7 +378,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-gpg-plugin</artifactId>
-                    <version>1.4</version>
+                    <version>1.5</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -353,7 +398,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>2.4.2</version>
+                    <version>2.5</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
