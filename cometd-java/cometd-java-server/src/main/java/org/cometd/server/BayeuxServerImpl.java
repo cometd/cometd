@@ -65,6 +65,31 @@ import org.slf4j.LoggerFactory;
  */
 public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 {
+    private static final boolean[] VALID = new boolean[256];
+    static
+    {
+        VALID[' '] = true;
+        VALID['!'] = true;
+        VALID['#'] = true;
+        VALID['$'] = true;
+        VALID['('] = true;
+        VALID[')'] = true;
+        VALID['*'] = true;
+        VALID['+'] = true;
+        VALID['-'] = true;
+        VALID['.'] = true;
+        VALID['/'] = true;
+        VALID['@'] = true;
+        VALID['_'] = true;
+        VALID['~'] = true;
+        for (int i = '0'; i <= '9'; ++i)
+            VALID[i] = true;
+        for (int i = 'A'; i <= 'Z'; ++i)
+            VALID[i] = true;
+        for (int i = 'a'; i <= 'z'; ++i)
+            VALID[i] = true;
+    }
+
     public static final String LOG_LEVEL = "logLevel";
     public static final int OFF_LOG_LEVEL = 0;
     public static final int CONFIG_LOG_LEVEL = 1;
@@ -87,6 +112,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private int _logLevel = OFF_LOG_LEVEL;
     private JSONContext.Server _jsonContext;
     private Timer _timer;
+    private boolean _validation;
 
     public BayeuxServerImpl()
     {
@@ -174,6 +200,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 }
             }, sweep_interval, sweep_interval);
         }
+
+        _validation = getOption("validateMessageFields", true);
     }
 
     @Override
@@ -278,21 +306,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _options;
     }
 
-    /**
-     * @see org.cometd.bayeux.Bayeux#getOption(java.lang.String)
-     */
     public Object getOption(String qualifiedName)
     {
         return _options.get(qualifiedName);
     }
 
-    /**
-     * Get an option value as a long
-     *
-     * @param name The option name
-     * @param dft  The default value
-     * @return long value
-     */
     protected long getOption(String name, long dft)
     {
         Object val = getOption(name);
@@ -303,17 +321,21 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return Long.parseLong(val.toString());
     }
 
-    /**
-     * @see org.cometd.bayeux.Bayeux#getOptionNames()
-     */
+    protected boolean getOption(String name, boolean dft)
+    {
+        Object value = getOption(name);
+        if (value == null)
+            return dft;
+        if (value instanceof Boolean)
+            return (Boolean)value;
+        return Boolean.parseBoolean(value.toString());
+    }
+
     public Set<String> getOptionNames()
     {
         return _options.keySet();
     }
 
-    /**
-     * @see org.cometd.bayeux.Bayeux#setOption(java.lang.String, java.lang.Object)
-     */
     public void setOption(String qualifiedName, Object value)
     {
         _options.put(qualifiedName, value);
@@ -604,6 +626,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         debug(">  {} {}", message, session);
 
+        if (_validation)
+            validateMessage(message);
+
         Mutable reply = createReply(message);
         if (!extendRecv(session, message) || session != null && !session.extendRecv(message))
         {
@@ -686,6 +711,27 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         debug("<< {}", reply);
         return reply;
+    }
+
+    protected void validateMessage(Mutable message)
+    {
+        String channel = message.getChannel();
+        if (!validate(channel))
+            throw new IllegalArgumentException("Invalid message channel: " + channel);
+        String id = message.getId();
+        if (id != null && !validate(id))
+            throw new IllegalArgumentException("Invalid message id: " + id);
+    }
+
+    private boolean validate(String value)
+    {
+        for (int i = 0; i < value.length(); ++i)
+        {
+            char c = value.charAt(i);
+            if (c > 127 || !VALID[c])
+                return false;
+        }
+        return true;
     }
 
     private Authorizer.Result isPublishAuthorized(ServerChannel channel, ServerSession session, ServerMessage message)
@@ -1300,8 +1346,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
-            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
-
             if (subscriptionField == null)
             {
                 error(reply, "403::subscription_missing");
@@ -1314,6 +1358,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 error(reply, "403::subscription_invalid");
                 return;
             }
+
+            if (_validation)
+            {
+                for (int i = 0; i < subscriptions.size(); ++i)
+                    validate(subscriptions.get(i));
+            }
+            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
 
             for (String subscription : subscriptions)
             {
@@ -1383,8 +1434,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
-            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
-
             if (subscriptionField == null)
             {
                 error(reply, "403::subscription_missing");
@@ -1397,6 +1446,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 error(reply, "403::subscription_invalid");
                 return;
             }
+
+            if (_validation)
+            {
+                for (int i = 0; i < subscriptions.size(); ++i)
+                    validate(subscriptions.get(i));
+            }
+            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
 
             for (String subscription : subscriptions)
             {

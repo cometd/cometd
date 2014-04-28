@@ -87,4 +87,42 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, badConnect.waitForDone());
         Assert.assertEquals(400, badConnect.getResponseStatus());
     }
+
+    @Test
+    public void testValidation() throws Exception
+    {
+        ContentExchange handshake = newBayeuxExchange("[{" +
+                "\"channel\": \"/meta/handshake\"," +
+                "\"version\": \"1.0\"," +
+                "\"minimumVersion\": \"1.0\"," +
+                "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                "}]");
+        httpClient.send(handshake);
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
+
+        String clientId = extractClientId(handshake);
+        String bayeuxCookie = extractBayeuxCookie(handshake);
+
+        ContentExchange connect = newBayeuxExchange("[{" +
+                "\"id\": \"<script>alert();</script>\"," +
+                "\"channel\": \"/meta/connect\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"connectionType\": \"long-polling\"" +
+                "}]");
+        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
+        httpClient.send(connect);
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
+        Assert.assertEquals(500, connect.getResponseStatus());
+
+        ContentExchange publish = newBayeuxExchange("[{" +
+                "\"channel\": \"/foo<>\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"data\": \"{}\"" +
+                "}]");
+        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
+        httpClient.send(publish);
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        Assert.assertEquals(500, connect.getResponseStatus());
+    }
 }
