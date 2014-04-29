@@ -323,16 +323,19 @@ org.cometd.WebSocketTransport = function()
         // and if it restarts we want to try websocket again.
         _webSocketSupported = _stickyReconnect && _webSocketConnected;
 
-        for (var id in _timeouts)
-        {
-            this.clearTimeout(_timeouts[id]);
-        }
+        var timeouts = _timeouts;
         _timeouts = {};
-
-        for (var key in _envelopes)
+        for (var id in timeouts)
         {
-            var envelope = _envelopes[key][0];
-            var metaConnect = _envelopes[key][1];
+            this.clearTimeout(timeouts[id]);
+        }
+
+        var envelopes = _envelopes;
+        _envelopes = {};
+        for (var key in envelopes)
+        {
+            var envelope = envelopes[key][0];
+            var metaConnect = envelopes[key][1];
             if (metaConnect)
             {
                 _connected = false;
@@ -342,7 +345,6 @@ org.cometd.WebSocketTransport = function()
                 reason: event.reason
             });
         }
-        _envelopes = {};
 
         _webSocket = null;
     };
