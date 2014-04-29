@@ -185,20 +185,18 @@ public class LongPollingTransport extends HttpClientTransport
             @Override
             public boolean onHeader(Response response, HttpField field)
             {
-                // We do not allow cookies to be handled by HttpClient, since one
-                // HttpClient instance is shared by multiple BayeuxClient instances.
-                // Instead, we store the cookies in the BayeuxClient instance.
-                switch (field.getHeader())
+                HttpHeader header = field.getHeader();
+                if (header != null && (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2))
                 {
-                    case SET_COOKIE:
-                    case SET_COOKIE2:
-                        Map<String, List<String>> cookies = new HashMap<>(1);
-                        cookies.put(field.getName(), Collections.singletonList(field.getValue()));
-                        storeCookies(uri, cookies);
-                        return false;
-                    default:
-                        return true;
+                    // We do not allow cookies to be handled by HttpClient, since one
+                    // HttpClient instance is shared by multiple BayeuxClient instances.
+                    // Instead, we store the cookies in the BayeuxClient instance.
+                    Map<String, List<String>> cookies = new HashMap<>(1);
+                    cookies.put(field.getName(), Collections.singletonList(field.getValue()));
+                    storeCookies(uri, cookies);
+                    return false;
                 }
+                return true;
             }
 
             private void storeCookies(URI uri, Map<String, List<String>> cookies)
