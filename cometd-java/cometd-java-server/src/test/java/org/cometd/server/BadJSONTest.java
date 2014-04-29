@@ -123,5 +123,13 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 "}]");
         response = publish.send();
         Assert.assertEquals(500, response.getStatus());
+
+        Request unsubscribe = newBayeuxRequest("[{" +
+                "\"channel\": \"/meta/unsubscribe\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"subscription\": \"/bar<script>\"" +
+                "}]");
+        response = unsubscribe.send();
+        Assert.assertEquals(500, response.getStatus());
     }
 }
