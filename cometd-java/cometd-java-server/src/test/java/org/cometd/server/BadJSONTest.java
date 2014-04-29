@@ -84,4 +84,44 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
         response = badConnect.send();
         Assert.assertEquals(400, response.getStatus());
     }
+
+    @Test
+    public void testValidation() throws Exception
+    {
+        Request handshake = newBayeuxRequest("[{" +
+                "\"channel\": \"/meta/handshake\"," +
+                "\"version\": \"1.0\"," +
+                "\"minimumVersion\": \"1.0\"," +
+                "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                "}]");
+        ContentResponse response = handshake.send();
+        Assert.assertEquals(200, response.getStatus());
+
+        String clientId = extractClientId(response);
+
+        Request connect = newBayeuxRequest("[{" +
+                "\"id\": \"<script>alert();</script>\"," +
+                "\"channel\": \"/meta/connect\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"connectionType\": \"long-polling\"" +
+                "}]");
+        response = connect.send();
+        Assert.assertEquals(500, response.getStatus());
+
+        Request subscribe = newBayeuxRequest("[{" +
+                "\"channel\": \"/meta/subscribe\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"subscription\": \"/bar<script>\"" +
+                "}]");
+        response = subscribe.send();
+        Assert.assertEquals(500, response.getStatus());
+
+        Request publish = newBayeuxRequest("[{" +
+                "\"channel\": \"/foo<>\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"data\": \"{}\"" +
+                "}]");
+        response = publish.send();
+        Assert.assertEquals(500, response.getStatus());
+    }
 }

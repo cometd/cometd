@@ -68,6 +68,31 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("The CometD server")
 public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 {
+    private static final boolean[] VALID = new boolean[256];
+    static
+    {
+        VALID[' '] = true;
+        VALID['!'] = true;
+        VALID['#'] = true;
+        VALID['$'] = true;
+        VALID['('] = true;
+        VALID[')'] = true;
+        VALID['*'] = true;
+        VALID['+'] = true;
+        VALID['-'] = true;
+        VALID['.'] = true;
+        VALID['/'] = true;
+        VALID['@'] = true;
+        VALID['_'] = true;
+        VALID['~'] = true;
+        for (int i = '0'; i <= '9'; ++i)
+            VALID[i] = true;
+        for (int i = 'A'; i <= 'Z'; ++i)
+            VALID[i] = true;
+        for (int i = 'a'; i <= 'z'; ++i)
+            VALID[i] = true;
+    }
+
     public static final String ALLOWED_TRANSPORTS_OPTION = "allowedTransports";
     public static final String SWEEP_PERIOD_OPTION = "sweepPeriod";
     public static final String TRANSPORTS_OPTION = "transports";
@@ -85,6 +110,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final Scheduler _scheduler = new ScheduledExecutorScheduler("BayeuxServer" + hashCode() + " Scheduler", false);
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
     private JSONContext.Server _jsonContext;
+    private boolean _validation;
 
     @Override
     protected void doStart() throws Exception
@@ -111,6 +137,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 _scheduler.schedule(this, sweepPeriod, TimeUnit.MILLISECONDS);
             }
         }, sweepPeriod, TimeUnit.MILLISECONDS);
+
+        _validation = getOption("validateMessageFields", true);
     }
 
     @Override
@@ -304,13 +332,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _options.get(qualifiedName);
     }
 
-    /**
-     * Get an option value as a long
-     *
-     * @param name The option name
-     * @param dft  The default value
-     * @return long value
-     */
     protected long getOption(String name, long dft)
     {
         Object val = getOption(name);
@@ -319,6 +340,16 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         if (val instanceof Number)
             return ((Number)val).longValue();
         return Long.parseLong(val.toString());
+    }
+
+    protected boolean getOption(String name, boolean dft)
+    {
+        Object value = getOption(name);
+        if (value == null)
+            return dft;
+        if (value instanceof Boolean)
+            return (Boolean)value;
+        return Boolean.parseBoolean(value.toString());
     }
 
     public Set<String> getOptionNames()
@@ -596,6 +627,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         _logger.debug(">  {} {}", message, session);
 
+        if (_validation)
+            validateMessage(message);
+
         Mutable reply = createReply(message);
         if (!extendRecv(session, message) || session != null && !session.extendRecv(message))
         {
@@ -678,6 +712,27 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         _logger.debug("<< {}", reply);
         return reply;
+    }
+
+    protected void validateMessage(Mutable message)
+    {
+        String channel = message.getChannel();
+        if (!validate(channel))
+            throw new IllegalArgumentException("Invalid message channel: " + channel);
+        String id = message.getId();
+        if (id != null && !validate(id))
+            throw new IllegalArgumentException("Invalid message id: " + id);
+    }
+
+    private boolean validate(String value)
+    {
+        for (int i = 0; i < value.length(); ++i)
+        {
+            char c = value.charAt(i);
+            if (c > 127 || !VALID[c])
+                return false;
+        }
+        return true;
     }
 
     private Authorizer.Result isPublishAuthorized(ServerChannel channel, ServerSession session, ServerMessage message)
@@ -1338,8 +1393,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
-            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
-
             if (subscriptionField == null)
             {
                 error(reply, "403::subscription_missing");
@@ -1352,6 +1405,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 error(reply, "403::subscription_invalid");
                 return;
             }
+
+            if (_validation)
+            {
+                for (int i = 0; i < subscriptions.size(); ++i)
+                {
+                    String subscription = subscriptions.get(i);
+                    if (!validate(subscription))
+                        throw new IllegalArgumentException("Invalid message subscription: " + subscription);
+                }
+            }
+            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
 
             for (String subscription : subscriptions)
             {
@@ -1421,8 +1485,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
-            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
-
             if (subscriptionField == null)
             {
                 error(reply, "403::subscription_missing");
@@ -1435,6 +1497,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 error(reply, "403::subscription_invalid");
                 return;
             }
+
+            if (_validation)
+            {
+                for (int i = 0; i < subscriptions.size(); ++i)
+                {
+                    String subscription = subscriptions.get(i);
+                    if (!validate(subscription))
+                        throw new IllegalArgumentException("Invalid message subscription: " + subscription);
+                }
+            }
+            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
 
             for (String subscription : subscriptions)
             {
