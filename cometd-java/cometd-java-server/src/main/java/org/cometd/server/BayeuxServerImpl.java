@@ -1362,7 +1362,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (_validation)
             {
                 for (int i = 0; i < subscriptions.size(); ++i)
-                    validate(subscriptions.get(i));
+                {
+                    String subscription = subscriptions.get(i);
+                    if (!validate(subscription))
+                        throw new IllegalArgumentException("Invalid message subscription: " + subscription);
+                }
             }
             reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
 
@@ -1450,7 +1454,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (_validation)
             {
                 for (int i = 0; i < subscriptions.size(); ++i)
-                    validate(subscriptions.get(i));
+                {
+                    String subscription = subscriptions.get(i);
+                    if (!validate(subscription))
+                        throw new IllegalArgumentException("Invalid message subscription: " + subscription);
+                }
             }
             reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
 

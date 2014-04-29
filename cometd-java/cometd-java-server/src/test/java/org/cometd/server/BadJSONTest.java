@@ -115,14 +115,34 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
         Assert.assertEquals(500, connect.getResponseStatus());
 
+        ContentExchange subscribe = newBayeuxExchange("[{" +
+                "\"channel\": \"/meta/subscribe\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"subscription\": \"/bar<script>\"" +
+                "}]");
+        subscribe.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
+        httpClient.send(subscribe);
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
+        Assert.assertEquals(500, subscribe.getResponseStatus());
+
         ContentExchange publish = newBayeuxExchange("[{" +
                 "\"channel\": \"/foo<>\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": \"{}\"" +
                 "}]");
-        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
+        publish.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(publish);
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(500, connect.getResponseStatus());
+        Assert.assertEquals(500, publish.getResponseStatus());
+
+        ContentExchange unsubscribe = newBayeuxExchange("[{" +
+                "\"channel\": \"/meta/unsubscribe\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"subscription\": \"/bar<script>\"" +
+                "}]");
+        unsubscribe.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
+        httpClient.send(unsubscribe);
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, unsubscribe.waitForDone());
+        Assert.assertEquals(500, unsubscribe.getResponseStatus());
     }
 }
