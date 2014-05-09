@@ -190,6 +190,7 @@ public interface ServerSession extends Session
     /**
      * <p>Listener objects that implement this interface will be notified when a message
      * is queued in the session queue.</p>
+     * <p>This is a <em>restricted</em> listener interface, see {@link MaxQueueListener}.</p>
      */
     public interface QueueListener extends ServerSessionListener
     {
@@ -205,6 +206,7 @@ public interface ServerSession extends Session
     /**
      * <p>Listeners objects that implement this interface will be notified when the session queue
      * is being drained to actually deliver the messages.</p>
+     * <p>This is a <em>restricted</em> listener interface, see {@link MaxQueueListener}.</p>
      */
     public interface DeQueueListener extends ServerSessionListener
     {
@@ -221,6 +223,9 @@ public interface ServerSession extends Session
 
     /**
      * <p>Listeners objects that implement this interface will be notified when the session queue is full.</p>
+     * <p>This is a <em>restricted</em> listener interface because implementers are invoked while holding
+     * the session lock and therefore are restricted in the type of operations they may perform; in particular,
+     * publishing a message to another session may end up in a deadlock.</p>
      */
     public interface MaxQueueListener extends ServerSessionListener
     {

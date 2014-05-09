@@ -243,18 +243,6 @@ public class ServerSessionImpl implements ServerSession
         {
             for (ServerSessionListener listener : _listeners)
             {
-                if (listener instanceof MaxQueueListener)
-                {
-                    final int maxQueueSize = _maxQueue;
-                    synchronized (_queue)
-                    {
-                        if (maxQueueSize > 0 && _queue.size() > maxQueueSize)
-                        {
-                            if (!notifyQueueMaxed((MaxQueueListener)listener, this, _queue, sender, message))
-                                return;
-                        }
-                    }
-                }
                 if (listener instanceof MessageListener)
                 {
                     if (!notifyOnMessage((MessageListener)listener, sender, message))
@@ -266,6 +254,22 @@ public class ServerSessionImpl implements ServerSession
         boolean wakeup;
         synchronized (getLock())
         {
+            if (!_listeners.isEmpty())
+            {
+                for (ServerSessionListener listener : _listeners)
+                {
+                    if (listener instanceof MaxQueueListener)
+                    {
+                        final int maxQueueSize = _maxQueue;
+                        if (maxQueueSize > 0 && _queue.size() > maxQueueSize)
+                        {
+                            if (!notifyQueueMaxed((MaxQueueListener)listener, this, _queue, sender, message))
+                                return;
+                        }
+                    }
+
+                }
+            }
             addMessage(message);
             if (!_listeners.isEmpty())
             {
