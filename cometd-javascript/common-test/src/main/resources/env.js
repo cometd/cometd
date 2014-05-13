@@ -8,6 +8,34 @@ var window = this;
 
 (function()
 {
+    // New JavaScript methods not defined by Rhino, but required by toolkits.
+    if (!Object.defineProperty)
+    {
+        Object.defineProperty = function(obj, prop, desc)
+        {
+            if (desc.value !== undefined)
+            {
+                obj[prop] = desc.value;
+            }
+            if (desc.get !== undefined)
+            {
+                obj.__defineGetter__(prop, desc.get);
+            }
+            if (desc.set !== undefined)
+            {
+                obj.__defineSetter__(prop, desc.set);
+            }
+        };
+    }
+
+    if (!Array.isArray)
+    {
+        Array.isArray = function(obj)
+        {
+            return Object.prototype.toString.call(obj) === '[object Array]';
+        };
+    }
+
     // Browser Navigator
     window.navigator = {
         get appVersion()
@@ -262,9 +290,20 @@ var window = this;
         xhr.open("GET", script.src, true);
         xhr.onload = function()
         {
+            window.console.debug('Invoking script callback', this.responseText, script.onload);
+
             eval(this.responseText);
-            if (script.onload)
+
+            if (script.onload && typeof script.onload === 'function')
+            {
                 script.onload.call(script);
+            }
+            else
+            {
+                var event = window.document.createEvent();
+                event.initEvent('load', true, true);
+                script.dispatchEvent(event);
+            }
         };
         xhr.send();
     }

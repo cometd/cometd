@@ -188,9 +188,26 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         {
             public Object call() throws Exception
             {
-                Function function = (Function)ScriptableObject.getProperty(thiz, functionName);
-                logger.debug("Invoking function {}", functionName);
-                return function.call(context, scope, thiz, arguments);
+                try
+                {
+                    Object property = ScriptableObject.getProperty(thiz, functionName);
+                    if (property instanceof Function)
+                    {
+                        Function function = (Function)property;
+                        logger.debug("Invoking function {} => {}", functionName, function);
+                        return function.call(context, scope, thiz, arguments);
+                    }
+                    else
+                    {
+                        logger.info("Could not invoke function {} => {}", functionName, property);
+                        return null;
+                    }
+                }
+                catch (Throwable x)
+                {
+                    logger.info("Exception while trying to invoke " + functionName, x);
+                    throw x;
+                }
             }
         };
         return invoke(sync, invocation);
