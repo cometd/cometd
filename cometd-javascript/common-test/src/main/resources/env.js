@@ -195,48 +195,50 @@ var window = this;
 
 
     // Window Events
-    var events = [{}];
+    var _events = [{}];
     window.addEventListener = function(type, fn)
     {
         if (!this.uuid || this == window)
         {
-            this.uuid = events.length;
-            events[this.uuid] = {};
+            this.uuid = _events.length;
+            _events[this.uuid] = {};
         }
 
-        if (!events[this.uuid][type])
-            events[this.uuid][type] = [];
+        if (!_events[this.uuid][type])
+            _events[this.uuid][type] = [];
 
-        if (events[this.uuid][type].indexOf(fn) < 0)
-            events[this.uuid][type].push(fn);
+        if (_events[this.uuid][type].indexOf(fn) < 0)
+            _events[this.uuid][type].push(fn);
+
+        window.console.debug('Added Event Listener:', this, type, fn);
     };
     window.removeEventListener = function(type, fn)
     {
         if (!this.uuid || this == window)
         {
-            this.uuid = events.length;
-            events[this.uuid] = {};
+            this.uuid = _events.length;
+            _events[this.uuid] = {};
         }
 
-        if (!events[this.uuid][type])
-            events[this.uuid][type] = [];
+        if (!_events[this.uuid][type])
+            _events[this.uuid][type] = [];
 
-        events[this.uuid][type] =
-        events[this.uuid][type].filter(function(f)
+        _events[this.uuid][type] =
+        _events[this.uuid][type].filter(function(f)
         {
             return f != fn;
         });
     };
     window.dispatchEvent = function(event)
     {
-        window.console.debug('Event: ', event);
+        window.console.debug('Dispatching Event: ', this, event, _events);
         if (event.type)
         {
             var self = this;
 
-            if (this.uuid && events[this.uuid][event.type])
+            if (this.uuid && _events[this.uuid][event.type])
             {
-                events[this.uuid][event.type].forEach(function(fn)
+                _events[this.uuid][event.type].forEach(function(fn)
                 {
                     fn.call(self, event);
                 });
@@ -258,14 +260,11 @@ var window = this;
     {
         var xhr = new XMLHttpRequest();
         xhr.open("GET", script.src, true);
-        xhr.onreadystatechange = function()
+        xhr.onload = function()
         {
-            if (this.readyState === XMLHttpRequest.DONE && this.status === 200)
-            {
-                eval(this.responseText);
-                if (script.onreadystatechange)
-                    script.onreadystatechange.call(script);
-            }
+            eval(this.responseText);
+            if (script.onload)
+                script.onload.call(script);
         };
         xhr.send();
     }
@@ -845,7 +844,7 @@ var window = this;
                 if (!this._doc)
                     this._doc = new DOMDocument(
                             new Packages.java.io.ByteArrayInputStream((new Packages.java.lang.String(
-                                    "<html><head><title></title></head><body></body></html>"))
+                                    "<html><head></head><body></body></html>"))
                                     .getBytes("UTF8")));
                 return this._doc;
             }
@@ -855,9 +854,10 @@ var window = this;
     });
 
 
-    // Fake document object
+    // Fake document object. Dojo needs a script element to work properly.
     window.document = new DOMDocument(new Packages.java.io.ByteArrayInputStream(
             (new Packages.java.lang.String("<html><head><title></title><script></script></head><body></body></html>")).getBytes("UTF8")));
+    window.document.head = window.document.getElementsByTagName('head')[0];
 
 
     // Helper method for extending one object with another
@@ -927,6 +927,12 @@ var window = this;
             {
                 // Dojo does not override this function (but uses a timer to poll state)
                 // so we do not throw if this function is called like we do with WebSocket below.
+            },
+            onload: function()
+            {
+            },
+            onerror: function()
+            {
             },
             open: function(method, url, async, user, password)
             {

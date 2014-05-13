@@ -186,6 +186,16 @@ public class XMLHttpRequestExchange extends ScriptableObject
             threads.invoke(sync, thiz, thiz, "onreadystatechange");
         }
 
+        private void notifyLoad()
+        {
+            threads.invoke(false, thiz, thiz, "onload");
+        }
+
+        private void notifyError()
+        {
+            threads.invoke(false, thiz, thiz, "onerror");
+        }
+
         public void send() throws Exception
         {
             logger.debug("Submitted {}", this);
@@ -203,6 +213,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
             {
                 readyState = ReadyState.DONE;
                 notifyReadyStateChange(false);
+                notifyError();
             }
             readyState = ReadyState.UNSENT;
         }
@@ -288,7 +299,10 @@ public class XMLHttpRequestExchange extends ScriptableObject
                     responseText = getContentAsString();
                     readyState = ReadyState.DONE;
                     if (async)
+                    {
                         notifyReadyStateChange(true);
+                        notifyLoad();
+                    }
                 }
             }
             else
@@ -300,6 +314,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
                 {
                     readyState = ReadyState.DONE;
                     notifyReadyStateChange(true);
+                    notifyError();
                 }
             }
             super.onComplete(result);
