@@ -25,7 +25,7 @@ public class AbstractCometDCallbackPollingTest extends AbstractCometDTest
     protected void initPage() throws Exception
     {
         super.initPage();
-        evaluateScript("keep_only_long_polling_transport",
+        evaluateScript("keep_only_callback_polling_transport",
                 "cometd.unregisterTransports();" +
                 "cometd.registerTransport('callback-polling', originalTransports['callback-polling']);");
     }
