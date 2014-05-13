@@ -237,8 +237,6 @@ var window = this;
 
         if (_events[this.uuid][type].indexOf(fn) < 0)
             _events[this.uuid][type].push(fn);
-
-        window.console.debug('Added Event Listener:', this, type, fn);
     };
     window.removeEventListener = function(type, fn)
     {
@@ -259,7 +257,6 @@ var window = this;
     };
     window.dispatchEvent = function(event)
     {
-        window.console.debug('Dispatching Event: ', this, event, _events);
         if (event.type)
         {
             var self = this;
@@ -290,8 +287,6 @@ var window = this;
         xhr.open("GET", script.src, true);
         xhr.onload = function()
         {
-            window.console.debug('Invoking script callback', this.responseText, script.onload);
-
             eval(this.responseText);
 
             if (script.onload && typeof script.onload === 'function')
