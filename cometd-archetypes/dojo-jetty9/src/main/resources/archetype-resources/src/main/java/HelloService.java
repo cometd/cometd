@@ -7,8 +7,8 @@ package ${package};
 import java.util.Map;
 import java.util.HashMap;
 
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 
@@ -20,7 +20,7 @@ public class HelloService extends AbstractService
         addService("/service/hello", "processHello");
     }
 
-    public void processHello(ServerSession remote, Message message)
+    public void processHello(ServerSession remote, ServerMessage message)
     {
         Map<String, Object> input = message.getDataAsMap();
         String name = (String)input.get("name");

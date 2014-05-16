@@ -35,7 +35,7 @@ public class HelloService
     }
 
     @Listener("/service/hello")
-    public void processHello(ServerSession remote, ServerMessage.Mutable message)
+    public void processHello(ServerSession remote, ServerMessage message)
     {
         Map<String, Object> input = message.getDataAsMap();
         String name = (String)input.get("name");
