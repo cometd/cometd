@@ -94,6 +94,11 @@ public class ServerChannelImpl implements ServerChannel
 
     public boolean subscribe(ServerSession session)
     {
+        return subscribe((ServerSessionImpl)session, null);
+    }
+
+    protected boolean subscribe(ServerSessionImpl session, ServerMessage message)
+    {
         if (!session.isHandshook())
             return false;
 
@@ -104,12 +109,8 @@ public class ServerChannelImpl implements ServerChannel
         if (isMeta())
             return false;
 
-        return subscribe((ServerSessionImpl)session, null);
-    }
-
-    protected boolean subscribe(ServerSessionImpl session, ServerMessage message)
-    {
         resetSweeperPasses();
+
         if (_subscribers.add(session))
         {
             session.subscribedTo(this);
@@ -120,6 +121,7 @@ public class ServerChannelImpl implements ServerChannel
                 if (listener instanceof BayeuxServer.SubscriptionListener)
                     notifySubscribed((BayeuxServer.SubscriptionListener)listener, session, this, message);
         }
+
         return true;
     }
 
@@ -149,6 +151,11 @@ public class ServerChannelImpl implements ServerChannel
 
     public boolean unsubscribe(ServerSession session)
     {
+        return unsubscribe((ServerSessionImpl)session, null);
+    }
+
+    protected boolean unsubscribe(ServerSessionImpl session, ServerMessage message)
+    {
         // The unsubscription may arrive when the session
         // is already disconnected; unsubscribe in any case
 
@@ -159,11 +166,6 @@ public class ServerChannelImpl implements ServerChannel
         if (isMeta())
             return false;
 
-        return unsubscribe((ServerSessionImpl)session, null);
-    }
-
-    protected boolean unsubscribe(ServerSessionImpl session, ServerMessage message)
-    {
         if (_subscribers.remove(session))
         {
             session.unsubscribedFrom(this);
@@ -174,6 +176,7 @@ public class ServerChannelImpl implements ServerChannel
                 if (listener instanceof BayeuxServer.SubscriptionListener)
                     notifyUnsubscribed((BayeuxServer.SubscriptionListener)listener, session, this, message);
         }
+
         return true;
     }
 
