@@ -16,6 +16,7 @@
 package org.cometd.server;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,7 +25,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.StringContentProvider;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.junit.After;
 import org.junit.Assert;
@@ -73,7 +73,6 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
     {
         request.timeout(5, TimeUnit.SECONDS);
         request.method(HttpMethod.POST);
-        request.header(HttpHeader.CONTENT_TYPE.asString(), "application/json;charset=" + encoding);
-        request.content(new StringContentProvider(requestBody, encoding));
+        request.content(new StringContentProvider("application/json;charset=" + encoding, requestBody, Charset.forName(encoding)));
     }
 }

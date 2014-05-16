@@ -152,7 +152,7 @@ public class BayeuxClientTest extends ClientServerTest
                     public void onBegin(Request request)
                     {
                         // Remove the host header so the request will fail
-                        request.getHeaders().remove(HttpHeader.HOST);
+                        request.header(HttpHeader.HOST, null);
                     }
                 });
             }
@@ -1028,7 +1028,7 @@ public class BayeuxClientTest extends ClientServerTest
                         @Override
                         public void onBegin(Request request)
                         {
-                            request.getHeaders().remove(HttpHeader.HOST);
+                            request.header(HttpHeader.HOST, null);
                         }
                     });
                 }
