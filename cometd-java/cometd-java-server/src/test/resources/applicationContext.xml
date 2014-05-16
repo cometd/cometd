@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd">
 
     <bean id="sweepPeriod" class="java.lang.Integer">
         <constructor-arg value="1013" />
@@ -18,9 +18,7 @@
     <bean class="org.springframework.web.context.support.ServletContextAttributeExporter">
         <property name="attributes">
             <map>
-                <entry key="org.cometd.bayeux">
-                    <ref local="bayeux" />
-                </entry>
+                <entry key="org.cometd.bayeux" value-ref="bayeux" />
             </map>
         </property>
     </bean>
