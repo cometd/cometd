@@ -63,7 +63,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
 
         String cometdURLMapping = (String)getOption(COMETD_URL_MAPPING);
         if (cometdURLMapping == null)
-            throw new IllegalArgumentException("Missing URL Mapping");
+            throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING + "' parameter");
 
         if (cometdURLMapping.endsWith("/*"))
             cometdURLMapping = cometdURLMapping.substring(0, cometdURLMapping.length() - 2);

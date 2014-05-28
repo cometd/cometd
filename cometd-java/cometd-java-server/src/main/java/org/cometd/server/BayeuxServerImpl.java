@@ -270,7 +270,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
             loader.loadClass("javax.websocket.server.ServerContainer");
-            return newServerTransport("org.cometd.websocket.server.WebSocketTransport");
+            String transportClass = "org.cometd.websocket.server.WebSocketTransport";
+            ServerTransport transport = newServerTransport(transportClass);
+            if (transport == null)
+            {
+                _logger.info("JSR 356 WebSocket classes available, but " + transportClass +
+                        " unavailable: JSR 356 WebSocket transport disabled");
+            }
+            return transport;
         }
         catch (Exception x)
         {
