@@ -244,10 +244,12 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
             }
             catch (ParseException x)
             {
+                close(1011, x.toString());
                 handleJSONParseException(wsSession, _session, data, x);
             }
             catch (Exception x)
             {
+                close(1011, x.toString());
                 handleException(wsSession, _session, x);
             }
             finally

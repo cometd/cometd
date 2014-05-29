@@ -146,6 +146,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<WebSocket.Con
         }
         catch (Exception x)
         {
+            wsSession.close(1011, x.toString());
             handleException(wsSession, session, x);
         }
     }
