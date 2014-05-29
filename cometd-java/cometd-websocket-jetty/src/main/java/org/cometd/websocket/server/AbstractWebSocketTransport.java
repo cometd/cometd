@@ -15,6 +15,7 @@
  */
 package org.cometd.websocket.server;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.List;
@@ -256,12 +257,12 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
             }
         }
 
-        private void processMessages(S wsSession, ServerMessage.Mutable[] messages)
+        private void processMessages(S wsSession, ServerMessage.Mutable[] messages) throws IOException
         {
             ServerSessionImpl session = _session;
 
             boolean startInterval = false;
-            boolean suspended = false;
+            boolean send = true;
             List<ServerMessage> queue = null;
             for (int i = 0; i < messages.length; ++i)
             {
@@ -280,6 +281,8 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
                 String channelName = message.getChannel();
                 if (channelName.equals(Channel.META_HANDSHAKE))
                 {
+                    if (messages.length > 1)
+                        throw new IOException();
                     ServerMessage.Mutable reply = processMetaHandshake(session, message);
                     if (reply != null)
                         session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
@@ -287,11 +290,12 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
                 }
                 else if (channelName.equals(Channel.META_CONNECT))
                 {
+                    if (messages.length > 1)
+                        throw new IOException();
                     ServerMessage.Mutable reply = processMetaConnect(session, message);
                     messages[i] = processReply(session, reply);
-                    startInterval = reply != null;
-                    suspended = reply == null && messages.length == 1;
-                    if (reply != null && session != null)
+                    send = startInterval = reply != null;
+                    if (send && session != null)
                     {
                         if (isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly())
                             queue = session.takeQueue();
@@ -304,7 +308,7 @@ public abstract class AbstractWebSocketTransport<S> extends HttpTransport
                 }
             }
 
-            if (!suspended)
+            if (send)
                 flush(wsSession, session, startInterval, queue, messages);
         }
 

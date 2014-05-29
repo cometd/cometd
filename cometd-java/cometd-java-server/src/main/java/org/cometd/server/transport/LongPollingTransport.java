@@ -209,8 +209,9 @@ public abstract class LongPollingTransport extends HttpTransport
         boolean autoBatch = _autoBatch;
         ServerSessionImpl session = null;
         boolean batch = false;
+        boolean sendQueue = true;
+        boolean sendReplies = true;
         boolean startInterval = false;
-        boolean suspended = false;
         boolean disconnected = false;
         try
         {
@@ -247,18 +248,21 @@ public abstract class LongPollingTransport extends HttpTransport
                 String channelName = message.getChannel();
                 if (channelName.equals(Channel.META_HANDSHAKE))
                 {
+                    if (messages.length > 1)
+                        throw new IOException();
                     ServerMessage.Mutable reply = processMetaHandshake(request, response, session, message);
                     if (reply != null)
                         session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
                     messages[i] = processReply(session, reply);
+                    sendQueue = false;
                 }
                 else if (channelName.equals(Channel.META_CONNECT))
                 {
+                    if (messages.length > 1)
+                        throw new IOException();
                     ServerMessage.Mutable reply = processMetaConnect(request, response, session, message);
-                    startInterval = reply != null;
-                    if (reply == null)
-                        suspended = messages.length == 1;
                     messages[i] = processReply(session, reply);
+                    startInterval = sendQueue = sendReplies = reply != null;
                 }
                 else
                 {
@@ -267,8 +271,8 @@ public abstract class LongPollingTransport extends HttpTransport
                 }
             }
 
-            if (!suspended)
-                flush(request, response, session, startInterval, messages);
+            if (sendReplies || sendQueue)
+                flush(request, response, session, sendQueue, startInterval, messages);
         }
         finally
         {
@@ -396,18 +400,18 @@ public abstract class LongPollingTransport extends HttpTransport
         if (session.isDisconnected())
             reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
 
-        flush(request, response, session, true, processReply(session, reply));
+        flush(request, response, session, true, true, processReply(session, reply));
     }
 
-    protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean startInterval, ServerMessage.Mutable... replies)
+    protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean sendQueue, boolean startInterval, ServerMessage.Mutable... replies)
     {
         List<ServerMessage> messages = Collections.emptyList();
         if (session != null)
         {
-            if (startInterval || !isMetaConnectDeliveryOnly() && !session.isMetaConnectDeliveryOnly())
+            boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
+            if (sendQueue && (startInterval || !metaConnectDelivery))
                 messages = session.takeQueue();
         }
-
         write(request, response, session, startInterval, messages, replies);
     }
 
