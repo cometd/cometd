@@ -47,14 +47,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
     @Test
     public void testConcurrentHandshakeFailureAndSubscribe() throws Exception
     {
-        bayeux.setSecurityPolicy(new Policy());
-
-        final AtomicBoolean subscribe = new AtomicBoolean();
-        new MetaSubscribeService(bayeux, subscribe);
-
-        // A bad sequence of messages that clients should prevent
-        // (by not allowing a subscribe until the handshake is completed)
-        // yet the server must behave properly
+        // A bad sequence of messages results in the server rejecting them.
         String channelName = "/foo";
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -67,41 +60,14 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
-
-        JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(2, messages.length);
-        Message handshakeResponse = messages[0];
-        Assert.assertFalse(handshakeResponse.isSuccessful());
-        String handshakeError = (String)handshakeResponse.get("error");
-        Assert.assertNotNull(handshakeError);
-        Assert.assertTrue(handshakeError.contains("403"));
-        Map<String, Object> advice = handshakeResponse.getAdvice();
-        Assert.assertNotNull(advice);
-        Assert.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get("reconnect"));
-        Message subscribeResponse = messages[1];
-        Assert.assertFalse(subscribeResponse.isSuccessful());
-        String subscribeError = (String)subscribeResponse.get("error");
-        Assert.assertNotNull(subscribeError);
-        Assert.assertTrue(subscribeError.contains("402"));
-        Assert.assertNull(subscribeResponse.getAdvice());
-
-        Assert.assertFalse(subscribe.get());
+        Assert.assertEquals(500, response.getStatus());
     }
 
     @Test
     public void testConcurrentHandshakeFailureAndPublish() throws Exception
     {
-        bayeux.setSecurityPolicy(new Policy());
-
-        final String channelName = "/foo";
-        final AtomicBoolean publish = new AtomicBoolean();
-        new BroadcastChannelService(bayeux, channelName, publish);
-
-        // A bad sequence of messages that clients should prevent
-        // (by not allowing a publish until the handshake is completed)
-        // yet the server must behave properly
+        // A bad sequence of messages results in the server rejecting them.
+        String channelName = "/foo";
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -113,72 +79,6 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 "\"data\": {}" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
-
-        JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(2, messages.length);
-        Message handshakeResponse = messages[0];
-        Assert.assertFalse(handshakeResponse.isSuccessful());
-        String handshakeError = (String)handshakeResponse.get("error");
-        Assert.assertNotNull(handshakeError);
-        Assert.assertTrue(handshakeError.contains("403"));
-        Map<String, Object> advice = handshakeResponse.getAdvice();
-        Assert.assertNotNull(advice);
-        Assert.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get("reconnect"));
-        Message publishResponse = messages[1];
-        Assert.assertFalse(publishResponse.isSuccessful());
-        String publishError = (String)publishResponse.get("error");
-        Assert.assertNotNull(publishError);
-        Assert.assertTrue(publishError.contains("402"));
-        Assert.assertNull(publishResponse.getAdvice());
-
-        Assert.assertFalse(publish.get());
-    }
-
-    private class Policy extends DefaultSecurityPolicy
-    {
-        @Override
-        public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-        {
-            if (session.isLocalSession())
-                return true;
-            Map<String,Object> ext = message.getExt();
-            return ext != null && ext.get("authn") != null;
-        }
-    }
-
-    public static class MetaSubscribeService extends AbstractService
-    {
-        private final AtomicBoolean subscribe;
-
-        public MetaSubscribeService(BayeuxServerImpl bayeux, AtomicBoolean subscribe)
-        {
-            super(bayeux, "test");
-            this.subscribe = subscribe;
-            addService(Channel.META_SUBSCRIBE, "metaSubscribe");
-        }
-
-        public void metaSubscribe(ServerSession remote, ServerMessage message)
-        {
-            subscribe.set(true);
-        }
-    }
-
-    public static class BroadcastChannelService extends AbstractService
-    {
-        private final AtomicBoolean publish;
-
-        public BroadcastChannelService(BayeuxServerImpl bayeux, String channelName, AtomicBoolean publish)
-        {
-            super(bayeux, "test");
-            this.publish = publish;
-            addService(channelName, "process");
-        }
-
-        public void process(ServerSession remote, ServerMessage message)
-        {
-            publish.set(true);
-        }
+        Assert.assertEquals(500, response.getStatus());
     }
 }

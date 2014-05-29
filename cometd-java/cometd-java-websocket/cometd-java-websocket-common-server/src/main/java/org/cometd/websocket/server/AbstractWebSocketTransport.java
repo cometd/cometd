@@ -15,6 +15,7 @@
  */
 package org.cometd.websocket.server;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -255,10 +256,12 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
             catch (ParseException x)
             {
+                close(1011, x.toString());
                 handleJSONParseException(wsSession, _session, data, x);
             }
             catch (Throwable x)
             {
+                close(1011, x.toString());
                 handleException(wsSession, _session, x);
             }
             finally
@@ -268,16 +271,17 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
         }
 
-        private void processMessages(S wsSession, ServerMessage.Mutable[] messages)
+        private void processMessages(S wsSession, ServerMessage.Mutable[] messages) throws IOException
         {
             ServerSessionImpl session = _session;
 
             boolean startInterval = false;
-            boolean suspended = false;
+            boolean send = true;
             List<ServerMessage> queue = Collections.emptyList();
             List<ServerMessage> replies = new ArrayList<>(messages.length);
-            for (ServerMessage.Mutable message : messages)
+            for (int i = 0; i < messages.length; i++)
             {
+                ServerMessage.Mutable message = messages[i];
                 _logger.debug("Processing {}", message);
 
                 // Get the session from the message
@@ -293,6 +297,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 {
                     case Channel.META_HANDSHAKE:
                     {
+                        if (messages.length > 1)
+                            throw new IOException();
                         ServerMessage.Mutable reply = processMetaHandshake(session, message);
                         if (reply != null)
                             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
@@ -301,11 +307,12 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     }
                     case Channel.META_CONNECT:
                     {
+                        if (messages.length > 1)
+                            throw new IOException();
                         ServerMessage.Mutable reply = processMetaConnect(session, message);
                         replies.add(processReply(session, reply));
-                        startInterval = reply != null;
-                        suspended = reply == null && messages.length == 1;
-                        if (reply != null && session != null)
+                        send = startInterval = reply != null;
+                        if (send && session != null)
                         {
                             if (isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly())
                                 queue = session.takeQueue();
@@ -321,7 +328,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 }
             }
 
-            if (!suspended)
+            if (send)
                 send(wsSession, session, startInterval, queue, replies);
         }
 
@@ -500,7 +507,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
             catch (Throwable x)
             {
-                // TODO: close connection ? or it's already closed ?
+                close(1011, x.toString());
                 handleException(wsSession, session, x);
             }
         }

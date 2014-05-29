@@ -132,8 +132,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         boolean autoBatch = isAutoBatch();
         ServerSessionImpl session = null;
         boolean batch = false;
+        boolean sendQueue = true;
+        boolean sendReplies = true;
         boolean startInterval = false;
-        boolean suspended = false;
         boolean disconnected = false;
         try
         {
@@ -171,19 +172,22 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                 {
                     case Channel.META_HANDSHAKE:
                     {
+                        if (messages.length > 1)
+                            throw new IOException();
                         ServerMessage.Mutable reply = processMetaHandshake(request, response, session, message);
                         if (reply != null)
                             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
                         messages[i] = processReply(session, reply);
+                        sendQueue = false;
                         break;
                     }
                     case Channel.META_CONNECT:
                     {
+                        if (messages.length > 1)
+                            throw new IOException();
                         ServerMessage.Mutable reply = processMetaConnect(request, response, session, message);
-                        startInterval = reply != null;
-                        if (reply == null)
-                            suspended = messages.length == 1;
                         messages[i] = processReply(session, reply);
+                        startInterval = sendQueue = sendReplies = reply != null;
                         break;
                     }
                     default:
@@ -195,8 +199,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                 }
             }
 
-            if (!suspended)
-                flush(request, response, session, startInterval, messages);
+            if (sendReplies || sendQueue)
+                flush(request, response, session, sendQueue, startInterval, messages);
         }
         finally
         {
@@ -311,12 +315,13 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         return reply;
     }
 
-    protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean startInterval, ServerMessage.Mutable... replies)
+    protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean sendQueue, boolean startInterval, ServerMessage.Mutable... replies)
     {
         List<ServerMessage> messages = Collections.emptyList();
         if (session != null)
         {
-            if (startInterval || !isMetaConnectDeliveryOnly() && !session.isMetaConnectDeliveryOnly())
+            boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
+            if (sendQueue && (startInterval || !metaConnectDelivery))
                 messages = session.takeQueue();
         }
 
@@ -334,7 +339,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
 
         HttpServletRequest request = (HttpServletRequest)asyncContext.getRequest();
         HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
-        flush(request, response, session, true, processReply(session, reply));
+        flush(request, response, session, true, true, processReply(session, reply));
     }
 
     public BayeuxContext getContext()
