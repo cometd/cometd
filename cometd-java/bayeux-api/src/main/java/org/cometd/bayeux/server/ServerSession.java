@@ -240,7 +240,7 @@ public interface ServerSession extends Session
          * @param message the message that exceeded the max queue capacity
          * @return true if the message should be added to the session queue
          */
-        public boolean queueMaxed(ServerSession session, Queue<ServerMessage> queue, Session sender, Message message);
+        public boolean queueMaxed(ServerSession session, Queue<ServerMessage> queue, ServerSession sender, Message message);
     }
 
     /**
