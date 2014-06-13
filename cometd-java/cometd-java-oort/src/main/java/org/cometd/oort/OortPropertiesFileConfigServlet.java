@@ -80,7 +80,7 @@ public class OortPropertiesFileConfigServlet implements Servlet
     			_properties.load(input);
     		} 
     	} catch (Throwable e) {
-    		logger.info("Error reading OORT properties file. OORT will not be enabled.");
+    		logger.info("Error reading OORT properties file. OORT will not be enabled: " + e.getMessage());
     		return;
         } finally{
         	if(input != null){
@@ -92,12 +92,22 @@ public class OortPropertiesFileConfigServlet implements Servlet
         }
 
         BayeuxServer bayeux = (BayeuxServer)config.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-        if (bayeux == null)
-            throw new UnavailableException("Missing " + BayeuxServer.ATTRIBUTE + " attribute");
+        if (bayeux == null) {
+        	logger.info("OORT will not be enabled. Missing " + BayeuxServer.ATTRIBUTE + " attribute");
+        	return;
+        }
 
         String url = _properties.getProperty(OORT_URL_PARAM);
-        if (url == null)
-            throw new UnavailableException("Missing " + OORT_URL_PARAM + " init parameter");
+        if (url == null) {
+        	logger.info("OORT will not be enabled. Missing " + OORT_URL_PARAM + " init parameter");
+        	return;
+        }
+        	
+        String peerDiscovery = _properties.getProperty(OORT_PEER_DISCOVERY_PARAM, null);
+        if (peerDiscovery == null) {
+        	logger.info("OORT will not be enabled. Missing " + OORT_PEER_DISCOVERY_PARAM + " init parameter");
+        	return;
+        }
 
         try
         {
@@ -111,21 +121,18 @@ public class OortPropertiesFileConfigServlet implements Servlet
             oort.setAckExtensionEnabled(enableAckExtension);
 
             String jsonContext = _properties.getProperty(OORT_JSON_CONTEXT_PARAM);
-            if (jsonContext != null)
+            if (jsonContext != null && !jsonContext.equals(""))
                 oort.setJSONContextClient((JSONContext.Client)getClass().getClassLoader().loadClass(jsonContext).newInstance());
 
             oort.start();
             _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, oort);
 
-            String peerDiscovery = _properties.getProperty(OORT_PEER_DISCOVERY_PARAM, null);
-            if (peerDiscovery == null)
-            	throw new UnavailableException("Missing " + OORT_PEER_DISCOVERY_PARAM + " init parameter");
             
             _oortConfig = OortConfigFactory.createOortConfigurator(peerDiscovery);
             _oortConfig.configureCloud(_properties, oort);
 
             String channels = _properties.getProperty(OORT_CHANNELS_PARAM);
-            if (channels != null)
+            if (channels != null && !channels.equals(""))
             {
                 String[] patterns = channels.split(",");
                 for (String channel : patterns)
@@ -146,7 +153,9 @@ public class OortPropertiesFileConfigServlet implements Servlet
 	public void destroy() {
         try
         {
-        	_oortConfig.destroyCloud();
+        	if(_oortConfig != null) {
+        		_oortConfig.destroyCloud();        		
+        	}
             Oort oort = (Oort)_config.getServletContext().getAttribute(Oort.OORT_ATTRIBUTE);
             if (oort != null)
                 oort.stop();
