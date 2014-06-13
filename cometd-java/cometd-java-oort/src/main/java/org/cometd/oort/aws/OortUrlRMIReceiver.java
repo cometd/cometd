@@ -17,6 +17,7 @@ package org.cometd.oort.aws;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 public class OortUrlRMIReceiver extends UnicastRemoteObject implements OortUrlRMIReceiverIF {
 
-    private final Logger logger;
+    private final Logger logger = LoggerFactory.getLogger(OortUrlRMIReceiver.class);
 
 	private Oort oort;
 	private final String rmiPeerAddress;
@@ -42,7 +43,6 @@ public class OortUrlRMIReceiver extends UnicastRemoteObject implements OortUrlRM
 	private boolean registryCreated;
 	
 	public OortUrlRMIReceiver(String rmiPeerAddress, int rmiPeerPort, long connectTimeout, Oort oort) throws RemoteException, MalformedURLException  {
-		this.logger = LoggerFactory.getLogger(getClass() + "." + Oort.replacePunctuation(oort.getURL(), '_'));
 
 		this.oort = oort;
 		this.rmiPeerAddress = rmiPeerAddress;
@@ -139,4 +139,5 @@ public class OortUrlRMIReceiver extends UnicastRemoteObject implements OortUrlRM
 			}
 		}
 	}
+	
 }

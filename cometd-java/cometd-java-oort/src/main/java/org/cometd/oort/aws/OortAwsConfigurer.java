@@ -53,12 +53,6 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 	{
 		this.logger = LoggerFactory.getLogger(getClass() + "." + Oort.replacePunctuation(oort.getURL(), '_'));
 
-		//		this.accessKey = accessKey;
-		//		this.secretKey = secretKey;
-		//		this.region = region;
-		//		this.instancesRefreshInterval = instancesRefreshInterval;
-		//		this.filtersMap = filtersMap;
-		
 		this.oort = oort;
 
 		refreshAWSInstancesThread = new RefreshAWSInstancesThread(region, accessKey, secretKey, instancesRefreshInterval, filtersMap, rmiPeerAddress, rmiRemotePeerPort);
@@ -68,98 +62,6 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 			throw new OortConfigException(e);
 		}
 	}
-
-	//	/**
-	//	 * @return the AWS access key
-	//	 */
-	//	public String getAccessKey() {
-	//		return accessKey;
-	//	}
-	//
-	//	/**
-	//	 * @return the AWS secret key
-	//	 */
-	//	public String getSecretKey() {
-	//		return secretKey;
-	//	}
-	//
-	//	/**
-	//	 * @return the AWS region
-	//	 */
-	//	public String getRegion() {
-	//		return region;
-	//	}
-	//
-	//	/**
-	//	 * @return the AWS instances refresh interval
-	//	 */
-	//	public int getInstancesRefreshInterval() {
-	//		return instancesRefreshInterval;
-	//	}
-	//
-	//	/**
-	//	 * @return the AWS instances filters map
-	//	 */
-	//	public HashMap<String, List<String>> getFiltersMap() {
-	//		return filtersMap;
-	//	}
-	//
-	//
-	//	/**
-	//	 * @return the timeout to connect to another Oort node
-	//	 */
-	//	public long getConnectTimeout()
-	//	{
-	//		return connectTimeout;
-	//	}
-
-	//	/**
-	//	 * @param accessKey the accessKey to connect to AWS API
-	//	 */
-	//	public void setAccessKey(String accessKey)
-	//	{
-	//		this.accessKey = accessKey;
-	//	}
-	//
-	//	/**
-	//	 * @param secretKey the secretKey to connect to AWS API
-	//	 */
-	//	public void setSecretKey(String secretKey)
-	//	{
-	//		this.secretKey = secretKey;
-	//	}
-	//
-	//	/**
-	//	 * @param instancesRefreshInterval the interval to refresh the AWS instances belonging to the cluster
-	//	 */
-	//	public void setInstancesRefreshInterval(int instancesRefreshInterval)
-	//	{
-	//		this.instancesRefreshInterval = instancesRefreshInterval;
-	//	}
-	//
-	//	/**
-	//	 * @param filtersMap the filtersMap used to select the AWS instances belonging to the cluster
-	//	 */
-	//	public void setFiltersMap(HashMap<String, List<String>> filtersMap)
-	//	{
-	//		this.filtersMap = filtersMap;
-	//	}
-	//
-	//	/**
-	//	 * @param region the region the AWS instances belong to
-	//	 */
-	//	public void setRegion(String region)
-	//	{
-	//		this.region = region;
-	//	}
-	//
-	//	/**
-	//	 * @param connectTimeout the timeout to connect to another Oort node
-	//	 */
-	//	public void setConnectTimeout(long connectTimeout)
-	//	{
-	//		this.connectTimeout = connectTimeout;
-	//	}
 
 	@Override
 	protected void doStart() throws Exception
@@ -196,7 +98,7 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 	private class RefreshAWSInstancesThread extends Thread
 	{
 
-		private final Logger logger;
+		private final Logger logger = LoggerFactory.getLogger(RefreshAWSInstancesThread.class);
 		private final String rmiPeerAddress;
 		private final int rmiPeerPort;
 		private final long refreshInterval;
@@ -209,8 +111,6 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 		public RefreshAWSInstancesThread(String regionName, String accessKey, String secretKey, int refreshInterval, HashMap<String, List<String>> filtersMap, String rmiPeerAddress, int rmiPeerPort) {
 			super("Oort-Refresh-AWS-Instances");
 			setDaemon(true);
-
-			this.logger = LoggerFactory.getLogger(getClass() + "." + Oort.replacePunctuation(oort.getURL(), '_'));
 
 			this.refreshInterval = refreshInterval;
 			this.rmiPeerAddress = rmiPeerAddress;
@@ -238,12 +138,8 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 			logger.debug("Entering refresh AWS instances thread");
 			try
 			{
-				//                final String cometURL = oort.getURL();
-				//                byte[] cometURLBytes = cometURL.getBytes("UTF-8");
-
 				while (active)
 				{
-					//comment for testing: start
 					DescribeInstancesResult describeInstancesResult = ec2.describeInstances(describeInstancesRequest);
 					List<Reservation> reservations = describeInstancesResult.getReservations();
 					Set<Instance> instances = new HashSet<Instance>();
@@ -256,21 +152,10 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 					}
 					for (Instance ins : instances) {
 						String ipAddress = ins.getPrivateIpAddress();
-						//comment for testing: end
-
-						// only for testing: start
-						//						List<String> ipAddresses = new ArrayList<String>();
-						//						ipAddresses.add("192.168.1.221");
-						//						ipAddresses.add("192.168.1.224");
-						//						for (String ipAddress : ipAddresses) {
-						// only for testing: end
 
 						if(ipAddress.equals(rmiPeerAddress)) {
 							//skipping my address
 							continue;
-						}
-						if(logger.isDebugEnabled()) {
-							logger.debug("Notifying my oortURL to: " + ipAddress);
 						}
 						String rmiUrl = new StringBuilder()
 						.append("//")
@@ -281,9 +166,13 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 						.append(OortUrlRMIReceiver.class.getName())
 						.toString();
 
+						if(logger.isDebugEnabled()) {
+							logger.debug("Notifying my oortURL to: " + rmiUrl);
+						}
 						try {
 							OortUrlRMIReceiverIF awsCometUrlReceiver = (OortUrlRMIReceiverIF) Naming.lookup(rmiUrl);
 							awsCometUrlReceiver.registerCometUrl(oort.getURL());
+							logger.info("Notified my oortURL via RMI to: " + rmiUrl);
 						} catch (UnmarshalException e) {
 							String message = e.getMessage();
 							if (message.contains("Read time out") || message.contains("Read timed out")) {

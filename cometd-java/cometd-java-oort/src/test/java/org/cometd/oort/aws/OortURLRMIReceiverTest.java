@@ -201,4 +201,5 @@ public class OortURLRMIReceiverTest extends OortTest
         Assert.assertEquals(1, oort1.getKnownComets().size());
         Assert.assertEquals(1, oort2.getKnownComets().size());
     }
+    
 }
