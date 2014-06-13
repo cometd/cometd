@@ -28,8 +28,9 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.client.BayeuxClient;
 import org.cometd.common.JSONContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>This servlet initializes and configures an instance of the {@link Oort}
@@ -49,6 +50,8 @@ import org.cometd.common.JSONContext;
 public class OortPropertiesFileConfigServlet implements Servlet
 {
 
+	private final Logger logger = LoggerFactory.getLogger(OortPropertiesFileConfigServlet.class);
+	
 	public final static String OORT_PROPERTIES_FILENAME_PARAM = "oort.properties.file";
     public static final String OORT_URL_PARAM = "oort.url";
     public static final String OORT_SECRET_PARAM = "oort.secret";
@@ -76,8 +79,9 @@ public class OortPropertiesFileConfigServlet implements Servlet
     		if(input != null){
     			_properties.load(input);
     		} 
-    	} catch (Exception e) {
-            throw new ServletException(e);
+    	} catch (Throwable e) {
+    		logger.info("Error reading OORT properties file. OORT will not be enabled.");
+    		return;
         } finally{
         	if(input != null){
 	        	try {
