@@ -166,6 +166,9 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 	{
 		active = true;
 		refreshAWSInstancesThread.start();
+		if(logger.isDebugEnabled()) {
+			logger.debug("Started AWS instances refreshing thread");		
+		}
 	}
 
 	@Override
@@ -225,7 +228,7 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 			describeInstancesRequest = new DescribeInstancesRequest().withFilters(filtersList);
 
 			if(logger.isDebugEnabled()) {
-				logger.debug("Started AWS instances refreshing thread: [region: " + region + ", filters: " + filtersList + "]");		
+				logger.debug("Created AWS instances refreshing thread: [region: " + region + ", filters: " + filtersList + "]");		
 			}
 
 		}
@@ -248,6 +251,9 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 					for (Reservation reservation : reservations) {
 						instances.addAll(reservation.getInstances());
 					}
+					if(instances.size() == 0) {
+						logger.info("No instances found belonging to OORT cluster");
+					}
 					for (Instance ins : instances) {
 						String ipAddress = ins.getPrivateIpAddress();
 						//comment for testing: end
@@ -259,12 +265,12 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 						//						for (String ipAddress : ipAddresses) {
 						// only for testing: end
 
-						if(logger.isDebugEnabled()) {
-							logger.debug("Adding AWS intance to the list: " + ipAddress);
-						}
 						if(ipAddress.equals(rmiPeerAddress)) {
 							//skipping my address
 							continue;
+						}
+						if(logger.isDebugEnabled()) {
+							logger.debug("Notifying my oortURL to: " + ipAddress);
 						}
 						String rmiUrl = new StringBuilder()
 						.append("//")
@@ -286,7 +292,7 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 								logger.debug(this + " Unable to send message to remote peer.  Message was: " + message);
 							}
 						} catch (Exception e) {
-							logger.error("Error connecting to rmiUrl: " + rmiUrl + ". Initial cause was " + e.getMessage(), e);
+							logger.debug("Error connecting to rmiUrl: " + rmiUrl + ". Initial cause was " + e.getMessage(), e);
 						}
 					}
 

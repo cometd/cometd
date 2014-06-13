@@ -117,7 +117,12 @@ public class OortAwsConfig implements OortConfig {
 		String connectTimeoutString = properties.getProperty(OORT_AWS_CONNECT_TIMEOUT_PARAM, "" + OORT_AWS_CONNECT_TIMEOUT_DEFAULT);
 		long connectTimeout = Long.parseLong(connectTimeoutString);
 
-		configurer = new OortAwsConfigurer(rmiPeerAddress, rmiPeerPort, rmiRemotePeerPort, accessKey, secretKey, region, refreshInterval, filtersMap, connectTimeout, oort);
+		try {
+			configurer = new OortAwsConfigurer(rmiPeerAddress, rmiPeerPort, rmiRemotePeerPort, accessKey, secretKey, region, refreshInterval, filtersMap, connectTimeout, oort);
+			configurer.start();
+		} catch (Exception e) {
+			throw new OortConfigException(e);
+		}
 	}
 
 	@Override
