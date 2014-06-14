@@ -42,7 +42,7 @@ import com.amazonaws.services.ec2.model.Reservation;
 
 public class OortAwsConfigurer extends AbstractLifeCycle
 {
-	private final Logger logger;
+	private static final Logger logger = LoggerFactory.getLogger(OortAwsConfigurer.class);
 	private final Oort oort;
 
 	private final RefreshAWSInstancesThread refreshAWSInstancesThread;
@@ -51,8 +51,6 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 
 	public OortAwsConfigurer(String rmiPeerAddress, int rmiPeerPort, int rmiRemotePeerPort, String accessKey, String secretKey, String region, int instancesRefreshInterval, HashMap<String, List<String>> filtersMap, long connectTimeout, Oort oort) throws OortConfigException
 	{
-		this.logger = LoggerFactory.getLogger(getClass() + "." + Oort.replacePunctuation(oort.getURL(), '_'));
-
 		this.oort = oort;
 
 		refreshAWSInstancesThread = new RefreshAWSInstancesThread(region, accessKey, secretKey, instancesRefreshInterval, filtersMap, rmiPeerAddress, rmiRemotePeerPort);

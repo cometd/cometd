@@ -709,7 +709,7 @@ public class Oort extends AggregateLifeCycle
         return _oortSession;
     }
 
-    public static String replacePunctuation(String source, char replacement)
+    protected static String replacePunctuation(String source, char replacement)
     {
         String replaced = source.replaceAll("[^\\p{Alnum}]", String.valueOf(replacement));
         // Compact multiple consecutive replacement chars

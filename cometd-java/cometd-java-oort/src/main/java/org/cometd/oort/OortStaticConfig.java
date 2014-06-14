@@ -17,15 +17,18 @@ package org.cometd.oort;
 
 import java.util.Properties;
 
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 
-public class OortStaticConfig implements OortConfig {
+public class OortStaticConfig extends OortConfig {
 
-    public final static String OORT_CLOUD_PARAM = "oort.cloud";
+	public final static String OORT_CLOUD_PARAM = "oort.cloud";
 
-	@Override
-	public void configureCloud(Properties properties, Oort oort) throws OortConfigException {
-        String cloud = properties.getProperty(OORT_CLOUD_PARAM);
+	public OortStaticConfig(Properties properties, BayeuxServer bayeux)
+			throws OortConfigException {
+		super(properties, bayeux);
+
+		String cloud = properties.getProperty(OORT_CLOUD_PARAM);
         if (cloud != null && cloud.length() > 0)
         {
             String[] urls = cloud.split(",");

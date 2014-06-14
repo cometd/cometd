@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 public class OortUrlRMIReceiver extends UnicastRemoteObject implements OortUrlRMIReceiverIF {
 
-    private final Logger logger = LoggerFactory.getLogger(OortUrlRMIReceiver.class);
+    private static final Logger logger = LoggerFactory.getLogger(OortUrlRMIReceiver.class);
 
 	private Oort oort;
 	private final String rmiPeerAddress;

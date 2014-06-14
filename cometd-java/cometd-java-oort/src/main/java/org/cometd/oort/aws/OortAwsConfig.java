@@ -23,14 +23,14 @@ import java.util.List;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.cometd.oort.Oort;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.oort.OortConfig;
 import org.cometd.oort.OortConfigException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
-public class OortAwsConfig implements OortConfig {
+public class OortAwsConfig extends OortConfig {
 
 	private static final String OORT_AWS_ACCESS_KEY_PARAM = "oort.aws.accessKey";
 	private static final String OORT_AWS_SECRET_KEY_PARAM = "oort.aws.secretKey";
@@ -46,12 +46,14 @@ public class OortAwsConfig implements OortConfig {
 	private static final int OORT_AWS_RMI_PEER_PORT_DEFAULT = 40000;
 	private static final int OORT_AWS_CONNECT_TIMEOUT_DEFAULT = 2000;
 
-	private final Logger _log = LoggerFactory.getLogger(OortAwsConfig.class);
+	private static final Logger _log = LoggerFactory.getLogger(OortAwsConfig.class);
 
 	private OortAwsConfigurer configurer;
 
-	@Override
-	public void configureCloud(Properties properties, Oort oort) throws OortConfigException {
+	public OortAwsConfig(Properties properties, BayeuxServer bayeux)
+			throws OortConfigException {
+		super(properties, bayeux);
+
 		String rmiPeerAddress = properties.getProperty(OORT_AWS_RMI_PEER_ADDRESS_PARAM);
 		if (rmiPeerAddress == null || rmiPeerAddress.length() == 0) {
 			try {

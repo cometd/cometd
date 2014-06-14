@@ -28,7 +28,6 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.common.JSONContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,12 +52,6 @@ public class OortPropertiesFileConfigServlet implements Servlet
 	private final Logger logger = LoggerFactory.getLogger(OortPropertiesFileConfigServlet.class);
 	
 	public final static String OORT_PROPERTIES_FILENAME_PARAM = "oort.properties.file";
-    public static final String OORT_URL_PARAM = "oort.url";
-    public static final String OORT_SECRET_PARAM = "oort.secret";
-    public static final String OORT_CHANNELS_PARAM = "oort.channels";
-    public static final String OORT_ENABLE_ACK_EXTENSION_PARAM = "enableAckExtension";
-    public static final String OORT_JSON_CONTEXT_PARAM = "jsonContext";
-    public final static String OORT_PEER_DISCOVERY_PARAM = "oort.peer_discovery";
     
     private ServletConfig _config;
     private Properties _properties = new Properties();
@@ -96,52 +89,15 @@ public class OortPropertiesFileConfigServlet implements Servlet
         	logger.info("OORT will not be enabled. Missing " + BayeuxServer.ATTRIBUTE + " attribute");
         	return;
         }
-
-        String url = _properties.getProperty(OORT_URL_PARAM);
-        if (url == null) {
-        	logger.info("OORT will not be enabled. Missing " + OORT_URL_PARAM + " init parameter");
-        	return;
-        }
         	
-        String peerDiscovery = _properties.getProperty(OORT_PEER_DISCOVERY_PARAM, null);
-        if (peerDiscovery == null) {
-        	logger.info("OORT will not be enabled. Missing " + OORT_PEER_DISCOVERY_PARAM + " init parameter");
-        	return;
-        }
-
         try
         {
-        	Oort oort = new Oort(bayeux, url);
-
-            String secret = _properties.getProperty(OORT_SECRET_PARAM, null);
-            if (secret != null)
-                oort.setSecret(secret);
-
-            boolean enableAckExtension = Boolean.parseBoolean(_properties.getProperty(OORT_ENABLE_ACK_EXTENSION_PARAM));
-            oort.setAckExtensionEnabled(enableAckExtension);
-
-            String jsonContext = _properties.getProperty(OORT_JSON_CONTEXT_PARAM);
-            if (jsonContext != null && !jsonContext.equals(""))
-                oort.setJSONContextClient((JSONContext.Client)getClass().getClassLoader().loadClass(jsonContext).newInstance());
-
-            oort.start();
-            _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, oort);
-
-            
-            _oortConfig = OortConfigFactory.createOortConfigurator(peerDiscovery);
-            _oortConfig.configureCloud(_properties, oort);
-
-            String channels = _properties.getProperty(OORT_CHANNELS_PARAM);
-            if (channels != null && !channels.equals(""))
-            {
-                String[] patterns = channels.split(",");
-                for (String channel : patterns)
-                {
-                    channel = channel.trim();
-                    if (channel.length() > 0)
-                        oort.observeChannel(channel);
-                }
+            _oortConfig = OortConfigFactory.createOortConfigurator(_properties, bayeux);
+            if(_oortConfig == null) {
+        		logger.debug("OortConfig is null. Oort is disabled.");
+            	return;
             }
+            _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, _oortConfig.getOort());
         }
         catch (Exception x)
         {
@@ -177,7 +133,7 @@ public class OortPropertiesFileConfigServlet implements Servlet
 
     public String getServletInfo()
     {
-        return OortConfigServlet.class.toString();
+        return OortPropertiesFileConfigServlet.class.toString();
     }
 
 	@Override

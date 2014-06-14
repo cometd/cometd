@@ -19,7 +19,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Properties;
 
-public class OortMulticastConfig implements OortConfig {
+import org.cometd.bayeux.server.BayeuxServer;
+
+public class OortMulticastConfig extends OortConfig {
 
 	public static final String OORT_MULTICAST_BIND_ADDRESS_PARAM = "oort.multicast.bindAddress";
 	public static final String OORT_MULTICAST_GROUP_ADDRESS_PARAM = "oort.multicast.groupAddress";
@@ -31,8 +33,10 @@ public class OortMulticastConfig implements OortConfig {
 
 	private OortMulticastConfigurer configurer;
 
-	@Override
-	public void configureCloud(Properties properties, Oort oort) throws OortConfigException {
+	public OortMulticastConfig(Properties properties, BayeuxServer bayeux)
+			throws OortConfigException {
+		super(properties, bayeux);
+
 		configurer = new OortMulticastConfigurer(oort);
 
 		String bindAddress = properties.getProperty(OORT_MULTICAST_BIND_ADDRESS_PARAM);
