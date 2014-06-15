@@ -38,12 +38,13 @@ public class OortAwsConfig extends OortConfig {
 	private static final String OORT_AWS_FILTERS_PARAM = "oort.aws.filters";
 	private static final String OORT_AWS_INSTANCES_REFRESH_INTERVAL_PARAM = "oort.aws.instancesRefreshInterval"; //millis
 	private static final String OORT_AWS_CONNECT_TIMEOUT_PARAM = "oort.aws.connectTimeout"; //millis
-	private static final String OORT_AWS_RMI_PEER_ADDRESS_PARAM = "oort.aws.rmiPeerAddress";
-	private static final String OORT_AWS_RMI_PEER_REMOTE_PORT_PARAM = "oort.aws.rmiRemotePeerPort";
-	private static final String OORT_AWS_RMI_PEER_PORT_PARAM = "oort.aws.rmiPeerPort";
+	private static final String OORT_AWS_RMI_REGISTRY_ADDRESS_PARAM = "oort.aws.rmiRegistryAddress";
+	private static final String OORT_AWS_RMI_REGISTRY_PORT_PARAM = "oort.aws.rmiRegistryPort";
+	private static final String OORT_AWS_RMI_OBJECTS_PORT_PARAM = "oort.aws.rmiObjectsPort";
 
 	private static final int OORT_AWS_INSTANCES_REFRESH_INTERVAL_DEFAULT = 5000; //millis
-	private static final int OORT_AWS_RMI_PEER_PORT_DEFAULT = 40000;
+	private static final int OORT_AWS_RMI_OBJECTS_PORT_DEFAULT = 40001;
+	private static final int OORT_AWS_RMI_REGISTRY_PORT_DEFAULT = 40000;
 	private static final int OORT_AWS_CONNECT_TIMEOUT_DEFAULT = 2000;
 
 	private static final Logger _log = LoggerFactory.getLogger(OortAwsConfig.class);
@@ -54,32 +55,32 @@ public class OortAwsConfig extends OortConfig {
 			throws OortConfigException {
 		super(properties, bayeux);
 
-		String rmiPeerAddress = properties.getProperty(OORT_AWS_RMI_PEER_ADDRESS_PARAM);
-		if (rmiPeerAddress == null || rmiPeerAddress.length() == 0) {
+		String rmiRegistryAddress = properties.getProperty(OORT_AWS_RMI_REGISTRY_ADDRESS_PARAM);
+		if (rmiRegistryAddress == null || rmiRegistryAddress.length() == 0) {
 			try {
-				rmiPeerAddress = InetAddress.getLocalHost().getHostAddress();
-				_log.warn("No peerAddress set. Set to the default of: " + rmiPeerAddress);
+				rmiRegistryAddress = InetAddress.getLocalHost().getHostAddress();
+				_log.warn("No registryAddress set. Set to the default of: " + rmiRegistryAddress);
 			} catch (UnknownHostException e) {
 	        	throw new OortConfigException(e);        	
 			}
 		}
 
-		String rmiPeerPortString = properties.getProperty(OORT_AWS_RMI_PEER_PORT_PARAM, String.valueOf(OORT_AWS_RMI_PEER_PORT_DEFAULT));
-		int rmiPeerPort = OORT_AWS_RMI_PEER_PORT_DEFAULT;
+		String rmiRegistryPortString = properties.getProperty(OORT_AWS_RMI_REGISTRY_PORT_PARAM, String.valueOf(OORT_AWS_RMI_REGISTRY_PORT_DEFAULT));
+		int rmiRegistryPort = OORT_AWS_RMI_REGISTRY_PORT_DEFAULT;
 		try {
-			rmiPeerPort = Integer.parseInt(rmiPeerPortString);
+			rmiRegistryPort = Integer.parseInt(rmiRegistryPortString);
 		} catch (Exception e) {
-			_log.info("No peerPort set. Set to the default of: " + rmiPeerPort);
+			_log.info("No rmiRegistryPort set. Set to the default of: " + rmiRegistryPort);
 		}
 		
-		String rmiRemotePeerPortString = properties.getProperty(OORT_AWS_RMI_PEER_REMOTE_PORT_PARAM, String.valueOf(rmiPeerPort));
-		int rmiRemotePeerPort = OORT_AWS_RMI_PEER_PORT_DEFAULT;
+		String rmiObjectsPortString = properties.getProperty(OORT_AWS_RMI_OBJECTS_PORT_PARAM, String.valueOf(OORT_AWS_RMI_OBJECTS_PORT_DEFAULT));
+		int rmiObjectsPort = OORT_AWS_RMI_OBJECTS_PORT_DEFAULT;
 		try {
-			rmiRemotePeerPort = Integer.parseInt(rmiRemotePeerPortString);
+			rmiObjectsPort = Integer.parseInt(rmiObjectsPortString);
 		} catch (Exception e) {
-			_log.info("No peerPort set. Set to the default of: " + rmiRemotePeerPort);
+			_log.info("No rmiObjectsPort set. Set to the default of: " + rmiObjectsPort);
 		}
-
+		
 		String accessKey = properties.getProperty(OORT_AWS_ACCESS_KEY_PARAM);
         if (accessKey == null) {
         	throw new OortConfigException("Missing " + OORT_AWS_ACCESS_KEY_PARAM + " parameter");        	
@@ -120,7 +121,7 @@ public class OortAwsConfig extends OortConfig {
 		long connectTimeout = Long.parseLong(connectTimeoutString);
 
 		try {
-			configurer = new OortAwsConfigurer(rmiPeerAddress, rmiPeerPort, rmiRemotePeerPort, accessKey, secretKey, region, refreshInterval, filtersMap, connectTimeout, oort);
+			configurer = new OortAwsConfigurer(rmiRegistryAddress, rmiRegistryPort, rmiObjectsPort, accessKey, secretKey, region, refreshInterval, filtersMap, connectTimeout, oort);
 			configurer.start();
 		} catch (Exception e) {
 			throw new OortConfigException(e);

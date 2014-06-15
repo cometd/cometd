@@ -22,6 +22,4 @@ public interface OortUrlRMIReceiverIF extends Remote {
 
 	public void registerCometUrl(String cometUrl) throws RemoteException;
 
-    String getUrl() throws RemoteException;
-
 }
