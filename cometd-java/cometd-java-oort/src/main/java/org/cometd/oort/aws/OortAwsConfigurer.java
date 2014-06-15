@@ -46,16 +46,16 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 	private final Oort oort;
 
 	private final RefreshAWSInstancesThread refreshAWSInstancesThread;
-	private final OortUrlRMIReceiverIF cometUrlReceiver;
+	private final OortUrlRMIReceiver cometUrlReceiver;
 	private volatile boolean active;
 
-	public OortAwsConfigurer(String rmiPeerAddress, int rmiPeerPort, int rmiRemotePeerPort, String accessKey, String secretKey, String region, int instancesRefreshInterval, HashMap<String, List<String>> filtersMap, long connectTimeout, Oort oort) throws OortConfigException
+	public OortAwsConfigurer(String rmiRegistryAddress, int rmiRegistryPort, int rmiObjectsPort, String accessKey, String secretKey, String region, int instancesRefreshInterval, HashMap<String, List<String>> filtersMap, long connectTimeout, Oort oort) throws OortConfigException
 	{
 		this.oort = oort;
 
-		refreshAWSInstancesThread = new RefreshAWSInstancesThread(region, accessKey, secretKey, instancesRefreshInterval, filtersMap, rmiPeerAddress, rmiRemotePeerPort);
+		refreshAWSInstancesThread = new RefreshAWSInstancesThread(region, accessKey, secretKey, instancesRefreshInterval, filtersMap, rmiRegistryAddress, rmiRegistryPort);
 		try {
-			cometUrlReceiver = new OortUrlRMIReceiver(rmiPeerAddress, rmiPeerPort, connectTimeout, oort);
+			cometUrlReceiver = new OortUrlRMIReceiver(rmiRegistryAddress, rmiRegistryPort, rmiObjectsPort, connectTimeout, oort);
 		} catch (Exception e) {
 			throw new OortConfigException(e);
 		}
@@ -76,8 +76,7 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 	{
 		active = false;
 		refreshAWSInstancesThread.interrupt();
-		// We do not interrupt the receiver thread, because it may be processing
-		// a received URL and we do not want to get ClosedByInterruptExceptions
+		cometUrlReceiver.dispose();
 	}
 
 	public boolean join(long timeout)
@@ -97,8 +96,8 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 	{
 
 		private final Logger logger = LoggerFactory.getLogger(RefreshAWSInstancesThread.class);
-		private final String rmiPeerAddress;
-		private final int rmiPeerPort;
+		private final String rmiRegistryAddress;
+		private final int rmiRegistryPort;
 		private final long refreshInterval;
 		private final AmazonEC2Client ec2;
 		private final DescribeInstancesRequest describeInstancesRequest;
@@ -106,13 +105,13 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 		/**
 		 * Constructor
 		 */         
-		public RefreshAWSInstancesThread(String regionName, String accessKey, String secretKey, int refreshInterval, HashMap<String, List<String>> filtersMap, String rmiPeerAddress, int rmiPeerPort) {
+		public RefreshAWSInstancesThread(String regionName, String accessKey, String secretKey, int refreshInterval, HashMap<String, List<String>> filtersMap, String rmiRegistryAddress, int rmiRegistryPort) {
 			super("Oort-Refresh-AWS-Instances");
 			setDaemon(true);
 
 			this.refreshInterval = refreshInterval;
-			this.rmiPeerAddress = rmiPeerAddress;
-			this.rmiPeerPort = rmiPeerPort;
+			this.rmiRegistryAddress = rmiRegistryAddress;
+			this.rmiRegistryPort = rmiRegistryPort;
 			ec2 = new AmazonEC2Client(new BasicAWSCredentials(accessKey, secretKey));
 			Region region = Region.getRegion(Regions.fromName(regionName));
 			ec2.setRegion(region);
@@ -151,7 +150,7 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 					for (Instance ins : instances) {
 						String ipAddress = ins.getPrivateIpAddress();
 
-						if(ipAddress.equals(rmiPeerAddress)) {
+						if(ipAddress.equals(rmiRegistryAddress)) {
 							//skipping my address
 							continue;
 						}
@@ -159,7 +158,7 @@ public class OortAwsConfigurer extends AbstractLifeCycle
 						.append("//")
 						.append(ipAddress)
 						.append(":")
-						.append(rmiPeerPort)
+						.append(rmiRegistryPort)
 						.append("/")
 						.append(OortUrlRMIReceiver.class.getName())
 						.toString();

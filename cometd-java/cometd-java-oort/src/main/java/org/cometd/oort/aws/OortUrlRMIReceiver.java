@@ -17,11 +17,11 @@ package org.cometd.oort.aws;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ExportException;
+import java.rmi.server.RMISocketFactory;
 import java.rmi.server.UnicastRemoteObject;
 
 import org.cometd.client.BayeuxClient;
@@ -31,43 +31,38 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class OortUrlRMIReceiver extends UnicastRemoteObject implements OortUrlRMIReceiverIF {
+public class OortUrlRMIReceiver implements OortUrlRMIReceiverIF {
 
     private static final Logger logger = LoggerFactory.getLogger(OortUrlRMIReceiver.class);
 
 	private Oort oort;
-	private final String rmiPeerAddress;
-	private final int rmiPeerPort;
+	private final String rmiRegistryAddress;
+	private final int rmiRegistryPort;
+	private final int rmiObjectsPort;
 	private final long connectTimeout;
 	private Registry registry;
 	private boolean registryCreated;
 	
-	public OortUrlRMIReceiver(String rmiPeerAddress, int rmiPeerPort, long connectTimeout, Oort oort) throws RemoteException, MalformedURLException  {
+	public OortUrlRMIReceiver(String rmiRegistryAddress, int rmiRegistryPort, int rmiObjectsPort, long connectTimeout, Oort oort) throws RemoteException, MalformedURLException  {
 
 		this.oort = oort;
-		this.rmiPeerAddress = rmiPeerAddress;
-		this.rmiPeerPort = rmiPeerPort;
+		this.rmiRegistryAddress = rmiRegistryAddress;
+		this.rmiRegistryPort = rmiRegistryPort;
+		this.rmiObjectsPort = rmiObjectsPort;
 		this.connectTimeout = connectTimeout;
 		
-		startRegistry();
-		Naming.rebind(getUrl(), this);
+        /*
+         * Create a registry and bind stub in registry.
+         */
+        startRegistry();
+        OortUrlRMIReceiverIF stub = (OortUrlRMIReceiverIF) UnicastRemoteObject.exportObject(this, this.rmiObjectsPort);
+        registry.rebind(this.getClass().getName(), stub);
 		
         if(logger.isDebugEnabled()) {
-        	logger.debug("Created OortUrlReceiver [peerAddress: " + rmiPeerAddress + ", peerPort: " + rmiPeerPort + "]");        	
+        	logger.debug("Created OortUrlReceiver [rmiRegistryAddress: " + rmiRegistryAddress + ", rmiRegistryPort: " + rmiRegistryPort + "]");        	
         }
 	}
 		
-    public final String getUrl() {
-        return new StringBuilder()
-                .append("//")
-                .append(rmiPeerAddress)
-                .append(":")
-                .append(rmiPeerPort)
-                .append("/")
-                .append(this.getClass().getName())
-                .toString();
-    }
-	
 	public void registerCometUrl(String cometURL) throws RemoteException {
         if (!oort.getKnownComets().contains(cometURL))
         {
@@ -88,7 +83,7 @@ public class OortUrlRMIReceiver extends UnicastRemoteObject implements OortUrlRM
 
 	public void dispose() {
 		try {
-			Naming.unbind(getUrl());
+			registry.unbind(this.getClass().getName());
 			stopRegistry();
 		} catch (Exception e) {
 			logger.warn("Exception unbinding on disposing.", e);
@@ -108,15 +103,16 @@ public class OortUrlRMIReceiver extends UnicastRemoteObject implements OortUrlRM
 	 */
 	protected void startRegistry() throws RemoteException {
 		try {
-			registry = LocateRegistry.getRegistry(rmiPeerPort);
+			registry = LocateRegistry.getRegistry(rmiRegistryAddress, rmiRegistryPort);
 			try {
 				registry.list();
 			} catch (RemoteException e) {
 				//may not be created. Let's create it.
-				registry = LocateRegistry.createRegistry(rmiPeerPort);
+				logger.debug("Creating registry on port: " + rmiRegistryPort);
+				registry = LocateRegistry.createRegistry(rmiRegistryPort);
 				registryCreated = true;
 			}
-		} catch (ExportException exception) {
+		} catch (Exception exception) {
 			logger.error("Exception starting RMI registry. Error was " + exception.getMessage(), exception);
 		}
 	}
