@@ -774,57 +774,40 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     private Authorizer.Result isOperationAuthorized(Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId)
     {
-        List<ServerChannelImpl> channels = new ArrayList<>();
-        for (String wildName : channelId.getWilds())
+        Authorizer.Result result = null;
+        List<String> wilds = channelId.getWilds();
+        for (int i = 0, size = wilds.size(); i <= size; ++i)
         {
-            ServerChannelImpl channel = _channels.get(wildName);
+            String channelName = i < size ? wilds.get(i) : channelId.toString();
+            ServerChannelImpl channel = _channels.get(channelName);
             if (channel != null)
-                channels.add(channel);
-        }
-        ServerChannelImpl candidate = _channels.get(channelId.toString());
-        if (candidate != null)
-            channels.add(candidate);
-
-        boolean called = false;
-        Authorizer.Result result = Authorizer.Result.ignore();
-        for (ServerChannelImpl channel : channels)
-        {
-            List<Authorizer> authorizers = channel.authorizers();
-            if (!authorizers.isEmpty())
             {
-                for (Authorizer authorizer : authorizers)
+                Authorizer.Result authz = isOperationAuthorized(channel, operation, session, message, channelId);
+                if (authz != null)
                 {
-                    called = true;
-                    Authorizer.Result authorization = authorizer.authorize(operation, channelId, session, message);
-                    _logger.debug("Authorizer {} on channel {} {} {} for channel {}", authorizer, channel, authorization, operation, channelId);
-                    if (authorization instanceof Authorizer.Result.Denied)
-                    {
-                        result = authorization;
+                    if (result == null || authz.isDenied() || authz.isGranted())
+                        result = authz;
+                    if (authz.isDenied())
                         break;
-                    }
-                    else if (authorization instanceof Authorizer.Result.Granted)
-                    {
-                        result = authorization;
-                    }
                 }
             }
         }
 
-        if (!called)
+        if (result == null)
         {
             result = Authorizer.Result.grant();
             _logger.debug("No authorizers, {} for channel {} {}", operation, channelId, result);
         }
         else
         {
-            if (result instanceof Authorizer.Result.Ignored)
+            if (result.isGranted())
+            {
+                _logger.debug("No authorizer denied {} for channel {}, authorization {}", operation, channelId, result);
+            }
+            else if (!result.isDenied())
             {
                 result = Authorizer.Result.deny("denied_by_not_granting");
                 _logger.debug("No authorizer granted {} for channel {}, authorization {}", operation, channelId, result);
-            }
-            else if (result instanceof Authorizer.Result.Granted)
-            {
-                _logger.debug("No authorizer denied {} for channel {}, authorization {}", operation, channelId, result);
             }
         }
 
@@ -834,41 +817,56 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return result;
     }
 
+    private Authorizer.Result isOperationAuthorized(ServerChannelImpl channel, Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId)
+    {
+        List<Authorizer> authorizers = channel.authorizers();
+        if (authorizers.isEmpty())
+            return null;
+
+        Authorizer.Result result = Authorizer.Result.ignore();
+        for (Authorizer authorizer : authorizers)
+        {
+            Authorizer.Result authorization = authorizer.authorize(operation, channelId, session, message);
+            _logger.debug("Authorizer {} on channel {} {} {} for channel {}", authorizer, channel, authorization, operation, channelId);
+            if (authorization.isDenied())
+            {
+                result = authorization;
+                break;
+            }
+            else if (authorization.isGranted())
+            {
+                result = authorization;
+            }
+        }
+        return result;
+    }
+
     protected void doPublish(ServerSessionImpl from, ServerChannelImpl to, final ServerMessage.Mutable mutable)
     {
         if (to.isLazy())
             mutable.setLazy(true);
 
         final List<String> wildChannelNames = to.getChannelId().getWilds();
-        final ServerChannelImpl[] wildChannels = new ServerChannelImpl[wildChannelNames.size()];
-        for (int i = wildChannelNames.size(); i-- > 0; )
-            wildChannels[i] = _channels.get(wildChannelNames.get(i));
-
-        // Call the wild listeners
-        for (final ServerChannelImpl wildChannel : wildChannels)
+        int wildChannelsCount = wildChannelNames.size();
+        for (int i = 0; i <= wildChannelsCount; ++i)
         {
-            if (wildChannel == null)
+            ServerChannelImpl channel = i == wildChannelsCount ? to : _channels.get(wildChannelNames.get(i));
+            if (channel == null)
                 continue;
-            if (wildChannel.isLazy())
+            if (channel.isLazy())
                 mutable.setLazy(true);
-            List<ServerChannelListener> listeners = wildChannel.listeners();
+            List<ServerChannelListener> listeners = channel.listeners();
             if (!listeners.isEmpty())
             {
                 for (ServerChannelListener listener : listeners)
+                {
                     if (listener instanceof MessageListener)
+                    {
                         if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
                             return;
+                    }
+                }
             }
-        }
-
-        // Call the leaf listeners
-        List<ServerChannelListener> listeners = to.listeners();
-        if (!listeners.isEmpty())
-        {
-            for (ServerChannelListener listener : listeners)
-                if (listener instanceof MessageListener)
-                    if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
-                        return;
         }
 
         // Exactly at this point, we convert the message to JSON and therefore
@@ -890,8 +888,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         Set<String> wildSubscribers = null;
         if (ChannelId.isBroadcast(mutable.getChannel()))
         {
-            for (final ServerChannelImpl wildChannel : wildChannels)
+            for (int i = 0; i < wildChannelsCount; ++i)
             {
+                ServerChannelImpl wildChannel = _channels.get(wildChannelNames.get(i));
                 if (wildChannel == null)
                     continue;
                 Set<ServerSession> subscribers = wildChannel.subscribers();
@@ -922,12 +921,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         // Meta handlers
         if (to.isMeta())
         {
-            listeners = to.listeners();
+            List<ServerChannelListener> listeners = to.listeners();
             if (!listeners.isEmpty())
             {
                 for (ServerChannelListener listener : listeners)
+                {
                     if (listener instanceof BayeuxServerImpl.HandlerListener)
                         ((BayeuxServerImpl.HandlerListener)listener).onMessage(from, mutable);
+                }
             }
         }
     }
@@ -988,17 +989,16 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     protected boolean extendRecv(ServerSession from, ServerMessage.Mutable message)
     {
-        if (message.isMeta())
+        if (!_extensions.isEmpty())
         {
             for (Extension extension : _extensions)
-                if (!notifyRcvMeta(extension, from, message))
+            {
+                boolean proceed = message.isMeta() ?
+                        notifyRcvMeta(extension, from, message) :
+                        notifyRcv(extension, from, message);
+                if (!proceed)
                     return false;
-        }
-        else
-        {
-            for (Extension extension : _extensions)
-                if (!notifyRcv(extension, from, message))
-                    return false;
+            }
         }
         return true;
     }
@@ -1031,7 +1031,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     protected boolean extendSend(ServerSession from, ServerSession to, Mutable message)
     {
-        if (message.isMeta())
+        if (!_extensions.isEmpty())
         {
             // Cannot use listIterator(int): it is not thread safe
             ListIterator<Extension> i = _extensions.listIterator();
@@ -1040,29 +1040,16 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             while (i.hasPrevious())
             {
                 final Extension extension = i.previous();
-                if (!notifySendMeta(extension, to, message))
+                boolean proceed = message.isMeta() ?
+                        notifySendMeta(extension, to, message) :
+                        notifySend(extension, from, to, message);
+                if (!proceed)
                 {
                     _logger.debug("Extension {} interrupted message processing for {}", extension, message);
                     return false;
                 }
             }
         }
-        else
-        {
-            ListIterator<Extension> i = _extensions.listIterator();
-            while (i.hasNext())
-                i.next();
-            while (i.hasPrevious())
-            {
-                final Extension extension = i.previous();
-                if (!notifySend(extension, from, to, message))
-                {
-                    _logger.debug("Extension {} interrupted message processing for {}", extension, message);
-                    return false;
-                }
-            }
-        }
-
         _logger.debug("<  {}", message);
         return true;
     }

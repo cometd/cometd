@@ -647,17 +647,16 @@ public class ServerSessionImpl implements ServerSession
 
     protected boolean extendRecv(ServerMessage.Mutable message)
     {
-        if (message.isMeta())
+        if (!_extensions.isEmpty())
         {
             for (Extension extension : _extensions)
-                if (!notifyRcvMeta(extension, message))
+            {
+                boolean proceed = message.isMeta() ?
+                        notifyRcvMeta(extension, message) :
+                        notifyRcv(extension, message);
+                if (!proceed)
                     return false;
-        }
-        else
-        {
-            for (Extension extension : _extensions)
-                if (!notifyRcv(extension, message))
-                    return false;
+            }
         }
         return true;
     }

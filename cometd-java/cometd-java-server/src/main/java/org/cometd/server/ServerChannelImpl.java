@@ -339,24 +339,32 @@ public class ServerChannelImpl implements ServerChannel
     {
         waitForInitialized();
 
-        for (ServerSession session : _subscribers)
+        if (!_subscribers.isEmpty())
         {
-            if (!session.isHandshook())
-                unsubscribe((ServerSessionImpl)session);
+            for (ServerSession session : _subscribers)
+            {
+                if (!session.isHandshook())
+                    unsubscribe(session);
+            }
         }
 
         if (isPersistent())
             return;
 
-        if (_subscribers.size() > 0)
+        if (!_subscribers.isEmpty())
             return;
 
-        if (_authorizers.size() > 0)
+        if (!_authorizers.isEmpty())
             return;
 
-        for (ServerChannelListener listener : _listeners)
-            if (!(listener instanceof ServerChannelListener.Weak))
-                return;
+        if (!_listeners.isEmpty())
+        {
+            for (ServerChannelListener listener : _listeners)
+            {
+                if (!(listener instanceof ServerChannelListener.Weak))
+                    return;
+            }
+        }
 
         if (_sweeperPasses.incrementAndGet() < 3)
             return;

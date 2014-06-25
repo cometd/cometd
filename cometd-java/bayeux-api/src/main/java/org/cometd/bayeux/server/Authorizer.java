@@ -171,6 +171,16 @@ public interface Authorizer
             return Ignored.IGNORED;
         }
 
+        public boolean isDenied()
+        {
+            return false;
+        }
+
+        public boolean isGranted()
+        {
+            return false;
+        }
+
         @Override
         public String toString()
         {
@@ -194,6 +204,12 @@ public interface Authorizer
             }
 
             @Override
+            public boolean isDenied()
+            {
+                return true;
+            }
+
+            @Override
             public String toString()
             {
                 return super.toString() + " (reason='" + reason + "')";
@@ -206,6 +222,12 @@ public interface Authorizer
 
             private Granted()
             {
+            }
+
+            @Override
+            public boolean isGranted()
+            {
+                return true;
             }
         }
 
