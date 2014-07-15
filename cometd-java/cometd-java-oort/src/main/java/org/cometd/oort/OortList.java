@@ -115,7 +115,8 @@ public class OortList<E> extends OortObject<List<E>>
         data.put(Info.TYPE_FIELD, TYPE_FIELD_ELEMENT_VALUE);
         data.put(Info.ACTION_FIELD, ACTION_FIELD_ADD_VALUE);
 
-        logger.debug("Sharing list add {}", data);
+        if (logger.isDebugEnabled())
+            logger.debug("Sharing list add {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
@@ -141,7 +142,8 @@ public class OortList<E> extends OortObject<List<E>>
         data.put(Info.TYPE_FIELD, TYPE_FIELD_ELEMENT_VALUE);
         data.put(Info.ACTION_FIELD, ACTION_FIELD_REMOVE_VALUE);
 
-        logger.debug("Sharing list remove {}", data);
+        if (logger.isDebugEnabled())
+            logger.debug("Sharing list remove {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
@@ -185,7 +187,8 @@ public class OortList<E> extends OortObject<List<E>>
                     }
                 });
 
-                logger.debug("{} {} list {} of {}",
+                if (logger.isDebugEnabled())
+                    logger.debug("{} {} list {} of {}",
                         old.isMarked() ? "Performed" : "Skipped",
                         newInfo.isLocal() ? "local" : "remote",
                         remove ? "remove" : "add",
@@ -204,7 +207,8 @@ public class OortList<E> extends OortObject<List<E>>
             }
             else
             {
-                logger.debug("No info for {}", oortURL);
+                if (logger.isDebugEnabled())
+                    logger.debug("No info for {}", oortURL);
             }
         }
         else

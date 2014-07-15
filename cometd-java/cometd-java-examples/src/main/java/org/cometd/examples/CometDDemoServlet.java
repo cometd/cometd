@@ -79,7 +79,8 @@ public class CometDDemoServlet extends GenericServlet
 
         bayeux.createChannelIfAbsent("/foo/bar/baz", new ConfigurableServerChannel.Initializer.Persistent());
 
-        logger.debug(bayeux.dump());
+        if (logger.isDebugEnabled())
+            logger.debug(bayeux.dump());
     }
 
     @Override
@@ -128,7 +129,8 @@ public class CometDDemoServlet extends GenericServlet
         @Listener("/meta/*")
         public void monitorMeta(ServerSession session, ServerMessage message)
         {
-            logger.debug(message.toString());
+            if (logger.isDebugEnabled())
+                logger.debug(message.toString());
         }
     }
 

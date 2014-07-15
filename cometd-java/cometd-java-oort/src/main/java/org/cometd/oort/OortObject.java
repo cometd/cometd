@@ -156,7 +156,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         Info<T> info = newInfo(factory.newObject(null));
         holder.set(info, null);
         infos.put(oort.getURL(), holder);
-        logger.debug("Set local {}", info);
+        if (logger.isDebugEnabled())
+            logger.debug("Set local {}", info);
 
         sender.handshake();
         oort.addCometListener(this);
@@ -169,7 +170,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         // Must be done after registering listeners, to avoid missing responses from other nodes.
         channel.publish(getLocalSession(), info);
 
-        logger.debug("{} started", this);
+        if (logger.isDebugEnabled())
+            logger.debug("{} started", this);
     }
 
     @Override
@@ -182,7 +184,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         oort.removeCometListener(this);
         sender.disconnect();
         infos.remove(oort.getURL());
-        logger.debug("{} stopped", this);
+        if (logger.isDebugEnabled())
+            logger.debug("{} stopped", this);
     }
 
     /**
@@ -261,7 +264,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         data.put(Info.NAME_FIELD, getName());
         data.put(Info.OBJECT_FIELD, serialize(newObject));
 
-        logger.debug("Sharing {}", data);
+        if (logger.isDebugEnabled())
+            logger.debug("Sharing {}", data);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
@@ -297,18 +301,21 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     public void cometJoined(Event event)
     {
         String remoteOortURL = event.getCometURL();
-        logger.debug("Oort {} joined", remoteOortURL);
+        if (logger.isDebugEnabled())
+            logger.debug("Oort {} joined", remoteOortURL);
         pushInfo(remoteOortURL, getInfo(oort.getURL()));
     }
 
     public void cometLeft(Event event)
     {
-        logger.debug("Oort {} left", event.getCometURL());
+        if (logger.isDebugEnabled())
+            logger.debug("Oort {} left", event.getCometURL());
         Holder<T> holder = infos.remove(event.getCometURL());
         if (holder != null)
         {
             Info<T> info = holder.get();
-            logger.debug("Removed remote {}", info);
+            if (logger.isDebugEnabled())
+                logger.debug("Removed remote {}", info);
             notifyRemoved(info);
         }
     }
@@ -417,7 +424,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         MarkedReference<Info<T>> old = setInfo(newInfo, null);
 
         Info<T> oldInfo = old.getReference();
-        logger.debug("{} {} update of {} with {}",
+        if (logger.isDebugEnabled())
+            logger.debug("{} {} update of {} with {}",
                 old.isMarked() ? "Performed" : "Skipped",
                 newInfo.isLocal() ? "local" : "remote",
                 oldInfo, newInfo);
@@ -469,7 +477,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     protected void pushInfo(String oortURL, Map<String, Object> info)
     {
         OortComet oortComet = oort.getComet(oortURL);
-        logger.debug("Pushing (to {}) local {}", oortURL, info);
+        if (logger.isDebugEnabled())
+            logger.debug("Pushing (to {}) local {}", oortURL, info);
         if (oortComet != null)
             oortComet.getChannel(channelName).publish(info);
     }
@@ -706,7 +715,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             boolean sameName = getName().equals(data.get(Info.NAME_FIELD));
             if (sameName)
             {
-                logger.debug("Received {}", data);
+                if (logger.isDebugEnabled())
+                    logger.debug("Received {}", data);
                 onObject(data);
             }
             return true;

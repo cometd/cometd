@@ -84,7 +84,8 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
     {
         try
         {
-            logger.debug("Opening websocket session to {}", uri);
+            if (logger.isDebugEnabled())
+                logger.debug("Opening websocket session to {}", uri);
             _webSocketClient.setConnectTimeout(getConnectTimeout());
             _webSocketClient.getPolicy().setIdleTimeout(getIdleTimeout());
             ClientUpgradeRequest request = new ClientUpgradeRequest();
@@ -166,7 +167,8 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
             {
                 _session = session;
             }
-            logger.debug("Opened websocket session {}", session);
+            if (logger.isDebugEnabled())
+                logger.debug("Opened websocket session {}", session);
         }
 
         @Override
@@ -225,7 +227,8 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
             }
             if (session != null)
             {
-                logger.debug("Closing websocket session {}", session);
+                if (logger.isDebugEnabled())
+                    logger.debug("Closing websocket session {}", session);
                 session.close(1000, reason);
             }
         }

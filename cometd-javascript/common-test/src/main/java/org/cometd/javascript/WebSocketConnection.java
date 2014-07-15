@@ -57,7 +57,8 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
 //            wsClient.getUpgradeRequest().setCookieStore();
 //            wsClient.getCookies().putAll(((HttpCookieStore)cookieStore).getAll(uri));
 
-            logger.debug("Opening WebSocket session to {}", uri);
+            if (logger.isDebugEnabled())
+                logger.debug("Opening WebSocket session to {}", uri);
             wsClient.connect(this, uri, request);
         }
         catch (final Throwable x)
@@ -86,7 +87,8 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
             Session session = this.session;
             if (session != null)
             {
-                logger.debug("WebSocket sending data {}", data);
+                if (logger.isDebugEnabled())
+                    logger.debug("WebSocket sending data {}", data);
                 session.getRemote().sendString(data);
             }
         }
@@ -118,7 +120,8 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     public void onWebSocketConnect(Session session)
     {
         this.session = session;
-        logger.debug("WebSocket opened session {}", session);
+        if (logger.isDebugEnabled())
+            logger.debug("WebSocket opened session {}", session);
         threads.invoke(false, thiz, thiz, "onopen");
     }
 
@@ -130,7 +133,8 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     @Override
     public void onWebSocketText(String data)
     {
-        logger.debug("WebSocket message data {}", data);
+        if (logger.isDebugEnabled())
+            logger.debug("WebSocket message data {}", data);
         // Use single quotes so they do not mess up with quotes in the data string
         Object event = threads.evaluate("event", "({data:'" + data + "'})");
         threads.invoke(false, thiz, thiz, "onmessage", event);
@@ -139,7 +143,8 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     @Override
     public void onWebSocketClose(int closeCode, String reason)
     {
-        logger.debug("WebSocket closed with code {}/{}", closeCode, reason);
+        if (logger.isDebugEnabled())
+            logger.debug("WebSocket closed with code {}/{}", closeCode, reason);
         // Use single quotes so they do not mess up with quotes in the reason string
         Object event = threads.evaluate("event", "({code:" + closeCode +",reason:'" + reason + "'})");
         threads.invoke(false, thiz, thiz, "onclose", event);
@@ -148,7 +153,8 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     @Override
     public void onWebSocketError(Throwable x)
     {
-        logger.debug("WebSocket exception", x);
+        if (logger.isDebugEnabled())
+            logger.debug("WebSocket exception", x);
         threads.invoke(false, thiz, thiz, "onerror");
     }
 }

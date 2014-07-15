@@ -91,7 +91,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         }
         catch (Exception x)
         {
-            _logger.debug("Exception while writing messages", x);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Exception while writing messages", x);
             error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
@@ -117,18 +118,21 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         public void onDataAvailable() throws IOException
         {
             ServletInputStream input = asyncContext.getRequest().getInputStream();
-            _logger.debug("Asynchronous read start from {}", input);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Asynchronous read start from {}", input);
             // First check for isReady() because it has
             // side effects, and then for isFinished().
             while (input.isReady() && !input.isFinished())
             {
                 int read = input.read(buffer);
-                _logger.debug("Asynchronous read {} bytes from {}", read, input);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Asynchronous read {} bytes from {}", read, input);
                 if (read >= 0)
                     append(buffer, 0, read);
             }
             if (!input.isFinished())
-                _logger.debug("Asynchronous read pending from {}", input);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Asynchronous read pending from {}", input);
         }
 
         protected abstract void append(byte[] buffer, int offset, int length);
@@ -138,7 +142,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         {
             ServletInputStream input = asyncContext.getRequest().getInputStream();
             String json = finish();
-            _logger.debug("Asynchronous read end from {}: {}", input, json);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Asynchronous read end from {}: {}", input, json);
             process(json);
         }
 
@@ -153,7 +158,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(json);
-                _logger.debug("Parsed {} messages", messages.length);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Parsed {} messages", messages.length);
                 processMessages(request, response, messages);
             }
             catch (ParseException x)
@@ -272,7 +278,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                     buffer.append("[");
                 }
 
-                _logger.debug("Messages to write for session {}: {}", session, messages.size());
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Messages to write for session {}: {}", session, messages.size());
                 while (messageIndex < messages.size())
                 {
                     if (messageIndex > 0)
@@ -294,7 +301,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                     session.startIntervalTimeout(getInterval());
             }
 
-            _logger.debug("Replies to write for session {}: {}", session, replies.length);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Replies to write for session {}: {}", session, replies.length);
             boolean needsComma = messageIndex > 0;
             while (replyIndex < replies.length)
             {

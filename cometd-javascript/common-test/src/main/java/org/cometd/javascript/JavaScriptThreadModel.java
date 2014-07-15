@@ -194,7 +194,8 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
                     if (property instanceof Function)
                     {
                         Function function = (Function)property;
-                        logger.debug("Invoking function {} => {}", functionName, function);
+                        if (logger.isDebugEnabled())
+                            logger.debug("Invoking function {} => {}", functionName, function);
                         return function.call(context, scope, thiz, arguments);
                     }
                     else

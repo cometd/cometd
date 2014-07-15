@@ -207,7 +207,8 @@ public class LongPollingTransport extends HttpClientTransport
                 }
                 catch (IOException x)
                 {
-                    logger.debug("", x);
+                    if (logger.isDebugEnabled())
+                        logger.debug("", x);
                 }
             }
 
@@ -235,7 +236,8 @@ public class LongPollingTransport extends HttpClientTransport
                         try
                         {
                             List<Message.Mutable> messages = parseMessages(content);
-                            logger.debug("Received messages {}", messages);
+                            if (logger.isDebugEnabled())
+                                logger.debug("Received messages {}", messages);
                             for (Message.Mutable message : messages)
                             {
                                 if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel()))

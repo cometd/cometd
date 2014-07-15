@@ -131,7 +131,8 @@ public class CometDServlet extends HttpServlet
         }
         catch (Exception x)
         {
-            _logger.debug("", x);
+            if (_logger.isDebugEnabled())
+                _logger.debug("", x);
         }
         finally
         {

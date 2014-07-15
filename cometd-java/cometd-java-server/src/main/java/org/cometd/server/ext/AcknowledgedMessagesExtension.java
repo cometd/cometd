@@ -51,7 +51,8 @@ public class AcknowledgedMessagesExtension extends Extension.Adapter
             if (clientRequestedAcks && remote != null)
             {
                 ServerSessionImpl session = (ServerSessionImpl)remote;
-                _logger.debug("Enabled message acknowledgement for session {}", session);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Enabled message acknowledgement for session {}", session);
 
                 AcknowledgedMessagesSessionExtension extension = new AcknowledgedMessagesSessionExtension(session);
 

@@ -202,7 +202,8 @@ public abstract class AbstractService
      */
     protected void addService(String channelName, String methodName)
     {
-        _logger.debug("Mapping {}#{} to {}", _name, methodName, channelName);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Mapping {}#{} to {}", _name, methodName, channelName);
 
         Method candidate = null;
         Class<?> c = this.getClass();
@@ -313,7 +314,8 @@ public abstract class AbstractService
 
     private void invoke(final Method method, final ServerSession fromClient, final ServerMessage msg)
     {
-        _logger.debug("Invoking {}#{} from {} with {}", _name, method.getName(), fromClient, msg);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Invoking {}#{} from {} with {}", _name, method.getName(), fromClient, msg);
 
         ThreadPool threadPool = getThreadPool();
         if (threadPool == null)

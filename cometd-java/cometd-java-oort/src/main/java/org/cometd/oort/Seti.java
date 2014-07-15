@@ -132,7 +132,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         _oort.addCometListener(_cometListener);
 
         Set<String> associatedUserIds = getAssociatedUserIds();
-        _logger.debug("Broadcasting associated users {}", associatedUserIds);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Broadcasting associated users {}", associatedUserIds);
         SetiPresence presence = new SetiPresence(true, associatedUserIds);
         presence.put(SetiPresence.ALIVE_FIELD, true);
         _session.getChannel(SETI_ALL_CHANNEL).publish(presence);
@@ -195,10 +196,12 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         if (added)
         {
             session.addListener(location);
-            _logger.debug("Associated session {} to user {}", session, userId);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Associated session {} to user {}", session, userId);
             if (!wasAssociated)
             {
-                _logger.debug("Broadcasting association addition for user {}", userId);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Broadcasting association addition for user {}", userId);
                 // Let everyone in the cluster know that this session is here
                 _session.getChannel(SETI_ALL_CHANNEL).publish(new SetiPresence(true, userId));
             }
@@ -221,7 +224,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
                 _uid2Location.put(userId, locations);
             }
             boolean result = locations.add(location);
-            _logger.debug("Associations {}", _uid2Location);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Associations {}", _uid2Location);
             return result;
         }
     }
@@ -240,7 +244,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         String oortURL = location._oortURL;
         if (associated && !_oort.isCometConnected(oortURL))
         {
-            _logger.debug("Disassociating {} since comet {} just disconnected", userId, oortURL);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Disassociating {} since comet {} just disconnected", userId, oortURL);
             disassociate(userId, location);
             return false;
         }
@@ -343,7 +348,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         LocalLocation location = new LocalLocation(userId, session);
         boolean removed = disassociate(userId, location);
         if (removed)
-            _logger.debug("Disassociated session {} from user {}", session, userId);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Disassociated session {} from user {}", session, userId);
 
         // Seti is stopped before BayeuxServer, but it may happen that RemoveListeners
         // call Seti when BayeuxServer is stopping, and they will find that Seti is already stopped.
@@ -357,7 +363,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         // that the user is gone, while in reality it is still associated with the remaining association.
         if (_session.isConnected() && !isAssociated(userId))
         {
-            _logger.debug("Broadcasting association removal for user {}", userId);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Broadcasting association removal for user {}", userId);
             // Let everyone in the cluster know that this session is not here anymore
             _session.getChannel(SETI_ALL_CHANNEL).publish(new SetiPresence(false, userId));
         }
@@ -377,7 +384,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
                 if (locations.isEmpty())
                     _uid2Location.remove(userId);
             }
-            _logger.debug("Associations {}", _uid2Location);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Associations {}", _uid2Location);
             return result;
         }
     }
@@ -390,7 +398,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
             getAssociatedUserIds(userIds);
             _uid2Location.clear();
         }
-        _logger.debug("Broadcasting association removal for users {}", userIds);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Broadcasting association removal for users {}", userIds);
         SetiPresence presence = new SetiPresence(false, userIds);
         presence.put(SetiPresence.ALIVE_FIELD, false);
         _session.getChannel(SETI_ALL_CHANNEL).publish(presence);
@@ -422,7 +431,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
                     entries.remove();
             }
         }
-        _logger.debug("Removing presences of comet {} for users {}", oortURL, userIds);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Removing presences of comet {} for users {}", oortURL, userIds);
         for (String userId : userIds)
             notifyPresenceRemoved(oortURL, userId);
     }
@@ -501,7 +511,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
                     copy.addAll(locations);
             }
 
-            _logger.debug("Sending message to locations {}", copy);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Sending message to locations {}", copy);
             for (Location location : copy)
                 location.send(toUserId, toChannel, data);
         }
@@ -515,7 +526,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      */
     protected void receiveDirect(Message message)
     {
-        _logger.debug("Received direct message {}", message);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Received direct message {}", message);
         Map<String, Object> data = message.getDataAsMap();
         Boolean presence = (Boolean)data.get(SetiPresence.PRESENCE_FIELD);
         if (presence != null)
@@ -538,7 +550,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      */
     protected void receiveBroadcast(Message message)
     {
-        _logger.debug("Received broadcast message {}", message);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Received broadcast message {}", message);
         Map<String, Object> data = message.getDataAsMap();
         Boolean presence = (Boolean)data.get(SetiPresence.PRESENCE_FIELD);
         if (presence != null)
@@ -554,7 +567,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      */
     protected void receivePresence(Map<String, Object> presence)
     {
-        _logger.debug("Received presence message {}", presence);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Received presence message {}", presence);
         String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
         if (_setiId.equals(generateSetiId(oortURL)))
             receiveLocalPresence(presence);
@@ -567,7 +581,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
         boolean present = (Boolean)presence.get(SetiPresence.PRESENCE_FIELD);
         Set<String> userIds = convertPresenceUsers(presence);
-        _logger.debug("Notifying presence listeners {}", presence);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Notifying presence listeners {}", presence);
         for (String userId : userIds)
         {
             if (present)
@@ -583,7 +598,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         boolean present = (Boolean)presence.get(SetiPresence.PRESENCE_FIELD);
         Set<String> userIds = convertPresenceUsers(presence);
 
-        _logger.debug("Received remote presence message from comet {} for {}", oortURL, userIds);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Received remote presence message from comet {} for {}", oortURL, userIds);
 
         for (String userId : userIds)
         {
@@ -607,7 +623,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
             if (oortComet != null)
             {
                 Set<String> associatedUserIds = getAssociatedUserIds();
-                _logger.debug("Pushing associated users {} to comet {}", associatedUserIds, oortURL);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Pushing associated users {} to comet {}", associatedUserIds, oortURL);
                 ClientSessionChannel channel = oortComet.getChannel(generateSetiChannel(generateSetiId(oortURL)));
                 channel.publish(new SetiPresence(true, associatedUserIds));
             }
@@ -689,7 +706,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
             }
         }
 
-        _logger.debug("Received message {} for locations {}", message, copy);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Received message {} for locations {}", message, copy);
         for (Location location : copy)
             location.receive(userId, channel, data);
     }
@@ -992,12 +1010,14 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         {
             String oortURL = event.getCometURL();
             OortComet oortComet = _oort.findComet(oortURL);
-            _logger.debug("Comet joined: {} with {}", oortURL, oortComet);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Comet joined: {} with {}", oortURL, oortComet);
             if (oortComet != null)
             {
                 ClientSessionChannel channel = oortComet.getChannel(generateSetiChannel(generateSetiId(oortURL)));
                 Set<String> userIds = getAssociatedUserIds();
-                _logger.debug("Pushing associated users {} to comet {}", userIds, oortURL);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Pushing associated users {} to comet {}", userIds, oortURL);
                 channel.publish(new SetiPresence(true, userIds));
             }
         }
@@ -1005,7 +1025,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         public void cometLeft(Event event)
         {
             String oortURL = event.getCometURL();
-            _logger.debug("Comet left: {}", oortURL);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Comet left: {}", oortURL);
             removePresences(oortURL);
         }
     }

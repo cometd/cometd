@@ -154,7 +154,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
     protected void handleException(S wsSession, ServerSession session, Throwable exception)
     {
-        _logger.debug("", exception);
+        if (_logger.isDebugEnabled())
+            _logger.debug("", exception);
     }
 
     protected abstract void send(S wsSession, ServerSession session, String data, Callback callback);
@@ -229,7 +230,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 session.startIntervalTimeout(getInterval());
                 cancelMetaConnectTask(session);
             }
-            _logger.debug("Closing {}/{} - {}", code, reason, session);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Closing {}/{} - {}", code, reason, session);
             AbstractWebSocketTransport.this.onClose(code, reason);
         }
 
@@ -248,7 +250,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
             if (connectTask == null)
                 return false;
-            _logger.debug("Cancelling meta connect task {}", connectTask);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Cancelling meta connect task {}", connectTask);
             connectTask.cancel(false);
             return true;
         }
@@ -260,7 +263,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(data);
-                _logger.debug("Received {}", data);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Received {}", data);
                 processMessages(wsSession, messages);
             }
             catch (ParseException x)
@@ -291,7 +295,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             for (int i = 0; i < messages.length; i++)
             {
                 ServerMessage.Mutable message = messages[i];
-                _logger.debug("Processing {}", message);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Processing {}", message);
 
                 // Get the session from the message
                 String clientId = message.getClientId();
@@ -383,14 +388,18 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                                 if (!session.hasNonLazyMessages())
                                 {
                                     if (cancelMetaConnectTask(session))
-                                        _logger.debug("Cancelled unresponded meta connect {}", _connectReply);
+                                    {
+                                        if (_logger.isDebugEnabled())
+                                            _logger.debug("Cancelled unresponded meta connect {}", _connectReply);
+                                    }
 
                                     _connectReply = reply;
 
                                     // Delay the connect reply until timeout.
                                     long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + timeout;
                                     _connectTask = getScheduler().schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
-                                    _logger.debug("Scheduled meta connect {}", _connectTask);
+                                    if (_logger.isDebugEnabled())
+                                        _logger.debug("Scheduled meta connect {}", _connectTask);
                                     reply = null;
                                 }
                             }
@@ -416,7 +425,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
         protected void send(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage> replies)
         {
-            _logger.debug("Sending {}, replies={}, messages={}", session, replies, queue);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Sending {}, replies={}, messages={}", session, replies, queue);
             flusher.queue(new Entry<>(wsSession, session, startInterval, queue, replies));
             flusher.iterate();
         }
@@ -454,7 +464,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             {
                 if (session == null)
                 {
-                    _logger.debug("No session, skipping reply {}", expiredConnectReply);
+                    if (_logger.isDebugEnabled())
+                        _logger.debug("No session, skipping reply {}", expiredConnectReply);
                     return;
                 }
 
@@ -473,7 +484,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     {
                         // We had a second meta connect arrived while we were expiring the first:
                         // just ignore to reply to the first connect as if we were able to cancel it
-                        _logger.debug("Flushing skipped replies that do not match: {} != {}", connectReply, expiredConnectReply);
+                        if (_logger.isDebugEnabled())
+                            _logger.debug("Flushing skipped replies that do not match: {} != {}", connectReply, expiredConnectReply);
                         return;
                     }
 
@@ -483,7 +495,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         {
                             // If we need to deliver only via meta connect, but we
                             // do not have one outstanding, wait until it arrives
-                            _logger.debug("Flushing skipped since metaConnectDelivery={}, metaConnectReply={}", metaConnectDelivery, connectReply);
+                            if (_logger.isDebugEnabled())
+                                _logger.debug("Flushing skipped since metaConnectDelivery={}, metaConnectReply={}", metaConnectDelivery, connectReply);
                             return;
                         }
                     }
@@ -511,7 +524,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
                 List<ServerMessage> queue = session.takeQueue();
 
-                _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, connectReply, queue);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, connectReply, queue);
                 send(wsSession, session, reply, queue, replies);
             }
             catch (Throwable x)
@@ -537,9 +551,11 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             {
                 long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 long delay = now - _connectExpiration;
-                if (delay > 5000) // TODO: make the max delay a parameter ?
-                    _logger.debug("/meta/connect {} expired {} ms too late", _connectReply, delay);
-
+                if (_logger.isDebugEnabled())
+                {
+                    if (delay > 5000) // TODO: make the max delay a parameter ?
+                        _logger.debug("/meta/connect {} expired {} ms too late", _connectReply, delay);
+                }
                 // Send the meta connect response after timeout.
                 // We *must* execute the next schedule() otherwise
                 // the client will timeout the meta connect, so we
@@ -561,7 +577,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             protected Action process() throws Exception
             {
                 Entry<S> entry = _entries.peek();
-                _logger.debug("Processing {}", entry);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Processing {}", entry);
 
                 if (entry == null)
                     return Action.IDLE;

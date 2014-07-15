@@ -151,7 +151,8 @@ public class ServerSessionImpl implements ServerSession
             {
                 if (now > _intervalTimestamp)
                 {
-                    _logger.debug("Sweeping session {}", this);
+                    if (_logger.isDebugEnabled())
+                        _logger.debug("Sweeping session {}", this);
                     remove = true;
                 }
             }

@@ -143,7 +143,8 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter
 
         public boolean rcv(ServerSession session, ServerMessage.Mutable message)
         {
-            logger.debug("Marking active session {}, received message {}", session, message);
+            if (logger.isDebugEnabled())
+                logger.debug("Marking active session {}, received message {}", session, message);
             markActive();
             return true;
         }
@@ -154,13 +155,15 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter
             {
                 if (isInactive())
                 {
-                    logger.debug("Inactive session {}, disconnecting", session);
+                    if (logger.isDebugEnabled())
+                        logger.debug("Inactive session {}, disconnecting", session);
                     disconnect(session);
                 }
             }
             else
             {
-                logger.debug("Marking active session {}, received meta message {}", session, message);
+                if (logger.isDebugEnabled())
+                    logger.debug("Marking active session {}, received meta message {}", session, message);
                 markActive();
             }
             return true;
@@ -170,7 +173,8 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter
         {
             if (activity == Activity.CLIENT_SERVER)
             {
-                logger.debug("Marking active session {}, sending message {}", session, message);
+                if (logger.isDebugEnabled())
+                    logger.debug("Marking active session {}, sending message {}", session, message);
                 markActive();
             }
             return message;
@@ -180,7 +184,8 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter
         {
             if (!Channel.META_CONNECT.equals(message.getChannel()) && activity == Activity.CLIENT_SERVER)
             {
-                logger.debug("Marking active session {}, sending meta message {}", session, message);
+                if (logger.isDebugEnabled())
+                    logger.debug("Marking active session {}, sending meta message {}", session, message);
                 markActive();
             }
             return true;

@@ -216,7 +216,8 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
     {
         if (!oort.getKnownComets().contains(cometURL))
         {
-            logger.debug("Received comet URL via multicast: {}", cometURL);
+            if (logger.isDebugEnabled())
+                logger.debug("Received comet URL via multicast: {}", cometURL);
             OortComet oortComet = oort.observeComet(cometURL);
             if (oortComet != null)
             {
@@ -224,7 +225,8 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
                 // If we could not connect, let's disconnect, we will be advertised again
                 if (elapsed)
                 {
-                    logger.debug("Interrupting attempts to connect to {}", cometURL);
+                    if (logger.isDebugEnabled())
+                        logger.debug("Interrupting attempts to connect to {}", cometURL);
                     oort.deobserveComet(cometURL);
                 }
             }
@@ -242,7 +244,8 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
 
         public void run()
         {
-            logger.debug("Entering multicast receiver thread on {}", socket.getLocalSocketAddress());
+            if (logger.isDebugEnabled())
+                logger.debug("Entering multicast receiver thread on {}", socket.getLocalSocketAddress());
             try
             {
                 // Set a timeout to avoid to wait forever
@@ -267,7 +270,8 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
             }
             finally
             {
-                logger.debug("Exiting multicast receiver thread");
+                if (logger.isDebugEnabled())
+                    logger.debug("Exiting multicast receiver thread");
                 socket.close();
             }
         }
@@ -297,7 +301,8 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
 
         public void run()
         {
-            logger.debug("Entering multicast sender thread");
+            if (logger.isDebugEnabled())
+                logger.debug("Entering multicast sender thread");
             try
             {
                 final String cometURL = oort.getURL();
@@ -325,7 +330,8 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
             }
             finally
             {
-                logger.debug("Exiting multicast sender thread");
+                if (logger.isDebugEnabled())
+                    logger.debug("Exiting multicast sender thread");
                 socket.close();
             }
         }

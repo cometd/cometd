@@ -148,7 +148,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                                 boolean flip = false;
                                 try
                                 {
-                                    logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
+                                    if (logger.isDebugEnabled())
+                                        logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
                                     if (!method.isAccessible())
                                     {
                                         flip = true;
@@ -172,13 +173,15 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
                         if (initializedChannel.isMarked())
                         {
-                            logger.debug("Channel {} already initialized. Not called method {} on bean {}", channel, method, bean);
+                            if (logger.isDebugEnabled())
+                                logger.debug("Channel {} already initialized. Not called method {} on bean {}", channel, method, bean);
                         }
                         else
                         {
                             if (configure.configureIfExists())
                             {
-                                logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
+                                if (logger.isDebugEnabled())
+                                    logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
                                 init.configureChannel(initializedChannel.getReference());
                             }
                             else if (configure.errorIfExists())
@@ -349,7 +352,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     {
                         setField(bean, field, value);
                         result = true;
-                        logger.debug("Injected {} to field {} on bean {}", value, field, bean);
+                        if (logger.isDebugEnabled())
+                            logger.debug("Injected {} to field {} on bean {}", value, field, bean);
                     }
                 }
             }
@@ -372,7 +376,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         {
                             invokeMethod(bean, method, value);
                             result = true;
-                            logger.debug("Injected {} to method {} on bean {}", value, method, bean);
+                            if (logger.isDebugEnabled())
+                                logger.debug("Injected {} to method {} on bean {}", value, method, bean);
                         }
                     }
                 }
@@ -412,7 +417,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         }
                         callbacks.add(listenerCallback);
                         result = true;
-                        logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
+                        if (logger.isDebugEnabled())
+                            logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }
@@ -469,7 +475,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         }
                         callbacks.add(subscriptionCallback);
                         result = true;
-                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
+                        if (logger.isDebugEnabled())
+                            logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }

@@ -137,7 +137,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         // blocking writes, so we rely on async writes.
         // In Jetty this is guaranteed to work, while for other implementation who knows.
 
-        _logger.debug("Sending {}", data);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Sending {}", data);
 
         // Async write.
         wsSession.getAsyncRemote().sendText(data, new SendHandler()
@@ -184,7 +185,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
                     {
                         if (_batchWrites)
                         {
-                            _logger.debug("Flushing batched messages for {}", session);
+                            if (_logger.isDebugEnabled())
+                                _logger.debug("Flushing batched messages for {}", session);
                             wsSession.getAsyncRemote().flushBatch();
                         }
                     }
@@ -232,7 +234,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             }
             catch (IOException x)
             {
-                _logger.debug("Could not configure batch writes", x);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Could not configure batch writes", x);
             }
         }
 
@@ -263,7 +266,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public void onMessage(String data)
         {
-            _logger.debug("WebSocket Text message on {}/{}", WebSocketTransport.this.hashCode(), hashCode());
+            if (_logger.isDebugEnabled())
+                _logger.debug("WebSocket Text message on {}/{}", WebSocketTransport.this.hashCode(), hashCode());
             delegate.onMessage(_wsSession, data);
         }
     }

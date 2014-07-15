@@ -141,7 +141,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
             for (int i = 0; i < messages.length; ++i)
             {
                 ServerMessage.Mutable message = messages[i];
-                _logger.debug("Processing {}", message);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Processing {}", message);
 
                 if (session == null && !disconnected)
                     session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
@@ -418,7 +419,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
             result = false;
         }
 
-        _logger.debug("> client {} {} sessions from {}", browserId, sessions, session);
+        if (_logger.isDebugEnabled())
+            _logger.debug("> client {} {} sessions from {}", browserId, sessions, session);
 
         return result;
     }
@@ -436,7 +438,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         if (sessions == 0)
             _browserSweep.put(browserId, new AtomicInteger(0));
 
-        _logger.debug("< client {} {} sessions for {}", browserId, sessions, session);
+        if (_logger.isDebugEnabled())
+            _logger.debug("< client {} {} sessions for {}", browserId, sessions, session);
     }
 
     protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws IOException
@@ -515,7 +518,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                     if (_browserSweep.remove(key) == count && _browserMap.get(key).get() == 0)
                     {
                         _browserMap.remove(key);
-                        _logger.debug("Swept browserId {}", key);
+                        if (_logger.isDebugEnabled())
+                            _logger.debug("Swept browserId {}", key);
                     }
                 }
             }
@@ -703,7 +707,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         {
             if (cancelTimeout())
             {
-                _logger.debug("Resuming /meta/connect after schedule");
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Resuming /meta/connect after schedule");
                 resume();
             }
         }
@@ -713,7 +718,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         {
             if (cancelTimeout())
             {
-                _logger.debug("Duplicate /meta/connect, cancelling {}", reply);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Duplicate /meta/connect, cancelling {}", reply);
                 error(HttpServletResponse.SC_REQUEST_TIMEOUT);
             }
         }
@@ -728,7 +734,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         {
             cancelTimeout();
             session.setScheduler(null);
-            _logger.debug("Resuming /meta/connect after timeout");
+            if (_logger.isDebugEnabled())
+                _logger.debug("Resuming /meta/connect after timeout");
             resume();
         }
 

@@ -115,7 +115,8 @@ class AnnotationProcessor
             }
             catch (RuntimeException x)
             {
-                logger.debug("Exception while invoking @PreDestroy method " + method + ", ignoring", x);
+                if (logger.isDebugEnabled())
+                    logger.debug("Exception while invoking @PreDestroy method " + method + ", ignoring", x);
             }
         }
 
@@ -241,13 +242,15 @@ class AnnotationProcessor
                         Object value = getField(bean, field);
                         if (value != null)
                         {
-                            logger.debug("Avoid injection of field {} on bean {}, it's already injected with {}", field, bean, value);
+                            if (logger.isDebugEnabled())
+                                logger.debug("Avoid injection of field {} on bean {}, it's already injected with {}", field, bean, value);
                             continue;
                         }
 
                         setField(bean, field, injectable);
                         result = true;
-                        logger.debug("Injected {} to field {} on bean {}", injectable, field, bean);
+                        if (logger.isDebugEnabled())
+                            logger.debug("Injected {} to field {} on bean {}", injectable, field, bean);
                     }
                 }
             }
@@ -268,14 +271,16 @@ class AnnotationProcessor
                                 Object value = invokeMethod(bean, getter);
                                 if (value != null)
                                 {
-                                    logger.debug("Avoid injection of method {} on bean {}, it's already injected with {}", method, bean, value);
+                                    if (logger.isDebugEnabled())
+                                        logger.debug("Avoid injection of method {} on bean {}, it's already injected with {}", method, bean, value);
                                     continue;
                                 }
                             }
 
                             invokeMethod(bean, method, injectable);
                             result = true;
-                            logger.debug("Injected {} to method {} on bean {}", injectable, method, bean);
+                            if (logger.isDebugEnabled())
+                                logger.debug("Injected {} to method {} on bean {}", injectable, method, bean);
                         }
                     }
                 }

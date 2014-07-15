@@ -111,7 +111,8 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         data.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
         data.put(Info.ACTION_FIELD, ACTION_FIELD_PUT_VALUE);
 
-        logger.debug("Sharing map put {}", data);
+        if (logger.isDebugEnabled())
+            logger.debug("Sharing map put {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
@@ -144,7 +145,8 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         data.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
         data.put(Info.ACTION_FIELD, ACTION_FIELD_PUT_ABSENT_VALUE);
 
-        logger.debug("Sharing map putIfAbsent {}", data);
+        if (logger.isDebugEnabled())
+            logger.debug("Sharing map putIfAbsent {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
@@ -174,7 +176,8 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         data.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
         data.put(Info.ACTION_FIELD, ACTION_FIELD_REMOVE_VALUE);
 
-        logger.debug("Sharing map remove {}", data);
+        if (logger.isDebugEnabled())
+            logger.debug("Sharing map remove {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
@@ -272,7 +275,8 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
                 V result = resultRef.get();
                 Entry<K, V> entry = new Entry<>(key, result, value);
 
-                logger.debug("{} {} map {} of {}",
+                if (logger.isDebugEnabled())
+                    logger.debug("{} {} map {} of {}",
                         old.isMarked() ? "Performed" : "Skipped",
                         newInfo.isLocal() ? "local" : "remote",
                         remove ? "remove" : "put",
@@ -291,7 +295,8 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
             }
             else
             {
-                logger.debug("No info for {}", oortURL);
+                if (logger.isDebugEnabled())
+                    logger.debug("No info for {}", oortURL);
             }
         }
         else

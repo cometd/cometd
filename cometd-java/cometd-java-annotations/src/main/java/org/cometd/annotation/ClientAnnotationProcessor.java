@@ -205,7 +205,8 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                     {
                         setField(bean, field, clientSession);
                         result = true;
-                        logger.debug("Injected {} to field {} on bean {}", clientSession, field, bean);
+                        if (logger.isDebugEnabled())
+                            logger.debug("Injected {} to field {} on bean {}", clientSession, field, bean);
                     }
                 }
             }
@@ -222,7 +223,8 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                         {
                             invokeMethod(bean, method, clientSession);
                             result = true;
-                            logger.debug("Injected {} to method {} on bean {}", clientSession, method, bean);
+                            if (logger.isDebugEnabled())
+                                logger.debug("Injected {} to method {} on bean {}", clientSession, method, bean);
                         }
                     }
                 }
@@ -261,7 +263,8 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                         }
                         callbacks.add(listenerCallback);
                         result = true;
-                        logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
+                        if (logger.isDebugEnabled())
+                            logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }
@@ -320,7 +323,8 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                         }
                         callbacks.add(subscriptionCallback);
                         result = true;
-                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
+                        if (logger.isDebugEnabled())
+                            logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }

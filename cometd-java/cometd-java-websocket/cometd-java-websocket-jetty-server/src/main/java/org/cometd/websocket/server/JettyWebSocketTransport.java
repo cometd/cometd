@@ -87,12 +87,14 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
                     }
                     else
                     {
-                        _logger.debug("Transport not those allowed: {}", allowedTransports);
+                        if (_logger.isDebugEnabled())
+                            _logger.debug("Transport not those allowed: {}", allowedTransports);
                     }
                 }
                 else
                 {
-                    _logger.debug("Origin check failed for origin {}", origin);
+                    if (_logger.isDebugEnabled())
+                        _logger.debug("Origin check failed for origin {}", origin);
                 }
                 return null;
             }
@@ -136,7 +138,8 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
 
     protected void send(final Session wsSession, final ServerSession session, String data, final Callback callback)
     {
-        _logger.debug("Sending {}", data);
+        if (_logger.isDebugEnabled())
+            _logger.debug("Sending {}", data);
 
         // First blocking version - but cannot be used for concurrent writes.
 //        wsSession.getRemote().sendString(data);

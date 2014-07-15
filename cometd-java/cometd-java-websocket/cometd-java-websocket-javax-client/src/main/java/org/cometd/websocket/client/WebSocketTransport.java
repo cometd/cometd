@@ -86,7 +86,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport
     {
         try
         {
-            logger.debug("Opening websocket session to {}", uri);
+            if (logger.isDebugEnabled())
+                logger.debug("Opening websocket session to {}", uri);
             _webSocketContainer.setDefaultMaxSessionIdleTimeout(getIdleTimeout());
             ClientEndpointConfig.Configurator configurator = new Configurator();
             String protocol = getProtocol();
@@ -141,7 +142,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport
                 _session = session;
             }
             session.addMessageHandler(this);
-            logger.debug("Opened websocket session {}", session);
+            if (logger.isDebugEnabled())
+                logger.debug("Opened websocket session {}", session);
         }
 
         @Override
@@ -184,7 +186,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport
             }
             if (session != null)
             {
-                logger.debug("Closing ({}) websocket session {}", reason, session);
+                if (logger.isDebugEnabled())
+                    logger.debug("Closing ({}) websocket session {}", reason, session);
                 try
                 {
                     session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));

@@ -175,7 +175,8 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         bayeuxServer.createChannelIfAbsent(broadcastChannelName).getReference().addListener(this);
         bayeuxServer.createChannelIfAbsent(resultChannelName).getReference().addListener(this);
         oort.observeChannel(broadcastChannelName);
-        logger.debug("Started {}", this);
+        if (logger.isDebugEnabled())
+            logger.debug("Started {}", this);
     }
 
     @Override
@@ -193,7 +194,8 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         if (channel != null)
             channel.removeListener(this);
         session.disconnect();
-        logger.debug("Stopped {}", this);
+        if (logger.isDebugEnabled())
+            logger.debug("Stopped {}", this);
     }
 
     /**
@@ -225,7 +227,8 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         if (targetOortURL == null)
         {
             // Application does not know where the entity is, broadcast
-            logger.debug("Broadcasting action: {}", data);
+            if (logger.isDebugEnabled())
+                logger.debug("Broadcasting action: {}", data);
             startTimeout(ctx);
             oort.getBayeuxServer().getChannel(broadcastChannelName).publish(getLocalSession(), data);
             return true;
@@ -235,7 +238,8 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
             if (localOortURL.equals(targetOortURL))
             {
                 // Local case
-                logger.debug("Forwarding action locally ({}): {}", localOortURL, data);
+                if (logger.isDebugEnabled())
+                    logger.debug("Forwarding action locally ({}): {}", localOortURL, data);
                 startTimeout(ctx);
                 onForwardMessage(data, false);
                 return true;
@@ -246,14 +250,16 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
                 OortComet comet = getOort().getComet(targetOortURL);
                 if (comet != null)
                 {
-                    logger.debug("Forwarding action from {} to {}: {}", localOortURL, targetOortURL, data);
+                    if (logger.isDebugEnabled())
+                        logger.debug("Forwarding action from {} to {}: {}", localOortURL, targetOortURL, data);
                     startTimeout(ctx);
                     comet.getChannel(forwardChannelName).publish(data);
                     return true;
                 }
                 else
                 {
-                    logger.debug("Could not forward action from {} to {}: {}", localOortURL, targetOortURL, data);
+                    if (logger.isDebugEnabled())
+                        logger.debug("Could not forward action from {} to {}: {}", localOortURL, targetOortURL, data);
                     return false;
                 }
             }
@@ -279,7 +285,8 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
 
     protected void onForwardMessage(Map<String, Object> data, boolean broadcast)
     {
-        logger.debug("Received {} action {}", broadcast ? "broadcast" : "forwarded", data);
+        if (logger.isDebugEnabled())
+            logger.debug("Received {} action {}", broadcast ? "broadcast" : "forwarded", data);
         Map<String, Object> resultData = new HashMap<>(3);
         resultData.put(ID_FIELD, data.get(ID_FIELD));
         resultData.put(OORT_URL_FIELD, getOort().getURL());
@@ -287,7 +294,8 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         try
         {
             Result<R> result = onForward(new Request(oort.getURL(), data.get(PARAMETER_FIELD), oortURL));
-            logger.debug("Forwarded action result {}", result);
+            if (logger.isDebugEnabled())
+                logger.debug("Forwarded action result {}", result);
             if (result.succeeded())
             {
                 resultData.put(RESULT_FIELD, true);
@@ -303,7 +311,8 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
                 if (broadcast)
                 {
                     // Ignore and therefore return
-                    logger.debug("Ignoring broadcast action result {}", result);
+                    if (logger.isDebugEnabled())
+                        logger.debug("Ignoring broadcast action result {}", result);
                     return;
                 }
                 else
@@ -329,7 +338,8 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         if (getOort().getURL().equals(oortURL))
         {
             // Local case
-            logger.debug("Returning forwarded action result {} to local {}", resultData, oortURL);
+            if (logger.isDebugEnabled())
+                logger.debug("Returning forwarded action result {} to local {}", resultData, oortURL);
             onResultMessage(resultData);
         }
         else
@@ -338,13 +348,15 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
             OortComet comet = getOort().getComet(oortURL);
             if (comet != null)
             {
-                logger.debug("Returning forwarded action result {} to remote {}", resultData, oortURL);
+                if (logger.isDebugEnabled())
+                    logger.debug("Returning forwarded action result {} to remote {}", resultData, oortURL);
                 comet.getChannel(resultChannelName).publish(resultData);
             }
             else
             {
                 // Probably the node disconnected concurrently
-                logger.debug("Could not return forwarded action result {} to remote {}", resultData, oortURL);
+                if (logger.isDebugEnabled())
+                    logger.debug("Could not return forwarded action result {} to remote {}", resultData, oortURL);
             }
         }
     }
@@ -353,7 +365,8 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     {
         long actionId = ((Number)data.get(ID_FIELD)).longValue();
         Map<String, Object> ctx = callbacks.remove(actionId);
-        logger.debug("Action result {} with context {}", data, ctx);
+        if (logger.isDebugEnabled())
+            logger.debug("Action result {} with context {}", data, ctx);
         // Atomically remove the callback, so we guarantee one notification only.
         // Multiple notifications may happen when broadcasting the forward request
         // and nodes mistakenly return multiple results.
