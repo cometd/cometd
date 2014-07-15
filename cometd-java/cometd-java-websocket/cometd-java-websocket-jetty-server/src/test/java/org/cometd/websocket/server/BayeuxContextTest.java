@@ -122,7 +122,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
             default:
                 throw new IllegalArgumentException();
         }
-        prepareServer(0, null, true, wsTransportClass);
+        prepareServer(0, "/cometd", null, true, wsTransportClass);
         startServer();
         prepareClient();
         startClient();
@@ -153,7 +153,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
             default:
                 throw new IllegalArgumentException();
         }
-        prepareServer(0, null, true, wsTransportClass);
+        prepareServer(0, "/cometd", null, true, wsTransportClass);
 
         context.addServlet(new ServletHolder(new HttpServlet()
         {

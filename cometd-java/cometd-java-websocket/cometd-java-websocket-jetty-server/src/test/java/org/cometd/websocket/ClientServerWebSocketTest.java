@@ -90,23 +90,23 @@ public abstract class ClientServerWebSocketTest
 
     protected void prepareAndStart(Map<String, String> initParams) throws Exception
     {
-        prepareAndStart(0, initParams);
+        prepareAndStart("/cometd", initParams);
     }
 
-    protected void prepareAndStart(int port, Map<String, String> initParams) throws Exception
+    protected void prepareAndStart(String servletPath, Map<String, String> initParams) throws Exception
     {
-        prepareServer(port, initParams);
+        prepareServer(0, servletPath, initParams, true);
         prepareClient();
         startServer();
         startClient();
     }
 
-    protected void prepareServer(int port, Map<String, String> initParams) throws Exception
+    protected void prepareServer(int port, Map<String, String> initParams, boolean eager) throws Exception
     {
-        prepareServer(port, initParams, true);
+        prepareServer(port, "/cometd", initParams, eager);
     }
 
-    protected void prepareServer(int port, Map<String, String> initParams, boolean eager) throws Exception
+    protected void prepareServer(int port, String servletPath, Map<String, String> initParams, boolean eager) throws Exception
     {
         String wsTransportClass;
         switch (wsTransportType)
@@ -120,10 +120,10 @@ public abstract class ClientServerWebSocketTest
             default:
                 throw new IllegalArgumentException();
         }
-        prepareServer(port, initParams, eager, wsTransportClass);
+        prepareServer(port, servletPath, initParams, eager, wsTransportClass);
     }
 
-    protected void prepareServer(int port, Map<String, String> initParams, boolean eager, String wsTransportClass) throws Exception
+    protected void prepareServer(int port, String servletPath, Map<String, String> initParams, boolean eager, String wsTransportClass) throws Exception
     {
         server = new Server();
 
@@ -136,8 +136,12 @@ public abstract class ClientServerWebSocketTest
         WebSocketServerContainerInitializer.configureContext(context);
 
         // CometD servlet
-        cometdServletPath = "/cometd";
-        String cometdURLMapping = cometdServletPath + "/*";
+        cometdServletPath = servletPath;
+        if (cometdServletPath.endsWith("/*"))
+            cometdServletPath = cometdServletPath.substring(0, cometdServletPath.length() - 2);
+        String cometdURLMapping = cometdServletPath;
+        if (!cometdURLMapping.endsWith("/*"))
+            cometdURLMapping = cometdURLMapping + "/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         String transports = wsTransportClass + "," + JSONTransport.class.getName();
         cometdServletHolder.setInitParameter("transports", transports);

@@ -179,7 +179,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         client.handshake();
         Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
 
-        prepareServer(port, null);
+        prepareServer(port, null, true);
         startServer();
 
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
@@ -252,7 +252,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         // restart server
         connectedLatch.set(new CountDownLatch(1));
-        prepareServer(port, null);
+        prepareServer(port, null, true);
         startServer();
 
         // Wait for connect
