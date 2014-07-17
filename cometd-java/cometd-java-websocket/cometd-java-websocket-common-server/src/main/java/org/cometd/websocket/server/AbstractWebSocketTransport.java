@@ -138,13 +138,19 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         return _bayeuxContext.get();
     }
 
-    protected String normalizeURLMapping(String mapping)
+    protected List<String> normalizeURLMapping(String urlMapping)
     {
-        if (mapping.endsWith("/*"))
-            mapping = mapping.substring(0, mapping.length() - 2);
-        if (!mapping.startsWith("/"))
-            mapping = "/" + mapping;
-        return mapping;
+        String[] mappings = urlMapping.split(",");
+        List<String> result = new ArrayList<>(mappings.length);
+        for (String mapping : mappings)
+        {
+            if (mapping.endsWith("/*"))
+                mapping = mapping.substring(0, mapping.length() - 2);
+            if (!mapping.startsWith("/"))
+                mapping = "/" + mapping;
+            result.add(mapping);
+        }
+        return result;
     }
 
     protected void handleJSONParseException(S wsSession, ServerSession session, String json, Throwable exception)

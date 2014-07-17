@@ -57,48 +57,13 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         if (context == null)
             throw new IllegalArgumentException("Missing ServletContext");
 
-        WebSocketUpgradeFilter wsFilter = (WebSocketUpgradeFilter)context.getAttribute(WebSocketUpgradeFilter.class.getName());
-        if (wsFilter == null)
-            throw new IllegalArgumentException("Missing WebSocketUpgradeFilter");
-
         String cometdURLMapping = (String)getOption(COMETD_URL_MAPPING);
         if (cometdURLMapping == null)
             throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING + "' parameter");
 
-        cometdURLMapping = normalizeURLMapping(cometdURLMapping);
-
-        wsFilter.addMapping(new ServletPathSpec(cometdURLMapping), new WebSocketCreator()
-        {
-            @Override
-            public Object createWebSocket(ServletUpgradeRequest request, ServletUpgradeResponse response)
-            {
-                String origin = request.getHeader("Origin");
-                if (origin == null)
-                    origin = request.getHeader("Sec-WebSocket-Origin");
-                if (checkOrigin(request, origin))
-                {
-                    modifyUpgrade(request, response);
-
-                    List<String> allowedTransports = getBayeux().getAllowedTransports();
-                    if (allowedTransports.contains(getName()))
-                    {
-                        WebSocketContext handshake = new WebSocketContext(context, request);
-                        return new WebSocketScheduler(handshake);
-                    }
-                    else
-                    {
-                        if (_logger.isDebugEnabled())
-                            _logger.debug("Transport not those allowed: {}", allowedTransports);
-                    }
-                }
-                else
-                {
-                    if (_logger.isDebugEnabled())
-                        _logger.debug("Origin check failed for origin {}", origin);
-                }
-                return null;
-            }
-        });
+        WebSocketUpgradeFilter wsFilter = (WebSocketUpgradeFilter)context.getAttribute(WebSocketUpgradeFilter.class.getName());
+        if (wsFilter == null)
+            throw new IllegalArgumentException("Missing WebSocketUpgradeFilter");
 
         WebSocketPolicy policy = wsFilter.getFactory().getPolicy();
         int bufferSize = getOption(BUFFER_SIZE_OPTION, policy.getInputBufferSize());
@@ -107,6 +72,42 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         policy.setMaxTextMessageSize(maxMessageSize);
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, policy.getIdleTimeout());
         policy.setIdleTimeout((int)idleTimeout);
+
+        for (String mapping : normalizeURLMapping(cometdURLMapping))
+        {
+            wsFilter.addMapping(new ServletPathSpec(mapping), new WebSocketCreator()
+            {
+                @Override
+                public Object createWebSocket(ServletUpgradeRequest request, ServletUpgradeResponse response)
+                {
+                    String origin = request.getHeader("Origin");
+                    if (origin == null)
+                        origin = request.getHeader("Sec-WebSocket-Origin");
+                    if (checkOrigin(request, origin))
+                    {
+                        modifyUpgrade(request, response);
+
+                        List<String> allowedTransports = getBayeux().getAllowedTransports();
+                        if (allowedTransports.contains(getName()))
+                        {
+                            WebSocketContext handshake = new WebSocketContext(context, request);
+                            return new WebSocketScheduler(handshake);
+                        }
+                        else
+                        {
+                            if (_logger.isDebugEnabled())
+                                _logger.debug("Transport not those allowed: {}", allowedTransports);
+                        }
+                    }
+                    else
+                    {
+                        if (_logger.isDebugEnabled())
+                            _logger.debug("Origin check failed for origin {}", origin);
+                    }
+                    return null;
+                }
+            });
+        }
     }
 
     protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response)

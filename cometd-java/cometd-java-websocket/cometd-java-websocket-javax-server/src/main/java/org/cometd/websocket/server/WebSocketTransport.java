@@ -73,8 +73,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         if (cometdURLMapping == null)
             throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING + "' parameter");
 
-        cometdURLMapping = normalizeURLMapping(cometdURLMapping);
-
         ServerContainer container = (ServerContainer)context.getAttribute(ServerContainer.class.getName());
         if (container == null)
             throw new IllegalArgumentException("Missing WebSocket ServerContainer");
@@ -88,18 +86,22 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         _batchWrites = getOption(BATCH_WRITES_OPTION, true);
 
         String protocol = getProtocol();
-        ServerEndpointConfig config = ServerEndpointConfig.Builder.create(WebSocketScheduler.class, cometdURLMapping)
-                .subprotocols(protocol == null ? null : Collections.singletonList(protocol))
-                .configurator(new Configurator(context))
-                .build();
+        List<String> protocols = protocol == null ? null : Collections.singletonList(protocol);
 
-        try
+        for (String mapping : normalizeURLMapping(cometdURLMapping))
         {
-            container.addEndpoint(config);
-        }
-        catch (DeploymentException x)
-        {
-            throw new RuntimeException(x);
+            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(WebSocketScheduler.class, mapping)
+                    .subprotocols(protocols)
+                    .configurator(new Configurator(context))
+                    .build();
+            try
+            {
+                container.addEndpoint(config);
+            }
+            catch (DeploymentException x)
+            {
+                throw new RuntimeException(x);
+            }
         }
     }
 
