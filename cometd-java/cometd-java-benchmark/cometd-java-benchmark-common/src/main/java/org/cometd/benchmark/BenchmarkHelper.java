@@ -71,11 +71,11 @@ public class BenchmarkHelper implements Runnable
         {
             if ("PS Eden Space".equals(memoryPool.getName()) ||
                     "Par Eden Space".equals(memoryPool.getName()) ||
-                    "G1 Eden".equals(memoryPool.getName()))
+                    "G1 Eden Space".equals(memoryPool.getName()))
                 youngMemoryPool = memoryPool;
             else if ("PS Survivor Space".equals(memoryPool.getName()) ||
                     "Par Survivor Space".equals(memoryPool.getName()) ||
-                    "G1 Survivor".equals(memoryPool.getName()))
+                    "G1 Survivor Space".equals(memoryPool.getName()))
                 survivorMemoryPool = memoryPool;
             else if ("PS Old Gen".equals(memoryPool.getName()) ||
                     "CMS Old Gen".equals(memoryPool.getName()) ||
