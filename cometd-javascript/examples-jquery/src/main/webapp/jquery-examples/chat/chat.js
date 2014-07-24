@@ -11,18 +11,18 @@
         if (state)
         {
             $('#username').val(state.username);
-            $('#useServer').attr('checked',state.useServer);
+            $('#useServer').prop('checked',state.useServer);
             $('#altServer').val(state.altServer);
         }
 
         // Setup UI
         $('#join').show();
         $('#joined').hide();
-        $('#altServer').attr('autocomplete', 'off');
+        $('#altServer').prop('autocomplete', 'off');
         $('#joinButton').click(function() { chat.join($('#username').val()); });
         $('#sendButton').click(chat.send);
         $('#leaveButton').click(chat.leave);
-        $('#username').attr('autocomplete', 'off').focus();
+        $('#username').prop('autocomplete', 'off').focus();
         $('#username').keyup(function(e)
         {
             if (e.keyCode == 13)
@@ -30,7 +30,7 @@
                 chat.join($('#username').val());
             }
         });
-        $('#phrase').attr('autocomplete', 'off');
+        $('#phrase').prop('autocomplete', 'off');
         $('#phrase').keyup(function(e)
         {
             if (e.keyCode == 13)
@@ -61,7 +61,7 @@
             }
 
             var cometdURL = location.protocol + "//" + location.host + config.contextPath + "/cometd";
-            var useServer = $('#useServer').attr('checked');
+            var useServer = $('#useServer').prop('checked');
             if (useServer)
             {
                 var altServer = $('#altServer').val();
@@ -306,7 +306,7 @@
                 expires.setTime(expires.getTime() + 5 * 1000);
                 org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
                     username: _username,
-                    useServer: $('#useServer').attr('checked'),
+                    useServer: $('#useServer').prop('checked'),
                     altServer: $('#altServer').val()
                 }), { 'max-age': 5, expires: expires });
                 $.cometd.getTransport().abort();
