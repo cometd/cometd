@@ -96,6 +96,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public static final String ALLOWED_TRANSPORTS_OPTION = "allowedTransports";
     public static final String SWEEP_PERIOD_OPTION = "sweepPeriod";
     public static final String TRANSPORTS_OPTION = "transports";
+    public static final String VALIDATE_MESSAGE_FIELDS_OPTION = "validateMessageFields";
+    public static final String BROADCAST_TO_PUBLISHER_OPTION = "broadcastToPublisher";
 
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName() + "." + Integer.toHexString(System.identityHashCode(this)));
     private final SecureRandom _random = new SecureRandom();
@@ -111,6 +113,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
     private JSONContext.Server _jsonContext;
     private boolean _validation;
+    private boolean _broadcastToPublisher;
 
     @Override
     protected void doStart() throws Exception
@@ -138,7 +141,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
         }, sweepPeriod, TimeUnit.MILLISECONDS);
 
-        _validation = getOption("validateMessageFields", true);
+        _validation = getOption(VALIDATE_MESSAGE_FIELDS_OPTION, true);
+        _broadcastToPublisher = getOption(BROADCAST_TO_PUBLISHER_OPTION, true);
     }
 
     @Override
@@ -1201,6 +1205,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
         if (_logger.isDebugEnabled())
             _logger.debug("allowedTransports {}", _allowedTransports);
+    }
+
+    @ManagedAttribute(value = "Whether this server broadcast messages to the publisher", readonly = true)
+    public boolean isBroadcastToPublisher()
+    {
+        return _broadcastToPublisher;
     }
 
     protected void unknownSession(Mutable reply)

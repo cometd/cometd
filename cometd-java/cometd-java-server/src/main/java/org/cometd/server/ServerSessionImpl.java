@@ -78,6 +78,7 @@ public class ServerSessionImpl implements ServerSession
     private long _connectTimestamp = -1;
     private long _intervalTimestamp;
     private boolean _nonLazyMessages;
+    private boolean _broadcastToPublisher;
 
     protected ServerSessionImpl(BayeuxServerImpl bayeux)
     {
@@ -112,6 +113,8 @@ public class ServerSessionImpl implements ServerSession
         ServerTransport transport = _bayeux.getCurrentTransport();
         if (transport != null)
             _intervalTimestamp = System.currentTimeMillis() + transport.getMaxInterval();
+
+        _broadcastToPublisher = _bayeux.isBroadcastToPublisher();
     }
 
     /**
@@ -224,6 +227,9 @@ public class ServerSessionImpl implements ServerSession
 
     protected void doDeliver(ServerSession sender, ServerMessage.Mutable mutable)
     {
+        if (sender == this && !isBroadcastToPublisher())
+            return;
+
         ServerMessage message = null;
         if (mutable.isMeta())
         {
@@ -797,6 +803,16 @@ public class ServerSessionImpl implements ServerSession
     {
         _interval = intervalMS;
         _advisedTransport = null;
+    }
+
+    public boolean isBroadcastToPublisher()
+    {
+        return _broadcastToPublisher;
+    }
+
+    public void setBroadcastToPublisher(boolean value)
+    {
+        _broadcastToPublisher = value;
     }
 
     /**
