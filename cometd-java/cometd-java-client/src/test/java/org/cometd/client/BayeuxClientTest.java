@@ -339,7 +339,7 @@ public class BayeuxClientTest extends ClientServerTest
         {
             public void onMessage(ClientSessionChannel session, Message message)
             {
-                if (message.getData() != null || Channel.META_SUBSCRIBE.equals(message.getChannel()) || Channel.META_DISCONNECT.equals(message.getChannel()))
+                if (!message.isMeta() && !message.isPublishReply() || Channel.META_SUBSCRIBE.equals(message.getChannel()) || Channel.META_DISCONNECT.equals(message.getChannel()))
                 {
                     queue.offer(message);
                 }

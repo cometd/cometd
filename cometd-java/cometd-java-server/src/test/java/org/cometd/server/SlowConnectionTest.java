@@ -265,7 +265,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
             @Override
             protected void writeMessage(ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException
             {
-                if (message.getData() != null)
+                if (!message.isMeta() && !message.isPublishReply())
                 {
                     sendLatch.countDown();
                     await(closeLatch);

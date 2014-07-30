@@ -487,7 +487,7 @@ public abstract class AbstractClientSession implements ClientSession
             {
                 if (listener instanceof ClientSessionChannel.MessageListener)
                 {
-                    if (message.getData() != null)
+                    if (!message.isPublishReply())
                         notifyOnMessage((MessageListener)listener, message);
                 }
             }

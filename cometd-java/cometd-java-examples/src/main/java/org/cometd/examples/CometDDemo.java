@@ -107,8 +107,8 @@ public class CometDDemo
                 @Override
                 public boolean rcv(ServerSession from, Mutable message)
                 {
-                    if (message.getChannel().startsWith("/chat/") && message.getData() != null && message.getData().toString().contains("lazy"))
-                        (message).setLazy(true);
+                    if (message.getChannel().startsWith("/chat/") && !message.isPublishReply() && message.getData().toString().contains("lazy"))
+                        message.setLazy(true);
                     return true;
                 }
             });
