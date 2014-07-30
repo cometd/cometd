@@ -16,12 +16,12 @@
 package org.cometd.annotation;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -29,6 +29,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -374,7 +375,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
                         if (value != null)
                         {
-                            invokeMethod(bean, method, value);
+                            invokePrivate(bean, method, value);
                             result = true;
                             if (logger.isDebugEnabled())
                                 logger.debug("Injected {} to method {} on bean {}", value, method, bean);
@@ -400,11 +401,18 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     if (!Modifier.isPublic(method.getModifiers()))
                         throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
 
+                    List<String> paramNames = processParameters(method);
+                    checkSignaturesMatch(method, ListenerCallback.signature, paramNames);
+
                     String[] channels = listener.value();
                     for (String channel : channels)
                     {
+                        ChannelId channelId = new ChannelId(channel);
+                        if (channelId.isTemplate())
+                            channel = channelId.getWilds().get(0);
+
                         MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel);
-                        ListenerCallback listenerCallback = new ListenerCallback(localSession, bean, method, channel, listener.receiveOwnPublishes());
+                        ListenerCallback listenerCallback = new ListenerCallback(localSession, bean, method, paramNames, channelId, channel, listener.receiveOwnPublishes());
                         initializedChannel.getReference().addListener(listenerCallback);
 
                         List<ListenerCallback> callbacks = listeners.get(bean);
@@ -434,7 +442,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         {
             for (ListenerCallback callback : callbacks)
             {
-                ServerChannel channel = bayeuxServer.getChannel(callback.channel);
+                ServerChannel channel = bayeuxServer.getChannel(callback.subscription);
                 if (channel != null)
                 {
                     channel.removeListener(callback);
@@ -459,10 +467,22 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     if (!Modifier.isPublic(method.getModifiers()))
                         throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
 
+                    List<String> paramNames = processParameters(method);
+                    checkSignaturesMatch(method, SubscriptionCallback.signature, paramNames);
+
                     String[] channels = subscription.value();
                     for (String channel : channels)
                     {
-                        SubscriptionCallback subscriptionCallback = new SubscriptionCallback(localSession, bean, method, channel);
+                        if (ChannelId.isMeta(channel))
+                            throw new IllegalArgumentException("Annotation @" + Subscription.class.getSimpleName() +
+                                    " on method '" + method.getName() + "' on class '" +
+                                    method.getDeclaringClass().getName() + "' must specify a non meta channel");
+
+                        ChannelId channelId = new ChannelId(channel);
+                        if (channelId.isTemplate())
+                            channel = channelId.getWilds().get(0);
+
+                        SubscriptionCallback subscriptionCallback = new SubscriptionCallback(localSession, bean, method, paramNames, channelId, channel);
                         localSession.getChannel(channel).subscribe(subscriptionCallback);
 
                         List<SubscriptionCallback> callbacks = subscribers.get(bean);
@@ -492,7 +512,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         {
             for (SubscriptionCallback callback : callbacks)
             {
-                callback.localSession.getChannel(callback.channel).unsubscribe(callback);
+                callback.localSession.getChannel(callback.subscription).unsubscribe(callback);
                 result = true;
             }
         }
@@ -505,18 +525,19 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         private final LocalSession localSession;
         private final Object target;
         private final Method method;
-        private final String channel;
+        private final ChannelId channelId;
+        private final String subscription;
         private final boolean receiveOwnPublishes;
+        private final List<String> paramNames;
 
-        private ListenerCallback(LocalSession localSession, Object target, Method method, String channel, boolean receiveOwnPublishes)
+        private ListenerCallback(LocalSession localSession, Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription, boolean receiveOwnPublishes)
         {
-            Class<?>[] parameters = method.getParameterTypes();
-            if (!signaturesMatch(parameters, signature))
-                throw new IllegalArgumentException("Wrong method signature for method " + method);
             this.localSession = localSession;
             this.target = target;
             this.method = method;
-            this.channel = channel;
+            this.paramNames = paramNames;
+            this.channelId = channelId;
+            this.subscription = subscription;
             this.receiveOwnPublishes = receiveOwnPublishes;
         }
 
@@ -525,24 +546,16 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
             if (from == localSession.getServerSession() && !receiveOwnPublishes)
                 return true;
 
-            try
-            {
-                Object result = method.invoke(target, from, message);
-                return !Boolean.FALSE.equals(result);
-            }
-            catch (InvocationTargetException x)
-            {
-                Throwable cause = x.getCause();
-                if (cause instanceof RuntimeException)
-                    throw (RuntimeException)cause;
-                if (cause instanceof Error)
-                    throw (Error)cause;
-                throw new RuntimeException(cause);
-            }
-            catch (IllegalAccessException x)
-            {
-                throw new RuntimeException(x);
-            }
+            Map<String, String> matches = channelId.bind(channel.getChannelId());
+            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames))
+                return true;
+
+            Object[] args = new Object[2 + paramNames.size()];
+            args[0] = from;
+            args[1] = message;
+            for (int i = 0; i < paramNames.size(); ++i)
+                args[2 + i] = matches.get(paramNames.get(i));
+            return !Boolean.FALSE.equals(invokePublic(target, method, args));
         }
     }
 
@@ -552,38 +565,31 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         private final LocalSession localSession;
         private final Object target;
         private final Method method;
-        private final String channel;
+        private final List<String> paramNames;
+        private final ChannelId channelId;
+        private final String subscription;
 
-        public SubscriptionCallback(LocalSession localSession, Object target, Method method, String channel)
+        public SubscriptionCallback(LocalSession localSession, Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription)
         {
-            Class<?>[] parameters = method.getParameterTypes();
-            if (!signaturesMatch(parameters, signature))
-                throw new IllegalArgumentException("Wrong method signature for method " + method);
             this.localSession = localSession;
             this.target = target;
             this.method = method;
-            this.channel = channel;
+            this.paramNames = paramNames;
+            this.channelId = channelId;
+            this.subscription = subscription;
         }
 
         public void onMessage(ClientSessionChannel channel, Message message)
         {
-            try
-            {
-                method.invoke(target, message);
-            }
-            catch (InvocationTargetException x)
-            {
-                Throwable cause = x.getCause();
-                if (cause instanceof RuntimeException)
-                    throw (RuntimeException)cause;
-                if (cause instanceof Error)
-                    throw (Error)cause;
-                throw new RuntimeException(cause);
-            }
-            catch (IllegalAccessException x)
-            {
-                throw new RuntimeException(x);
-            }
+            Map<String, String> matches = channelId.bind(message.getChannelId());
+            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames))
+                return;
+
+            Object[] args = new Object[1 + paramNames.size()];
+            args[0] = message;
+            for (int i = 0; i < paramNames.size(); ++i)
+                args[1 + i] = matches.get(paramNames.get(i));
+            invokePublic(target, method, args);
         }
     }
 }

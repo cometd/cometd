@@ -15,6 +15,8 @@
  */
 package org.cometd.common;
 
+import java.util.List;
+
 import org.cometd.bayeux.ChannelId;
 import org.junit.Assert;
 import org.junit.Test;
@@ -25,11 +27,11 @@ public class ChannelIdTest
     public void testDepth()
     {
         Assert.assertEquals(1, new ChannelId("/foo").depth());
-        Assert.assertEquals(1,new ChannelId("/foo/").depth());
-        Assert.assertEquals(2,new ChannelId("/foo/bar").depth());
-        Assert.assertEquals(2,new ChannelId("/foo/bar/").depth());
-        Assert.assertEquals(3,new ChannelId("/foo/bar/*").depth());
-        Assert.assertEquals(3,new ChannelId("/foo/bar/**").depth());
+        Assert.assertEquals(1, new ChannelId("/foo/").depth());
+        Assert.assertEquals(2, new ChannelId("/foo/bar").depth());
+        Assert.assertEquals(2, new ChannelId("/foo/bar/").depth());
+        Assert.assertEquals(3, new ChannelId("/foo/bar/*").depth());
+        Assert.assertEquals(3, new ChannelId("/foo/bar/**").depth());
     }
 
     @Test
@@ -37,8 +39,8 @@ public class ChannelIdTest
     {
         ChannelId channel = new ChannelId("/foo/bar");
 
-        Assert.assertEquals("foo",channel.getSegment(0));
-        Assert.assertEquals("bar",channel.getSegment(1));
+        Assert.assertEquals("foo", channel.getSegment(0));
+        Assert.assertEquals("bar", channel.getSegment(1));
 
         Assert.assertNull(channel.getSegment(2));
         Assert.assertNull(channel.getSegment(3));
@@ -85,6 +87,12 @@ public class ChannelIdTest
         Assert.assertFalse(id.isMeta());
         Assert.assertTrue(id.isService());
         Assert.assertTrue(id.isWild());
+
+        id = new ChannelId("/service/{var}");
+        Assert.assertFalse(id.isMeta());
+        Assert.assertTrue(id.isService());
+        Assert.assertFalse(id.isWild());
+        Assert.assertTrue(id.isTemplate());
     }
 
     @Test
@@ -129,7 +137,6 @@ public class ChannelIdTest
         Assert.assertFalse(bar.isAncestorOf(foo));
         Assert.assertFalse(bar.isAncestorOf(foobar));
         Assert.assertFalse(bar.isAncestorOf(foobarbaz));
-
     }
 
     @Test
@@ -169,34 +176,74 @@ public class ChannelIdTest
         Assert.assertFalse(foo.matches(foobarbaz));
         Assert.assertFalse(wild.matches(foobarbaz));
         Assert.assertTrue(deep.matches(foobarbaz));
-
     }
 
     @Test
     public void testWilds()
     {
-        ChannelId id;
+        ChannelId id = new ChannelId("/foo/bar/*");
+        List<String> wilds = id.getWilds();
+        Assert.assertEquals(0, wilds.size());
 
-        id=new ChannelId("/foo/bar/*");
-        Assert.assertEquals(0,id.getWilds().size());
+        id = new ChannelId("/foo");
+        wilds = id.getWilds();
+        Assert.assertEquals(2, wilds.size());
+        Assert.assertEquals("/*", wilds.get(0));
+        Assert.assertEquals("/**", wilds.get(1));
 
-        id=new ChannelId("/foo");
-        Assert.assertEquals(2,id.getWilds().size());
-        Assert.assertEquals("/*",id.getWilds().get(0));
-        Assert.assertEquals("/**",id.getWilds().get(1));
+        id = new ChannelId("/foo/bar");
+        wilds = id.getWilds();
+        Assert.assertEquals(3, wilds.size());
+        Assert.assertEquals("/foo/*", wilds.get(0));
+        Assert.assertEquals("/foo/**", wilds.get(1));
+        Assert.assertEquals("/**", wilds.get(2));
 
-        id=new ChannelId("/foo/bar");
-        Assert.assertEquals(3,id.getWilds().size());
-        Assert.assertEquals("/foo/*",id.getWilds().get(0));
-        Assert.assertEquals("/foo/**",id.getWilds().get(1));
-        Assert.assertEquals("/**",id.getWilds().get(2));
+        id = new ChannelId("/foo/bar/bob");
+        wilds = id.getWilds();
+        Assert.assertEquals(4, wilds.size());
+        Assert.assertEquals("/foo/bar/*", wilds.get(0));
+        Assert.assertEquals("/foo/bar/**", wilds.get(1));
+        Assert.assertEquals("/foo/**", wilds.get(2));
+        Assert.assertEquals("/**", wilds.get(3));
 
-        id=new ChannelId("/foo/bar/bob");
-        Assert.assertEquals(4,id.getWilds().size());
-        Assert.assertEquals("/foo/bar/*",id.getWilds().get(0));
-        Assert.assertEquals("/foo/bar/**",id.getWilds().get(1));
-        Assert.assertEquals("/foo/**",id.getWilds().get(2));
-        Assert.assertEquals("/**",id.getWilds().get(3));
+        id = new ChannelId("/foo/{bar}");
+        wilds = id.getWilds();
+        Assert.assertEquals(3, wilds.size());
+        Assert.assertEquals("/foo/*", wilds.get(0));
+        Assert.assertEquals("/foo/**", wilds.get(1));
+        Assert.assertEquals("/**", wilds.get(2));
 
+        id = new ChannelId("/foo/{bar}/baz");
+        wilds = id.getWilds();
+        Assert.assertEquals(2, wilds.size());
+        Assert.assertEquals("/foo/**", wilds.get(0));
+        Assert.assertEquals("/**", wilds.get(1));
+    }
+
+    @Test
+    public void testInvalid()
+    {
+        assertInvalid("/");
+        assertInvalid("/foo/*/*");
+        assertInvalid("/foo/*/**");
+        assertInvalid("/foo/**/**");
+        assertInvalid("/foo/**/*");
+        assertInvalid("/foo/{var}/*");
+        assertInvalid("/foo/*/{var}");
+        assertInvalid("/foo/{var1}/{var2}/**");
+    }
+
+    private void assertInvalid(String channel)
+    {
+        try
+        {
+            // Call depth() to ensure the ChannelId is resolved.
+            new ChannelId(channel).depth();
+            Assert.fail(channel);
+        }
+        catch (IllegalArgumentException x)
+        {
+            // Expected
+        }
     }
 }

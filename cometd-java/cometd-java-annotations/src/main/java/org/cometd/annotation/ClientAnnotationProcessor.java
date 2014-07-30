@@ -16,11 +16,11 @@
 package org.cometd.annotation;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -221,7 +221,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                     {
                         if (parameterTypes[0].isAssignableFrom(clientSession.getClass()))
                         {
-                            invokeMethod(bean, method, clientSession);
+                            invokePrivate(bean, method, clientSession);
                             result = true;
                             if (logger.isDebugEnabled())
                                 logger.debug("Injected {} to method {} on bean {}", clientSession, method, bean);
@@ -247,10 +247,22 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                     if (!Modifier.isPublic(method.getModifiers()))
                         throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
 
+                    List<String> paramNames = processParameters(method);
+                    checkSignaturesMatch(method, ListenerCallback.signature, paramNames);
+
                     String[] channels = listener.value();
                     for (String channel : channels)
                     {
-                        ListenerCallback listenerCallback = new ListenerCallback(bean, method, channel);
+                        if (!ChannelId.isMeta(channel))
+                            throw new IllegalArgumentException("Annotation @" + Listener.class.getSimpleName() +
+                                    " on method '" + method.getName() + "' in class '" +
+                                    method.getDeclaringClass().getName() + "' must specify a meta channel");
+
+                        ChannelId channelId = new ChannelId(channel);
+                        if (channelId.isTemplate())
+                            channel = channelId.getWilds().get(0);
+
+                        ListenerCallback listenerCallback = new ListenerCallback(bean, method, paramNames, channelId, channel);
                         clientSession.getChannel(channel).addListener(listenerCallback);
 
                         List<ListenerCallback> callbacks = listeners.get(bean);
@@ -280,7 +292,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         {
             for (ListenerCallback callback : callbacks)
             {
-                ClientSessionChannel channel = clientSession.getChannel(callback.channel);
+                ClientSessionChannel channel = clientSession.getChannel(callback.subscription);
                 if (channel != null)
                 {
                     channel.removeListener(callback);
@@ -305,10 +317,22 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                     if (!Modifier.isPublic(method.getModifiers()))
                         throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
 
+                    List<String> paramNames = processParameters(method);
+                    checkSignaturesMatch(method, SubscriptionCallback.signature, paramNames);
+
                     String[] channels = subscription.value();
                     for (String channel : channels)
                     {
-                        SubscriptionCallback subscriptionCallback = new SubscriptionCallback(clientSession, bean, method, channel);
+                        if (ChannelId.isMeta(channel))
+                            throw new IllegalArgumentException("Annotation @" + Subscription.class.getSimpleName() +
+                                    " on method '" + method.getName() + "' on class '" +
+                                    method.getDeclaringClass().getName() + "' must specify a non meta channel");
+
+                        ChannelId channelId = new ChannelId(channel);
+                        if (channelId.isTemplate())
+                            channel = channelId.getWilds().get(0);
+
+                        SubscriptionCallback subscriptionCallback = new SubscriptionCallback(clientSession, bean, method, paramNames, channelId, channel);
                         // We should delay the subscription if the client session did not complete the handshake
                         if (clientSession.isHandshook())
                             clientSession.getChannel(channel).subscribe(subscriptionCallback);
@@ -340,7 +364,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         {
             for (SubscriptionCallback callback : callbacks)
             {
-                clientSession.getChannel(callback.channel).unsubscribe(callback);
+                clientSession.getChannel(callback.subscription).unsubscribe(callback);
                 result = true;
             }
         }
@@ -352,39 +376,30 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         private static final Class<?>[] signature = new Class<?>[]{Message.class};
         private final Object target;
         private final Method method;
-        private final String channel;
+        private final List<String> paramNames;
+        private final ChannelId channelId;
+        private final String subscription;
 
-        private ListenerCallback(Object target, Method method, String channel)
+        private ListenerCallback(Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription)
         {
-            Class<?>[] parameters = method.getParameterTypes();
-            if (!signaturesMatch(parameters, signature))
-                throw new IllegalArgumentException("Wrong method signature for method " + method);
-            if (!ChannelId.isMeta(channel))
-                throw new IllegalArgumentException("Annotation @Listener on method " + method + " must specify a meta channel");
             this.target = target;
             this.method = method;
-            this.channel = channel;
+            this.paramNames = paramNames;
+            this.channelId = channelId;
+            this.subscription = subscription;
         }
 
         public void onMessage(ClientSessionChannel channel, Message message)
         {
-            try
-            {
-                method.invoke(target, message);
-            }
-            catch (InvocationTargetException x)
-            {
-                Throwable cause = x.getCause();
-                if (cause instanceof RuntimeException)
-                    throw (RuntimeException)cause;
-                if (cause instanceof Error)
-                    throw (Error)cause;
-                throw new RuntimeException(cause);
-            }
-            catch (IllegalAccessException x)
-            {
-                throw new RuntimeException(x);
-            }
+            Map<String, String> matches = channelId.bind(message.getChannelId());
+            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames))
+                return;
+
+            Object[] args = new Object[1 + paramNames.size()];
+            args[0] = message;
+            for (int i = 0; i < paramNames.size(); ++i)
+                args[1 + i] = matches.get(paramNames.get(i));
+            invokePublic(target, method, args);
         }
     }
 
@@ -394,45 +409,36 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         private final ClientSession clientSession;
         private final Object target;
         private final Method method;
-        private final String channel;
+        private final List<String> paramNames;
+        private final ChannelId channelId;
+        private final String subscription;
 
-        public SubscriptionCallback(ClientSession clientSession, Object target, Method method, String channel)
+        public SubscriptionCallback(ClientSession clientSession, Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription)
         {
-            Class<?>[] parameters = method.getParameterTypes();
-            if (!signaturesMatch(parameters, signature))
-                throw new IllegalArgumentException("Wrong method signature for method " + method);
-            if (ChannelId.isMeta(channel))
-                throw new IllegalArgumentException("Annotation @Subscription on method " + method + " must specify a non meta channel");
             this.clientSession = clientSession;
             this.target = target;
             this.method = method;
-            this.channel = channel;
+            this.paramNames = paramNames;
+            this.channelId = channelId;
+            this.subscription = subscription;
         }
 
         public void onMessage(ClientSessionChannel channel, Message message)
         {
-            try
-            {
-                method.invoke(target, message);
-            }
-            catch (InvocationTargetException x)
-            {
-                Throwable cause = x.getCause();
-                if (cause instanceof RuntimeException)
-                    throw (RuntimeException)cause;
-                if (cause instanceof Error)
-                    throw (Error)cause;
-                throw new RuntimeException(cause);
-            }
-            catch (IllegalAccessException x)
-            {
-                throw new RuntimeException(x);
-            }
+            Map<String, String> matches = channelId.bind(message.getChannelId());
+            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames))
+                return;
+
+            Object[] args = new Object[1 + paramNames.size()];
+            args[0] = message;
+            for (int i = 0; i < paramNames.size(); ++i)
+                args[1 + i] = matches.get(paramNames.get(i));
+            invokePublic(target, method, args);
         }
 
         private void subscribe()
         {
-            clientSession.getChannel(channel).subscribe(this);
+            clientSession.getChannel(subscription).subscribe(this);
         }
     }
 

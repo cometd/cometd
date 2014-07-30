@@ -15,9 +15,13 @@
  */
 package org.cometd.bayeux;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * <p>Reification of a {@link Channel#getId() channel id} with methods to test properties
@@ -27,17 +31,22 @@ import java.util.List;
  * <p>{@link ChannelId} can be wild, when they end with one or two wild characters {@code "*"};
  * a {@link ChannelId} is shallow wild if it ends with one wild character (for example {@code /foo/bar/*})
  * and deep wild if it ends with two wild characters (for example {@code /foo/bar/**}).</p>
+ * <p>{@link ChannelId} can be a template, when a segment contains variable names surrounded by
+ * braces, for example {@code /foo/{var_name}}. Variable names can only be made of characters
+ * defined by the {@link Pattern <code>\w</code>} regular expression character class.</p>
  */
 public class ChannelId
 {
-    public final static String WILD = "*";
-    public final static String DEEPWILD = "**";
+    public static final String WILD = "*";
+    public static final String DEEPWILD = "**";
+    private static final Pattern VAR = Pattern.compile("\\{(\\w+)\\}");
 
     private final String _id;
-    private volatile String[] _segments;
+    private String[] _segments;
     private int _wild;
     private List<String> _wilds;
     private String _parent;
+    private List<String> _vars;
 
     /**
      * Constructs a new {@code ChannelId} with the given id
@@ -65,40 +74,64 @@ public class ChannelId
 
             String[] segments = _id.substring(1).split("/");
             if (segments.length < 1)
-                throw new IllegalArgumentException("Invalid channel id:" + this);
+                throw new IllegalArgumentException("Invalid channel id: " + this);
 
-            String lastSegment = segments[segments.length - 1];
-            int wild = 0;
-            if (WILD.equals(lastSegment))
-                wild = 1;
-            else if (DEEPWILD.equals(lastSegment))
-                wild = 2;
-            _wild = wild;
-
-            if (wild > 0)
+            for (int i = 1, size = segments.length; i <= size; ++i)
             {
+                String segment = segments[i - 1];
+                if (i < size && (WILD.equals(segment) || DEEPWILD.equals(segment)))
+                    throw new IllegalArgumentException("Invalid channel id: " + this);
+
+                Matcher matcher = VAR.matcher(segment);
+                if (matcher.matches())
+                {
+                    if (_vars == null)
+                        _vars = new ArrayList<>();
+                    _vars.add(matcher.group(1));
+                }
+
+                if (i == size)
+                    _wild = DEEPWILD.equals(segment) ? 2 : WILD.equals(segment) ? 1 : 0;
+            }
+
+            if (_vars == null)
+                _vars = Collections.emptyList();
+
+            if (_wild > 0)
+            {
+                if (!_vars.isEmpty())
+                    throw new IllegalArgumentException("Invalid channel id: " + this);
                 _wilds = Collections.emptyList();
             }
             else
             {
-                String[] wilds = new String[segments.length + 1];
-                StringBuilder b = new StringBuilder(_id.length());
-                b.append('/');
-                for (int i = 0; i < segments.length; ++i)
+                boolean addShallow = true;
+                List<String> wilds = new ArrayList<>(segments.length + 1);
+                StringBuilder b = new StringBuilder(_id.length()).append("/");
+                for (int i = 1, size = segments.length; i <= size; ++i)
                 {
-                    if (segments[i].trim().length() == 0)
-                        throw new IllegalArgumentException("Invalid channel id:" + this);
-                    if (i > 0)
-                        b.append(segments[i - 1]).append('/');
-                    wilds[segments.length - i] = b + "**";
+                    String segment = segments[i - 1];
+                    if (segment.trim().length() == 0)
+                        throw new IllegalArgumentException("Invalid channel id: " + this);
+
+                    wilds.add(0, b + "**");
+
+                    if (segment.matches(VAR.pattern()))
+                    {
+                        addShallow = i == size;
+                        break;
+                    }
+
+                    if (i < size)
+                        b.append(segment).append('/');
                 }
-                wilds[0] = b + "*";
-                _wilds = Collections.unmodifiableList(Arrays.asList(wilds));
+                if (addShallow)
+                    wilds.add(0, b + "*");
+                _wilds = Collections.unmodifiableList(wilds);
             }
 
-            _parent = segments.length == 1 ? null : _id.substring(0, _id.length() - lastSegment.length() - 1);
+            _parent = segments.length == 1 ? null : _id.substring(0, _id.length() - segments[segments.length - 1].length() - 1);
 
-            // Volatile write, other members will be visible as well
             _segments = segments;
         }
     }
@@ -166,6 +199,18 @@ public class ChannelId
     public boolean isBroadcast()
     {
         return isBroadcast(_id);
+    }
+
+    /**
+     * @return whether this {@code ChannelId} is a template, that is it contains segments
+     * that identify a variable name between braces, such as {@code /foo/{var_name}}.
+     *
+     * @see #bind(ChannelId)
+     */
+    public boolean isTemplate()
+    {
+        resolve();
+        return !_vars.isEmpty();
     }
 
     @Override
@@ -237,6 +282,61 @@ public class ChannelId
                 throw new IllegalStateException();
             }
         }
+    }
+
+    /**
+     * If this {@code ChannelId} is a template, and the given {@code target} {@code ChannelId}
+     * is non-wild and non-template, and the two have the same {@link #depth()}, then binds
+     * the variable(s) defined in this template with the values of the segments defined by
+     * the target {@code ChannelId}.
+     * <p/>
+     * For example:
+     * <pre>
+     * // template and target match.
+     * Map<String, String> bindings = new ChannelId("/a/{var1}/c/{var2}").bind(new ChannelId("/a/foo/c/bar"));
+     * bindings: {"var1": "foo", "var2": "bar"}
+     *
+     * // template has 2 segments, target has only 1 segment.
+     * bindings = new ChannelId("/a/{var1}").bind(new ChannelId("/a"))
+     * bindings = {}
+     *
+     * // template has 2 segments, target too many segments.
+     * bindings = new ChannelId("/a/{var1}").bind(new ChannelId("/a/b/c"))
+     * bindings = {}
+     *
+     * // same number of segments, but no match on non-variable segments.
+     * bindings = new ChannelId("/a/{var1}").bind(new ChannelId("/b/c"))
+     * bindings = {}
+     * </pre>
+     * The returned map may not preserve the order of variables present in the template {@code ChannelId}.
+     *
+     * @param target the non-wild, non-template {@code ChannelId} to bind
+     * @return a map withe the bindings, or an empty map if no binding was possible
+     * @see #isTemplate()
+     */
+    public Map<String, String> bind(ChannelId target)
+    {
+        if (!isTemplate() || target.isTemplate() || target.isWild() || depth() != target.depth())
+            return Collections.emptyMap();
+
+        Map<String, String> result = new LinkedHashMap<>();
+        for (int i = 0; i < _segments.length; ++i)
+        {
+            String thisSegment = getSegment(i);
+            String thatSegment = target.getSegment(i);
+
+            Matcher matcher = VAR.matcher(thisSegment);
+            if (matcher.matches())
+            {
+                result.put(matcher.group(1), thatSegment);
+            }
+            else
+            {
+                if (!thisSegment.equals(thatSegment))
+                    return Collections.emptyMap();
+            }
+        }
+        return result;
     }
 
     @Override

@@ -28,6 +28,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -1075,6 +1076,172 @@ public class ServerAnnotationProcessorTest
         @PreDestroy
         public static void destroy()
         {
+        }
+    }
+
+    @Test
+    public void testListenerWithParameters() throws Exception
+    {
+        String value = "test";
+        CountDownLatch latch = new CountDownLatch(1);
+        Object service = new ListenerWithParametersService(latch, value);
+        boolean processed = processor.process(service);
+        assertTrue(processed);
+
+        String parentChannel = new ChannelId(ListenerWithParametersService.CHANNEL).getParent();
+
+        // Fake a publish
+        LocalSession remote = bayeuxServer.newLocalSession("remote");
+        remote.handshake();
+        ServerMessage.Mutable message = bayeuxServer.newMessage();
+        message.setChannel(parentChannel + "/" + value);
+        message.setData(new HashMap());
+        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public class ListenerWithParametersService
+    {
+        private static final String CHANNEL = "/foo/{var}";
+
+        private final CountDownLatch latch;
+        private final String value;
+
+        public ListenerWithParametersService(CountDownLatch latch, String value)
+        {
+            this.latch = latch;
+            this.value = value;
+        }
+
+        @Listener(CHANNEL)
+        public void service(ServerSession session, ServerMessage message, @Param("var") String var)
+        {
+            assertNotNull(session);
+            assertNotNull(message);
+            assertEquals(value, var);
+            latch.countDown();
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testListenerWithParametersNoParamAnnotation() throws Exception
+    {
+        Object service = new ListenerWithoutParamAnnotationService();
+        processor.process(service);
+    }
+
+    @Service
+    public static class ListenerWithoutParamAnnotationService
+    {
+        @Listener("/foo/{var}")
+        public void service(ServerSession session, ServerMessage message, String var)
+        {
+        }
+    }
+
+    @Test
+    public void testListenerWithParametersNotBinding() throws Exception
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        Object service = new ListenerWithParametersNotBindingService(latch);
+        boolean processed = processor.process(service);
+        assertTrue(processed);
+
+        String parentChannel = new ChannelId(ListenerWithParametersNotBindingService.CHANNEL).getParent();
+        String grandParentChannel = new ChannelId(parentChannel).getParent();
+
+        // Fake a publish
+        LocalSession remote = bayeuxServer.newLocalSession("remote");
+        remote.handshake();
+        ServerMessage.Mutable message = bayeuxServer.newMessage();
+        // Wrong channel (does not bind to the template), the message must not be delivered.
+        message.setChannel(grandParentChannel + "/test");
+        message.setData(new HashMap());
+        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+
+        assertFalse(latch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class ListenerWithParametersNotBindingService
+    {
+        public static final String CHANNEL = "/a/{b}/c";
+
+        private final CountDownLatch latch;
+
+        public ListenerWithParametersNotBindingService(CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
+        @Listener(CHANNEL)
+        public void service(ServerSession session, ServerMessage message, @Param("b") String b)
+        {
+            latch.countDown();
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testListenerWithParameterWithWrongType() throws Exception
+    {
+        Object service = new ListenerWithParametersWithWrongTypeService();
+        processor.process(service);
+    }
+
+    @Service
+    public static class ListenerWithParametersWithWrongTypeService
+    {
+        public static final String CHANNEL = "/foo/{var}";
+
+        @Listener(CHANNEL)
+        public void service(ServerSession session, ServerMessage message, @Param("b") Integer b)
+        {
+        }
+    }
+
+    @Test
+    public void testSubscriptionWithParameters() throws Exception
+    {
+        String value = "test";
+        CountDownLatch latch = new CountDownLatch(1);
+        Object service = new SubscriberWithParametersService(latch, value);
+        boolean processed = processor.process(service);
+        assertTrue(processed);
+
+        String parentChannel = new ChannelId(SubscriberWithParametersService.CHANNEL).getParent();
+
+        // Fake a publish
+        LocalSession remote = bayeuxServer.newLocalSession("remote");
+        remote.handshake();
+        ServerMessage.Mutable message = bayeuxServer.newMessage();
+        message.setChannel(parentChannel + "/" + value);
+        message.setData(new HashMap());
+        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class SubscriberWithParametersService
+    {
+        public static final String CHANNEL = "/foo/{var}";
+
+        private final CountDownLatch latch;
+        private final String value;
+
+        public SubscriberWithParametersService(CountDownLatch latch, String value)
+        {
+            this.latch = latch;
+            this.value = value;
+        }
+
+        @Subscription(CHANNEL)
+        public void service(Message message, @Param("var") String var)
+        {
+            assertEquals(value, var);
+            latch.countDown();
         }
     }
 }

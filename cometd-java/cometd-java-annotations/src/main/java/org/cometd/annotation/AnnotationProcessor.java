@@ -15,6 +15,7 @@
  */
 package org.cometd.annotation;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -69,7 +70,7 @@ class AnnotationProcessor
         boolean result = false;
         for (Method method : postConstructs)
         {
-            invokeMethod(bean, method);
+            invokePrivate(bean, method);
             result = true;
         }
 
@@ -110,7 +111,7 @@ class AnnotationProcessor
         {
             try
             {
-                invokeMethod(bean, method);
+                invokePrivate(bean, method);
                 result = true;
             }
             catch (RuntimeException x)
@@ -123,7 +124,22 @@ class AnnotationProcessor
         return result;
     }
 
-    protected Object invokeMethod(Object bean, Method method, Object... args)
+    protected List<String> processParameters(Method method)
+    {
+        List<String> result = new ArrayList<>();
+        Annotation[][] parametersAnnotations = method.getParameterAnnotations();
+        for (Annotation[] parameterAnnotations : parametersAnnotations)
+        {
+            for (Annotation parameterAnnotation : parameterAnnotations)
+            {
+                if (parameterAnnotation instanceof Param)
+                    result.add(((Param)parameterAnnotation).value());
+            }
+        }
+        return result;
+    }
+
+    protected Object invokePrivate(Object bean, Method method, Object... args)
     {
         boolean accessible = method.isAccessible();
         try
@@ -142,6 +158,27 @@ class AnnotationProcessor
         finally
         {
             method.setAccessible(accessible);
+        }
+    }
+
+    protected static Object invokePublic(Object target, Method method, Object... arguments)
+    {
+        try
+        {
+            return method.invoke(target, arguments);
+        }
+        catch (InvocationTargetException x)
+        {
+            Throwable cause = x.getCause();
+            if (cause instanceof RuntimeException)
+                throw (RuntimeException)cause;
+            if (cause instanceof Error)
+                throw (Error)cause;
+            throw new RuntimeException(cause);
+        }
+        catch (IllegalAccessException x)
+        {
+            throw new RuntimeException(x);
         }
     }
 
@@ -204,19 +241,28 @@ class AnnotationProcessor
         }
     }
 
-    protected static boolean signaturesMatch(Class<?>[] candidate, Class<?>[] expected)
+    protected static void checkSignaturesMatch(Method method, Class<?>[] expected, List<String> paramNames)
     {
-        if (candidate.length != expected.length)
-            return false;
-
-        for (int i = 0; i < candidate.length; i++)
+        Class<?>[] paramTypes = method.getParameterTypes();
+        if (paramTypes.length != expected.length + paramNames.size())
         {
-            Class<?> parameter = candidate[i];
-            if (!parameter.isAssignableFrom(expected[i]))
-                return false;
+            throw new IllegalArgumentException("Wrong number of parameters in service method: " + method.getName() + "(...)." +
+                    (paramTypes.length > 2 ? " Template parameters not annotated with @" + Param.class.getSimpleName() + " ?" : ""));
         }
-
-        return true;
+        for (int i = 0; i < expected.length; ++i)
+        {
+            Class<?> parameter = paramTypes[i];
+            if (!parameter.isAssignableFrom(expected[i]))
+                throw new IllegalArgumentException("Parameter type " + parameter.getName() + " must be instead " +
+                        expected[i].getName() + " in service method: " + method.getName() + "(...).");
+        }
+        for (int i = 0; i < paramNames.size(); ++i)
+        {
+            Class<?> parameter = paramTypes[expected.length + i];
+            if (!parameter.isAssignableFrom(String.class))
+                throw new IllegalArgumentException("Template parameter '" + paramNames.get(i) + "' must be of type " +
+                        String.class.getName() + " in service method: " + method.getName() + "(...).");
+        }
     }
 
     protected boolean processInjectables(Object bean, List<Object> injectables)
@@ -268,7 +314,7 @@ class AnnotationProcessor
                             Method getter = findGetterMethod(c, method);
                             if (getter != null)
                             {
-                                Object value = invokeMethod(bean, getter);
+                                Object value = invokePrivate(bean, getter);
                                 if (value != null)
                                 {
                                     if (logger.isDebugEnabled())
@@ -277,7 +323,7 @@ class AnnotationProcessor
                                 }
                             }
 
-                            invokeMethod(bean, method, injectable);
+                            invokePrivate(bean, method, injectable);
                             result = true;
                             if (logger.isDebugEnabled())
                                 logger.debug("Injected {} to method {} on bean {}", injectable, method, bean);

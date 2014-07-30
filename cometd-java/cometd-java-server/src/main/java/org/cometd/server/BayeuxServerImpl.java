@@ -84,7 +84,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         VALID['/'] = true;
         VALID['@'] = true;
         VALID['_'] = true;
+        VALID['{'] = true;
         VALID['~'] = true;
+        VALID['}'] = true;
         for (int i = '0'; i <= '9'; ++i)
             VALID[i] = true;
         for (int i = 'A'; i <= 'Z'; ++i)

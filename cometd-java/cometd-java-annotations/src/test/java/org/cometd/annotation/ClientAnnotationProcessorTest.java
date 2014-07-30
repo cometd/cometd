@@ -24,6 +24,7 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -41,6 +42,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -413,7 +415,7 @@ public class ClientAnnotationProcessorTest
     @Test
     public void testResubscribeOnRehandshake() throws Exception
     {
-        AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>();
+        AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>();
         ResubscribeOnRehandshakeService s = new ResubscribeOnRehandshakeService(messageLatch);
         boolean processed = processor.process(s);
         assertTrue(processed);
@@ -476,8 +478,85 @@ public class ClientAnnotationProcessorTest
         @Subscription("/foo")
         public void foo(Message message)
         {
-            if (message.getData() != null)
-                messageLatch.get().countDown();
+            messageLatch.get().countDown();
+        }
+    }
+
+    @Test
+    public void testListenerWithParameters() throws Exception
+    {
+        // Wait for handshake and first connect.
+        CountDownLatch latch = new CountDownLatch(2);
+        ListenerWithParametersService s = new ListenerWithParametersService(latch);
+        boolean processed = processor.process(s);
+        assertTrue(processed);
+
+        bayeuxClient.handshake();
+        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class ListenerWithParametersService
+    {
+        private final CountDownLatch latch;
+
+        public ListenerWithParametersService(CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
+        @Listener("/meta/{action}")
+        public void meta(Message message, @Param("action") String action)
+        {
+            if ("handshake".equals(action) || "connect".equals(action))
+                latch.countDown();
+        }
+    }
+
+    @Test
+    public void testSubscriberWithParameters() throws Exception
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        String value1 = "v1";
+        String value2 = "v2";
+        SubscriberWithParametersService s = new SubscriberWithParametersService(latch, value1, value2);
+        boolean processed = processor.process(s);
+        assertTrue(processed);
+
+        bayeuxClient.handshake();
+        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
+
+        String channel = "/a/" + value1 + "/" + value2 + "/d";
+        assertFalse(new ChannelId(SubscriberWithParametersService.CHANNEL).bind(new ChannelId(channel)).isEmpty());
+
+        bayeuxClient.getChannel(channel).publish("data");
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class SubscriberWithParametersService
+    {
+        public static final String CHANNEL = "/a/{b}/{c}/d";
+
+        private final CountDownLatch latch;
+        private final String value1;
+        private final String value2;
+
+        public SubscriberWithParametersService(CountDownLatch latch, String value1, String value2)
+        {
+            this.latch = latch;
+            this.value1 = value1;
+            this.value2 = value2;
+        }
+
+        @Subscription(CHANNEL)
+        public void service(Message message, @Param("b") String b, @Param("c") String c)
+        {
+            assertEquals(value1, b);
+            assertEquals(value2, c);
+            latch.countDown();
         }
     }
 }
