@@ -90,7 +90,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         Map<String, Object> advice = getAdvice();
         if (create && advice == null)
         {
-            advice = new HashMap<String, Object>(4);
+            advice = new HashMap<>(4);
             put(ADVICE_FIELD, advice);
         }
         return advice;
@@ -102,7 +102,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         Map<String, Object> data = getDataAsMap();
         if (create && data == null)
         {
-            data = new HashMap<String, Object>();
+            data = new HashMap<>();
             put(DATA_FIELD, data);
         }
         return data;
@@ -113,7 +113,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         Map<String, Object> ext = getExt();
         if (create && ext == null)
         {
-            ext = new HashMap<String, Object>();
+            ext = new HashMap<>();
             put(EXT_FIELD, ext);
         }
         return ext;
