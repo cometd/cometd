@@ -83,7 +83,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, container.getDefaultMaxSessionIdleTimeout());
         container.setDefaultMaxSessionIdleTimeout(idleTimeout);
 
-        _batchWrites = getOption(BATCH_WRITES_OPTION, true);
+        _batchWrites = getOption(BATCH_WRITES_OPTION, false);
 
         String protocol = getProtocol();
         List<String> protocols = protocol == null ? null : Collections.singletonList(protocol);
