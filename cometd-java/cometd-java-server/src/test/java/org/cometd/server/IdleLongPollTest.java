@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
@@ -49,9 +51,9 @@ public class IdleLongPollTest extends AbstractBayeuxClientServerTest
         JSONTransport transport = new JSONTransport(bayeux)
         {
             @Override
-            protected HttpScheduler newHttpScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
+            protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
             {
-                return new DispatchingLongPollScheduler(asyncContext, session, reply, browserId, timeout)
+                return new DispatchingLongPollScheduler(request, response, asyncContext, session, reply, browserId, timeout)
                 {
                     private final AtomicInteger decrements = new AtomicInteger();
 

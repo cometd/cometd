@@ -62,7 +62,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         // that the timeout fires in case of slow reads.
         asyncContext.setTimeout(0);
         Charset charset = Charset.forName(encoding);
-        ReadListener reader = "UTF-8".equals(charset.name()) ? new UTF8Reader(asyncContext) : new CharsetReader(asyncContext, charset);
+        ReadListener reader = "UTF-8".equals(charset.name()) ? new UTF8Reader(request, response, asyncContext) :
+                new CharsetReader(request, response, asyncContext, charset);
         ServletInputStream input = request.getInputStream();
         input.setReadListener(reader);
     }
@@ -70,12 +71,12 @@ public class AsyncJSONTransport extends AbstractHttpTransport
     protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
     {
         AsyncContext asyncContext = request.getAsyncContext();
-        return newHttpScheduler(asyncContext, session, reply, browserId, timeout);
+        return newHttpScheduler(request, response, asyncContext, session, reply, browserId, timeout);
     }
 
-    protected HttpScheduler newHttpScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
+    protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
     {
-        return new AsyncLongPollScheduler(asyncContext, session, reply, browserId, timeout);
+        return new AsyncLongPollScheduler(request, response, asyncContext, session, reply, browserId, timeout);
     }
 
     @Override
@@ -87,19 +88,14 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             // Always write asynchronously
             response.setContentType("application/json;charset=UTF-8");
             ServletOutputStream output = response.getOutputStream();
-            output.setWriteListener(new Writer(asyncContext, session, startInterval, messages, replies));
+            output.setWriteListener(new Writer(request, response, asyncContext, session, startInterval, messages, replies));
         }
         catch (Exception x)
         {
             if (_logger.isDebugEnabled())
                 _logger.debug("Exception while writing messages", x);
-            error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            error(request, response, asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private void error(AsyncContext asyncContext, int responseCode)
-    {
-        error(asyncContext, (HttpServletResponse)asyncContext.getResponse(), responseCode);
     }
 
     protected abstract class AbstractReader implements ReadListener
@@ -107,17 +103,21 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         protected static final int CAPACITY = 512;
 
         private final byte[] buffer = new byte[CAPACITY];
+        private final HttpServletRequest request;
+        private final HttpServletResponse response;
         protected final AsyncContext asyncContext;
 
-        protected AbstractReader(AsyncContext asyncContext)
+        protected AbstractReader(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext)
         {
+            this.request = request;
+            this.response = response;
             this.asyncContext = asyncContext;
         }
 
         @Override
         public void onDataAvailable() throws IOException
         {
-            ServletInputStream input = asyncContext.getRequest().getInputStream();
+            ServletInputStream input = request.getInputStream();
             if (_logger.isDebugEnabled())
                 _logger.debug("Asynchronous read start from {}", input);
             // First check for isReady() because it has
@@ -140,7 +140,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         @Override
         public void onAllDataRead() throws IOException
         {
-            ServletInputStream input = asyncContext.getRequest().getInputStream();
+            ServletInputStream input = request.getInputStream();
             String json = finish();
             if (_logger.isDebugEnabled())
                 _logger.debug("Asynchronous read end from {}: {}", input, json);
@@ -151,8 +151,6 @@ public class AsyncJSONTransport extends AbstractHttpTransport
 
         protected void process(String json) throws IOException
         {
-            HttpServletRequest request = (HttpServletRequest)asyncContext.getRequest();
-            HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
             getBayeux().setCurrentTransport(AsyncJSONTransport.this);
             setCurrentRequest(request);
             try
@@ -177,7 +175,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         @Override
         public void onError(Throwable throwable)
         {
-            error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            error(request, response, asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -185,9 +183,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport
     {
         private final Utf8StringBuilder content = new Utf8StringBuilder(CAPACITY);
 
-        protected UTF8Reader(AsyncContext asyncContext)
+        protected UTF8Reader(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext)
         {
-            super(asyncContext);
+            super(request, response, asyncContext);
         }
 
         @Override
@@ -209,9 +207,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         private final Charset charset;
         private int count;
 
-        public CharsetReader(AsyncContext asyncContext, Charset charset)
+        public CharsetReader(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, Charset charset)
         {
-            super(asyncContext);
+            super(request, response, asyncContext);
             this.charset = charset;
         }
 
@@ -247,6 +245,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport
     protected class Writer implements WriteListener
     {
         private final StringBuilder buffer = new StringBuilder(512);
+        private final HttpServletRequest request;
+        private final HttpServletResponse response;
         private final AsyncContext asyncContext;
         private final ServerSessionImpl session;
         private final boolean startInterval;
@@ -255,8 +255,10 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         private int messageIndex = -1;
         private int replyIndex;
 
-        public Writer(AsyncContext asyncContext, ServerSessionImpl session, boolean startInterval, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
+        protected Writer(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, boolean startInterval, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
         {
+            this.request = request;
+            this.response = response;
             this.asyncContext = asyncContext;
             this.session = session;
             this.startInterval = startInterval;
@@ -270,7 +272,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             ServletOutputStream output;
             try
             {
-                output = asyncContext.getResponse().getOutputStream();
+                output = response.getOutputStream();
 
                 if (messageIndex < 0)
                 {
@@ -331,15 +333,15 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         @Override
         public void onError(Throwable throwable)
         {
-            error(asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            error(request, response, asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
     private class AsyncLongPollScheduler extends LongPollScheduler
     {
-        private AsyncLongPollScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
+        private AsyncLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
         {
-            super(asyncContext, session, reply, browserId, timeout);
+            super(request, response, asyncContext, session, reply, browserId, timeout);
         }
 
         @Override
@@ -347,13 +349,13 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         {
             // Direct call to resume() to write the messages in the queue and the replies.
             // Since the write is async, we will never block here and thus never delay other sessions.
-            resume(getAsyncContext(), getServerSession(), getMetaConnectReply());
+            resume(getRequest(), getResponse(), getAsyncContext(), getServerSession(), getMetaConnectReply());
         }
 
         @Override
         protected void error(int code)
         {
-            AsyncJSONTransport.this.error(getAsyncContext(), code);
+            AsyncJSONTransport.this.error(getRequest(), getResponse(), getAsyncContext(), code);
         }
     }
 }

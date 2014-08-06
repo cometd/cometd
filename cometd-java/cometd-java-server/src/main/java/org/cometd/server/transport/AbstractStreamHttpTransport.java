@@ -85,7 +85,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         }
         else
         {
-            resume(request.getAsyncContext(), scheduler.getServerSession(), scheduler.getMetaConnectReply());
+            resume(request, response, request.getAsyncContext(), scheduler.getServerSession(), scheduler.getMetaConnectReply());
         }
     }
 
@@ -94,14 +94,14 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
     {
         AsyncContext asyncContext = request.startAsync(request, response);
         asyncContext.setTimeout(0);
-        HttpScheduler scheduler = newHttpScheduler(asyncContext, session, reply, browserId, timeout);
+        HttpScheduler scheduler = newHttpScheduler(request, response, asyncContext, session, reply, browserId, timeout);
         request.setAttribute(SCHEDULER_ATTRIBUTE, scheduler);
         return scheduler;
     }
 
-    protected HttpScheduler newHttpScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
+    protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
     {
-        return new DispatchingLongPollScheduler(asyncContext, session, reply, browserId, timeout);
+        return new DispatchingLongPollScheduler(request, response, asyncContext, session, reply, browserId, timeout);
     }
 
     protected abstract ServerMessage.Mutable[] parseMessages(HttpServletRequest request) throws IOException, ParseException;
@@ -170,7 +170,10 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         }
         catch (Exception x)
         {
-            error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            AsyncContext asyncContext = null;
+            if (request.isAsyncStarted())
+                asyncContext = request.getAsyncContext();
+            error(request, response, asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -179,20 +182,15 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         output.print(message.getJSON());
     }
 
-    private void error(HttpServletResponse response, int responseCode)
-    {
-        error(null, response, responseCode);
-    }
-
     protected abstract ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException;
 
     protected abstract void endWrite(ServletOutputStream output) throws IOException;
 
     protected class DispatchingLongPollScheduler extends LongPollScheduler
     {
-        public DispatchingLongPollScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
+        public DispatchingLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
         {
-            super(asyncContext, session, reply, browserId, timeout);
+            super(request, response, asyncContext, session, reply, browserId, timeout);
         }
 
         protected void dispatch()
@@ -211,8 +209,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         @Override
         protected void error(int code)
         {
-            HttpServletResponse response = (HttpServletResponse)getAsyncContext().getResponse();
-            AbstractStreamHttpTransport.this.error(response, code);
+            AbstractStreamHttpTransport.this.error(getRequest(), getResponse(), getAsyncContext(), code);
         }
     }
 }

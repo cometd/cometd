@@ -265,7 +265,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                         // session will decide atomically if we need to resume or not.
 
                         HttpScheduler scheduler = suspend(request, response, session, reply, browserId, timeout);
-                        metaConnectSuspended(scheduler.getAsyncContext(), session);
+                        metaConnectSuspended(request, response, scheduler.getAsyncContext(), session);
                         // Setting the scheduler may resume the /meta/connect
                         session.setScheduler(scheduler);
                         reply = null;
@@ -329,17 +329,15 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         write(request, response, session, startInterval, messages, replies);
     }
 
-    protected void resume(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply)
+    protected void resume(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply)
     {
-        metaConnectResumed(asyncContext, session);
+        metaConnectResumed(request, response, asyncContext, session);
         Map<String, Object> advice = session.takeAdvice(this);
         if (advice != null)
             reply.put(Message.ADVICE_FIELD, advice);
         if (session.isDisconnected())
             reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
 
-        HttpServletRequest request = (HttpServletRequest)asyncContext.getRequest();
-        HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
         flush(request, response, session, true, true, processReply(session, reply));
     }
 
@@ -456,7 +454,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         }
     }
 
-    protected void error(AsyncContext asyncContext, HttpServletResponse response, int responseCode)
+    protected void error(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, int responseCode)
     {
         try
         {
@@ -486,11 +484,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         return getBayeux().handle(session, message);
     }
 
-    protected void metaConnectSuspended(AsyncContext asyncContext, ServerSession session)
+    protected void metaConnectSuspended(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session)
     {
     }
 
-    protected void metaConnectResumed(AsyncContext asyncContext, ServerSession session)
+    protected void metaConnectResumed(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session)
     {
     }
 
@@ -665,25 +663,45 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
 
     public interface HttpScheduler extends Scheduler
     {
+        public HttpServletRequest getRequest();
+
+        public HttpServletResponse getResponse();
+
         public AsyncContext getAsyncContext();
     }
 
     protected abstract class LongPollScheduler implements Runnable, HttpScheduler, AsyncListener
     {
+        private final HttpServletRequest request;
+        private final HttpServletResponse response;
         private final AsyncContext asyncContext;
         private final ServerSessionImpl session;
         private final ServerMessage.Mutable reply;
         private final String browserId;
         private final org.eclipse.jetty.util.thread.Scheduler.Task task;
 
-        protected LongPollScheduler(AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
+        protected LongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
         {
+            this.request = request;
+            this.response = response;
             this.asyncContext = asyncContext;
             this.session = session;
             this.reply = reply;
             this.browserId = browserId;
             asyncContext.addListener(this);
             this.task = getBayeux().schedule(this, timeout);
+        }
+
+        @Override
+        public HttpServletRequest getRequest()
+        {
+            return request;
+        }
+
+        @Override
+        public HttpServletResponse getResponse()
+        {
+            return response;
         }
 
         @Override
