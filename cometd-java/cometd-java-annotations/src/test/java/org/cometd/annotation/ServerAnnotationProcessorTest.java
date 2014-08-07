@@ -1244,4 +1244,20 @@ public class ServerAnnotationProcessorTest
             latch.countDown();
         }
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testListenerWithBadChannelTest() throws Exception
+    {
+        Object service = new BadChannelTestService();
+        processor.process(service);
+    }
+
+    @Service
+    public static class BadChannelTestService
+    {
+        @Listener("/foo/{var}/*")
+        public void bad(ServerSession session, ServerMessage message, @Param("var") String var)
+        {
+        }
+    }
 }
