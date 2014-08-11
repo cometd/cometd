@@ -486,10 +486,14 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
 
     protected void metaConnectSuspended(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session)
     {
+        if (_logger.isDebugEnabled())
+            _logger.debug("Suspended request {}", request);
     }
 
     protected void metaConnectResumed(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session)
     {
+        if (_logger.isDebugEnabled())
+            _logger.debug("Resumed request {}", request);
     }
 
     /**
