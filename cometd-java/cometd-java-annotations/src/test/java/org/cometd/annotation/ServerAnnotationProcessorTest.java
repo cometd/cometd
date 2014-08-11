@@ -1201,6 +1201,58 @@ public class ServerAnnotationProcessorTest
         }
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testListenerWithParameterWithoutArgument() throws Exception
+    {
+        Object service = new ListenerWithParameterWithoutArgument();
+        processor.process(service);
+    }
+
+    @Service
+    public static class ListenerWithParameterWithoutArgument
+    {
+        public static final String CHANNEL = "/foo/{var}";
+
+        @Listener(CHANNEL)
+        public void service(ServerSession session, ServerMessage message)
+        {
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testListenerWithParameterWrongVariableName() throws Exception
+    {
+        Object service = new ListenerWithParameterWrongVariableName();
+        processor.process(service);
+    }
+
+    @Service
+    public static class ListenerWithParameterWrongVariableName
+    {
+        public static final String CHANNEL = "/foo/{var}";
+
+        @Listener(CHANNEL)
+        public void service(ServerSession session, ServerMessage message, @Param("wrong") String var)
+        {
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testListenerWithBadChannelTest() throws Exception
+    {
+        Object service = new BadChannelTestService();
+        processor.process(service);
+    }
+
+    @Service
+    public static class BadChannelTestService
+    {
+        @Listener("/foo/{var}/*")
+        public void bad(ServerSession session, ServerMessage message, @Param("var") String var)
+        {
+        }
+    }
+
     @Test
     public void testSubscriptionWithParameters() throws Exception
     {
@@ -1246,17 +1298,17 @@ public class ServerAnnotationProcessorTest
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testListenerWithBadChannelTest() throws Exception
+    public void testSubscriptionWithParametersInWrongOrder() throws Exception
     {
-        Object service = new BadChannelTestService();
+        Object service = new  SubscriptionWithParametersInWrongOrder();
         processor.process(service);
     }
 
     @Service
-    public static class BadChannelTestService
+    public static class SubscriptionWithParametersInWrongOrder
     {
-        @Listener("/foo/{var}/*")
-        public void bad(ServerSession session, ServerMessage message, @Param("var") String var)
+        @Subscription("/a/{b}/{c}")
+        public void service(Message message, @Param("c") String c, @Param("b") String b)
         {
         }
     }

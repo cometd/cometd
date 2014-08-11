@@ -409,7 +409,13 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     {
                         ChannelId channelId = new ChannelId(channel);
                         if (channelId.isTemplate())
+                        {
+                            if (channelId.getParameters().size() != paramNames.size())
+                                throw new IllegalArgumentException("Wrong number of template parameters in service method: " + method.getName() + "(...).");
+                            if (!channelId.getParameters().equals(paramNames))
+                                throw new IllegalArgumentException("Wrong parameter names in service method: " + method.getName() + "(...).");
                             channel = channelId.getWilds().get(0);
+                        }
 
                         MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel);
                         ListenerCallback listenerCallback = new ListenerCallback(localSession, bean, method, paramNames, channelId, channel, listener.receiveOwnPublishes());
@@ -480,7 +486,13 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
                         ChannelId channelId = new ChannelId(channel);
                         if (channelId.isTemplate())
+                        {
+                            if (channelId.getParameters().size() != paramNames.size())
+                                throw new IllegalArgumentException("Wrong number of template parameters in service method: " + method.getName() + "(...).");
+                            if (!channelId.getParameters().equals(paramNames))
+                                throw new IllegalArgumentException("Wrong parameter names in service method: " + method.getName() + "(...).");
                             channel = channelId.getWilds().get(0);
+                        }
 
                         SubscriptionCallback subscriptionCallback = new SubscriptionCallback(localSession, bean, method, paramNames, channelId, channel);
                         localSession.getChannel(channel).subscribe(subscriptionCallback);

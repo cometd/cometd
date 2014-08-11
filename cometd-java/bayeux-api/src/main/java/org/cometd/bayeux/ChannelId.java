@@ -96,6 +96,8 @@ public class ChannelId
 
             if (_vars == null)
                 _vars = Collections.emptyList();
+            else
+                _vars = Collections.unmodifiableList(_vars);
 
             if (_wild > 0)
             {
@@ -206,11 +208,23 @@ public class ChannelId
      * that identify a variable name between braces, such as {@code /foo/{var_name}}.
      *
      * @see #bind(ChannelId)
+     * @see #getParameters()
      */
     public boolean isTemplate()
     {
         resolve();
         return !_vars.isEmpty();
+    }
+
+    /**
+     * @return the list of variable names if this {@link ChannelId} is a template,
+     *         otherwise an empty list.
+     * @see #isTemplate()
+     */
+    public List<String> getParameters()
+    {
+        resolve();
+        return _vars;
     }
 
     @Override
