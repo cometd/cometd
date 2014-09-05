@@ -30,9 +30,11 @@ public class JSONPTransport extends AbstractStreamHttpTransport
     public final static String NAME = "callback-polling";
     public final static String MIME_TYPE_OPTION = "mimeType";
     public final static String CALLBACK_PARAMETER_OPTION = "callbackParameter";
+    public final static String CALLBACK_PARAMETER_MAX_LENGTH_OPTION = "callbackParameterMaxLength";
 
     private String _mimeType = "text/javascript;charset=UTF-8";
     private String _callbackParam = "jsonp";
+    private int _callbackMaxLength = 50;
 
     public JSONPTransport(BayeuxServerImpl bayeux)
     {
@@ -45,6 +47,7 @@ public class JSONPTransport extends AbstractStreamHttpTransport
     {
         super.init();
         _callbackParam = getOption(CALLBACK_PARAMETER_OPTION, _callbackParam);
+        _callbackMaxLength = getOption(CALLBACK_PARAMETER_MAX_LENGTH_OPTION, _callbackMaxLength);
         _mimeType = getOption(MIME_TYPE_OPTION, _mimeType);
         // This transport must deliver only via /meta/connect
         setMetaConnectDeliveryOnly(true);
@@ -53,7 +56,8 @@ public class JSONPTransport extends AbstractStreamHttpTransport
     @Override
     public boolean accept(HttpServletRequest request)
     {
-        return "GET".equals(request.getMethod()) && request.getParameter(getCallbackParameter()) != null;
+        String callbackValue = request.getParameter(getCallbackParameter());
+        return "GET".equals(request.getMethod()) && (callbackValue != null) && (callbackValue.length() <= _callbackMaxLength);
     }
 
     @Override
