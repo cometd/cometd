@@ -47,7 +47,6 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.benchmark.Atomics;
-import org.cometd.benchmark.BenchmarkHelper;
 import org.cometd.benchmark.Config;
 import org.cometd.benchmark.MonitoringQueuedThreadPool;
 import org.cometd.benchmark.MonitoringThreadPoolExecutor;
@@ -73,6 +72,7 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.BenchmarkHelper;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 

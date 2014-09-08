@@ -44,7 +44,6 @@ import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.benchmark.Atomics;
-import org.cometd.benchmark.BenchmarkHelper;
 import org.cometd.benchmark.Config;
 import org.cometd.benchmark.MonitoringQueuedThreadPool;
 import org.cometd.benchmark.SystemTimer;
@@ -57,6 +56,7 @@ import org.cometd.websocket.client.JettyWebSocketTransport;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.toolchain.test.BenchmarkHelper;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 
@@ -364,13 +364,13 @@ public class BayeuxLoadClient
             System.err.printf("Testing %d clients in %d rooms, %d rooms/client%n", bayeuxClients.size(), rooms, roomsPerClient);
             System.err.printf("Sending %d batches of %dx%d bytes messages every %d \u00B5s%n", batchCount, batchSize, messageSize, batchPause);
 
-            long start = System.nanoTime();
+            long begin = System.nanoTime();
             long expected = runBatches(batchCount, batchSize, batchPause, chat, randomize, channel);
             long end = System.nanoTime();
 
             helper.stopStatistics();
 
-            long elapsedNanos = end - start;
+            long elapsedNanos = end - begin;
             if (elapsedNanos > 0)
             {
                 System.err.printf("Outgoing: Elapsed = %d ms | Rate = %d messages/s - %d requests/s - ~%.3f Mib/s%n",
