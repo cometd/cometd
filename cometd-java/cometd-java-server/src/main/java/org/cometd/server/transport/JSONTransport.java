@@ -73,14 +73,14 @@ public class JSONTransport extends AbstractStreamHttpTransport
     {
         response.setContentType(_mimeType);
         ServletOutputStream output = response.getOutputStream();
-        output.write('[');
+        output.print("[");
         return output;
     }
 
     @Override
     protected void endWrite(ServletOutputStream output) throws IOException
     {
-        output.write(']');
+        output.print("]");
         output.close();
     }
 }
