@@ -80,14 +80,14 @@ public class JSONTransport extends LongPollingTransport
     {
         response.setContentType(_mimeType);
         ServletOutputStream output = response.getOutputStream();
-        output.write('[');
+        output.print("[");
         return output;
     }
 
     @Override
     protected void endWrite(ServletOutputStream output, ServerSessionImpl session) throws IOException
     {
-        output.write(']');
+        output.print("]");
         output.close();
     }
 }

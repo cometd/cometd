@@ -429,7 +429,7 @@ public abstract class LongPollingTransport extends HttpTransport
                 {
                     ServerMessage message = messages.get(i);
                     if (i > 0)
-                        output.write(',');
+                        output.print(",");
                     writeMessage(output, session, message);
                 }
             }
@@ -450,7 +450,7 @@ public abstract class LongPollingTransport extends HttpTransport
                 if (reply == null)
                     continue;
                 if (needsComma)
-                    output.write(',');
+                    output.print(",");
                 needsComma = true;
                 writeMessage(output, session, reply);
             }
@@ -473,7 +473,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
     protected void writeMessage(ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException
     {
-        output.write(message.getJSON().getBytes("UTF-8"));
+        output.print(message.getJSON());
     }
 
     protected abstract ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session) throws IOException;
