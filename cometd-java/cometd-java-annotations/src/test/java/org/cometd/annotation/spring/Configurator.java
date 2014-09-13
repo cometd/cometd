@@ -24,7 +24,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * The Spring component that configures CometD services.
@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
  * Implementing {@link DestructionAwareBeanPostProcessor} allows to plug-in
  * CometD's annotation processor to process the CometD services.
  */
-@Component
+@Configuration
 public class Configurator implements DestructionAwareBeanPostProcessor
 {
     private BayeuxServer bayeuxServer;
