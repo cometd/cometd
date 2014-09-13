@@ -29,7 +29,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * The Spring component that configures CometD services.
  *
- * Spring scans the classes and finds this class annotated with Spring's @Component
+ * Spring scans the classes and finds this class annotated with Spring's @Configuration
  * annotation, and makes an instance. Then it notices that it has a bean factory
  * method (annotated with @Bean) that produces the BayeuxServer instance.
  * Note that, as per Spring documentation, this class is subclassed by Spring
@@ -56,7 +56,7 @@ public class Configurator implements DestructionAwareBeanPostProcessor
         this.processor = new ServerAnnotationProcessor(bayeuxServer);
     }
 
-
+    @Override
     public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException
     {
         processor.processDependencies(bean);
@@ -65,11 +65,13 @@ public class Configurator implements DestructionAwareBeanPostProcessor
         return bean;
     }
 
+    @Override
     public Object postProcessAfterInitialization(Object bean, String name) throws BeansException
     {
         return bean;
     }
 
+    @Override
     public void postProcessBeforeDestruction(Object bean, String name) throws BeansException
     {
         processor.deprocessCallbacks(bean);
