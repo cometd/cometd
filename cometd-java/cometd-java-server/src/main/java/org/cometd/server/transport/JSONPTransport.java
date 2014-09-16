@@ -17,6 +17,7 @@ package org.cometd.server.transport;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.regex.Pattern;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,9 +32,13 @@ public class JSONPTransport extends LongPollingTransport
     public final static String NAME = "callback-polling";
     public final static String MIME_TYPE_OPTION = "mimeType";
     public final static String CALLBACK_PARAMETER_OPTION = "callbackParameter";
+    public final static String CALLBACK_PARAMETER_MAX_LENGTH_OPTION = "callbackParameterMaxLength";
+
+    private final static Pattern CALLBACK_PATTERN = Pattern.compile("^[a-zA-Z0-9\\._\\-]+$");
 
     private String _mimeType = "text/javascript;charset=UTF-8";
     private String _callbackParam = "jsonp";
+    private int _callbackMaxLength = 50;
 
     public JSONPTransport(BayeuxServerImpl bayeux)
     {
@@ -41,23 +46,18 @@ public class JSONPTransport extends LongPollingTransport
         setOptionPrefix(PREFIX);
     }
 
-    /**
-     * @see org.cometd.server.transport.LongPollingTransport#isAlwaysFlushingAfterHandle()
-     */
     @Override
     protected boolean isAlwaysFlushingAfterHandle()
     {
         return true;
     }
 
-    /**
-     * @see org.cometd.server.transport.JSONTransport#init()
-     */
     @Override
     protected void init()
     {
         super.init();
         _callbackParam = getOption(CALLBACK_PARAMETER_OPTION, _callbackParam);
+        _callbackMaxLength = getOption(CALLBACK_PARAMETER_MAX_LENGTH_OPTION, _callbackMaxLength);
         _mimeType = getOption(MIME_TYPE_OPTION, _mimeType);
         // This transport must deliver only via /meta/connect
         setMetaConnectDeliveryOnly(true);
@@ -66,7 +66,8 @@ public class JSONPTransport extends LongPollingTransport
     @Override
     public boolean accept(HttpServletRequest request)
     {
-        return "GET".equals(request.getMethod()) && request.getParameter(getCallbackParameter()) != null;
+        String callbackValue = request.getParameter(getCallbackParameter());
+        return "GET".equals(request.getMethod()) && isCallbackValueValid(callbackValue);
     }
 
     @Override
@@ -96,5 +97,9 @@ public class JSONPTransport extends LongPollingTransport
     {
         output.print("])");
         output.close();
+    }
+
+    private boolean isCallbackValueValid(String callbackValue) {
+        return (callbackValue != null) && (callbackValue.length() <= _callbackMaxLength) && CALLBACK_PATTERN.matcher(callbackValue).matches();
     }
 }
