@@ -67,6 +67,25 @@ public class JSONPTransportCallbackParamValidationTest extends AbstractBayeuxCli
         testSubscribe(400);
     }
 
+    @Test
+    public void testValidCallbackParamCharacters() throws Exception {
+        startServer(initParams);
+        cometdURL = cometdURL + jsonpPath + "s-h_o.R1";
+
+        testSubscribe(200);
+    }
+
+    @Test
+    public void testInvalidCallbackParamCharacters() throws Exception {
+        startServer(initParams);
+        cometdURL = cometdURL + jsonpPath + "sh%20rt";
+        testSubscribe(400);
+        cometdURL = cometdURL + jsonpPath + "sh%0d%0art";
+        testSubscribe(400);
+        cometdURL = cometdURL + jsonpPath + "NOTICE:";
+        testSubscribe(400);
+    }
+
     @Override
     protected Request newBayeuxRequest(String requestBody) throws UnsupportedEncodingException
     {
