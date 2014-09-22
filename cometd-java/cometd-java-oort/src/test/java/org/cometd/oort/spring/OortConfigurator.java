@@ -20,6 +20,7 @@ import javax.servlet.ServletContext;
 
 import org.cometd.annotation.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
 import org.cometd.server.BayeuxServerImpl;
@@ -38,7 +39,16 @@ public class OortConfigurator implements DestructionAwareBeanPostProcessor, Serv
     @PostConstruct
     private void init()
     {
-        this.processor = new ServerAnnotationProcessor(bayeuxServer());
+        BayeuxServer bayeuxServer = bayeuxServer();
+        bayeuxServer.setSecurityPolicy(policy());
+        this.processor = new ServerAnnotationProcessor(bayeuxServer);
+
+        // Link the cloud, or use OortMulticastConfigurer.
+        Oort oort = oort();
+//        oort.observeComet("http://cloud.cometd.org/cometd");
+
+        // Observe the required channels.
+        oort.observeChannel("/cloud/*");
     }
 
     @Override
@@ -92,5 +102,11 @@ public class OortConfigurator implements DestructionAwareBeanPostProcessor, Serv
         Seti seti = new Seti(oort());
         servletContext.setAttribute(Seti.SETI_ATTRIBUTE, seti);
         return seti;
+    }
+
+    @Bean
+    public SecurityPolicy policy()
+    {
+        return new OortSecurityPolicy(seti());
     }
 }

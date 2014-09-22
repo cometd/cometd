@@ -19,6 +19,7 @@ import java.beans.Introspector;
 import java.util.Arrays;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
 import org.eclipse.jetty.server.Server;
@@ -60,6 +61,10 @@ public class OortSpringAnnotationTest
         assertNotNull(oort);
         BayeuxServer bayeux = oort.getBayeuxServer();
         assertNotNull(bayeux);
+
+        SecurityPolicy policy = bayeux.getSecurityPolicy();
+        assertNotNull(policy);
+        assertTrue(policy instanceof OortSecurityPolicy);
 
         server.stop();
     }
