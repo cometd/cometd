@@ -16,11 +16,16 @@
 package org.cometd.oort;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.MulticastSocket;
-import java.net.SocketTimeoutException;
+import java.net.NetworkInterface;
+import java.net.StandardSocketOptions;
+import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.DatagramChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.client.BayeuxClient;
@@ -36,6 +41,7 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
     private final Oort oort;
     private InetAddress bindAddress;
     private InetAddress groupAddress;
+    private List<NetworkInterface> groupInterfaces;
     private int groupPort = 5577;
     private int timeToLive = 1;
     private long advertiseInterval = 2000;
@@ -97,6 +103,22 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
     public void setGroupPort(int groupPort)
     {
         this.groupPort = groupPort;
+    }
+
+    /**
+     * @return the interfaces that receive multicast messages
+     */
+    public List<NetworkInterface> getGroupInterfaces()
+    {
+        return groupInterfaces;
+    }
+
+    /**
+     * @param groupInterfaces the interfaces that receive multicast messages
+     */
+    public void setGroupInterfaces(List<NetworkInterface> groupInterfaces)
+    {
+        this.groupInterfaces = groupInterfaces;
     }
 
     /**
@@ -167,16 +189,28 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
     protected void doStart() throws Exception
     {
         // Bind sender to an ephemeral port and set the TTL
-        MulticastSocket sender = new MulticastSocket();
-        sender.setTimeToLive(getTimeToLive());
+        DatagramChannel sender = DatagramChannel.open();
+        sender.setOption(StandardSocketOptions.IP_MULTICAST_TTL, getTimeToLive());
 
         // Bind receiver to the given port and bind address
         InetAddress bindTo = getBindAddress();
         InetSocketAddress bindSocketAddress = bindTo == null ? new InetSocketAddress(groupPort) : new InetSocketAddress(bindTo, groupPort);
-        MulticastSocket receiver = new MulticastSocket(bindSocketAddress);
+        DatagramChannel receiver = DatagramChannel.open()
+                .setOption(StandardSocketOptions.SO_REUSEADDR, true)
+                .bind(bindSocketAddress);
+
         if (groupAddress == null)
             groupAddress = InetAddress.getByName("239.255.0.1");
-        receiver.joinGroup(groupAddress);
+
+        List<NetworkInterface> groupInterfaces = getGroupInterfaces();
+        if (groupInterfaces == null)
+            groupInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+        for (NetworkInterface groupInterface : groupInterfaces)
+        {
+            if (groupInterface.isLoopback() || groupInterface.isPointToPoint() || !groupInterface.supportsMulticast())
+                continue;
+            receiver.join(groupAddress, groupInterface);
+        }
 
         active = true;
 
@@ -194,8 +228,7 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
     {
         active = false;
         senderThread.interrupt();
-        // We do not interrupt the receiver thread, because it may be processing
-        // a received URL and we do not want to get ClosedByInterruptExceptions
+        receiverThread.interrupt();
     }
 
     public boolean join(long timeout)
@@ -233,26 +266,36 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
         }
     }
 
+    private void close(DatagramChannel channel)
+    {
+        try
+        {
+            channel.close();
+        }
+        catch (IOException x)
+        {
+            if (logger.isDebugEnabled())
+                logger.debug("Could not close " + channel, x);
+        }
+    }
+
     private class MulticastReceiver implements Runnable
     {
-        private final MulticastSocket socket;
+        private final DatagramChannel channel;
 
-        public MulticastReceiver(MulticastSocket socket)
+        public MulticastReceiver(DatagramChannel channel)
         {
-            this.socket = socket;
+            this.channel = channel;
         }
 
         public void run()
         {
-            if (logger.isDebugEnabled())
-                logger.debug("Entering multicast receiver thread on {}", socket.getLocalSocketAddress());
             try
             {
-                // Set a timeout to avoid to wait forever
-                // and not notice that we've been stopped.
-                socket.setSoTimeout((int)(2 * advertiseInterval));
+                if (logger.isDebugEnabled())
+                    logger.debug("Entering multicast receiver thread on {}", channel.getLocalAddress());
 
-                byte[] buffer = new byte[getMaxTransmissionLength()];
+                ByteBuffer buffer = ByteBuffer.allocate(getMaxTransmissionLength());
                 String url = null;
                 while (active)
                 {
@@ -264,6 +307,10 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
                         url = null;
                 }
             }
+            catch (ClosedByInterruptException x)
+            {
+                // Do nothing, we're stopping
+            }
             catch (IOException x)
             {
                 logger.warn("Unexpected exception", x);
@@ -272,31 +319,26 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
             {
                 if (logger.isDebugEnabled())
                     logger.debug("Exiting multicast receiver thread");
-                socket.close();
+                close(channel);
             }
         }
 
-        private String receive(byte[] buffer) throws IOException
+        private String receive(ByteBuffer buffer) throws IOException
         {
-            try
-            {
-                DatagramPacket packet = new DatagramPacket(buffer, 0, buffer.length);
-                socket.receive(packet);
-                return new String(buffer, packet.getOffset(), packet.getLength(), "UTF-8");
-            }
-            catch (SocketTimeoutException x)
-            {
-                return null;
-            }
+            buffer.clear();
+            channel.receive(buffer);
+            buffer.flip();
+            return StandardCharsets.UTF_8.decode(buffer).toString();
         }
     }
+
     private class MulticastSender implements Runnable
     {
-        private final MulticastSocket socket;
+        private final DatagramChannel channel;
 
-        public MulticastSender(MulticastSocket socket)
+        public MulticastSender(DatagramChannel channel)
         {
-            this.socket = socket;
+            this.channel = channel;
         }
 
         public void run()
@@ -313,26 +355,29 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
                     return;
                 }
 
+                ByteBuffer buffer = ByteBuffer.wrap(cometURLBytes);
+                InetSocketAddress address = new InetSocketAddress(getGroupAddress(), getGroupPort());
+
                 while (active)
                 {
-                    DatagramPacket packet = new DatagramPacket(cometURLBytes, 0, cometURLBytes.length, getGroupAddress(), getGroupPort());
-                    socket.send(packet);
+                    buffer.clear();
+                    channel.send(buffer, address);
                     Thread.sleep(getAdvertiseInterval());
                 }
+            }
+            catch (InterruptedException | ClosedByInterruptException x)
+            {
+                // Do nothing, we're stopping
             }
             catch (IOException x)
             {
                 logger.warn("Unexpected exception", x);
             }
-            catch (InterruptedException x)
-            {
-                // Do nothing, we're stopping
-            }
             finally
             {
                 if (logger.isDebugEnabled())
                     logger.debug("Exiting multicast sender thread");
-                socket.close();
+                close(channel);
             }
         }
     }

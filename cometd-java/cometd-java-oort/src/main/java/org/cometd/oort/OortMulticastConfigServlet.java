@@ -17,6 +17,9 @@ package org.cometd.oort;
 
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.util.ArrayList;
+import java.util.List;
 import javax.servlet.ServletConfig;
 
 import org.cometd.bayeux.server.BayeuxServer;
@@ -58,6 +61,7 @@ public class OortMulticastConfigServlet extends OortConfigServlet
     public static final String OORT_MULTICAST_BIND_ADDRESS_PARAM = "oort.multicast.bindAddress";
     public static final String OORT_MULTICAST_GROUP_ADDRESS_PARAM = "oort.multicast.groupAddress";
     public static final String OORT_MULTICAST_GROUP_PORT_PARAM = "oort.multicast.groupPort";
+    public static final String OORT_MULTICAST_GROUP_INTERFACES_PARAM = "oort.multicast.groupInterfaces";
     public static final String OORT_MULTICAST_TIME_TO_LIVE_PARAM = "oort.multicast.timeToLive";
     public static final String OORT_MULTICAST_ADVERTISE_INTERVAL_PARAM = "oort.multicast.advertiseInterval";
     public static final String OORT_MULTICAST_CONNECT_TIMEOUT_PARAM = "oort.multicast.connectTimeout";
@@ -81,6 +85,20 @@ public class OortMulticastConfigServlet extends OortConfigServlet
         String groupPort = config.getInitParameter(OORT_MULTICAST_GROUP_PORT_PARAM);
         if (groupPort != null)
             configurer.setGroupPort(Integer.parseInt(groupPort));
+
+        String groupInterfaceList = config.getInitParameter(OORT_MULTICAST_GROUP_INTERFACES_PARAM);
+        if (groupInterfaceList != null)
+        {
+            List<NetworkInterface> networkInterfaces = new ArrayList<>();
+            String[] groupInterfaces = groupInterfaceList.split(",");
+            for (String groupInterface : groupInterfaces)
+            {
+                groupInterface = groupInterface.trim();
+                if (!groupInterface.isEmpty())
+                    networkInterfaces.add(NetworkInterface.getByInetAddress(InetAddress.getByName(groupInterface)));
+            }
+            configurer.setGroupInterfaces(networkInterfaces);
+        }
 
         String timeToLive = config.getInitParameter(OORT_MULTICAST_TIME_TO_LIVE_PARAM);
         if (timeToLive != null)
