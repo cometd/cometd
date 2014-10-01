@@ -205,11 +205,5 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
             // there will be more mechanical sympathy.
             getAsyncContext().dispatch();
         }
-
-        @Override
-        protected void error(int code)
-        {
-            AbstractStreamHttpTransport.this.error(getRequest(), getResponse(), getAsyncContext(), code);
-        }
     }
 }

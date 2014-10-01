@@ -16,6 +16,7 @@
 package org.cometd.client;
 
 import java.net.HttpCookie;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -26,7 +27,14 @@ import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.common.JSONContext;
+import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.transport.AbstractHttpTransport;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.http.HttpMethod;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -350,5 +358,118 @@ public class MultipleClientSessionsTest extends ClientServerTest
         disconnectBayeuxClient(client2);
 
         disconnectBayeuxClient(client3);
+    }
+
+    @Test
+    public void testMultipleClientSession_WhenSameClientSendsTwoConnects() throws Exception
+    {
+        long multiSessionInterval = 1500;
+
+        AbstractHttpTransport transport = (AbstractHttpTransport)bayeux.getTransport("long-polling");
+        transport.setOption(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
+        transport.setOption(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
+        // Force re-initialization
+        transport.init();
+
+        JSONContext.Client parser = new JettyJSONContextClient();
+
+        String handshakeContent = "[{" +
+                "\"id\":\"1\"," +
+                "\"channel\":\"/meta/handshake\"," +
+                "\"version\":\"1.0\"," +
+                "\"supportedConnectionTypes\":[\"long-polling\"]" +
+                "}]";
+        ContentResponse handshake = httpClient.newRequest("localhost", connector.getLocalPort())
+                .method(HttpMethod.POST)
+                .path(cometdServletPath)
+                .content(new StringContentProvider(handshakeContent), "application/json;charset=UTF-8")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        assertEquals(200, handshake.getStatus());
+        HttpCookie browserCookie = httpClient.getCookieStore().get(URI.create(cometdURL)).get(0);
+        assertEquals("BAYEUX_BROWSER", browserCookie.getName());
+        Message.Mutable[] messages = parser.parse(handshake.getContentAsString());
+        assertEquals(1, messages.length);
+        String clientId = messages[0].getClientId();
+
+        String connectContent1 = "[{" +
+                "\"id\":\"2\"," +
+                "\"channel\":\"/meta/connect\"," +
+                "\"connectionType\":\"long-polling\"," +
+                "\"clientId\":\"" + clientId + "\"," +
+                "\"advice\": {\"timeout\":0}" +
+                "}]";
+        ContentResponse connect1 = httpClient.newRequest("localhost", connector.getLocalPort())
+                .method(HttpMethod.POST)
+                .path(cometdServletPath)
+                .content(new StringContentProvider(connectContent1), "application/json;charset=UTF-8")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        assertEquals(200, connect1.getStatus());
+
+        // This /meta/connect is suspended.
+        final CountDownLatch abortedConnectLatch = new CountDownLatch(1);
+        String connectContent2 = "[{" +
+                "\"id\":\"3\"," +
+                "\"channel\":\"/meta/connect\"," +
+                "\"connectionType\":\"long-polling\"," +
+                "\"clientId\":\"" + clientId + "\"" +
+                "}]";
+        httpClient.newRequest("localhost", connector.getLocalPort())
+                .method(HttpMethod.POST)
+                .path(cometdServletPath)
+                .content(new StringContentProvider(connectContent2), "application/json;charset=UTF-8")
+                .timeout(5, TimeUnit.SECONDS)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        assertTrue(result.isSucceeded());
+                        assertEquals(408, result.getResponse().getStatus());
+                        abortedConnectLatch.countDown();
+                    }
+                });
+
+        // Give some time to the long poll to happen.
+        Thread.sleep(1000);
+
+        // Send the second /meta/connect before the previous returns.
+        String connectContent3 = "[{" +
+                "\"id\":\"4\"," +
+                "\"channel\":\"/meta/connect\"," +
+                "\"connectionType\":\"long-polling\"," +
+                "\"clientId\":\"" + clientId + "\"," +
+                "\"advice\": {\"timeout\":0}" +
+                "}]";
+        ContentResponse connect3 = httpClient.newRequest("localhost", connector.getLocalPort())
+                .method(HttpMethod.POST)
+                .path(cometdServletPath)
+                .content(new StringContentProvider(connectContent3), "application/json;charset=UTF-8")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        assertEquals(200, connect3.getStatus());
+
+        assertTrue(abortedConnectLatch.await(5, TimeUnit.SECONDS));
+
+        // Make sure a subsequent connect does not have the multiple-clients advice.
+        String connectContent4 = "[{" +
+                "\"id\":\"5\"," +
+                "\"channel\":\"/meta/connect\"," +
+                "\"connectionType\":\"long-polling\"," +
+                "\"clientId\":\"" + clientId + "\"" +
+                "}]";
+        ContentResponse connect4 = httpClient.newRequest("localhost", connector.getLocalPort())
+                .method(HttpMethod.POST)
+                .path(cometdServletPath)
+                .content(new StringContentProvider(connectContent4), "application/json;charset=UTF-8")
+                .timeout(2 * timeout, TimeUnit.MILLISECONDS)
+                .send();
+        assertEquals(200, connect4.getStatus());
+        messages = parser.parse(connect4.getContentAsString());
+        assertEquals(1, messages.length);
+        Message.Mutable message = messages[0];
+        Map<String, Object> advice = message.getAdvice(true);
+        assertFalse(advice.containsKey("multiple-clients"));
     }
 }

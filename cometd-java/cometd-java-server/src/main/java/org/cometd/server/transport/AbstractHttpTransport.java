@@ -783,12 +783,15 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
-            decBrowserId(browserId, session);
             error(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
 
         protected abstract void dispatch();
 
-        protected abstract void error(int code);
+        protected void error(int code)
+        {
+            decBrowserId(browserId, session);
+            AbstractHttpTransport.this.error(getRequest(), getResponse(), getAsyncContext(), code);
+        }
     }
 }

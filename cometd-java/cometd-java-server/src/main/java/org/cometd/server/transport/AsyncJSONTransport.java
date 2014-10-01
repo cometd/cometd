@@ -351,11 +351,5 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             // Since the write is async, we will never block here and thus never delay other sessions.
             resume(getRequest(), getResponse(), getAsyncContext(), getServerSession(), getMetaConnectReply());
         }
-
-        @Override
-        protected void error(int code)
-        {
-            AsyncJSONTransport.this.error(getRequest(), getResponse(), getAsyncContext(), code);
-        }
     }
 }
