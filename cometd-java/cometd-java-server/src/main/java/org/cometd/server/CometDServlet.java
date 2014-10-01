@@ -95,8 +95,7 @@ public class CometDServlet extends HttpServlet
         AbstractHttpTransport transport = _bayeux.findHttpTransport(request);
         if (transport == null)
         {
-            if (!response.isCommitted())
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown Bayeux Transport");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown Bayeux Transport");
         }
         else
         {

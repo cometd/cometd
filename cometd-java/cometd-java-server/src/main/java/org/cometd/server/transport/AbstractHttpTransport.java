@@ -445,8 +445,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         try
         {
             _logger.warn("Could not parse JSON: " + json, exception);
-            if (!response.isCommitted())
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
         catch (IOException x)
         {
@@ -458,8 +457,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
     {
         try
         {
-            if (!response.isCommitted())
-                response.sendError(responseCode);
+            response.sendError(responseCode);
         }
         catch (Exception x)
         {
