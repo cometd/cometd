@@ -15,14 +15,11 @@
  */
 package org.cometd.oort;
 
-import java.io.IOException;
-import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.UnavailableException;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServlet;
 
 /**
  * <p>This servlet initializes and configures and instance of the {@link Seti}
@@ -34,25 +31,14 @@ import javax.servlet.http.HttpServletResponse;
  *
  * @see OortMulticastConfigServlet
  */
-public class SetiServlet implements Servlet
+public class SetiServlet extends HttpServlet
 {
-    private ServletConfig _config;
-
-    public ServletConfig getServletConfig()
-    {
-        return _config;
-    }
-
-    public String getServletInfo()
-    {
-        return SetiServlet.class.toString();
-    }
-
     public void init(ServletConfig config) throws ServletException
     {
-        _config = config;
+        super.init(config);
 
-        Oort oort = (Oort)config.getServletContext().getAttribute(Oort.OORT_ATTRIBUTE);
+        ServletContext servletContext = config.getServletContext();
+        Oort oort = (Oort)servletContext.getAttribute(Oort.OORT_ATTRIBUTE);
         if (oort == null)
             throw new UnavailableException("Missing " + Oort.OORT_ATTRIBUTE + " attribute");
 
@@ -60,7 +46,7 @@ public class SetiServlet implements Servlet
         {
             Seti seti = newSeti(oort);
             seti.start();
-            _config.getServletContext().setAttribute(Seti.SETI_ATTRIBUTE, seti);
+            servletContext.setAttribute(Seti.SETI_ATTRIBUTE, seti);
         }
         catch (Exception x)
         {
@@ -77,7 +63,9 @@ public class SetiServlet implements Servlet
     {
         try
         {
-            Seti seti = (Seti)_config.getServletContext().getAttribute(Seti.SETI_ATTRIBUTE);
+            ServletContext servletContext = getServletConfig().getServletContext();
+            Seti seti = (Seti)servletContext.getAttribute(Seti.SETI_ATTRIBUTE);
+            servletContext.removeAttribute(Seti.SETI_ATTRIBUTE);
             if (seti != null)
                 seti.stop();
         }
@@ -85,15 +73,5 @@ public class SetiServlet implements Servlet
         {
             throw new RuntimeException(x);
         }
-        finally
-        {
-            _config.getServletContext().removeAttribute(Seti.SETI_ATTRIBUTE);
-        }
-    }
-
-    public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
-    {
-        HttpServletResponse response = (HttpServletResponse)res;
-        response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
     }
 }

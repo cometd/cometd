@@ -15,37 +15,23 @@
  */
 package org.cometd.oort;
 
-import java.io.IOException;
-import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
 
 import org.cometd.annotation.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.ext.TimesyncExtension;
 
-public class OortDemoServlet implements Servlet
+public class OortDemoServlet extends HttpServlet
 {
-    private ServletConfig _config;
     private ServerAnnotationProcessor _processor;
     private OortChatService _service;
 
-    public String getServletInfo()
-    {
-        return this.getClass().toString();
-    }
-
-    public ServletConfig getServletConfig()
-    {
-        return _config;
-    }
-
     public void init(ServletConfig config) throws ServletException
     {
-        _config = config;
+        super.init(config);
 
         ServletContext context = config.getServletContext();
 
@@ -58,11 +44,6 @@ public class OortDemoServlet implements Servlet
         _processor.process(_service);
 
         bayeux.addExtension(new TimesyncExtension());
-    }
-
-    public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
-    {
-        throw new UnsupportedOperationException();
     }
 
     public void destroy()

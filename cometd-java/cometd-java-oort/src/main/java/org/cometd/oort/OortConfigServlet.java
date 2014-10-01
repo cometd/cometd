@@ -15,14 +15,11 @@
  */
 package org.cometd.oort;
 
-import java.io.IOException;
-import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.UnavailableException;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServlet;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.common.JSONContext;
@@ -45,7 +42,7 @@ import org.cometd.common.JSONContext;
  *
  * @see SetiServlet
  */
-public abstract class OortConfigServlet implements Servlet
+public abstract class OortConfigServlet extends HttpServlet
 {
     public static final String OORT_URL_PARAM = "oort.url";
     public static final String OORT_SECRET_PARAM = "oort.secret";
@@ -53,23 +50,12 @@ public abstract class OortConfigServlet implements Servlet
     public static final String OORT_ENABLE_ACK_EXTENSION_PARAM = "enableAckExtension";
     public static final String OORT_JSON_CONTEXT_PARAM = "jsonContext";
 
-    private ServletConfig _config;
-
-    public ServletConfig getServletConfig()
-    {
-        return _config;
-    }
-
-    public String getServletInfo()
-    {
-        return OortConfigServlet.class.toString();
-    }
-
     public void init(ServletConfig config) throws ServletException
     {
-        _config = config;
+        super.init(config);
 
-        BayeuxServer bayeux = (BayeuxServer)config.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+        ServletContext servletContext = config.getServletContext();
+        BayeuxServer bayeux = (BayeuxServer)servletContext.getAttribute(BayeuxServer.ATTRIBUTE);
         if (bayeux == null)
             throw new UnavailableException("Missing " + BayeuxServer.ATTRIBUTE + " attribute");
 
@@ -81,11 +67,11 @@ public abstract class OortConfigServlet implements Servlet
         {
             Oort oort = newOort(bayeux, url);
 
-            String secret = _config.getInitParameter(OORT_SECRET_PARAM);
+            String secret = config.getInitParameter(OORT_SECRET_PARAM);
             if (secret != null)
                 oort.setSecret(secret);
 
-            boolean enableAckExtension = Boolean.parseBoolean(_config.getInitParameter(OORT_ENABLE_ACK_EXTENSION_PARAM));
+            boolean enableAckExtension = Boolean.parseBoolean(config.getInitParameter(OORT_ENABLE_ACK_EXTENSION_PARAM));
             oort.setAckExtensionEnabled(enableAckExtension);
 
             String jsonContext = config.getInitParameter(OORT_JSON_CONTEXT_PARAM);
@@ -93,11 +79,11 @@ public abstract class OortConfigServlet implements Servlet
                 oort.setJSONContextClient((JSONContext.Client)getClass().getClassLoader().loadClass(jsonContext).newInstance());
 
             oort.start();
-            _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, oort);
+            servletContext.setAttribute(Oort.OORT_ATTRIBUTE, oort);
 
             configureCloud(config, oort);
 
-            String channels = _config.getInitParameter(OORT_CHANNELS_PARAM);
+            String channels = config.getInitParameter(OORT_CHANNELS_PARAM);
             if (channels != null)
             {
                 String[] patterns = channels.split(",");
@@ -124,7 +110,7 @@ public abstract class OortConfigServlet implements Servlet
      */
     protected String provideOortURL()
     {
-        return _config.getInitParameter(OORT_URL_PARAM);
+        return getServletConfig().getInitParameter(OORT_URL_PARAM);
     }
 
     /**
@@ -153,7 +139,9 @@ public abstract class OortConfigServlet implements Servlet
     {
         try
         {
-            Oort oort = (Oort)_config.getServletContext().getAttribute(Oort.OORT_ATTRIBUTE);
+            ServletContext servletContext = getServletConfig().getServletContext();
+            Oort oort = (Oort)servletContext.getAttribute(Oort.OORT_ATTRIBUTE);
+            servletContext.removeAttribute(Oort.OORT_ATTRIBUTE);
             if (oort != null)
                 oort.stop();
         }
@@ -161,15 +149,5 @@ public abstract class OortConfigServlet implements Servlet
         {
             throw new RuntimeException(x);
         }
-        finally
-        {
-            _config.getServletContext().removeAttribute(Oort.OORT_ATTRIBUTE);
-        }
-    }
-
-    public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
-    {
-        HttpServletResponse response = (HttpServletResponse)res;
-        response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
     }
 }

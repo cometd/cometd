@@ -17,11 +17,11 @@ package org.cometd.examples;
 
 import java.io.IOException;
 import java.util.Map;
-import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.UnavailableException;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.annotation.Configure;
@@ -42,7 +42,7 @@ import org.cometd.server.ext.TimesyncExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CometDDemoServlet extends GenericServlet
+public class CometDDemoServlet extends HttpServlet
 {
     private static final Logger logger = LoggerFactory.getLogger(CometDDemoServlet.class);
 
@@ -50,9 +50,9 @@ public class CometDDemoServlet extends GenericServlet
     public void init() throws ServletException
     {
         super.init();
-        final BayeuxServerImpl bayeux=(BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+        final BayeuxServerImpl bayeux = (BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
 
-        if (bayeux==null)
+        if (bayeux == null)
             throw new UnavailableException("No BayeuxServer!");
 
         // Create extensions
@@ -61,7 +61,7 @@ public class CometDDemoServlet extends GenericServlet
 
         // Deny unless granted
 
-        bayeux.createChannelIfAbsent("/**",new ServerChannel.Initializer()
+        bayeux.createChannelIfAbsent("/**", new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -105,8 +105,8 @@ public class CometDDemoServlet extends GenericServlet
         @Listener("/service/echo")
         public void doEcho(ServerSession session, ServerMessage message)
         {
-            Map<String,Object> data = message.getDataAsMap();
-            logger.info("ECHO from "+session+" "+data);
+            Map<String, Object> data = message.getDataAsMap();
+            logger.info("ECHO from " + session + " " + data);
             session.deliver(_session, message.getChannel(), data);
         }
     }
@@ -117,13 +117,13 @@ public class CometDDemoServlet extends GenericServlet
         @Listener("/meta/subscribe")
         public void monitorSubscribe(ServerSession session, ServerMessage message)
         {
-            logger.info("Monitored Subscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
+            logger.info("Monitored Subscribe from " + session + " for " + message.get(Message.SUBSCRIPTION_FIELD));
         }
 
         @Listener("/meta/unsubscribe")
         public void monitorUnsubscribe(ServerSession session, ServerMessage message)
         {
-            logger.info("Monitored Unsubscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
+            logger.info("Monitored Unsubscribe from " + session + " for " + message.get(Message.SUBSCRIPTION_FIELD));
         }
 
         @Listener("/meta/*")

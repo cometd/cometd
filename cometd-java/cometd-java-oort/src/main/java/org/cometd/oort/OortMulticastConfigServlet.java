@@ -42,6 +42,8 @@ import org.cometd.bayeux.server.BayeuxServer;
  * to join to receive the advertisements; defaults to 239.255.0.1</li>
  * <li><code>oort.multicast.groupPort</code>, to specify the port over which advertisements
  * are sent and received; defaults to 5577</li>
+ * <li><code>oort.multicast.groupInterfaces</code>, a comma separated list of IP addresses
+ * that will join the multicast group; default to all interfaces that support multicast</li>
  * <li><code>oort.multicast.timeToLive</code>, to specify the time to live of advertisement packets;
  * defaults to 1 (1 = same subnet, 32 = same site, 255 = global)</li>
  * <li><code>oort.multicast.advertiseInterval</code>, to specify the interval in milliseconds

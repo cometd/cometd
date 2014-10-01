@@ -15,17 +15,14 @@
  */
 package org.cometd.oort;
 
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
@@ -149,7 +146,7 @@ public class JMXTest
         server.stop();
     }
 
-    public static class CometDJMXExporter extends GenericServlet
+    public static class CometDJMXExporter extends HttpServlet
     {
         private final List<Object> mbeans = new ArrayList<>();
         private volatile MBeanContainer mbeanContainer;
@@ -162,12 +159,6 @@ public class JMXTest
             mbeanContainer.beanAdded(null, bayeuxServer);
             mbeans.add(bayeuxServer);
             // Add other components
-        }
-
-        @Override
-        public void service(ServletRequest servletRequest, ServletResponse servletResponse) throws ServletException, IOException
-        {
-            throw new ServletException();
         }
 
         @Override
