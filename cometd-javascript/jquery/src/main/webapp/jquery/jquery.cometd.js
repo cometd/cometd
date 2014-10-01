@@ -50,6 +50,7 @@
                     type: 'POST',
                     contentType: 'application/json;charset=UTF-8',
                     data: packet.body,
+                    global: false,
                     xhrFields: {
                         // For asynchronous calls.
                         withCredentials: true
