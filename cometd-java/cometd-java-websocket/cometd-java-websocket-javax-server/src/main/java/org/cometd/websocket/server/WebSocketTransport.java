@@ -45,16 +45,11 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 {
-    public static final String BATCH_WRITES_OPTION = "batchWrites";
-
-    private boolean _batchWrites;
-
     public WebSocketTransport(BayeuxServerImpl bayeux)
     {
         super(bayeux);
@@ -82,8 +77,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         container.setDefaultMaxTextMessageBufferSize(maxMessageSize);
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, container.getDefaultMaxSessionIdleTimeout());
         container.setDefaultMaxSessionIdleTimeout(idleTimeout);
-
-        _batchWrites = getOption(BATCH_WRITES_OPTION, false);
 
         String protocol = getProtocol();
         List<String> protocols = protocol == null ? null : Collections.singletonList(protocol);
@@ -172,34 +165,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             delegate = new AbstractWebSocketScheduler(context)
             {
                 @Override
-                protected void send(final Session wsSession, final ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage> replies)
-                {
-                    // TODO: if we are batching writes, we should send the queue and the replies
-                    // TODO: using blocking API, and then call flushBatch() which is also blocking.
-                    // TODO: The code below will work in Jetty, but who knows in other implementations.
-                    super.send(wsSession, session, startInterval, queue, replies);
-                    flushBatchedWrites(wsSession, session);
-                }
-
-                private void flushBatchedWrites(Session wsSession, ServerSessionImpl session)
-                {
-                    try
-                    {
-                        if (_batchWrites)
-                        {
-                            if (_logger.isDebugEnabled())
-                                _logger.debug("Flushing batched messages for {}", session);
-                            wsSession.getAsyncRemote().flushBatch();
-                        }
-                    }
-                    catch (IOException x)
-                    {
-                        close(1011, x.toString());
-                        handleException(wsSession, session, x);
-                    }
-                }
-
-                @Override
                 protected void close(final int code, String reason)
                 {
                     try
@@ -225,20 +190,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         {
             _wsSession = wsSession;
             wsSession.addMessageHandler(this);
-            configureBatchWrites(wsSession);
-        }
-
-        private void configureBatchWrites(Session wsSession)
-        {
-            try
-            {
-                wsSession.getAsyncRemote().setBatchingAllowed(_batchWrites);
-            }
-            catch (IOException x)
-            {
-                if (_logger.isDebugEnabled())
-                    _logger.debug("Could not configure batch writes", x);
-            }
         }
 
         @Override
