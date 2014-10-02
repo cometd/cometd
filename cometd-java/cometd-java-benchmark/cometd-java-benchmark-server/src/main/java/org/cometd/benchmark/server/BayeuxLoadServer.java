@@ -25,11 +25,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -46,7 +41,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.benchmark.Atomics;
 import org.cometd.benchmark.Config;
 import org.cometd.benchmark.MonitoringQueuedThreadPool;
 import org.cometd.benchmark.MonitoringThreadPoolExecutor;
@@ -72,7 +66,8 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.toolchain.test.BenchmarkHelper;
+import org.eclipse.jetty.toolchain.perf.MeasureRecorder;
+import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 
@@ -259,7 +254,7 @@ public class BayeuxLoadServer
 
     public static class StatisticsService extends AbstractService
     {
-        private final BenchmarkHelper helper = new BenchmarkHelper();
+        private final PlatformMonitor monitor = new PlatformMonitor();
         private final MonitoringQueuedThreadPool jettyThreadPool;
         private final MonitoringThreadPoolExecutor websocketThreadPool;
         private final StatisticsHandler statisticsHandler;
@@ -281,9 +276,12 @@ public class BayeuxLoadServer
             // Multiple nodes must wait that initialization is completed
             synchronized (this)
             {
-                boolean started = helper.startStatistics();
-                if (started)
+                PlatformMonitor.Start start = monitor.start();
+                if (start != null)
                 {
+                    System.err.println();
+                    System.err.println(start);
+
                     if (jettyThreadPool != null)
                         jettyThreadPool.reset();
                     if (websocketThreadPool != null)
@@ -305,9 +303,11 @@ public class BayeuxLoadServer
         {
             synchronized (this)
             {
-                boolean stopped = helper.stopStatistics();
-                if (stopped)
+                PlatformMonitor.Stop stop = monitor.stop();
+                if (stop != null)
                 {
+                    System.err.println(stop);
+
                     if (requestLatencyHandler != null)
                     {
                         requestLatencyHandler.print();
@@ -350,6 +350,7 @@ public class BayeuxLoadServer
                                 TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getAverageTaskLatency()),
                                 TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getMaxTaskLatency()));
                     }
+                    System.err.println();
                 }
             }
         }
@@ -447,13 +448,9 @@ public class BayeuxLoadServer
         }
     }
 
-    private static class RequestLatencyHandler extends HandlerWrapper
+    private static class RequestLatencyHandler extends HandlerWrapper implements MeasureRecorder.Converter
     {
-        private final AtomicLong requests = new AtomicLong();
-        private final AtomicLong minLatency = new AtomicLong();
-        private final AtomicLong maxLatency = new AtomicLong();
-        private final AtomicLong totLatency = new AtomicLong();
-        private final ConcurrentMap<Long, AtomicLong> latencies = new ConcurrentHashMap<>();
+        private final MeasureRecorder recorder = new MeasureRecorder(this, "Requests - Latency", "ms");
         private final ThreadLocal<Boolean> currentEnabled = new ThreadLocal<Boolean>()
         {
             @Override
@@ -466,7 +463,6 @@ public class BayeuxLoadServer
         @Override
         public void handle(String target, Request request, final HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {
-            requests.incrementAndGet();
             long begin = System.nanoTime();
             try
             {
@@ -486,105 +482,25 @@ public class BayeuxLoadServer
             }
         }
 
+        @Override
+        public long convert(long measure)
+        {
+            return TimeUnit.NANOSECONDS.toMillis(measure);
+        }
+
         private void reset()
         {
-            requests.set(0);
-            minLatency.set(Long.MAX_VALUE);
-            maxLatency.set(0);
-            totLatency.set(0);
-            latencies.clear();
+            recorder.reset();
         }
 
         private void updateLatencies(long begin, long end)
         {
-            // Latencies are in nanoseconds, but microsecond accuracy is enough
-            long latency = TimeUnit.MICROSECONDS.toNanos(TimeUnit.NANOSECONDS.toMicros(end - begin));
-            Atomics.updateMin(minLatency, latency);
-            Atomics.updateMax(maxLatency, latency);
-            totLatency.addAndGet(latency);
-            AtomicLong count = latencies.get(latency);
-            if (count == null)
-            {
-                count = new AtomicLong();
-                AtomicLong existing = latencies.put(latency, count);
-                if (existing != null)
-                    count = existing;
-            }
-            count.incrementAndGet();
+            recorder.record(end - begin, true);
         }
 
         private void print()
         {
-            if (latencies.size() > 1)
-            {
-                long requestCount = requests.get();
-
-                // Needs to be sorted in order to calculate the median (aka latency at 50th percentile)
-                Map<Long, AtomicLong> sortedLatencies = new TreeMap<>(latencies);
-                latencies.clear();
-
-                long requests = 0;
-                long maxLatencyBucketFrequency = 0;
-                long previousLatency = 0;
-                long latencyAt50thPercentile = 0;
-                long latencyAt99thPercentile = 0;
-                long[] latencyBucketFrequencies = new long[20];
-                long minLatency = this.minLatency.get();
-                long latencyRange = maxLatency.get() - minLatency;
-                for (Iterator<Map.Entry<Long, AtomicLong>> entries = sortedLatencies.entrySet().iterator(); entries.hasNext();)
-                {
-                    Map.Entry<Long, AtomicLong> entry = entries.next();
-                    long latency = entry.getKey();
-                    Long bucketIndex = latencyRange == 0 ? 0 : (latency - minLatency) * latencyBucketFrequencies.length / latencyRange;
-                    int index = bucketIndex.intValue() == latencyBucketFrequencies.length ? latencyBucketFrequencies.length - 1 : bucketIndex.intValue();
-                    long value = entry.getValue().get();
-                    requests += value;
-                    latencyBucketFrequencies[index] += value;
-                    if (latencyBucketFrequencies[index] > maxLatencyBucketFrequency)
-                        maxLatencyBucketFrequency = latencyBucketFrequencies[index];
-                    if (latencyAt50thPercentile == 0 && requests > requestCount / 2)
-                        latencyAt50thPercentile = (previousLatency + latency) / 2;
-                    if (latencyAt99thPercentile == 0 && requests > requestCount - requestCount / 100)
-                        latencyAt99thPercentile = (previousLatency + latency) / 2;
-                    previousLatency = latency;
-                    entries.remove();
-                }
-
-                System.err.println("Requests - Latency Distribution Curve (X axis: Frequency, Y axis: Latency):");
-                double percentile = 0.0;
-                for (int i = 0; i < latencyBucketFrequencies.length; ++i)
-                {
-                    long latencyBucketFrequency = latencyBucketFrequencies[i];
-                    int value = maxLatencyBucketFrequency == 0 ? 0 : Math.round(latencyBucketFrequency * (float)latencyBucketFrequencies.length / maxLatencyBucketFrequency);
-                    if (value == latencyBucketFrequencies.length)
-                        value = value - 1;
-                    for (int j = 0; j < value; ++j)
-                        System.err.print(" ");
-                    System.err.print("@");
-                    for (int j = value + 1; j < latencyBucketFrequencies.length; ++j)
-                        System.err.print(" ");
-                    System.err.print("  _  ");
-                    System.err.print(TimeUnit.NANOSECONDS.toMillis((latencyRange * (i + 1) / latencyBucketFrequencies.length) + minLatency));
-                    System.err.printf(" ms (%d, %.2f%%)", latencyBucketFrequency, (100.0 * latencyBucketFrequency / requestCount));
-                    double last = percentile;
-                    percentile += (100.0 * latencyBucketFrequency / requestCount);
-                    if (last < 50.0 && percentile >= 50.0)
-                        System.err.print(" ^50%");
-                    if (last < 85.0 && percentile >= 85.0)
-                        System.err.print(" ^85%");
-                    if (last < 95.0 && percentile >= 95.0)
-                        System.err.print(" ^95%");
-                    if (last < 99.0 && percentile >= 99.0)
-                        System.err.print(" ^99%");
-                    if (last < 99.9 && percentile >= 99.9)
-                        System.err.print(" ^99.9%");
-                    System.err.println();
-                }
-
-                System.err.printf("Requests - Latency 50th%%/99th%% = %d/%d ms%n",
-                        TimeUnit.NANOSECONDS.toMillis(latencyAt50thPercentile),
-                        TimeUnit.NANOSECONDS.toMillis(latencyAt99thPercentile));
-            }
+            System.err.println(recorder.snapshot());
         }
 
         public void doNotTrackCurrentRequest()

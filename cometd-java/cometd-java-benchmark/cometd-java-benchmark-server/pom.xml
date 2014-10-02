@@ -90,11 +90,6 @@
             <version>${jetty-version}</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty.toolchain</groupId>
-            <artifactId>jetty-test-helper</artifactId>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-mapper-asl</artifactId>
             <version>${jackson1-version}</version>

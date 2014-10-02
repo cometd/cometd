@@ -21,12 +21,10 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -46,7 +44,6 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.benchmark.Atomics;
 import org.cometd.benchmark.Config;
 import org.cometd.benchmark.MonitoringQueuedThreadPool;
-import org.cometd.benchmark.SystemTimer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
@@ -56,18 +53,21 @@ import org.cometd.websocket.client.JettyWebSocketTransport;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.toolchain.test.BenchmarkHelper;
+import org.eclipse.jetty.toolchain.perf.MeasureRecorder;
+import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
+import org.eclipse.jetty.toolchain.perf.PlatformTimer;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 
-public class BayeuxLoadClient
+public class BayeuxLoadClient implements MeasureRecorder.Converter
 {
     private static final String ID_FIELD = "ID";
     private static final String START_FIELD = "start";
 
-    private final SystemTimer systemTimer = SystemTimer.detect();
+    private final MeasureRecorder recorder = new MeasureRecorder(this, "Messages - Latency", "ms");
+    private final PlatformTimer timer = PlatformTimer.detect();
     private final Random random = new Random();
-    private final BenchmarkHelper helper = new BenchmarkHelper();
+    private final PlatformMonitor monitor = new PlatformMonitor();
     private final AtomicLong ids = new AtomicLong();
     private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<LoadBayeuxClient>());
     private final ConcurrentMap<String, ChannelId> channelIds = new ConcurrentHashMap<>();
@@ -76,14 +76,10 @@ public class BayeuxLoadClient
     private final AtomicLong end = new AtomicLong();
     private final AtomicLong responses = new AtomicLong();
     private final AtomicLong messages = new AtomicLong();
-    private final AtomicLong minWallLatency = new AtomicLong();
-    private final AtomicLong maxWallLatency = new AtomicLong();
-    private final AtomicLong totWallLatency = new AtomicLong();
     private final AtomicLong minLatency = new AtomicLong();
     private final AtomicLong maxLatency = new AtomicLong();
     private final AtomicLong totLatency = new AtomicLong();
     private final AtomicStampedReference<String> maxTime = new AtomicStampedReference<>(null, 0);
-    private final ConcurrentMap<Long, AtomicLong> wallLatencies = new ConcurrentHashMap<>();
     private final Map<String, AtomicStampedReference<Long>> sendTimes = new ConcurrentHashMap<>();
     private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<>();
     private ScheduledExecutorService scheduler;
@@ -98,21 +94,11 @@ public class BayeuxLoadClient
         client.run();
     }
 
-    public long getResponses()
-    {
-        return responses.get();
-    }
-
-    public long getMessages()
-    {
-        return messages.get();
-    }
-
     public void run() throws Exception
     {
         System.err.println("detecting timer resolution...");
-        System.err.printf("native timer resolution: %d \u00B5s%n", systemTimer.getNativeResolution());
-        System.err.printf("emulated timer resolution: %d \u00B5s%n", systemTimer.getEmulatedResolution());
+        System.err.printf("native timer resolution: %d \u00B5s%n", timer.getNativeResolution());
+        System.err.printf("emulated timer resolution: %d \u00B5s%n", timer.getEmulatedResolution());
         System.err.println();
 
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
@@ -237,7 +223,7 @@ public class BayeuxLoadClient
         LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(clientTransportType), null, false);
         statsClient.handshake();
 
-        int clients = 100;
+        int clients = 1000;
         int batchCount = 1000;
         int batchSize = 10;
         long batchPause = 10000;
@@ -246,6 +232,7 @@ public class BayeuxLoadClient
 
         while (true)
         {
+            System.err.println();
             System.err.println("-----");
 
             System.err.printf("clients [%d]: ", clients);
@@ -360,7 +347,9 @@ public class BayeuxLoadClient
             // Send a message to the server to signal the start of the test
             statsClient.begin();
 
-            helper.startStatistics();
+            PlatformMonitor.Start start = monitor.start();
+            System.err.println();
+            System.err.println(start);
             System.err.printf("Testing %d clients in %d rooms, %d rooms/client%n", bayeuxClients.size(), rooms, roomsPerClient);
             System.err.printf("Sending %d batches of %dx%d bytes messages every %d \u00B5s%n", batchCount, batchSize, messageSize, batchPause);
 
@@ -368,7 +357,8 @@ public class BayeuxLoadClient
             long expected = runBatches(batchCount, batchSize, batchPause, chat, randomize, channel);
             long end = System.nanoTime();
 
-            helper.stopStatistics();
+            PlatformMonitor.Stop stop = monitor.stop();
+            System.err.println(stop);
 
             long elapsedNanos = end - begin;
             if (elapsedNanos > 0)
@@ -454,7 +444,7 @@ public class BayeuxLoadClient
         client.endBatch();
 
         if (batchPause > 0)
-            systemTimer.sleep(batchPause);
+            timer.sleep(batchPause);
 
         return expected;
     }
@@ -507,30 +497,13 @@ public class BayeuxLoadClient
 
     private void updateLatencies(long startTime, long sendTime, long arrivalTime, long endTime, boolean recordDetails)
     {
-        // Latencies are in nanoseconds, but microsecond accuracy is enough
-        long wallLatency = TimeUnit.MICROSECONDS.toNanos(TimeUnit.NANOSECONDS.toMicros(endTime - startTime));
-        long latency = TimeUnit.MICROSECONDS.toNanos(TimeUnit.NANOSECONDS.toMicros(arrivalTime - sendTime));
+        long wallLatency = endTime - startTime;
+        recorder.record(wallLatency, recordDetails);
 
-        // Update the latencies using a non-blocking algorithm
-        Atomics.updateMin(minWallLatency, wallLatency);
-        Atomics.updateMax(maxWallLatency, wallLatency);
-        totWallLatency.addAndGet(wallLatency);
+        long latency = TimeUnit.MICROSECONDS.toNanos(TimeUnit.NANOSECONDS.toMicros(arrivalTime - sendTime));
         Atomics.updateMin(minLatency, latency);
         Atomics.updateMax(maxLatency, latency);
         totLatency.addAndGet(latency);
-
-        if (recordDetails)
-        {
-            AtomicLong count = wallLatencies.get(wallLatency);
-            if (count == null)
-            {
-                count = new AtomicLong();
-                AtomicLong existing = wallLatencies.putIfAbsent(wallLatency, count);
-                if (existing != null)
-                    count = existing;
-            }
-            count.incrementAndGet();
-        }
     }
 
     private boolean waitForMessages(long expected) throws InterruptedException
@@ -585,89 +558,15 @@ public class BayeuxLoadClient
                     );
         }
 
-        if (wallLatencies.size() > 1)
-        {
-            // Needs to be sorted in order to calculate the median (aka latency at 50th percentile)
-            Map<Long, AtomicLong> sortedWallLatencies = new TreeMap<>(wallLatencies);
-            wallLatencies.clear();
-
-            long messages = 0;
-            long maxLatencyBucketFrequency = 0;
-            long previousLatency = 0;
-            long latencyAt50thPercentile = 0;
-            long latencyAt99thPercentile = 0;
-            long[] latencyBucketFrequencies = new long[20];
-            long minWallLatency = this.minWallLatency.get();
-            long latencyRange = maxWallLatency.get() - minWallLatency;
-            for (Iterator<Map.Entry<Long, AtomicLong>> entries = sortedWallLatencies.entrySet().iterator(); entries.hasNext();)
-            {
-                Map.Entry<Long, AtomicLong> entry = entries.next();
-                long latency = entry.getKey();
-                Long bucketIndex = latencyRange == 0 ? 0 : (latency - minWallLatency) * latencyBucketFrequencies.length / latencyRange;
-                int index = bucketIndex.intValue() == latencyBucketFrequencies.length ? latencyBucketFrequencies.length - 1 : bucketIndex.intValue();
-                long value = entry.getValue().get();
-                messages += value;
-                latencyBucketFrequencies[index] += value;
-                if (latencyBucketFrequencies[index] > maxLatencyBucketFrequency)
-                    maxLatencyBucketFrequency = latencyBucketFrequencies[index];
-                if (latencyAt50thPercentile == 0 && messages > messageCount / 2)
-                    latencyAt50thPercentile = (previousLatency + latency) / 2;
-                if (latencyAt99thPercentile == 0 && messages > messageCount - messageCount / 100)
-                    latencyAt99thPercentile = (previousLatency + latency) / 2;
-                previousLatency = latency;
-                entries.remove();
-            }
-
-            if (messages != messageCount)
-                System.err.printf("Counted messages (%d) != Latency messages sum (%d)%n", messageCount, messages);
-
-            System.err.println("Messages - Wall Latency Distribution Curve (X axis: Frequency, Y axis: Latency):");
-            double percentile = 0.0;
-            for (int i = 0; i < latencyBucketFrequencies.length; ++i)
-            {
-                long latencyBucketFrequency = latencyBucketFrequencies[i];
-                int value = maxLatencyBucketFrequency == 0 ? 0 : Math.round(latencyBucketFrequency * (float)latencyBucketFrequencies.length / maxLatencyBucketFrequency);
-                if (value == latencyBucketFrequencies.length)
-                    value = value - 1;
-                for (int j = 0; j < value; ++j)
-                    System.err.print(" ");
-                System.err.print("@");
-                for (int j = value + 1; j < latencyBucketFrequencies.length; ++j)
-                    System.err.print(" ");
-                System.err.print("  _  ");
-                double percentage = 100D * latencyBucketFrequency / messages;
-                System.err.print(TimeUnit.NANOSECONDS.toMillis((latencyRange * (i + 1) / latencyBucketFrequencies.length) + minWallLatency));
-                System.err.printf(" ms (%d, %.2f%%)", latencyBucketFrequency, percentage);
-                double last = percentile;
-                percentile += percentage;
-                if (last < 50.0 && percentile >= 50.0)
-                    System.err.print(" ^50%");
-                if (last < 85.0 && percentile >= 85.0)
-                    System.err.print(" ^85%");
-                if (last < 95.0 && percentile >= 95.0)
-                    System.err.print(" ^95%");
-                if (last < 99.0 && percentile >= 99.0)
-                    System.err.print(" ^99%");
-                if (last < 99.9 && percentile >= 99.9)
-                    System.err.print(" ^99.9%");
-                System.err.println();
-            }
-            System.err.printf("Slowest Message ID = %s time = %d ms%n", maxTime.getReference(), maxTime.getStamp());
-
-            System.err.printf("Messages - Wall Latency 50th%%/99th%% = %d/%d ms%n",
-                    TimeUnit.NANOSECONDS.toMillis(latencyAt50thPercentile),
-                    TimeUnit.NANOSECONDS.toMillis(latencyAt99thPercentile));
-        }
-
-        System.err.printf("Messages - Wall Latency Min/Ave/Max = %d/%d/%d ms%n",
-                TimeUnit.NANOSECONDS.toMillis(minWallLatency.get()),
-                messageCount == 0 ? -1 : TimeUnit.NANOSECONDS.toMillis(totWallLatency.get() / messageCount),
-                TimeUnit.NANOSECONDS.toMillis(maxWallLatency.get()));
+        MeasureRecorder.Snapshot snapshot = recorder.snapshot();
+        System.err.println(snapshot);
 
         System.err.printf("Messages - Network Latency Min/Ave/Max = %d/%d/%d ms%n",
                 TimeUnit.NANOSECONDS.toMillis(minLatency.get()),
                 messageCount == 0 ? -1 : TimeUnit.NANOSECONDS.toMillis(totLatency.get() / messageCount),
                 TimeUnit.NANOSECONDS.toMillis(maxLatency.get()));
+
+        System.err.printf("Slowest Message ID = %s time = %d ms%n", maxTime.getReference(), maxTime.getStamp());
 
         System.err.printf("Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms | Task Latency avg/max = %d/%d ms%n",
                 threadPool.getTasks(),
@@ -679,21 +578,24 @@ public class BayeuxLoadClient
                 TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxTaskLatency()));
     }
 
+    @Override
+    public long convert(long measure)
+    {
+        return TimeUnit.NANOSECONDS.toMillis(measure);
+    }
+
     private void reset()
     {
+        recorder.reset();
         threadPool.reset();
         start.set(0L);
         end.set(0L);
         responses.set(0L);
         messages.set(0L);
-        minWallLatency.set(Long.MAX_VALUE);
-        maxWallLatency.set(0L);
-        totWallLatency.set(0L);
         minLatency.set(Long.MAX_VALUE);
         maxLatency.set(0L);
         totLatency.set(0L);
         maxTime.set(null, 0);
-        wallLatencies.clear();
         sendTimes.clear();
         arrivalTimes.clear();
     }
@@ -778,8 +680,7 @@ public class BayeuxLoadClient
             {
                 long startTime = ((Number)data.get(START_FIELD)).longValue();
                 long endTime = System.nanoTime();
-                if (start.get() == 0L)
-                    start.set(endTime);
+                start.compareAndSet(0, endTime);
                 end.set(endTime);
                 messages.incrementAndGet();
 
