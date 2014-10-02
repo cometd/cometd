@@ -18,6 +18,7 @@ package org.cometd.server;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.Arrays;
 
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;
@@ -147,15 +148,21 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
 
     protected ServerMessage.Mutable[] parseMessages(BufferedReader reader, boolean jsonDebug) throws ParseException, IOException
     {
-        if (jsonDebug)
+        if (jsonDebug) {
             return parseMessages(IO.toString(reader));
-        else
-            return jsonContext.parse(reader);
+        } else {
+            return sorted(jsonContext.parse(reader));
+        }
     }
 
     protected ServerMessage.Mutable[] parseMessages(String json) throws ParseException
     {
-        return jsonContext.parse(json);
+        return sorted(jsonContext.parse(json));
+    }
+
+    private static ServerMessage.Mutable[] sorted(ServerMessage.Mutable[] messages) {
+        Arrays.sort(messages, MessageOrdering.COMPARATOR);
+        return messages;
     }
 
     /**
