@@ -48,7 +48,7 @@ import org.cometd.bayeux.server.ServerSession;
  * client
  * </ul>
  * <p>
- * The relationship between tc, ts, o & l on the server is given by
+ * The relationship between tc, ts, o and l on the server is given by
  * <code>ts=tc+o+l</code> (the time the server received the message is the
  * client time plus the offset plus the network lag). Thus the accuracy of the o
  * and l settings can be determined with <code>a=tc+o+l-ts</code>.

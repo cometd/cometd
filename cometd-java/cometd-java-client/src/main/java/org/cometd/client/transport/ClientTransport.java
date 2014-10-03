@@ -90,14 +90,14 @@ public abstract class ClientTransport extends AbstractTransport
      * Aborts this transport, usually by cancelling all pending Bayeux messages that require a response,
      * such as {@code /meta/connect}s, without waiting for a response.
      *
-     * @see {@link org.cometd.client.BayeuxClient#abort()}
+     * @see org.cometd.client.BayeuxClient#abort()
      */
     public abstract void abort();
 
     /**
      * Terminates this transport, usually by closing network connections opened directly by this transport.
      *
-     * @see {@link org.cometd.client.BayeuxClient#disconnect()}
+     * @see org.cometd.client.BayeuxClient#disconnect()
      */
     public void terminate()
     {

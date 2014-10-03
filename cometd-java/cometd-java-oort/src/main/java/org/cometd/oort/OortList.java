@@ -27,20 +27,17 @@ import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.server.BayeuxServer;
 
 /**
- * A specialized oort object whose entity is a {@link List}.
- * <p />
- * {@link OortList} specializes {@code OortObject} and allows optimized replication of elements
+ * <p>A specialized oort object whose entity is a {@link List}.</p>
+ * <p>{@link OortList} specializes {@code OortObject} and allows optimized replication of elements
  * across the cluster: instead of replicating the whole list, that may be contain a lot of elements,
- * only elements that are added or removed are replicated.
- * <p/>
- * Applications can use {@link #addAndShare(Object[])} and {@link #removeAndShare(Object[])}
+ * only elements that are added or removed are replicated.</p>
+ * <p>Applications can use {@link #addAndShare(Object[])} and {@link #removeAndShare(Object[])}
  * to broadcast changes related to elements, as well as {@link #setAndShare(Object)} to
- * change the whole list.
- * <p/>
- * When one or more elements are changed, {@link ElementListener}s are notified.
+ * change the whole list.</p>
+ * <p>When one or more elements are changed, {@link ElementListener}s are notified.
  * {@link DeltaListener} converts whole list updates triggered by {@link #setAndShare(Object)}
  * into events for {@link ElementListener}s, giving applications a single listener type to implement
- * their business logic.
+ * their business logic.</p>
  *
  * @param <E> the element type
  */
@@ -97,10 +94,10 @@ public class OortList<E> extends OortObject<List<E>>
     }
 
     /**
-     * Adds the given {@code elements} to the local entity list,
-     * and then broadcasts the addition to all nodes in the cluster.
-     * <p/>
-     * Calling this method triggers notifications {@link ElementListener}s, both on this node and on remote nodes.
+     * <p>Adds the given {@code elements} to the local entity list,
+     * and then broadcasts the addition to all nodes in the cluster.</p>
+     * <p>Calling this method triggers notifications {@link ElementListener}s,
+     * both on this node and on remote nodes.</p>
      *
      * @param elements the elements to add
      * @return whether at least one of the elements was added to the local entity list
@@ -124,10 +121,10 @@ public class OortList<E> extends OortObject<List<E>>
     }
 
     /**
-     * Removes the given {@code elements} to the local entity list,
-     * and then broadcasts the removal to all nodes in the cluster.
-     * <p/>
-     * Calling this method triggers notifications {@link ElementListener}s, both on this node and on remote nodes.
+     * <p>Removes the given {@code elements} to the local entity list,
+     * and then broadcasts the removal to all nodes in the cluster.</p>
+     * <p>Calling this method triggers notifications {@link ElementListener}s,
+     * both on this node and on remote nodes.</p>
      *
      * @param elements the elements to remove
      * @return whether at least one of the elements was removed from the local entity list
@@ -288,18 +285,17 @@ public class OortList<E> extends OortObject<List<E>>
     }
 
     /**
-     * An implementation of {@link Listener} that converts whole list events into {@link ElementListener} events.
-     * <p />
-     * For example, if an entity list:
+     * <p>An implementation of {@link Listener} that converts whole list events into {@link ElementListener} events.</p>
+     * <p>For example, if an entity list:</p>
      * <pre>
      * [A, B]
      * </pre>
-     * is replaced by a list:
+     * <p>is replaced by a list:</p>
      * <pre>
      * [A, C, D]
      * </pre>
-     * then this listener generates two "add" events for {@code C} and {@code D}
-     * and one "remove" event for {@code B}
+     * <p>then this listener generates two "add" events for {@code C} and {@code D}
+     * and one "remove" event for {@code B}.</p>
      *
      * @param <E> the element type
      */

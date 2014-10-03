@@ -18,19 +18,17 @@ package org.cometd.oort;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * A distributed counter service to be deployed on a Oort cluster that
- * modifies a {@code long} value hosted in a "master" node.
- * <p/>
- * Instances of this service may be used as unique ID generator, or as
+ * <p>A distributed counter service to be deployed on a Oort cluster that
+ * modifies a {@code long} value hosted in a "master" node.</p>
+ * <p>Instances of this service may be used as unique ID generator, or as
  * unique counter across the cluster, for example to aggregate values
  * from different nodes, such as the number of users connected to each
- * node.
- * <p/>
- * Applications may call methods {@link #addAndGet(long, Callback)} or
+ * node.</p>
+ * <p>Applications may call methods {@link #addAndGet(long, Callback)} or
  * {@link #getAndAdd(long, Callback)} providing the amount to add
  * (it may be negative) and a {@link Callback} object that will be
  * invoked on the <em>requesting node</em> when the result has been
- * computed and transmitted back by the "master" node.
+ * computed and transmitted back by the "master" node.</p>
  */
 public class OortMasterLong extends OortMasterService<Long, OortMasterLong.Context>
 {

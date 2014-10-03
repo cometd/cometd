@@ -40,17 +40,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An {@link OortObject} represents a named composite entity that is distributed in an Oort cluster.
- * <p/>
- * A typical example is an oort object that stores the number of users connected to an Oort node.
+ * <p>An {@link OortObject} represents a named composite entity that is distributed in an Oort cluster.</p>
+ * <p>A typical example is an oort object that stores the number of users connected to an Oort node.
  * The entity in this case is a {@code long} value representing the number of connected users.
  * Such oort object may be named 'user_count', and there will be an oort object instance with this name in each node.
- * Each oort object instance will have a different local value, along with all the values from the other nodes.
- * <p/>
- * A particular {@link OortObject} has a unique name across the node and is made of N parts,
+ * Each oort object instance will have a different local value, along with all the values from the other nodes.</p>
+ * <p>A particular {@link OortObject} has a unique name across the node and is made of N parts,
  * where N is the number of active nodes. A part is represented by {@link Info} instances.
  * Each {@link Info} instance represents the contribution of that node to the whole {@link OortObject}
- * and stores the Oort URL of the node it represents along with the entity in that node.
+ * and stores the Oort URL of the node it represents along with the entity in that node.</p>
  * <pre>
  *     +------------+
  *     | user_count |
@@ -62,64 +60,59 @@ import org.slf4j.LoggerFactory;
  * | part3 | 29 | remote - http://oort3/ |
  * +-------+----+------------------------+
  * </pre>
- * An {@link OortObject} must be created and then {@link #start() started}:
+ * <p>An {@link OortObject} must be created and then {@link #start() started}:</p>
  * <pre>
  * Oort oort1 = ...;
  * OortObject userCount1 = new OortObject(oort1, "user_count", OortObjectFactories.forLong());
  * userCount1.start();
  * </pre>
- * Once started, it connects via Oort facilities to the other nodes and communicates with the oort object
+ * <p>Once started, it connects via Oort facilities to the other nodes and communicates with the oort object
  * instances that have the same name that live in the other nodes.
  * The communication is performed on a channel constructed from the oort object's name and returned by
- * {@link #getChannelName()}.
- * <p/>
- * Oort objects work best when the entity they hold is an immutable, value-type object: {@code OortObject<Long>}
+ * {@link #getChannelName()}.</p>
+ * <p>Oort objects work best when the entity they hold is an immutable, value-type object: {@code OortObject<Long>}
  * works better than {@code OortObject<AtomicLong>} because AtomicLong is mutable and its APIs
- * (for example, {@link AtomicLong#compareAndSet(long, long)}) are not exposed by {@link OortObject}.
- * <p/>
- * Objects stored by an oort object are created using a {@link Factory}. This is necessary to recreate
+ * (for example, {@link AtomicLong#compareAndSet(long, long)}) are not exposed by {@link OortObject}.</p>
+ * <p>Objects stored by an oort object are created using a {@link Factory}. This is necessary to recreate
  * objects that may be serialized differently when transmitted via JSON, without forcing a global JSON serializer.
- * A number of factories are available in {@link OortObjectFactories}, and applications can write their own.
- * <p/>
- * Applications can change the entity value of the oort object and broadcast the change to other nodes via
+ * A number of factories are available in {@link OortObjectFactories}, and applications can write their own.</p>
+ * <p>Applications can change the entity value of the oort object and broadcast the change to other nodes via
  * {@link #setAndShare(Object)}. The other nodes will receive a message on the oort object's channel
  * and set the new entity value in the part that corresponds to the node that changed the entity.
  * The diagram below shows one oort object with name "user_count" in two nodes.
- * On the left of the arrow (A), the situation before calling:
+ * On the left of the arrow (A), the situation before calling:</p>
  * <pre>
  * userCount1.setAndShare(17);
  * </pre>
- * and on the right of the arrow (A) the situation afterwards, that shows how the value is first changed
+ * <p>and on the right of the arrow (A) the situation afterwards, that shows how the value is first changed
  * (1) locally on {@code node_1}, then a message (2) is broadcast on the cluster, reaches
- * {@code node_2}, where it updates (3) the part corresponding to {@code node_1} to the new value.
+ * {@code node_2}, where it updates (3) the part corresponding to {@code node_1} to the new value.</p>
  * <pre>
  * +-------------+  +-------------+         +-----------------+       +-----------------+
  * |   node_1    |  |   node_2    |         |     node_1      |       |     node_2      |
  * +-------------+  +-------------+         +-----------------+  (2)  +-----------------+
- * | user_count  |  | user_count  |   (A)   |   user_count    | ----> |   user_count    |
- * +--------+----+  +--------+----+  ---->  +--------+--------+       +--------+--------+
+ * | user_count  |  | user_count  |   (A)   |   user_count    | ----&gt; |   user_count    |
+ * +--------+----+  +--------+----+  ----&gt;  +--------+--------+       +--------+--------+
  * | local  | 13 |  | local  | 19 |         | local  | 17 (1) |       | local  | 19     |
  * +--------+----+  +--------+----+         +--------+--------+       +--------+--------+
  * | remote | 19 |  | remote | 13 |         | remote | 19     |       | remote | 17 (3) |
  * +--------+----+  +-------+----+          +--------+--------+       +-------+---------+
  * </pre>
- * When an entity is updated, either locally or remotely, an event is fired to registered {@link Listener}s.
- * <p/>
- * Oort objects can only update the entity they own; in the example above, {@code node_1} can only update
+ * <p>When an entity is updated, either locally or remotely, an event is fired to registered {@link Listener}s.</p>
+ * <p>Oort objects can only update the entity they own; in the example above, {@code node_1} can only update
  * the "local" value 13 to 17, but cannot modify the "remote" value 19, which is owned by {@code node_2}.
  * Only update messages from {@code node_1} can update the "remote" value on {@code node_2}.
- * Every node has a part that belongs to a particular node, and only that particular node can update it.
- * <p />
- * Values of oort objects may be merged using a {@link Merger} via {@link #merge(Merger)}.
+ * Every node has a part that belongs to a particular node, and only that particular node can update it.</p>
+ * <p>Values of oort objects may be merged using a {@link Merger} via {@link #merge(Merger)}.
  * A number of mergers are available in {@link OortObjectMergers}, and applications can write their own.
- * For example:
+ * For example:</p>
  * <pre>
  * long totalUsersOnAllNodes = userCount1.merge(OortObjectMergers.longSum()); // yields 17+19=36
  * </pre>
- * Oort objects implement a strategy where value objects are replicated in each node, trading increased memory
+ * <p>Oort objects implement a strategy where value objects are replicated in each node, trading increased memory
  * usage for reduced latency accessing the data.
  * An alternative strategy that trades reduced memory usage for increased latency is implemented by
- * {@link OortService}.
+ * {@link OortService}.</p>
  *
  * @param <T> the type of value object stored in this oort object
  */
@@ -246,9 +239,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     }
 
     /**
-     * Sets the given new object on this oort object, and then broadcast the new object to all nodes in the cluster.
-     * <p/>
-     * Setting an object triggers notification of {@link Listener}s, both on this node and on remote nodes.
+     * <p>Sets the given new object on this oort object, and then broadcast the new object to all nodes in the cluster.</p>
+     * <p>Setting an object triggers notification of {@link Listener}s, both on this node and on remote nodes.</p>
      *
      * @param newObject the new object to set
      * @return the old object

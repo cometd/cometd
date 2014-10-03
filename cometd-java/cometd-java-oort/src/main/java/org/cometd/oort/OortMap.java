@@ -28,22 +28,18 @@ import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.server.BayeuxServer;
 
 /**
- * A specialized oort object whose entity is a {@link ConcurrentMap}.
- * <p/>
- * {@link OortMap} specializes {@code OortObject} and allows optimized replication of map entries
+ * <p>A specialized oort object whose entity is a {@link ConcurrentMap}.</p>
+ * <p>{@link OortMap} specializes {@code OortObject} and allows optimized replication of map entries
  * across the cluster: instead of replicating the whole map, that may be contain a lot of entries,
- * only entries that are modified are replicated.
- * <p/>
- * Applications can use {@link #putAndShare(Object, Object)} and {@link #removeAndShare(Object)}
+ * only entries that are modified are replicated.</p>
+ * <p>Applications can use {@link #putAndShare(Object, Object)} and {@link #removeAndShare(Object)}
  * to broadcast changes related to single entries, as well as {@link #setAndShare(Object)} to
- * change the whole map.
- * <p/>
- * When a single entry is changed, {@link EntryListener}s are notified.
+ * change the whole map.</p>
+ * <p>When a single entry is changed, {@link EntryListener}s are notified.
  * {@link DeltaListener} converts whole map updates triggered by {@link #setAndShare(Object)}
  * into events for {@link EntryListener}s, giving applications a single listener type to implement
- * their business logic.
- * <p/>
- * The type parameter for keys, {@code K}, must be a String to be able to use this class as-is,
+ * their business logic.</p>
+ * <p>The type parameter for keys, {@code K}, must be a String to be able to use this class as-is,
  * although usage of {@link OortStringMap} is preferred.
  * This is due to the fact that a {@code Map&lt;Long,Object&gt;} containing an entry {@code {13:"foo"}}
  * is serialized in JSON as {@code {"13":"foo"}} because JSON field names must always be strings.
@@ -54,7 +50,7 @@ import org.cometd.bayeux.server.BayeuxServer;
  * Method {@link #serialize(Object)} should convert the entity object to a format that retains
  * enough type information for {@link #deserialize(Object)} to convert the JSON-deserialized entity
  * object that has the wrong key type to an entity object that has the right key type, like
- * {@link OortLongMap} does.
+ * {@link OortLongMap} does.</p>
  *
  * @param <K> the key type
  * @param <V> the value type
@@ -86,10 +82,9 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
     }
 
     /**
-     * Updates a single entry of the local entity map with the given {@code key} and {@code value},
-     * and broadcasts the operation to all nodes in the cluster.
-     * <p/>
-     * Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes.
+     * <p>Updates a single entry of the local entity map with the given {@code key} and {@code value},
+     * and broadcasts the operation to all nodes in the cluster.</p>
+     * <p>Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes.</p>
      *
      * @param key   the key to associate the value to
      * @param value the value associated with the key
@@ -120,11 +115,10 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
     }
 
     /**
-     * Updates a single entry of the local entity map with the given {@code key} and {@code value}
-     * if it does not exist yet, and broadcasts the operation to all nodes in the cluster.
-     * <p/>
-     * Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes,
-     * only if the key did not exist.
+     * <p>Updates a single entry of the local entity map with the given {@code key} and {@code value}
+     * if it does not exist yet, and broadcasts the operation to all nodes in the cluster.</p>
+     * <p>Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes,
+     * only if the key did not exist.</p>
      *
      * @param key   the key to associate the value to
      * @param value the value associated with the key
@@ -154,10 +148,9 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
     }
 
     /**
-     * Removes the given {@code key} from the local entity map,
-     * and broadcasts the operation to all nodes in the cluster.
-     * <p/>
-     * Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes.
+     * <p>Removes the given {@code key} from the local entity map,
+     * and broadcasts the operation to all nodes in the cluster.</p>
+     * <p>Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes.</p>
      *
      * @param key the key to remove
      * @return the value associated with the key, or null if no value was associated with the key
@@ -431,28 +424,27 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
     }
 
     /**
-     * An implementation of {@link Listener} that converts whole map events into {@link EntryListener} events.
-     * <p />
-     * For example, if an entity map:
+     * <p>An implementation of {@link Listener} that converts whole map events into {@link EntryListener} events.</p>
+     * <p>For example, if an entity map:</p>
      * <pre>
      * {
      *     key1: value1,
      *     key2: value2
      * }
      * </pre>
-     * is replaced by a map:
+     * <p>is replaced by a map:</p>
      * <pre>
      * {
      *     key1: valueA,
      *     key3: valueB
      * }
      * </pre>
-     * then this listener generates two "put" events with the following {@link Entry entries}:
+     * <p>then this listener generates two "put" events with the following {@link Entry entries}:</p>
      * <pre>
      * (key1, value1, valueA)
      * (key3, null, valueB)
      * </pre>
-     * and one "remove" event with the following {@link Entry entry}:
+     * <p>and one "remove" event with the following {@link Entry entry}:</p>
      * <pre>
      * (key2, value2, null)
      * </pre>

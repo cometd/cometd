@@ -32,9 +32,8 @@ import org.cometd.bayeux.ChannelId;
  *
  * <p>For an operation on a channel, the authorizers on the wildcard channels that match the channel and the
  * authorizers on the channel itself (together known at the <em>authorizers set</em> for that channel) will be
- * consulted to check if the the operation is granted, denied or ignored.
- * <br />
- * The list of wildcard channels that match the channel is obtained from {@link ChannelId#getWilds()}.</p>
+ * consulted to check if the the operation is granted, denied or ignored.</p>
+ * <p>The list of wildcard channels that match the channel is obtained from {@link ChannelId#getWilds()}.</p>
  *
  * <p>The following is the authorization algorithm:</p>
  * <ul>
@@ -64,7 +63,7 @@ import org.cometd.bayeux.ChannelId;
  *             public Result authorize(Operation operation, ChannelId channel,
  *                                     ServerSession session, ServerMessage message)
  *             {
- *                 if (operation == Operation.PUBLISH &&
+ *                 if (operation == Operation.PUBLISH &amp;&amp;
  *                         session.getAttribute("isCNNEmployee") == Boolean.TRUE)
  *                     return Result.grant();
  *                 else
@@ -79,17 +78,14 @@ import org.cometd.bayeux.ChannelId;
  * <ul>
  * <li>Create a wildcard authorizer that matches all channels and neither grants or
  * denies (e.g. use {@link org.cometd.server.authorizer.GrantAuthorizer#GRANT_NONE}).
- * <br />
  * This authorizer can be added to channel /** or to a more specific channel for your application such as
  * /game/**.
- * <br />
  * This ensures that authorizers set is not empty and that another authorizer must explicitly grant access.</li>
  * <li>For public channels, that all users can access, add authorizers that will simply grant
  * publish and/or subscribe permissions to the specific or wildcard channels.</li>
  * <li>For access controlled channels (e.g. only nominated players can publish to a game channel), then
  * specific implementation of authorizers need to be created that will check identities and possibly other
  * state before granting permission.
- * <br />
  * Typically there is no need for such authorizers to explicitly deny access, unless that attempted access
  * represents a specific error condition that needs to be passed to the client in the message associated
  * with a deny.</li>

@@ -36,8 +36,11 @@ public interface ServerTransport extends Transport
     /**
      * <p>The advice that this transport sends to inform the client
      * about transport (re)connection.</p>
+     *
      * @return the advice object sent by the server transport
+     * @deprecated
      */
+    @Deprecated
     public Object getAdvice();
 
     /**

@@ -31,16 +31,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 
 /**
- * Abstract Long Polling Transport.
- * <p/>
- * Transports based on this class can be configured with servlet init parameters:
- * <dl>
- * <dt>browserId</dt><dd>The Cookie name used to save a browser ID.</dd>
- * <dt>maxSessionsPerBrowser</dt><dd>The maximum number of long polling sessions allowed per browser.</dd>
- * <dt>multiSessionInterval</dt><dd>The polling interval to use once max session per browser is exceeded.</dd>
- * <dt>autoBatch</dt><dd>If true a batch will be automatically created to span the handling of messages received from a session.</dd>
- * <dt>allowMultiSessionsNoBrowser</dt><dd>Allows multiple sessions even when the browser identifier cannot be retrieved.</dd>
- * </dl>
+ * <p>The base class for HTTP transports that use blocking stream I/O.</p>
  */
 public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
 {

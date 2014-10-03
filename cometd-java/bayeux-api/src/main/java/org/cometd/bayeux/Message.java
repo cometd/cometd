@@ -21,7 +21,7 @@ import java.util.Map;
  * <p>The Bayeux protocol exchange information by means of messages.</p>
  * <p>This interface represents the API of a Bayeux message, and consists
  * mainly of convenience methods to access the known fields of the message map.</p>
- * <p>This interface comes in both an immutable and {@link Mutable mutable} versions.<br/>
+ * <p>This interface comes in both an immutable and {@link Mutable mutable} versions.
  * Mutability may be deeply enforced by an implementation, so that it is not correct
  * to cast a passed Message, to a Message.Mutable, even if the implementation
  * allows this.</p>

@@ -28,13 +28,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The base class of all server transports.
- * <p/>
- * Each derived Transport class should declare all options that it supports
+ * <p>The base class of all server transports.</p>
+ * <p>Each derived Transport class should declare all options that it supports
  * by calling {@link #setOption(String, Object)} for each option.
  * Then during the call the {@link #init()}, each transport should
  * call the variants of {@link #getOption(String)} to obtained the configured
- * value for the option.
+ * value for the option.</p>
  */
 public abstract class AbstractServerTransport extends AbstractTransport implements ServerTransport
 {
@@ -54,7 +53,6 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     private long _maxLazyTimeout = 5000;
     private boolean _metaConnectDeliveryOnly = false;
     private JSONContext.Server jsonContext;
-    private Object _advice;
 
     /**
      * <p>The constructor is passed the {@link BayeuxServerImpl} instance for
@@ -64,8 +62,8 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
      * actual values used.  The options are arranged into a naming hierarchy
      * by derived classes adding prefix by calling add {@link #setOptionPrefix(String)}.
      * Calls to {@link #getOption(String)} will use the list of prefixes
-     * to search for the most specific option set.
-     * </p>
+     * to search for the most specific option set.</p>
+     *
      * @param bayeux the BayeuxServer implementation
      * @param name the name of the transport
      */
@@ -77,13 +75,11 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
 
     public Object getAdvice()
     {
-        return _advice;
+        return null;
     }
 
     /**
-     * Get the interval.
-     *
-     * @return the interval
+     * @return the interval in milliseconds
      */
     public long getInterval()
     {
@@ -91,9 +87,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     /**
-     * Get the maxInterval.
-     *
-     * @return the maxInterval
+     * @return the maxInterval in milliseconds
      */
     public long getMaxInterval()
     {
@@ -101,9 +95,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     /**
-     * Get the max time before dispatching lazy message.
-     *
-     * @return the max lazy timeout in MS
+     * @return the max lazy timeout in milliseconds before flushing lazy messages
      */
     public long getMaxLazyTimeout()
     {
@@ -111,7 +103,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     /**
-     * @return the timeout
+     * @return the timeout in milliseconds
      */
     public long getTimeout()
     {
@@ -129,7 +121,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     /**
-     * Initialise the transport, resolving default and direct options.
+     * Initializes the transport, resolving default and direct options.
      */
     public void init()
     {
@@ -159,9 +151,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     /**
-     * Get the bayeux.
-     *
-     * @return the bayeux
+     * @return the BayeuxServer object
      */
     public BayeuxServerImpl getBayeux()
     {
@@ -169,9 +159,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     /**
-     * Set the interval.
-     *
-     * @param interval the interval to set
+     * @param interval the interval in milliseconds
      */
     public void setInterval(long interval)
     {
@@ -179,9 +167,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     /**
-     * Set the maxInterval.
-     *
-     * @param maxInterval the maxInterval to set
+     * @param maxInterval the maxInterval in milliseconds
      */
     public void setMaxInterval(long maxInterval)
     {
@@ -189,9 +175,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     /**
-     * Set the timeout.
-     *
-     * @param timeout the timeout to set
+     * @param timeout the timeout in milliseconds
      */
     public void setTimeout(long timeout)
     {
@@ -199,23 +183,11 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     /**
-     * Set the maxLazyTimeout.
-     *
-     * @param maxLazyTimeout the maxLazyTimeout to set
+     * @param maxLazyTimeout the maxLazyTimeout in milliseconds
      */
     public void setMaxLazyTimeout(long maxLazyTimeout)
     {
         _maxLazyTimeout = maxLazyTimeout;
-    }
-
-    /**
-     * Set the advice.
-     *
-     * @param advice the advice to set
-     */
-    public void setAdvice(Object advice)
-    {
-        _advice = advice;
     }
 
     /**

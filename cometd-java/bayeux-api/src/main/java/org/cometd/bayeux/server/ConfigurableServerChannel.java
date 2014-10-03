@@ -24,8 +24,8 @@ import org.cometd.bayeux.Channel;
  * <p>A {@link ConfigurableServerChannel} offers an API that can be used to
  * configure {@link ServerChannel}s at creation time.</p>
  * <p>{@link ServerChannel}s may be created concurrently via
- * {@link BayeuxServer#createChannelIfAbsent(String, Initializer...)} and it is
- * important that the creation of a channel is atomic so that its
+ * {@link BayeuxServer#createChannelIfAbsent(String, ConfigurableServerChannel.Initializer...)}
+ * and it is important that the creation of a channel is atomic so that its
  * configuration is executed only once, and so that it is guaranteed that
  * it happens before any message can be published or received by the channel.</p>
  */

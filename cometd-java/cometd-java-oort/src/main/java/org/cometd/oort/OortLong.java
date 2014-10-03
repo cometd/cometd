@@ -21,30 +21,24 @@ import org.cometd.bayeux.server.LocalSession;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /**
- * A shared atomic long made of an internal {@link AtomicLong} and of an internal
- * {@link OortObject OortObject&lt;Long&gt;}.
- * <p />
- * This class exposes an API similar to that of {@link AtomicLong}, and for every successful
+ * <p>A shared atomic long made of an internal {@link AtomicLong} and of an internal
+ * {@link OortObject OortObject&lt;Long&gt;}.</p>
+ * <p>This class exposes an API similar to that of {@link AtomicLong}, and for every successful
  * update of the local value of the internal {@link AtomicLong}, it broadcast the local value
- * via the internal {@link OortObject} to other nodes.
- * <p />
- * This class can be seen as the counterpart of {@link OortMasterLong}.
- * <p />
- * Where the {@link OortMasterLong} instance in each node has an internal {@link AtomicLong},
+ * via the internal {@link OortObject} to other nodes.</p>
+ * <p>This class can be seen as the counterpart of {@link OortMasterLong}.</p>
+ * <p>Where the {@link OortMasterLong} instance in each node has an internal {@link AtomicLong},
  * but only the one in the "master" node has a non-zero value, the instance of this class in
- * each node has an internal {@link AtomicLong} that has its own value.
- * <p />
- * Where in {@link OortMasterLong} updates are always sent to the "master" node, in this
- * class updates are always local, and then broadcast to the other nodes in the cluster.
- * <p />
- * Where in {@link OortMasterLong} each node has to send a message to the "master" node to
+ * each node has an internal {@link AtomicLong} that has its own value.</p>
+ * <p>Where in {@link OortMasterLong} updates are always sent to the "master" node, in this
+ * class updates are always local, and then broadcast to the other nodes in the cluster.</p>
+ * <p>Where in {@link OortMasterLong} each node has to send a message to the "master" node to
  * retrieve the total value, in this class the total value can be obtained from the internal
- * {@link OortObject} without network communication with other nodes.
- * <p />
- * Where {@link OortMasterLong} trades less memory (one {@code long} per node) for
+ * {@link OortObject} without network communication with other nodes.</p>
+ * <p>Where {@link OortMasterLong} trades less memory (one {@code long} per node) for
  * larger latencies (every operation on non-master nodes requires sending a message to the
  * master node), this class trades more memory (N {@code long}s per node - where N is the
- * number of nodes) for smaller latencies (operations do not require messaging).
+ * number of nodes) for smaller latencies (operations do not require messaging).</p>
  *
  * @see OortMasterLong
  */

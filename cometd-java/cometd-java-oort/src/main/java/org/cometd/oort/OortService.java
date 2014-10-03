@@ -34,26 +34,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An {@link OortService} allows applications to forward actions to Oort
- * nodes that own the entity onto which the action should be applied.
- * <p/>
- * An {@link OortService} builds on the concept introduced by {@link OortObject}
+ * <p>An {@link OortService} allows applications to forward actions to Oort
+ * nodes that own the entity onto which the action should be applied.</p>
+ * <p>An {@link OortService} builds on the concept introduced by {@link OortObject}
  * that the ownership of a particular entity belongs only to one node.
- * Any node can read the entity, but only the owner can create/modify/delete it.
- * <p/>
- * In order to perform actions that modify the entity, a node has to know
+ * Any node can read the entity, but only the owner can create/modify/delete it.</p>
+ * <p>In order to perform actions that modify the entity, a node has to know
  * what is the node that owns the entity, and then forward the action to
- * the owner node.
- * <p/>
- * {@link OortService} provides the facilities to forward the action to the
- * owner node and return the result of the action, or its failure.
- * <p/>
- * {@link OortService}s are usually created at application startup, but may
+ * the owner node.</p>
+ * <p>{@link OortService} provides the facilities to forward the action to the
+ * owner node and return the result of the action, or its failure.</p>
+ * <p>{@link OortService}s are usually created at application startup, but may
  * be created and destroyed on-the-fly.
  * In both cases, they must be {@link #start() started} to make them functional
- * and {@link #stop() stopped} when they are no longer needed.
- * <p />
- * Usage of {@link OortService} follows these steps:
+ * and {@link #stop() stopped} when they are no longer needed.</p>
+ * <p>Usage of {@link OortService} follows these steps:</p>
  * <ol>
  * <li>
  * The application running in the <em>requesting node</em> identifies
@@ -82,8 +77,8 @@ import org.slf4j.LoggerFactory;
  * or the failure returned by {@link Result#failure(Object)}.
  * </li>
  * </ol>
- * The steps above do not change if the <em>requesting node</em> and
- * the <em>owner node</em> are the same.
+ * <p>The steps above do not change if the <em>requesting node</em> and
+ * the <em>owner node</em> are the same.</p>
  *
  * @param <R> the result type
  * @param <C> the opaque context type
@@ -199,11 +194,10 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     }
 
     /**
-     * Subclasses must call this method to forward the action to the owner node.
-     * <p />
-     * If the {@code targetOortURL} is {@code null}, then the action is broadcast to all nodes.
+     * <p>Subclasses must call this method to forward the action to the owner node.</p>
+     * <p>If the {@code targetOortURL} is {@code null}, then the action is broadcast to all nodes.
      * Nodes that receive an action request that they can't fullfill because they don't own the
-     * entity the action should be applied to must return {@link Result#ignore(Object)}.
+     * entity the action should be applied to must return {@link Result#ignore(Object)}.</p>
      *
      * @param targetOortURL the owner node Oort URL, or null to broadcast the action to all nodes
      * @param parameter the action parameter that will be passed to {@link #onForward(Request)}
@@ -406,13 +400,12 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     }
 
     /**
-     * Subclasses must implement this method, that runs on the <em>owner node</em>,
-     * to implement the action functionality.
-     * <p />
-     * The result to return is {@link Result#success(Object)} or {@link Result#failure(Object)}
+     * <p>Subclasses must implement this method, that runs on the <em>owner node</em>,
+     * to implement the action functionality.</p>
+     * <p>The result to return is {@link Result#success(Object)} or {@link Result#failure(Object)}
      * if the implementation of this method was able to find the entity on which the action
      * functionality was meant to be applied, or {@link Result#ignore(Object)} if the entity
-     * was not found.
+     * was not found.</p>
      *
      * @param request the request containing the parameter passed from {@link #forward(String, Object, Object)}
      * @return the result containing the data that will be passed to {@link #onForwardSucceeded(Object, Object)}
@@ -497,16 +490,14 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     }
 
     /**
-     * Encapsulates the result of a forwarded request returned by {@link #onForward(Request)}.
-     * <p />
-     * Applications must use methods {@link #success(Object)}, {@link #failure(Object)} or {@link #ignore(Object)}
-     * to signal to the implementation the result of the forwarded request.
-     * <p />
-     * {@link OortService} may forward a request action for an entity to the owner node, but before the request
+     * <p>Encapsulates the result of a forwarded request returned by {@link #onForward(Request)}.</p>
+     * <p>Applications must use methods {@link #success(Object)}, {@link #failure(Object)} or {@link #ignore(Object)}
+     * to signal to the implementation the result of the forwarded request.</p>
+     * <p>{@link OortService} may forward a request action for an entity to the owner node, but before the request
      * arrives to the owner node, the entity may be removed from the owner node.
      * When the owner node receives the request for the entity, the entity is not available anymore.
      * Similarly, a request that is broadcast to all nodes arrives to nodes that do not own the entity.
-     * The node that receives the request must return a {@link Result} using the following rules:
+     * The node that receives the request must return a {@link Result} using the following rules:</p>
      * <ul>
      * <li>If the node owns the entity, use {@link #success(Object)} or {@link #failure(Object)} - never use
      * {@link #ignore(Object)}</li>
@@ -585,10 +576,9 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     }
 
     /**
-     * Utility context that stores the {@link ServerSession} and the {@link ServerMessage}.
-     * <p />
-     * CometD services that extend {@link OortService} may register themselves as listeners
-     * for messages sent by remote clients. In such case, this class will come handy in this way:
+     * <p>Utility context that stores the {@link ServerSession} and the {@link ServerMessage}.</p>
+     * <p>CometD services that extend {@link OortService} may register themselves as listeners
+     * for messages sent by remote clients. In such case, this class will come handy in this way:</p>
      * <pre>
      * &#64;Service
      * class MyService extends OortService&lt;Boolean, ServerContext&gt;

@@ -28,18 +28,18 @@ import java.util.Set;
  * representation of a channel.</p>
  *
  * <p>Channels are identified with strings that look like paths (e.g. "/foo/bar")
- * called "channel id".<br/>
+ * called "channel id".
  * Meta channels have channel ids starting with "/meta/" and are reserved for the
- * operation of they Bayeux protocol.<br/>
+ * operation of they Bayeux protocol.
  * Service channels have channel ids starting with "/service/" and are channels
  * for which publish is disabled, so that only server side listeners will receive
  * the messages.</p>
  *
- * <p>A channel id may also be specified with wildcards.<br/>
+ * <p>A channel id may also be specified with wildcards.
  * For example "/meta/*" refers to all top level meta channels
- * like "/meta/subscribe" or "/meta/handshake".<br/>
+ * like "/meta/subscribe" or "/meta/handshake".
  * The channel "/foo/**" is deeply wild and refers to all channels like "/foo/bar",
- * "/foo/bar/bob" and "/foo/bar/wibble/bip".<br/>
+ * "/foo/bar/bob" and "/foo/bar/wibble/bip".
  * Wildcards can only be specified as last segment of a channel; therefore channel
  * "/foo/&#42;/bar/** is an invalid channel.</p>
  */

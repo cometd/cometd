@@ -26,9 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Monitors the activity of {@link ServerSession}s and disconnects them after a period of inactivity.
- * <p/>
- * The inactivity of a particular {@code ServerSession} is determined in two ways:
+ * <p>Monitors the activity of {@link ServerSession}s and disconnects them after a period of inactivity.</p>
+ * <p>The inactivity of a particular {@code ServerSession} is determined in two ways:</p>
  * <ul>
  * <li>Only the client is inactive, that is the client only sends periodic {@code /meta/connect}
  * messages but no other messages, while the server may send messages to the client; this is
@@ -37,8 +36,8 @@ import org.slf4j.LoggerFactory;
  * send messages apart the periodic {@code /meta/connect} messages; this is configured via
  * {@link Activity#CLIENT_SERVER}</li>
  * </ul>
- * When the inactivity exceeds a configurable {@link #getMaxInactivityPeriod() inactive period},
- * the {@code ServerSession} is {@link ServerSession#disconnect() disconnected}.
+ * <p>When the inactivity exceeds a configurable {@link #getMaxInactivityPeriod() inactive period},
+ * the {@code ServerSession} is {@link ServerSession#disconnect() disconnected}.</p>
  */
 public class ActivityExtension extends BayeuxServer.Extension.Adapter
 {

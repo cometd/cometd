@@ -25,7 +25,6 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -53,10 +52,10 @@ import org.slf4j.LoggerFactory;
  * constructor.</p>
  * <p>Each CometD service has an associated {@link LocalSession} that can be
  * used as the source for messages published via
- * {@link ServerChannel#publish(Session, Mutable)} or
- * {@link ServerSession#deliver(Session, Mutable)}.</p>
+ * {@link ServerChannel#publish(Session, ServerMessage.Mutable)} or
+ * {@link ServerSession#deliver(Session, ServerMessage.Mutable)}.</p>
  *
- * @see {@link BayeuxServer#newLocalSession(String)} as an alternative to {@link AbstractService}.
+ * @see BayeuxServer#newLocalSession(String)
  */
 public abstract class AbstractService
 {
@@ -193,7 +192,7 @@ public abstract class AbstractService
      * <p>A mapped method may also call {@link #send(org.cometd.bayeux.server.ServerSession, String, Object)}
      * to deliver message(s) to specific clients and/or channels.</p>
      * <p>A mapped method may also publish to different channels via
-     * {@link ServerChannel#publish(Session, Mutable)}.</p>
+     * {@link ServerChannel#publish(Session, ServerMessage.Mutable)}.</p>
      *
      * @param channelName The channel to listen to
      * @param methodName  The name of the method on this subclass to call when messages
@@ -359,7 +358,7 @@ public abstract class AbstractService
             this.method = method;
         }
 
-        public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
+        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
         {
             if (isSeeOwnPublishes() || from != getServerSession())
                 invoke(method, from, message);

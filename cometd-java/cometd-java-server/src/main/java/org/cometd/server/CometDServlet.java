@@ -30,11 +30,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The CometD Servlet maps HTTP requests to the {@link org.cometd.server.transport.AbstractHttpTransport} of a {@link BayeuxServer} instance.
- * <p />
- * The {@link BayeuxServer} instance is searched in the servlet context under the {@link BayeuxServer#ATTRIBUTE}
+ * <p>The CometD Servlet maps HTTP requests to the {@link org.cometd.server.transport.AbstractHttpTransport}
+ * of a {@link BayeuxServer} instance.</p>
+ * <p>The {@link BayeuxServer} instance is searched in the servlet context under the {@link BayeuxServer#ATTRIBUTE}
  * attribute; if it is found then it is used without further configuration, otherwise a new {@link BayeuxServer}
- * instance is created and configured using the init parameters of this servlet.
+ * instance is created and configured using the init parameters of this servlet.</p>
  */
 public class CometDServlet extends HttpServlet
 {

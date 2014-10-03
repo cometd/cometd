@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  * and deep wild if it ends with two wild characters (for example {@code /foo/bar/**}).</p>
  * <p>{@link ChannelId} can be a template, when a segment contains variable names surrounded by
  * braces, for example {@code /foo/{var_name}}. Variable names can only be made of characters
- * defined by the {@link Pattern <code>\w</code>} regular expression character class.</p>
+ * defined by the {@link Pattern \w} regular expression character class.</p>
  */
 public class ChannelId
 {
@@ -299,15 +299,14 @@ public class ChannelId
     }
 
     /**
-     * If this {@code ChannelId} is a template, and the given {@code target} {@code ChannelId}
+     * <p>If this {@code ChannelId} is a template, and the given {@code target} {@code ChannelId}
      * is non-wild and non-template, and the two have the same {@link #depth()}, then binds
      * the variable(s) defined in this template with the values of the segments defined by
-     * the target {@code ChannelId}.
-     * <p/>
-     * For example:
+     * the target {@code ChannelId}.</p>
+     * <p>For example:</p>
      * <pre>
      * // template and target match.
-     * Map<String, String> bindings = new ChannelId("/a/{var1}/c/{var2}").bind(new ChannelId("/a/foo/c/bar"));
+     * Map&lt;String, String&gt; bindings = new ChannelId("/a/{var1}/c/{var2}").bind(new ChannelId("/a/foo/c/bar"));
      * bindings: {"var1": "foo", "var2": "bar"}
      *
      * // template has 2 segments, target has only 1 segment.
@@ -322,7 +321,7 @@ public class ChannelId
      * bindings = new ChannelId("/a/{var1}").bind(new ChannelId("/b/c"))
      * bindings = {}
      * </pre>
-     * The returned map may not preserve the order of variables present in the template {@code ChannelId}.
+     * <p>The returned map may not preserve the order of variables present in the template {@code ChannelId}.</p>
      *
      * @param target the non-wild, non-template {@code ChannelId} to bind
      * @return a map withe the bindings, or an empty map if no binding was possible

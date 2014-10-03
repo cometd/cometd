@@ -23,11 +23,9 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSession.Extension;
 
 /**
- * AckExtension
- * <p/>
- * This client-side extension enables the client to acknowledge to the server
- * the messages that the client has received.
- * For the acknowledgement to work, the server must be configured with the
+ * <p>This client-side extension enables the client to acknowledge to the server
+ * the messages that the client has received.</p>
+ * <p>For the acknowledgement to work, the server must be configured with the
  * correspondent server-side ack extension. If both client and server support
  * the ack extension, then the ack functionality will take place automatically.
  * By enabling this extension, all messages arriving from the server will arrive
@@ -36,7 +34,7 @@ import org.cometd.bayeux.client.ClientSession.Extension;
  * messages will arrive with total order, which is not guaranteed if messages
  * can arrive via both long poll and normal response.
  * Messages are not acknowledged one by one, but instead a group of messages is
- * acknowledged when long poll returns.
+ * acknowledged when long poll returns.</p>
  */
 public class AckExtension extends Extension.Adapter
 {

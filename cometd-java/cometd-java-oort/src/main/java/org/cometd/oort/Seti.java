@@ -539,7 +539,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable
     /**
      * <p>Receives messages broadcast by other Setis in the cloud.</p>
      * <p>Broadcast messages may be presence messages, where another Seti advertises
-     * an association, or fallback messages. <br />
+     * an association, or fallback messages.
      * Fallback messages are messages that were sent to a particular Seti because the
      * sender thought the target userId was there, but the receiving Seti does not know
      * that userId anymore (for example, it just disconnected); in this case, the receiving

@@ -22,14 +22,13 @@ import java.util.Set;
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
-import org.cometd.bayeux.server.ServerMessage.Mutable;
 
 /**
  * <p>Objects implementing this interface are the server-side representation of remote Bayeux clients.</p>
  * <p>{@link ServerSession} contains the queue of messages to be delivered to the client; messages are
  * normally queued on a {@link ServerSession} by publishing them to a channel to which the session is
  * subscribed (via {@link ServerChannel#publish(Session, ServerMessage.Mutable)}.</p>
- * <p>The {@link #deliver(Session, Mutable)} and {@link #deliver(org.cometd.bayeux.Session, String, Object)}
+ * <p>The {@link #deliver(Session, ServerMessage.Mutable)} and {@link #deliver(Session, String, Object)}
  * methods may be used to directly queue messages to a session without publishing them to all subscribers
  * of a channel.</p>
  */
@@ -94,7 +93,7 @@ public interface ServerSession extends Session
      *
      * @param sender  the session delivering the message
      * @param message the message to deliver
-     * @see #deliver(org.cometd.bayeux.Session, String, Object)
+     * @see #deliver(Session, String, Object)
      */
     public void deliver(Session sender, ServerMessage.Mutable message);
 
@@ -105,7 +104,7 @@ public interface ServerSession extends Session
      * @param sender  the session delivering the message
      * @param channel the channel of the message
      * @param data    the data of the message
-     * @see #deliver(Session, Mutable)
+     * @see #deliver(Session, ServerMessage.Mutable)
      */
     public void deliver(Session sender, String channel, Object data);
 
@@ -298,12 +297,12 @@ public interface ServerSession extends Session
          */
         public static class Adapter implements Extension
         {
-            public boolean rcv(ServerSession session, Mutable message)
+            public boolean rcv(ServerSession session, ServerMessage.Mutable message)
             {
                 return true;
             }
 
-            public boolean rcvMeta(ServerSession session, Mutable message)
+            public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message)
             {
                 return true;
             }
@@ -313,7 +312,7 @@ public interface ServerSession extends Session
                 return message;
             }
 
-            public boolean sendMeta(ServerSession session, Mutable message)
+            public boolean sendMeta(ServerSession session, ServerMessage.Mutable message)
             {
                 return true;
             }

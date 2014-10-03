@@ -53,7 +53,7 @@ public interface Session
     boolean isConnected();
 
     /**
-     * <p>A handshook session is a session where the handshake has successfully completed>
+     * <p>A handshook session is a session where the handshake has successfully completed</p>
      * @return whether the session is handshook
      */
     boolean isHandshook();

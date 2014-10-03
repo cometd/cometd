@@ -31,7 +31,6 @@ import org.cometd.client.transport.ClientTransport;
 
 /**
  * <p>The Oort comet client connects a local Oort comet server to a remote Oort comet server.</p>
- * <p>
  */
 public class OortComet extends BayeuxClient
 {

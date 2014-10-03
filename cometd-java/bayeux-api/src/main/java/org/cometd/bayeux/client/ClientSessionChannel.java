@@ -30,7 +30,7 @@ import org.cometd.bayeux.Message;
  * clientSession.getChannel("/foo/bar").subscribe(mySubscriptionListener);
  * clientSession.getChannel("/foo/bar").publish("Hello");
  * clientSession.getChannel("/meta/*").addListener(myMetaChannelListener);
- * <pre>
+ * </pre>
  */
 public interface ClientSessionChannel extends Channel
 {
