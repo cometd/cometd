@@ -77,7 +77,7 @@ import org.cometd.bayeux.ChannelId;
  * <p>A typical usage of authorizers is as follows:</p>
  * <ul>
  * <li>Create a wildcard authorizer that matches all channels and neither grants or
- * denies (e.g. use {@link org.cometd.server.authorizer.GrantAuthorizer#GRANT_NONE}).
+ * denies (e.g. use {@code org.cometd.server.authorizer.GrantAuthorizer.GRANT_NONE}).
  * This authorizer can be added to channel /** or to a more specific channel for your application such as
  * /game/**.
  * This ensures that authorizers set is not empty and that another authorizer must explicitly grant access.</li>
@@ -95,7 +95,6 @@ import org.cometd.bayeux.ChannelId;
  * </ul>
  *
  * @see SecurityPolicy
- * @see org.cometd.server.authorizer.GrantAuthorizer
  */
 public interface Authorizer
 {
