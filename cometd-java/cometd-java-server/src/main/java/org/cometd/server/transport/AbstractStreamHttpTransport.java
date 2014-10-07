@@ -15,20 +15,20 @@
  */
 package org.cometd.server.transport;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.ServerSessionImpl;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerSessionImpl;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * <p>The base class for HTTP transports that use blocking stream I/O.</p>
@@ -76,18 +76,23 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         }
         else
         {
-            resume(request, response, request.getAsyncContext(), scheduler.getServerSession(), scheduler.getMetaConnectReply());
+            resume(request, response, getAsyncContext(request, response), scheduler.getServerSession(), scheduler.getMetaConnectReply());
         }
     }
 
     @Override
     protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
     {
-        AsyncContext asyncContext = request.startAsync(request, response);
-        asyncContext.setTimeout(0);
+        AsyncContext asyncContext = getAsyncContext(request, response);
         HttpScheduler scheduler = newHttpScheduler(request, response, asyncContext, session, reply, browserId, timeout);
         request.setAttribute(SCHEDULER_ATTRIBUTE, scheduler);
         return scheduler;
+    }
+
+    private AsyncContext getAsyncContext(HttpServletRequest request, HttpServletResponse response) {
+        AsyncContext asyncContext = request.isAsyncStarted() ? request.getAsyncContext() : request.startAsync(request, response);
+        asyncContext.setTimeout(0);
+        return asyncContext;
     }
 
     protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
