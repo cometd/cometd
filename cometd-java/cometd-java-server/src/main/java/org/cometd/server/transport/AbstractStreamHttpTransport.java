@@ -76,23 +76,18 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         }
         else
         {
-            resume(request, response, getAsyncContext(request, response), scheduler.getServerSession(), scheduler.getMetaConnectReply());
+            resume(request, response, null, scheduler.getServerSession(), scheduler.getMetaConnectReply());
         }
     }
 
     @Override
     protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
     {
-        AsyncContext asyncContext = getAsyncContext(request, response);
+        AsyncContext asyncContext = request.startAsync(request, response);
+        asyncContext.setTimeout(0);
         HttpScheduler scheduler = newHttpScheduler(request, response, asyncContext, session, reply, browserId, timeout);
         request.setAttribute(SCHEDULER_ATTRIBUTE, scheduler);
         return scheduler;
-    }
-
-    private AsyncContext getAsyncContext(HttpServletRequest request, HttpServletResponse response) {
-        AsyncContext asyncContext = request.isAsyncStarted() ? request.getAsyncContext() : request.startAsync(request, response);
-        asyncContext.setTimeout(0);
-        return asyncContext;
     }
 
     protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
