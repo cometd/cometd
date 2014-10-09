@@ -184,8 +184,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                     }
                     case Channel.META_CONNECT:
                     {
-                        if (messages.length > 1)
-                            throw new IOException();
                         ServerMessage.Mutable reply = processMetaConnect(request, response, session, message);
                         messages[i] = processReply(session, reply);
                         startInterval = sendQueue = sendReplies = reply != null;
