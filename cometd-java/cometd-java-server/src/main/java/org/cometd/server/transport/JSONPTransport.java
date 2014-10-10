@@ -92,7 +92,10 @@ public class JSONPTransport extends AbstractStreamHttpTransport
         output.close();
     }
 
-    private boolean isCallbackValueValid(String callbackValue) {
-        return (callbackValue != null) && (callbackValue.length() <= _callbackMaxLength) && CALLBACK_PATTERN.matcher(callbackValue).matches();
+    private boolean isCallbackValueValid(String callbackValue)
+    {
+        return callbackValue != null &&
+                callbackValue.length() <= _callbackMaxLength &&
+                CALLBACK_PATTERN.matcher(callbackValue).matches();
     }
 }
