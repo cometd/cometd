@@ -76,7 +76,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         }
         else
         {
-            resume(request, response, request.getAsyncContext(), scheduler.getServerSession(), scheduler.getMetaConnectReply());
+            resume(request, response, null, scheduler.getServerSession(), scheduler.getMetaConnectReply());
         }
     }
 
