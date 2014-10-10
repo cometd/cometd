@@ -15,6 +15,10 @@
  */
 package org.cometd.client.transport;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.ServerSocket;
@@ -39,10 +43,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class LongPollingTransportTest
 {
@@ -429,4 +429,93 @@ public class LongPollingTransportTest
             serverSocket.close();
         }
     }
+    
+    
+    @Test
+    public void testSendWithResponse200AndNonDefaultBufferingListenerSize() throws Exception
+    {
+        final long processingTime = 500;
+        final int bufferingResponseListenerMaxLength = 4 * 1024 * 1024;
+        final ServerSocket serverSocket = new ServerSocket(0);
+        final AtomicReference<Exception> serverException = new AtomicReference<>();
+        Map<String, Object> longPollingOptions = new HashMap<String, Object>();
+        longPollingOptions.put("maxMessageSize", bufferingResponseListenerMaxLength);
+        Thread serverThread = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    Socket socket = serverSocket.accept();
+
+                    Thread.sleep(processingTime);
+
+                    OutputStream output = socket.getOutputStream();
+                    output.write((
+                            "HTTP/1.1 200 OK\r\n" +
+                                    "Connection: close\r\n" +
+                                    "Content-Type: application/json;charset=UTF-8\r\n" +
+                                    "Content-Length: 2\r\n" +
+                                    "\r\n" +
+                                    "[]").getBytes("UTF-8"));
+                    output.flush();
+                    socket.close();
+                }
+                catch (Exception x)
+                {
+                    serverException.set(x);
+                }
+            }
+        };
+        serverThread.start();
+        final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
+
+        try
+        {
+            HttpClient httpClient = new HttpClient();
+            httpClient.start();
+
+            try
+            {
+                final CountDownLatch latch = new CountDownLatch(1);
+                HttpClientTransport transport = new LongPollingTransport(longPollingOptions, httpClient);
+                transport.setURL(serverURL);
+                transport.setCookieStore(new HttpCookieStore());
+                transport.init();
+
+                List<Message.Mutable> messages = new ArrayList<>(1);
+                messages.add(new HashMapMessage());
+                long start = System.nanoTime();
+                transport.send(new TransportListener.Empty()
+                {
+                    @Override
+                    public void onMessages(List<Message.Mutable> messages)
+                    {
+                        latch.countDown();
+                    }
+                }, messages);
+                long end = System.nanoTime();
+
+                long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
+                assertTrue("elapsed=" + elapsed + ", processing=" + processingTime, elapsed <= processingTime);
+                assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            finally
+            {
+                httpClient.stop();
+            }
+        }
+        finally
+        {
+            serverThread.join();
+            assertNull(serverException.get());
+            serverSocket.close();
+        }
+    }
+    
 }

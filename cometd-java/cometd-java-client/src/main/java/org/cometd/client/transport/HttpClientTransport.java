@@ -22,6 +22,8 @@ public abstract class HttpClientTransport extends ClientTransport
 {
     private volatile String url;
     private volatile CookieStore cookieStore;
+    
+    public final static String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
 
     protected HttpClientTransport(String name, String url, Map<String, Object> options)
     {

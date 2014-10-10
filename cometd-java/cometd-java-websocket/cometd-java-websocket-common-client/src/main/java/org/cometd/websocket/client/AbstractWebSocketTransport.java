@@ -46,7 +46,6 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     public final static String PROTOCOL_OPTION = "protocol";
     public final static String CONNECT_TIMEOUT_OPTION = "connectTimeout";
     public final static String IDLE_TIMEOUT_OPTION = "idleTimeout";
-    public final static String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public final static String STICKY_RECONNECT_OPTION = "stickyReconnect";
 
     private ScheduledExecutorService _scheduler;
@@ -65,7 +64,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
         setOptionPrefix(PREFIX);
     }
 
-    public void setMessageTransportListener(TransportListener listener)
+    @Override
+	public void setMessageTransportListener(TransportListener listener)
     {
         _listener = listener;
     }
@@ -348,7 +348,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             final long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + maxNetworkDelay;
             ScheduledFuture<?> task = _scheduler.schedule(new Runnable()
             {
-                public void run()
+                @Override
+				public void run()
                 {
                     long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                     long delay = now - expiration;
