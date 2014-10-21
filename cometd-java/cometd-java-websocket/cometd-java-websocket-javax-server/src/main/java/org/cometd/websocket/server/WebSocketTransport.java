@@ -127,11 +127,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 
     protected void send(final Session wsSession, final ServerSession session, String data, final Callback callback)
     {
-        // This method may be called concurrently.
-        // The WebSocket specification specifically forbids concurrent calls in case of
-        // blocking writes, so we rely on async writes.
-        // In Jetty this is guaranteed to work, while for other implementation who knows.
-
         if (_logger.isDebugEnabled())
             _logger.debug("Sending {}", data);
 
