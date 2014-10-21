@@ -80,15 +80,16 @@ public class JSONPTransport extends AbstractStreamHttpTransport
         response.setContentType(_mimeType);
         String callback = request.getParameter(_callbackParam);
         ServletOutputStream output = response.getOutputStream();
-        output.print(callback);
-        output.print("([");
+        output.write(callback.getBytes(response.getCharacterEncoding()));
+        output.write("([".getBytes(response.getCharacterEncoding()));
         return output;
     }
 
     @Override
-    protected void endWrite(ServletOutputStream output) throws IOException
+    protected void endWrite(HttpServletResponse response) throws IOException
     {
-        output.print("])");
+        ServletOutputStream output = response.getOutputStream();
+        output.write("])".getBytes(response.getCharacterEncoding()));
         output.close();
     }
 
