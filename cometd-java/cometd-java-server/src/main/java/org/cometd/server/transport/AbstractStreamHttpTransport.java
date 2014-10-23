@@ -132,7 +132,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
                     ServerMessage message = messages.get(i);
                     if (i > 0)
                         output.print(",");
-                    writeMessage(response, session, message);
+                    writeMessage(response, output, session, message);
                 }
             }
             finally
@@ -154,10 +154,10 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
                 if (needsComma)
                     output.print(",");
                 needsComma = true;
-                writeMessage(response, session, reply);
+                writeMessage(response, output, session, reply);
             }
 
-            endWrite(response);
+            endWrite(response, output);
         }
         catch (Exception x)
         {
@@ -168,14 +168,14 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         }
     }
 
-    protected void writeMessage(HttpServletResponse response, ServerSessionImpl session, ServerMessage message) throws IOException
+    protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException
     {
-        response.getOutputStream().write(message.getJSON().getBytes(response.getCharacterEncoding()));
+        output.write(message.getJSON().getBytes(response.getCharacterEncoding()));
     }
 
     protected abstract ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException;
 
-    protected abstract void endWrite(HttpServletResponse response) throws IOException;
+    protected abstract void endWrite(HttpServletResponse response, ServletOutputStream output) throws IOException;
 
     protected class DispatchingLongPollScheduler extends LongPollScheduler
     {

@@ -34,6 +34,8 @@ public class JSONPTransport extends AbstractStreamHttpTransport
     public final static String CALLBACK_PARAMETER_MAX_LENGTH_OPTION = "callbackParameterMaxLength";
 
     private final static Pattern CALLBACK_PATTERN = Pattern.compile("^[a-zA-Z0-9\\._\\-]+$");
+    private final static byte[] MESSAGE_BEGIN = new byte[]{'(', '['};
+    private final static byte[] MESSAGE_END = new byte[]{']', ')'};
 
     private String _mimeType = "text/javascript;charset=UTF-8";
     private String _callbackParam = "jsonp";
@@ -81,15 +83,14 @@ public class JSONPTransport extends AbstractStreamHttpTransport
         String callback = request.getParameter(_callbackParam);
         ServletOutputStream output = response.getOutputStream();
         output.write(callback.getBytes(response.getCharacterEncoding()));
-        output.write("([".getBytes(response.getCharacterEncoding()));
+        output.write(MESSAGE_BEGIN);
         return output;
     }
 
     @Override
-    protected void endWrite(HttpServletResponse response) throws IOException
+    protected void endWrite(HttpServletResponse response, ServletOutputStream output) throws IOException
     {
-        ServletOutputStream output = response.getOutputStream();
-        output.write("])".getBytes(response.getCharacterEncoding()));
+        output.write(MESSAGE_END);
         output.close();
     }
 

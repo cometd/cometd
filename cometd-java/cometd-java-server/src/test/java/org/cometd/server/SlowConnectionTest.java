@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Channel;
@@ -186,7 +187,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         JSONTransport transport = new JSONTransport(bayeux)
         {
             @Override
-            protected void writeMessage(HttpServletResponse response, ServerSessionImpl session, ServerMessage message) throws IOException
+            protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException
             {
                 try
                 {
@@ -195,7 +196,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
                         session.startIntervalTimeout(0);
                         TimeUnit.MILLISECONDS.sleep(2 * maxInterval);
                     }
-                    super.writeMessage(response, session, message);
+                    super.writeMessage(response, output, session, message);
                 }
                 catch (InterruptedException x)
                 {
@@ -263,7 +264,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         final JSONTransport transport = new JSONTransport(bayeux)
         {
             @Override
-            protected void writeMessage(HttpServletResponse response, ServerSessionImpl session, ServerMessage message) throws IOException
+            protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException
             {
                 if (!message.isMeta() && !message.isPublishReply())
                 {
@@ -272,7 +273,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
                     // Simulate that an exception is being thrown while writing
                     throw new EofException("test_exception");
                 }
-                super.writeMessage(response, session, message);
+                super.writeMessage(response, output, session, message);
             }
         };
         transport.init();
