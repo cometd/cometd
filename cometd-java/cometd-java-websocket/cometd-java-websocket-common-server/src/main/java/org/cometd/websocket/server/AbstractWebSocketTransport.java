@@ -327,8 +327,6 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     }
                     case Channel.META_CONNECT:
                     {
-                        if (messages.length > 1)
-                            throw new IOException();
                         ServerMessage.Mutable reply = processMetaConnect(session, message);
                         replies.add(processReply(session, reply));
                         send = startInterval = reply != null;
