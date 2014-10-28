@@ -228,8 +228,10 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         private final Map<String, List<String>> headers;
         private final Map<String, List<String>> parameters;
         private final HttpSession session;
+        private final InetSocketAddress localAddress;
+        private final InetSocketAddress remoteAddress;
 
-        private WebSocketContext(ServletContext context, HandshakeRequest request)
+        private WebSocketContext(ServletContext context, HandshakeRequest request, Map<String, Object> userProperties)
         {
             this.context = context;
             // Must copy everything from the request, it may be gone afterwards.
@@ -244,6 +246,9 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
             this.parameters = request.getParameterMap();
             // Assume the HttpSession does not go away immediately after the upgrade.
             this.session = (HttpSession)request.getHttpSession();
+            // Hopefully this will become a standard, for now it's Jetty specific.
+            this.localAddress = (InetSocketAddress)userProperties.get("javax.websocket.endpoint.localAddress");
+            this.remoteAddress = (InetSocketAddress)userProperties.get("javax.websocket.endpoint.remoteAddress");
         }
 
         @Override
@@ -261,15 +266,13 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public InetSocketAddress getRemoteAddress()
         {
-            // Not available in JSR 356
-            return null;
+            return remoteAddress;
         }
 
         @Override
         public InetSocketAddress getLocalAddress()
         {
-            // Not available in JSR 356
-            return null;
+            return localAddress;
         }
 
         @Override
@@ -383,7 +386,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
-            this.bayeuxContext = new WebSocketContext(servletContext, request);
+            this.bayeuxContext = new WebSocketContext(servletContext, request, sec.getUserProperties());
             WebSocketTransport.this.modifyHandshake(request, response);
         }
 
