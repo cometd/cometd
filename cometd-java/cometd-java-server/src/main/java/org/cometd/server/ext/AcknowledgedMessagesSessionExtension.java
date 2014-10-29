@@ -42,9 +42,9 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     public AcknowledgedMessagesSessionExtension(ServerSession session)
     {
         _session = (ServerSessionImpl)session;
-        _session.addListener(this);
-        _session.setMetaConnectDeliveryOnly(true);
         _queue = new BatchArrayQueue<>(16, _session.getLock());
+        _session.setMetaConnectDeliveryOnly(true);
+        _session.addListener(this);
     }
 
     public boolean rcv(ServerSession from, Mutable message)
