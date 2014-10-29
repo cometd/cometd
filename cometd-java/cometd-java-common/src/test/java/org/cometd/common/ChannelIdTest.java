@@ -233,6 +233,20 @@ public class ChannelIdTest
         assertInvalid("/foo/{var1}/{var2}/**");
     }
 
+    @Test
+    public void testRegularPart() throws Exception
+    {
+        Assert.assertEquals("/foo", new ChannelId("/foo/*").getRegularPart());
+        Assert.assertEquals("/foo/bar", new ChannelId("/foo/bar/**").getRegularPart());
+        Assert.assertEquals("/foo", new ChannelId("/foo/{p}").getRegularPart());
+        Assert.assertEquals("/foo/bar", new ChannelId("/foo/bar/{p}").getRegularPart());
+        Assert.assertEquals("/foo", new ChannelId("/foo/{p1}/{p2}").getRegularPart());
+        Assert.assertNull(new ChannelId("/*").getRegularPart());
+        Assert.assertNull(new ChannelId("/**").getRegularPart());
+        Assert.assertNull(new ChannelId("/{p}").getRegularPart());
+        Assert.assertNull(new ChannelId("/{p1}/{p2}").getRegularPart());
+    }
+
     private void assertInvalid(String channel)
     {
         try

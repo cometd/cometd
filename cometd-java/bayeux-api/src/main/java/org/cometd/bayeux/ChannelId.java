@@ -409,7 +409,8 @@ public class ChannelId
     }
 
     /**
-     * @return the {@code ChannelId} parent of this {@code ChannelId}
+     * @return the channel string parent of this {@code ChannelId},
+     *         or null if this {@code ChannelId} has only one segment
      * @see #isParentOf(ChannelId)
      */
     public String getParent()
@@ -439,6 +440,72 @@ public class ChannelId
     {
         resolve();
         return _wilds;
+    }
+
+    /**
+     * <p>Returns the regular part of this {@link ChannelId}: the part
+     * of the channel id from the beginning until the first occurrence
+     * of a parameter or a wild character.</p>
+     * <p>Examples:</p>
+     * <table>
+     *     <thead>
+     *         <tr>
+     *             <th>Channel</th>
+     *             <th>Regular Part</th>
+     *         </tr>
+     *     </thead>
+     *     <tbody>
+     *         <tr>
+     *             <td>/foo</td>
+     *             <td>/foo</td>
+     *         </tr>
+     *         <tr>
+     *             <td>/foo/*</td>
+     *             <td>/foo</td>
+     *         </tr>
+     *         <tr>
+     *             <td>/foo/bar/**</td>
+     *             <td>/foo/bar</td>
+     *         </tr>
+     *         <tr>
+     *             <td>/foo/{p}</td>
+     *             <td>/foo</td>
+     *         </tr>
+     *         <tr>
+     *             <td>/foo/bar/{p}</td>
+     *             <td>/foo/bar</td>
+     *         </tr>
+     *         <tr>
+     *             <td>/*</td>
+     *             <td><code>null</code></td>
+     *         </tr>
+     *         <tr>
+     *             <td>/**</td>
+     *             <td><code>null</code></td>
+     *         </tr>
+     *         <tr>
+     *             <td>/{p}</td>
+     *             <td><code>null</code></td>
+     *         </tr>
+     *     </tbody>
+     * </table>
+     *
+     * @return the regular part of this channel
+     */
+    public String getRegularPart()
+    {
+        resolve();
+        if (isWild())
+            return getParent();
+        if (!isTemplate())
+            return _id;
+        int regular = depth() - getParameters().size();
+        if (regular <= 0)
+            return null;
+        String result = "";
+        for (int i = 0; i < regular; ++i)
+            result += "/" + getSegment(i);
+        return result;
     }
 
     /**
