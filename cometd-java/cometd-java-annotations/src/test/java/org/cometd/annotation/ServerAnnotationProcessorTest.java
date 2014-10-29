@@ -1204,12 +1204,12 @@ public class ServerAnnotationProcessorTest
     @Test(expected = IllegalArgumentException.class)
     public void testListenerWithParameterWithoutArgument() throws Exception
     {
-        Object service = new ListenerWithParameterWithoutArgument();
+        Object service = new ListenerWithParameterWithoutArgumentService();
         processor.process(service);
     }
 
     @Service
-    public static class ListenerWithParameterWithoutArgument
+    public static class ListenerWithParameterWithoutArgumentService
     {
         public static final String CHANNEL = "/foo/{var}";
 
@@ -1222,12 +1222,12 @@ public class ServerAnnotationProcessorTest
     @Test(expected = IllegalArgumentException.class)
     public void testListenerWithParameterWrongVariableName() throws Exception
     {
-        Object service = new ListenerWithParameterWrongVariableName();
+        Object service = new ListenerWithParameterWrongVariableNameService();
         processor.process(service);
     }
 
     @Service
-    public static class ListenerWithParameterWrongVariableName
+    public static class ListenerWithParameterWrongVariableNameService
     {
         public static final String CHANNEL = "/foo/{var}";
 
@@ -1300,12 +1300,12 @@ public class ServerAnnotationProcessorTest
     @Test(expected = IllegalArgumentException.class)
     public void testSubscriptionWithParametersInWrongOrder() throws Exception
     {
-        Object service = new  SubscriptionWithParametersInWrongOrder();
+        Object service = new SubscriptionWithParametersInWrongOrderService();
         processor.process(service);
     }
 
     @Service
-    public static class SubscriptionWithParametersInWrongOrder
+    public static class SubscriptionWithParametersInWrongOrderService
     {
         @Subscription("/a/{b}/{c}")
         public void service(Message message, @Param("c") String c, @Param("b") String b)
