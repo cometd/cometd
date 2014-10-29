@@ -1105,28 +1105,28 @@ org.cometd.CometD = function(name)
 
     function _messageResponse(message)
     {
-        if (message.successful === undefined)
+        if (message.data !== undefined)
         {
-            if (message.data !== undefined)
-            {
-                // It is a plain message, and not a bayeux meta message
-                _notifyListeners(message.channel, message);
-            }
-            else
-            {
-                _cometd._warn('Unknown Bayeux Message', message);
-            }
+            // It is a plain message, and not a bayeux meta message
+            _notifyListeners(message.channel, message);
         }
         else
         {
-            if (message.successful)
+            if (message.successful === undefined)
             {
-                _handleCallback(message);
-                _notifyListeners('/meta/publish', message);
+                _cometd._warn('Unknown Bayeux Message', message);
             }
             else
             {
-                _failMessage(message);
+                if (message.successful)
+                {
+                    _handleCallback(message);
+                    _notifyListeners('/meta/publish', message);
+                }
+                else
+                {
+                    _failMessage(message);
+                }
             }
         }
     }

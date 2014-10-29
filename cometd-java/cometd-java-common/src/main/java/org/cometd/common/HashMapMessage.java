@@ -126,7 +126,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public boolean isPublishReply()
     {
-        return !isMeta() && containsKey(SUCCESSFUL_FIELD);
+        return !isMeta() && !containsKey(DATA_FIELD);
     }
 
     public boolean isSuccessful()

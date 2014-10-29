@@ -250,8 +250,8 @@ org.cometd.WebSocketTransport = function()
 
             // Detect if the message is a response to a request we made.
             // If it's a meta message, for sure it's a response; otherwise it's
-            // a publish message and publish responses have the successful field.
-            if (/^\/meta\//.test(message.channel) || message.successful !== undefined)
+            // a publish message and publish responses don't have the data field.
+            if (/^\/meta\//.test(message.channel) || message.data === undefined)
             {
                 if (message.id)
                 {
