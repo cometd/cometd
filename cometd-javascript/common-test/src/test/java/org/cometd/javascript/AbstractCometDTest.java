@@ -64,7 +64,7 @@ public abstract class AbstractCometDTest
     protected ServerConnector connector;
     protected ServletContextHandler context;
     protected CometDServlet cometdServlet;
-    protected int longPollingPeriod = 5000;
+    protected int metaConnectPeriod = 5000;
     protected String cometdServletPath = "/cometd";
     protected int port;
     protected String contextURL;
@@ -116,7 +116,7 @@ public abstract class AbstractCometDTest
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
         for (Map.Entry<String, String> entry : options.entrySet())
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
-        cometdServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
+        cometdServletHolder.setInitParameter("timeout", String.valueOf(metaConnectPeriod));
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
         context.addServlet(cometdServletHolder, cometdURLMapping);
 

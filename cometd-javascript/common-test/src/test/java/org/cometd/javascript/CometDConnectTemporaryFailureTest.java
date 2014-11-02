@@ -60,7 +60,7 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest
         handshakeLatch.reset(1);
         connectLatch.reset(1);
         // Wait for the connect to temporarily fail
-        Assert.assertTrue(failureLatch.await(longPollingPeriod * 2));
+        Assert.assertTrue(failureLatch.await(metaConnectPeriod * 2));
         Assert.assertEquals(1L, handshakeLatch.jsGet_count());
         Assert.assertEquals(1L, connectLatch.jsGet_count());
 

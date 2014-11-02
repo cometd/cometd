@@ -41,7 +41,7 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
     protected void customizeContext(ServletContextHandler context) throws Exception
     {
         super.customizeContext(context);
-        DelayingFilter filter = new DelayingFilter(longPollingPeriod + 2 * maxNetworkDelay);
+        DelayingFilter filter = new DelayingFilter(metaConnectPeriod + 2 * maxNetworkDelay);
         FilterHolder filterHolder = new FilterHolder(filter);
         context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
@@ -77,11 +77,11 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
 
         // First connect (id=2) returns immediately (time = 0)
         // Second connect (id=3) is delayed, but client is not aware of this
-        // MaxNetworkDelay elapses, second connect is failed on the client (time = longPollingPeriod + maxNetworkDelay)
+        // MaxNetworkDelay elapses, second connect is failed on the client (time = metaConnectPeriod + maxNetworkDelay)
         // Client sends third connect (id=4)
         // Third connect returns immediately
         // Fourth connect (id=5) is held
-        // Second connect is processed on server (time = longPollingPeriod + 2 * maxNetworkDelay)
+        // Second connect is processed on server (time = metaConnectPeriod + 2 * maxNetworkDelay)
         //  + Fourth connect is replied with a 408
         //  + Second connect is held
         // Client sends fifth connect (id=6)
@@ -89,9 +89,9 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
         // Client sends sixth connect (id=7) and it is processed on server:
         //  + Second connect is replied with a 408, but connection is already closed by the client
         //  + Sixth connect is held
-        // Sixth connect returns (time = 2 * longPollingPeriod + 2 * maxNetworkDelay)
+        // Sixth connect returns (time = 2 * metaConnectPeriod + 2 * maxNetworkDelay)
 
-        Assert.assertTrue(latch.await(2 * longPollingPeriod + 3 * maxNetworkDelay));
+        Assert.assertTrue(latch.await(2 * metaConnectPeriod + 3 * maxNetworkDelay));
         evaluateScript("window.assert(failure === undefined, failure);");
 
         evaluateScript("cometd.disconnect(true);");

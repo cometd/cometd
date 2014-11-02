@@ -54,7 +54,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         Assert.assertTrue(readyLatch.await(5000));
 
         // Wait that the long poll is established before reloading
-        Thread.sleep(longPollingPeriod / 2);
+        Thread.sleep(metaConnectPeriod / 2);
 
         evaluateScript("cometd.reload();");
         String cookies = evaluateScript("window.document.cookie");
@@ -81,7 +81,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         Assert.assertTrue(readyLatch.await(5000));
 
         // Wait that the long poll is established before reloading
-        Thread.sleep(longPollingPeriod / 2);
+        Thread.sleep(metaConnectPeriod / 2);
 
         evaluateScript("cometd.reload();");
 
@@ -135,7 +135,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         String clientId = evaluateScript("cometd.getClientId();");
 
         // Wait that the long poll is established before reloading
-        Thread.sleep(longPollingPeriod / 2);
+        Thread.sleep(metaConnectPeriod / 2);
 
         // Calling reload() results in the cookie being written
         evaluateScript("cometd.reload();");
@@ -166,7 +166,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         Assert.assertEquals(clientId, newClientId);
 
         // Make sure that reloading will not expire the client on the server
-        Assert.assertFalse(expireLatch.await(expirationPeriod + longPollingPeriod));
+        Assert.assertFalse(expireLatch.await(expirationPeriod + metaConnectPeriod));
 
         evaluateScript("cometd.disconnect(true);");
     }

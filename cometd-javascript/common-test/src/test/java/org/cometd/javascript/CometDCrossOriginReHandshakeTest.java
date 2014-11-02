@@ -68,7 +68,7 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
         evaluateScript("cometd.addListener('/meta/connect', connectLatch, 'countDown');");
         evaluateScript("cometd.handshake();");
 
-        Assert.assertTrue(connectLatch.await(longPollingPeriod + 5000));
+        Assert.assertTrue(connectLatch.await(metaConnectPeriod + 5000));
         Assert.assertTrue(handshakeLatch.await(5000));
         Assert.assertEquals("long-polling", evaluateScript("cometd.getTransport().getType()"));
 

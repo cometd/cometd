@@ -57,7 +57,7 @@ public class CometDInitDisconnectTest extends AbstractCometDTest
 
         // Make sure there are no attempts to reconnect
         latch.reset(1);
-        Assert.assertFalse(latch.await(longPollingPeriod * 3));
+        Assert.assertFalse(latch.await(metaConnectPeriod * 3));
     }
 
     @Test

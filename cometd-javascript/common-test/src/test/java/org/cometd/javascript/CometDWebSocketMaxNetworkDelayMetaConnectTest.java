@@ -31,7 +31,7 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
     {
         long maxNetworkDelay = 2000;
 
-        bayeuxServer.addExtension(new DelayingExtension(longPollingPeriod + maxNetworkDelay + maxNetworkDelay / 2));
+        bayeuxServer.addExtension(new DelayingExtension(metaConnectPeriod + maxNetworkDelay + maxNetworkDelay / 2));
 
         defineClass(Latch.class);
         evaluateScript("var latch = new Latch(6);");
@@ -61,21 +61,21 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
 
         // First connect returns immediately (time = 0)
         // Second connect is delayed, but client is not aware of this
-        // MaxNetworkDelay elapses, second connect is failed on the client (time = longPollingPeriod + maxNetworkDelay)
+        // MaxNetworkDelay elapses, second connect is failed on the client (time = metaConnectPeriod + maxNetworkDelay)
         //   + Connection is closed
         // Client sends third connect and is replied by the server
         // Fourth connect is sent and is held by the server
-        // Delay elapses (time = longPollingPeriod + 1.5 * maxNetworkDelay)
+        // Delay elapses (time = metaConnectPeriod + 1.5 * maxNetworkDelay)
         // Second connect is processed on server and held
         //   + Fourth connect is canceled and not replied
-        // MaxNetworkDelay elapses, fourth connect is failed on the client (time = 2 * longPollingPeriod + 2 * maxNetworkDelay)
+        // MaxNetworkDelay elapses, fourth connect is failed on the client (time = 2 * metaConnectPeriod + 2 * maxNetworkDelay)
         //   + Connection is closed
         // Client sends fifth connect and is replied by the server
         // Sixth connect is sent and is held by the server
         //   + Second connect is canceled and not replied
         // Sixth connect is replied
 
-        Assert.assertTrue(latch.await(3 * longPollingPeriod + 3 * maxNetworkDelay));
+        Assert.assertTrue(latch.await(3 * metaConnectPeriod + 3 * maxNetworkDelay));
         evaluateScript("window.assert(failure === undefined, failure);");
 
         evaluateScript("cometd.disconnect(true);");
