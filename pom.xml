@@ -11,7 +11,7 @@
     <repositories>
         <repository>
             <id>jetty-staging</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-1112</url>
+            <url>https://oss.sonatype.org/content/repositories/jetty-1115</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -33,7 +33,7 @@
     <pluginRepositories>
         <pluginRepository>
             <id>jetty-staging</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-1112</url>
+            <url>https://oss.sonatype.org/content/repositories/jetty-1115</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -55,7 +55,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>9.2.4.v20141028</jetty-version>
+        <jetty-version>9.2.4.v20141030</jetty-version>
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
         <slf4j-version>1.7.7</slf4j-version>
         <spring-version>4.1.0.RELEASE</spring-version>
