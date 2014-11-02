@@ -47,6 +47,8 @@ public interface Channel
 {
     /** Constant representing the meta prefix */
     public static final String META = "/meta";
+    /** Constant representing the service prefix */
+    public static final String SERVICE = "/service";
     /** Constant representing the handshake meta channel. */
     public final static String META_HANDSHAKE = META + "/handshake";
     /** Constant representing the connect meta channel */

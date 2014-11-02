@@ -241,24 +241,27 @@ class AnnotationProcessor
         }
     }
 
-    protected static void checkSignaturesMatch(Method method, Class<?>[] expected, List<String> paramNames)
+    protected static void checkSignaturesMatch(Method method, Class<?>[] expectedTypes, List<String> paramNames)
     {
         Class<?>[] paramTypes = method.getParameterTypes();
-        if (paramTypes.length != expected.length + paramNames.size())
+        if (paramTypes.length != expectedTypes.length + paramNames.size())
         {
             throw new IllegalArgumentException("Wrong number of parameters in service method: " + method.getName() + "(...)." +
                     (paramTypes.length > 2 ? " Template parameters not annotated with @" + Param.class.getSimpleName() + " ?" : ""));
         }
-        for (int i = 0; i < expected.length; ++i)
+        for (int i = 0; i < expectedTypes.length; ++i)
         {
+            Class<?> expected = expectedTypes[i];
+            if (expected == null)
+                continue;
             Class<?> parameter = paramTypes[i];
-            if (!parameter.isAssignableFrom(expected[i]))
+            if (!parameter.isAssignableFrom(expected))
                 throw new IllegalArgumentException("Parameter type " + parameter.getName() + " must be instead " +
-                        expected[i].getName() + " in service method: " + method.getName() + "(...).");
+                        expected.getName() + " in service method: " + method.getName() + "(...).");
         }
         for (int i = 0; i < paramNames.size(); ++i)
         {
-            Class<?> parameter = paramTypes[expected.length + i];
+            Class<?> parameter = paramTypes[expectedTypes.length + i];
             if (!parameter.isAssignableFrom(String.class))
                 throw new IllegalArgumentException("Template parameter '" + paramNames.get(i) + "' must be of type " +
                         String.class.getName() + " in service method: " + method.getName() + "(...).");

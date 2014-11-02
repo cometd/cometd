@@ -25,10 +25,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
@@ -82,6 +84,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
     private final ConcurrentMap<Object, LocalSession> sessions = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Object, List<RemoteCallCallback>> remoteCalls = new ConcurrentHashMap<>();
     private final BayeuxServer bayeuxServer;
     private final Object[] injectables;
 
@@ -255,6 +258,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         LocalSession session = findOrCreateLocalSession(bean, serviceAnnotation.value());
         boolean result = processListener(bean, session);
         result |= processSubscription(bean, session);
+        result |= processRemoteCall(bean, session);
         return result;
     }
 
@@ -293,6 +297,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
         boolean result = deprocessListener(bean);
         result |= deprocessSubscription(bean);
+        result |= deprocessRemoteCall(bean);
         destroyLocalSession(bean);
         return result;
     }
@@ -399,7 +404,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                 if (listener != null)
                 {
                     if (!Modifier.isPublic(method.getModifiers()))
-                        throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+                        throw new IllegalArgumentException("@" + Listener.class + " method '" + method.getName() +
+                                "' in class '" + method.getDeclaringClass().getName() + "' must be public");
 
                     List<String> paramNames = processParameters(method);
                     checkSignaturesMatch(method, ListenerCallback.signature, paramNames);
@@ -410,11 +416,14 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         ChannelId channelId = new ChannelId(channel);
                         if (channelId.isTemplate())
                         {
-                            if (channelId.getParameters().size() != paramNames.size())
-                                throw new IllegalArgumentException("Wrong number of template parameters in service method: " + method.getName() + "(...).");
-                            if (!channelId.getParameters().equals(paramNames))
-                                throw new IllegalArgumentException("Wrong parameter names in service method: " + method.getName() + "(...).");
-                            channel = channelId.getWilds().get(0);
+                            List<String> parameters = channelId.getParameters();
+                            if (parameters.size() != paramNames.size())
+                                throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
+                                        Listener.class.getSimpleName() + " on method: " + method.getName() + "(...).");
+                            if (!parameters.equals(paramNames))
+                                throw new IllegalArgumentException("Wrong parameter names in annotation @" +
+                                        Listener.class.getSimpleName() + " on method: " + method.getName() + "(...).");
+                            channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
                         }
 
                         MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel);
@@ -471,7 +480,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                 if (subscription != null)
                 {
                     if (!Modifier.isPublic(method.getModifiers()))
-                        throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+                        throw new IllegalArgumentException("@" + Subscription.class.getSimpleName() + " method '" +
+                                method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
 
                     List<String> paramNames = processParameters(method);
                     checkSignaturesMatch(method, SubscriptionCallback.signature, paramNames);
@@ -487,11 +497,14 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         ChannelId channelId = new ChannelId(channel);
                         if (channelId.isTemplate())
                         {
-                            if (channelId.getParameters().size() != paramNames.size())
-                                throw new IllegalArgumentException("Wrong number of template parameters in service method: " + method.getName() + "(...).");
-                            if (!channelId.getParameters().equals(paramNames))
-                                throw new IllegalArgumentException("Wrong parameter names in service method: " + method.getName() + "(...).");
-                            channel = channelId.getWilds().get(0);
+                            List<String> parameters = channelId.getParameters();
+                            if (parameters.size() != paramNames.size())
+                                throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
+                                        Subscription.class.getSimpleName() + " on method: " + method.getName() + "(...).");
+                            if (!parameters.equals(paramNames))
+                                throw new IllegalArgumentException("Wrong parameter names in annotation @" +
+                                        Subscription.class.getSimpleName() + " on method: " + method.getName() + "(...).");
+                            channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
                         }
 
                         SubscriptionCallback subscriptionCallback = new SubscriptionCallback(localSession, bean, method, paramNames, channelId, channel);
@@ -526,6 +539,90 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
             {
                 callback.localSession.getChannel(callback.subscription).unsubscribe(callback);
                 result = true;
+            }
+        }
+        return result;
+    }
+
+    private boolean processRemoteCall(Object bean, LocalSession localSession)
+    {
+        boolean result = false;
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
+        {
+            Method[] methods = c.getDeclaredMethods();
+            for (Method method : methods)
+            {
+                RemoteCall remoteCall = method.getAnnotation(RemoteCall.class);
+                if (remoteCall != null)
+                {
+                    if (!Modifier.isPublic(method.getModifiers()))
+                        throw new IllegalArgumentException("@" + RemoteCall.class.getSimpleName() + " method '" +
+                                method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+
+                    List<String> paramNames = processParameters(method);
+                    checkSignaturesMatch(method, RemoteCallCallback.signature, paramNames);
+
+                    String[] targets = remoteCall.value();
+                    for (String target : targets)
+                    {
+                        if (!target.startsWith("/"))
+                            target = "/" + target;
+                        String channel = Channel.SERVICE + target;
+
+                        ChannelId channelId = new ChannelId(channel);
+                        if (channelId.isWild())
+                            throw new IllegalArgumentException("Annotation @" + RemoteCall.class.getSimpleName() +
+                                    " on method: " + method.getName() + "(...) cannot specify wild channels.");
+
+                        if (channelId.isTemplate())
+                        {
+                            List<String> parameters = channelId.getParameters();
+                            if (parameters.size() != paramNames.size())
+                                throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
+                                        RemoteCall.class.getSimpleName() + " on method: " + method.getName() + "(...).");
+                            if (!parameters.equals(paramNames))
+                                throw new IllegalArgumentException("Wrong parameter names in annotation @" +
+                                        RemoteCall.class.getSimpleName() + " on method: " + method.getName() + "(...).");
+                            channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
+                        }
+
+                        MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel);
+                        RemoteCallCallback remoteCallCallback = new RemoteCallCallback(bayeuxServer, localSession, bean, method, paramNames, channelId, channel);
+                        initializedChannel.getReference().addListener(remoteCallCallback);
+
+                        List<RemoteCallCallback> callbacks = remoteCalls.get(bean);
+                        if (callbacks == null)
+                        {
+                            callbacks = new CopyOnWriteArrayList<>();
+                            List<RemoteCallCallback> existing = remoteCalls.putIfAbsent(bean, callbacks);
+                            if (existing != null)
+                                callbacks = existing;
+                        }
+                        callbacks.add(remoteCallCallback);
+                        result = true;
+                        if (logger.isDebugEnabled())
+                            logger.debug("Registered remote call for channel {} to method {} on bean {}", target, method, bean);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private boolean deprocessRemoteCall(Object bean)
+    {
+        boolean result = false;
+        List<RemoteCallCallback> callbacks = remoteCalls.remove(bean);
+        if (callbacks != null)
+        {
+            for (RemoteCallCallback callback : callbacks)
+            {
+                ServerChannel channel = bayeuxServer.getChannel(callback.subscription);
+                if (channel != null)
+                {
+                    channel.removeListener(callback);
+                    result = true;
+                }
             }
         }
         return result;
@@ -602,6 +699,101 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
             for (int i = 0; i < paramNames.size(); ++i)
                 args[1 + i] = matches.get(paramNames.get(i));
             invokePublic(target, method, args);
+        }
+    }
+
+    private static class RemoteCallCallback implements ServerChannel.MessageListener
+    {
+        private static final Class<?>[] signature = new Class<?>[]{RemoteCall.Caller.class, null};
+        private final BayeuxServer bayeuxServer;
+        private final LocalSession localSession;
+        private final Object target;
+        private final Method method;
+        private final List<String> paramNames;
+        private final ChannelId channelId;
+        private final String subscription;
+
+        private RemoteCallCallback(BayeuxServer bayeuxServer, LocalSession localSession, Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription)
+        {
+            this.bayeuxServer = bayeuxServer;
+            this.localSession = localSession;
+            this.target = target;
+            this.method = method;
+            this.paramNames = paramNames;
+            this.channelId = channelId;
+            this.subscription = subscription;
+        }
+
+        @Override
+        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+        {
+            // Protect against (wrong) publishes on the remote call channel.
+            if (from == localSession.getServerSession())
+                return true;
+
+            Map<String, String> matches = channelId.bind(channel.getChannelId());
+            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames))
+                return true;
+
+            Object[] args = new Object[2 + paramNames.size()];
+            RemoteCall.Caller caller = new CallerImpl(bayeuxServer, localSession, from, message.getId(), message.getChannel());
+            args[0] = caller;
+            args[1] = message.getData();
+            for (int i = 0; i < paramNames.size(); ++i)
+                args[2 + i] = matches.get(paramNames.get(i));
+            return !Boolean.FALSE.equals(invokePublic(target, method, args));
+        }
+    }
+
+    private static class CallerImpl implements RemoteCall.Caller
+    {
+        private final AtomicBoolean complete = new AtomicBoolean();
+        private final BayeuxServer bayeux;
+        private final LocalSession sender;
+        private final ServerSession session;
+        private final String messageId;
+        private final String channel;
+
+        private CallerImpl(BayeuxServer bayeux, LocalSession sender, ServerSession session, String messageId, String channel)
+        {
+            this.bayeux = bayeux;
+            this.sender = sender;
+            this.session = session;
+            this.messageId = messageId;
+            this.channel = channel;
+        }
+
+        @Override
+        public ServerSession getServerSession()
+        {
+            return session;
+        }
+
+        @Override
+        public boolean result(Object result)
+        {
+            return deliver(result, true);
+        }
+
+        @Override
+        public boolean failure(Object failure)
+        {
+            return deliver(failure, false);
+        }
+
+        private boolean deliver(Object data, boolean successful)
+        {
+            boolean completed = complete.compareAndSet(false, true);
+            if (completed)
+            {
+                ServerMessage.Mutable message = bayeux.newMessage();
+                message.setId(messageId);
+                message.setSuccessful(successful);
+                message.setChannel(channel);
+                message.setData(data);
+                session.deliver(sender, message);
+            }
+            return completed;
         }
     }
 }

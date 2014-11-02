@@ -313,13 +313,16 @@ public class ServerChannelImpl implements ServerChannel
                 ? (ServerSessionImpl)from
                 : ((from instanceof LocalSession) ? (ServerSessionImpl)((LocalSession)from).getServerSession() : null);
 
-        // Do not leak the clientId to other subscribers
-        // as we are now "sending" this message
-        mutable.setClientId(null);
+        if (ChannelId.isBroadcast(mutable.getChannel()))
+        {
+            // Do not leak the clientId to other subscribers
+            // as we are now "sending" this message.
+            mutable.setClientId(null);
 
-        // Reset the messageId to avoid clashes with message-based transports such
-        // as websocket that may rely on the messageId to match request/responses.
-        mutable.setId(null);
+            // Reset the messageId to avoid clashes with message-based transports such
+            // as websocket whose clients may rely on the messageId to match request/responses.
+            mutable.setId(null);
+        }
 
         if (_bayeux.extendSend(session, null, mutable))
             _bayeux.doPublish(session, this, mutable);
