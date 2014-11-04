@@ -49,10 +49,12 @@ public class LongPollingTransport extends HttpClientTransport
 {
     public static final String NAME = "long-polling";
     public static final String PREFIX = "long-polling.json";
+    public static final String MAX_BUFFER_SIZE_OPTION = "maxBufferSize";
 
     private final HttpClient _httpClient;
     private final List<Request> _requests = new ArrayList<>();
     private volatile boolean _aborted;
+    private volatile int _maxBufferSize;
     private volatile boolean _appendMessageType;
     private volatile CookieManager _cookieManager;
     private volatile Map<String, Object> _advice;
@@ -69,6 +71,7 @@ public class LongPollingTransport extends HttpClientTransport
         setOptionPrefix(PREFIX);
     }
 
+    @Override
     public boolean accept(String bayeuxVersion)
     {
         return true;
@@ -78,11 +81,16 @@ public class LongPollingTransport extends HttpClientTransport
     public void init()
     {
         super.init();
+
         _aborted = false;
+
         long defaultMaxNetworkDelay = _httpClient.getIdleTimeout();
         if (defaultMaxNetworkDelay <= 0)
             defaultMaxNetworkDelay = 10000;
         setMaxNetworkDelay(defaultMaxNetworkDelay);
+
+        _maxBufferSize = getOption(MAX_BUFFER_SIZE_OPTION, 1024 * 1024);
+
         Pattern uriRegexp = Pattern.compile("(^https?://(((\\[[^\\]]+\\])|([^:/\\?#]+))(:(\\d+))?))?([^\\?#]*)(.*)?");
         Matcher uriMatcher = uriRegexp.matcher(getURL());
         if (uriMatcher.matches())
@@ -180,7 +188,7 @@ public class LongPollingTransport extends HttpClientTransport
         // so there are no races between the two timeouts
         request.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
         request.timeout(maxNetworkDelay, TimeUnit.MILLISECONDS);
-        request.send(new BufferingResponseListener()
+        request.send(new BufferingResponseListener(_maxBufferSize)
         {
             @Override
             public boolean onHeader(Response response, HttpField field)
@@ -280,7 +288,7 @@ public class LongPollingTransport extends HttpClientTransport
 
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory
     {
-        private HttpClient httpClient;
+        private final HttpClient httpClient;
 
         public Factory(HttpClient httpClient)
         {

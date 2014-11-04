@@ -18,6 +18,7 @@ package org.cometd.client;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -1244,6 +1245,121 @@ public class BayeuxClientTest extends ClientServerTest
 
         channel.publish("data");
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testMaxBufferSizeExceededViaMetaConnect() throws Exception
+    {
+        startServer(null);
+
+        Map<String, Object> options = new HashMap<>();
+        int maxBufferSize = 1024;
+        options.put(LongPollingTransport.MAX_BUFFER_SIZE_OPTION, maxBufferSize);
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(options, httpClient));
+
+        final CountDownLatch metaConnectLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (!message.isSuccessful())
+                    metaConnectLatch.countDown();
+            }
+        });
+
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
+
+        String channelName = "/max_message_size";
+        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        final CountDownLatch messageLatch = new CountDownLatch(1);
+        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+        {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                messageLatch.countDown();
+            }
+        }, new ClientSessionChannel.MessageListener()
+        {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                subscribeLatch.countDown();
+            }
+        });
+        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+
+        // Publish a large message from server to client;
+        // it will be delivered via /meta/connect, and fail
+        // because it's too big, so we'll have a notification
+        // to the /meta/connect listener.
+        char[] chars = new char[maxBufferSize];
+        Arrays.fill(chars, '0');
+        String data = new String(chars);
+        bayeux.getChannel(channelName).publish(null, data);
+
+        Assert.assertTrue(metaConnectLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testMaxBufferSizeExceededViaPublish() throws Exception
+    {
+        startServer(null);
+
+        Map<String, Object> options = new HashMap<>();
+        int maxBufferSize = 1024;
+        options.put(LongPollingTransport.MAX_BUFFER_SIZE_OPTION, maxBufferSize);
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(options, httpClient));
+
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
+
+        String channelName = "/max_message_size";
+        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        final CountDownLatch messageLatch = new CountDownLatch(1);
+        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+        {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                messageLatch.countDown();
+            }
+        }, new ClientSessionChannel.MessageListener()
+        {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                subscribeLatch.countDown();
+            }
+        });
+        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+
+        // Publish a large message that will be echoed back.
+        // It will be delivered via the publish, and fail
+        // because it's too big.
+        char[] chars = new char[maxBufferSize];
+        Arrays.fill(chars, '0');
+        String data = new String(chars);
+        final CountDownLatch callbackLatch = new CountDownLatch(1);
+        client.getChannel(channelName).publish(data, new ClientSessionChannel.MessageListener()
+        {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (!message.isSuccessful())
+                    callbackLatch.countDown();
+            }
+        });
+
+        Assert.assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
