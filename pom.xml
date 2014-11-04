@@ -8,51 +8,6 @@
     <name>CometD</name>
     <version>3.0.3-SNAPSHOT</version>
 
-    <repositories>
-        <repository>
-            <id>jetty-staging</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-1121</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>jetty-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>jetty-staging</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-1121</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </pluginRepository>
-        <pluginRepository>
-            <id>jetty-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- tag::jetty-version[] -->
