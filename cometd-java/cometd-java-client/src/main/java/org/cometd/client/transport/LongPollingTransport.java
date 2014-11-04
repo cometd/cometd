@@ -56,6 +56,7 @@ public class LongPollingTransport extends HttpClientTransport
     private volatile boolean _appendMessageType;
     private volatile CookieManager _cookieManager;
     private volatile Map<String, Object> _advice;
+	private int _bufferingResponseListenerMaxLength;
 
     public LongPollingTransport(Map<String, Object> options, HttpClient httpClient)
     {
@@ -68,8 +69,10 @@ public class LongPollingTransport extends HttpClientTransport
         _httpClient = httpClient;
         setOptionPrefix(PREFIX);
     }
+    
 
-    public boolean accept(String bayeuxVersion)
+    @Override
+	public boolean accept(String bayeuxVersion)
     {
         return true;
     }
@@ -79,6 +82,7 @@ public class LongPollingTransport extends HttpClientTransport
     {
         super.init();
         _aborted = false;
+        _bufferingResponseListenerMaxLength = getOption(MAX_MESSAGE_SIZE_OPTION, 2 *1024 * 1024);
         long defaultMaxNetworkDelay = _httpClient.getIdleTimeout();
         if (defaultMaxNetworkDelay <= 0)
             defaultMaxNetworkDelay = 10000;
@@ -180,7 +184,16 @@ public class LongPollingTransport extends HttpClientTransport
         // so there are no races between the two timeouts
         request.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
         request.timeout(maxNetworkDelay, TimeUnit.MILLISECONDS);
-        request.send(new BufferingResponseListener()
+        request.send(getCometdBufferingResponseListener(listener, messages, uri));
+    }
+
+	private BufferingResponseListener getCometdBufferingResponseListener(
+			final TransportListener listener,
+			final List<Message.Mutable> messages, final URI uri) {
+		if (_bufferingResponseListenerMaxLength == 0) {
+			_bufferingResponseListenerMaxLength = 2 * 1024 * 1024;
+		}
+		return new BufferingResponseListener(_bufferingResponseListenerMaxLength)
         {
             @Override
             public boolean onHeader(Response response, HttpField field)
@@ -271,8 +284,8 @@ public class LongPollingTransport extends HttpClientTransport
                     listener.onFailure(x, messages);
                 }
             }
-        });
-    }
+        };
+	}
 
     protected void customize(Request request)
     {
@@ -280,7 +293,7 @@ public class LongPollingTransport extends HttpClientTransport
 
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory
     {
-        private HttpClient httpClient;
+        private final HttpClient httpClient;
 
         public Factory(HttpClient httpClient)
         {
