@@ -238,7 +238,7 @@
                         <Bundle-DocURL>http://docs.cometd.org</Bundle-DocURL>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Version>${project.version}</Bundle-Version>
-                        <Import-Package>org.eclipse.jetty.*;version="[7.6,9)",*</Import-Package>
+                        <Import-Package>org.eclipse.jetty.*;version="[9.2,10)",*</Import-Package>
                         <mode>development</mode>
                         <url>${project.url}</url>
                         <implementation-version>${project.version}</implementation-version>
