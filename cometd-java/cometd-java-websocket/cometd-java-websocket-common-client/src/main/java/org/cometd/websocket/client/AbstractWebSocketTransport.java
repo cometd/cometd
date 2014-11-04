@@ -65,6 +65,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
         setOptionPrefix(PREFIX);
     }
 
+    @Override
     public void setMessageTransportListener(TransportListener listener)
     {
         _listener = listener;
@@ -348,6 +349,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             final long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + maxNetworkDelay;
             ScheduledFuture<?> task = _scheduler.schedule(new Runnable()
             {
+                @Override
                 public void run()
                 {
                     long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
