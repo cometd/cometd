@@ -1816,6 +1816,7 @@ org.cometd.CometD = function(name)
                 _cometd._debug('Timing out remote call', bayeuxMessage, 'after', timeout, 'ms');
                 _failMessage({
                     id: bayeuxMessage.id,
+                    error: '406::timeout',
                     successful: false,
                     failure: {
                         message : bayeuxMessage,

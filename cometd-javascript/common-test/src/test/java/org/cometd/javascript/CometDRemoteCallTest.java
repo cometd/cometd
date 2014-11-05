@@ -146,6 +146,7 @@ public class CometDRemoteCallTest extends AbstractCometDTest
                 "{" +
                 "    ++calls;" +
                 "    window.assert(response.successful === false, 'missing successful field');" +
+                "    window.assert(response.error !== undefined, 'missing error field');" +
                 "    latch.countDown();" +
                 "});");
 
