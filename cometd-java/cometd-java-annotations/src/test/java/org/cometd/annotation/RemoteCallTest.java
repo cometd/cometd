@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class RemoteCallTest
@@ -259,9 +260,49 @@ public class RemoteCallTest
         public static final String CHANNEL = "/call_failure";
 
         @RemoteCall(CHANNEL)
-        public void service(RemoteCall.Caller caller, Object data)
+        public void service(RemoteCall.Caller caller, String data)
         {
             caller.failure(data);
+        }
+    }
+
+    @Test
+    public void testRemoteCallWithUncaughtException() throws Exception
+    {
+        Object service = new RemoteCallWithUncaughtExceptionService();
+        boolean processed = processor.process(service);
+        assertTrue(processed);
+
+        LocalSession remote = bayeuxServer.newLocalSession("remoteCall");
+        remote.handshake();
+        ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + RemoteCallWithUncaughtExceptionService.CHANNEL);
+        final CountDownLatch latch = new CountDownLatch(1);
+        channel.addListener(new ClientSessionChannel.MessageListener()
+        {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isPublishReply())
+                    return;
+                assertFalse(message.isSuccessful());
+                assertNotNull(message.getData());
+                latch.countDown();
+            }
+        });
+        channel.publish("throw");
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class RemoteCallWithUncaughtExceptionService
+    {
+        public static final String CHANNEL = "/uncaught";
+
+        @RemoteCall(CHANNEL)
+        public void service(RemoteCall.Caller caller, Object data)
+        {
+            throw new NullPointerException();
         }
     }
 }

@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -741,7 +742,18 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
             args[1] = message.getData();
             for (int i = 0; i < paramNames.size(); ++i)
                 args[2 + i] = matches.get(paramNames.get(i));
-            return !Boolean.FALSE.equals(invokePublic(target, method, args));
+            try
+            {
+                return !Boolean.FALSE.equals(invokePublic(target, method, args));
+            }
+            catch (Throwable x)
+            {
+                Map<String, Object> failure = new HashMap<>();
+                failure.put("class", x.getClass().getName());
+                failure.put("message", x.getMessage());
+                caller.failure(failure);
+                throw x;
+            }
         }
     }
 
