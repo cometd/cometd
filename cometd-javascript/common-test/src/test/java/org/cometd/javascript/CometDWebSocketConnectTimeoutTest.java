@@ -72,7 +72,7 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
                 "       lpLatch.countDown();" +
                 "   }" +
                 "});");
-        evaluateScript("cometd.onTransportFailure = function(oldTransport, newTransport, failure)" +
+        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport)" +
                 "{" +
                 "    failureLatch.countDown();" +
                 "};");

@@ -32,7 +32,7 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTest
         defineClass(Latch.class);
         evaluateScript("var failureLatch = new Latch(1);");
         Latch failureLatch = get("failureLatch");
-        evaluateScript("cometd.onTransportFailure = function(oldTransport, newTransport, failure)" +
+        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport)" +
                 "{" +
                 "    failureLatch.countDown();" +
                 "}");
@@ -55,7 +55,7 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTest
         defineClass(Latch.class);
         evaluateScript("var failureLatch = new Latch(1);");
         Latch failureLatch = get("failureLatch");
-        evaluateScript("cometd.onTransportFailure = function(oldTransport, newTransport, failure)" +
+        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport)" +
                 "{" +
                 "    failureLatch.countDown();" +
                 "}");
