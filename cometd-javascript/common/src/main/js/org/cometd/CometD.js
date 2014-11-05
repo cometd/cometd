@@ -315,19 +315,22 @@ org.cometd.CometD = function(name)
         }
         catch (x)
         {
-            _cometd._debug('Exception during execution of extension', name, x);
-            var exceptionCallback = _cometd.onExtensionException;
-            if (_isFunction(exceptionCallback))
+            var handler = _cometd.onExtensionException;
+            if (_isFunction(handler))
             {
-                _cometd._debug('Invoking extension exception callback', name, x);
+                _cometd._debug('Invoking extension exception handler', name, x);
                 try
                 {
-                    exceptionCallback.call(_cometd, x, name, outgoing, message);
+                    handler.call(_cometd, x, name, outgoing, message);
                 }
                 catch(xx)
                 {
-                    _cometd._info('Exception during execution of exception callback in extension', name, xx);
+                    _cometd._info('Exception during execution of extension exception handler', name, xx);
                 }
+            }
+            else
+            {
+                _cometd._info('Exception during execution of extension', name, x);
             }
             return message;
         }
@@ -391,19 +394,22 @@ org.cometd.CometD = function(name)
                     }
                     catch (x)
                     {
-                        _cometd._debug('Exception during notification', subscription, message, x);
-                        var listenerCallback = _cometd.onListenerException;
-                        if (_isFunction(listenerCallback))
+                        var handler = _cometd.onListenerException;
+                        if (_isFunction(handler))
                         {
-                            _cometd._debug('Invoking listener exception callback', subscription, x);
+                            _cometd._debug('Invoking listener exception handler', subscription, x);
                             try
                             {
-                                listenerCallback.call(_cometd, x, subscription, subscription.listener, message);
+                                handler.call(_cometd, x, subscription, subscription.listener, message);
                             }
                             catch (xx)
                             {
-                                _cometd._info('Exception during execution of listener callback', subscription, xx);
+                                _cometd._info('Exception during execution of listener exception handler', subscription, xx);
                             }
+                        }
+                        else
+                        {
+                            _cometd._info('Exception during execution of listener', subscription, message, x);
                         }
                     }
                 }
@@ -534,7 +540,7 @@ org.cometd.CometD = function(name)
                 }
                 catch (x)
                 {
-                    _cometd._debug('Exception during handling of messages', x);
+                    _cometd._info('Exception during handling of messages', x);
                 }
             },
             onFailure: function(conduit, messages, failure)
@@ -547,7 +553,7 @@ org.cometd.CometD = function(name)
                 }
                 catch (x)
                 {
-                    _cometd._debug('Exception during handling of failure', x);
+                    _cometd._info('Exception during handling of failure', x);
                 }
             }
         };
@@ -701,18 +707,17 @@ org.cometd.CometD = function(name)
 
     function _notifyTransportFailure(oldTransport, newTransport, failure)
     {
-        var callback = _cometd.onTransportFailure;
-        if (_isFunction(callback))
+        var handler = _cometd.onTransportException;
+        if (_isFunction(handler))
         {
-            _cometd._debug('Invoking transport failure callback', oldTransport, newTransport, failure);
+            _cometd._debug('Invoking transport exception handler', oldTransport, newTransport, failure);
             try
             {
-                callback.call(_cometd, oldTransport, newTransport, failure);
+                handler.call(_cometd, failure, oldTransport, newTransport);
             }
             catch (x)
             {
-                _cometd._info('Exception during execution of transport failure callback', x);
-
+                _cometd._info('Exception during execution of transport exception handler', x);
             }
         }
     }
@@ -821,13 +826,41 @@ org.cometd.CometD = function(name)
         });
     }
 
+    function _notifyCallback(callback, message)
+    {
+        try
+        {
+            callback.call(_cometd, message);
+        }
+        catch (x)
+        {
+            var handler = _cometd.onCallbackException;
+            if (_isFunction(handler))
+            {
+                _cometd._debug('Invoking callback exception handler', x);
+                try
+                {
+                    handler.call(_cometd, x, message);
+                }
+                catch (xx)
+                {
+                    _cometd._info('Exception during execution of callback exception handler', xx);
+                }
+            }
+            else
+            {
+                _cometd._info('Exception during execution of message callback', x);
+            }
+        }
+    }
+
     function _handleCallback(message)
     {
         var callback = _callbacks[message.id];
         if (_isFunction(callback))
         {
             delete _callbacks[message.id];
-            callback.call(_cometd, message);
+            _notifyCallback(callback, message);
         }
     }
 
@@ -848,7 +881,7 @@ org.cometd.CometD = function(name)
             var callback = context.callback;
             if (_isFunction(callback))
             {
-                callback.call(_cometd, message);
+                _notifyCallback(callback, message);
                 return true;
             }
         }
