@@ -448,6 +448,7 @@ public class ChannelId
      * of a parameter or a wild character.</p>
      * <p>Examples:</p>
      * <table>
+     *     <caption>ChannelId.regularPart Examples</caption>
      *     <thead>
      *         <tr>
      *             <th>Channel</th>
