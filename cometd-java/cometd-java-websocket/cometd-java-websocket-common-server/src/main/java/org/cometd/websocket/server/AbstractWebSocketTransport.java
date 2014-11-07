@@ -384,36 +384,40 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         long timeout = session.calculateTimeout(getTimeout());
                         boolean holdMetaConnect = timeout > 0 && wasConnected;
                         if (holdMetaConnect)
-                        {
-                            // Decide atomically if we need to hold the meta connect or not
-                            // In schedule() we decide atomically if reply to the meta connect.
-                            synchronized (session.getLock())
-                            {
-                                if (!session.hasNonLazyMessages())
-                                {
-                                    if (cancelMetaConnectTask(session))
-                                    {
-                                        if (_logger.isDebugEnabled())
-                                            _logger.debug("Cancelled unresponded meta connect {}", _connectReply);
-                                    }
-
-                                    _connectReply = reply;
-
-                                    // Delay the connect reply until timeout.
-                                    long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + timeout;
-                                    _connectTask = getScheduler().schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
-                                    if (_logger.isDebugEnabled())
-                                        _logger.debug("Scheduled meta connect {}", _connectTask);
-                                    reply = null;
-                                }
-                            }
-                        }
+                            reply = shouldHoldMetaConnect(session, reply, timeout);
                     }
                 }
                 if (reply != null && session.isDisconnected())
                     reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
             }
             return reply;
+        }
+
+        private ServerMessage.Mutable shouldHoldMetaConnect(ServerSessionImpl session, ServerMessage.Mutable reply, long timeout)
+        {
+            // Decide atomically if we need to hold the meta connect or not
+            // In schedule() we decide atomically if reply to the meta connect.
+            synchronized (session.getLock())
+            {
+                if (!session.hasNonLazyMessages())
+                {
+                    if (cancelMetaConnectTask(session))
+                    {
+                        if (_logger.isDebugEnabled())
+                            _logger.debug("Cancelled unresponded meta connect {}", _connectReply);
+                    }
+
+                    _connectReply = reply;
+
+                    // Delay the connect reply until timeout.
+                    long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + timeout;
+                    _connectTask = getScheduler().schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
+                    if (_logger.isDebugEnabled())
+                        _logger.debug("Scheduled meta connect {}", _connectTask);
+                    reply = null;
+                }
+                return reply;
+            }
         }
 
         private ServerMessage.Mutable processReply(ServerSessionImpl session, ServerMessage.Mutable reply)
@@ -473,11 +477,14 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     return;
                 }
 
+                boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Flushing {} timeout={} metaConnectDelivery={}", session, timeout, metaConnectDelivery);
+
                 // Decide atomically if we have to reply to the meta connect
                 // We need to guarantee the metaConnectDeliverOnly semantic
                 // and allow only one thread to reply to the meta connect
                 // otherwise we may have out of order delivery.
-                boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
                 boolean reply = false;
                 ServerMessage.Mutable connectReply;
                 synchronized (session.getLock())
@@ -516,27 +523,32 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     }
                 }
 
-                List<ServerMessage> replies = Collections.emptyList();
-                if (reply)
-                {
-                    if (session.isDisconnected())
-                        connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                    connectReply = processReply(session, connectReply);
-                    replies = new ArrayList<>(1);
-                    replies.add(connectReply);
-                }
-
-                List<ServerMessage> queue = session.takeQueue();
-
-                if (_logger.isDebugEnabled())
-                    _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, connectReply, queue);
-                send(wsSession, session, reply, queue, replies);
+                send(wsSession, session, reply, connectReply);
             }
             catch (Throwable x)
             {
                 close(1011, x.toString());
                 handleException(wsSession, session, x);
             }
+        }
+
+        private void send(S wsSession, ServerSessionImpl session, boolean reply, ServerMessage.Mutable connectReply)
+        {
+            List<ServerMessage> replies = Collections.emptyList();
+            if (reply)
+            {
+                if (session.isDisconnected() && connectReply != null)
+                    connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                connectReply = processReply(session, connectReply);
+                replies = new ArrayList<>(1);
+                replies.add(connectReply);
+            }
+
+            List<ServerMessage> queue = session.takeQueue();
+
+            if (_logger.isDebugEnabled())
+                _logger.debug("Flushing {} metaConnectReply={}, messages={}", session, connectReply, queue);
+            send(wsSession, session, reply, queue, replies);
         }
 
         private class MetaConnectReplyTask implements Runnable

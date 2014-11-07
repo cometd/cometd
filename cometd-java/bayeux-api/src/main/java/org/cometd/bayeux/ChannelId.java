@@ -71,71 +71,75 @@ public class ChannelId
         {
             if (_segments != null)
                 return;
+            resolve(_id);
+        }
+    }
 
-            String[] segments = _id.substring(1).split("/");
-            if (segments.length < 1)
+    private void resolve(String name)
+    {
+        String[] segments = name.substring(1).split("/");
+        if (segments.length < 1)
+            throw new IllegalArgumentException("Invalid channel id: " + this);
+
+        for (int i = 1, size = segments.length; i <= size; ++i)
+        {
+            String segment = segments[i - 1];
+            if (i < size && (WILD.equals(segment) || DEEPWILD.equals(segment)))
                 throw new IllegalArgumentException("Invalid channel id: " + this);
 
+            Matcher matcher = VAR.matcher(segment);
+            if (matcher.matches())
+            {
+                if (_vars == null)
+                    _vars = new ArrayList<>();
+                _vars.add(matcher.group(1));
+            }
+
+            if (i == size)
+                _wild = DEEPWILD.equals(segment) ? 2 : WILD.equals(segment) ? 1 : 0;
+        }
+
+        if (_vars == null)
+            _vars = Collections.emptyList();
+        else
+            _vars = Collections.unmodifiableList(_vars);
+
+        if (_wild > 0)
+        {
+            if (!_vars.isEmpty())
+                throw new IllegalArgumentException("Invalid channel id: " + this);
+            _wilds = Collections.emptyList();
+        }
+        else
+        {
+            boolean addShallow = true;
+            List<String> wilds = new ArrayList<>(segments.length + 1);
+            StringBuilder b = new StringBuilder(name.length()).append("/");
             for (int i = 1, size = segments.length; i <= size; ++i)
             {
                 String segment = segments[i - 1];
-                if (i < size && (WILD.equals(segment) || DEEPWILD.equals(segment)))
+                if (segment.trim().length() == 0)
                     throw new IllegalArgumentException("Invalid channel id: " + this);
 
-                Matcher matcher = VAR.matcher(segment);
-                if (matcher.matches())
+                wilds.add(0, b + "**");
+
+                if (segment.matches(VAR.pattern()))
                 {
-                    if (_vars == null)
-                        _vars = new ArrayList<>();
-                    _vars.add(matcher.group(1));
+                    addShallow = i == size;
+                    break;
                 }
 
-                if (i == size)
-                    _wild = DEEPWILD.equals(segment) ? 2 : WILD.equals(segment) ? 1 : 0;
+                if (i < size)
+                    b.append(segment).append('/');
             }
-
-            if (_vars == null)
-                _vars = Collections.emptyList();
-            else
-                _vars = Collections.unmodifiableList(_vars);
-
-            if (_wild > 0)
-            {
-                if (!_vars.isEmpty())
-                    throw new IllegalArgumentException("Invalid channel id: " + this);
-                _wilds = Collections.emptyList();
-            }
-            else
-            {
-                boolean addShallow = true;
-                List<String> wilds = new ArrayList<>(segments.length + 1);
-                StringBuilder b = new StringBuilder(_id.length()).append("/");
-                for (int i = 1, size = segments.length; i <= size; ++i)
-                {
-                    String segment = segments[i - 1];
-                    if (segment.trim().length() == 0)
-                        throw new IllegalArgumentException("Invalid channel id: " + this);
-
-                    wilds.add(0, b + "**");
-
-                    if (segment.matches(VAR.pattern()))
-                    {
-                        addShallow = i == size;
-                        break;
-                    }
-
-                    if (i < size)
-                        b.append(segment).append('/');
-                }
-                if (addShallow)
-                    wilds.add(0, b + "*");
-                _wilds = Collections.unmodifiableList(wilds);
-            }
-
-            _parent = segments.length == 1 ? null : _id.substring(0, _id.length() - segments[segments.length - 1].length() - 1);
-
-            _segments = segments;
+            if (addShallow)
+                wilds.add(0, b + "*");
+            _wilds = Collections.unmodifiableList(wilds);
         }
+
+        _parent = segments.length == 1 ? null : name.substring(0, name.length() - segments[segments.length - 1].length() - 1);
+
+        _segments = segments;
     }
 
     /**

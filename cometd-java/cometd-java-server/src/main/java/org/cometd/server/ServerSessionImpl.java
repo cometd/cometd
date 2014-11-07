@@ -34,7 +34,6 @@ import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.HashMapMessage;
@@ -203,7 +202,7 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    public void deliver(Session sender, Mutable message)
+    public void deliver(Session sender, ServerMessage.Mutable message)
     {
         ServerSession session = null;
         if (sender instanceof ServerSession)
@@ -230,21 +229,11 @@ public class ServerSessionImpl implements ServerSession
         if (sender == this && !isBroadcastToPublisher())
             return;
 
-        ServerMessage message = null;
-        if (mutable.isMeta())
-        {
-            if (extendSendMeta(mutable))
-                message = mutable;
-        }
-        else
-        {
-            message = extendSendMessage(mutable);
-        }
-
+        ServerMessage.Mutable message = extendSend(mutable);
         if (message == null)
             return;
 
-        _bayeux.freeze((Mutable)message);
+        _bayeux.freeze(message);
 
         if (!_listeners.isEmpty())
         {
@@ -258,7 +247,21 @@ public class ServerSessionImpl implements ServerSession
             }
         }
 
-        boolean wakeup;
+        Boolean wakeup = enqueueMessage(sender, message);
+        if (wakeup == null)
+            return;
+
+        if (wakeup)
+        {
+            if (message.isLazy())
+                flushLazy(message);
+            else
+                flush();
+        }
+    }
+
+    private Boolean enqueueMessage(ServerSession sender, ServerMessage.Mutable message)
+    {
         synchronized (getLock())
         {
             if (!_listeners.isEmpty())
@@ -271,7 +274,7 @@ public class ServerSessionImpl implements ServerSession
                         if (maxQueueSize > 0 && _queue.size() > maxQueueSize)
                         {
                             if (!notifyQueueMaxed((MaxQueueListener)listener, this, _queue, sender, message))
-                                return;
+                                return null;
                         }
                     }
 
@@ -286,16 +289,23 @@ public class ServerSessionImpl implements ServerSession
                         notifyQueued((QueueListener)listener, sender, message);
                 }
             }
-            wakeup = _batch == 0;
+            return _batch == 0;
         }
+    }
 
-        if (wakeup)
+    private ServerMessage.Mutable extendSend(ServerMessage.Mutable mutable)
+    {
+        ServerMessage.Mutable message = null;
+        if (mutable.isMeta())
         {
-            if (message.isLazy())
-                flushLazy(message);
-            else
-                flush();
+            if (extendSendMeta(mutable))
+                message = mutable;
         }
+        else
+        {
+            message = extendSendMessage(mutable);
+        }
+        return message;
     }
 
     private boolean notifyQueueMaxed(MaxQueueListener listener, ServerSession session, Queue<ServerMessage> queue, ServerSession sender, ServerMessage message)
@@ -668,7 +678,7 @@ public class ServerSessionImpl implements ServerSession
         return true;
     }
 
-    private boolean notifyRcvMeta(Extension extension, Mutable message)
+    private boolean notifyRcvMeta(Extension extension, ServerMessage.Mutable message)
     {
         try
         {
@@ -681,7 +691,7 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    private boolean notifyRcv(Extension extension, Mutable message)
+    private boolean notifyRcv(Extension extension, ServerMessage.Mutable message)
     {
         try
         {
@@ -709,7 +719,7 @@ public class ServerSessionImpl implements ServerSession
         return true;
     }
 
-    private boolean notifySendMeta(Extension extension, Mutable message)
+    private boolean notifySendMeta(Extension extension, ServerMessage.Mutable message)
     {
         try
         {
@@ -722,7 +732,7 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    protected ServerMessage extendSendMessage(ServerMessage message)
+    protected ServerMessage.Mutable extendSendMessage(ServerMessage.Mutable message)
     {
         if (message.isMeta())
             throw new IllegalStateException();
@@ -740,11 +750,15 @@ public class ServerSessionImpl implements ServerSession
         return message;
     }
 
-    private ServerMessage notifySend(Extension extension, ServerMessage message)
+    private ServerMessage.Mutable notifySend(Extension extension, ServerMessage.Mutable message)
     {
         try
         {
-            return extension.send(this, message);
+            ServerMessage result = extension.send(this, message);
+            if (result instanceof ServerMessage.Mutable)
+                return (ServerMessage.Mutable)result;
+            else
+                return _bayeux.newMessage(result);
         }
         catch (Throwable x)
         {

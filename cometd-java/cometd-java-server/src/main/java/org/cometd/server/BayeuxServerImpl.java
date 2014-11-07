@@ -657,17 +657,61 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (_logger.isDebugEnabled())
                 _logger.debug(">> {}", message);
 
-            String channelName = message.getChannel();
+            handle(session, message, reply);
+        }
 
-            ServerChannelImpl channel;
-            if (channelName == null)
+        if (_logger.isDebugEnabled())
+            _logger.debug("<< {}", reply);
+        return reply;
+    }
+
+    private void handle(ServerSessionImpl session, Mutable message, Mutable reply)
+    {
+        String channelName = message.getChannel();
+
+        ServerChannelImpl channel;
+        if (channelName == null)
+        {
+            error(reply, "400::channel missing");
+        }
+        else
+        {
+            channel = getServerChannel(channelName);
+            if (channel == null)
             {
-                error(reply, "400::channel missing");
+                if (session == null)
+                {
+                    unknownSession(reply);
+                }
+                else
+                {
+                    Authorizer.Result creationResult = isCreationAuthorized(session, message, channelName);
+                    if (creationResult instanceof Authorizer.Result.Denied)
+                    {
+                        String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
+                        error(reply, "403:" + denyReason + ":create denied");
+                    }
+                    else
+                    {
+                        channel = (ServerChannelImpl)createChannelIfAbsent(channelName).getReference();
+                    }
+                }
             }
-            else
+
+            if (channel != null)
             {
-                channel = getServerChannel(channelName);
-                if (channel == null)
+                if (channel.isMeta())
+                {
+                    if (session == null && !Channel.META_HANDSHAKE.equals(channelName))
+                    {
+                        unknownSession(reply);
+                    }
+                    else
+                    {
+                        doPublish(session, channel, message);
+                    }
+                }
+                else
                 {
                     if (session == null)
                     {
@@ -675,62 +719,21 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     }
                     else
                     {
-                        Authorizer.Result creationResult = isCreationAuthorized(session, message, channelName);
-                        if (creationResult instanceof Authorizer.Result.Denied)
+                        Authorizer.Result publishResult = isPublishAuthorized(channel, session, message);
+                        if (publishResult instanceof Authorizer.Result.Denied)
                         {
-                            String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
-                            error(reply, "403:" + denyReason + ":create denied");
+                            String denyReason = ((Authorizer.Result.Denied)publishResult).getReason();
+                            error(reply, "403:" + denyReason + ":publish denied");
                         }
                         else
                         {
-                            channel = (ServerChannelImpl)createChannelIfAbsent(channelName).getReference();
-                        }
-                    }
-                }
-
-                if (channel != null)
-                {
-                    if (channel.isMeta())
-                    {
-                        if (session == null && !Channel.META_HANDSHAKE.equals(channelName))
-                        {
-                            unknownSession(reply);
-                        }
-                        else
-                        {
-                            doPublish(session, channel, message);
-                        }
-                    }
-                    else
-                    {
-                        if (session == null)
-                        {
-                            unknownSession(reply);
-                        }
-                        else
-                        {
-                            Authorizer.Result publishResult = isPublishAuthorized(channel, session, message);
-                            if (publishResult instanceof Authorizer.Result.Denied)
-                            {
-                                String denyReason = ((Authorizer.Result.Denied)publishResult).getReason();
-                                error(reply, "403:" + denyReason + ":publish denied");
-                            }
-                            else
-                            {
-                                channel.publish(session, message);
-                                reply.setSuccessful(true);
-                            }
+                            channel.publish(session, message);
+                            reply.setSuccessful(true);
                         }
                     }
                 }
             }
         }
-
-        // Here the reply may be null if this instance is stopped concurrently
-
-        if (_logger.isDebugEnabled())
-            _logger.debug("<< {}", reply);
-        return reply;
     }
 
     protected void validateMessage(Mutable message)
@@ -786,24 +789,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     private Authorizer.Result isOperationAuthorized(Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId)
     {
-        Authorizer.Result result = null;
-        List<String> wilds = channelId.getWilds();
-        for (int i = 0, size = wilds.size(); i <= size; ++i)
-        {
-            String channelName = i < size ? wilds.get(i) : channelId.toString();
-            ServerChannelImpl channel = _channels.get(channelName);
-            if (channel != null)
-            {
-                Authorizer.Result authz = isOperationAuthorized(channel, operation, session, message, channelId);
-                if (authz != null)
-                {
-                    if (result == null || authz.isDenied() || authz.isGranted())
-                        result = authz;
-                    if (authz.isDenied())
-                        break;
-                }
-            }
-        }
+        Authorizer.Result result = isChannelOperationAuthorized(operation, session, message, channelId);
 
         if (result == null)
         {
@@ -832,7 +818,30 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return result;
     }
 
-    private Authorizer.Result isOperationAuthorized(ServerChannelImpl channel, Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId)
+    private Authorizer.Result isChannelOperationAuthorized(Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId)
+    {
+        Authorizer.Result result = null;
+        List<String> wilds = channelId.getWilds();
+        for (int i = 0, size = wilds.size(); i <= size; ++i)
+        {
+            String channelName = i < size ? wilds.get(i) : channelId.toString();
+            ServerChannelImpl channel = _channels.get(channelName);
+            if (channel != null)
+            {
+                Authorizer.Result authz = isChannelOperationAuthorized(channel, operation, session, message, channelId);
+                if (authz != null)
+                {
+                    if (result == null || authz.isDenied() || authz.isGranted())
+                        result = authz;
+                    if (authz.isDenied())
+                        break;
+                }
+            }
+        }
+        return result;
+    }
+
+    private Authorizer.Result isChannelOperationAuthorized(ServerChannelImpl channel, Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId)
     {
         List<Authorizer> authorizers = channel.authorizers();
         if (authorizers.isEmpty())
@@ -859,31 +868,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     protected void doPublish(ServerSessionImpl from, ServerChannelImpl to, final ServerMessage.Mutable mutable)
     {
-        if (to.isLazy())
-            mutable.setLazy(true);
+        List<String> wildChannels = to.getChannelId().getWilds();
 
-        final List<String> wildChannelNames = to.getChannelId().getWilds();
-        int wildChannelsCount = wildChannelNames.size();
-        for (int i = 0; i <= wildChannelsCount; ++i)
-        {
-            ServerChannelImpl channel = i == wildChannelsCount ? to : _channels.get(wildChannelNames.get(i));
-            if (channel == null)
-                continue;
-            if (channel.isLazy())
-                mutable.setLazy(true);
-            List<ServerChannelListener> listeners = channel.listeners();
-            if (!listeners.isEmpty())
-            {
-                for (ServerChannelListener listener : listeners)
-                {
-                    if (listener instanceof MessageListener)
-                    {
-                        if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
-                            return;
-                    }
-                }
-            }
-        }
+        // First notify the channel listeners.
+        if (!notifyListeners(from, to, mutable, wildChannels))
+            return;
 
         // Exactly at this point, we convert the message to JSON and therefore
         // any further modification will be lost.
@@ -904,9 +893,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         Set<String> wildSubscribers = null;
         if (ChannelId.isBroadcast(mutable.getChannel()))
         {
-            for (int i = 0; i < wildChannelsCount; ++i)
+            for (int i = 0, size = wildChannels.size(); i < size; ++i)
             {
-                ServerChannelImpl wildChannel = _channels.get(wildChannelNames.get(i));
+                ServerChannelImpl wildChannel = _channels.get(wildChannels.get(i));
                 if (wildChannel == null)
                     continue;
                 Set<ServerSession> subscribers = wildChannel.subscribers();
@@ -936,15 +925,43 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         // Meta handlers
         if (to.isMeta())
+            notifyHandlerListeners(from, to, mutable);
+    }
+
+    private boolean notifyListeners(ServerSessionImpl from, ServerChannelImpl to, Mutable mutable, List<String> wildChannels)
+    {
+        for (int i = 0, size = wildChannels.size(); i <= size; ++i)
         {
-            List<ServerChannelListener> listeners = to.listeners();
+            ServerChannelImpl channel = i == size ? to : _channels.get(wildChannels.get(i));
+            if (channel == null)
+                continue;
+            if (channel.isLazy())
+                mutable.setLazy(true);
+            List<ServerChannelListener> listeners = channel.listeners();
             if (!listeners.isEmpty())
             {
                 for (ServerChannelListener listener : listeners)
                 {
-                    if (listener instanceof BayeuxServerImpl.HandlerListener)
-                        ((BayeuxServerImpl.HandlerListener)listener).onMessage(from, mutable);
+                    if (listener instanceof MessageListener)
+                    {
+                        if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
+                            return false;
+                    }
                 }
+            }
+        }
+        return true;
+    }
+
+    private void notifyHandlerListeners(ServerSessionImpl from, ServerChannelImpl to, Mutable mutable)
+    {
+        List<ServerChannelListener> listeners = to.listeners();
+        if (!listeners.isEmpty())
+        {
+            for (ServerChannelListener listener : listeners)
+            {
+                if (listener instanceof HandlerListener)
+                    ((HandlerListener)listener).onMessage(from, mutable);
             }
         }
     }

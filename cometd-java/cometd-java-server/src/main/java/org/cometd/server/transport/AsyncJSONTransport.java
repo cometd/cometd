@@ -269,11 +269,24 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         @Override
         public void onWritePossible() throws IOException
         {
-            ServletOutputStream output;
+            ServletOutputStream output = response.getOutputStream();
+
+            if (!writeMessages(output))
+                return;
+
+            if (_logger.isDebugEnabled())
+                _logger.debug("Replies to write for session {}: {}", session, replies.length);
+
+            if (!writeReplies(output))
+                return;
+
+            asyncContext.complete();
+        }
+
+        private boolean writeMessages(ServletOutputStream output) throws IOException
+        {
             try
             {
-                output = response.getOutputStream();
-
                 if (messageIndex < 0)
                 {
                     messageIndex = 0;
@@ -291,7 +304,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                     output.write(buffer.toString().getBytes("UTF-8"));
                     buffer.setLength(0);
                     if (!output.isReady())
-                        return;
+                        return false;
                 }
             }
             finally
@@ -302,9 +315,11 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                 if (replyIndex == 0 && startInterval && session != null && session.isConnected())
                     session.startIntervalTimeout(getInterval());
             }
+            return true;
+        }
 
-            if (_logger.isDebugEnabled())
-                _logger.debug("Replies to write for session {}: {}", session, replies.length);
+        private boolean writeReplies(ServletOutputStream output) throws IOException
+        {
             boolean needsComma = messageIndex > 0;
             while (replyIndex < replies.length)
             {
@@ -324,10 +339,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                 output.write(buffer.toString().getBytes("UTF-8"));
                 buffer.setLength(0);
                 if (!output.isReady())
-                    return;
+                    return false;
             }
-
-            asyncContext.complete();
+            return true;
         }
 
         @Override
