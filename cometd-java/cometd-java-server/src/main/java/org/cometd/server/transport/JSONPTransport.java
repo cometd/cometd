@@ -39,7 +39,7 @@ public class JSONPTransport extends AbstractStreamHttpTransport
 
     private String _mimeType = "text/javascript;charset=UTF-8";
     private String _callbackParam = "jsonp";
-    private int _callbackMaxLength = 50;
+    private int _callbackMaxLength = 64;
 
     public JSONPTransport(BayeuxServerImpl bayeux)
     {

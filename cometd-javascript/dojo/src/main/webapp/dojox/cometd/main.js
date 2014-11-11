@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/io/script', 'dojo/topic'],
-        function(org_cometd, JSON, dojox, dojoXHR, dojoSCRIPT, topic)
+define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/request/script'],
+        function(org_cometd, JSON, dojox, dojoXHR, dojoSCRIPT)
 {
     // Remap cometd JSON functions to dojo JSON functions
     org_cometd.JSON.toJSON = JSON.stringify;
@@ -58,19 +58,17 @@ define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/io/script', 
 
             that.jsonpSend = function(packet)
             {
-                var deferred = dojoSCRIPT.get({
-                    url: packet.url,
-                    sync: packet.sync === true,
-                    callbackParamName: 'jsonp',
-                    content: {
+                dojoSCRIPT.get(packet.url, {
+                    jsonp: 'jsonp',
+                    query: {
                         // In callback-polling, the content must be sent via the 'message' parameter
                         message: packet.body
                     },
-                    load: packet.onSuccess,
-                    error: function(error)
-                    {
-                        packet.onError(error.message, deferred ? deferred.ioArgs.error : error);
-                    }
+                    sync: packet.sync === true
+                }).then(packet.onSuccess, function (error)
+                {
+                    // Actually never called by Dojo, perhaps a Dojo bug.
+                    packet.onError(error);
                 });
                 return undefined;
             };
