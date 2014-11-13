@@ -65,6 +65,7 @@ org.cometd.LongPollingTransport = function()
                 },
                 onError: function(reason, exception)
                 {
+                    self._debug('Transport', self.getType(), 'received error', reason, exception);
                     _supportsCrossDomain = false;
                     var failure = {
                         reason: reason,

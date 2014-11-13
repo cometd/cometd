@@ -26,9 +26,7 @@ org.cometd.WebSocketTransport = function()
         _envelopes = {};
         _timeouts = {};
         _connecting = false;
-        _webSocket = null;
         _connected = false;
-        _successCallback = null;
     };
 
     function _websocketConnect()

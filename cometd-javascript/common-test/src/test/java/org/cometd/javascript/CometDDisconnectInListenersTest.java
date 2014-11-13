@@ -15,7 +15,9 @@
  */
 package org.cometd.javascript;
 
+import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class CometDDisconnectInListenersTest extends AbstractCometDTest
@@ -23,6 +25,11 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTest
     @Test
     public void testDisconnectInHandshakeListener() throws Exception
     {
+        // Dojo has a bug where aborting an XHR from the
+        // handshake listener does not notify the XHR error
+        // handlers, so the disconnect listener is not invoked.
+        Assume.assumeTrue(System.getProperty("toolkitTestProvider").equalsIgnoreCase(JQueryTestProvider.class.getName()));
+
         defineClass(Latch.class);
 
         evaluateScript("var connectLatch = new Latch(1);");
@@ -31,21 +38,21 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTest
         Latch disconnectLatch = get("disconnectLatch");
 
         evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});\n" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "cometd.addListener('/meta/handshake', function(message)" +
-                "{\n" +
-                "   cometd.disconnect();\n" +
-                "});\n" +
+                "{" +
+                "   cometd.disconnect();" +
+                "});" +
                 "cometd.addListener('/meta/connect', function(message)" +
                 "{" +
                 "   connectLatch.countDown();" +
-                "});\n" +
+                "});" +
                 "cometd.addListener('/meta/disconnect', function(message)" +
                 "{" +
                 "   disconnectLatch.countDown();" +
-                "});\n" +
+                "});" +
                 "" +
-                "cometd.handshake();\n" +
+                "cometd.handshake();" +
                 "");
 
         // Connect must not be called
@@ -65,19 +72,19 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTest
         Latch disconnectLatch = get("disconnectLatch");
 
         evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});\n" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "cometd.addListener('/meta/connect', function(message)" +
                 "{" +
                 "   if (connectLatch.count == 2) " +
                 "       cometd.disconnect();" +
                 "   connectLatch.countDown();" +
-                "});\n" +
+                "});" +
                 "cometd.addListener('/meta/disconnect', function(message)" +
                 "{" +
                 "   disconnectLatch.countDown();" +
-                "});\n" +
+                "});" +
                 "" +
-                "cometd.handshake();\n" +
+                "cometd.handshake();" +
                 "");
 
         // Connect must be called only once

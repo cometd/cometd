@@ -904,7 +904,7 @@ org.cometd.CometD = function(name)
         }
         else
         {
-            _disconnect(false);
+            _disconnect(true);
         }
     }
 
@@ -960,7 +960,7 @@ org.cometd.CometD = function(name)
                     _delayedConnect();
                     break;
                 case 'none':
-                    _disconnect(false);
+                    _disconnect(true);
                     break;
                 default:
                     throw 'Unrecognized advice action ' + action;
@@ -1019,7 +1019,7 @@ org.cometd.CometD = function(name)
                 _delayedHandshake();
                 break;
             case 'none':
-                _disconnect(false);
+                _disconnect(true);
                 break;
             default:
                 throw 'Unrecognized advice action' + action;
@@ -1046,6 +1046,7 @@ org.cometd.CometD = function(name)
                     _delayedConnect();
                     break;
                 case 'none':
+                    // Wait for the /meta/disconnect to arrive.
                     _disconnect(false);
                     break;
                 default:
@@ -1076,6 +1077,7 @@ org.cometd.CometD = function(name)
     {
         if (message.successful)
         {
+            // Wait for the /meta/connect to arrive.
             _disconnect(false);
             _handleCallback(message);
             _notifyListeners('/meta/disconnect', message);

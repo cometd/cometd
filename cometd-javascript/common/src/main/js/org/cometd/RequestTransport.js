@@ -72,7 +72,8 @@ org.cometd.RequestTransport = function()
         var requestId = ++_requestIds;
         var request = {
             id: requestId,
-            metaConnect: false
+            metaConnect: false,
+            envelope: envelope
         };
 
         // Consider the metaConnect requests which should always be present
@@ -205,7 +206,8 @@ org.cometd.RequestTransport = function()
         this._debug('Transport', this.getType(), 'metaConnect send, request', requestId, 'envelope', envelope);
         var request = {
             id: requestId,
-            metaConnect: true
+            metaConnect: true,
+            envelope: envelope
         };
         _transportSend.call(this, envelope, request);
         _metaConnectRequest = request;
@@ -229,13 +231,22 @@ org.cometd.RequestTransport = function()
         for (var i = 0; i < _requests.length; ++i)
         {
             var request = _requests[i];
-            this._debug('Aborting request', request);
-            this.abortXHR(request.xhr);
+            if (request)
+            {
+                this._debug('Aborting request', request);
+                if (!this.abortXHR(request.xhr))
+                {
+                    this.transportFailure(request.envelope, request, {reason: 'abort'});
+                }
+            }
         }
         if (_metaConnectRequest)
         {
             this._debug('Aborting metaConnect request', _metaConnectRequest);
-            this.abortXHR(_metaConnectRequest.xhr);
+            if (!this.abortXHR(_metaConnectRequest.xhr))
+            {
+                this.transportFailure(_metaConnectRequest.envelope, _metaConnectRequest, {reason: 'abort'});
+            }
         }
         this.reset();
     };
@@ -254,13 +265,16 @@ org.cometd.RequestTransport = function()
         {
             try
             {
+                var state = xhr.readyState;
                 xhr.abort();
+                return state !== XMLHttpRequest.UNSENT;
             }
             catch (x)
             {
                 this._debug(x);
             }
         }
+        return false;
     };
 
     _self.xhrStatus = function(xhr)

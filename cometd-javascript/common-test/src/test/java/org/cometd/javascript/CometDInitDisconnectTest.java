@@ -22,7 +22,9 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class CometDInitDisconnectTest extends AbstractCometDTest
@@ -63,6 +65,11 @@ public class CometDInitDisconnectTest extends AbstractCometDTest
     @Test
     public void testHandshakeDisconnect() throws Exception
     {
+        // Dojo has a bug where aborting an XHR from the
+        // handshake listener does not notify the XHR error
+        // handlers, so the disconnect listener is not invoked.
+        Assume.assumeTrue(System.getProperty("toolkitTestProvider").equalsIgnoreCase(JQueryTestProvider.class.getName()));
+
         final CountDownLatch removeLatch = new CountDownLatch(1);
         bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter()
         {
