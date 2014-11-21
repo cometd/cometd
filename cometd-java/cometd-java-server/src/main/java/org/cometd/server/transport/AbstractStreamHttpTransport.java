@@ -131,7 +131,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
                 {
                     ServerMessage message = messages.get(i);
                     if (i > 0)
-                        output.print(",");
+                        output.write(',');
                     writeMessage(response, output, session, message);
                 }
             }
@@ -152,7 +152,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
                 if (reply == null)
                     continue;
                 if (needsComma)
-                    output.print(",");
+                    output.write(',');
                 needsComma = true;
                 writeMessage(response, output, session, reply);
             }
