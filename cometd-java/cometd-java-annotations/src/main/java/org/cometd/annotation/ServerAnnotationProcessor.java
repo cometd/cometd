@@ -101,9 +101,10 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
     }
 
     /**
-     * Processes dependencies annotated with {@link Inject} and {@link Session}, lifecycle methods
-     * annotated with {@link PostConstruct}, and callback methods annotated with {@link Listener}
-     * and {@link Subscription}.
+     * Processes dependencies annotated with {@link Inject} and {@link Session},
+     * configuration methods annotated with {@link Configure}, callback methods
+     * annotated with {@link Listener}, {@link Subscription} and {@link RemoteCall},
+     * and lifecycle methods annotated with {@link PostConstruct}.
      *
      * @param bean the annotated service instance
      * @return true if the bean contains at least one annotation that has been processed, false otherwise
@@ -118,7 +119,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
     }
 
     /**
-     * Processes the methods annotated with {@link Configure}
+     * Processes the methods annotated with {@link Configure}.
      *
      * @param bean the annotated service instance
      * @return true if at least one annotated configure has been processed, false otherwise
@@ -238,7 +239,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
     }
 
     /**
-     * Processes the callbacks annotated with {@link Listener} and {@link Subscription}.
+     * Processes the callbacks annotated with {@link Listener}, {@link Subscription}
+     * and {@link RemoteCall}.
      *
      * @param bean the annotated service instance
      * @return true if at least one annotated callback has been processed, false otherwise
@@ -254,7 +256,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
             return false;
 
         if (!Modifier.isPublic(klass.getModifiers()))
-            throw new IllegalArgumentException("Service class '" + klass.getName() + "' must be public");
+            throw new IllegalArgumentException("Service class " + klass.getName() + " must be public");
 
         LocalSession session = findOrCreateLocalSession(bean, serviceAnnotation.value());
         boolean result = processListener(bean, session);
@@ -265,8 +267,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
     /**
      * Performs the opposite processing done by {@link #process(Object)} on callbacks methods
-     * annotated with {@link Listener} and {@link Subscription}, and on lifecycle methods annotated
-     * with {@link PreDestroy}.
+     * annotated with {@link Listener}, {@link Subscription} and {@link RemoteCall}, and on
+     * lifecycle methods annotated with {@link PreDestroy}.
      *
      * @param bean the annotated service instance
      * @return true if at least one deprocessing has been performed, false otherwise
@@ -281,7 +283,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
     /**
      * Performs the opposite processing done by {@link #processCallbacks(Object)} on callback methods
-     * annotated with {@link Listener} and {@link Subscription}.
+     * annotated with {@link Listener}, {@link Subscription} and {@link RemoteCall}.
      *
      * @param bean the annotated service instance
      * @return true if the at least one callback has been deprocessed
@@ -405,8 +407,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                 if (listener != null)
                 {
                     if (!Modifier.isPublic(method.getModifiers()))
-                        throw new IllegalArgumentException("@" + Listener.class + " method '" + method.getName() +
-                                "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+                        throw new IllegalArgumentException("@" + Listener.class.getSimpleName() + " method " +
+                                method.getDeclaringClass().getName() + "." + method.getName() + "(...) must be public");
 
                     List<String> paramNames = processParameters(method);
                     checkSignaturesMatch(method, ListenerCallback.signature, paramNames);
@@ -420,10 +422,12 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                             List<String> parameters = channelId.getParameters();
                             if (parameters.size() != paramNames.size())
                                 throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
-                                        Listener.class.getSimpleName() + " on method: " + method.getName() + "(...).");
+                                        Listener.class.getSimpleName() + " on method " +
+                                        method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
                             if (!parameters.equals(paramNames))
                                 throw new IllegalArgumentException("Wrong parameter names in annotation @" +
-                                        Listener.class.getSimpleName() + " on method: " + method.getName() + "(...).");
+                                        Listener.class.getSimpleName() + " on method " +
+                                        method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
                             channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
                         }
 
@@ -481,8 +485,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                 if (subscription != null)
                 {
                     if (!Modifier.isPublic(method.getModifiers()))
-                        throw new IllegalArgumentException("@" + Subscription.class.getSimpleName() + " method '" +
-                                method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+                        throw new IllegalArgumentException("@" + Subscription.class.getSimpleName() + " method " +
+                                method.getDeclaringClass().getName() + "." + method.getName() + "(...) must be public");
 
                     List<String> paramNames = processParameters(method);
                     checkSignaturesMatch(method, SubscriptionCallback.signature, paramNames);
@@ -492,8 +496,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     {
                         if (ChannelId.isMeta(channel))
                             throw new IllegalArgumentException("Annotation @" + Subscription.class.getSimpleName() +
-                                    " on method '" + method.getName() + "' on class '" +
-                                    method.getDeclaringClass().getName() + "' must specify a non meta channel");
+                                    " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
+                                    "(...) must specify a non meta channel");
 
                         ChannelId channelId = new ChannelId(channel);
                         if (channelId.isTemplate())
@@ -501,10 +505,12 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                             List<String> parameters = channelId.getParameters();
                             if (parameters.size() != paramNames.size())
                                 throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
-                                        Subscription.class.getSimpleName() + " on method: " + method.getName() + "(...).");
+                                        Subscription.class.getSimpleName() + " on method " +
+                                        method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
                             if (!parameters.equals(paramNames))
                                 throw new IllegalArgumentException("Wrong parameter names in annotation @" +
-                                        Subscription.class.getSimpleName() + " on method: " + method.getName() + "(...).");
+                                        Subscription.class.getSimpleName() + " on method " +
+                                        method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
                             channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
                         }
 
@@ -557,8 +563,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                 if (remoteCall != null)
                 {
                     if (!Modifier.isPublic(method.getModifiers()))
-                        throw new IllegalArgumentException("@" + RemoteCall.class.getSimpleName() + " method '" +
-                                method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+                        throw new IllegalArgumentException("@" + RemoteCall.class.getSimpleName() + " method " +
+                                method.getDeclaringClass().getName() + "." + method.getName() + "(...) must be public");
 
                     List<String> paramNames = processParameters(method);
                     checkSignaturesMatch(method, RemoteCallCallback.signature, paramNames);
@@ -573,17 +579,20 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         ChannelId channelId = new ChannelId(channel);
                         if (channelId.isWild())
                             throw new IllegalArgumentException("Annotation @" + RemoteCall.class.getSimpleName() +
-                                    " on method: " + method.getName() + "(...) cannot specify wild channels.");
+                                    " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
+                                    "(...) cannot specify wild channels.");
 
                         if (channelId.isTemplate())
                         {
                             List<String> parameters = channelId.getParameters();
                             if (parameters.size() != paramNames.size())
                                 throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
-                                        RemoteCall.class.getSimpleName() + " on method: " + method.getName() + "(...).");
+                                        RemoteCall.class.getSimpleName() + " on method " +
+                                        method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
                             if (!parameters.equals(paramNames))
                                 throw new IllegalArgumentException("Wrong parameter names in annotation @" +
-                                        RemoteCall.class.getSimpleName() + " on method: " + method.getName() + "(...).");
+                                        RemoteCall.class.getSimpleName() + " on method " +
+                                        method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
                             channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
                         }
 

@@ -76,8 +76,10 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         this.injectables = injectables;
     }
     /**
-     * Processes dependencies annotated with {@link Session}, and callbacks
-     * annotated with {@link Listener} and {@link Subscription}.
+     * Processes dependencies annotated with {@link Session}, callbacks
+     * annotated with {@link Listener} and {@link Subscription} and lifecycle
+     * methods annotated with {@link PostConstruct}.
+     *
      * @param bean the annotated service instance
      * @return true if at least one dependency or callback has been processed, false otherwise
      */
@@ -103,6 +105,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
 
     /**
      * Processes lifecycle methods annotated with {@link PostConstruct}.
+     *
      * @param bean the annotated service instance
      * @return true if at least one lifecycle method has been invoked, false otherwise
      */
@@ -123,7 +126,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
             return false;
 
         if (!Modifier.isPublic(klass.getModifiers()))
-            throw new IllegalArgumentException("Service class '" + klass.getName() + "' must be public");
+            throw new IllegalArgumentException("Service class " + klass.getName() + " must be public");
 
         boolean result = processListener(bean);
         result |= processSubscription(bean);
@@ -134,6 +137,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
      * Performs the opposite processing done by {@link #process(Object)} on callbacks methods
      * annotated with {@link Listener} and {@link Subscription}, and on lifecycle methods annotated
      * with {@link PreDestroy}.
+     *
      * @param bean the annotated service instance
      * @return true if at least one deprocessing has been performed, false otherwise
      * @see #process(Object)
@@ -154,9 +158,11 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
     }
 
     /**
-     * Deconfigures callbacks annotated with {@link Listener} and {@link Subscription}.
+     * Performs the opposite processing done by {@link #processCallbacks(Object)}
+     * on callback methods annotated with {@link Listener} and {@link Subscription}.
+     *
      * @param bean the annotated service instance
-     * @return true if the at least one callback has been deconfigured
+     * @return true if the at least one callback has been deprocessed
      */
     public boolean deprocessCallbacks(Object bean)
     {
@@ -167,6 +173,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
 
     /**
      * Processes lifecycle methods annotated with {@link PreDestroy}.
+     *
      * @param bean the annotated service instance
      * @return true if at least one lifecycle method has been invoked, false otherwise
      */
@@ -245,7 +252,8 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                 if (listener != null)
                 {
                     if (!Modifier.isPublic(method.getModifiers()))
-                        throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+                        throw new IllegalArgumentException("@" + Listener.class.getSimpleName() + " method " +
+                                method.getDeclaringClass().getName() + "." + method.getName() + "(...) must be public");
 
                     List<String> paramNames = processParameters(method);
                     checkSignaturesMatch(method, ListenerCallback.signature, paramNames);
@@ -255,8 +263,8 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                     {
                         if (!ChannelId.isMeta(channel))
                             throw new IllegalArgumentException("Annotation @" + Listener.class.getSimpleName() +
-                                    " on method '" + method.getName() + "' in class '" +
-                                    method.getDeclaringClass().getName() + "' must specify a meta channel");
+                                    " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
+                                    "(...) must specify a meta channel");
 
                         ChannelId channelId = new ChannelId(channel);
                         if (channelId.isTemplate())
@@ -315,7 +323,9 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                 if (subscription != null)
                 {
                     if (!Modifier.isPublic(method.getModifiers()))
-                        throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+                        throw new IllegalArgumentException("@" + Subscription.class.getSimpleName() + " method " +
+                                method.getDeclaringClass().getName() + "." + method.getName() + "(...) must be public");
+
 
                     List<String> paramNames = processParameters(method);
                     checkSignaturesMatch(method, SubscriptionCallback.signature, paramNames);
@@ -325,8 +335,8 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                     {
                         if (ChannelId.isMeta(channel))
                             throw new IllegalArgumentException("Annotation @" + Subscription.class.getSimpleName() +
-                                    " on method '" + method.getName() + "' on class '" +
-                                    method.getDeclaringClass().getName() + "' must specify a non meta channel");
+                                    " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
+                                    "(...) must specify a non meta channel");
 
                         ChannelId channelId = new ChannelId(channel);
                         if (channelId.isTemplate())
