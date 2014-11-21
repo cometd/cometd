@@ -440,22 +440,15 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
 
     protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws IOException
     {
-        try
-        {
-            _logger.warn("Could not parse JSON: " + json, exception);
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
-        }
-        catch (IOException x)
-        {
-            _logger.trace("Could not send response error", x);
-        }
+        _logger.warn("Could not parse JSON: " + json, exception);
+        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
     }
 
     protected void error(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, int responseCode)
     {
         try
         {
-            response.sendError(responseCode);
+            response.setStatus(responseCode);
         }
         catch (Exception x)
         {
