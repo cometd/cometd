@@ -26,9 +26,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.annotation.Configure;
 import org.cometd.annotation.Listener;
+import org.cometd.annotation.RemoteCall;
 import org.cometd.annotation.ServerAnnotationProcessor;
 import org.cometd.annotation.Service;
-import org.cometd.annotation.Session;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
@@ -92,22 +92,17 @@ public class CometDDemoServlet extends HttpServlet
     @Service("echo")
     public static class EchoRPC
     {
-        @Session
-        private ServerSession _session;
-
-        @SuppressWarnings("unused")
         @Configure("/service/echo")
         private void configureEcho(ConfigurableServerChannel channel)
         {
             channel.addAuthorizer(GrantAuthorizer.GRANT_SUBSCRIBE_PUBLISH);
         }
 
-        @Listener("/service/echo")
-        public void doEcho(ServerSession session, ServerMessage message)
+        @RemoteCall("echo")
+        public void doEcho(RemoteCall.Caller caller, Map<String, Object> data)
         {
-            Map<String, Object> data = message.getDataAsMap();
-            logger.info("ECHO from " + session + " " + data);
-            session.deliver(_session, message.getChannel(), data);
+            logger.info("ECHO from " + caller.getServerSession() + ": " + data);
+            caller.result(data);
         }
     }
 

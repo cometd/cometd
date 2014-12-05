@@ -1,81 +1,8 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html>
 <html>
 <head>
     <title>Comet echo RPC</title>
-    <script type="text/javascript" src="../../dojo/dojo.js"></script>
-    <script type="text/javascript">
-        dojo.registerModulePath("org", "../org");
-        dojo.require("dojox.cometd");
-        dojo.require("dojox.cometd.timestamp");
-        $ = dojo.byId;
-
-        var echoBehaviours = {
-            '#phrase': {
-                "found": function(e)
-                {
-                    e.setAttribute("autocomplete", "OFF");
-                },
-                "onkeyup": function(e)
-                {
-                    if (e.keyCode == dojo.keys.ENTER)
-                    {
-                        echoRpc($('phrase').value);
-                        $('phrase').value = '';
-                        return false;
-                    }
-                    return true;
-                }
-            },
-            '#sendB': {
-                "onclick": function(e)
-                {
-                    echoRpc($('phrase').value);
-                    $('phrase').value = '';
-                    return false;
-                }
-            }
-        };
-
-        function setUp()
-        {
-            var element = dojo.byId('phrase');
-            element.setAttribute("autocomplete", "OFF");
-            dojo.connect(element, "onkeyup", function(e)
-            {
-                if (e.keyCode == dojo.keys.ENTER)
-                {
-                    echoRpc($('phrase').value);
-                    $('phrase').value = '';
-                    return false;
-                }
-                return true;
-            });
-            element = dojo.byId('sendB');
-            dojo.connect(element, "onclick", function(e)
-            {
-                echoRpc($('phrase').value);
-                $('phrase').value = '';
-                return false;
-            });
-
-            dojox.cometd.init(location.href.replace(/\/dojo-examples\/.*$/, '') + "/cometd");
-            dojox.cometd.subscribe("/service/echo", echoRpcReturn);
-        }
-
-        function echoRpc(msg)
-        {
-            console.debug(msg);
-            dojox.cometd.publish("/service/echo", { msg: msg });
-        }
-
-        function echoRpcReturn(msg)
-        {
-            dojo.byId("responses").innerHTML += (msg.timestamp ? msg.timestamp : "") + " " + msg.channel + ": " + msg.data.msg + "\n";
-        }
-
-        dojo.addOnLoad(setUp);
-        dojo.addOnUnload(dojox.cometd, "disconnect");
-    </script>
+    <script data-dojo-config="async: true, deps: ['echo.js'], tlmSiblingOfDojo: true" src="../../dojo/dojo.js"></script>
 </head>
 <body>
 
