@@ -57,6 +57,7 @@ import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -183,7 +184,10 @@ public class BayeuxLoadServer
             sslContextFactory.setKeyManagerPassword("keypwd");
         }
 
-        ConnectionFactory[] factories = AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory());
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        httpConfiguration.setDelayDispatchUntilContent(true);
+        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(httpConfiguration);
+        ConnectionFactory[] factories = AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory);
         ServerConnector connector = new ServerConnector(server, null, null, null, 1, selectors, factories);
         // Make sure the OS is configured properly for load testing;
         // see http://cometd.org/documentation/howtos/loadtesting
