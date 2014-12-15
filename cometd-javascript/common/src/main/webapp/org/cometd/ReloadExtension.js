@@ -54,11 +54,13 @@
             var _cookiePath = '/';
             var _cookieMaxAge = 5;
             var _batch = false;
+            var _reloading = false;
 
             function _reload(config)
             {
                 if (_state && _state.handshakeResponse !== null)
                 {
+                    _reloading = true;
                     _configure(config);
                     _state.cookiePath = _cookiePath;
                     var cookie = org_cometd.JSON.toJSON(_state);
@@ -155,12 +157,16 @@
                                         _debug('Reload extension replayed handshake response', response);
                                     }, 0);
 
-                                    // delay any sends until first connect is complete.
+                                    // Delay any sends until first connect is complete.
+                                    // This avoids that there is an old /meta/connect pending on server
+                                    // that will be resumed to send messages to the client, when the
+                                    // client has already closed the connection, thereby losing the messages.
                                     if (!_batch)
                                     {
                                         _batch = true;
                                         _cometd.startBatch();
                                     }
+
                                     // This handshake is aborted, as we will replay the prior handshake response
                                     return null;
                                 }
@@ -178,6 +184,18 @@
                     }
                     case '/meta/connect':
                     {
+                        if (_reloading === true)
+                        {
+                            // The reload causes the failure of the outstanding /meta/connect,
+                            // which CometD will react to by sending another. Here we avoid
+                            // that /meta/connect messages are sent between the reload and
+                            // the destruction of the JavaScript context, so that we are sure
+                            // that the first /meta/connect is the one triggered after the
+                            // replay of the /meta/handshake by this extension.
+                            _debug('Reload extension aborting /meta/connect during reload');
+                            return null;
+                        }
+
                         if (!_state.transportType)
                         {
                             _state.transportType = message.connectionType;
@@ -216,18 +234,18 @@
                             }
                             break;
                         }
-                        case '/meta/disconnect':
-                        {
-                            _state = null;
-                            break;
-                        }
                         case '/meta/connect':
                         {
                             if (_batch)
                             {
-                                _cometd.endBatch();
                                 _batch = false;
+                                _cometd.endBatch();
                             }
+                            break;
+                        }
+                        case '/meta/disconnect':
+                        {
+                            _state = null;
                             break;
                         }
                         default:
