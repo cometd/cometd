@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comet echo RPC</title>
+    <script data-main="echo"  src="../require.js"></script>
+</head>
+<body>
+
+<h1>Echo test</h1>
+<a href="../..">Main Demo index</a><br/>
+
+<p>
+    Echo data to ONLY this client using RPC style messaging over
+    cometd. Requires a server side component at /service/echo which echos
+    responses directly to the client.
+</p>
+
+<div>
+    <label for="phrase">Echo: </label><input id="phrase" type="text" />
+    <input id="sendB" class="button" type="submit" name="join" value="Send"/>
+</div>
+<pre id="responses"></pre>
+</body>
+</html>

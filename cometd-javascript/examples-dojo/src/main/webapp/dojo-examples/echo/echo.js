@@ -1,21 +1,18 @@
-require(["dojo", "dojo/on", "dojo/keys", "dojo/_base/unload", "dojox/cometd", "dojox/cometd/timestamp", "dojo/domReady!"],
+require(["dojo", "dojo/on", "dojo/keys", "dojo/_base/unload", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/reload", "dojo/domReady!"],
 function(dojo, on, keys, unload, cometd)
 {
     function echoRpc(text)
     {
         console.debug("Echoing", text);
 
-        setTimeout(function ()
+        cometd.remoteCall("echo", {msg: text}, function(reply)
         {
-            cometd.remoteCall("echo", {msg: text}, function(reply)
-            {
-                dojo.byId("responses").innerHTML +=
-                    (reply.timestamp || "") + " " + reply.channel + ": " + reply.data.msg + "<br/>";
-            });
-        }, 0);
+            dojo.byId("responses").innerHTML +=
+                (reply.timestamp || "") + " Echoed by server: " + reply.data.msg + "<br/>";
+        });
     }
 
-    unload.addOnUnload(cometd, "disconnect");
+    unload.addOnUnload(cometd, "reload");
 
     var phrase = dojo.byId("phrase");
     phrase.setAttribute("autocomplete", "OFF");
@@ -30,16 +27,25 @@ function(dojo, on, keys, unload, cometd)
         return true;
     });
     var sendB = dojo.byId("sendB");
-    on(sendB, "click", function(e)
+    on(sendB, "click", function()
     {
         echoRpc(phrase.value);
         phrase.value = "";
         return false;
     });
 
+    cometd.websocketEnabled = false;
     cometd.configure({
         url: location.href.replace(/\/dojo-examples\/.*$/, "") + "/cometd",
         logLevel: "debug"
+    });
+
+    cometd.addListener("/meta/handshake", function(reply)
+    {
+        if (reply.successful)
+        {
+            echoRpc("Type something in the textbox above");
+        }
     });
     cometd.handshake();
 });
