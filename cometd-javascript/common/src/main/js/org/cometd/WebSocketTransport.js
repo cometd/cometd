@@ -46,10 +46,11 @@ org.cometd.WebSocketTransport = function()
         var url = _cometd.getURL().replace(/^http/, 'ws');
         this._debug('Transport', this.getType(), 'connecting to URL', url);
 
+        var webSocket;
         try
         {
             var protocol = _cometd.getConfiguration().protocol;
-            var webSocket = protocol ? new org.cometd.WebSocket(url, protocol) : new org.cometd.WebSocket(url);
+            webSocket = protocol ? new org.cometd.WebSocket(url, protocol) : new org.cometd.WebSocket(url);
         }
         catch (x)
         {

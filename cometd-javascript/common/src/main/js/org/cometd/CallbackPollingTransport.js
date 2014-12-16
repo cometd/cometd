@@ -20,7 +20,7 @@ org.cometd.CallbackPollingTransport = function()
         return function()
         {
             self.transportFailure(envelope, request, 'error', x);
-        }
+        };
     }
 
     _self.transportSend = function(envelope, request)

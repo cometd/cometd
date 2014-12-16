@@ -157,7 +157,7 @@ org.cometd.CometD = function(name)
             {
                 break;
             }
-            result += '0'
+            result += '0';
         }
         result += value;
         return result;
@@ -502,7 +502,7 @@ org.cometd.CometD = function(name)
                 message.clientId = _clientId;
             }
 
-            var callback = undefined;
+            var callback;
             if (_isFunction(message._callback))
             {
                 callback = message._callback;
