@@ -49,7 +49,7 @@
         {
             var _cometd;
             var _debug;
-            var _state = null;
+            var _state = {};
             var _cookieName = 'org.cometd.reload';
             var _cookiePath = '/';
             var _cookieMaxAge = 5;
@@ -58,9 +58,14 @@
 
             function _reload(config)
             {
-                if (_state && _state.handshakeResponse !== null)
+                if (_state.handshakeResponse)
                 {
                     _reloading = true;
+                    var transport = _cometd.getTransport();
+                    if (transport)
+                    {
+                        transport.abort();
+                    }
                     _configure(config);
                     _state.cookiePath = _cookiePath;
                     var cookie = org_cometd.JSON.toJSON(_state);
@@ -205,7 +210,7 @@
                     }
                     case '/meta/disconnect':
                     {
-                        _state = null;
+                        _state = {};
                         break;
                     }
                     default:
@@ -245,7 +250,7 @@
                         }
                         case '/meta/disconnect':
                         {
-                            _state = null;
+                            _state = {};
                             break;
                         }
                         default:
