@@ -22,7 +22,7 @@ function($, cometd)
             });
         }
 
-        $(window).on("unload", cometd.reload);
+        $(window).on("beforeunload", cometd.reload);
 
         var phrase = $("#phrase");
         phrase.attr("autocomplete", "OFF");

@@ -1,5 +1,5 @@
-require(["dojo", "dojo/on", "dojo/keys", "dojo/_base/unload", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/reload", "dojo/domReady!"],
-function(dojo, on, keys, unload, cometd)
+require(["dojo", "dojo/on", "dojo/keys", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/reload", "dojo/domReady!"],
+function(dojo, on, keys, cometd)
 {
     function echoRpc(text)
     {
@@ -12,7 +12,7 @@ function(dojo, on, keys, unload, cometd)
         });
     }
 
-    unload.addOnUnload(cometd, "reload");
+    on(window, "beforeunload", cometd.reload);
 
     var phrase = dojo.byId("phrase");
     phrase.setAttribute("autocomplete", "OFF");
