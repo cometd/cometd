@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicStampedReference;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import org.HdrHistogram.AtomicHistogram;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
@@ -53,18 +54,19 @@ import org.cometd.websocket.client.JettyWebSocketTransport;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.toolchain.perf.MeasureRecorder;
+import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
+import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.toolchain.perf.PlatformTimer;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 
-public class BayeuxLoadClient implements MeasureRecorder.Converter
+public class BayeuxLoadClient implements MeasureConverter
 {
     private static final String ID_FIELD = "ID";
     private static final String START_FIELD = "start";
 
-    private final MeasureRecorder recorder = new MeasureRecorder(this, "Messages - Latency", "ms");
+    private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);
     private final PlatformTimer timer = PlatformTimer.detect();
     private final Random random = new Random();
     private final PlatformMonitor monitor = new PlatformMonitor();
@@ -170,13 +172,6 @@ public class BayeuxLoadClient implements MeasureRecorder.Converter
             value = String.valueOf(roomsPerClient);
         roomsPerClient = Integer.parseInt(value);
 
-        boolean recordLatencyDetails = true;
-        System.err.printf("record latency details [%b]: ", recordLatencyDetails);
-        value = console.readLine().trim();
-        if (value.length() == 0)
-            value = String.valueOf(recordLatencyDetails);
-        recordLatencyDetails = Boolean.parseBoolean(value);
-
         boolean enableAckExtension = false;
         System.err.printf("enable ack extension [%b]: ", enableAckExtension);
         value = console.readLine().trim();
@@ -218,7 +213,7 @@ public class BayeuxLoadClient implements MeasureRecorder.Converter
 
         HandshakeListener handshakeListener = new HandshakeListener(channel, rooms, roomsPerClient);
         DisconnectListener disconnectListener = new DisconnectListener();
-        LatencyListener latencyListener = new LatencyListener(recordLatencyDetails);
+        LatencyListener latencyListener = new LatencyListener();
 
         LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(clientTransportType), null, false);
         statsClient.handshake();
@@ -495,10 +490,10 @@ public class BayeuxLoadClient implements MeasureRecorder.Converter
         }
     }
 
-    private void updateLatencies(long startTime, long sendTime, long arrivalTime, long endTime, boolean recordDetails)
+    private void updateLatencies(long startTime, long sendTime, long arrivalTime, long endTime)
     {
         long wallLatency = endTime - startTime;
-        recorder.record(wallLatency, recordDetails);
+        histogram.recordValue(wallLatency);
 
         long latency = TimeUnit.MICROSECONDS.toNanos(TimeUnit.NANOSECONDS.toMicros(arrivalTime - sendTime));
         Atomics.updateMin(minLatency, latency);
@@ -558,8 +553,7 @@ public class BayeuxLoadClient implements MeasureRecorder.Converter
                     );
         }
 
-        MeasureRecorder.Snapshot snapshot = recorder.snapshot();
-        System.err.println(snapshot);
+        System.err.println(new HistogramSnapshot(histogram.copy(), 20, "Messages - Latency", "\u00B5s", this));
 
         System.err.printf("Messages - Network Latency Min/Ave/Max = %d/%d/%d ms%n",
                 TimeUnit.NANOSECONDS.toMillis(minLatency.get()),
@@ -581,12 +575,12 @@ public class BayeuxLoadClient implements MeasureRecorder.Converter
     @Override
     public long convert(long measure)
     {
-        return TimeUnit.NANOSECONDS.toMillis(measure);
+        return TimeUnit.NANOSECONDS.toMicros(measure);
     }
 
     private void reset()
     {
-        recorder.reset();
+        histogram.reset();
         threadPool.reset();
         start.set(0L);
         end.set(0L);
@@ -666,13 +660,6 @@ public class BayeuxLoadClient implements MeasureRecorder.Converter
 
     private class LatencyListener implements ClientSessionChannel.MessageListener
     {
-        private final boolean recordDetails;
-
-        public LatencyListener(boolean recordDetails)
-        {
-            this.recordDetails = recordDetails;
-        }
-
         public void onMessage(ClientSessionChannel channel, Message message)
         {
             Map<String, Object> data = message.getDataAsMap();
@@ -701,7 +688,7 @@ public class BayeuxLoadClient implements MeasureRecorder.Converter
                 long delayMs = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
                 Atomics.updateMax(maxTime, id, (int)delayMs);
 
-                updateLatencies(startTime, sendTime, arrivalTime, endTime, recordDetails);
+                updateLatencies(startTime, sendTime, arrivalTime, endTime);
             }
             else
             {

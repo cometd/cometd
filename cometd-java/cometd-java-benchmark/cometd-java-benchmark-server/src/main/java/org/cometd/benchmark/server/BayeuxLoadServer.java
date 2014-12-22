@@ -38,6 +38,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.HdrHistogram.AtomicHistogram;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -67,7 +68,8 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.toolchain.perf.MeasureRecorder;
+import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
+import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
@@ -452,9 +454,9 @@ public class BayeuxLoadServer
         }
     }
 
-    private static class RequestLatencyHandler extends HandlerWrapper implements MeasureRecorder.Converter
+    private static class RequestLatencyHandler extends HandlerWrapper implements MeasureConverter
     {
-        private final MeasureRecorder recorder = new MeasureRecorder(this, "Requests - Latency", "ms");
+        private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MINUTES.toNanos(1), 3);
         private final ThreadLocal<Boolean> currentEnabled = new ThreadLocal<Boolean>()
         {
             @Override
@@ -489,22 +491,22 @@ public class BayeuxLoadServer
         @Override
         public long convert(long measure)
         {
-            return TimeUnit.NANOSECONDS.toMillis(measure);
+            return TimeUnit.NANOSECONDS.toMicros(measure);
         }
 
         private void reset()
         {
-            recorder.reset();
+            histogram.reset();
         }
 
         private void updateLatencies(long begin, long end)
         {
-            recorder.record(end - begin, true);
+            histogram.recordValue(end - begin);
         }
 
         private void print()
         {
-            System.err.println(recorder.snapshot());
+            System.err.println(new HistogramSnapshot(histogram.copy(), 20, "Requests - Latency", "\u00B5s", this));
         }
 
         public void doNotTrackCurrentRequest()
