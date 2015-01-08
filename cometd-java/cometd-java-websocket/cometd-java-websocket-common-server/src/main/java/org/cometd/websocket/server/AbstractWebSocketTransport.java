@@ -322,13 +322,17 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         ServerMessage.Mutable reply = processMetaHandshake(session, message);
                         if (reply != null)
                             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-                        replies.add(processReply(session, reply));
+                        reply = processReply(session, reply);
+                        if (reply != null)
+                            replies.add(reply);
                         break;
                     }
                     case Channel.META_CONNECT:
                     {
                         ServerMessage.Mutable reply = processMetaConnect(session, message);
-                        replies.add(processReply(session, reply));
+                        reply = processReply(session, reply);
+                        if (reply != null)
+                            replies.add(reply);
                         send = startInterval = reply != null;
                         if (send && session != null)
                         {
@@ -340,7 +344,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     default:
                     {
                         ServerMessage.Mutable reply = getBayeux().handle(session, message);
-                        replies.add(processReply(session, reply));
+                        reply = processReply(session, reply);
+                        if (reply != null)
+                            replies.add(reply);
                         break;
                     }
                 }
@@ -540,8 +546,11 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 if (session.isDisconnected() && connectReply != null)
                     connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                 connectReply = processReply(session, connectReply);
-                replies = new ArrayList<>(1);
-                replies.add(connectReply);
+                if (connectReply != null)
+                {
+                    replies = new ArrayList<>(1);
+                    replies.add(connectReply);
+                }
             }
 
             List<ServerMessage> queue = session.takeQueue();
