@@ -17,6 +17,7 @@ package org.cometd.server.ext;
 
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -34,9 +35,9 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
 {
     private static final Logger _logger = LoggerFactory.getLogger(AcknowledgedMessagesSessionExtension.class);
 
+    private final Map<Long, Long> _batches = new ConcurrentHashMap<>();
     private final ServerSessionImpl _session;
     private final BatchArrayQueue<ServerMessage> _queue;
-    private final ThreadLocal<Long> _batch = new ThreadLocal<>();
     private long _lastBatch;
 
     public AcknowledgedMessagesSessionExtension(ServerSession session)
@@ -105,7 +106,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
             {
                 Map<String, Object> ext = message.getExt(true);
                 long batch = _queue.getBatch();
-                _batch.set(batch);
+                _batches.put(Thread.currentThread().getId(), batch);
                 if (_logger.isDebugEnabled())
                     _logger.debug("Sending batch {} for {}", batch, _session);
                 ext.put("ack", batch);
@@ -119,7 +120,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     {
         synchronized (_session.getLock())
         {
-            long batch = _batch.get();
+            Long batch = _batches.remove(Thread.currentThread().getId());
             if (_logger.isDebugEnabled())
                 _logger.debug("Dequeuing {}/{} messages until batch {} for {}", queue.size(), _queue.size(), batch, _session);
             queue.clear();
