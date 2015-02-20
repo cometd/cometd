@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -672,6 +673,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         private final ServerMessage.Mutable reply;
         private final String browserId;
         private final org.eclipse.jetty.util.thread.Scheduler.Task task;
+        private final AtomicBoolean cancel;
 
         protected LongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
         {
@@ -683,6 +685,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
             this.browserId = browserId;
             asyncContext.addListener(this);
             this.task = getBayeux().schedule(this, timeout);
+            this.cancel = new AtomicBoolean();
         }
 
         @Override
@@ -737,17 +740,24 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
 
         private boolean cancelTimeout()
         {
-            return task.cancel();
+            // Cannot rely on the return value of task.cancel()
+            // since it may be invoked when the task is in run()
+            // where cancellation is not possible (it's too late).
+            boolean cancelled = cancel.compareAndSet(false, true);
+            task.cancel();
+            return cancelled;
         }
 
         @Override
         public void run()
         {
-            cancelTimeout();
-            session.setScheduler(null);
-            if (_logger.isDebugEnabled())
-                _logger.debug("Resuming /meta/connect after timeout");
-            resume();
+            if (cancelTimeout())
+            {
+                session.setScheduler(null);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Resuming /meta/connect after timeout");
+                resume();
+            }
         }
 
         private void resume()
