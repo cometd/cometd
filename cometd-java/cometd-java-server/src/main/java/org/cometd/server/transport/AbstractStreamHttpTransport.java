@@ -67,7 +67,10 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(request);
-                processMessages(request, response, messages);
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Parsed {} messages", messages == null ? -1 : messages.length);
+                if (messages != null)
+                    processMessages(request, response, messages);
             }
             catch (ParseException x)
             {
@@ -110,7 +113,9 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         {
             if (batch == null)
                 continue;
-            messages.addAll(Arrays.asList(parseMessages(batch)));
+            ServerMessage.Mutable[] parsed = parseMessages(batch);
+            if (parsed != null)
+                messages.addAll(Arrays.asList(parsed));
         }
         return messages.toArray(new ServerMessage.Mutable[messages.size()]);
     }

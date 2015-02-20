@@ -270,8 +270,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             {
                 ServerMessage.Mutable[] messages = parseMessages(data);
                 if (_logger.isDebugEnabled())
-                    _logger.debug("Received {}", data);
-                processMessages(wsSession, messages);
+                    _logger.debug("Parsed {} messages", messages == null ? -1 : messages.length);
+                if (messages != null)
+                    processMessages(wsSession, messages);
             }
             catch (ParseException x)
             {

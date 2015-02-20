@@ -157,8 +157,11 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             {
                 ServerMessage.Mutable[] messages = parseMessages(json);
                 if (_logger.isDebugEnabled())
-                    _logger.debug("Parsed {} messages", messages.length);
-                processMessages(request, response, messages);
+                    _logger.debug("Parsed {} messages", messages == null ? -1 : messages.length);
+                if (messages != null)
+                    processMessages(request, response, messages);
+                else
+                    asyncContext.complete();
             }
             catch (ParseException x)
             {
