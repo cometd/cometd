@@ -59,6 +59,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
     public final static String BROWSER_COOKIE_DOMAIN_OPTION = "browserCookieDomain";
     public final static String BROWSER_COOKIE_PATH_OPTION = "browserCookiePath";
     public final static String BROWSER_COOKIE_SECURE_OPTION = "browserCookieSecure";
+    public final static String BROWSER_COOKIE_HTTP_ONLY_OPTION = "browserCookieHttpOnly";
     public final static String MAX_SESSIONS_PER_BROWSER_OPTION = "maxSessionsPerBrowser";
     public final static String MULTI_SESSION_INTERVAL_OPTION = "multiSessionInterval";
     public final static String AUTOBATCH_OPTION = "autoBatch";
@@ -72,6 +73,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
     private String _browserCookieDomain;
     private String _browserCookiePath;
     private boolean _browserCookieSecure;
+    private boolean _browserCookieHttpOnly;
     private int _maxSessionsPerBrowser;
     private long _multiSessionInterval;
     private boolean _autoBatch;
@@ -92,6 +94,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         _browserCookieDomain = getOption(BROWSER_COOKIE_DOMAIN_OPTION, null);
         _browserCookiePath = getOption(BROWSER_COOKIE_PATH_OPTION, "/");
         _browserCookieSecure = getOption(BROWSER_COOKIE_SECURE_OPTION, false);
+        _browserCookieHttpOnly = getOption(BROWSER_COOKIE_HTTP_ONLY_OPTION, true);
         _maxSessionsPerBrowser = getOption(MAX_SESSIONS_PER_BROWSER_OPTION, 1);
         _multiSessionInterval = getOption(MULTI_SESSION_INTERVAL_OPTION, 2000);
         _autoBatch = getOption(AUTOBATCH_OPTION, true);
@@ -376,6 +379,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
             cookie.setDomain(_browserCookieDomain);
         cookie.setPath(_browserCookiePath);
         cookie.setSecure(_browserCookieSecure);
+        cookie.setHttpOnly(_browserCookieHttpOnly);
         cookie.setMaxAge(-1);
         response.addCookie(cookie);
         return browserId;
