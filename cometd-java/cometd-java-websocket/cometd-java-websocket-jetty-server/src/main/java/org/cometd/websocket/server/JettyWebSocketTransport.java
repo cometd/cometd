@@ -15,17 +15,11 @@
  */
 package org.cometd.websocket.server;
 
-import java.net.HttpCookie;
-import java.net.InetSocketAddress;
-import java.security.Principal;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.Executor;
 import javax.servlet.ServletContext;
-import javax.servlet.http.HttpSession;
 
-import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
@@ -233,153 +227,22 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         }
     }
 
-    private class WebSocketContext implements BayeuxContext
+    private class WebSocketContext extends AbstractBayeuxContext
     {
-        private final ServletContext context;
-        private final InetSocketAddress localAddress;
-        private final InetSocketAddress remoteAddress;
-        private final String url;
-        private final Principal principal;
-        private final Map<String, List<String>> headers;
-        private final Map<String, List<String>> parameters;
         private final Map<String, Object> attributes;
-        private final HttpSession session;
 
         private WebSocketContext(ServletContext context, ServletUpgradeRequest request)
         {
-            this.context = context;
-            // Must copy everything from the request, it may be gone afterwards.
-            this.localAddress = request.getLocalSocketAddress();
-            this.remoteAddress = request.getRemoteSocketAddress();
-            String uri = request.getRequestURI().toString();
-            String query = request.getQueryString();
-            if (query != null)
-                uri += "?" + query;
-            this.url = uri;
-            this.principal = request.getUserPrincipal();
-            this.headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            this.headers.putAll(request.getHeaders());
-            this.parameters = request.getParameterMap();
+            super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
+                    request.getParameterMap(), request.getUserPrincipal(), request.getSession(),
+                    request.getLocalSocketAddress(), request.getRemoteSocketAddress());
             this.attributes = request.getServletAttributes();
-            // Assume the HttpSession does not go away immediately after the upgrade.
-            this.session = request.getSession();
-        }
-
-        @Override
-        public Principal getUserPrincipal()
-        {
-            return principal;
-        }
-
-        @Override
-        public boolean isUserInRole(String role)
-        {
-            return false;
-        }
-
-        @Override
-        public InetSocketAddress getRemoteAddress()
-        {
-            return remoteAddress;
-        }
-
-        @Override
-        public InetSocketAddress getLocalAddress()
-        {
-            return localAddress;
-        }
-
-        @Override
-        public String getHeader(String name)
-        {
-            List<String> values = headers.get(name);
-            return values != null && values.size() > 0 ? values.get(0) : null;
-        }
-
-        @Override
-        public List<String> getHeaderValues(String name)
-        {
-            return headers.get(name);
-        }
-
-        public String getParameter(String name)
-        {
-            List<String> values = parameters.get(name);
-            return values != null && values.size() > 0 ? values.get(0) : null;
-        }
-
-        @Override
-        public List<String> getParameterValues(String name)
-        {
-            return parameters.get(name);
-        }
-
-        @Override
-        public String getCookie(String name)
-        {
-            List<String> values = headers.get("Cookie");
-            if (values != null)
-            {
-                for (String value : values)
-                {
-                    for (HttpCookie cookie : HttpCookie.parse(value))
-                    {
-                        if (cookie.getName().equals(name))
-                            return cookie.getValue();
-                    }
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public String getHttpSessionId()
-        {
-            return session == null ? null : session.getId();
-        }
-
-        @Override
-        public Object getHttpSessionAttribute(String name)
-        {
-            return session == null ? null : session.getAttribute(name);
-        }
-
-        @Override
-        public void setHttpSessionAttribute(String name, Object value)
-        {
-            if (session != null)
-                session.setAttribute(name, value);
-        }
-
-        @Override
-        public void invalidateHttpSession()
-        {
-            if (session != null)
-                session.invalidate();
         }
 
         @Override
         public Object getRequestAttribute(String name)
         {
             return attributes.get(name);
-        }
-
-        @Override
-        public Object getContextAttribute(String name)
-        {
-            return context.getAttribute(name);
-        }
-
-        @Override
-        public String getContextInitParameter(String name)
-        {
-            return context.getInitParameter(name);
-        }
-
-        @Override
-        public String getURL()
-        {
-            return url;
         }
     }
 }

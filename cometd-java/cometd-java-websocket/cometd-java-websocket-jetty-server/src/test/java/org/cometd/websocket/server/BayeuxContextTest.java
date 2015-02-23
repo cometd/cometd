@@ -16,8 +16,12 @@
 package org.cometd.websocket.server;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.HttpCookie;
+import java.net.Socket;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -136,6 +140,68 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
         Assert.assertEquals(CookieConstants.COOKIE_VALUE, cookie.getValue());
 
         disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testMultipleCookiesSentToServer() throws Exception
+    {
+        prepareAndStart(null);
+
+        final List<String> cookieNames = Arrays.asList("a", "BAYEUX_BROWSER", "b");
+        final List<String> cookieValues = Arrays.asList("1", "761e1pplr7yo3wmsri1x5y0gnnby", "2");
+        StringBuilder cookies = new StringBuilder();
+        for (int i = 0; i < cookieNames.size(); ++i)
+            cookies.append(cookieNames.get(i)).append("=").append(cookieValues.get(i)).append("; ");
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener()
+        {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+            {
+                BayeuxContext context = bayeux.getContext();
+                for (int i = 0; i < cookieNames.size(); ++i)
+                    Assert.assertEquals(cookieValues.get(i), context.getCookie(cookieNames.get(i)));
+                latch.countDown();
+                return true;
+            }
+        });
+
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+            String upgrade = "" +
+                    "GET " + cometdServletPath + " HTTP/1.1\r\n" +
+                    "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                    "Connection: Upgrade\r\n" +
+                    "Upgrade: websocket\r\n" +
+                    "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+                    "Sec-WebSocket-Version: 13\r\n" +
+                    "Cookie: " + cookies + "\r\n" +
+                    "\r\n";
+            output.write(upgrade.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            // Wait for the upgrade to take place on server side.
+            Thread.sleep(1000);
+
+            String handshake = "" +
+                    "{" +
+                    "\"id\":\"1\"," +
+                    "\"channel\":\"/meta/handshake\"," +
+                    "\"version\":\"1.0\"," +
+                    "\"supportedConnectionTypes\":[\"websocket\"]" +
+                    "}";
+            byte[] handshakeBytes = handshake.getBytes(StandardCharsets.UTF_8);
+            Assert.assertTrue(handshakeBytes.length <= 125); // Max payload length
+
+            output.write(0x81); // FIN FLAG + TYPE=TEXT
+            output.write(0x80 + handshakeBytes.length); // MASK FLAG + LENGTH
+            output.write(new byte[]{0, 0, 0, 0}); // MASK BYTES
+            output.write(handshakeBytes); // PAYLOAD
+            output.flush();
+
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
     }
 
     @Test
