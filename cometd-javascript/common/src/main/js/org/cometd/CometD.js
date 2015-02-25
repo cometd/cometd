@@ -502,27 +502,16 @@ org.cometd.CometD = function(name)
                 message.clientId = _clientId;
             }
 
-            var callback;
-            if (_isFunction(message._callback))
-            {
-                callback = message._callback;
-                // Remove the callback before calling the extensions.
-                delete message._callback;
-            }
-
             message = _applyOutgoingExtensions(message);
             if (message !== undefined && message !== null)
             {
                 // Extensions may have modified the message id, but we need to own it.
                 message.id = messageId;
                 messages[i] = message;
-                if (callback !== undefined)
-                {
-                    _callbacks[messageId] = callback;
-                }
             }
             else
             {
+                delete _callbacks[messageId];
                 messages.splice(i--, 1);
             }
         }
@@ -800,7 +789,6 @@ org.cometd.CometD = function(name)
             minimumVersion: version,
             channel: '/meta/handshake',
             supportedConnectionTypes: transportTypes,
-            _callback: handshakeCallback,
             advice: {
                 timeout: _advice.timeout,
                 interval: _advice.interval
@@ -808,6 +796,12 @@ org.cometd.CometD = function(name)
         };
         // Do not allow the user to override important fields.
         var message = _cometd._mixin(false, {}, _handshakeProps, bayeuxMessage);
+
+        // Save the callback.
+        if (_isFunction(handshakeCallback))
+        {
+            _callbacks[message.id] = handshakeCallback;
+        }
 
         // Pick up the first available transport as initial transport
         // since we don't know if the server supports it
@@ -1540,11 +1534,17 @@ org.cometd.CometD = function(name)
 
         var bayeuxMessage = {
             id: _nextMessageId(),
-            channel: '/meta/disconnect',
-            _callback: disconnectCallback
+            channel: '/meta/disconnect'
         };
         // Do not allow the user to override important fields.
         var message = this._mixin(false, {}, disconnectProps, bayeuxMessage);
+
+        // Save the callback.
+        if (_isFunction(disconnectCallback))
+        {
+            _callbacks[message.id] = disconnectCallback;
+        }
+
         _setStatus('disconnecting');
         _send(sync === true, [message], false, 'disconnect');
     };
@@ -1696,11 +1696,17 @@ org.cometd.CometD = function(name)
             var bayeuxMessage = {
                 id: _nextMessageId(),
                 channel: '/meta/subscribe',
-                subscription: channel,
-                _callback: subscribeCallback
+                subscription: channel
             };
             // Do not allow the user to override important fields.
             var message = this._mixin(false, {}, subscribeProps, bayeuxMessage);
+
+            // Save the callback.
+            if (_isFunction(subscribeCallback))
+            {
+                _callbacks[message.id] = subscribeCallback;
+            }
+
             _queueSend(message);
         }
 
@@ -1741,11 +1747,17 @@ org.cometd.CometD = function(name)
             var bayeuxMessage = {
                 id: _nextMessageId(),
                 channel: '/meta/unsubscribe',
-                subscription: channel,
-                _callback: unsubscribeCallback
+                subscription: channel
             };
             // Do not allow the user to override important fields.
             var message = this._mixin(false, {}, unsubscribeProps, bayeuxMessage);
+
+            // Save the callback.
+            if (_isFunction(unsubscribeCallback))
+            {
+                _callbacks[message.id] = unsubscribeCallback;
+            }
+
             _queueSend(message);
         }
     };
@@ -1809,11 +1821,17 @@ org.cometd.CometD = function(name)
         var bayeuxMessage = {
             id: _nextMessageId(),
             channel: channel,
-            data: content,
-            _callback: publishCallback
+            data: content
         };
         // Do not allow the user to override important fields.
         var message = this._mixin(false, {}, publishProps, bayeuxMessage);
+
+        // Save the callback.
+        if (_isFunction(publishCallback))
+        {
+            _callbacks[message.id] = publishCallback;
+        }
+
         _queueSend(message);
     };
 
