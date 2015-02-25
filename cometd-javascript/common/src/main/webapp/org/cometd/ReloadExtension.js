@@ -150,14 +150,30 @@
                                 if (oldState.handshakeResponse && _similarState(oldState))
                                 {
                                     _debug('Reload extension restoring state', oldState);
+
+                                    // Since we are going to abort this message,
+                                    // we must save an eventual callback to restore
+                                    // it when we replay the handshake response.
+                                    var callback = _cometd._getCallback(message.id);
+
                                     setTimeout(function ()
                                     {
                                         _debug('Reload extension replaying handshake response', oldState.handshakeResponse);
                                         _state.handshakeResponse = oldState.handshakeResponse;
                                         _state.transportType = oldState.transportType;
-                                        _state.reloading = true;
-                                        var response = _cometd._mixin(true, {}, _state.handshakeResponse, {ext: {reload: true}});
+
+                                        // Restore the callback.
+                                        _cometd._putCallback(message.id, callback);
+
+                                        var response = _cometd._mixin(true, {}, _state.handshakeResponse, {
+                                            // Keep the response message id the same as the request.
+                                            id: message.id,
+                                            // Tells applications this is a handshake replayed by the reload extension.
+                                            ext: { reload: true }
+                                        });
+                                        // Use the same transport as before.
                                         response.supportedConnectionTypes = [_state.transportType];
+
                                         _cometd.receive(response);
                                         _debug('Reload extension replayed handshake response', response);
                                     }, 0);

@@ -401,4 +401,46 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
                 "cometd.addListener('/meta/connect', _init);" +
                 "cometd.handshake();");
     }
+
+    @Test
+    public void testReloadWithHandshakeCallback() throws Exception
+    {
+        defineClass(Latch.class);
+
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("cometd.handshake(function(message)" +
+                "{" +
+                "    if (message.successful) {" +
+                "        readyLatch.countDown();" +
+                "    }" +
+                "});");
+        Assert.assertTrue(readyLatch.await(5000));
+
+        // Wait that the long poll is established before reloading
+        Thread.sleep(metaConnectPeriod / 2);
+
+        // Reload the page
+        evaluateScript("cometd.reload();");
+        destroyPage();
+        initPage();
+        initExtension();
+
+        defineClass(Latch.class);
+        evaluateScript("var readyLatch = new Latch(1);");
+        readyLatch = get("readyLatch");
+
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("cometd.handshake(function(message)" +
+                "{" +
+                "    if (message.successful) {" +
+                "        readyLatch.countDown();" +
+                "    }" +
+                "});");
+        Assert.assertTrue(readyLatch.await(5000));
+
+        disconnect();
+    }
 }

@@ -798,10 +798,7 @@ org.cometd.CometD = function(name)
         var message = _cometd._mixin(false, {}, _handshakeProps, bayeuxMessage);
 
         // Save the callback.
-        if (_isFunction(handshakeCallback))
-        {
-            _callbacks[message.id] = handshakeCallback;
-        }
+        _cometd._putCallback(message.id, handshakeCallback);
 
         // Pick up the first available transport as initial transport
         // since we don't know if the server supports it
@@ -868,9 +865,24 @@ org.cometd.CometD = function(name)
         }
     }
 
+    this._getCallback = function(messageId)
+    {
+        return _callbacks[messageId];
+    };
+
+    this._putCallback = function(messageId, callback)
+    {
+        var result = this._getCallback(messageId);
+        if (_isFunction(callback))
+        {
+            _callbacks[messageId] = callback;
+        }
+        return result;
+    };
+
     function _handleCallback(message)
     {
-        var callback = _callbacks[message.id];
+        var callback = _cometd._getCallback([message.id]);
         if (_isFunction(callback))
         {
             delete _callbacks[message.id];
@@ -1540,10 +1552,7 @@ org.cometd.CometD = function(name)
         var message = this._mixin(false, {}, disconnectProps, bayeuxMessage);
 
         // Save the callback.
-        if (_isFunction(disconnectCallback))
-        {
-            _callbacks[message.id] = disconnectCallback;
-        }
+        _cometd._putCallback(message.id, disconnectCallback);
 
         _setStatus('disconnecting');
         _send(sync === true, [message], false, 'disconnect');
@@ -1702,10 +1711,7 @@ org.cometd.CometD = function(name)
             var message = this._mixin(false, {}, subscribeProps, bayeuxMessage);
 
             // Save the callback.
-            if (_isFunction(subscribeCallback))
-            {
-                _callbacks[message.id] = subscribeCallback;
-            }
+            _cometd._putCallback(message.id, subscribeCallback);
 
             _queueSend(message);
         }
@@ -1753,10 +1759,7 @@ org.cometd.CometD = function(name)
             var message = this._mixin(false, {}, unsubscribeProps, bayeuxMessage);
 
             // Save the callback.
-            if (_isFunction(unsubscribeCallback))
-            {
-                _callbacks[message.id] = unsubscribeCallback;
-            }
+            _cometd._putCallback(message.id, unsubscribeCallback);
 
             _queueSend(message);
         }
@@ -1827,10 +1830,7 @@ org.cometd.CometD = function(name)
         var message = this._mixin(false, {}, publishProps, bayeuxMessage);
 
         // Save the callback.
-        if (_isFunction(publishCallback))
-        {
-            _callbacks[message.id] = publishCallback;
-        }
+        _cometd._putCallback(message.id, publishCallback);
 
         _queueSend(message);
     };
