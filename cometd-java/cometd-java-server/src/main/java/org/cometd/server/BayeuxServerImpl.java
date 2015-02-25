@@ -109,7 +109,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<>();
     private final Map<String, ServerTransport> _transports = new LinkedHashMap<>(); // Order is important
     private final List<String> _allowedTransports = new ArrayList<>();
-    private final ThreadLocal<AbstractServerTransport> _currentTransport = new ThreadLocal<>();
+    private final ThreadLocal<ServerTransport> _currentTransport = new ThreadLocal<>();
     private final Map<String, Object> _options = new TreeMap<>();
     private final Scheduler _scheduler = new ScheduledExecutorScheduler("BayeuxServer" + hashCode() + " Scheduler", false);
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
@@ -386,7 +386,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _random.nextLong();
     }
 
-    public void setCurrentTransport(AbstractServerTransport transport)
+    public void setCurrentTransport(ServerTransport transport)
     {
         _currentTransport.set(transport);
     }
