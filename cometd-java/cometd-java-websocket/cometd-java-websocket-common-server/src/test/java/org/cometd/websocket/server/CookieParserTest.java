@@ -171,4 +171,43 @@ public class CookieParserTest
         Assert.assertEquals(name, cookie1.getName());
         Assert.assertEquals(value, cookie1.getValue());
     }
+
+    @Test
+    public void parseCookieWithNameValueAttribute() throws Exception
+    {
+        String name = "name";
+        String value = "value";
+        String header = name + "=" + value + "; $Path=/";
+        List<HttpCookie> cookies = CookieParser.parse(header);
+        Assert.assertEquals(1, cookies.size());
+        HttpCookie cookie1 = cookies.get(0);
+        Assert.assertEquals(name, cookie1.getName());
+        Assert.assertEquals(value, cookie1.getValue());
+    }
+
+    @Test
+    public void parseCookieWithVersionAttributeAtBeginning() throws Exception
+    {
+        String name = "name";
+        String value = "value";
+        String header = "$Version=1; " + name + "=" + value;
+        List<HttpCookie> cookies = CookieParser.parse(header);
+        Assert.assertEquals(1, cookies.size());
+        HttpCookie cookie1 = cookies.get(0);
+        Assert.assertEquals(name, cookie1.getName());
+        Assert.assertEquals(value, cookie1.getValue());
+    }
+
+    @Test
+    public void parseCookieWithNameOnlyAttribute() throws Exception
+    {
+        String name = "name";
+        String value = "value";
+        String header = name + "=" + value + "; $Port";
+        List<HttpCookie> cookies = CookieParser.parse(header);
+        Assert.assertEquals(1, cookies.size());
+        HttpCookie cookie1 = cookies.get(0);
+        Assert.assertEquals(name, cookie1.getName());
+        Assert.assertEquals(value, cookie1.getValue());
+    }
 }

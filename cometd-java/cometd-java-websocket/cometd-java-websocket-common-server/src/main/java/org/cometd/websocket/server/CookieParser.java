@@ -46,7 +46,11 @@ public class CookieParser
             {
                 case NAME:
                 {
-                    if (ch == '=')
+                    if (ch == '$')
+                    {
+                        state = State.SEPARATOR;
+                    }
+                    else if (ch == '=')
                     {
                         name = header.substring(begin, end).trim();
                         if (name.length() == 0)
