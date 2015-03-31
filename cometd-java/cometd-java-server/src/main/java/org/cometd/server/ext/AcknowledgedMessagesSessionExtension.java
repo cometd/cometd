@@ -15,9 +15,9 @@
  */
 package org.cometd.server.ext;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -35,7 +35,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
 {
     private static final Logger _logger = LoggerFactory.getLogger(AcknowledgedMessagesSessionExtension.class);
 
-    private final Map<Long, Long> _batches = new ConcurrentHashMap<>();
+    private final Map<Long, Long> _batches = new HashMap<>();
     private final ServerSessionImpl _session;
     private final BatchArrayQueue<ServerMessage> _queue;
     private long _lastBatch;
