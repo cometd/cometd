@@ -13,14 +13,35 @@
 
     <properties>
         <jsSourceDir>${basedir}/src/main/js</jsSourceDir>
+        <jsTargetDir>${project.build.directory}/js</jsTargetDir>
     </properties>
 
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>interpolate-js</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>${jsSourceDir}</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                            <outputDirectory>${jsTargetDir}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>yuicompressor-maven-plugin</artifactId>
-                <version>1.3.2</version>
                 <executions>
                     <execution>
                         <id>aggregate-js</id>
@@ -33,18 +54,18 @@
                                     <output>${project.build.directory}/${project.build.finalName}/org/cometd.js</output>
                                     <insertNewLine>true</insertNewLine>
                                     <includes>
-                                        <include>${jsSourceDir}/org/cometd/cometd-header.js</include>
-                                        <include>${jsSourceDir}/org/cometd/cometd-namespace.js</include>
-                                        <include>${jsSourceDir}/org/cometd/cometd-json.js</include>
-                                        <include>${jsSourceDir}/org/cometd/Utils.js</include>
-                                        <include>${jsSourceDir}/org/cometd/TransportRegistry.js</include>
-                                        <include>${jsSourceDir}/org/cometd/Transport.js</include>
-                                        <include>${jsSourceDir}/org/cometd/RequestTransport.js</include>
-                                        <include>${jsSourceDir}/org/cometd/LongPollingTransport.js</include>
-                                        <include>${jsSourceDir}/org/cometd/CallbackPollingTransport.js</include>
-                                        <include>${jsSourceDir}/org/cometd/WebSocketTransport.js</include>
-                                        <include>${jsSourceDir}/org/cometd/CometD.js</include>
-                                        <include>${jsSourceDir}/org/cometd/cometd-amd.js</include>
+                                        <include>${jsTargetDir}/org/cometd/cometd-header.js</include>
+                                        <include>${jsTargetDir}/org/cometd/cometd-namespace.js</include>
+                                        <include>${jsTargetDir}/org/cometd/cometd-json.js</include>
+                                        <include>${jsTargetDir}/org/cometd/Utils.js</include>
+                                        <include>${jsTargetDir}/org/cometd/TransportRegistry.js</include>
+                                        <include>${jsTargetDir}/org/cometd/Transport.js</include>
+                                        <include>${jsTargetDir}/org/cometd/RequestTransport.js</include>
+                                        <include>${jsTargetDir}/org/cometd/LongPollingTransport.js</include>
+                                        <include>${jsTargetDir}/org/cometd/CallbackPollingTransport.js</include>
+                                        <include>${jsTargetDir}/org/cometd/WebSocketTransport.js</include>
+                                        <include>${jsTargetDir}/org/cometd/CometD.js</include>
+                                        <include>${jsTargetDir}/org/cometd/cometd-amd.js</include>
                                     </includes>
                                 </aggregation>
                             </aggregations>

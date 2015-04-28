@@ -443,6 +443,11 @@
                     <artifactId>jetty-maven-plugin</artifactId>
                     <version>${jetty-plugin-version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>net.alchim31.maven</groupId>
+                    <artifactId>yuicompressor-maven-plugin</artifactId>
+                    <version>1.5.1</version>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
