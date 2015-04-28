@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,24 +19,20 @@
 
 package org.webtide.demo.auction;
 
+import org.cometd.bayeux.server.*;
+import org.cometd.oort.Oort;
+import org.cometd.oort.Seti;
+import org.cometd.oort.SetiServlet;
+import org.cometd.server.AbstractService;
+import org.cometd.server.authorizer.GrantAuthorizer;
+
+import javax.servlet.ServletContext;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import javax.servlet.ServletContext;
-
-import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
-import org.cometd.bayeux.server.ServerChannel;
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
-import org.cometd.oort.Oort;
-import org.cometd.oort.Seti;
-import org.cometd.oort.SetiServlet;
-import org.cometd.server.AbstractService;
-import org.cometd.server.authorizer.GrantAuthorizer;
 
 public class AuctionChatService extends AbstractService
 {

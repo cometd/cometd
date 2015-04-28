@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,6 @@
  */
 package org.cometd.annotation.spring;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-
 import org.cometd.annotation.Configure;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
@@ -29,6 +23,12 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerSession;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 @Singleton // Specifies to Spring that this is a singleton
 @Named // Spring looks for this annotation when scanning the classes to determine if it's a spring bean

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 package org.cometd.oort.spring;
 
-import javax.annotation.PostConstruct;
-import javax.servlet.ServletContext;
-
 import org.cometd.annotation.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.SecurityPolicy;
@@ -29,6 +26,9 @@ import org.springframework.beans.factory.config.DestructionAwareBeanPostProcesso
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.context.ServletContextAware;
+
+import javax.annotation.PostConstruct;
+import javax.servlet.ServletContext;
 
 @Configuration
 public class OortConfigurator implements DestructionAwareBeanPostProcessor, ServletContextAware

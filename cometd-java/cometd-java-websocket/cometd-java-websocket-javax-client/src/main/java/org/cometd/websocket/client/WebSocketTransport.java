@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,34 +15,20 @@
  */
 package org.cometd.websocket.client;
 
+import org.cometd.bayeux.Message.Mutable;
+import org.cometd.client.transport.ClientTransport;
+import org.cometd.client.transport.TransportListener;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+
+import javax.websocket.*;
 import java.io.IOException;
-import java.net.ConnectException;
-import java.net.CookieStore;
-import java.net.HttpCookie;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.*;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.CloseReason;
-import javax.websocket.ContainerProvider;
-import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.HandshakeResponse;
-import javax.websocket.MessageHandler;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
-
-import org.cometd.bayeux.Message.Mutable;
-import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.TransportListener;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public class WebSocketTransport extends AbstractWebSocketTransport
 {

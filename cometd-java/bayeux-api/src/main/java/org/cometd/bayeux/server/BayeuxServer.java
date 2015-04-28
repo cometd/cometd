@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 package org.cometd.bayeux.server;
 
-import java.util.List;
-
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
+
+import java.util.List;
 
 /**
  * <p>The server-side Bayeux interface.</p>

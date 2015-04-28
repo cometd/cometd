@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package org.cometd.client;
 
-import java.util.Collections;
-
 import org.cometd.client.transport.LongPollingTransport;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -29,6 +27,8 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Collections;
 
 public class HandshakeWithAuthenticationTest extends ClientServerTest
 {

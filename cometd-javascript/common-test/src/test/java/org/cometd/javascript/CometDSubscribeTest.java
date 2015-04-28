@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 package org.cometd.javascript;
 
-import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -25,6 +22,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CometDSubscribeTest extends AbstractCometDTest
 {
@@ -229,13 +229,13 @@ public class CometDSubscribeTest extends AbstractCometDTest
         Thread.sleep(1000);
 
         String sessionId = evaluateScript("cometd.getClientId();");
-        
+
         final String channelName = "/test";
         evaluateScript("var messageLatch = new Latch(1);");
         Latch messageLatch = get("messageLatch");
         evaluateScript("cometd.subscribe('" + channelName + "', messageLatch, 'countDown');");
         Assert.assertTrue(subscribeLatch.await(5000));
-        
+
         // Verify that messages are not received
         bayeuxServer.getSession(sessionId).deliver(null, channelName, "data");
         Assert.assertFalse(messageLatch.await(1000));

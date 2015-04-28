@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 package org.cometd.javascript.jquery;
 
-import java.net.URL;
-
 import org.cometd.javascript.TestProvider;
 import org.cometd.javascript.ThreadModel;
+
+import java.net.URL;
 
 public class JQueryTestProvider implements TestProvider
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package org.cometd.oort;
 
+import org.cometd.bayeux.server.BayeuxServer;
+
+import javax.servlet.ServletConfig;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.List;
-import javax.servlet.ServletConfig;
-
-import org.cometd.bayeux.server.BayeuxServer;
 
 /**
  * <p>This servlet initializes and configures an instance of the {@link Oort}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,6 @@
  */
 package org.cometd.websocket.server;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import javax.servlet.ServletContext;
-
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
@@ -34,6 +29,11 @@ import org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+
+import javax.servlet.ServletContext;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
 
 public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package org.cometd.oort;
 
+import org.cometd.annotation.ServerAnnotationProcessor;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.server.ext.TimesyncExtension;
+
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
-
-import org.cometd.annotation.ServerAnnotationProcessor;
-import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.server.ext.TimesyncExtension;
 
 public class OortDemoServlet extends HttpServlet
 {

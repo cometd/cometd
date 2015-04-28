@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,25 @@
  */
 package org.cometd.websocket.server;
 
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.server.*;
+import org.cometd.client.BayeuxClient;
+import org.cometd.server.BayeuxServerImpl;
+import org.cometd.websocket.ClientServerWebSocketTest;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.junit.Assert;
+import org.junit.Test;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.server.HandshakeRequest;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpCookie;
@@ -26,29 +45,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.websocket.HandshakeResponse;
-import javax.websocket.server.HandshakeRequest;
-
-import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.server.BayeuxContext;
-import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ServerChannel;
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
-import org.cometd.client.BayeuxClient;
-import org.cometd.server.BayeuxServerImpl;
-import org.cometd.websocket.ClientServerWebSocketTest;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.junit.Assert;
-import org.junit.Test;
 
 public class BayeuxContextTest extends ClientServerWebSocketTest
 {

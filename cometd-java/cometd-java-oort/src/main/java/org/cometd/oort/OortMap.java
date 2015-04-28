@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,13 @@
  */
 package org.cometd.oort;
 
-import java.util.Collections;
-import java.util.EventListener;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.cometd.bayeux.MarkedReference;
+import org.cometd.bayeux.server.BayeuxServer;
+
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.cometd.bayeux.MarkedReference;
-import org.cometd.bayeux.server.BayeuxServer;
 
 /**
  * <p>A specialized oort object whose entity is a {@link ConcurrentMap}.</p>

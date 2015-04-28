@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,6 @@
  */
 package org.cometd.client;
 
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -32,16 +25,19 @@ import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.common.Jackson1JSONContextClient;
 import org.cometd.common.Jackson2JSONContextClient;
-import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.AbstractService;
-import org.cometd.server.Jackson1JSONContextServer;
-import org.cometd.server.Jackson2JSONContextServer;
-import org.cometd.server.ServerMessageImpl;
+import org.cometd.server.*;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(Parameterized.class)
 public class JacksonContextTest extends ClientServerTest

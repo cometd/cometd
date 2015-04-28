@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,9 @@
 
 package org.webtide.demo.auction;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import javax.servlet.ServletContext;
-
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
-import org.cometd.bayeux.server.ServerChannel;
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.*;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
 import org.cometd.oort.SetiServlet;
@@ -39,6 +30,11 @@ import org.cometd.server.authorizer.GrantAuthorizer;
 import org.webtide.demo.auction.dao.AuctionDao;
 import org.webtide.demo.auction.dao.BidderDao;
 import org.webtide.demo.auction.dao.CategoryDao;
+
+import javax.servlet.ServletContext;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class AuctionService extends AbstractService implements ClientSessionChannel.MessageListener, BayeuxServer.ChannelListener, BayeuxServer.SubscriptionListener
 {

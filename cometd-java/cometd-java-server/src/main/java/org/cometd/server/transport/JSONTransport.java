@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2014 the original author or authors.
+ * Copyright (c) 2008-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package org.cometd.server.transport;
 
-import java.io.IOException;
-import java.text.ParseException;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.server.BayeuxServerImpl;
+
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.server.BayeuxServerImpl;
+import java.io.IOException;
+import java.text.ParseException;
 
 public class JSONTransport extends AbstractStreamHttpTransport
 {
