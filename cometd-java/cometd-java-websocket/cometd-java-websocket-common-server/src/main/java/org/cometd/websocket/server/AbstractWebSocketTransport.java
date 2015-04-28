@@ -639,23 +639,17 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 send(wsSession, replies, replies.size(), this);
                 return Action.SCHEDULED;
             }
-
-            @Override
-            protected void completed()
-            {
-                // This IteratingCallback never completes.
-            }
         }
 
-        private class Entry<S>
+        private class Entry<W>
         {
-            private final S _wsSession;
+            private final W _wsSession;
             private final ServerSessionImpl _session;
             private final boolean _startInterval;
             private final List<ServerMessage> _queue;
             private final List<ServerMessage> _replies;
 
-            private Entry(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage> replies)
+            private Entry(W wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage> replies)
             {
                 this._wsSession = wsSession;
                 this._session = session;
