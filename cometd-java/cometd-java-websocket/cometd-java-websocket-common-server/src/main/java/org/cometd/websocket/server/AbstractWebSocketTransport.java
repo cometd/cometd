@@ -15,6 +15,19 @@
  */
 package org.cometd.websocket.server;
 
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxContext;
@@ -28,14 +41,6 @@ import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.*;
 
 public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransport
 {
@@ -587,7 +592,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
         private class Flusher extends IteratingCallback
         {
-            private Queue<Entry<S>> _entries = new ConcurrentArrayQueue<>();
+            private final Queue<Entry<S>> _entries = new ConcurrentArrayQueue<>();
 
             private boolean queue(Entry<S> entry)
             {
