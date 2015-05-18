@@ -47,12 +47,12 @@ http://cometd.org/documentation/building, or just to
 
 To run load testing, open two windows. In the server window run:
 
-    $ cd cometd-java/cometd-java-examples
-    $ mvn -Pserver exec:exec
+    $ cd cometd-java/cometd-java-benchmark/cometd-java-benchmark-server/
+    $ mvn exec:exec
 
 In the client window (potentially on another machine), run
 
-    $ cd cometd-java/cometd-java-examples
-    $ mvn -Pclient exec:exec
+    $ cd cometd-java/cometd-java-benchmark/cometd-java-benchmark-client/
+    $ mvn exec:exec
 
 Then follow instructions on the console to generate load.
