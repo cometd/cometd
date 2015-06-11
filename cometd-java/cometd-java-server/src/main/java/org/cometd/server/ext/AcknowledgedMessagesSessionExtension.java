@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Queue;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
@@ -62,10 +63,30 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
             {
                 Number batchValue = (Number)ext.get("ack");
                 if (batchValue != null)
+                {
                     processBatch(batchValue.longValue());
+                    updateAdvice(message);
+                }
             }
         }
         return true;
+    }
+
+    private void updateAdvice(Mutable message)
+    {
+        synchronized (_session.getLock())
+        {
+            if (!_session.hasNonLazyMessages() && _session.getQueue().size() != _queue.size())
+            {
+                Map<String, Object> advice = message.getAdvice(true);
+                if (advice.get(Message.TIMEOUT_FIELD) == null)
+                {
+                    advice.put(Message.TIMEOUT_FIELD, 0L);
+                    if (_logger.isDebugEnabled())
+                        _logger.debug("Forcing advice: { timeout: 0 } for {}", _session);
+                }
+            }
+        }
     }
 
     protected void processBatch(long batch)
@@ -134,5 +155,10 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         {
             _queue.addAll(session.getQueue());
         }
+    }
+
+    BatchArrayQueue<ServerMessage> getBatchArrayQueue()
+    {
+        return _queue;
     }
 }
