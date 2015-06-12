@@ -15,8 +15,35 @@
  */
 package org.cometd.websocket.server;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.HttpCookie;
+import java.net.Socket;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.server.HandshakeRequest;
+
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.server.*;
+import org.cometd.bayeux.server.BayeuxContext;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.websocket.ClientServerWebSocketTest;
@@ -27,24 +54,7 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.websocket.HandshakeResponse;
-import javax.websocket.server.HandshakeRequest;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.HttpCookie;
-import java.net.Socket;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import static org.junit.Assert.assertTrue;
 
 public class BayeuxContextTest extends ClientServerWebSocketTest
 {
@@ -301,6 +311,100 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
         disconnectBayeuxClient(client);
     }
 
+    @Test
+    public void testConcurrentClientsHaveDifferentBayeuxContexts() throws Exception
+    {
+        String wsTransportClass;
+        switch (wsTransportType)
+        {
+            case WEBSOCKET_JSR_356:
+                wsTransportClass = ConcurrentBayeuxContextWebSocketTransport.class.getName();
+                break;
+            case WEBSOCKET_JETTY:
+                wsTransportClass = ConcurrentBayeuxContextJettyWebSocketTransport.class.getName();
+                break;
+            default:
+                throw new IllegalArgumentException();
+        }
+        prepareServer(0, "/cometd", null, true, wsTransportClass);
+        startServer();
+        prepareClient();
+        startClient();
+
+        // The first client will be held by the server.
+        final BayeuxClient client1 = newBayeuxClient();
+        // The connect operation is blocking, so we must use another thread.
+        new Thread(new Runnable()
+        {
+            public void run()
+            {
+                client1.handshake();
+            }
+        }).start();
+
+        // Wait for the first client to arrive at the concurrency point.
+        switch (wsTransportType)
+        {
+            case WEBSOCKET_JSR_356:
+            {
+                CountDownLatch enterLatch = ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).enterLatch;
+                assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
+                break;
+            }
+            case WEBSOCKET_JETTY:
+            {
+                CountDownLatch enterLatch = ((ConcurrentBayeuxContextJettyWebSocketTransport)bayeux.getTransport("websocket")).enterLatch;
+                assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
+                break;
+            }
+            default:
+                throw new IllegalArgumentException();
+        }
+
+        // Connect the second client.
+        BayeuxClient client2 = newBayeuxClient();
+        client2.handshake();
+        assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
+
+        // Release the first client.
+        switch (wsTransportType)
+        {
+            case WEBSOCKET_JSR_356:
+                ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).proceedLatch.countDown();
+                break;
+            case WEBSOCKET_JETTY:
+                ((ConcurrentBayeuxContextJettyWebSocketTransport)bayeux.getTransport("websocket")).proceedLatch.countDown();
+                break;
+            default:
+                throw new IllegalArgumentException();
+        }
+        assertTrue(client1.waitFor(1000, BayeuxClient.State.CONNECTED));
+
+        final String channelName = "/service/test";
+        final Map<String, BayeuxContext> contexts = new ConcurrentHashMap<>();
+        final CountDownLatch contextLatch = new CountDownLatch(2);
+        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener()
+        {
+            @Override
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+            {
+                contexts.put(from.getId(), bayeux.getContext());
+                contextLatch.countDown();
+                return true;
+            }
+        });
+
+        client1.getChannel(channelName).publish("data");
+        client2.getChannel(channelName).publish("data");
+        assertTrue(contextLatch.await(5, TimeUnit.SECONDS));
+
+        Assert.assertEquals(2, contexts.size());
+        Assert.assertNotSame(contexts.get(client1.getId()), contexts.get(client2.getId()));
+
+        disconnectBayeuxClient(client1);
+        disconnectBayeuxClient(client2);
+    }
+
     public interface CookieConstants
     {
         public static final String COOKIE_NAME = "name";
@@ -370,6 +474,62 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
             HttpSession session = request.getSession();
             Assert.assertNotNull(session);
             Assert.assertEquals(ATTRIBUTE_VALUE, session.getAttribute(ATTRIBUTE_NAME));
+        }
+    }
+
+    public static class ConcurrentBayeuxContextWebSocketTransport extends WebSocketTransport
+    {
+        private final AtomicInteger handshakes = new AtomicInteger();
+        private final CountDownLatch enterLatch = new CountDownLatch(1);
+        private final CountDownLatch proceedLatch = new CountDownLatch(1);
+
+        public ConcurrentBayeuxContextWebSocketTransport(BayeuxServerImpl bayeux)
+        {
+            super(bayeux);
+        }
+
+        @Override
+        protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response)
+        {
+            onUpgrade(handshakes, enterLatch, proceedLatch);
+            super.modifyHandshake(request, response);
+        }
+    }
+
+    public static class ConcurrentBayeuxContextJettyWebSocketTransport extends JettyWebSocketTransport
+    {
+        private final AtomicInteger handshakes = new AtomicInteger();
+        private final CountDownLatch enterLatch = new CountDownLatch(1);
+        private final CountDownLatch proceedLatch = new CountDownLatch(1);
+
+        public ConcurrentBayeuxContextJettyWebSocketTransport(BayeuxServerImpl bayeux)
+        {
+            super(bayeux);
+        }
+
+        @Override
+        protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response)
+        {
+            onUpgrade(handshakes, enterLatch, proceedLatch);
+            super.modifyUpgrade(request, response);
+        }
+    }
+
+    private static void onUpgrade(AtomicInteger handshakes, CountDownLatch enterLatch, CountDownLatch proceedLatch)
+    {
+        int count = handshakes.incrementAndGet();
+        if (count == 1)
+        {
+            try
+            {
+                enterLatch.countDown();
+                if (!proceedLatch.await(5, TimeUnit.SECONDS))
+                    throw new IllegalStateException();
+            }
+            catch (InterruptedException x)
+            {
+                throw new IllegalStateException(x);
+            }
         }
     }
 }

@@ -15,25 +15,35 @@
  */
 package org.cometd.websocket.server;
 
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.BayeuxServerImpl;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.LifeCycle;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpSession;
-import javax.websocket.*;
-import javax.websocket.server.HandshakeRequest;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpointConfig;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
+import javax.websocket.CloseReason;
+import javax.websocket.DeploymentException;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.Extension;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.MessageHandler;
+import javax.websocket.SendHandler;
+import javax.websocket.SendResult;
+import javax.websocket.Session;
+import javax.websocket.server.HandshakeRequest;
+import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpointConfig;
+
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.AbstractServerTransport;
+import org.cometd.server.BayeuxServerImpl;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
 
 public class WebSocketTransport extends AbstractWebSocketTransport<Session>
 {
@@ -222,20 +232,17 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     private class Configurator extends ServerEndpointConfig.Configurator
     {
         private final ServletContext servletContext;
-        private WebSocketContext bayeuxContext;
-        private boolean protocolMatches;
 
         private Configurator(ServletContext servletContext)
         {
             this.servletContext = servletContext;
-            // Use a sensible default in case getNegotiatedSubprotocol() is not invoked.
-            this.protocolMatches = true;
         }
 
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
-            this.bayeuxContext = new WebSocketContext(servletContext, request, sec.getUserProperties());
+            ContextHolder context = provideContext();
+            context.bayeuxContext = new WebSocketContext(servletContext, request, sec.getUserProperties());
             WebSocketTransport.this.modifyHandshake(request, response);
         }
 
@@ -248,7 +255,9 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public String getNegotiatedSubprotocol(List<String> supported, List<String> requested)
         {
-            if (protocolMatches = checkProtocol(supported, requested))
+            ContextHolder context = provideContext();
+            context.protocolMatches = checkProtocol(supported, requested);
+            if (context.protocolMatches)
                 return super.getNegotiatedSubprotocol(supported, requested);
             _logger.warn("Could not negotiate WebSocket SubProtocols: server{} != client{}", supported, requested);
             return null;
@@ -264,11 +273,40 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @SuppressWarnings("unchecked")
         public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException
         {
+            ContextHolder context = provideContext();
             if (!getBayeux().getAllowedTransports().contains(getName()))
                 throw new InstantiationException("Transport not allowed");
-            if (!protocolMatches)
+            if (!context.protocolMatches)
                 throw new InstantiationException("Could not negotiate WebSocket SubProtocols");
-            return (T)new WebSocketScheduler(bayeuxContext);
+            T instance = (T)new WebSocketScheduler(context.bayeuxContext);
+            context.clear();
+            return instance;
+        }
+
+        private ContextHolder provideContext()
+        {
+            ContextHolder result = ContextHolder.holder.get();
+            if (result == null)
+            {
+                result = new ContextHolder();
+                result.clear();
+                ContextHolder.holder.set(result);
+            }
+            return result;
+        }
+    }
+
+    private static class ContextHolder
+    {
+        private static final ThreadLocal<ContextHolder> holder = new ThreadLocal<>();
+        private WebSocketContext bayeuxContext;
+        private boolean protocolMatches;
+
+        public void clear()
+        {
+            bayeuxContext = null;
+            // Use a sensible default in case getNegotiatedSubprotocol() is not invoked.
+            protocolMatches = true;
         }
     }
 }
