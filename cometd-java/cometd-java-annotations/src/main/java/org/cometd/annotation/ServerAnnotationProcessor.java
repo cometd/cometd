@@ -15,25 +15,35 @@
  */
 package org.cometd.annotation;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.*;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
+import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 
 /**
  * <p>Processes annotations in server-side service objects.</p>
@@ -125,72 +135,49 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         if (serviceAnnotation == null)
             return false;
 
-        boolean result = false;
-        for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
+        List<Method> methods = findAnnotatedMethods(bean, Configure.class);
+        if (methods.isEmpty())
+            return false;
+
+        for (final Method method : methods)
         {
-            Method[] methods = c.getDeclaredMethods();
-            for (final Method method : methods)
+            Configure configure = method.getAnnotation(Configure.class);
+            String[] channels = configure.value();
+            for (String channel : channels)
             {
-                final Configure configure = method.getAnnotation(Configure.class);
-                if (configure != null)
+                final Initializer init = new Initializer()
                 {
-                    result = true;
-                    String[] channels = configure.value();
-                    for (String channel : channels)
+                    public void configureChannel(ConfigurableServerChannel channel)
                     {
-                        final Initializer init = new Initializer()
-                        {
-                            public void configureChannel(ConfigurableServerChannel channel)
-                            {
-                                boolean flip = false;
-                                try
-                                {
-                                    if (logger.isDebugEnabled())
-                                        logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
-                                    if (!method.isAccessible())
-                                    {
-                                        flip = true;
-                                        method.setAccessible(true);
-                                    }
-                                    method.invoke(bean, channel);
-                                }
-                                catch (Exception x)
-                                {
-                                    throw new RuntimeException(x);
-                                }
-                                finally
-                                {
-                                    if (flip)
-                                        method.setAccessible(false);
-                                }
-                            }
-                        };
+                        if (logger.isDebugEnabled())
+                            logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
+                        invokePrivate(bean, method, channel);
+                    }
+                };
 
-                        MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel, init);
+                MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel, init);
 
-                        if (initializedChannel.isMarked())
-                        {
-                            if (logger.isDebugEnabled())
-                                logger.debug("Channel {} already initialized. Not called method {} on bean {}", channel, method, bean);
-                        }
-                        else
-                        {
-                            if (configure.configureIfExists())
-                            {
-                                if (logger.isDebugEnabled())
-                                    logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
-                                init.configureChannel(initializedChannel.getReference());
-                            }
-                            else if (configure.errorIfExists())
-                            {
-                                throw new IllegalStateException("Channel already configured: " + channel);
-                            }
-                        }
+                if (!initializedChannel.isMarked())
+                {
+                    if (configure.configureIfExists())
+                    {
+                        if (logger.isDebugEnabled())
+                            logger.debug("Configure again channel {} with method {} on bean {}", channel, method, bean);
+                        init.configureChannel(initializedChannel.getReference());
+                    }
+                    else if (configure.errorIfExists())
+                    {
+                        throw new IllegalStateException("Channel already configured: " + channel);
+                    }
+                    else
+                    {
+                        if (logger.isDebugEnabled())
+                            logger.debug("Channel {} already initialized. Not called method {} on bean {}", channel, method, bean);
                     }
                 }
             }
         }
-        return result;
+        return true;
     }
 
     /**
@@ -357,29 +344,26 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     }
                 }
             }
+        }
 
-            Method[] methods = c.getDeclaredMethods();
-            for (Method method : methods)
+        List<Method> methods = findAnnotatedMethods(bean, Session.class);
+        for (Method method : methods)
+        {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            if (parameterTypes.length == 1)
             {
-                if (method.getAnnotation(Session.class) != null)
-                {
-                    Class<?>[] parameterTypes = method.getParameterTypes();
-                    if (parameterTypes.length == 1)
-                    {
-                        Object value = null;
-                        if (parameterTypes[0].isAssignableFrom(localSession.getClass()))
-                            value = localSession;
-                        else if (parameterTypes[0].isAssignableFrom(serverSession.getClass()))
-                            value = serverSession;
+                Object value = null;
+                if (parameterTypes[0].isAssignableFrom(localSession.getClass()))
+                    value = localSession;
+                else if (parameterTypes[0].isAssignableFrom(serverSession.getClass()))
+                    value = serverSession;
 
-                        if (value != null)
-                        {
-                            invokePrivate(bean, method, value);
-                            result = true;
-                            if (logger.isDebugEnabled())
-                                logger.debug("Injected {} to method {} on bean {}", value, method, bean);
-                        }
-                    }
+                if (value != null)
+                {
+                    invokePrivate(bean, method, value);
+                    result = true;
+                    if (logger.isDebugEnabled())
+                        logger.debug("Injected {} to method {} on bean {}", value, method, bean);
                 }
             }
         }
@@ -388,57 +372,55 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
     private boolean processListener(Object bean, LocalSession localSession)
     {
+        checkMethodsPublic(bean, Listener.class);
+
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
+        Method[] methods = bean.getClass().getMethods();
+        for (Method method : methods)
         {
-            Method[] methods = c.getDeclaredMethods();
-            for (Method method : methods)
+            if (method.getDeclaringClass() == Object.class)
+                continue;
+
+            Listener listener = method.getAnnotation(Listener.class);
+            if (listener != null)
             {
-                Listener listener = method.getAnnotation(Listener.class);
-                if (listener != null)
+                List<String> paramNames = processParameters(method);
+                checkSignaturesMatch(method, ListenerCallback.signature, paramNames);
+
+                String[] channels = listener.value();
+                for (String channel : channels)
                 {
-                    if (!Modifier.isPublic(method.getModifiers()))
-                        throw new IllegalArgumentException("@" + Listener.class.getSimpleName() + " method " +
-                                method.getDeclaringClass().getName() + "." + method.getName() + "(...) must be public");
-
-                    List<String> paramNames = processParameters(method);
-                    checkSignaturesMatch(method, ListenerCallback.signature, paramNames);
-
-                    String[] channels = listener.value();
-                    for (String channel : channels)
+                    ChannelId channelId = new ChannelId(channel);
+                    if (channelId.isTemplate())
                     {
-                        ChannelId channelId = new ChannelId(channel);
-                        if (channelId.isTemplate())
-                        {
-                            List<String> parameters = channelId.getParameters();
-                            if (parameters.size() != paramNames.size())
-                                throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
-                                        Listener.class.getSimpleName() + " on method " +
-                                        method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
-                            if (!parameters.equals(paramNames))
-                                throw new IllegalArgumentException("Wrong parameter names in annotation @" +
-                                        Listener.class.getSimpleName() + " on method " +
-                                        method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
-                            channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
-                        }
-
-                        MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel);
-                        ListenerCallback listenerCallback = new ListenerCallback(localSession, bean, method, paramNames, channelId, channel, listener.receiveOwnPublishes());
-                        initializedChannel.getReference().addListener(listenerCallback);
-
-                        List<ListenerCallback> callbacks = listeners.get(bean);
-                        if (callbacks == null)
-                        {
-                            callbacks = new CopyOnWriteArrayList<>();
-                            List<ListenerCallback> existing = listeners.putIfAbsent(bean, callbacks);
-                            if (existing != null)
-                                callbacks = existing;
-                        }
-                        callbacks.add(listenerCallback);
-                        result = true;
-                        if (logger.isDebugEnabled())
-                            logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
+                        List<String> parameters = channelId.getParameters();
+                        if (parameters.size() != paramNames.size())
+                            throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
+                                    Listener.class.getSimpleName() + " on method " +
+                                    method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
+                        if (!parameters.equals(paramNames))
+                            throw new IllegalArgumentException("Wrong parameter names in annotation @" +
+                                    Listener.class.getSimpleName() + " on method " +
+                                    method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
+                        channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
                     }
+
+                    MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel);
+                    ListenerCallback listenerCallback = new ListenerCallback(localSession, bean, method, paramNames, channelId, channel, listener.receiveOwnPublishes());
+                    initializedChannel.getReference().addListener(listenerCallback);
+
+                    List<ListenerCallback> callbacks = listeners.get(bean);
+                    if (callbacks == null)
+                    {
+                        callbacks = new CopyOnWriteArrayList<>();
+                        List<ListenerCallback> existing = listeners.putIfAbsent(bean, callbacks);
+                        if (existing != null)
+                            callbacks = existing;
+                    }
+                    callbacks.add(listenerCallback);
+                    result = true;
+                    if (logger.isDebugEnabled())
+                        logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
                 }
             }
         }
@@ -466,61 +448,59 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
     private boolean processSubscription(Object bean, LocalSession localSession)
     {
+        checkMethodsPublic(bean, Subscription.class);
+
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
+        Method[] methods = bean.getClass().getMethods();
+        for (Method method : methods)
         {
-            Method[] methods = c.getDeclaredMethods();
-            for (Method method : methods)
+            if (method.getDeclaringClass() == Object.class)
+                continue;
+
+            Subscription subscription = method.getAnnotation(Subscription.class);
+            if (subscription != null)
             {
-                Subscription subscription = method.getAnnotation(Subscription.class);
-                if (subscription != null)
+                List<String> paramNames = processParameters(method);
+                checkSignaturesMatch(method, SubscriptionCallback.signature, paramNames);
+
+                String[] channels = subscription.value();
+                for (String channel : channels)
                 {
-                    if (!Modifier.isPublic(method.getModifiers()))
-                        throw new IllegalArgumentException("@" + Subscription.class.getSimpleName() + " method " +
-                                method.getDeclaringClass().getName() + "." + method.getName() + "(...) must be public");
+                    if (ChannelId.isMeta(channel))
+                        throw new IllegalArgumentException("Annotation @" + Subscription.class.getSimpleName() +
+                                " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
+                                "(...) must specify a non meta channel");
 
-                    List<String> paramNames = processParameters(method);
-                    checkSignaturesMatch(method, SubscriptionCallback.signature, paramNames);
-
-                    String[] channels = subscription.value();
-                    for (String channel : channels)
+                    ChannelId channelId = new ChannelId(channel);
+                    if (channelId.isTemplate())
                     {
-                        if (ChannelId.isMeta(channel))
-                            throw new IllegalArgumentException("Annotation @" + Subscription.class.getSimpleName() +
-                                    " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
-                                    "(...) must specify a non meta channel");
-
-                        ChannelId channelId = new ChannelId(channel);
-                        if (channelId.isTemplate())
-                        {
-                            List<String> parameters = channelId.getParameters();
-                            if (parameters.size() != paramNames.size())
-                                throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
-                                        Subscription.class.getSimpleName() + " on method " +
-                                        method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
-                            if (!parameters.equals(paramNames))
-                                throw new IllegalArgumentException("Wrong parameter names in annotation @" +
-                                        Subscription.class.getSimpleName() + " on method " +
-                                        method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
-                            channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
-                        }
-
-                        SubscriptionCallback subscriptionCallback = new SubscriptionCallback(localSession, bean, method, paramNames, channelId, channel);
-                        localSession.getChannel(channel).subscribe(subscriptionCallback);
-
-                        List<SubscriptionCallback> callbacks = subscribers.get(bean);
-                        if (callbacks == null)
-                        {
-                            callbacks = new CopyOnWriteArrayList<>();
-                            List<SubscriptionCallback> existing = subscribers.putIfAbsent(bean, callbacks);
-                            if (existing != null)
-                                callbacks = existing;
-                        }
-                        callbacks.add(subscriptionCallback);
-                        result = true;
-                        if (logger.isDebugEnabled())
-                            logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
+                        List<String> parameters = channelId.getParameters();
+                        if (parameters.size() != paramNames.size())
+                            throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
+                                    Subscription.class.getSimpleName() + " on method " +
+                                    method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
+                        if (!parameters.equals(paramNames))
+                            throw new IllegalArgumentException("Wrong parameter names in annotation @" +
+                                    Subscription.class.getSimpleName() + " on method " +
+                                    method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
+                        channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
                     }
+
+                    SubscriptionCallback subscriptionCallback = new SubscriptionCallback(localSession, bean, method, paramNames, channelId, channel);
+                    localSession.getChannel(channel).subscribe(subscriptionCallback);
+
+                    List<SubscriptionCallback> callbacks = subscribers.get(bean);
+                    if (callbacks == null)
+                    {
+                        callbacks = new CopyOnWriteArrayList<>();
+                        List<SubscriptionCallback> existing = subscribers.putIfAbsent(bean, callbacks);
+                        if (existing != null)
+                            callbacks = existing;
+                    }
+                    callbacks.add(subscriptionCallback);
+                    result = true;
+                    if (logger.isDebugEnabled())
+                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
                 }
             }
         }
@@ -544,66 +524,61 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
     private boolean processRemoteCall(Object bean, LocalSession localSession)
     {
+        checkMethodsPublic(bean, RemoteCall.class);
+
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
+        Method[] methods = bean.getClass().getMethods();
+        for (Method method : methods)
         {
-            Method[] methods = c.getDeclaredMethods();
-            for (Method method : methods)
+            RemoteCall remoteCall = method.getAnnotation(RemoteCall.class);
+            if (remoteCall != null)
             {
-                RemoteCall remoteCall = method.getAnnotation(RemoteCall.class);
-                if (remoteCall != null)
+                List<String> paramNames = processParameters(method);
+                checkSignaturesMatch(method, RemoteCallCallback.signature, paramNames);
+
+                String[] targets = remoteCall.value();
+                for (String target : targets)
                 {
-                    if (!Modifier.isPublic(method.getModifiers()))
-                        throw new IllegalArgumentException("@" + RemoteCall.class.getSimpleName() + " method " +
-                                method.getDeclaringClass().getName() + "." + method.getName() + "(...) must be public");
+                    if (!target.startsWith("/"))
+                        target = "/" + target;
+                    String channel = Channel.SERVICE + target;
 
-                    List<String> paramNames = processParameters(method);
-                    checkSignaturesMatch(method, RemoteCallCallback.signature, paramNames);
+                    ChannelId channelId = new ChannelId(channel);
+                    if (channelId.isWild())
+                        throw new IllegalArgumentException("Annotation @" + RemoteCall.class.getSimpleName() +
+                                " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
+                                "(...) cannot specify wild channels.");
 
-                    String[] targets = remoteCall.value();
-                    for (String target : targets)
+                    if (channelId.isTemplate())
                     {
-                        if (!target.startsWith("/"))
-                            target = "/" + target;
-                        String channel = Channel.SERVICE + target;
-
-                        ChannelId channelId = new ChannelId(channel);
-                        if (channelId.isWild())
-                            throw new IllegalArgumentException("Annotation @" + RemoteCall.class.getSimpleName() +
-                                    " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
-                                    "(...) cannot specify wild channels.");
-
-                        if (channelId.isTemplate())
-                        {
-                            List<String> parameters = channelId.getParameters();
-                            if (parameters.size() != paramNames.size())
-                                throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
-                                        RemoteCall.class.getSimpleName() + " on method " +
-                                        method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
-                            if (!parameters.equals(paramNames))
-                                throw new IllegalArgumentException("Wrong parameter names in annotation @" +
-                                        RemoteCall.class.getSimpleName() + " on method " +
-                                        method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
-                            channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
-                        }
-
-                        MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel);
-                        RemoteCallCallback remoteCallCallback = new RemoteCallCallback(bayeuxServer, localSession, bean, method, paramNames, channelId, channel);
-                        initializedChannel.getReference().addListener(remoteCallCallback);
-
-                        List<RemoteCallCallback> callbacks = remoteCalls.get(bean);
-                        if (callbacks == null)
-                        {
-                            callbacks = new CopyOnWriteArrayList<>();
-                            List<RemoteCallCallback> existing = remoteCalls.putIfAbsent(bean, callbacks);
-                            if (existing != null)
-                                callbacks = existing;
-                        }
-                        callbacks.add(remoteCallCallback);
-                        result = true;
-                        if (logger.isDebugEnabled())
-                            logger.debug("Registered remote call for channel {} to method {} on bean {}", target, method, bean);
+                        List<String> parameters = channelId.getParameters();
+                        if (parameters.size() != paramNames.size())
+                            throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
+                                    RemoteCall.class.getSimpleName() + " on method " +
+                                    method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
+                        if (!parameters.equals(paramNames))
+                            throw new IllegalArgumentException("Wrong parameter names in annotation @" +
+                                    RemoteCall.class.getSimpleName() + " on method " +
+                                    method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
+                        channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
                     }
+
+                    MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel);
+                    RemoteCallCallback remoteCallCallback = new RemoteCallCallback(bayeuxServer, localSession, bean, method, paramNames, channelId, channel);
+                    initializedChannel.getReference().addListener(remoteCallCallback);
+
+                    List<RemoteCallCallback> callbacks = remoteCalls.get(bean);
+                    if (callbacks == null)
+                    {
+                        callbacks = new CopyOnWriteArrayList<>();
+                        List<RemoteCallCallback> existing = remoteCalls.putIfAbsent(bean, callbacks);
+                        if (existing != null)
+                            callbacks = existing;
+                    }
+                    callbacks.add(remoteCallCallback);
+                    result = true;
+                    if (logger.isDebugEnabled())
+                        logger.debug("Registered remote call for channel {} to method {} on bean {}", target, method, bean);
                 }
             }
         }

@@ -15,14 +15,6 @@
  */
 package org.cometd.annotation;
 
-import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.ChannelId;
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSession;
-import org.cometd.bayeux.client.ClientSessionChannel;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -32,6 +24,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
 
 /**
  * <p>Processes annotations in client-side service objects.</p>
@@ -75,6 +76,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         this.clientSession = clientSession;
         this.injectables = injectables;
     }
+
     /**
      * Processes dependencies annotated with {@link Session}, callbacks
      * annotated with {@link Listener} and {@link Subscription} and lifecycle
@@ -217,23 +219,20 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                     }
                 }
             }
+        }
 
-            Method[] methods = c.getDeclaredMethods();
-            for (Method method : methods)
+        List<Method> methods = findAnnotatedMethods(bean, Session.class);
+        for (Method method : methods)
+        {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            if (parameterTypes.length == 1)
             {
-                if (method.getAnnotation(Session.class) != null)
+                if (parameterTypes[0].isAssignableFrom(clientSession.getClass()))
                 {
-                    Class<?>[] parameterTypes = method.getParameterTypes();
-                    if (parameterTypes.length == 1)
-                    {
-                        if (parameterTypes[0].isAssignableFrom(clientSession.getClass()))
-                        {
-                            invokePrivate(bean, method, clientSession);
-                            result = true;
-                            if (logger.isDebugEnabled())
-                                logger.debug("Injected {} to method {} on bean {}", clientSession, method, bean);
-                        }
-                    }
+                    invokePrivate(bean, method, clientSession);
+                    result = true;
+                    if (logger.isDebugEnabled())
+                        logger.debug("Injected {} to method {} on bean {}", clientSession, method, bean);
                 }
             }
         }
@@ -242,50 +241,48 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
 
     private boolean processListener(Object bean)
     {
+        checkMethodsPublic(bean, Listener.class);
+
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
+        Method[] methods = bean.getClass().getMethods();
+        for (Method method : methods)
         {
-            Method[] methods = c.getDeclaredMethods();
-            for (Method method : methods)
+            if (method.getDeclaringClass() == Object.class)
+                continue;
+
+            Listener listener = method.getAnnotation(Listener.class);
+            if (listener != null)
             {
-                Listener listener = method.getAnnotation(Listener.class);
-                if (listener != null)
+                List<String> paramNames = processParameters(method);
+                checkSignaturesMatch(method, ListenerCallback.signature, paramNames);
+
+                String[] channels = listener.value();
+                for (String channel : channels)
                 {
-                    if (!Modifier.isPublic(method.getModifiers()))
-                        throw new IllegalArgumentException("@" + Listener.class.getSimpleName() + " method " +
-                                method.getDeclaringClass().getName() + "." + method.getName() + "(...) must be public");
+                    if (!ChannelId.isMeta(channel))
+                        throw new IllegalArgumentException("Annotation @" + Listener.class.getSimpleName() +
+                                " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
+                                "(...) must specify a meta channel");
 
-                    List<String> paramNames = processParameters(method);
-                    checkSignaturesMatch(method, ListenerCallback.signature, paramNames);
+                    ChannelId channelId = new ChannelId(channel);
+                    if (channelId.isTemplate())
+                        channel = channelId.getWilds().get(0);
 
-                    String[] channels = listener.value();
-                    for (String channel : channels)
+                    ListenerCallback listenerCallback = new ListenerCallback(bean, method, paramNames, channelId, channel);
+                    clientSession.getChannel(channel).addListener(listenerCallback);
+
+                    List<ListenerCallback> callbacks = listeners.get(bean);
+                    if (callbacks == null)
                     {
-                        if (!ChannelId.isMeta(channel))
-                            throw new IllegalArgumentException("Annotation @" + Listener.class.getSimpleName() +
-                                    " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
-                                    "(...) must specify a meta channel");
-
-                        ChannelId channelId = new ChannelId(channel);
-                        if (channelId.isTemplate())
-                            channel = channelId.getWilds().get(0);
-
-                        ListenerCallback listenerCallback = new ListenerCallback(bean, method, paramNames, channelId, channel);
-                        clientSession.getChannel(channel).addListener(listenerCallback);
-
-                        List<ListenerCallback> callbacks = listeners.get(bean);
-                        if (callbacks == null)
-                        {
-                            callbacks = new CopyOnWriteArrayList<>();
-                            List<ListenerCallback> existing = listeners.putIfAbsent(bean, callbacks);
-                            if (existing != null)
-                                callbacks = existing;
-                        }
-                        callbacks.add(listenerCallback);
-                        result = true;
-                        if (logger.isDebugEnabled())
-                            logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
+                        callbacks = new CopyOnWriteArrayList<>();
+                        List<ListenerCallback> existing = listeners.putIfAbsent(bean, callbacks);
+                        if (existing != null)
+                            callbacks = existing;
                     }
+                    callbacks.add(listenerCallback);
+                    result = true;
+                    if (logger.isDebugEnabled())
+                        logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
                 }
             }
         }
@@ -313,53 +310,50 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
 
     private boolean processSubscription(Object bean)
     {
+        checkMethodsPublic(bean, Subscription.class);
+
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
+        Method[] methods = bean.getClass().getMethods();
+        for (Method method : methods)
         {
-            Method[] methods = c.getDeclaredMethods();
-            for (Method method : methods)
+            if (method.getDeclaringClass() == Object.class)
+                continue;
+
+            Subscription subscription = method.getAnnotation(Subscription.class);
+            if (subscription != null)
             {
-                Subscription subscription = method.getAnnotation(Subscription.class);
-                if (subscription != null)
+                List<String> paramNames = processParameters(method);
+                checkSignaturesMatch(method, SubscriptionCallback.signature, paramNames);
+
+                String[] channels = subscription.value();
+                for (String channel : channels)
                 {
-                    if (!Modifier.isPublic(method.getModifiers()))
-                        throw new IllegalArgumentException("@" + Subscription.class.getSimpleName() + " method " +
-                                method.getDeclaringClass().getName() + "." + method.getName() + "(...) must be public");
+                    if (ChannelId.isMeta(channel))
+                        throw new IllegalArgumentException("Annotation @" + Subscription.class.getSimpleName() +
+                                " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
+                                "(...) must specify a non meta channel");
 
+                    ChannelId channelId = new ChannelId(channel);
+                    if (channelId.isTemplate())
+                        channel = channelId.getWilds().get(0);
 
-                    List<String> paramNames = processParameters(method);
-                    checkSignaturesMatch(method, SubscriptionCallback.signature, paramNames);
+                    SubscriptionCallback subscriptionCallback = new SubscriptionCallback(clientSession, bean, method, paramNames, channelId, channel);
+                    // We should delay the subscription if the client session did not complete the handshake
+                    if (clientSession.isHandshook())
+                        clientSession.getChannel(channel).subscribe(subscriptionCallback);
 
-                    String[] channels = subscription.value();
-                    for (String channel : channels)
+                    List<SubscriptionCallback> callbacks = subscribers.get(bean);
+                    if (callbacks == null)
                     {
-                        if (ChannelId.isMeta(channel))
-                            throw new IllegalArgumentException("Annotation @" + Subscription.class.getSimpleName() +
-                                    " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
-                                    "(...) must specify a non meta channel");
-
-                        ChannelId channelId = new ChannelId(channel);
-                        if (channelId.isTemplate())
-                            channel = channelId.getWilds().get(0);
-
-                        SubscriptionCallback subscriptionCallback = new SubscriptionCallback(clientSession, bean, method, paramNames, channelId, channel);
-                        // We should delay the subscription if the client session did not complete the handshake
-                        if (clientSession.isHandshook())
-                            clientSession.getChannel(channel).subscribe(subscriptionCallback);
-
-                        List<SubscriptionCallback> callbacks = subscribers.get(bean);
-                        if (callbacks == null)
-                        {
-                            callbacks = new CopyOnWriteArrayList<>();
-                            List<SubscriptionCallback> existing = subscribers.putIfAbsent(bean, callbacks);
-                            if (existing != null)
-                                callbacks = existing;
-                        }
-                        callbacks.add(subscriptionCallback);
-                        result = true;
-                        if (logger.isDebugEnabled())
-                            logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
+                        callbacks = new CopyOnWriteArrayList<>();
+                        List<SubscriptionCallback> existing = subscribers.putIfAbsent(bean, callbacks);
+                        if (existing != null)
+                            callbacks = existing;
                     }
+                    callbacks.add(subscriptionCallback);
+                    result = true;
+                    if (logger.isDebugEnabled())
+                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
                 }
             }
         }

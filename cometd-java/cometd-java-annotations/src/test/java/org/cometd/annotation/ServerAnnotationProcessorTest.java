@@ -15,26 +15,42 @@
  */
 package org.cometd.annotation;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.server.*;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
+import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ServerAnnotationProcessorTest
 {
@@ -115,6 +131,69 @@ public class ServerAnnotationProcessorTest
     }
 
     @Test
+    public void testInjectBayeuxServerOnOverriddenMethod() throws Exception
+    {
+        DerivedInjectBayeuxServerOnOverriddenMethodService s = new DerivedInjectBayeuxServerOnOverriddenMethodService();
+        boolean processed = processor.process(s);
+        assertFalse(processed);
+        assertNull(s.bayeux);
+    }
+
+    @Service
+    public static class InjectBayeuxServerOnOverriddenMethodService
+    {
+        protected BayeuxServer bayeux;
+
+        @Inject
+        protected void setBayeuxServer(BayeuxServer bayeuxServer)
+        {
+            this.bayeux = bayeuxServer;
+        }
+    }
+
+    public static class DerivedInjectBayeuxServerOnOverriddenMethodService extends InjectBayeuxServerOnOverriddenMethodService
+    {
+        // Overrides without annotation.
+        @Override
+        protected void setBayeuxServer(BayeuxServer bayeuxServer)
+        {
+            super.setBayeuxServer(bayeuxServer);
+        }
+    }
+
+    @Test
+    public void testInjectBayeuxServerOnOverridingMethod() throws Exception
+    {
+        DerivedInjectBayeuxServerOnOverridingMethodService s = new DerivedInjectBayeuxServerOnOverridingMethodService();
+        boolean processed = processor.process(s);
+        assertTrue(processed);
+        assertNotNull(s.bayeux);
+    }
+
+    @Service
+    public static class InjectBayeuxServerOnOverridingMethodService
+    {
+        protected BayeuxServer bayeux;
+
+        @Inject
+        protected void setBayeuxServer(BayeuxServer bayeuxServer)
+        {
+            this.bayeux = bayeuxServer;
+        }
+    }
+
+    public static class DerivedInjectBayeuxServerOnOverridingMethodService extends InjectBayeuxServerOnOverridingMethodService
+    {
+        // Overrides with annotation.
+        @Override
+        @Inject
+        protected void setBayeuxServer(BayeuxServer bayeuxServer)
+        {
+            super.setBayeuxServer(bayeuxServer);
+        }
+    }
+
+    @Test
     public void testInjectLocalSessionOnField() throws Exception
     {
         InjectLocalSessionOnFieldService s = new InjectLocalSessionOnFieldService();
@@ -148,6 +227,69 @@ public class ServerAnnotationProcessorTest
         private void set(LocalSession localSession)
         {
             this.localSession = localSession;
+        }
+    }
+
+    @Test
+    public void testInjectLocalSessionOnOverriddenMethod() throws Exception
+    {
+        DerivedInjectLocalSessionOnOverriddenMethodService s = new DerivedInjectLocalSessionOnOverriddenMethodService();
+        boolean processed = processor.process(s);
+        assertFalse(processed);
+        assertNull(s.localSession);
+    }
+
+    @Service
+    public static class InjectLocalSessionOnOverriddenMethodService
+    {
+        protected LocalSession localSession;
+
+        @Session
+        protected void set(LocalSession localSession)
+        {
+            this.localSession = localSession;
+        }
+    }
+
+    public static class DerivedInjectLocalSessionOnOverriddenMethodService extends InjectLocalSessionOnOverriddenMethodService
+    {
+        // Overrides without annotation.
+        @Override
+        protected void set(LocalSession localSession)
+        {
+            super.set(localSession);
+        }
+    }
+
+    @Test
+    public void testInjectLocalSessionOnOverridingMethod() throws Exception
+    {
+        DerivedInjectLocalSessionOnOverridingMethodService s = new DerivedInjectLocalSessionOnOverridingMethodService();
+        boolean processed = processor.process(s);
+        assertTrue(processed);
+        assertNotNull(s.localSession);
+    }
+
+    @Service
+    public static class InjectLocalSessionOnOverridingMethodService
+    {
+        protected LocalSession localSession;
+
+        @Session
+        protected void set(LocalSession localSession)
+        {
+            this.localSession = localSession;
+        }
+    }
+
+    public static class DerivedInjectLocalSessionOnOverridingMethodService extends InjectLocalSessionOnOverridingMethodService
+    {
+        // Overrides with annotation.
+        @Override
+        @Session
+        protected void set(LocalSession localSession)
+        {
+            super.set(localSession);
         }
     }
 
@@ -424,14 +566,15 @@ public class ServerAnnotationProcessorTest
 
         DerivedListenerOnOverriddenMethodService ss = new DerivedListenerOnOverriddenMethodService(messageLatch);
         boolean processed = processor.process(ss);
-        assertTrue(processed);
+        assertFalse(processed);
 
         // Fake a publish
         LocalSession remote = bayeuxServer.newLocalSession("remote");
         remote.handshake();
         remote.getChannel("/foo").publish(new HashSet<>());
 
-        assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
+        assertEquals(2, messageLatch.getCount());
     }
 
     @Service
@@ -441,7 +584,6 @@ public class ServerAnnotationProcessorTest
 
         public ListenerOnOverriddenMethodService(CountDownLatch messageLatch)
         {
-
             this.messageLatch = messageLatch;
         }
 
@@ -459,10 +601,274 @@ public class ServerAnnotationProcessorTest
             super(messageLatch);
         }
 
+        // Overrides without annotation.
         @Override
         public void foo(ServerSession remote, ServerMessage.Mutable message)
         {
             super.foo(remote, message);
+            messageLatch.countDown();
+        }
+    }
+
+    @Test
+    public void testListenerOnOverridingMethod() throws Exception
+    {
+        final CountDownLatch messageLatch = new CountDownLatch(2);
+
+        DerivedListenerOnOverridingMethodService ss = new DerivedListenerOnOverridingMethodService(messageLatch);
+        boolean processed = processor.process(ss);
+        assertTrue(processed);
+
+        assertEquals(1, bayeuxServer.getChannel("/foo").getListeners().size());
+
+        // Fake a publish
+        LocalSession remote = bayeuxServer.newLocalSession("remote");
+        remote.handshake();
+        remote.getChannel("/foo").publish(new HashSet<>());
+
+        assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class ListenerOnOverridingMethodService
+    {
+        protected final CountDownLatch messageLatch;
+
+        public ListenerOnOverridingMethodService(CountDownLatch messageLatch)
+        {
+            this.messageLatch = messageLatch;
+        }
+
+        @Listener("/foo")
+        public void foo(ServerSession remote, ServerMessage.Mutable message)
+        {
+            messageLatch.countDown();
+        }
+    }
+
+    public static class DerivedListenerOnOverridingMethodService extends ListenerOnOverridingMethodService
+    {
+        public DerivedListenerOnOverridingMethodService(CountDownLatch messageLatch)
+        {
+            super(messageLatch);
+        }
+
+        // Overridden with annotation.
+        @Override
+        @Listener("/foo")
+        public void foo(ServerSession remote, ServerMessage.Mutable message)
+        {
+            super.foo(remote, message);
+            messageLatch.countDown();
+        }
+    }
+
+    @Test
+    public void testSubscriptionOnOverriddenMethod() throws Exception
+    {
+        final CountDownLatch messageLatch = new CountDownLatch(2);
+
+        DerivedSubscriptionOnOverriddenMethodService ss = new DerivedSubscriptionOnOverriddenMethodService(messageLatch);
+        boolean processed = processor.process(ss);
+        assertFalse(processed);
+
+        // Fake a publish
+        LocalSession remote = bayeuxServer.newLocalSession("remote");
+        remote.handshake();
+        remote.getChannel("/foo").publish(new HashSet<>());
+
+        assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
+        assertEquals(2, messageLatch.getCount());
+    }
+
+    @Service
+    public static class SubscriptionOnOverriddenMethodService
+    {
+        protected final CountDownLatch messageLatch;
+
+        public SubscriptionOnOverriddenMethodService(CountDownLatch messageLatch)
+        {
+            this.messageLatch = messageLatch;
+        }
+
+        @Subscription("/foo")
+        public void foo(Message message)
+        {
+            messageLatch.countDown();
+        }
+    }
+
+    public static class DerivedSubscriptionOnOverriddenMethodService extends SubscriptionOnOverriddenMethodService
+    {
+        public DerivedSubscriptionOnOverriddenMethodService(CountDownLatch messageLatch)
+        {
+            super(messageLatch);
+        }
+
+        // Overrides without annotation.
+        @Override
+        public void foo(Message message)
+        {
+            super.foo(message);
+            messageLatch.countDown();
+        }
+    }
+
+    @Test
+    public void testSubscriptionOnOverridingMethod() throws Exception
+    {
+        final CountDownLatch messageLatch = new CountDownLatch(2);
+
+        DerivedSubscriptionOnOverridingMethodService ss = new DerivedSubscriptionOnOverridingMethodService(messageLatch);
+        boolean processed = processor.process(ss);
+        assertTrue(processed);
+
+        assertEquals(1, bayeuxServer.getChannel("/foo").getSubscribers().size());
+
+        // Fake a publish
+        LocalSession remote = bayeuxServer.newLocalSession("remote");
+        remote.handshake();
+        remote.getChannel("/foo").publish(new HashSet<>());
+
+        assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class SubscriptionOnOverridingMethodService
+    {
+        protected final CountDownLatch messageLatch;
+
+        public SubscriptionOnOverridingMethodService(CountDownLatch messageLatch)
+        {
+            this.messageLatch = messageLatch;
+        }
+
+        @Subscription("/foo")
+        public void foo(Message message)
+        {
+            messageLatch.countDown();
+        }
+    }
+
+    public static class DerivedSubscriptionOnOverridingMethodService extends SubscriptionOnOverridingMethodService
+    {
+        public DerivedSubscriptionOnOverridingMethodService(CountDownLatch messageLatch)
+        {
+            super(messageLatch);
+        }
+
+        // Overridden with annotation.
+        @Override
+        @Subscription("/foo")
+        public void foo(Message message)
+        {
+            super.foo(message);
+            messageLatch.countDown();
+        }
+    }
+
+    @Test
+    public void testRemoteCallOnOverriddenMethod() throws Exception
+    {
+        final CountDownLatch messageLatch = new CountDownLatch(2);
+
+        DerivedRemoteCallOnOverriddenMethodService ss = new DerivedRemoteCallOnOverriddenMethodService(messageLatch);
+        boolean processed = processor.process(ss);
+        assertFalse(processed);
+
+        // Fake a publish
+        LocalSession remote = bayeuxServer.newLocalSession("remote");
+        remote.handshake();
+        remote.getChannel("/service/foo").publish(new HashSet<>());
+
+        assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
+        assertEquals(2, messageLatch.getCount());
+    }
+
+    @Service
+    public static class RemoteCallOnOverriddenMethodService
+    {
+        protected final CountDownLatch messageLatch;
+
+        public RemoteCallOnOverriddenMethodService(CountDownLatch messageLatch)
+        {
+            this.messageLatch = messageLatch;
+        }
+
+        @RemoteCall("/foo")
+        public void foo(RemoteCall.Caller caller, Object data)
+        {
+            caller.result(data);
+            messageLatch.countDown();
+        }
+    }
+
+    public static class DerivedRemoteCallOnOverriddenMethodService extends RemoteCallOnOverriddenMethodService
+    {
+        public DerivedRemoteCallOnOverriddenMethodService(CountDownLatch messageLatch)
+        {
+            super(messageLatch);
+        }
+
+        // Overrides without annotation.
+        @Override
+        public void foo(RemoteCall.Caller caller, Object data)
+        {
+            super.foo(caller, data);
+            messageLatch.countDown();
+        }
+    }
+
+    @Test
+    public void testRemoteCallOnOverridingMethod() throws Exception
+    {
+        final CountDownLatch messageLatch = new CountDownLatch(2);
+
+        DerivedRemoteCallOnOverridingMethodService ss = new DerivedRemoteCallOnOverridingMethodService(messageLatch);
+        boolean processed = processor.process(ss);
+        assertTrue(processed);
+
+        assertEquals(1, bayeuxServer.getChannel("/service/foo").getListeners().size());
+
+        // Fake a publish
+        LocalSession remote = bayeuxServer.newLocalSession("remote");
+        remote.handshake();
+        remote.getChannel("/service/foo").publish(new HashSet<>());
+
+        assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class RemoteCallOnOverridingMethodService
+    {
+        protected final CountDownLatch messageLatch;
+
+        public RemoteCallOnOverridingMethodService(CountDownLatch messageLatch)
+        {
+            this.messageLatch = messageLatch;
+        }
+
+        @RemoteCall("/foo")
+        public void foo(RemoteCall.Caller caller, Object data)
+        {
+            caller.result(data);
+            messageLatch.countDown();
+        }
+    }
+
+    public static class DerivedRemoteCallOnOverridingMethodService extends RemoteCallOnOverridingMethodService
+    {
+        public DerivedRemoteCallOnOverridingMethodService(CountDownLatch messageLatch)
+        {
+            super(messageLatch);
+        }
+
+        // Overridden with annotation.
+        @Override
+        @RemoteCall("/foo")
+        public void foo(RemoteCall.Caller caller, Object data)
+        {
+            super.foo(caller, data);
             messageLatch.countDown();
         }
     }
@@ -537,7 +943,7 @@ public class ServerAnnotationProcessorTest
         @Listener("/foo")
         public Object foo(ServerSession remote, ServerMessage.Mutable message)
         {
-            // Do not unbox it, we are testing exactly this case
+            // Do not unbox it, we are testing exactly this case.
             return new Boolean(false);
         }
 
@@ -699,12 +1105,12 @@ public class ServerAnnotationProcessorTest
     }
 
     @Test
-    public void testInitDestroy() throws Exception
+    public void testPostConstructPreDestroy() throws Exception
     {
         final CountDownLatch initLatch = new CountDownLatch(1);
         final CountDownLatch destroyLatch = new CountDownLatch(1);
 
-        InitDestroyService s = new InitDestroyService(initLatch, destroyLatch);
+        PostConstructPreDestroyService s = new PostConstructPreDestroyService(initLatch, destroyLatch);
 
         processor.process(s);
         assertTrue(initLatch.await(5, TimeUnit.SECONDS));
@@ -714,12 +1120,12 @@ public class ServerAnnotationProcessorTest
     }
 
     @Service
-    public static class InitDestroyService
+    public static class PostConstructPreDestroyService
     {
         private final CountDownLatch initLatch;
         private final CountDownLatch destroyLatch;
 
-        public InitDestroyService(CountDownLatch initLatch, CountDownLatch destroyLatch)
+        public PostConstructPreDestroyService(CountDownLatch initLatch, CountDownLatch destroyLatch)
         {
             this.initLatch = initLatch;
             this.destroyLatch = destroyLatch;
@@ -739,12 +1145,12 @@ public class ServerAnnotationProcessorTest
     }
 
     @Test
-    public void testInitInSuperClass() throws Exception
+    public void testPostConstructInSuperClass() throws Exception
     {
         final CountDownLatch initLatch = new CountDownLatch(1);
         final CountDownLatch destroyLatch = new CountDownLatch(1);
 
-        DerivedInitInSuperClassService ss = new DerivedInitInSuperClassService(initLatch, destroyLatch);
+        DerivedPostConstructInSuperClassService ss = new DerivedPostConstructInSuperClassService(initLatch, destroyLatch);
 
         processor.process(ss);
         assertTrue(initLatch.await(5, TimeUnit.SECONDS));
@@ -754,11 +1160,11 @@ public class ServerAnnotationProcessorTest
     }
 
     @Service
-    public static class InitInSuperClassService
+    public static class PostConstructInSuperClassService
     {
         private final CountDownLatch initLatch;
 
-        public InitInSuperClassService(CountDownLatch initLatch)
+        public PostConstructInSuperClassService(CountDownLatch initLatch)
         {
             this.initLatch = initLatch;
         }
@@ -770,11 +1176,11 @@ public class ServerAnnotationProcessorTest
         }
     }
 
-    public class DerivedInitInSuperClassService extends InitInSuperClassService
+    public class DerivedPostConstructInSuperClassService extends PostConstructInSuperClassService
     {
         private final CountDownLatch destroyLatch;
 
-        public DerivedInitInSuperClassService(CountDownLatch initLatch, CountDownLatch destroyLatch)
+        public DerivedPostConstructInSuperClassService(CountDownLatch initLatch, CountDownLatch destroyLatch)
         {
             super(initLatch);
             this.destroyLatch = destroyLatch;
@@ -788,28 +1194,30 @@ public class ServerAnnotationProcessorTest
     }
 
     @Test
-    public void testInitOverridden() throws Exception
+    public void testPostConstructPreDestroyOnOverriddenMethod() throws Exception
     {
         final CountDownLatch initLatch = new CountDownLatch(2);
-        final CountDownLatch destroyLatch = new CountDownLatch(1);
+        final CountDownLatch destroyLatch = new CountDownLatch(2);
 
-        DerivedInitOverriddenService ss = new DerivedInitOverriddenService(initLatch, destroyLatch);
+        DerivedPostConstructPreDestroyOnOverriddenMethodService ss = new DerivedPostConstructPreDestroyOnOverriddenMethodService(initLatch, destroyLatch);
 
         processor.process(ss);
-        assertTrue(initLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(initLatch.await(1, TimeUnit.SECONDS));
 
         processor.deprocess(ss);
-        assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(destroyLatch.await(1, TimeUnit.SECONDS));
     }
 
     @Service
-    public static class InitOverriddenService
+    public static class PostConstructPreDestroyOnOverriddenMethodService
     {
         protected final CountDownLatch initLatch;
+        protected final CountDownLatch destroyLatch;
 
-        public InitOverriddenService(CountDownLatch initLatch)
+        public PostConstructPreDestroyOnOverriddenMethodService(CountDownLatch initLatch, CountDownLatch destroyLatch)
         {
             this.initLatch = initLatch;
+            this.destroyLatch = destroyLatch;
         }
 
         @PostConstruct
@@ -818,18 +1226,23 @@ public class ServerAnnotationProcessorTest
             assertEquals(1, initLatch.getCount());
             initLatch.countDown();
         }
+
+        @PreDestroy
+        public void destroy()
+        {
+            assertEquals(1, destroyLatch.getCount());
+            destroyLatch.countDown();
+        }
     }
 
-    public static class DerivedInitOverriddenService extends InitOverriddenService
+    public static class DerivedPostConstructPreDestroyOnOverriddenMethodService extends PostConstructPreDestroyOnOverriddenMethodService
     {
-        private final CountDownLatch destroyLatch;
-
-        public DerivedInitOverriddenService(CountDownLatch initLatch, CountDownLatch destroyLatch)
+        public DerivedPostConstructPreDestroyOnOverriddenMethodService(CountDownLatch initLatch, CountDownLatch destroyLatch)
         {
-            super(initLatch);
-            this.destroyLatch = destroyLatch;
+            super(initLatch, destroyLatch);
         }
 
+        // Overridden without annotation.
         @Override
         public void init()
         {
@@ -838,10 +1251,82 @@ public class ServerAnnotationProcessorTest
             super.init();
         }
 
-        @PreDestroy
-        void destroy()
+        // Overridden without annotation.
+        @Override
+        public void destroy()
         {
+            assertEquals(2, destroyLatch.getCount());
             destroyLatch.countDown();
+            super.init();
+        }
+    }
+
+    @Test
+    public void testPostConstructPreDestroyOnOverridingMethod() throws Exception
+    {
+        final CountDownLatch initLatch = new CountDownLatch(2);
+        final CountDownLatch destroyLatch = new CountDownLatch(2);
+
+        DerivedPostConstructPreDestroyOnOverridingMethodService ss = new DerivedPostConstructPreDestroyOnOverridingMethodService(initLatch, destroyLatch);
+
+        processor.process(ss);
+        assertTrue(initLatch.await(5, TimeUnit.SECONDS));
+
+        processor.deprocess(ss);
+        assertTrue(initLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class PostConstructPreDestroyOnOverridingMethodService
+    {
+        protected final CountDownLatch initLatch;
+        protected final CountDownLatch destroyLatch;
+
+        public PostConstructPreDestroyOnOverridingMethodService(CountDownLatch initLatch, CountDownLatch destroyLatch)
+        {
+            this.initLatch = initLatch;
+            this.destroyLatch = destroyLatch;
+        }
+
+        @PostConstruct
+        public void init()
+        {
+            assertEquals(1, initLatch.getCount());
+            initLatch.countDown();
+        }
+
+        @PreDestroy
+        public void destroy()
+        {
+            assertEquals(1, destroyLatch.getCount());
+            destroyLatch.countDown();
+        }
+    }
+
+    public static class DerivedPostConstructPreDestroyOnOverridingMethodService extends PostConstructPreDestroyOnOverridingMethodService
+    {
+        public DerivedPostConstructPreDestroyOnOverridingMethodService(CountDownLatch initLatch, CountDownLatch destroyLatch)
+        {
+            super(initLatch, destroyLatch);
+        }
+
+        // Overriding with annotation.
+        @Override
+        @PostConstruct
+        public void init()
+        {
+            assertEquals(2, initLatch.getCount());
+            initLatch.countDown();
+            super.init();
+        }
+
+        @Override
+        @PreDestroy
+        public void destroy()
+        {
+            assertEquals(2, destroyLatch.getCount());
+            destroyLatch.countDown();
+            super.destroy();
         }
     }
 
@@ -875,7 +1360,7 @@ public class ServerAnnotationProcessorTest
         @PostConstruct
         public void init1()
         {
-            assertEquals(2, initLatch.getCount());
+            assertEquals(1, initLatch.getCount());
             initLatch.countDown();
         }
 
@@ -897,7 +1382,7 @@ public class ServerAnnotationProcessorTest
         @PostConstruct
         public void init2()
         {
-            assertEquals(1, initLatch.getCount());
+            assertEquals(2, initLatch.getCount());
             initLatch.countDown();
         }
 
@@ -910,11 +1395,11 @@ public class ServerAnnotationProcessorTest
     }
 
     @Test
-    public void testConfigureDefault() throws Exception
+    public void testConfigureErrorIfExists() throws Exception
     {
         final Set<String> configured = new HashSet<>();
 
-        ConfigureDefaultService s = new ConfigureDefaultService(configured);
+        ConfigureErrorIfExistsService s = new ConfigureErrorIfExistsService(configured);
         boolean processed = processor.process(s);
         assertTrue(processed);
 
@@ -922,7 +1407,7 @@ public class ServerAnnotationProcessorTest
         assertTrue(configured.contains("/blah"));
         assertTrue(configured.contains("/halb"));
 
-        ConfigureDefaultService s2 = new ConfigureDefaultService(configured);
+        ConfigureErrorIfExistsService s2 = new ConfigureErrorIfExistsService(configured);
         try
         {
             processor.process(s2);
@@ -934,11 +1419,11 @@ public class ServerAnnotationProcessorTest
     }
 
     @Service
-    public static class ConfigureDefaultService
+    public static class ConfigureErrorIfExistsService
     {
         private final Set<String> configured;
 
-        public ConfigureDefaultService(Set<String> configured)
+        public ConfigureErrorIfExistsService(Set<String> configured)
         {
             this.configured = configured;
         }
@@ -1020,6 +1505,97 @@ public class ServerAnnotationProcessorTest
         private void configureFooBar(ConfigurableServerChannel channel)
         {
             configured.add(channel.getId());
+        }
+    }
+
+    @Test
+    public void testConfigureOnOverriddenMethod() throws Exception
+    {
+        CountDownLatch latch = new CountDownLatch(2);
+        DerivedConfigureOnOverriddenMethodService s = new DerivedConfigureOnOverriddenMethodService(latch);
+        boolean processed = processor.process(s);
+        assertFalse(processed);
+        assertFalse(latch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class ConfigureOnOverriddenMethodService
+    {
+        protected final CountDownLatch latch;
+
+        public ConfigureOnOverriddenMethodService(CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
+        @Configure(value = "/foo")
+        protected void configureFoo(ConfigurableServerChannel channel)
+        {
+            assertEquals(1, latch.getCount());
+            latch.countDown();
+        }
+    }
+
+    public static class DerivedConfigureOnOverriddenMethodService extends ConfigureOnOverriddenMethodService
+    {
+        public DerivedConfigureOnOverriddenMethodService(CountDownLatch latch)
+        {
+            super(latch);
+        }
+
+        // Overriding without annotation.
+        @Override
+        public void configureFoo(ConfigurableServerChannel channel)
+        {
+            assertEquals(2, latch.getCount());
+            latch.countDown();
+            super.configureFoo(channel);
+        }
+    }
+
+    @Test
+    public void testConfigureOnOverridingMethod() throws Exception
+    {
+        CountDownLatch latch = new CountDownLatch(2);
+        DerivedConfigureOnOverridingMethodService s = new DerivedConfigureOnOverridingMethodService(latch);
+        boolean processed = processor.process(s);
+        assertTrue(processed);
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Service
+    public static class ConfigureOnOverridingMethodService
+    {
+        protected final CountDownLatch latch;
+
+        public ConfigureOnOverridingMethodService(CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
+        @Configure(value = "/foo")
+        protected void configureFoo(ConfigurableServerChannel channel)
+        {
+            assertEquals(1, latch.getCount());
+            latch.countDown();
+        }
+    }
+
+    public static class DerivedConfigureOnOverridingMethodService extends ConfigureOnOverridingMethodService
+    {
+        public DerivedConfigureOnOverridingMethodService(CountDownLatch latch)
+        {
+            super(latch);
+        }
+
+        // Overriding with annotation.
+        @Override
+        @Configure(value = "/foo")
+        public void configureFoo(ConfigurableServerChannel channel)
+        {
+            assertEquals(2, latch.getCount());
+            latch.countDown();
+            super.configureFoo(channel);
         }
     }
 

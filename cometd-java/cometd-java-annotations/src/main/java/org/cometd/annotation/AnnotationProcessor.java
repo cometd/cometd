@@ -15,12 +15,6 @@
  */
 package org.cometd.annotation;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -29,6 +23,13 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base class for common functionality in annotation processors
@@ -42,30 +43,7 @@ class AnnotationProcessor
         if (bean == null)
             return false;
 
-        List<Method> postConstructs = new ArrayList<>();
-        for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
-        {
-            boolean foundInClass = false;
-            Method[] methods = c.getDeclaredMethods();
-            for (Method method : methods)
-            {
-                PostConstruct postConstruct = method.getAnnotation(PostConstruct.class);
-                if (postConstruct != null)
-                {
-                    if (foundInClass)
-                        throw new RuntimeException("Invalid @PostConstruct method " + method + ": another method with the same annotation exists");
-                    foundInClass = true;
-                    if (method.getReturnType() != Void.TYPE)
-                        throw new RuntimeException("Invalid @PostConstruct method " + method + ": it must have void return type");
-                    if (method.getParameterTypes().length > 0)
-                        throw new RuntimeException("Invalid @PostConstruct method " + method + ": it must have no parameters");
-                    if (Modifier.isStatic(method.getModifiers()))
-                        throw new RuntimeException("Invalid @PostConstruct method " + method + ": it must not be static");
-                    postConstructs.add(method);
-                }
-            }
-        }
-        Collections.reverse(postConstructs);
+        List<Method> postConstructs = findLifeCycleMethods(bean, PostConstruct.class);
 
         boolean result = false;
         for (Method method : postConstructs)
@@ -82,29 +60,7 @@ class AnnotationProcessor
         if (bean == null)
             return false;
 
-        List<Method> preDestroys = new ArrayList<>();
-        for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
-        {
-            boolean foundInClass = false;
-            Method[] methods = c.getDeclaredMethods();
-            for (Method method : methods)
-            {
-                PreDestroy preDestroy = method.getAnnotation(PreDestroy.class);
-                if (preDestroy != null)
-                {
-                    if (foundInClass)
-                        throw new RuntimeException("Invalid @PreDestroy method " + method + ": another method with the same annotation exists");
-                    foundInClass = true;
-                    if (method.getReturnType() != Void.TYPE)
-                        throw new RuntimeException("Invalid @PreDestroy method " + method + ": it must have void return type");
-                    if (method.getParameterTypes().length > 0)
-                        throw new RuntimeException("Invalid @PreDestroy method " + method + ": it must have no parameters");
-                    if (Modifier.isStatic(method.getModifiers()))
-                        throw new RuntimeException("Invalid @PreDestroy method " + method + ": it must not be static");
-                    preDestroys.add(method);
-                }
-            }
-        }
+        List<Method> preDestroys = findLifeCycleMethods(bean, PreDestroy.class);
 
         boolean result = false;
         for (Method method : preDestroys)
@@ -121,6 +77,99 @@ class AnnotationProcessor
             }
         }
 
+        return result;
+    }
+
+    private List<Method> findLifeCycleMethods(Object bean, Class<? extends Annotation> lifeCycle)
+    {
+        List<Class<?>> classes = new ArrayList<>();
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
+            classes.add(c);
+        Collections.reverse(classes);
+
+        List<Method> result = new ArrayList<>();
+        for (int i = 0; i < classes.size(); ++i)
+        {
+            Class<?> c = classes.get(i);
+            boolean foundInClass = false;
+            Method[] methods = c.getDeclaredMethods();
+            for (Method method : methods)
+            {
+                Annotation annotation = method.getAnnotation(lifeCycle);
+                if (annotation != null)
+                {
+                    if (foundInClass)
+                        throw new RuntimeException("Invalid @" + lifeCycle.getSimpleName() + " method " + method + ": another method with the same annotation exists");
+                    foundInClass = true;
+                    if (method.getReturnType() != Void.TYPE)
+                        throw new RuntimeException("Invalid @" + lifeCycle.getSimpleName() + " method " + method + ": it must have void return type");
+                    if (method.getParameterTypes().length > 0)
+                        throw new RuntimeException("Invalid @" + lifeCycle.getSimpleName() + " method " + method + ": it must have no parameters");
+                    if (Modifier.isStatic(method.getModifiers()))
+                        throw new RuntimeException("Invalid @" + lifeCycle.getSimpleName() + " method " + method + ": it must not be static");
+
+                    // Check if the method has not been overridden.
+                    boolean overridden = false;
+                    for (int j = i + 1; j < classes.size(); ++j)
+                    {
+                        try
+                        {
+                            Class<?> sc = classes.get(j);
+                            sc.getDeclaredMethod(method.getName(), method.getParameterTypes());
+                            overridden = true;
+                            break;
+                        }
+                        catch (Exception ignored)
+                        {
+                        }
+                    }
+                    if (!overridden)
+                        result.add(method);
+                }
+            }
+        }
+        Collections.reverse(result);
+        return result;
+    }
+
+    protected List<Method> findAnnotatedMethods(Object bean, Class<? extends Annotation> annotationClass)
+    {
+        List<Class<?>> classes = new ArrayList<>();
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
+            classes.add(c);
+        Collections.reverse(classes);
+
+        List<Method> result = new ArrayList<>();
+        for (int i = 0; i < classes.size(); ++i)
+        {
+            Class<?> c = classes.get(i);
+            Method[] methods = c.getDeclaredMethods();
+            for (Method method : methods)
+            {
+                Annotation annotation = method.getAnnotation(annotationClass);
+                if (annotation != null)
+                {
+                    // Check if the method has not been overridden.
+                    boolean overridden = false;
+                    for (int j = i + 1; j < classes.size(); ++j)
+                    {
+                        try
+                        {
+                            Class<?> sc = classes.get(j);
+                            sc.getDeclaredMethod(method.getName(), method.getParameterTypes());
+                            overridden = true;
+                            break;
+                        }
+                        catch (Exception ignored)
+                        {
+                        }
+                    }
+                    if (!overridden)
+                        result.add(method);
+                }
+            }
+        }
+        Collections.reverse(result);
         return result;
     }
 
@@ -182,29 +231,6 @@ class AnnotationProcessor
         }
     }
 
-    protected Method findGetterMethod(Class<?> klass, Method setter)
-    {
-        try
-        {
-            String setterPrefix = "set";
-            String setterName = setter.getName();
-            if (setterName.startsWith(setterPrefix) &&
-                    (setterName.length() == setterPrefix.length() ||
-                            Character.isUpperCase(setterName.charAt(setterPrefix.length()))))
-            {
-                String getterName = "get" + setterName.substring(setterPrefix.length());
-                Method getter = klass.getDeclaredMethod(getterName);
-                if (getter.getReturnType() == setter.getParameterTypes()[0])
-                    return getter;
-            }
-            return null;
-        }
-        catch (NoSuchMethodException x)
-        {
-            return null;
-        }
-    }
-
     protected Object getField(Object bean, Field field)
     {
         boolean accessible = field.isAccessible();
@@ -238,6 +264,24 @@ class AnnotationProcessor
         finally
         {
             field.setAccessible(accessible);
+        }
+    }
+
+    protected static void checkMethodsPublic(Object bean, Class<? extends Annotation> annotationClass)
+    {
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
+        {
+            Method[] methods = c.getDeclaredMethods();
+            for (Method method : methods)
+            {
+                Annotation annotation = method.getAnnotation(annotationClass);
+                if (annotation != null)
+                {
+                    if (!Modifier.isPublic(method.getModifiers()))
+                        throw new IllegalArgumentException("@" + annotationClass.getSimpleName() + " method " +
+                                method.getDeclaringClass().getName() + "." + method.getName() + "(...) must be public");
+                }
+            }
         }
     }
 
@@ -303,35 +347,20 @@ class AnnotationProcessor
                     }
                 }
             }
+        }
 
-            Method[] methods = c.getDeclaredMethods();
-            for (Method method : methods)
+        List<Method> methods = findAnnotatedMethods(bean, Inject.class);
+        for (Method method : methods)
+        {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            if (parameterTypes.length == 1)
             {
-                if (method.getAnnotation(Inject.class) != null)
+                if (parameterTypes[0].isAssignableFrom(injectable.getClass()))
                 {
-                    Class<?>[] parameterTypes = method.getParameterTypes();
-                    if (parameterTypes.length == 1)
-                    {
-                        if (parameterTypes[0].isAssignableFrom(injectable.getClass()))
-                        {
-                            Method getter = findGetterMethod(c, method);
-                            if (getter != null)
-                            {
-                                Object value = invokePrivate(bean, getter);
-                                if (value != null)
-                                {
-                                    if (logger.isDebugEnabled())
-                                        logger.debug("Avoid injection of method {} on bean {}, it's already injected with {}", method, bean, value);
-                                    continue;
-                                }
-                            }
-
-                            invokePrivate(bean, method, injectable);
-                            result = true;
-                            if (logger.isDebugEnabled())
-                                logger.debug("Injected {} to method {} on bean {}", injectable, method, bean);
-                        }
-                    }
+                    invokePrivate(bean, method, injectable);
+                    result = true;
+                    if (logger.isDebugEnabled())
+                        logger.debug("Injected {} to method {} on bean {}", injectable, method, bean);
                 }
             }
         }
