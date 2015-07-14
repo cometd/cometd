@@ -203,6 +203,7 @@
                 <executions>
                     <execution>
                         <id>osgi</id>
+                        <phase>process-classes</phase>
                         <goals>
                             <goal>manifest</goal>
                         </goals>
