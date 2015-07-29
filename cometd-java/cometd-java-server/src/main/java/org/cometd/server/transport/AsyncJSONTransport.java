@@ -37,8 +37,17 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 
 public class AsyncJSONTransport extends AbstractHttpTransport
 {
-    private final static String PREFIX = "long-polling.json";
-    private final static String NAME = "long-polling";
+    private static final String PREFIX = "long-polling.json";
+    private static final String NAME = "long-polling";
+    private static final int BUFFER_CAPACITY = 512;
+    private static final ThreadLocal<byte[]> buffers = new ThreadLocal<byte[]>()
+    {
+        @Override
+        protected byte[] initialValue()
+        {
+            return new byte[BUFFER_CAPACITY];
+        }
+    };
 
     public AsyncJSONTransport(BayeuxServerImpl bayeux)
     {
@@ -102,9 +111,6 @@ public class AsyncJSONTransport extends AbstractHttpTransport
 
     protected abstract class AbstractReader implements ReadListener
     {
-        protected static final int CAPACITY = 512;
-
-        private final byte[] buffer = new byte[CAPACITY];
         private final HttpServletRequest request;
         private final HttpServletResponse response;
         protected final AsyncContext asyncContext;
@@ -122,6 +128,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             ServletInputStream input = request.getInputStream();
             if (_logger.isDebugEnabled())
                 _logger.debug("Asynchronous read start from {}", input);
+            byte[] buffer = buffers.get();
             // First check for isReady() because it has
             // side effects, and then for isFinished().
             while (input.isReady() && !input.isFinished())
@@ -186,7 +193,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
 
     protected class UTF8Reader extends AbstractReader
     {
-        private final Utf8StringBuilder content = new Utf8StringBuilder(CAPACITY);
+        private final Utf8StringBuilder content = new Utf8StringBuilder(BUFFER_CAPACITY);
 
         protected UTF8Reader(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext)
         {
@@ -208,7 +215,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
 
     protected class CharsetReader extends AbstractReader
     {
-        private byte[] content = new byte[CAPACITY];
+        private byte[] content = new byte[BUFFER_CAPACITY];
         private final Charset charset;
         private int count;
 
