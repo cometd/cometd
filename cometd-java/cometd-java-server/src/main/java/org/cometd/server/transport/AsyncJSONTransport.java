@@ -15,18 +15,24 @@
  */
 package org.cometd.server.transport;
 
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerSessionImpl;
-import org.eclipse.jetty.util.Utf8StringBuilder;
-
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.List;
+
+import javax.servlet.AsyncContext;
+import javax.servlet.ReadListener;
+import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.ServerSessionImpl;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 
 public class AsyncJSONTransport extends AbstractHttpTransport
 {
@@ -242,7 +248,6 @@ public class AsyncJSONTransport extends AbstractHttpTransport
 
     protected class Writer implements WriteListener
     {
-        private final StringBuilder buffer = new StringBuilder(512);
         private final HttpServletRequest request;
         private final HttpServletResponse response;
         private final AsyncContext asyncContext;
@@ -251,7 +256,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         private final List<ServerMessage> messages;
         private final ServerMessage.Mutable[] replies;
         private int messageIndex = -1;
-        private int replyIndex;
+        private int replyIndex = -1;
+        private boolean needsComma;
 
         protected Writer(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, boolean startInterval, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
         {
@@ -269,12 +275,13 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         {
             ServletOutputStream output = response.getOutputStream();
 
+            if (_logger.isDebugEnabled())
+                _logger.debug("Messages to write for session {}: {}", session, messages.size());
             if (!writeMessages(output))
                 return;
 
             if (_logger.isDebugEnabled())
                 _logger.debug("Replies to write for session {}: {}", session, replies.length);
-
             if (!writeReplies(output))
                 return;
 
@@ -285,61 +292,100 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         {
             try
             {
-                if (messageIndex < 0)
+                int size = messages.size();
+                while (output.isReady())
                 {
-                    messageIndex = 0;
-                    buffer.append("[");
+                    if (messageIndex < 0)
+                    {
+                        messageIndex = 0;
+                        output.write('[');
+                    }
+                    else
+                    {
+                        if (messageIndex == size)
+                        {
+                            // Start the interval timeout after writing the
+                            // messages since they may take time to be written.
+                            startInterval();
+                            return true;
+                        }
+                        else
+                        {
+                            if (needsComma)
+                            {
+                                needsComma = false;
+                                output.write(',');
+                            }
+                            else
+                            {
+                                ServerMessage message = messages.get(messageIndex);
+                                output.write(message.getJSON().getBytes("UTF-8"));
+                                ++messageIndex;
+                                needsComma = messageIndex < size;
+                            }
+                        }
+                    }
                 }
-
-                if (_logger.isDebugEnabled())
-                    _logger.debug("Messages to write for session {}: {}", session, messages.size());
-                while (messageIndex < messages.size())
-                {
-                    if (messageIndex > 0)
-                        buffer.append(",");
-
-                    buffer.append(messages.get(messageIndex++).getJSON());
-                    output.write(buffer.toString().getBytes("UTF-8"));
-                    buffer.setLength(0);
-                    if (!output.isReady())
-                        return false;
-                }
+                return false;
             }
-            finally
+            catch (Throwable x)
             {
-                // Start the interval timeout after writing the messages
-                // since they may take time to be written, even in case
-                // of exceptions to make sure the session can be swept.
-                if (replyIndex == 0 && startInterval && session != null && session.isConnected())
-                    session.startIntervalTimeout(getInterval());
+                // Start the interval timeout also in case of
+                // exceptions to ensure the session can be swept.
+                startInterval();
+                throw x;
             }
-            return true;
+        }
+
+        private void startInterval()
+        {
+            if (startInterval && session != null && session.isConnected())
+                session.startIntervalTimeout(getInterval());
         }
 
         private boolean writeReplies(ServletOutputStream output) throws IOException
         {
-            boolean needsComma = messageIndex > 0;
-            while (replyIndex < replies.length)
+            int size = replies.length;
+            while (output.isReady())
             {
-                ServerMessage.Mutable reply = replies[replyIndex++];
-                if (reply == null)
-                    continue;
-
-                if (needsComma)
-                    buffer.append(",");
-                needsComma = true;
-
-                buffer.append(reply.getJSON());
-
-                if (replyIndex == replies.length)
-                    buffer.append("]");
-
-                output.write(buffer.toString().getBytes("UTF-8"));
-                buffer.setLength(0);
-                if (!output.isReady())
-                    return false;
+                if (replyIndex < 0)
+                {
+                    replyIndex = 0;
+                    needsComma = messageIndex > 0;
+                }
+                else if (replyIndex < size)
+                {
+                    ServerMessage.Mutable reply = replies[replyIndex];
+                    if (reply != null)
+                    {
+                        if (needsComma)
+                        {
+                            needsComma = false;
+                            output.write(',');
+                        }
+                        else
+                        {
+                            output.write(reply.getJSON().getBytes("UTF-8"));
+                            ++replyIndex;
+                            needsComma = replyIndex < size;
+                        }
+                    }
+                    else
+                    {
+                        ++replyIndex;
+                    }
+                }
+                else if (replyIndex == size)
+                {
+                    ++replyIndex;
+                    output.write(']');
+                }
+                else
+                {
+                    return true;
+                }
             }
-            return true;
+            return false;
         }
 
         @Override
