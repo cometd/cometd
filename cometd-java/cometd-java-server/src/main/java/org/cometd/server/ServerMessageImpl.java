@@ -15,19 +15,25 @@
  */
 package org.cometd.server;
 
+import java.nio.charset.StandardCharsets;
+import java.util.AbstractSet;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.HashMapMessage;
 import org.cometd.common.JSONContext;
-
-import java.util.*;
 
 public class ServerMessageImpl extends HashMapMessage implements ServerMessage.Mutable
 {
     private static final long serialVersionUID = 6412048662640296067L;
 
-    private volatile transient ServerMessage.Mutable _associated;
-    private volatile boolean _lazy = false;
-    private volatile String _json;
+    private transient ServerMessage.Mutable _associated;
+    private boolean _lazy = false;
+    private String _json;
+    private byte[] _jsonBytes;
 
     public ServerMessage.Mutable getAssociated()
     {
@@ -53,6 +59,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     {
         assert _json == null;
         _json = json;
+        _jsonBytes = json.getBytes(StandardCharsets.UTF_8);
     }
 
     protected boolean isFrozen()
@@ -66,6 +73,11 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
         if (_json == null)
             return _jsonContext.generate(this);
         return _json;
+    }
+
+    public byte[] getJSONBytes()
+    {
+        return _jsonBytes;
     }
 
     @Override
