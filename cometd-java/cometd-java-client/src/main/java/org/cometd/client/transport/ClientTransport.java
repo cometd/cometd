@@ -15,18 +15,18 @@
  */
 package org.cometd.client.transport;
 
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 import org.cometd.bayeux.Message;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 /**
  * {@link ClientTransport}s are used by {@link org.cometd.client.BayeuxClient} to send and receive Bayeux messages.
@@ -37,7 +37,7 @@ public abstract class ClientTransport extends AbstractTransport
     public static final String JSON_CONTEXT_OPTION = "jsonContext";
     public static final String SCHEDULER_OPTION = "scheduler";
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + System.identityHashCode(this));
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
     private long maxNetworkDelay;
     private JSONContext.Client jsonContext;
 
