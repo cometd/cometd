@@ -16,6 +16,7 @@
 package org.cometd.websocket.server;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -243,7 +245,15 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
         protected void onError(Throwable failure)
         {
-            _logger.info("WebSocket Error", failure);
+            if (failure instanceof SocketTimeoutException || failure instanceof TimeoutException)
+            {
+                if (_logger.isDebugEnabled())
+                    _logger.debug("WebSocket Timeout", failure);
+            }
+            else
+            {
+                _logger.info("WebSocket Error", failure);
+            }
         }
 
         protected boolean cancelMetaConnectTask(ServerSessionImpl session)
