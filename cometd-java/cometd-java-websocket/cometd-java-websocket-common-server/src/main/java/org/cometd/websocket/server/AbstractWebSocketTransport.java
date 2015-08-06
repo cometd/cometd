@@ -16,6 +16,7 @@
 package org.cometd.websocket.server;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -252,7 +253,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
             else
             {
-                _logger.info("WebSocket Error", failure);
+                BayeuxContext context = getContext();
+                InetSocketAddress address = context == null ? null : context.getRemoteAddress();
+                _logger.info("WebSocket Error, Address: " + address, failure);
             }
         }
 
