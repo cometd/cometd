@@ -15,7 +15,6 @@
  */
 package org.cometd.websocket.server;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
@@ -161,9 +160,11 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
                 {
                     try
                     {
+                        // Limits of the WebSocket APIs, otherwise an exception is thrown.
+                        reason = reason.substring(0, 30);
                         _wsSession.close(new CloseReason(CloseReason.CloseCodes.getCloseCode(code), reason));
                     }
-                    catch (IOException x)
+                    catch (Throwable x)
                     {
                         _logger.trace("Could not close WebSocket session " + _wsSession, x);
                     }
