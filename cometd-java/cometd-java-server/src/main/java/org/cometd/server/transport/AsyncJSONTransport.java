@@ -31,7 +31,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
@@ -327,10 +326,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                             else
                             {
                                 ServerMessage message = messages.get(messageIndex);
-                                if (message instanceof ServerMessageImpl)
-                                    output.write(((ServerMessageImpl)message).getJSONBytes());
-                                else
-                                    output.write(message.getJSON().getBytes("UTF-8"));
+                                output.write(toJSONBytes(message, "UTF-8"));
                                 ++messageIndex;
                                 needsComma = messageIndex < size;
                             }
@@ -376,7 +372,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                         }
                         else
                         {
-                            output.write(reply.getJSON().getBytes("UTF-8"));
+                            output.write(toJSONBytes(reply, "UTF-8"));
                             ++replyIndex;
                             needsComma = replyIndex < size;
                         }

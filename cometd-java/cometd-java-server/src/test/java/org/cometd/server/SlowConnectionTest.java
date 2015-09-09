@@ -15,6 +15,19 @@
  */
 package org.cometd.server;
 
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -28,18 +41,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.io.EofException;
 import org.junit.Assert;
 import org.junit.Test;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 public class SlowConnectionTest extends AbstractBayeuxClientServerTest
 {
@@ -212,10 +213,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         {
             public void sessionAdded(ServerSession session, ServerMessage message)
             {
-                ServerMessage.Mutable msg = bayeux.newMessage();
-                msg.setChannel(channelName);
-                msg.setData("test");
-                ((ServerSessionImpl)session).addMessage(msg);
+                session.deliver(null, channelName, "test");
             }
 
             public void sessionRemoved(ServerSession session, boolean timedout)
