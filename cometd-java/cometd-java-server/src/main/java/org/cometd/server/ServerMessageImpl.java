@@ -33,7 +33,8 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     private transient ServerMessage.Mutable _associated;
     private boolean _lazy = false;
     private String _json;
-    private byte[] _jsonBytes;
+    private transient byte[] _jsonBytes;
+    private transient boolean _local;
 
     public ServerMessage.Mutable getAssociated()
     {
@@ -53,6 +54,16 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     public void setLazy(boolean lazy)
     {
         _lazy = lazy;
+    }
+
+    public boolean isLocal()
+    {
+        return _local;
+    }
+
+    public void setLocal(boolean local)
+    {
+        _local = local;
     }
 
     protected void freeze(String json)

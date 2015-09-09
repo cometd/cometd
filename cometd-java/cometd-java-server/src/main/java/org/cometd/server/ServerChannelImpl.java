@@ -15,13 +15,6 @@
  */
 package org.cometd.server;
 
-import org.cometd.bayeux.ChannelId;
-import org.cometd.bayeux.Session;
-import org.cometd.bayeux.server.*;
-import org.eclipse.jetty.util.AttributesMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -30,6 +23,18 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.cometd.bayeux.ChannelId;
+import org.cometd.bayeux.Session;
+import org.cometd.bayeux.server.Authorizer;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
+import org.eclipse.jetty.util.AttributesMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServerChannelImpl implements ServerChannel
 {
@@ -318,6 +323,9 @@ public class ServerChannelImpl implements ServerChannel
             // as websocket whose clients may rely on the messageId to match request/responses.
             mutable.setId(null);
         }
+
+        if (mutable instanceof ServerMessageImpl)
+            ((ServerMessageImpl)mutable).setLocal(true);
 
         if (_bayeux.extendSend(session, null, mutable))
             _bayeux.doPublish(session, this, mutable);

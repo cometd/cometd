@@ -15,10 +15,27 @@
  */
 package org.cometd.server;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
-import org.cometd.bayeux.server.*;
+import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.AbstractServerTransport.Scheduler;
 import org.cometd.server.transport.AbstractHttpTransport;
@@ -26,13 +43,6 @@ import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class ServerSessionImpl implements ServerSession
 {
@@ -199,6 +209,9 @@ public class ServerSessionImpl implements ServerSession
             session = (ServerSession)sender;
         else if (sender instanceof LocalSession)
             session = ((LocalSession)sender).getServerSession();
+
+        if (message instanceof ServerMessageImpl)
+            ((ServerMessageImpl)message).setLocal(true);
 
         if (!_bayeux.extendSend(session, this, message))
             return;

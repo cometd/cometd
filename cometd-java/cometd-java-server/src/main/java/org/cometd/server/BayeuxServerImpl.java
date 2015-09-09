@@ -15,15 +15,42 @@
  */
 package org.cometd.server;
 
+import java.lang.reflect.Constructor;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.server.*;
+import org.cometd.bayeux.server.Authorizer;
+import org.cometd.bayeux.server.BayeuxContext;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
 import org.cometd.bayeux.server.ConfigurableServerChannel.ServerChannelListener;
+import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.SecurityPolicy;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerChannel.MessageListener;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.JSONContext;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.cometd.server.transport.AsyncJSONTransport;
@@ -38,15 +65,6 @@ import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.servlet.http.HttpServletRequest;
-import java.lang.reflect.Constructor;
-import java.security.SecureRandom;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 
 @ManagedObject("The CometD server")
 public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
@@ -555,7 +573,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public ServerMessage.Mutable newMessage()
     {
-        return new ServerMessageImpl();
+        ServerMessageImpl result = new ServerMessageImpl();
+        result.setLocal(true);
+        return result;
     }
 
     public ServerMessage.Mutable newMessage(ServerMessage tocopy)
@@ -951,11 +971,16 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public void freeze(Mutable mutable)
     {
-        ServerMessageImpl message = (ServerMessageImpl)mutable;
-        if (message.isFrozen())
-            return;
-        String json = _jsonContext.generate(message);
-        message.freeze(json);
+        if (mutable instanceof ServerMessageImpl)
+        {
+            ServerMessageImpl message = (ServerMessageImpl)mutable;
+            if (message.isFrozen())
+                return;
+            if (!message.isLocal() && !ChannelId.isBroadcast(message.getChannel()))
+                return;
+            String json = _jsonContext.generate(message);
+            message.freeze(json);
+        }
     }
 
     private boolean notifyOnMessage(MessageListener listener, ServerSession from, ServerChannel to, Mutable mutable)
