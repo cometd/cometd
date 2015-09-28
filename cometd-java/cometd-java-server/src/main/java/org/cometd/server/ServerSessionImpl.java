@@ -111,7 +111,10 @@ public class ServerSessionImpl implements ServerSession
 
         ServerTransport transport = _bayeux.getCurrentTransport();
         if (transport != null)
+        {
+            _maxInterval = transport.getMaxInterval();
             _intervalTimestamp = System.currentTimeMillis() + transport.getMaxInterval();
+        }
 
         _broadcastToPublisher = _bayeux.isBroadcastToPublisher();
     }
@@ -357,7 +360,7 @@ public class ServerSessionImpl implements ServerSession
         if (transport != null)
         {
             _maxQueue = transport.getOption(AbstractServerTransport.MAX_QUEUE_OPTION, -1);
-            _maxInterval = _interval >= 0 ? _interval + transport.getMaxInterval() : transport.getMaxInterval();
+            _maxInterval = transport.getMaxInterval();
             _maxServerInterval = transport.getOption("maxServerInterval", -1);
             _maxLazy = transport.getMaxLazyTimeout();
         }
