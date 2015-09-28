@@ -46,6 +46,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     public static final String META_CONNECT_DELIVERY_OPTION = "metaConnectDeliverOnly";
     public static final String MAX_QUEUE_OPTION = "maxQueue";
     public static final String JSON_CONTEXT_OPTION = "jsonContext";
+    public static final String FAST_RECONNECT_OPTION = "fastReconnect";
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass().getName());
     private final BayeuxServerImpl _bayeux;
@@ -55,6 +56,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     private long _maxLazyTimeout = 5000;
     private boolean _metaConnectDeliveryOnly = false;
     private JSONContext.Server jsonContext;
+    private boolean _fastReconnect;
 
     /**
      * <p>The constructor is passed the {@link BayeuxServerImpl} instance for
@@ -122,6 +124,16 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _metaConnectDeliveryOnly = meta;
     }
 
+    public boolean isFastReconnect()
+    {
+        return _fastReconnect;
+    }
+
+    public void setFastReconnect(boolean fastReconnect)
+    {
+        _fastReconnect = fastReconnect;
+    }
+
     /**
      * Initializes the transport, resolving default and direct options.
      */
@@ -133,6 +145,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _maxLazyTimeout = getOption(MAX_LAZY_TIMEOUT_OPTION, _maxLazyTimeout);
         _metaConnectDeliveryOnly = getOption(META_CONNECT_DELIVERY_OPTION, _metaConnectDeliveryOnly);
         jsonContext = (JSONContext.Server)getOption(JSON_CONTEXT_OPTION);
+        _fastReconnect = getOption(FAST_RECONNECT_OPTION, false);
     }
 
     public void destroy()

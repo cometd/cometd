@@ -15,22 +15,6 @@
  */
 package org.cometd.server.transport;
 
-import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.server.BayeuxContext;
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerSessionImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.servlet.*;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.Principal;
@@ -41,6 +25,27 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.BayeuxContext;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.AbstractServerTransport;
+import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.ServerSessionImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>HTTP ServerTransport base class, used by ServerTransports that use
@@ -182,7 +187,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                         if (reply != null)
                             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
                         messages[i] = processReply(session, reply);
-                        sendQueue = false;
+                        startInterval = sendQueue = isFastReconnect() && reply != null && reply.isSuccessful();
                         break;
                     }
                     case Channel.META_CONNECT:
