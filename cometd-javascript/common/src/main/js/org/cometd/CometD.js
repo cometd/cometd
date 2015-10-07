@@ -44,6 +44,7 @@ org.cometd.CometD = function(name)
     var _remoteCalls = {};
     var _reestablish = false;
     var _connected = false;
+    var _unconnectTime = 0;
     var _config = {
         protocol: null,
         stickyReconnect: true,
@@ -60,7 +61,8 @@ org.cometd.CometD = function(name)
         advice: {
             timeout: 60000,
             interval: 0,
-            reconnect: 'retry'
+            reconnect: 'retry',
+            maxInterval: 0
         }
     };
 
@@ -749,7 +751,7 @@ org.cometd.CometD = function(name)
         // Reset the transports if we're not retrying the handshake
         if (_isDisconnected())
         {
-            _transports.reset();
+            _transports.reset(true);
             _updateAdvice(_config.advice);
         }
         else
@@ -1023,14 +1025,32 @@ org.cometd.CometD = function(name)
 
     function _failConnect(message)
     {
-        // Notify the listeners after the status change but before the next action
+        // Notify the listeners after the status change but before the next action.
         _notifyListeners('/meta/connect', message);
         _notifyListeners('/meta/unsuccessful', message);
 
+        if (_unconnectTime === 0)
+        {
+            _unconnectTime = new Date().getTime();
+        }
+
         // This may happen when the server crashed, the current clientId
-        // will be invalid, and the server will ask to handshake again
-        // Listeners can call disconnect(), so check the state after they run
+        // will be invalid, and the server will ask to handshake again.
+        // Listeners can call disconnect(), so check the state after they run.
         var action = _isDisconnected() ? 'none' : _advice.reconnect;
+
+        // Check whether we may switch to handshaking.
+        var maxInterval = _advice.maxInterval;
+        if (maxInterval > 0)
+        {
+            var expiration = _advice.timeout + _advice.interval + maxInterval;
+            var unconnected = new Date().getTime() - _unconnectTime;
+            if (unconnected + _backoff > expiration)
+            {
+                action = 'handshake';
+            }
+        }
+
         switch (action)
         {
             case 'retry':
@@ -1039,8 +1059,8 @@ org.cometd.CometD = function(name)
                 break;
             case 'handshake':
                 // The current transport may be failed (e.g. network disconnection)
-                // Reset the transports so the new handshake picks up the right one
-                _transports.reset();
+                // Reset the transports so the new handshake picks up the right one.
+                _transports.reset(false);
                 _resetBackoff();
                 _delayedHandshake();
                 break;
@@ -1062,8 +1082,8 @@ org.cometd.CometD = function(name)
 
             // Normally, the advice will say "reconnect: 'retry', interval: 0"
             // and the server will hold the request, so when a response returns
-            // we immediately call the server again (long polling)
-            // Listeners can call disconnect(), so check the state after they run
+            // we immediately call the server again (long polling).
+            // Listeners can call disconnect(), so check the state after they run.
             var action = _isDisconnected() ? 'none' : _advice.reconnect;
             switch (action)
             {
@@ -1230,6 +1250,8 @@ org.cometd.CometD = function(name)
 
     function _receive(message)
     {
+        _unconnectTime = 0;
+
         message = _applyIncomingExtensions(message);
         if (message === undefined || message === null)
         {

@@ -118,9 +118,9 @@ org.cometd.Transport = function()
         throw 'Abstract';
     };
 
-    this.reset = function()
+    this.reset = function(init)
     {
-        this._debug('Transport', _type, 'reset');
+        this._debug('Transport', _type, 'reset', init ? 'initial' : 'retry');
     };
 
     this.abort = function()

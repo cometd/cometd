@@ -278,6 +278,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return bayeuxClientState.type == State.CONNECTED;
     }
 
+    private boolean isUnconnected(BayeuxClientState bayeuxClientState)
+    {
+        return bayeuxClientState.type == State.UNCONNECTED;
+    }
+
     private boolean isDisconnecting(BayeuxClientState bayeuxClientState)
     {
         return bayeuxClientState.type == State.DISCONNECTING;
@@ -376,7 +381,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     protected boolean sendHandshake()
     {
         BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
-        if (isHandshaking(bayeuxClientState))
+        if (isHandshaking(bayeuxClientState) || isUnconnected(bayeuxClientState))
         {
             Message.Mutable message = newMessage();
             if (bayeuxClientState.handshakeFields != null)
@@ -465,7 +470,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             Message.Mutable message = newMessage();
             message.setChannel(Channel.META_CONNECT);
             message.put(Message.CONNECTION_TYPE_FIELD, bayeuxClientState.transport.getName());
-            if (isConnecting(bayeuxClientState) || bayeuxClientState.type == State.UNCONNECTED)
+            if (isConnecting(bayeuxClientState) || isUnconnected(bayeuxClientState))
             {
                 // First connect after handshake or after failure, add advice
                 message.getAdvice(true).put("timeout", 0);
@@ -715,14 +720,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void processConnect(final Message.Mutable connect)
     {
-        // TODO: Split "connected" state into connectSent+connectReceived ?
-        // It may happen that the server replies to the meta connect with a delay
-        // that exceeds the maxNetworkTimeout (for example because the server is
-        // busy and the meta connect reply thread is starved).
-        // In this case, it is possible that we issue 2 concurrent connects, one
-        // for the response arrived late, and one from the unconnected state.
-        // We should avoid this, although it is a very rare case.
-
         if (logger.isDebugEnabled())
             logger.debug("Processing meta connect {}", connect);
         updateBayeuxClientState(new BayeuxClientStateUpdater()
@@ -748,7 +745,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     if (Message.RECONNECT_HANDSHAKE_VALUE.equals(action))
                         return new RehandshakingState(oldState.handshakeFields, oldState.callback, oldState.transport, 0);
                     else if (Message.RECONNECT_RETRY_VALUE.equals(action))
-                        return new UnconnectedState(oldState.handshakeFields, oldState.callback, advice, oldState.transport, oldState.clientId, oldState.nextBackoff());
+                        return new UnconnectedState(oldState.handshakeFields, oldState.callback, advice, oldState.transport, oldState.clientId, oldState.nextBackoff(), System.nanoTime());
                     else if (Message.RECONNECT_NONE_VALUE.equals(action))
                         return new DisconnectedState(oldState.transport);
                 }
@@ -1253,7 +1250,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             {
                 public BayeuxClientState create(BayeuxClientState oldState)
                 {
-                    return new UnconnectedState(oldState.handshakeFields, oldState.callback, oldState.advice, oldState.transport, oldState.clientId, oldState.nextBackoff());
+                    long time = isUnconnected(oldState) ? ((UnconnectedState)oldState).unconnectTime : System.nanoTime();
+                    return new UnconnectedState(oldState.handshakeFields, oldState.callback, oldState.advice, oldState.transport, oldState.clientId, oldState.nextBackoff(), time);
                 }
             });
             super.onFailure(failure, messages);
@@ -1377,11 +1375,26 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             this.backoff = backoff;
         }
 
+        protected long getTimeout()
+        {
+            return getAdviceField(Message.TIMEOUT_FIELD);
+        }
+
         protected long getInterval()
         {
+            return getAdviceField(Message.INTERVAL_FIELD);
+        }
+
+        protected long getMaxInterval()
+        {
+            return getAdviceField(Message.MAX_INTERVAL_FIELD);
+        }
+
+        private long getAdviceField(String field)
+        {
             long result = 0;
-            if (advice != null && advice.containsKey(Message.INTERVAL_FIELD))
-                result = ((Number)advice.get(Message.INTERVAL_FIELD)).longValue();
+            if (advice != null && advice.containsKey(field))
+                result = ((Number)advice.get(field)).longValue();
             return result;
         }
 
@@ -1625,9 +1638,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private class UnconnectedState extends BayeuxClientState
     {
-        private UnconnectedState(Map<String, Object> handshakeFields, ClientSessionChannel.MessageListener callback, Map<String, Object> advice, ClientTransport transport, String clientId, long backoff)
+        private final long unconnectTime;
+
+        private UnconnectedState(Map<String, Object> handshakeFields, ClientSessionChannel.MessageListener callback, Map<String, Object> advice, ClientTransport transport, String clientId, long backoff, long unconnectTime)
         {
             super(State.UNCONNECTED, handshakeFields, callback, advice, transport, clientId, backoff);
+            this.unconnectTime = unconnectTime;
         }
 
         @Override
@@ -1642,6 +1658,19 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         @Override
         protected void execute()
         {
+            long maxInterval = getMaxInterval();
+            if (maxInterval > 0)
+            {
+                long expiration = getTimeout() + getInterval() + maxInterval;
+                long unconnected = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - unconnectTime);
+                if (unconnected + backoff > expiration)
+                {
+                    if (logger.isDebugEnabled())
+                        logger.debug("Switching to handshake retries");
+                    scheduleHandshake(getInterval(), backoff);
+                    return;
+                }
+            }
             scheduleConnect(getInterval(), backoff);
         }
     }

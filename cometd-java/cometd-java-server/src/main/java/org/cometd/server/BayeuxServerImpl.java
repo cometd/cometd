@@ -1383,6 +1383,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             reply.put(Message.VERSION_FIELD, "1.0");
             reply.put(Message.MIN_VERSION_FIELD, "1.0");
             reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, getAllowedTransports());
+
+            Map<String, Object> adviceOut = session.takeAdvice(getCurrentTransport());
+            reply.put(Message.ADVICE_FIELD, adviceOut);
         }
     }
 

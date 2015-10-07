@@ -796,6 +796,11 @@ public class ServerSessionImpl implements ServerSession
             advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
             advice.put(Message.INTERVAL_FIELD, interval);
             advice.put(Message.TIMEOUT_FIELD, timeout);
+            if (transport instanceof AbstractServerTransport)
+            {
+                if (((AbstractServerTransport)transport).isFastReconnect())
+                    advice.put(Message.MAX_INTERVAL_FIELD, getMaxInterval());
+            }
             return advice;
         }
 

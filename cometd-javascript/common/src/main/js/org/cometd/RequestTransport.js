@@ -248,12 +248,12 @@ org.cometd.RequestTransport = function()
                 this.transportFailure(_metaConnectRequest.envelope, _metaConnectRequest, {reason: 'abort'});
             }
         }
-        this.reset();
+        this.reset(true);
     };
 
-    _self.reset = function()
+    _self.reset = function(init)
     {
-        _super.reset();
+        _super.reset(init);
         _metaConnectRequest = null;
         _requests = [];
         _envelopes = [];
