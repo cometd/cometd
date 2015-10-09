@@ -289,7 +289,7 @@ public class BayeuxClientTest extends ClientServerTest
 
         Assert.assertFalse(handshake.get().isSuccessful());
         Assert.assertTrue(handshake.get().containsKey(Message.ERROR_FIELD));
-        Assert.assertEquals(BayeuxClient.State.DISCONNECTED, client.getState());
+        Assert.assertTrue(client.waitFor(5000, State.DISCONNECTED));
 
         // Be sure the connect is not tried
         Assert.assertFalse(connectLatch.await(1, TimeUnit.SECONDS));

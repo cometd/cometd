@@ -548,7 +548,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 else if (isDisconnecting(oldState))
                     return new DisconnectingState(callback, oldState.transport, oldState.clientId);
                 else
-                    return new DisconnectedState(oldState.transport);
+                    return new TerminatingState(oldState.transport);
             }
         });
     }
@@ -609,7 +609,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             @Override
             public BayeuxClientState create(BayeuxClientState oldState)
             {
-                return new DisconnectedState(oldState.transport);
+                return new TerminatingState(oldState.transport);
             }
         });
 
@@ -628,7 +628,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         {
             public BayeuxClientState create(BayeuxClientState oldState)
             {
-                return new AbortedState(oldState.transport);
+                return new AbortingState(oldState.transport);
             }
         });
     }
@@ -659,7 +659,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     public BayeuxClientState create(BayeuxClientState oldState)
                     {
                         onTransportFailure(oldState.transport.getName(), null, new TransportException(null));
-                        return new DisconnectedState(oldState.transport);
+                        return new TerminatingState(oldState.transport);
                     }
 
                     @Override
@@ -683,7 +683,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                         if (Message.RECONNECT_RETRY_VALUE.equals(action))
                             return new ConnectingState(oldState.handshakeFields, oldState.callback, handshake.getAdvice(), newTransport, handshake.getClientId());
                         else if (Message.RECONNECT_NONE_VALUE.equals(action))
-                            return new DisconnectedState(oldState.transport);
+                            return new TerminatingState(oldState.transport);
                         return null;
                     }
 
@@ -705,7 +705,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     if (Message.RECONNECT_HANDSHAKE_VALUE.equals(action) || Message.RECONNECT_RETRY_VALUE.equals(action))
                         return new RehandshakingState(oldState.handshakeFields, oldState.callback, oldState.transport, oldState.nextBackoff());
                     else if (Message.RECONNECT_NONE_VALUE.equals(action))
-                        return new DisconnectedState(oldState.transport);
+                        return new TerminatingState(oldState.transport);
                     return null;
                 }
 
@@ -747,7 +747,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     else if (Message.RECONNECT_RETRY_VALUE.equals(action))
                         return new UnconnectedState(oldState.handshakeFields, oldState.callback, advice, oldState.transport, oldState.clientId, oldState.nextBackoff(), System.nanoTime());
                     else if (Message.RECONNECT_NONE_VALUE.equals(action))
-                        return new DisconnectedState(oldState.transport);
+                        return new TerminatingState(oldState.transport);
                 }
                 return null;
             }
@@ -769,7 +769,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         {
             public BayeuxClientState create(BayeuxClientState oldState)
             {
-                return new DisconnectedState(oldState.transport);
+                return new TerminatingState(oldState.transport);
             }
 
             @Override
@@ -1149,9 +1149,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
          */
         DISCONNECTING,
         /**
+         * State assumed when the disconnect is received but terminal actions must be performed
+         */
+        TERMINATING(DISCONNECTING),
+        /**
          * State assumed before the handshake and when the disconnect is completed
          */
-        DISCONNECTED(DISCONNECTING);
+        DISCONNECTED(DISCONNECTING, TERMINATING);
 
         private final State[] implieds;
 
@@ -1232,7 +1236,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     public BayeuxClientState create(BayeuxClientState oldState)
                     {
                         onTransportFailure(oldState.transport.getName(), null, failure);
-                        return new DisconnectedState(oldState.transport);
+                        return new TerminatingState(oldState.transport);
                     }
                 });
             }
@@ -1313,7 +1317,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             {
                 public BayeuxClientState create(BayeuxClientState oldState)
                 {
-                    return new DisconnectedState(oldState.transport);
+                    return new TerminatingState(oldState.transport);
                 }
             });
             super.onFailure(failure, messages);
@@ -1531,23 +1535,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         @Override
         public void run()
         {
-            transport.terminate();
-            terminate();
-        }
-    }
-
-    private class AbortedState extends DisconnectedState
-    {
-        private AbortedState(ClientTransport transport)
-        {
-            super(transport);
-        }
-
-        @Override
-        public void run()
-        {
-            transport.abort();
-            terminate();
         }
     }
 
@@ -1563,7 +1550,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         {
             return newState.type == State.CONNECTING ||
                     newState.type == State.REHANDSHAKING ||
-                    newState.type == State.DISCONNECTED;
+                    newState.type == State.TERMINATING;
         }
 
         @Override
@@ -1595,7 +1582,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         {
             return newState.type == State.CONNECTING ||
                     newState.type == State.REHANDSHAKING ||
-                    newState.type == State.DISCONNECTED;
+                    newState.type == State.TERMINATING;
         }
 
         @Override
@@ -1628,7 +1615,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     newState.type == State.UNCONNECTED ||
                     newState.type == State.REHANDSHAKING ||
                     newState.type == State.DISCONNECTING ||
-                    newState.type == State.DISCONNECTED;
+                    newState.type == State.TERMINATING;
         }
 
         @Override
@@ -1654,7 +1641,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     newState.type == State.UNCONNECTED ||
                     newState.type == State.REHANDSHAKING ||
                     newState.type == State.DISCONNECTING ||
-                    newState.type == State.DISCONNECTED;
+                    newState.type == State.TERMINATING;
         }
 
         @Override
@@ -1680,7 +1667,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             return newState.type == State.CONNECTED ||
                     newState.type == State.UNCONNECTED ||
                     newState.type == State.REHANDSHAKING ||
-                    newState.type == State.DISCONNECTED;
+                    newState.type == State.TERMINATING;
         }
 
         @Override
@@ -1713,7 +1700,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         @Override
         protected boolean isUpdateableTo(BayeuxClientState newState)
         {
-            return newState.type == State.DISCONNECTED;
+            return newState.type == State.TERMINATING;
         }
 
         @Override
@@ -1726,6 +1713,63 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             List<Message.Mutable> messages = new ArrayList<>(1);
             messages.add(message);
             send(disconnectListener, messages);
+        }
+    }
+
+    private class TerminatingState extends BayeuxClientState
+    {
+        private TerminatingState(ClientTransport transport)
+        {
+            super(State.TERMINATING, null, null, null, transport, null, 0);
+        }
+
+        @Override
+        protected boolean transportSend(TransportListener listener, List<Message.Mutable> messages)
+        {
+            failMessages(new TransportException(null), messages);
+            return false;
+        }
+
+        @Override
+        protected boolean isUpdateableTo(BayeuxClientState newState)
+        {
+            return newState.type == State.DISCONNECTED;
+        }
+
+        @Override
+        public void run()
+        {
+            transport.terminate();
+            terminate();
+            changeState(new BayeuxClientStateUpdater()
+            {
+                public BayeuxClientState create(BayeuxClientState oldState)
+                {
+                    return new DisconnectedState(oldState.transport);
+                }
+            });
+        }
+    }
+
+    private class AbortingState extends TerminatingState
+    {
+        private AbortingState(ClientTransport transport)
+        {
+            super(transport);
+        }
+
+        @Override
+        public void run()
+        {
+            transport.abort();
+            terminate();
+            changeState(new BayeuxClientStateUpdater()
+            {
+                public BayeuxClientState create(BayeuxClientState oldState)
+                {
+                    return new DisconnectedState(oldState.transport);
+                }
+            });
         }
     }
 }
