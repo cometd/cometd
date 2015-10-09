@@ -119,6 +119,11 @@ public class ServerSessionImpl implements ServerSession
         _broadcastToPublisher = _bayeux.isBroadcastToPublisher();
     }
 
+    public BayeuxServerImpl getBayeuxServer()
+    {
+        return _bayeux;
+    }
+
     /**
      * @return the remote user agent
      */
@@ -798,7 +803,7 @@ public class ServerSessionImpl implements ServerSession
             advice.put(Message.TIMEOUT_FIELD, timeout);
             if (transport instanceof AbstractServerTransport)
             {
-                if (((AbstractServerTransport)transport).isFastReconnect())
+                if (((AbstractServerTransport)transport).isHandshakeReconnect())
                     advice.put(Message.MAX_INTERVAL_FIELD, getMaxInterval());
             }
             return advice;

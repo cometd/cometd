@@ -15,14 +15,6 @@
  */
 package org.cometd.websocket.client;
 
-import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.client.BayeuxClient;
-import org.cometd.websocket.ClientServerWebSocketTest;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +23,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.client.BayeuxClient;
+import org.cometd.websocket.ClientServerWebSocketTest;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -247,11 +247,11 @@ public class SimulatedNetworkFailureTest extends ClientServerWebSocketTest
         }
 
         @Override
-        protected void processConnect(Message.Mutable connect)
+        protected Runnable processConnect(Message.Mutable connect)
         {
             if (networkDown > 0)
                 connect.setSuccessful(false);
-            super.processConnect(connect);
+            return super.processConnect(connect);
         }
 
         @Override

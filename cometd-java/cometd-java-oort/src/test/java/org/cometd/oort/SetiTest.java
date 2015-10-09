@@ -15,6 +15,16 @@
  */
 package org.cometd.oort;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -30,12 +40,6 @@ import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class SetiTest extends OortTest
 {
@@ -242,7 +246,7 @@ public class SetiTest extends OortTest
         BayeuxClient client2 = new BayeuxClient(oort2.getURL(), new LongPollingTransport(null, httpClient))
         {
             @Override
-            protected void processConnect(Message.Mutable connect)
+            protected Runnable processConnect(Message.Mutable connect)
             {
                 // Send the login message, so Seti can associate this user
                 Map<String, Object> login2 = new HashMap<>();
@@ -254,7 +258,7 @@ public class SetiTest extends OortTest
                 session2.set(getId());
                 connect.setSuccessful(false);
                 connect.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                super.processConnect(connect);
+                return super.processConnect(connect);
             }
         };
         client2.handshake();

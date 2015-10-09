@@ -46,7 +46,8 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     public static final String META_CONNECT_DELIVERY_OPTION = "metaConnectDeliverOnly";
     public static final String MAX_QUEUE_OPTION = "maxQueue";
     public static final String JSON_CONTEXT_OPTION = "jsonContext";
-    public static final String FAST_RECONNECT_OPTION = "fastReconnect";
+    public static final String HANDSHAKE_RECONNECT_OPTION = "handshakeReconnect";
+    public static final String ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE = "allowMessageDeliveryDuringHandshake";
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass().getName());
     private final BayeuxServerImpl _bayeux;
@@ -56,7 +57,8 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     private long _maxLazyTimeout = 5000;
     private boolean _metaConnectDeliveryOnly = false;
     private JSONContext.Server jsonContext;
-    private boolean _fastReconnect;
+    private boolean _handshakeReconnect;
+    private boolean _allowHandshakeDelivery;
 
     /**
      * <p>The constructor is passed the {@link BayeuxServerImpl} instance for
@@ -124,14 +126,24 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _metaConnectDeliveryOnly = meta;
     }
 
-    public boolean isFastReconnect()
+    public boolean isHandshakeReconnect()
     {
-        return _fastReconnect;
+        return _handshakeReconnect;
     }
 
-    public void setFastReconnect(boolean fastReconnect)
+    public void setHandshakeReconnect(boolean handshakeReconnect)
     {
-        _fastReconnect = fastReconnect;
+        _handshakeReconnect = handshakeReconnect;
+    }
+
+    public boolean isAllowMessageDeliveryDuringHandshake()
+    {
+        return _allowHandshakeDelivery;
+    }
+
+    public void setAllowMessageDeliveryDuringHandshake(boolean allow)
+    {
+        _allowHandshakeDelivery = allow;
     }
 
     /**
@@ -145,7 +157,8 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _maxLazyTimeout = getOption(MAX_LAZY_TIMEOUT_OPTION, _maxLazyTimeout);
         _metaConnectDeliveryOnly = getOption(META_CONNECT_DELIVERY_OPTION, _metaConnectDeliveryOnly);
         jsonContext = (JSONContext.Server)getOption(JSON_CONTEXT_OPTION);
-        _fastReconnect = getOption(FAST_RECONNECT_OPTION, false);
+        _handshakeReconnect = getOption(HANDSHAKE_RECONNECT_OPTION, false);
+        _allowHandshakeDelivery = getOption(ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, false);
     }
 
     public void destroy()

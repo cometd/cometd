@@ -26,12 +26,12 @@ import org.cometd.server.AbstractServerTransport;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDFastReconnectTest extends AbstractCometDTest
+public class CometDHandshakeReconnectTest extends AbstractCometDTest
 {
     @Override
     protected void initCometDServer(Map<String, String> options) throws Exception
     {
-        options.put(AbstractServerTransport.FAST_RECONNECT_OPTION, String.valueOf(true));
+        options.put(AbstractServerTransport.HANDSHAKE_RECONNECT_OPTION, String.valueOf(true));
         options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(1500));
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(2000));
         super.initCometDServer(options);

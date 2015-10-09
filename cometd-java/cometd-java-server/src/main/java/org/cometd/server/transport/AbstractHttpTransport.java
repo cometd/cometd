@@ -187,7 +187,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                         if (reply != null)
                             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
                         messages[i] = processReply(session, reply);
-                        startInterval = sendQueue = isFastReconnect() && reply != null && reply.isSuccessful();
+                        startInterval = sendQueue = isAllowMessageDeliveryDuringHandshake() && reply != null && reply.isSuccessful();
                         break;
                     }
                     case Channel.META_CONNECT:

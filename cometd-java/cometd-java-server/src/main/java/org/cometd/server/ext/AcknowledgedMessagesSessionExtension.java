@@ -25,6 +25,9 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerSession.Extension;
+import org.cometd.bayeux.server.ServerTransport;
+import org.cometd.server.AbstractServerTransport;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,20 +124,65 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
 
     public boolean sendMeta(ServerSession to, Mutable message)
     {
-        if (message.getChannel().equals(Channel.META_CONNECT))
+        String channel = message.getChannel();
+        Map<String, Object> ext = message.getExt(true);
+        if (channel.equals(Channel.META_HANDSHAKE))
         {
-            synchronized (_session.getLock())
+            BayeuxServerImpl bayeuxServer = _session.getBayeuxServer();
+            ServerTransport transport = bayeuxServer.getCurrentTransport();
+            if (transport instanceof AbstractServerTransport)
             {
-                Map<String, Object> ext = message.getExt(true);
-                long batch = _queue.getBatch();
-                _batches.put(Thread.currentThread().getId(), batch);
-                if (_logger.isDebugEnabled())
-                    _logger.debug("Sending batch {} for {}", batch, _session);
-                ext.put("ack", batch);
-                _queue.nextBatch();
+                if (((AbstractServerTransport)transport).isAllowMessageDeliveryDuringHandshake())
+                {
+                    long batch;
+                    long size;
+                    synchronized (_session.getLock())
+                    {
+                        batch = closeBatch();
+                        size = _queue.batchSize(batch);
+                    }
+
+                    if (size == 0)
+                    {
+                        // No messages to send.
+                        ext.put("ack", Boolean.TRUE);
+                    }
+                    else
+                    {
+                        Map<String, Object> ack = new HashMap<>(3);
+                        ack.put("enabled", true);
+                        ack.put("batch", batch);
+                        ack.put("size", size);
+                        ext.put("ack", ack);
+                        if (_logger.isDebugEnabled())
+                            _logger.debug("Sending batch {} for {}", batch, _session);
+                    }
+                }
+                else
+                {
+                    ext.put("ack", Boolean.TRUE);
+                }
             }
         }
+        else if (channel.equals(Channel.META_CONNECT))
+        {
+            long batch = closeBatch();
+            ext.put("ack", batch);
+            if (_logger.isDebugEnabled())
+                _logger.debug("Sending batch {} for {}", batch, _session);
+        }
         return true;
+    }
+
+    private long closeBatch()
+    {
+        synchronized (_session.getLock())
+        {
+            long batch = _queue.getBatch();
+            _batches.put(Thread.currentThread().getId(), batch);
+            _queue.nextBatch();
+            return batch;
+        }
     }
 
     public void deQueue(ServerSession session, Queue<ServerMessage> queue)

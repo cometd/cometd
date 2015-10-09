@@ -15,6 +15,8 @@
  */
 package org.cometd.server.ext;
 
+import java.util.Map;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -24,8 +26,6 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.ServerSessionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
 
 /**
  * <p>Installing this extension in a {@link BayeuxServer} provides support for
@@ -63,9 +63,6 @@ public class AcknowledgedMessagesExtension extends Extension.Adapter
                     extension.importMessages(session);
                 }
             }
-
-            Map<String, Object> sndExt = message.getExt(true);
-            sndExt.put("ack", Boolean.TRUE);
         }
         return true;
     }
