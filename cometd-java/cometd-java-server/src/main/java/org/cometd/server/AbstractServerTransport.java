@@ -15,6 +15,12 @@
  */
 package org.cometd.server;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.UnsupportedCharsetException;
+import java.text.ParseException;
+
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AbstractTransport;
@@ -22,10 +28,6 @@ import org.cometd.common.JSONContext;
 import org.eclipse.jetty.util.IO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.text.ParseException;
 
 /**
  * <p>The base class of all server transports.</p>
@@ -44,6 +46,8 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     public static final String META_CONNECT_DELIVERY_OPTION = "metaConnectDeliverOnly";
     public static final String MAX_QUEUE_OPTION = "maxQueue";
     public static final String JSON_CONTEXT_OPTION = "jsonContext";
+    public static final String HANDSHAKE_RECONNECT_OPTION = "handshakeReconnect";
+    public static final String ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE = "allowMessageDeliveryDuringHandshake";
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass().getName());
     private final BayeuxServerImpl _bayeux;
@@ -53,6 +57,8 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     private long _maxLazyTimeout = 5000;
     private boolean _metaConnectDeliveryOnly = false;
     private JSONContext.Server jsonContext;
+    private boolean _handshakeReconnect;
+    private boolean _allowHandshakeDelivery;
 
     /**
      * <p>The constructor is passed the {@link BayeuxServerImpl} instance for
@@ -120,6 +126,26 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _metaConnectDeliveryOnly = meta;
     }
 
+    public boolean isHandshakeReconnect()
+    {
+        return _handshakeReconnect;
+    }
+
+    public void setHandshakeReconnect(boolean handshakeReconnect)
+    {
+        _handshakeReconnect = handshakeReconnect;
+    }
+
+    public boolean isAllowMessageDeliveryDuringHandshake()
+    {
+        return _allowHandshakeDelivery;
+    }
+
+    public void setAllowMessageDeliveryDuringHandshake(boolean allow)
+    {
+        _allowHandshakeDelivery = allow;
+    }
+
     /**
      * Initializes the transport, resolving default and direct options.
      */
@@ -131,6 +157,8 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _maxLazyTimeout = getOption(MAX_LAZY_TIMEOUT_OPTION, _maxLazyTimeout);
         _metaConnectDeliveryOnly = getOption(META_CONNECT_DELIVERY_OPTION, _metaConnectDeliveryOnly);
         jsonContext = (JSONContext.Server)getOption(JSON_CONTEXT_OPTION);
+        _handshakeReconnect = getOption(HANDSHAKE_RECONNECT_OPTION, false);
+        _allowHandshakeDelivery = getOption(ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, false);
     }
 
     public void destroy()
@@ -195,6 +223,23 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
      */
     protected void sweep()
     {
+    }
+
+    protected byte[] toJSONBytes(ServerMessage message, String encoding)
+    {
+        try
+        {
+            byte[] bytes = null;
+            if (message instanceof ServerMessageImpl)
+                bytes = ((ServerMessageImpl)message).getJSONBytes();
+            if (bytes == null)
+                bytes = message.getJSON().getBytes(encoding);
+            return bytes;
+        }
+        catch (UnsupportedEncodingException x)
+        {
+            throw new UnsupportedCharsetException(encoding);
+        }
     }
 
     public interface Scheduler

@@ -15,6 +15,30 @@
  */
 package org.cometd.client;
 
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.Socket;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
@@ -39,18 +63,6 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import javax.servlet.*;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.Socket;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class BayeuxClientTest extends ClientServerTest
 {
@@ -249,11 +261,11 @@ public class BayeuxClientTest extends ClientServerTest
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
-            protected void processHandshake(Message.Mutable message)
+            protected Runnable processHandshake(Message.Mutable message)
             {
                 // Force no transports
                 message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, new Object[0]);
-                super.processHandshake(message);
+                return super.processHandshake(message);
             }
 
             @Override
@@ -277,7 +289,7 @@ public class BayeuxClientTest extends ClientServerTest
 
         Assert.assertFalse(handshake.get().isSuccessful());
         Assert.assertTrue(handshake.get().containsKey(Message.ERROR_FIELD));
-        Assert.assertEquals(BayeuxClient.State.DISCONNECTED, client.getState());
+        Assert.assertTrue(client.waitFor(5000, State.DISCONNECTED));
 
         // Be sure the connect is not tried
         Assert.assertFalse(connectLatch.await(1, TimeUnit.SECONDS));
@@ -393,7 +405,9 @@ public class BayeuxClientTest extends ClientServerTest
                 Message.Mutable connect = newMessage();
                 connect.setChannel(Channel.META_CONNECT);
                 connect.setSuccessful(false);
-                processConnect(connect);
+                Runnable action = processConnect(connect);
+                if (action != null)
+                    action.run();
                 return false;
             }
         };

@@ -15,6 +15,8 @@
  */
 package org.cometd.client;
 
+import java.util.Map;
+
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.CometDServlet;
@@ -28,9 +30,7 @@ import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
-import java.util.Map;
-
-public class ClientServerTest
+public abstract class ClientServerTest
 {
     @Rule
     public final TestWatcher testName = new TestWatcher()

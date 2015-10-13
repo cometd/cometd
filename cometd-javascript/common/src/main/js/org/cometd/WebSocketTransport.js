@@ -17,11 +17,14 @@ org.cometd.WebSocketTransport = function()
     var _connected = false;
     var _successCallback = null;
 
-    _self.reset = function()
+    _self.reset = function(init)
     {
-        _super.reset();
+        _super.reset(init);
         _webSocketSupported = true;
-        _webSocketConnected = false;
+        if (init)
+        {
+            _webSocketConnected = false;
+        }
         _stickyReconnect = true;
         _envelopes = {};
         _timeouts = {};
@@ -414,7 +417,7 @@ org.cometd.WebSocketTransport = function()
             // and therefore the onclose function is never called.
             this.onClose(_webSocket, event);
         }
-        this.reset();
+        this.reset(true);
     };
 
     return _self;

@@ -101,9 +101,9 @@ org.cometd.LongPollingTransport = function()
         }
     };
 
-    _self.reset = function()
+    _self.reset = function(init)
     {
-        _super.reset();
+        _super.reset(init);
         _supportsCrossDomain = true;
     };
 

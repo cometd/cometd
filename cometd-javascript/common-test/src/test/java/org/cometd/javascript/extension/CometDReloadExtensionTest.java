@@ -15,9 +15,12 @@
  */
 package org.cometd.javascript.extension;
 
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.javascript.AbstractCometDTest;
 import org.cometd.javascript.Latch;
-import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,7 +69,16 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     @Test
     public void testReloadedHandshakeContainsExtension() throws Exception
     {
-        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
+        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter()
+        {
+            @Override
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
+            {
+                if (Channel.META_HANDSHAKE.equals(message.getChannel()))
+                    message.getExt(true).put("foo", true);
+                return true;
+            }
+        });
 
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
@@ -110,8 +122,8 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
 
         evaluateScript("" +
                 "window.assert(ext !== undefined, 'ext must be present');" +
-                "window.assert(ext.reload === true, 'ext.reload must be true');" +
-                "window.assert(ext.ack === true, 'ext.ack must be true');");
+                "window.assert(ext.reload === true, 'ext.reload must be true: ' + org.cometd.JSON.toJSON(ext));" +
+                "window.assert(ext.foo === true, 'ext.foo must be true: ' + org.cometd.JSON.toJSON(ext));");
 
         evaluateScript("cometd.disconnect(true)");
     }

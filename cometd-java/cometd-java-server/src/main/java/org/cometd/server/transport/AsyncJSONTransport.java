@@ -29,9 +29,9 @@ import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
@@ -263,9 +263,10 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         private final boolean startInterval;
         private final List<ServerMessage> messages;
         private final ServerMessage.Mutable[] replies;
-        private int messageIndex = -1;
-        private int replyIndex = -1;
+        private int messageIndex;
+        private int replyIndex;
         private boolean needsComma;
+        private State state = State.BEGIN;
 
         protected Writer(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, boolean startInterval, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
         {
@@ -284,16 +285,79 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             ServletOutputStream output = response.getOutputStream();
 
             if (_logger.isDebugEnabled())
-                _logger.debug("Messages to write for session {}: {}", session, messages.size());
-            if (!writeMessages(output))
-                return;
+                _logger.debug("Messages/replies {}/{} to write for session {}", messages.size(), replies.length, session);
 
-            if (_logger.isDebugEnabled())
-                _logger.debug("Replies to write for session {}: {}", session, replies.length);
-            if (!writeReplies(output))
-                return;
+            while (true)
+            {
+                switch (state)
+                {
+                    case BEGIN:
+                    {
+                        state = State.HANDSHAKE;
+                        if (!writeBegin(output))
+                            return;
+                        break;
+                    }
+                    case HANDSHAKE:
+                    {
+                        state = State.MESSAGES;
+                        if (!writeHandshakeReply(output))
+                            return;
+                        break;
+                    }
+                    case MESSAGES:
+                    {
+                        if (!writeMessages(output))
+                            return;
+                        state = State.REPLIES;
+                        break;
+                    }
+                    case REPLIES:
+                    {
+                        if (!writeReplies(output))
+                            return;
+                        state = State.END;
+                        break;
+                    }
+                    case END:
+                    {
+                        state = State.COMPLETE;
+                        if (!writeEnd(output))
+                            return;
+                        break;
+                    }
+                    case COMPLETE:
+                    {
+                        asyncContext.complete();
+                        return;
+                    }
+                    default:
+                    {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
+        }
 
-            asyncContext.complete();
+        private boolean writeBegin(ServletOutputStream output) throws IOException
+        {
+            output.write('[');
+            return output.isReady();
+        }
+
+        private boolean writeHandshakeReply(ServletOutputStream output) throws IOException
+        {
+            if (replies.length > 0)
+            {
+                ServerMessage.Mutable reply = replies[0];
+                if (Channel.META_HANDSHAKE.equals(reply.getChannel()))
+                {
+                    output.write(toJSONBytes(reply, "UTF-8"));
+                    needsComma = true;
+                    ++replyIndex;
+                }
+            }
+            return output.isReady();
         }
 
         private boolean writeMessages(ServletOutputStream output) throws IOException
@@ -303,37 +367,26 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                 int size = messages.size();
                 while (output.isReady())
                 {
-                    if (messageIndex < 0)
+                    if (messageIndex == size)
                     {
-                        messageIndex = 0;
-                        output.write('[');
+                        // Start the interval timeout after writing the
+                        // messages since they may take time to be written.
+                        startInterval();
+                        return true;
                     }
                     else
                     {
-                        if (messageIndex == size)
+                        if (needsComma)
                         {
-                            // Start the interval timeout after writing the
-                            // messages since they may take time to be written.
-                            startInterval();
-                            return true;
+                            output.write(',');
+                            needsComma = false;
                         }
                         else
                         {
-                            if (needsComma)
-                            {
-                                needsComma = false;
-                                output.write(',');
-                            }
-                            else
-                            {
-                                ServerMessage message = messages.get(messageIndex);
-                                if (message instanceof ServerMessageImpl)
-                                    output.write(((ServerMessageImpl)message).getJSONBytes());
-                                else
-                                    output.write(message.getJSON().getBytes("UTF-8"));
-                                ++messageIndex;
-                                needsComma = messageIndex < size;
-                            }
+                            ServerMessage message = messages.get(messageIndex);
+                            output.write(toJSONBytes(message, "UTF-8"));
+                            needsComma = messageIndex < size;
+                            ++messageIndex;
                         }
                     }
                 }
@@ -359,26 +412,25 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             int size = replies.length;
             while (output.isReady())
             {
-                if (replyIndex < 0)
+                if (replyIndex == size)
                 {
-                    replyIndex = 0;
-                    needsComma = messageIndex > 0;
+                    return true;
                 }
-                else if (replyIndex < size)
+                else
                 {
                     ServerMessage.Mutable reply = replies[replyIndex];
                     if (reply != null)
                     {
                         if (needsComma)
                         {
-                            needsComma = false;
                             output.write(',');
+                            needsComma = false;
                         }
                         else
                         {
-                            output.write(reply.getJSON().getBytes("UTF-8"));
-                            ++replyIndex;
+                            output.write(toJSONBytes(reply, "UTF-8"));
                             needsComma = replyIndex < size;
+                            ++replyIndex;
                         }
                     }
                     else
@@ -386,17 +438,14 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                         ++replyIndex;
                     }
                 }
-                else if (replyIndex == size)
-                {
-                    ++replyIndex;
-                    output.write(']');
-                }
-                else
-                {
-                    return true;
-                }
             }
             return false;
+        }
+
+        private boolean writeEnd(ServletOutputStream output) throws IOException
+        {
+            output.write(']');
+            return output.isReady();
         }
 
         @Override
@@ -404,6 +453,11 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         {
             error(request, response, asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private enum State
+    {
+        BEGIN, HANDSHAKE, MESSAGES, REPLIES, END, COMPLETE
     }
 
     private class AsyncLongPollScheduler extends LongPollScheduler

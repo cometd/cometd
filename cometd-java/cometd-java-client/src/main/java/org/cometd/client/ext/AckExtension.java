@@ -15,12 +15,12 @@
  */
 package org.cometd.client.ext;
 
+import java.util.Map;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSession.Extension;
-
-import java.util.Map;
 
 /**
  * <p>This client-side extension enables the client to acknowledge to the server
@@ -40,8 +40,10 @@ public class AckExtension extends Extension.Adapter
 {
     public static final String ACK_FIELD = "ack";
 
-    private volatile boolean _serverSupportsAcks = false;
-    private volatile long _ackId = -1;
+    private boolean _serverSupportsAcks;
+    private long _transientBatch;
+    private int _size;
+    private long _batch;
 
     @Override
     public boolean rcvMeta(ClientSession session, Mutable message)
@@ -49,7 +51,31 @@ public class AckExtension extends Extension.Adapter
         if (Channel.META_HANDSHAKE.equals(message.getChannel()))
         {
             Map<String, Object> ext = message.getExt(false);
-            _serverSupportsAcks = ext != null && Boolean.TRUE.equals(ext.get(ACK_FIELD));
+            if (ext != null)
+            {
+                Object field = ext.get(ACK_FIELD);
+                if (field instanceof Map)
+                {
+                    // New format.
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> ack = (Map<String, Object>)field;
+                    _serverSupportsAcks = Boolean.TRUE.equals(ack.get("enabled"));
+
+                    // Check if there are messages.
+                    Object batch = ack.get("batch");
+                    Object size = ack.get("size");
+                    if (batch instanceof Number && size instanceof Number)
+                    {
+                        _transientBatch = ((Number)batch).longValue();
+                        _size = ((Number)size).intValue();
+                    }
+                }
+                else
+                {
+                    // Old format.
+                    _serverSupportsAcks = Boolean.TRUE.equals(field);
+                }
+            }
         }
         else if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful() && _serverSupportsAcks)
         {
@@ -58,7 +84,22 @@ public class AckExtension extends Extension.Adapter
             {
                 Object ack = ext.get(ACK_FIELD);
                 if (ack instanceof Number)
-                    _ackId = ((Number)ack).longValue();
+                    _batch = ((Number)ack).longValue();
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean rcv(ClientSession session, Mutable message)
+    {
+        if (_size > 0)
+        {
+            --_size;
+            if (_size == 0)
+            {
+                _batch = _transientBatch;
+                _transientBatch = 0;
             }
         }
         return true;
@@ -70,11 +111,11 @@ public class AckExtension extends Extension.Adapter
         if (Channel.META_HANDSHAKE.equals(message.getChannel()))
         {
             message.getExt(true).put(ACK_FIELD, Boolean.TRUE);
-            _ackId = -1;
         }
-        else if (Channel.META_CONNECT.equals(message.getChannel()) && _serverSupportsAcks)
+        else if (Channel.META_CONNECT.equals(message.getChannel()))
         {
-            message.getExt(true).put(ACK_FIELD, _ackId);
+            if (_serverSupportsAcks)
+                message.getExt(true).put(ACK_FIELD, _batch);
         }
         return true;
     }

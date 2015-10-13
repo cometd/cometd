@@ -41,6 +41,10 @@
             <param-value>10000</param-value>
         </init-param>
         <init-param>
+            <param-name>handshakeReconnect</param-name>
+            <param-value>true</param-value>
+        </init-param>
+        <init-param>
             <param-name>maxLazyTimeout</param-name>
             <param-value>5000</param-value>
         </init-param>

@@ -15,20 +15,22 @@
  */
 package org.cometd.server.transport;
 
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerSessionImpl;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.ServerSessionImpl;
 
 /**
  * <p>The base class for HTTP transports that use blocking stream I/O.</p>
@@ -126,17 +128,32 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
     {
         try
         {
+            int replyIndex = 0;
+            boolean needsComma = false;
             ServletOutputStream output;
             try
             {
                 output = beginWrite(request, response);
 
-                // Write the messages first.
+                // First message is always the handshake reply, if any.
+                if (replies.length > 0)
+                {
+                    ServerMessage.Mutable firstReply = replies[0];
+                    if (Channel.META_HANDSHAKE.equals(firstReply.getChannel()))
+                    {
+                        writeMessage(response, output, session, firstReply);
+                        needsComma = true;
+                        ++replyIndex;
+                    }
+                }
+
+                // Write the messages.
                 for (int i = 0; i < messages.size(); ++i)
                 {
                     ServerMessage message = messages.get(i);
-                    if (i > 0)
+                    if (needsComma)
                         output.write(',');
+                    needsComma = true;
                     writeMessage(response, output, session, message);
                 }
             }
@@ -150,16 +167,17 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
             }
 
             // Write the replies, if any.
-            boolean needsComma = !messages.isEmpty();
-            for (int i = 0; i < replies.length; ++i)
+            while (replyIndex < replies.length)
             {
-                ServerMessage reply = replies[i];
-                if (reply == null)
-                    continue;
-                if (needsComma)
-                    output.write(',');
-                needsComma = true;
-                writeMessage(response, output, session, reply);
+                ServerMessage reply = replies[replyIndex];
+                if (reply != null)
+                {
+                    if (needsComma)
+                        output.write(',');
+                    needsComma = true;
+                    writeMessage(response, output, session, reply);
+                }
+                ++replyIndex;
             }
 
             endWrite(response, output);
@@ -175,7 +193,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
 
     protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException
     {
-        output.write(message.getJSON().getBytes(response.getCharacterEncoding()));
+        output.write(toJSONBytes(message, response.getCharacterEncoding()));
     }
 
     protected abstract ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException;

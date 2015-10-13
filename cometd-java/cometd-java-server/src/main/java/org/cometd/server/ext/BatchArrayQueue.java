@@ -15,11 +15,11 @@
  */
 package org.cometd.server.ext;
 
-import org.eclipse.jetty.util.ArrayQueue;
-
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+
+import org.eclipse.jetty.util.ArrayQueue;
 
 public class BatchArrayQueue<T> extends ArrayQueue<T>
 {
@@ -162,6 +162,26 @@ public class BatchArrayQueue<T> extends ArrayQueue<T>
                 target.offer(element);
                 ++index;
             }
+        }
+    }
+
+    public int batchSize(long value)
+    {
+        synchronized (_lock)
+        {
+            int result = 0;
+            int index = 0;
+            while (index < _size)
+            {
+                int cursor = (_nextE + index) % getCapacity();
+                long batch = batches[cursor];
+                if (batch == value)
+                    ++result;
+                else if (batch > value)
+                    break;
+                ++index;
+            }
+            return result;
         }
     }
 

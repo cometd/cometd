@@ -106,11 +106,11 @@ org.cometd.TransportRegistry = function()
         _transports = {};
     };
 
-    this.reset = function()
+    this.reset = function(init)
     {
         for (var i = 0; i < _types.length; ++i)
         {
-            _transports[_types[i]].reset();
+            _transports[_types[i]].reset(init);
         }
     };
 };
