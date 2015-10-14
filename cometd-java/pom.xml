@@ -23,6 +23,7 @@
         <module>cometd-java-server</module>
         <module>cometd-java-websocket</module>
         <module>cometd-java-benchmark</module>
+        <module>cometd-java-tests</module>
     </modules>
 
     <dependencyManagement>

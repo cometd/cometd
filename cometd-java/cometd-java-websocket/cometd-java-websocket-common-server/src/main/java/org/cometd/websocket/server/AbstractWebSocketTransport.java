@@ -339,6 +339,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         reply = processReply(session, reply);
                         if (reply != null)
                             replies.add(reply);
+                        startInterval = isAllowMessageDeliveryDuringHandshake() && reply != null && reply.isSuccessful();
+                        if (startInterval)
+                            queue = session.takeQueue();
                         break;
                     }
                     case Channel.META_CONNECT:
