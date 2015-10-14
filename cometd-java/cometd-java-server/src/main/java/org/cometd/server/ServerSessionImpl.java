@@ -378,7 +378,6 @@ public class ServerSessionImpl implements ServerSession
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(Channel.META_DISCONNECT);
-            message.setSuccessful(true);
             deliver(this, message);
             flush();
         }

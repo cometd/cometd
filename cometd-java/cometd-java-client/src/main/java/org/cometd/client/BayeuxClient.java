@@ -1187,7 +1187,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         protected void processMessage(Message.Mutable message)
         {
-            BayeuxClient.this.processMessage(message);
+            if (Channel.META_DISCONNECT.equals(message.getChannel()))
+                processDisconnect(message);
+            else
+                BayeuxClient.this.processMessage(message);
         }
 
         public void onFailure(Throwable failure, List<? extends Message> messages)
@@ -1274,15 +1277,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private class DisconnectTransportListener extends PublishTransportListener
     {
-        @Override
-        protected void processMessage(Message.Mutable message)
-        {
-            if (Channel.META_DISCONNECT.equals(message.getChannel()))
-                processDisconnect(message);
-            else
-                super.processMessage(message);
-        }
-
         @Override
         public void onFailure(Throwable failure, List<? extends Message> messages)
         {
@@ -1378,11 +1372,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             this.transport = transport;
             this.clientId = clientId;
             this.backoff = backoff;
-        }
-
-        protected long getTimeout()
-        {
-            return getAdviceField(Message.TIMEOUT_FIELD);
         }
 
         protected long getInterval()
