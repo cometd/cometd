@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.client;
+package org.cometd.tests;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -26,29 +25,16 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.transport.AsyncJSONTransport;
-import org.cometd.server.transport.JSONTransport;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-@RunWith(Parameterized.class)
-public class HandshakeReconnectTest extends ClientServerTest
+public class HandshakeReconnectTest extends AbstractClientServerTest
 {
-    @Parameterized.Parameters(name = "{0}")
-    public static Object[] data()
+    public HandshakeReconnectTest(Transport transport)
     {
-        return new Object[]{JSONTransport.class.getName(), AsyncJSONTransport.class.getName()};
-    }
-
-    private final String transport;
-
-    public HandshakeReconnectTest(String transport)
-    {
-        this.transport = transport;
+        super(transport);
     }
 
     @Test
@@ -56,8 +42,7 @@ public class HandshakeReconnectTest extends ClientServerTest
     {
         long timeout = 1500;
         long maxInterval = 2000;
-        Map<String, String> options = new HashMap<>();
-        options.put(BayeuxServerImpl.TRANSPORTS_OPTION, transport);
+        Map<String, String> options = serverOptions();
         options.put(AbstractServerTransport.HANDSHAKE_RECONNECT_OPTION, String.valueOf(true));
         options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));

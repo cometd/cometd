@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.client;
+package org.cometd.tests;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -22,22 +26,24 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-public class MetaConnectFailureWithAckExtensionTest extends ClientServerTest
+public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServerTest
 {
+    public MetaConnectFailureWithAckExtensionTest(Transport transport)
+    {
+        super(transport);
+    }
+
     @Test
     public void testMetaConnectFailureWithAckExtension() throws Exception
     {
-        startServer(null);
+        startServer(serverOptions());
         bayeux.addExtension(new AcknowledgedMessagesExtension());
 
         final String channelName = "/test";

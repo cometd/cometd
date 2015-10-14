@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.websocket.client;
+package org.cometd.tests;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,32 +28,31 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
-import org.cometd.websocket.ClientServerWebSocketTest;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class SimulatedNetworkFailureTest extends ClientServerWebSocketTest
+public class SimulatedNetworkFailureTest extends AbstractClientServerTest
 {
     private long timeout = 10000;
     private long maxInterval = 8000;
     private long sweepInterval = 1000;
 
-    public SimulatedNetworkFailureTest(String implementation)
+    public SimulatedNetworkFailureTest(Transport transport)
     {
-        super(implementation);
+        super(transport);
     }
 
     @Before
     public void setUp() throws Exception
     {
-        Map<String, String> params = new HashMap<>();
-        params.put("timeout", String.valueOf(timeout));
-        params.put("maxInterval", String.valueOf(maxInterval));
-        params.put("sweepIntervalMs", String.valueOf(sweepInterval));
-        prepareAndStart(params);
+        Map<String, String> options = serverOptions();
+        options.put("timeout", String.valueOf(timeout));
+        options.put("maxInterval", String.valueOf(maxInterval));
+        options.put("sweepIntervalMs", String.valueOf(sweepInterval));
+        startServer(options);
     }
 
     @Test
@@ -108,7 +107,7 @@ public class SimulatedNetworkFailureTest extends ClientServerWebSocketTest
 
         // Publish, it must succeed
         publishLatch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         // Wait for the connect to return
@@ -121,7 +120,7 @@ public class SimulatedNetworkFailureTest extends ClientServerWebSocketTest
 
         // Another publish, it must fail
         publishLatch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         // Sleep to allow the next connect to be issued
@@ -133,7 +132,7 @@ public class SimulatedNetworkFailureTest extends ClientServerWebSocketTest
 
         // We should be able to publish now
         publishLatch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertFalse(publishLatch.get().await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
@@ -200,7 +199,7 @@ public class SimulatedNetworkFailureTest extends ClientServerWebSocketTest
 
         // Publish, it must succeed
         publishLatch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         // Wait for the connect to return
@@ -213,7 +212,7 @@ public class SimulatedNetworkFailureTest extends ClientServerWebSocketTest
 
         // Another publish, it must fail
         publishLatch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         // Sleep to allow the next connect to be issued
@@ -225,7 +224,7 @@ public class SimulatedNetworkFailureTest extends ClientServerWebSocketTest
 
         // We should be able to publish now
         publishLatch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertFalse(publishLatch.get().await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
@@ -237,7 +236,7 @@ public class SimulatedNetworkFailureTest extends ClientServerWebSocketTest
 
         private TestBayeuxClient()
         {
-            super(cometdURL, newLongPollingTransport(null));
+            super(cometdURL, newClientTransport(null));
         }
 
         public void setNetworkDown(long time)
