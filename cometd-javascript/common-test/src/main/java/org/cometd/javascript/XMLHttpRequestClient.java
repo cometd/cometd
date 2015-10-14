@@ -24,15 +24,15 @@ import org.mozilla.javascript.ScriptableObject;
 public class XMLHttpRequestClient extends ScriptableObject
 {
     private HttpClient httpClient;
-    private int maxConnections;
+    private JavaScriptCookieStore cookieStore;
 
     public XMLHttpRequestClient()
     {
     }
 
-    public void jsConstructor(int maxConnections) throws Exception
+    public void jsConstructor(JavaScriptCookieStore cookieStore) throws Exception
     {
-        this.maxConnections = maxConnections;
+        this.cookieStore = cookieStore;
     }
 
     public String getClassName()
@@ -43,8 +43,9 @@ public class XMLHttpRequestClient extends ScriptableObject
     public void start() throws Exception
     {
         httpClient = new HttpClient();
-        httpClient.setMaxConnectionsPerDestination(maxConnections);
+        httpClient.setMaxConnectionsPerDestination(2);
         httpClient.setIdleTimeout(300000);
+        httpClient.setCookieStore(cookieStore.getStore());
         httpClient.start();
     }
 

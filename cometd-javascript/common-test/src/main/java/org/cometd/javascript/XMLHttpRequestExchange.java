@@ -15,6 +15,14 @@
  */
 package org.cometd.javascript;
 
+import java.io.EOFException;
+import java.io.InterruptedIOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.FutureResponseListener;
@@ -25,14 +33,6 @@ import org.mozilla.javascript.ScriptableObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.EOFException;
-import java.io.InterruptedIOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 public class XMLHttpRequestExchange extends ScriptableObject
 {
     private CometDExchange exchange;
@@ -41,9 +41,9 @@ public class XMLHttpRequestExchange extends ScriptableObject
     {
     }
 
-    public void jsConstructor(Object client, Object cookieStore, Object threadModel, Scriptable thiz, String method, String url, boolean async)
+    public void jsConstructor(Object client, Object threadModel, Scriptable thiz, String method, String url, boolean async)
     {
-        exchange = new CometDExchange((XMLHttpRequestClient)client, (HttpCookieStore)cookieStore, (ThreadModel)threadModel, thiz, method, url, async);
+        exchange = new CometDExchange((XMLHttpRequestClient)client, (ThreadModel)threadModel, thiz, method, url, async);
     }
 
     public String getClassName()
@@ -142,7 +142,6 @@ public class XMLHttpRequestExchange extends ScriptableObject
         }
 
         private final Logger logger = LoggerFactory.getLogger(getClass().getName());
-        private final HttpCookieStore cookieStore;
         private final ThreadModel threads;
         private final Scriptable thiz;
         private final boolean async;
@@ -153,11 +152,10 @@ public class XMLHttpRequestExchange extends ScriptableObject
         private volatile int responseStatus;
         private volatile String responseStatusText;
 
-        public CometDExchange(XMLHttpRequestClient client, HttpCookieStore cookieStore, ThreadModel threads, Scriptable thiz, String method, String url, boolean async)
+        public CometDExchange(XMLHttpRequestClient client, ThreadModel threads, Scriptable thiz, String method, String url, boolean async)
         {
             super(client.getHttpClient().newRequest(url));
             getRequest().method(HttpMethod.fromString(method));
-            this.cookieStore = cookieStore;
             this.threads = threads;
             this.thiz = thiz;
             this.async = async;

@@ -975,7 +975,7 @@ var window = this;
 
                 var absolute = /^https?:\/\//.test(url);
                 var absoluteURL = absolute ? url : window.location.href + url;
-                this._exchange = new XMLHttpRequestExchange(xhrClient, cookies, threadModel, this, method, absoluteURL, async);
+                this._exchange = new XMLHttpRequestExchange(xhrClient, threadModel, this, method, absoluteURL, async);
             },
             setRequestHeader: function(header, value)
             {
@@ -1022,7 +1022,7 @@ var window = this;
     {
         this._id = ++wsIds;
         this._url = url;
-        this._ws = new WebSocketConnection(cookies, threadModel, this, wsConnector, url, protocol);
+        this._ws = new WebSocketConnection(threadModel, this, wsConnector, url, protocol);
     };
     window.WebSocket.CONNECTING = 0;
     window.WebSocket.OPEN = 1;
