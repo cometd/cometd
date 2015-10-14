@@ -15,6 +15,12 @@
  */
 package org.cometd.websocket.server;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+
+import javax.servlet.ServletContext;
+
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
@@ -29,11 +35,6 @@ import org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-
-import javax.servlet.ServletContext;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
 
 public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
 {
@@ -217,6 +218,8 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         protected void close(int code, String reason)
         {
+            if (_logger.isDebugEnabled())
+                _logger.debug("Closing {}/{}", code, reason);
             _wsSession.close(code, reason);
         }
 
