@@ -384,7 +384,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public long randomLong()
     {
-        return _random.nextLong();
+        long value = _random.nextLong();
+        return value < 0 ? -value : value;
     }
 
     public void setCurrentTransport(ServerTransport transport)
