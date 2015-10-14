@@ -101,8 +101,7 @@ public class ServerSessionImpl implements ServerSession
 
         while (id.length() < len)
         {
-            long random = _bayeux.randomLong();
-            id.append(Long.toString(random < 0 ? -random : random, 36));
+            id.append(Long.toString(_bayeux.randomLong(), 36));
         }
 
         id.insert(index, Long.toString(_idCount.incrementAndGet(), 36));
