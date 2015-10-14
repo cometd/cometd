@@ -162,6 +162,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
                     {
                         // Limits of the WebSocket APIs, otherwise an exception is thrown.
                         reason = reason.substring(0, Math.min(reason.length(), 30));
+                        if (_logger.isDebugEnabled())
+                            _logger.debug("Closing {}/{}", code, reason);
                         _wsSession.close(new CloseReason(CloseReason.CloseCodes.getCloseCode(code), reason));
                     }
                     catch (Throwable x)
@@ -213,7 +215,11 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         public void onMessage(String data)
         {
             if (_logger.isDebugEnabled())
-                _logger.debug("WebSocket Text message on {}/{}", WebSocketTransport.this.hashCode(), hashCode());
+                _logger.debug("WebSocket Text message on {}@{}/{}@{}",
+                        WebSocketTransport.this.getClass().getSimpleName(),
+                        Integer.toHexString(WebSocketTransport.this.hashCode()),
+                        getClass().getSimpleName(),
+                        Integer.toHexString(hashCode()));
             delegate.onMessage(_wsSession, data);
         }
     }
