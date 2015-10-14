@@ -24,13 +24,15 @@ public class WebSocketConnector extends ScriptableObject
 {
     private org.eclipse.jetty.websocket.client.WebSocketClient wsClient;
     private QueuedThreadPool threadPool;
+    private JavaScriptCookieStore cookieStore;
 
     public WebSocketConnector()
     {
     }
 
-    public void jsConstructor()
+    public void jsConstructor(JavaScriptCookieStore cookieStore)
     {
+        this.cookieStore = cookieStore;
     }
 
     public String getClassName()
@@ -44,6 +46,7 @@ public class WebSocketConnector extends ScriptableObject
         wsClient = new WebSocketClient();
         wsClient.setExecutor(threadPool);
         wsClient.setMasker(new ZeroMasker());
+        wsClient.setCookieStore(cookieStore.getStore());
         wsClient.start();
     }
 

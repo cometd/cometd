@@ -289,6 +289,8 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
+        String cookieName = "BAYEUX_SESSION";
+        String sessionId = extractCookie(cookieName);
 
         String channelName = "/foo";
         Request subscribe = newBayeuxRequest("[{" +
@@ -322,6 +324,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
                 "Host: localhost:" + port + "\r\n" +
                 "Content-Type: application/json;charset=UTF-8\r\n" +
                 "Content-Length: " + content.length + "\r\n" +
+                "Cookie: " + cookieName + "=" + sessionId + "\r\n" +
                 "\r\n";
         output.write(request.getBytes("UTF-8"));
         output.write(content);

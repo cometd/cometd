@@ -15,6 +15,9 @@
  */
 package org.cometd.javascript;
 
+import java.io.IOException;
+import java.net.URI;
+
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -24,9 +27,6 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.net.URI;
 
 public class WebSocketConnection extends ScriptableObject implements WebSocketListener
 {
@@ -40,7 +40,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     {
     }
 
-    public void jsConstructor(Object cookieStore, Object threadModel, Scriptable thiz, Object connector, String url, Object protocol)
+    public void jsConstructor(Object threadModel, Scriptable thiz, Object connector, String url, Object protocol)
     {
         this.threads = (ThreadModel)threadModel;
         this.thiz = thiz;
@@ -52,10 +52,6 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             if (protocol != null && protocol != Undefined.instance)
                 request.setSubProtocols(protocol.toString());
-
-            // TODO: pass in cookies
-//            wsClient.getUpgradeRequest().setCookieStore();
-//            wsClient.getCookies().putAll(((HttpCookieStore)cookieStore).getAll(uri));
 
             if (logger.isDebugEnabled())
                 logger.debug("Opening WebSocket session to {}", uri);

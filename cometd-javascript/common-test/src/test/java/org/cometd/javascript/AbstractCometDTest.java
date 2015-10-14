@@ -15,6 +15,12 @@
  */
 package org.cometd.javascript;
 
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
 import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
@@ -36,12 +42,6 @@ import org.junit.runner.Description;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-
 public abstract class AbstractCometDTest
 {
     @Rule
@@ -58,8 +58,8 @@ public abstract class AbstractCometDTest
                     providerClass.substring(providerClass.lastIndexOf('.') + 1));
         }
     };
+    private final JavaScriptCookieStore.Store cookieStore = new JavaScriptCookieStore.Store();
     protected TestProvider provider;
-    private HttpCookieStore cookies;
     protected Server server;
     protected ServerConnector connector;
     protected ServletContextHandler context;
@@ -92,8 +92,6 @@ public abstract class AbstractCometDTest
     {
         String providerClass = getProviderClassName();
         provider = (TestProvider)Thread.currentThread().getContextClassLoader().loadClass(providerClass).newInstance();
-
-        cookies = new HttpCookieStore();
 
         server = new Server();
         connector = new ServerConnector(server);
@@ -141,13 +139,13 @@ public abstract class AbstractCometDTest
     {
         destroyPage();
         stopServer();
+        cookieStore.clear();
     }
 
     protected void stopServer() throws Exception
     {
         server.stop();
         server.join();
-        cookies.clear();
     }
 
     private String getProviderClassName()
@@ -194,12 +192,10 @@ public abstract class AbstractCometDTest
         {
             ScriptableObject rootScope = jsContext.initStandardObjects();
 
-            // TODO: not needed now that HttpClient supports cookies
-            ScriptableObject.defineClass(rootScope, HttpCookieStore.class);
-            jsContext.evaluateString(rootScope, "var cookies = new HttpCookieStore();", "cookies", 1, null);
-            HttpCookieStore cookies = (HttpCookieStore)rootScope.get("cookies", rootScope);
-            cookies.putAll(this.cookies);
-            this.cookies = cookies;
+            ScriptableObject.defineClass(rootScope, JavaScriptCookieStore.class);
+            jsContext.evaluateString(rootScope, "var cookies = new JavaScriptCookieStore();", "cookies", 1, null);
+            JavaScriptCookieStore cookies = (JavaScriptCookieStore)rootScope.get("cookies", rootScope);
+            cookies.setStore(cookieStore);
 
             ScriptableObject.defineClass(rootScope, JavaScriptThreadModel.class);
             jsContext.evaluateString(rootScope, "var threadModel = new JavaScriptThreadModel(this);", "threadModel", 1, null);
@@ -208,13 +204,13 @@ public abstract class AbstractCometDTest
 
             ScriptableObject.defineClass(rootScope, XMLHttpRequestClient.class);
             ScriptableObject.defineClass(rootScope, XMLHttpRequestExchange.class);
-            jsContext.evaluateString(rootScope, "var xhrClient = new XMLHttpRequestClient(2);", "xhrClient", 1, null);
+            jsContext.evaluateString(rootScope, "var xhrClient = new XMLHttpRequestClient(cookies);", "xhrClient", 1, null);
             xhrClient = (XMLHttpRequestClient)rootScope.get("xhrClient", rootScope);
             xhrClient.start();
 
             ScriptableObject.defineClass(rootScope, WebSocketConnector.class);
             ScriptableObject.defineClass(rootScope, WebSocketConnection.class);
-            jsContext.evaluateString(rootScope, "var wsConnector = new WebSocketConnector();", "wsConnector", 1, null);
+            jsContext.evaluateString(rootScope, "var wsConnector = new WebSocketConnector(cookies);", "wsConnector", 1, null);
             wsConnector = (WebSocketConnector)rootScope.get("wsConnector", rootScope);
             wsConnector.start();
         }
@@ -251,9 +247,12 @@ public abstract class AbstractCometDTest
 
     protected void destroyJavaScript() throws Exception
     {
-        wsConnector.stop();
-        xhrClient.stop();
-        threadModel.destroy();
+        if (wsConnector != null)
+            wsConnector.stop();
+        if (xhrClient != null)
+            xhrClient.stop();
+        if (threadModel != null)
+            threadModel.destroy();
     }
 
     @SuppressWarnings("unchecked")
