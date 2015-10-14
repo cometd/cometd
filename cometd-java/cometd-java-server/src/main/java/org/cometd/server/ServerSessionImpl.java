@@ -387,15 +387,15 @@ public class ServerSessionImpl implements ServerSession
 
     public boolean endBatch()
     {
+        boolean result = false;
         synchronized (getLock())
         {
             if (--_batch == 0 && _nonLazyMessages)
-            {
-                flush();
-                return true;
-            }
+                result = true;
         }
-        return false;
+        if (result)
+            flush();
+        return result;
     }
 
     public LocalSession getLocalSession()
