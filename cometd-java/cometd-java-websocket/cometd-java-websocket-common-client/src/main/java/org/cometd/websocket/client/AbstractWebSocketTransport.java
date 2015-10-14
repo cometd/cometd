@@ -15,13 +15,6 @@
  */
 package org.cometd.websocket.client;
 
-import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Message.Mutable;
-import org.cometd.client.transport.HttpClientTransport;
-import org.cometd.client.transport.MessageClientTransport;
-import org.cometd.client.transport.TransportListener;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.CookieManager;
@@ -32,7 +25,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Message.Mutable;
+import org.cometd.client.transport.HttpClientTransport;
+import org.cometd.client.transport.MessageClientTransport;
+import org.cometd.client.transport.TransportListener;
 
 public abstract class AbstractWebSocketTransport extends HttpClientTransport implements MessageClientTransport
 {
@@ -300,7 +305,21 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
         private boolean isReply(Message message)
         {
-            return message.isMeta() || message.isPublishReply();
+            if (message.isPublishReply())
+                return true;
+
+            if (message.isMeta())
+            {
+                // Check if it's a server-side disconnect.
+                if (Channel.META_DISCONNECT.equals(message.getChannel()))
+                {
+                    if (message.getId() == null)
+                        return false;
+                }
+                return true;
+            }
+
+            return false;
         }
 
         private void registerMessages(TransportListener listener, List<Mutable> messages)
@@ -373,12 +392,15 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
         private WebSocketExchange deregisterMessage(Message message)
         {
-            WebSocketExchange exchange = _exchanges.remove(message.getId());
             if (Channel.META_CONNECT.equals(message.getChannel()))
                 _connected = false;
             else if (Channel.META_DISCONNECT.equals(message.getChannel()))
                 _disconnected = true;
 
+            WebSocketExchange exchange = null;
+            String messageId = message.getId();
+            if (messageId != null)
+                exchange = _exchanges.remove(messageId);
             if (logger.isDebugEnabled())
                 logger.debug("Deregistering {} for message {}", exchange, message);
 

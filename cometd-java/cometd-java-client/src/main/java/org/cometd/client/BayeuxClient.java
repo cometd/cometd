@@ -1186,9 +1186,18 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         public void onMessages(List<Message.Mutable> messages)
         {
+            Runnable action = null;
             BayeuxClient.this.onMessages(messages);
             for (Message.Mutable message : messages)
-                processMessage(message);
+            {
+                // Handle server-side disconnects.
+                if (Channel.META_DISCONNECT.equals(message.getChannel()))
+                    action = processDisconnect(message);
+                else
+                    processMessage(message);
+            }
+            if (action != null)
+                action.run();
         }
 
         protected void processMessage(Message.Mutable message)
@@ -1294,22 +1303,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private class DisconnectTransportListener extends PublishTransportListener
     {
-        @Override
-        public void onMessages(List<Message.Mutable> messages)
-        {
-            Runnable action = null;
-            BayeuxClient.this.onMessages(messages);
-            for (Message.Mutable message : messages)
-            {
-                if (Channel.META_DISCONNECT.equals(message.getChannel()))
-                    action = processDisconnect(message);
-                else
-                    super.processMessage(message);
-            }
-            if (action != null)
-                action.run();
-        }
-
         @Override
         public void onFailure(Throwable failure, List<? extends Message> messages)
         {
