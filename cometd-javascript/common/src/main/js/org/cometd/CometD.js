@@ -57,6 +57,7 @@ org.cometd.CometD = function(name)
         requestHeaders: {},
         appendMessageTypeToURL: true,
         autoBatch: false,
+        maxURILength: 2000,
         advice: {
             timeout: 60000,
             interval: 0,
