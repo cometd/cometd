@@ -2,7 +2,6 @@ org.cometd.CallbackPollingTransport = function()
 {
     var _super = new org.cometd.RequestTransport();
     var _self = org.cometd.Transport.derive(_super);
-    var _maxLength = 2000;
 
     _self.accept = function(version, crossDomain, url)
     {
@@ -39,15 +38,12 @@ org.cometd.CallbackPollingTransport = function()
             var json = org.cometd.JSON.toJSON(envelope.messages.slice(start, start + length));
             var urlLength = envelope.url.length + encodeURI(json).length;
 
-            // Let's stay on the safe side and use 2000 instead of 2083
-            // also because we did not count few characters among which
-            // the parameter name 'message' and the parameter 'jsonp',
-            // which sum up to about 50 chars
-            if (urlLength > _maxLength)
+            var maxLength = this.getConfiguration().maxURILength;
+            if (urlLength > maxLength)
             {
                 if (length === 1)
                 {
-                    var x = 'Bayeux message too big (' + urlLength + ' bytes, max is ' + _maxLength + ') ' +
+                    var x = 'Bayeux message too big (' + urlLength + ' bytes, max is ' + maxLength + ') ' +
                             'for transport ' + this.getType();
                     // Keep the semantic of calling response callbacks asynchronously after the request
                     this.setTimeout(_failTransportFn.call(this, envelope, request, x), 0);
