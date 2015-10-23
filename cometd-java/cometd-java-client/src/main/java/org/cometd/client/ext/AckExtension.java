@@ -110,6 +110,10 @@ public class AckExtension extends Extension.Adapter
     {
         if (Channel.META_HANDSHAKE.equals(message.getChannel()))
         {
+            _serverSupportsAcks = false;
+            _transientBatch = 0;
+            _batch = 0;
+            _size = 0;
             message.getExt(true).put(ACK_FIELD, Boolean.TRUE);
         }
         else if (Channel.META_CONNECT.equals(message.getChannel()))
