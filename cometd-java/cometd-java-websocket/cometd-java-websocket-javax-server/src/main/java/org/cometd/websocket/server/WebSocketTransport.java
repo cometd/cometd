@@ -161,7 +161,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
                     try
                     {
                         // Limits of the WebSocket APIs, otherwise an exception is thrown.
-                        reason = reason.substring(0, 30);
+                        reason = reason.substring(0, Math.min(reason.length(), 30));
                         _wsSession.close(new CloseReason(CloseReason.CloseCodes.getCloseCode(code), reason));
                     }
                     catch (Throwable x)
