@@ -603,7 +603,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         getChannel(Channel.META_CONNECT).removeListener(lastConnectListener);
 
-        // Force to DISCONNECTED state
+        // Force termination.
         changeState(new BayeuxClientStateUpdater()
         {
             @Override
