@@ -19,11 +19,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -57,7 +60,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
     public final static String PREFIX = "long-polling";
     public static final String JSON_DEBUG_OPTION = "jsonDebug";
     public static final String MESSAGE_PARAM = "message";
-    public final static String SESSION_COOKIE_NAME_OPTION = "sessionCookieName";
     public final static String BROWSER_COOKIE_NAME_OPTION = "browserCookieName";
     public final static String BROWSER_COOKIE_DOMAIN_OPTION = "browserCookieDomain";
     public final static String BROWSER_COOKIE_PATH_OPTION = "browserCookiePath";
@@ -70,10 +72,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<>();
-    private final ConcurrentMap<String, ServerSessionImpl> _sessions = new ConcurrentHashMap<>();
+    private final Map<String, Collection<ServerSessionImpl>> _sessions = new HashMap<>();
     private final ConcurrentMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<>();
     private final Map<String, AtomicInteger> _browserSweep = new ConcurrentHashMap<>();
-    private String _sessionCookieName;
     private String _browserCookieName;
     private String _browserCookieDomain;
     private String _browserCookiePath;
@@ -95,7 +96,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
     public void init()
     {
         super.init();
-        _sessionCookieName = getOption(SESSION_COOKIE_NAME_OPTION, "BAYEUX_SESSION");
         _browserCookieName = getOption(BROWSER_COOKIE_NAME_OPTION, "BAYEUX_BROWSER");
         _browserCookieDomain = getOption(BROWSER_COOKIE_DOMAIN_OPTION, null);
         _browserCookiePath = getOption(BROWSER_COOKIE_PATH_OPTION, "/");
@@ -142,7 +142,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
 
     protected void processMessages(HttpServletRequest request, HttpServletResponse response, ServerMessage.Mutable[] messages) throws IOException
     {
-        ServerSessionImpl session = findCurrentSession(request);
+        Collection<ServerSessionImpl> sessions = findCurrentSessions(request);
+        ServerSessionImpl session = null;
         boolean autoBatch = isAutoBatch();
         boolean batch = false;
         boolean sendQueue = true;
@@ -156,10 +157,26 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                 if (_logger.isDebugEnabled())
                     _logger.debug("Processing {}", message);
 
-                if (session != null && !session.getId().equals(message.getClientId()))
+                // Try to find the session.
+                if (sessions != null)
                 {
-                    session.disconnect();
-                    return;
+                    String clientId = message.getClientId();
+                    if (clientId != null)
+                    {
+                        for (ServerSessionImpl s : sessions)
+                        {
+                            if (s.getId().equals(clientId))
+                            {
+                                session = s;
+                                break;
+                            }
+                        }
+                    }
+                    if (session == null && clientId != null)
+                    {
+                        session.disconnect();
+                        return;
+                    }
                 }
 
                 if (session != null)
@@ -223,15 +240,20 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         }
     }
 
-    protected ServerSessionImpl findCurrentSession(HttpServletRequest request)
+    protected Collection<ServerSessionImpl> findCurrentSessions(HttpServletRequest request)
     {
         Cookie[] cookies = request.getCookies();
         if (cookies != null)
         {
             for (Cookie cookie : cookies)
             {
-                if (_sessionCookieName.equals(cookie.getName()))
-                    return _sessions.get(cookie.getValue());
+                if (_browserCookieName.equals(cookie.getName()))
+                {
+                    synchronized (_sessions)
+                    {
+                        return _sessions.get(cookie.getValue());
+                    }
+                }
             }
         }
         return null;
@@ -245,17 +267,36 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
             if (session != null)
             {
-                String browserId = findBrowserId(request);
-                if (browserId == null)
-                    setBrowserId(request, response);
-                final String sessionId = setSessionId(request, response);
-                _sessions.put(sessionId, session);
+                String id = findBrowserId(request);
+                if (id == null)
+                    id = setBrowserId(request, response);
+                final String browserId = id;
+
+                synchronized (_sessions)
+                {
+                    Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
+                    if (sessions == null)
+                    {
+                        // The list is modified inside sync blocks, but
+                        // iterated outside, so it must be concurrent.
+                        sessions = new CopyOnWriteArrayList<>();
+                        _sessions.put(browserId, sessions);
+                    }
+                    sessions.add(session);
+                }
+
                 session.addListener(new ServerSession.RemoveListener()
                 {
                     @Override
                     public void removed(ServerSession session, boolean timeout)
                     {
-                        _sessions.remove(sessionId);
+                        synchronized (_sessions)
+                        {
+                            Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
+                            sessions.remove(session);
+                            if (sessions.isEmpty())
+                                _sessions.remove(browserId);
+                        }
                     }
                 });
             }
@@ -386,20 +427,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         return null;
     }
 
-    protected String setSessionId(HttpServletRequest request, HttpServletResponse response)
-    {
-        // Use 4 longs, i.e. 4 * 64 = 256 bits.
-        String sessionId = Long.toString(getBayeux().randomLong(), 36) +
-                Long.toString(getBayeux().randomLong(), 36) +
-                Long.toString(getBayeux().randomLong(), 36) +
-                Long.toString(getBayeux().randomLong(), 36);
-        Cookie cookie = new Cookie(_sessionCookieName, sessionId);
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(-1);
-        response.addCookie(cookie);
-        return sessionId;
-    }
-
     protected String findBrowserId(HttpServletRequest request)
     {
         Cookie[] cookies = request.getCookies();
@@ -416,10 +443,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
 
     protected String setBrowserId(HttpServletRequest request, HttpServletResponse response)
     {
-        String browserId = Long.toHexString(request.getRemotePort()) +
-                Long.toString(getBayeux().randomLong(), 36) +
-                Long.toString(System.currentTimeMillis(), 36) +
-                Long.toString(request.getRemotePort(), 36);
+        StringBuilder builder = new StringBuilder();
+        while (builder.length() < 16)
+            builder.append(Long.toString(getBayeux().randomLong(), 36));
+        builder.setLength(16);
+        String browserId = builder.toString();
         Cookie cookie = new Cookie(_browserCookieName, browserId);
         if (_browserCookieDomain != null)
             cookie.setDomain(_browserCookieDomain);

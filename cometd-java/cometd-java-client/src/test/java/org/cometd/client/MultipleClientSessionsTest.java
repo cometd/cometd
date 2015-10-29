@@ -15,6 +15,16 @@
  */
 package org.cometd.client;
 
+import java.net.HttpCookie;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -29,16 +39,11 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.net.HttpCookie;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Simulates a browser opening multiple tabs to the same Bayeux server
@@ -78,8 +83,8 @@ public class MultipleClientSessionsTest extends ClientServerTest
         client1.handshake();
 
         assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
-        HttpCookie cookie = client1.getCookie("BAYEUX_BROWSER");
-        assertNotNull(cookie);
+        HttpCookie browserCookie = client1.getCookie("BAYEUX_BROWSER");
+        assertNotNull(browserCookie);
 
         // Give some time to the first client to establish the long poll before the second client
         Thread.sleep(1000);
@@ -87,7 +92,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         BayeuxClient client2 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
         final CountDownLatch latch2 = new CountDownLatch(1);
-        client2.putCookie(cookie);
+        client2.putCookie(browserCookie);
         client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -140,15 +145,15 @@ public class MultipleClientSessionsTest extends ClientServerTest
         });
         client1.handshake();
         assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
-        HttpCookie cookie = client1.getCookie("BAYEUX_BROWSER");
-        assertNotNull(cookie);
+        HttpCookie browserCookie = client1.getCookie("BAYEUX_BROWSER");
+        assertNotNull(browserCookie);
 
         // Give some time to the first client to establish the long poll before the second client
         Thread.sleep(1000);
 
         BayeuxClient client2 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
-        client2.putCookie(cookie);
+        client2.putCookie(browserCookie);
         client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -163,7 +168,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
 
         BayeuxClient client3 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<>();
-        client3.putCookie(cookie);
+        client3.putCookie(browserCookie);
         client3.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -272,15 +277,15 @@ public class MultipleClientSessionsTest extends ClientServerTest
         });
         client1.handshake();
         assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
-        HttpCookie cookie = client1.getCookie("BAYEUX_BROWSER");
-        assertNotNull(cookie);
+        HttpCookie browserCookie = client1.getCookie("BAYEUX_BROWSER");
+        assertNotNull(browserCookie);
 
         // Give some time to the first client to establish the long poll before the second client
         Thread.sleep(1000);
 
         BayeuxClient client2 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
-        client2.putCookie(cookie);
+        client2.putCookie(browserCookie);
         client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -295,7 +300,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
 
         BayeuxClient client3 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<>();
-        client3.putCookie(cookie);
+        client3.putCookie(browserCookie);
         client3.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -382,7 +387,9 @@ public class MultipleClientSessionsTest extends ClientServerTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         assertEquals(200, handshake.getStatus());
-        HttpCookie browserCookie = httpClient.getCookieStore().get(URI.create(cometdURL)).get(0);
+        List<HttpCookie> cookies = httpClient.getCookieStore().get(URI.create(cometdURL));
+        assertEquals(1, cookies.size());
+        HttpCookie browserCookie = cookies.get(0);
         assertEquals("BAYEUX_BROWSER", browserCookie.getName());
         Message.Mutable[] messages = parser.parse(handshake.getContentAsString());
         assertEquals(1, messages.length);
