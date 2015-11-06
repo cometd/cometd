@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CometD Angular Chat</title>
+    <link rel="stylesheet" type="text/css" href="chat.css">
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+
+    <script type="text/javascript" src="../../angular/angular-1.4.7.js"></script>
+    <script type="text/javascript" src="../../angular/angular-cookies-1.4.7.js"></script>
+    <script type="text/javascript" src="../../org/cometd.js"></script>
+    <script type="text/javascript" src="../../org/cometd/ReloadExtension.js"></script>
+    <script type="text/javascript" src="../../angular/angular-cometd.js"></script>
+    <script type="text/javascript" src="../../angular/angular-cometd-reload.js"></script>
+    <script type="text/javascript" src="chat.js"></script>
+    <script type="text/javascript">
+        var config = {
+            contextPath: location.href.replace(/https?:\/\/[^\/]*/, '').replace(/\/angular-examples\/.*$/, '')
+        }
+    </script>
+</head>
+
+<body ng-app="cometdAngularChat">
+
+<h1>CometD Chat Example</h1>
+<h6>
+    <a href="../..">Main Demo index</a>
+</h6>
+
+<div id="chatRoom" ng-controller="chatRoom">
+    <div id="chat">
+        <span ng-if="messages.length === 0">&nbsp;</span>
+        <div ng-repeat="message in messages" class="{{message.type}}">
+            <span class="from">{{message.user}}&nbsp;</span>
+            <span ng-show="message.type=='private'">[private]&nbsp;</span>
+            <span class="text">{{message.text}}</span>
+        </div>
+    </div>
+    <div id="members">
+        <div ng-repeat="member in members">{{member}}</div>
+    </div>
+    <div id="input">
+        <div id="join" ng-show="!joined">
+            <table>
+                <tbody>
+                <tr>
+                    <td>
+                        <input id="useServer" type="checkbox" ng-model="useServer" />
+                    </td>
+                    <td>
+                        <label for="useServer" title="Selects whether to use cross-domain CometD">Use Alternate Server</label>
+                    </td>
+                    <td>
+                        <input id="altServer" type="text" ng-model="altServer" />
+                    </td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>&nbsp;</td>
+                    <td>
+                        <label for="userName">Enter Chat Nickname</label>
+                    </td>
+                    <td>
+                        <input id="userName" type="text" ng-model="userName" cometd-enter="join()" />
+                    </td>
+                    <td>
+                        <button id="joinButton" class="button" ng-click="join()">Join</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="joined" ng-show="joined">
+            <label for="phrase">Chat:&nbsp;</label>
+            <input id="phrase" type="text" ng-model="phrase" cometd-enter="send()" />
+            <button id="sendButton" class="button" ng-click="send()">Send</button>
+            <button id="leaveButton" class="button" ng-click="leave()">Leave</button>
+        </div>
+    </div>
+</div>
+<br />
+<div style="padding: 0.25em;">Tip: Use username[,username2]::text to send private messages</div>
+
+</body>
+
+</html>

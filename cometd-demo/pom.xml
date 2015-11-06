@@ -37,6 +37,14 @@
                         </overlay>
                         <overlay>
                             <groupId>org.cometd.javascript</groupId>
+                            <artifactId>cometd-javascript-angular</artifactId>
+                            <excludes>
+                                <exclude>META-INF/**</exclude>
+                                <exclude>WEB-INF/web.xml</exclude>
+                            </excludes>
+                        </overlay>
+                        <overlay>
+                            <groupId>org.cometd.javascript</groupId>
                             <artifactId>cometd-examples-dojo</artifactId>
                             <excludes>
                                 <exclude>META-INF/**</exclude>
@@ -46,6 +54,14 @@
                         <overlay>
                             <groupId>org.cometd.javascript</groupId>
                             <artifactId>cometd-examples-jquery</artifactId>
+                            <excludes>
+                                <exclude>META-INF/**</exclude>
+                                <exclude>WEB-INF/web.xml</exclude>
+                            </excludes>
+                        </overlay>
+                        <overlay>
+                            <groupId>org.cometd.javascript</groupId>
+                            <artifactId>cometd-examples-angular</artifactId>
                             <excludes>
                                 <exclude>META-INF/**</exclude>
                                 <exclude>WEB-INF/web.xml</exclude>
@@ -96,6 +112,12 @@
         </dependency>
         <dependency>
             <groupId>org.cometd.javascript</groupId>
+            <artifactId>cometd-javascript-angular</artifactId>
+            <version>${project.version}</version>
+            <type>war</type>
+        </dependency>
+        <dependency>
+            <groupId>org.cometd.javascript</groupId>
             <artifactId>cometd-examples-dojo</artifactId>
             <version>${project.version}</version>
             <type>war</type>
@@ -103,6 +125,12 @@
         <dependency>
             <groupId>org.cometd.javascript</groupId>
             <artifactId>cometd-examples-jquery</artifactId>
+            <version>${project.version}</version>
+            <type>war</type>
+        </dependency>
+        <dependency>
+            <groupId>org.cometd.javascript</groupId>
+            <artifactId>cometd-examples-angular</artifactId>
             <version>${project.version}</version>
             <type>war</type>
         </dependency>

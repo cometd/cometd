@@ -15,6 +15,8 @@
     <modules>
         <module>common</module>
         <module>common-test</module>
+        <module>angular</module>
+        <module>examples-angular</module>
         <module>dojo</module>
         <module>examples-dojo</module>
         <module>jquery</module>
