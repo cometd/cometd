@@ -145,7 +145,7 @@ org.cometd.WebSocketTransport = function()
         webSocket.onerror = function()
         {
             // Clients should call onclose(), but if they do not we do it here for safety.
-            onclose({ code: 1002, reason: 'Error' });
+            onclose({ code: 1000, reason: 'Error' });
         };
         webSocket.onmessage = onmessage;
 
@@ -410,7 +410,7 @@ org.cometd.WebSocketTransport = function()
         _super.abort();
         if (_webSocket)
         {
-            var event = { code: 1001, reason: 'Abort' };
+            var event = { code: 1000, reason: 'Abort' };
             this.webSocketClose(_webSocket, event.code, event.reason);
             // Force immediate failure of pending messages to trigger reconnect.
             // This is needed because the server may not reply to our close()
