@@ -298,10 +298,10 @@
 
         $(window).unload(function()
         {
-            $.cometd.reload();
             // Save the application state only if the user was chatting
             if (_username)
             {
+                $.cometd.reload();
                 var expires = new Date();
                 expires.setTime(expires.getTime() + 5 * 1000);
                 org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
