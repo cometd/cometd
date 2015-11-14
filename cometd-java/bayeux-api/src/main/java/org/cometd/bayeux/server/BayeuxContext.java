@@ -18,6 +18,7 @@ package org.cometd.bayeux.server;
 import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * <p>The Bayeux Context provides information about the current context of a Bayeux message.</p>
@@ -146,4 +147,10 @@ public interface BayeuxContext
      * @return the full request URI complete with query string if present.
      */
     String getURL();
+
+    /**
+     * @return the request Locales, in order of preference, or the default
+     * server Locale if the request Locales are missing.
+     */
+    List<Locale> getLocales();
 }

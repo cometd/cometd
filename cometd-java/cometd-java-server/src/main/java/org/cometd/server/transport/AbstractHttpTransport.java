@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -734,6 +735,12 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
             if (query != null)
                 url.append("?").append(query);
             return url.toString();
+        }
+
+        @Override
+        public List<Locale> getLocales()
+        {
+            return Collections.list(_request.getLocales());
         }
     }
 

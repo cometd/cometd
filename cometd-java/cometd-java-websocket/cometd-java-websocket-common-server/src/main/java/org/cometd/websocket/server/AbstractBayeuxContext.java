@@ -15,19 +15,21 @@
  */
 package org.cometd.websocket.server;
 
-import org.cometd.bayeux.server.BayeuxContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpSession;
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
+
+import org.cometd.bayeux.server.BayeuxContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractBayeuxContext implements BayeuxContext
 {
@@ -41,8 +43,9 @@ public abstract class AbstractBayeuxContext implements BayeuxContext
     private final HttpSession session;
     private final InetSocketAddress localAddress;
     private final InetSocketAddress remoteAddress;
+    private final List<Locale> locales;
 
-    public AbstractBayeuxContext(ServletContext context, String uri, String query, Map<String, List<String>> headers, Map<String, List<String>> parameters, Principal principal, HttpSession session, InetSocketAddress local, InetSocketAddress remote)
+    public AbstractBayeuxContext(ServletContext context, String uri, String query, Map<String, List<String>> headers, Map<String, List<String>> parameters, Principal principal, HttpSession session, InetSocketAddress local, InetSocketAddress remote, List<Locale> locales)
     {
         this.context = context;
         this.url = uri + (query == null ? "" : "?" + query);
@@ -53,6 +56,7 @@ public abstract class AbstractBayeuxContext implements BayeuxContext
         this.session = session;
         this.localAddress = local;
         this.remoteAddress = remote;
+        this.locales = locales;
     }
 
     @Override
@@ -135,6 +139,12 @@ public abstract class AbstractBayeuxContext implements BayeuxContext
     public InetSocketAddress getLocalAddress()
     {
         return localAddress;
+    }
+
+    @Override
+    public List<Locale> getLocales()
+    {
+        return locales;
     }
 
     @Override
