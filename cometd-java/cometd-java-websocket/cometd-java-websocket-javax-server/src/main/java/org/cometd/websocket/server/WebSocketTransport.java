@@ -241,7 +241,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
     private static List<Locale> retrieveLocales(Map<String, Object> userProperties)
     {
         @SuppressWarnings("unchecked")
-        List<Locale> locales = (List<Locale>)userProperties.get("javax.websocket.locales");
+        List<Locale> locales = (List<Locale>)userProperties.get("javax.websocket.upgrade.locales");
         if (locales == null || locales.isEmpty())
             return Collections.singletonList(Locale.getDefault());
         return locales;
