@@ -15,8 +15,13 @@
  */
 package org.cometd.tests;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.junit.Assert;
 import org.junit.Test;
@@ -51,15 +56,30 @@ public class SessionHijackingTest extends AbstractClientServerTest
                 return true;
             }
         });
-        String channel = "/session_mismatch";
-        client1.getChannel(channel).publish("data");
 
-        // Expect Client1 to be disconnected.
-        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        final AtomicReference<Message> messageRef = new AtomicReference<>();
+        final CountDownLatch latch = new CountDownLatch(1);
+        String channel = "/session_mismatch";
+        client1.getChannel(channel).publish("data", new ClientSessionChannel.MessageListener()
+        {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                messageRef.set(message);
+                latch.countDown();
+            }
+        });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Message publishReply = messageRef.get();
+        Assert.assertNotNull(publishReply);
+        Assert.assertFalse(publishReply.isSuccessful());
+        Assert.assertTrue(((String)publishReply.get(Message.ERROR_FIELD)).startsWith("402"));
 
         // Client2 should be connected.
         Assert.assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
 
+        disconnectBayeuxClient(client1);
         disconnectBayeuxClient(client2);
     }
 }

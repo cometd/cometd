@@ -15,6 +15,7 @@
  */
 package org.cometd.websocket.server;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -238,7 +239,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         {
             super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
                     request.getParameterMap(), request.getUserPrincipal(), request.getSession(),
-                    request.getLocalSocketAddress(), request.getRemoteSocketAddress());
+                    request.getLocalSocketAddress(), request.getRemoteSocketAddress(), Collections.list(request.getLocales()));
             this.attributes = request.getServletAttributes();
         }
 

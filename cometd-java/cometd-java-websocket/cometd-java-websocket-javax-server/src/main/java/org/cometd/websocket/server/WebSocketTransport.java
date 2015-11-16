@@ -18,6 +18,7 @@ package org.cometd.websocket.server;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -232,8 +233,18 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
                     request.getParameterMap(), request.getUserPrincipal(), (HttpSession)request.getHttpSession(),
                     // Hopefully these will become a standard, for now they are Jetty specific.
                     (InetSocketAddress)userProperties.get("javax.websocket.endpoint.localAddress"),
-                    (InetSocketAddress)userProperties.get("javax.websocket.endpoint.remoteAddress"));
+                    (InetSocketAddress)userProperties.get("javax.websocket.endpoint.remoteAddress"),
+                    retrieveLocales(userProperties));
         }
+    }
+
+    private static List<Locale> retrieveLocales(Map<String, Object> userProperties)
+    {
+        @SuppressWarnings("unchecked")
+        List<Locale> locales = (List<Locale>)userProperties.get("javax.websocket.upgrade.locales");
+        if (locales == null || locales.isEmpty())
+            return Collections.singletonList(Locale.getDefault());
+        return locales;
     }
 
     private class Configurator extends ServerEndpointConfig.Configurator

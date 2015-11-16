@@ -11,7 +11,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- tag::jetty-version[] -->
-        <jetty-version>9.2.13.v20150730</jetty-version>
+        <jetty-version>9.2.14.v20151106</jetty-version>
         <!-- end::jetty-version[] -->
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
         <slf4j-version>1.7.12</slf4j-version>
