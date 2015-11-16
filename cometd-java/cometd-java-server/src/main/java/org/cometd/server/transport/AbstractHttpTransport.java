@@ -173,11 +173,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                             }
                         }
                     }
-                    if (session == null && clientId != null)
-                    {
-                        session.disconnect();
-                        return;
-                    }
                 }
 
                 if (session != null)
