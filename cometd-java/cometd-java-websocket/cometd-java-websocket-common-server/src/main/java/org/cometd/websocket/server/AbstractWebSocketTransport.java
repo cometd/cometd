@@ -325,14 +325,14 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 if (session != null && !session.isHandshook())
                     _session = session = null;
 
-                if (session != null && !session.getId().equals(message.getClientId()))
-                {
-                    session.disconnect();
-                    return;
-                }
+                String clientId = message.getClientId();
 
                 if (session == null && !_requireHandshakePerConnection)
-                    _session = session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
+                    _session = session = (ServerSessionImpl)getBayeux().getSession(clientId);
+
+                // Session hijacked ?
+                if (session != null && !session.getId().equals(clientId))
+                    session = null;
 
                 switch (message.getChannel())
                 {
