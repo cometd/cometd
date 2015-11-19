@@ -15,16 +15,6 @@
  */
 package org.cometd.common;
 
-import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.ChannelId;
-import org.cometd.bayeux.MarkedReference;
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSession;
-import org.cometd.bayeux.client.ClientSessionChannel;
-import org.eclipse.jetty.util.AttributesMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -35,14 +25,22 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
+import org.cometd.bayeux.MarkedReference;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
+import org.eclipse.jetty.util.AttributesMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * <p>Partial implementation of {@link ClientSession}.</p>
  * <p>It handles extensions and batching, and provides utility methods to be used by subclasses.</p>
  */
 public abstract class AbstractClientSession implements ClientSession
 {
-    protected static final String SUBSCRIBER_KEY = "org.cometd.client.subscriber";
-    protected static final String CALLBACK_KEY = "org.cometd.client.callback";
     private static final Logger logger = LoggerFactory.getLogger(ClientSession.class);
     private static final AtomicLong _idGen = new AtomicLong(0);
 
@@ -51,6 +49,7 @@ public abstract class AbstractClientSession implements ClientSession
     private final ConcurrentMap<String, AbstractSessionChannel> _channels = new ConcurrentHashMap<>();
     private final Map<String, ClientSessionChannel.MessageListener> _callbacks = new ConcurrentHashMap<>();
     private final Map<String, ClientSessionChannel.MessageListener> _subscribers = new ConcurrentHashMap<>();
+    private final Map<String, MessageListener> _remoteCalls = new ConcurrentHashMap<>();
     private final AtomicInteger _batch = new AtomicInteger();
 
     protected AbstractClientSession()
@@ -213,6 +212,28 @@ public abstract class AbstractClientSession implements ClientSession
         _attributes.setAttribute(name, value);
     }
 
+    @Override
+    public void remoteCall(String target, Object data, MessageListener callback)
+    {
+        if (!target.startsWith("/"))
+            target = "/" + target;
+        String channelName = "/service" + target;
+        Message.Mutable message = newMessage();
+        String messageId = newMessageId();
+        message.setId(messageId);
+        message.setChannel(channelName);
+        message.setData(data);
+        _remoteCalls.put(messageId, callback);
+        send(message);
+    }
+
+    protected abstract void send(Message.Mutable message);
+
+    protected Message.Mutable newMessage()
+    {
+        return new HashMapMessage();
+    }
+
     protected void resetSubscriptions()
     {
         for (AbstractSessionChannel ch : _channels.values())
@@ -234,6 +255,7 @@ public abstract class AbstractClientSession implements ClientSession
 
         if (Channel.META_SUBSCRIBE.equals(channelName))
         {
+            // Remove the subscriber if the subscription fails.
             ClientSessionChannel.MessageListener subscriber = unregisterSubscriber(message.getId());
             if (!message.isSuccessful())
             {
@@ -249,11 +271,49 @@ public abstract class AbstractClientSession implements ClientSession
         if (!extendRcv(message))
             return;
 
+        if (handleRemoteCall(message))
+            return;
+
         notifyListeners(message);
+    }
+
+    private boolean handleRemoteCall(Message.Mutable message)
+    {
+        String messageId = message.getId();
+        if (messageId != null)
+        {
+            MessageListener listener = _remoteCalls.remove(messageId);
+            if (listener != null)
+            {
+                notifyMessageListener(listener, message);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void notifyMessageListener(MessageListener listener, Message.Mutable message)
+    {
+        try
+        {
+            listener.onMessage(message);
+        }
+        catch (Throwable x)
+        {
+            logger.info("Exception while invoking listener " + listener, x);
+        }
     }
 
     protected void notifyListeners(Message.Mutable message)
     {
+        if (message.isMeta() || message.isPublishReply())
+        {
+            String messageId = message.getId();
+            ClientSessionChannel.MessageListener callback = unregisterCallback(messageId);
+            if (callback != null)
+                notifyListener(callback, message);
+        }
+
         MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(message.getChannel());
         AbstractSessionChannel channel = channelRef.getReference();
         channel.notifyMessageListeners(message);
@@ -299,6 +359,8 @@ public abstract class AbstractClientSession implements ClientSession
 
     protected ClientSessionChannel.MessageListener unregisterCallback(String messageId)
     {
+        if (messageId == null)
+            return null;
         return _callbacks.remove(messageId);
     }
 
@@ -310,6 +372,8 @@ public abstract class AbstractClientSession implements ClientSession
 
     protected ClientSessionChannel.MessageListener unregisterSubscriber(String messageId)
     {
+        if (messageId == null)
+            return null;
         return _subscribers.remove(messageId);
     }
 
@@ -377,6 +441,20 @@ public abstract class AbstractClientSession implements ClientSession
             publish(data, null);
         }
 
+        @Override
+        public void publish(Object data, MessageListener callback)
+        {
+            throwIfReleased();
+            Message.Mutable message = newMessage();
+            String messageId = newMessageId();
+            message.setId(messageId);
+            message.setChannel(getId());
+            message.setData(data);
+            registerCallback(messageId, callback);
+            send(message);
+        }
+
+        @Override
         public void subscribe(MessageListener listener)
         {
             subscribe(listener, null);
@@ -395,7 +473,17 @@ public abstract class AbstractClientSession implements ClientSession
             }
         }
 
-        protected abstract void sendSubscribe(MessageListener listener, MessageListener callback);
+        protected void sendSubscribe(MessageListener listener, MessageListener callback)
+        {
+            Message.Mutable message = newMessage();
+            String messageId = newMessageId();
+            message.setId(messageId);
+            message.setChannel(Channel.META_SUBSCRIBE);
+            message.put(Message.SUBSCRIPTION_FIELD, getId());
+            registerSubscriber(messageId, listener);
+            registerCallback(messageId, callback);
+            send(message);
+        }
 
         @Override
         public void unsubscribe(MessageListener listener)
@@ -421,7 +509,16 @@ public abstract class AbstractClientSession implements ClientSession
             return _subscriptions.remove(listener);
         }
 
-        protected abstract void sendUnSubscribe(MessageListener callback);
+        protected void sendUnSubscribe(MessageListener callback)
+        {
+            Message.Mutable message = newMessage();
+            String messageId = newMessageId();
+            message.setId(messageId);
+            message.setChannel(Channel.META_UNSUBSCRIBE);
+            message.put(Message.SUBSCRIPTION_FIELD, getId());
+            registerCallback(messageId, callback);
+            send(message);
+        }
 
         @Override
         public void unsubscribe()
@@ -595,7 +692,7 @@ public abstract class AbstractClientSession implements ClientSession
         @Override
         public String toString()
         {
-            return _id.toString();
+            return String.format("%s@%s", _id, AbstractClientSession.this);
         }
     }
 }

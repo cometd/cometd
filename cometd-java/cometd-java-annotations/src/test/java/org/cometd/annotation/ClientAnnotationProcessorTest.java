@@ -30,17 +30,8 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
-import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.server.CometDServlet;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -50,63 +41,22 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
-public class ClientAnnotationProcessorTest
+public class ClientAnnotationProcessorTest extends AbstractClientServerTest
 {
-    private static Server server;
-    private static String cometdURL;
-    private static HttpClient httpClient;
     private BayeuxClient bayeuxClient;
     private ClientAnnotationProcessor processor;
-
-    @BeforeClass
-    public static void startServer() throws Exception
-    {
-        server = new Server();
-
-        ServerConnector connector = new ServerConnector(server);
-        connector.setIdleTimeout(30000);
-        server.addConnector(connector);
-
-        ServletContextHandler context = new ServletContextHandler(server, "/");
-
-        // CometD servlet
-        ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
-        cometdServletHolder.setInitParameter("timeout", "10000");
-        cometdServletHolder.setInitParameter("multiSessionInterval", "2000");
-        cometdServletHolder.setInitOrder(1);
-
-        String cometdServletPath = "/cometd";
-        context.addServlet(cometdServletHolder, cometdServletPath + "/*");
-
-        server.start();
-        int port = connector.getLocalPort();
-        cometdURL = "http://localhost:" + port + cometdServletPath;
-
-        httpClient = new HttpClient();
-        httpClient.start();
-
-    }
-
-    @AfterClass
-    public static void stopServer() throws Exception
-    {
-        httpClient.stop();
-
-        server.stop();
-        server.join();
-    }
 
     @Before
     public void init()
     {
-        bayeuxClient = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
+        bayeuxClient = newBayeuxClient();
         processor = new ClientAnnotationProcessor(bayeuxClient);
     }
 
     @After
     public void destroy()
     {
-        bayeuxClient.disconnect(1000);
+        disconnectBayeuxClient(bayeuxClient);
     }
 
     @Test

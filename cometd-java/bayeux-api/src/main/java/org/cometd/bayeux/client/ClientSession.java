@@ -15,11 +15,12 @@
  */
 package org.cometd.bayeux.client;
 
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Session;
-
 import java.util.List;
 import java.util.Map;
+
+import org.cometd.bayeux.Bayeux;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Session;
 
 /**
  * <p>This interface represents the client side Bayeux session.</p>
@@ -31,6 +32,7 @@ public interface ClientSession extends Session
 {
     /**
      * Adds an extension to this session.
+     *
      * @param extension the extension to add
      * @see #removeExtension(Extension)
      */
@@ -38,6 +40,7 @@ public interface ClientSession extends Session
 
     /**
      * Removes an extension from this session.
+     *
      * @param extension the extension to remove
      * @see #addExtension(Extension)
      */
@@ -92,10 +95,57 @@ public interface ClientSession extends Session
      *     clientSession.getChannel("/foo/bar").publish("Hello");
      *     clientSession.getChannel("/meta/*").addListener(myMetaChannelListener);
      * </pre>
+     *
      * @param channelName specific or wild channel name.
      * @return a channel scoped by this session.
      */
     ClientSessionChannel getChannel(String channelName);
+
+    /**
+     * <p>Performs a remote call to the server, to the specified {@code target},
+     * and with the given {@code data} as payload.</p>
+     * <p>The remote call response will be delivered via the {@code callback}
+     * parameter.</p>
+     * <p>Typical usage:</p>
+     * <pre>
+     * clientSession.remoteCall("getOnlineStatus", userId, new MessageListener()
+     * {
+     *     &#64;Override
+     *     public void onMessage(Message message)
+     *     {
+     *         if (message.isSuccessful())
+     *         {
+     *             String status = (String)message.getData();
+     *             // Update UI with online status.
+     *         }
+     *         else
+     *         {
+     *             // Remote call failed.
+     *         }
+     *     }
+     * });
+     * </pre>
+     *
+     * @param target   the remote call target
+     * @param data     the remote call parameters
+     * @param callback the listener that receives the remote call response
+     */
+    void remoteCall(String target, Object data, MessageListener callback);
+
+    /**
+     * <p>A listener for remote call messages.</p>
+     *
+     * @see #remoteCall(String, Object, MessageListener)
+     */
+    public interface MessageListener extends Bayeux.BayeuxListener
+    {
+        /**
+         * Callback invoked when a remote call response is received.
+         *
+         * @param message the remote call response
+         */
+        void onMessage(Message message);
+    }
 
     /**
      * <p>Extension API for client session.</p>
@@ -110,6 +160,7 @@ public interface ClientSession extends Session
     {
         /**
          * Callback method invoked every time a normal message is received.
+         *
          * @param session the session object that is receiving the message
          * @param message the message received
          * @return true if message processing should continue, false if it should stop
@@ -118,6 +169,7 @@ public interface ClientSession extends Session
 
         /**
          * Callback method invoked every time a meta message is received.
+         *
          * @param session the session object that is receiving the meta message
          * @param message the meta message received
          * @return true if message processing should continue, false if it should stop
@@ -126,6 +178,7 @@ public interface ClientSession extends Session
 
         /**
          * Callback method invoked every time a normal message is being sent.
+         *
          * @param session the session object that is sending the message
          * @param message the message being sent
          * @return true if message processing should continue, false if it should stop
@@ -134,6 +187,7 @@ public interface ClientSession extends Session
 
         /**
          * Callback method invoked every time a meta message is being sent.
+         *
          * @param session the session object that is sending the message
          * @param message the meta message being sent
          * @return true if message processing should continue, false if it should stop

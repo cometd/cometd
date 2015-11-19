@@ -49,7 +49,6 @@ import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
-import org.cometd.common.HashMapMessage;
 import org.cometd.common.TransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -392,6 +391,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             Message.Mutable message = newMessage();
             if (bayeuxClientState.handshakeFields != null)
                 message.putAll(bayeuxClientState.handshakeFields);
+            String messageId = newMessageId();
+            message.setId(messageId);
             message.setChannel(Channel.META_HANDSHAKE);
             List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
             List<String> transportNames = new ArrayList<>(transports.size());
@@ -399,8 +400,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 transportNames.add(transport.getName());
             message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, transportNames);
             message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
-            if (bayeuxClientState.callback != null)
-                message.put(CALLBACK_KEY, bayeuxClientState.callback);
+            registerCallback(messageId, bayeuxClientState.callback);
 
             if (logger.isDebugEnabled())
                 logger.debug("Handshaking on transport {}: {}", bayeuxClientState.transport, message);
@@ -474,6 +474,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         if (isHandshook(bayeuxClientState))
         {
             Message.Mutable message = newMessage();
+            message.setId(newMessageId());
             message.setChannel(Channel.META_CONNECT);
             message.put(Message.CONNECTION_TYPE_FIELD, bayeuxClientState.transport.getName());
             if (isConnecting(bayeuxClientState) || isUnconnected(bayeuxClientState))
@@ -947,9 +948,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return Collections.unmodifiableMap(options);
     }
 
-    protected Message.Mutable newMessage()
+    @Override
+    protected void send(Message.Mutable message)
     {
-        return new HashMapMessage();
+        enqueueSend(message);
     }
 
     protected void enqueueSend(Message.Mutable message)
@@ -991,7 +993,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         failed.setSuccessful(false);
         failed.setChannel(message.getChannel());
         failed.put(Message.SUBSCRIPTION_FIELD, message.get(Message.SUBSCRIPTION_FIELD));
-        failed.put(CALLBACK_KEY, message.remove(CALLBACK_KEY));
 
         Map<String, Object> failure = new HashMap<>();
         failed.put("failure", failure);
@@ -1007,20 +1008,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         failure.put(Message.CONNECTION_TYPE_FIELD, getTransport().getName());
 
         receive(failed);
-    }
-
-    @Override
-    protected void notifyListeners(Message.Mutable message)
-    {
-        ClientSessionChannel.MessageListener callback = (ClientSessionChannel.MessageListener)message.remove(CALLBACK_KEY);
-        if (message.isMeta() || message.isPublishReply())
-        {
-            String messageId = message.getId();
-            callback = messageId == null ? callback : unregisterCallback(messageId);
-            if (callback != null)
-                notifyListener(callback, message);
-        }
-        super.notifyListeners(message);
     }
 
     /**
@@ -1342,6 +1329,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         }
     }
 
+    /**
+     * <p>A channel scoped to this BayeuxClient.</p>
+     */
     protected class BayeuxClientChannel extends AbstractSessionChannel
     {
         protected BayeuxClientChannel(ChannelId channelId)
@@ -1349,43 +1339,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             super(channelId);
         }
 
+        @Override
         public ClientSession getSession()
         {
             throwIfReleased();
             return BayeuxClient.this;
-        }
-
-        public void publish(Object data, MessageListener callback)
-        {
-            throwIfReleased();
-            Message.Mutable message = newMessage();
-            message.setChannel(getId());
-            message.setData(data);
-            if (callback != null)
-                message.put(CALLBACK_KEY, callback);
-            enqueueSend(message);
-        }
-
-        protected void sendSubscribe(MessageListener listener, MessageListener callback)
-        {
-            Message.Mutable message = newMessage();
-            message.setChannel(Channel.META_SUBSCRIBE);
-            message.put(Message.SUBSCRIPTION_FIELD, getId());
-            if (listener != null)
-                message.put(SUBSCRIBER_KEY, listener);
-            if (callback != null)
-                message.put(CALLBACK_KEY, callback);
-            enqueueSend(message);
-        }
-
-        protected void sendUnSubscribe(MessageListener callback)
-        {
-            Message.Mutable message = newMessage();
-            message.setChannel(Channel.META_UNSUBSCRIBE);
-            message.put(Message.SUBSCRIPTION_FIELD, getId());
-            if (callback != null)
-                message.put(CALLBACK_KEY, callback);
-            enqueueSend(message);
         }
     }
 
@@ -1454,25 +1412,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             {
                 Message.Mutable message = iterator.next();
 
-                String messageId = newMessageId();
-                message.setId(messageId);
-
-                if (clientId != null)
-                    message.setClientId(clientId);
-
-                // Remove the synthetic fields before calling the extensions
-                ClientSessionChannel.MessageListener subscriber = (ClientSessionChannel.MessageListener)message.remove(SUBSCRIBER_KEY);
-                ClientSessionChannel.MessageListener callback = (ClientSessionChannel.MessageListener)message.remove(CALLBACK_KEY);
+                String messageId = message.getId();
+                message.setClientId(clientId);
 
                 if (extendSend(message))
                 {
-                    // Extensions may have modified the messageId, but we need to own
-                    // the messageId in case of meta messages to link request/response
-                    // in non request/response transports such as websocket
+                    // Extensions may have changed the messageId, but we need to
+                    // own it in case of meta messages to link requests to responses
+                    // in non request/response transports such as WebSocket.
                     message.setId(messageId);
-
-                    registerSubscriber(messageId, subscriber);
-                    registerCallback(messageId, callback);
                 }
                 else
                 {
@@ -1725,9 +1673,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         public void run()
         {
             Message.Mutable message = newMessage();
+            String messageId = newMessageId();
+            message.setId(messageId);
             message.setChannel(Channel.META_DISCONNECT);
-            if (callback != null)
-                message.put(CALLBACK_KEY, callback);
+            registerCallback(messageId, callback);
             List<Message.Mutable> messages = new ArrayList<>(1);
             messages.add(message);
             send(disconnectListener, messages);

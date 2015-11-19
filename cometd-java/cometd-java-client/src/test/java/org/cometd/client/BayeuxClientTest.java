@@ -311,6 +311,7 @@ public class BayeuxClientTest extends ClientServerTest
             public void onFailure(Throwable failure, List<? extends Message> messages)
             {
                 Message.Mutable problem = newMessage();
+                problem.setId(newMessageId());
                 problem.setSuccessful(false);
                 problem.put("exception", failure);
                 queue.offer(problem);
@@ -403,6 +404,7 @@ public class BayeuxClientTest extends ClientServerTest
                     return super.sendConnect();
 
                 Message.Mutable connect = newMessage();
+                connect.setId(newMessageId());
                 connect.setChannel(Channel.META_CONNECT);
                 connect.setSuccessful(false);
                 Runnable action = processConnect(connect);

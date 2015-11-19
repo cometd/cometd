@@ -15,17 +15,17 @@
  */
 package org.cometd.client;
 
-import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSessionChannel;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.*;
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.common.HashMapMessage;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class PublishDoesNotLeakClientIdTest extends ClientServerTest
 {
@@ -42,15 +42,15 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest
         client1.handshake();
         try
         {
-            assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+            Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
 
             BayeuxClient client2 = newBayeuxClient();
             client2.handshake();
             try
             {
-                assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+                Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-                assertFalse(client1.getId().equals(client2.getId()));
+                Assert.assertFalse(client1.getId().equals(client2.getId()));
 
                 String channel = "/test";
                 final CountDownLatch subscribe = new CountDownLatch(1);
@@ -71,12 +71,12 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest
                         latch.countDown();
                     }
                 });
-                assertTrue(subscribe.await(5, TimeUnit.SECONDS));
+                Assert.assertTrue(subscribe.await(5, TimeUnit.SECONDS));
 
-                client2.getChannel(channel).publish(client2.newMessage());
+                client2.getChannel(channel).publish(new HashMapMessage());
 
-                assertTrue(latch.await(5, TimeUnit.SECONDS));
-                assertNull(messageRef.get().getClientId());
+                Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+                Assert.assertNull(messageRef.get().getClientId());
             }
             finally
             {

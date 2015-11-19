@@ -15,6 +15,10 @@
  */
 package org.cometd.server;
 
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
@@ -24,10 +28,6 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.AbstractClientSession;
-
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * <p>A {@link LocalSession} implementation.</p>
@@ -54,20 +54,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         super.receive(message);
         if (Channel.META_DISCONNECT.equals(message.getChannel()) && message.isSuccessful())
             _session = null;
-    }
-
-    @Override
-    protected void notifyListeners(Message.Mutable message)
-    {
-        ClientSessionChannel.MessageListener callback = (ClientSessionChannel.MessageListener)message.remove(CALLBACK_KEY);
-        if (message.isMeta() || message.isPublishReply())
-        {
-            String messageId = message.getId();
-            callback = messageId == null ? callback : unregisterCallback(messageId);
-            if (callback != null)
-                notifyListener(callback, message);
-        }
-        super.notifyListeners(message);
     }
 
     @Override
@@ -121,20 +107,21 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
         ServerSessionImpl session = new ServerSessionImpl(_bayeux, this, _idHint);
 
-        ServerMessage.Mutable message = _bayeux.newMessage();
+        ServerMessage.Mutable message = newMessage();
         if (template != null)
             message.putAll(template);
+        String messageId = newMessageId();
+        message.setId(messageId);
         message.setChannel(Channel.META_HANDSHAKE);
-
-        if (callback != null)
-            message.put(CALLBACK_KEY, callback);
+        registerCallback(messageId, callback);
 
         doSend(session, message);
 
         ServerMessage reply = message.getAssociated();
         if (reply != null && reply.isSuccessful())
         {
-            message = _bayeux.newMessage();
+            message = newMessage();
+            message.setId(newMessageId());
             message.setChannel(Channel.META_CONNECT);
             message.getAdvice(true).put(Message.INTERVAL_FIELD, -1L);
             message.setClientId(session.getId());
@@ -161,12 +148,13 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     {
         if (_session != null)
         {
-            ServerMessage.Mutable message = _bayeux.newMessage();
+            ServerMessage.Mutable message = newMessage();
+            String messageId = newMessageId();
+            message.setId(messageId);
             message.setChannel(Channel.META_DISCONNECT);
             message.setClientId(_session.getId());
-            if (callback != null)
-                message.put(CALLBACK_KEY, callback);
-            send(_session, message);
+            registerCallback(messageId, callback);
+            send(message);
             while (isBatching())
                 endBatch();
         }
@@ -198,6 +186,12 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         return "L:" + (_sessionId == null ? _idHint + "_" : _session.getId());
     }
 
+    @Override
+    protected void send(Message.Mutable message)
+    {
+        send(_session, (ServerMessage.Mutable)message);
+    }
+
     /**
      * <p>Enqueues or sends a message to the server.</p>
      * <p>This method will either enqueue the message, if this session {@link #isBatching() is batching},
@@ -222,37 +216,38 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
      */
     protected void doSend(ServerSessionImpl from, ServerMessage.Mutable message)
     {
-        String messageId = newMessageId();
-        message.setId(messageId);
-
-        // Remove the synthetic fields before calling the extensions
-        ClientSessionChannel.MessageListener subscriber = (ClientSessionChannel.MessageListener)message.remove(SUBSCRIBER_KEY);
-        ClientSessionChannel.MessageListener callback = (ClientSessionChannel.MessageListener)message.remove(CALLBACK_KEY);
+        String messageId = message.getId();
+        message.setClientId(_sessionId);
 
         if (!extendSend(message))
             return;
+
+        // Extensions may have changed the messageId.
+        message.setId(messageId);
 
         ServerMessage.Mutable reply = _bayeux.handle(from, message);
         if (reply != null)
         {
             reply = _bayeux.extendReply(from, _session, reply);
             if (reply != null)
-            {
-                registerSubscriber(messageId, subscriber);
-                registerCallback(messageId, callback);
                 receive(reply);
-            }
         }
     }
 
+    @Override
+    protected ServerMessage.Mutable newMessage()
+    {
+        return _bayeux.newMessage();
+    }
+
     /**
-     * <p>A channel scoped to this local session.</p>
+     * <p>A channel scoped to this LocalSession.</p>
      */
     protected class LocalChannel extends AbstractSessionChannel
     {
-        protected LocalChannel(ChannelId id)
+        protected LocalChannel(ChannelId channelId)
         {
-            super(id);
+            super(channelId);
         }
 
         @Override
@@ -260,50 +255,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         {
             throwIfReleased();
             return LocalSessionImpl.this;
-        }
-
-        public void publish(Object data, MessageListener callback)
-        {
-            throwIfReleased();
-            ServerMessage.Mutable message = _bayeux.newMessage();
-            message.setChannel(getId());
-            message.setData(data);
-            message.setClientId(LocalSessionImpl.this.getId());
-            if (callback != null)
-                message.put(CALLBACK_KEY, callback);
-            send(_session, message);
-        }
-
-        @Override
-        protected void sendSubscribe(MessageListener listener, MessageListener callback)
-        {
-            ServerMessage.Mutable message = _bayeux.newMessage();
-            message.setChannel(Channel.META_SUBSCRIBE);
-            message.put(Message.SUBSCRIPTION_FIELD, getId());
-            message.setClientId(LocalSessionImpl.this.getId());
-            if (listener != null)
-                message.put(SUBSCRIBER_KEY, listener);
-            if (callback != null)
-                message.put(CALLBACK_KEY, callback);
-            send(_session, message);
-        }
-
-        @Override
-        protected void sendUnSubscribe(MessageListener callback)
-        {
-            ServerMessage.Mutable message = _bayeux.newMessage();
-            message.setChannel(Channel.META_UNSUBSCRIBE);
-            message.put(Message.SUBSCRIPTION_FIELD, getId());
-            message.setClientId(LocalSessionImpl.this.getId());
-            if (callback != null)
-                message.put(CALLBACK_KEY, callback);
-            send(_session, message);
-        }
-
-        @Override
-        public String toString()
-        {
-            return super.toString() + "@" + LocalSessionImpl.this.toString();
         }
     }
 }
