@@ -240,11 +240,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         getCookieStore().add(uri, cookie);
     }
 
+    @Override
     public String getId()
     {
         return bayeuxClientState.get().clientId;
     }
 
+    @Override
     public boolean isHandshook()
     {
         return isHandshook(bayeuxClientState.get());
@@ -268,6 +270,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return bayeuxClientState.type == State.CONNECTING;
     }
 
+    @Override
     public boolean isConnected()
     {
         return isConnected(bayeuxClientState.get());
@@ -310,11 +313,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return bayeuxClientState.get().type;
     }
 
+    @Override
     public void handshake()
     {
         handshake(null, null);
     }
 
+    @Override
     public void handshake(final Map<String, Object> handshakeFields)
     {
         handshake(handshakeFields, null);
@@ -325,6 +330,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         handshake(null, callback);
     }
 
+    @Override
     public void handshake(final Map<String, Object> template, final ClientSessionChannel.MessageListener callback)
     {
         initialize();
@@ -484,6 +490,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return false;
     }
 
+    @Override
     protected ChannelId newChannelId(String channelId)
     {
         // Save some parsing by checking if there is already one
@@ -491,11 +498,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return channel == null ? new ChannelId(channelId) : channel.getChannelId();
     }
 
+    @Override
     protected AbstractSessionChannel newChannel(ChannelId channelId)
     {
         return new BayeuxClientChannel(channelId);
     }
 
+    @Override
     protected void sendBatch()
     {
         if (canSend())
@@ -532,11 +541,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     /**
      * @see #disconnect(long)
      */
+    @Override
     public void disconnect()
     {
         disconnect(null);
     }
 
+    @Override
     public void disconnect(final ClientSessionChannel.MessageListener callback)
     {
         changeState(new BayeuxClientStateUpdater()
@@ -656,6 +667,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
                 return updateState(new BayeuxClientStateUpdater()
                 {
+                    @Override
                     public BayeuxClientState create(BayeuxClientState oldState)
                     {
                         onTransportFailure(oldState.transport.getName(), null, new TransportException(null));
@@ -674,6 +686,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 final ClientTransport newTransport = negotiatedTransports.get(0);
                 return updateState(new BayeuxClientStateUpdater()
                 {
+                    @Override
                     public BayeuxClientState create(BayeuxClientState oldState)
                     {
                         if (newTransport != oldState.transport)
@@ -699,6 +712,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         {
             return updateState(new BayeuxClientStateUpdater()
             {
+                @Override
                 public BayeuxClientState create(BayeuxClientState oldState)
                 {
                     String action = getAdviceAction(handshake.getAdvice(), Message.RECONNECT_HANDSHAKE_VALUE);
@@ -724,6 +738,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             logger.debug("Processing /meta/connect {}", connect);
         return updateState(new BayeuxClientStateUpdater()
         {
+            @Override
             public BayeuxClientState create(BayeuxClientState oldState)
             {
                 Map<String, Object> advice = connect.getAdvice();
@@ -767,6 +782,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         return updateState(new BayeuxClientStateUpdater()
         {
+            @Override
             public BayeuxClientState create(BayeuxClientState oldState)
             {
                 return new TerminatingState(oldState.transport);
@@ -839,16 +855,19 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return false;
     }
 
+    @Override
     public List<String> getAllowedTransports()
     {
         return transportRegistry.getAllowedTransports();
     }
 
+    @Override
     public Set<String> getKnownTransportNames()
     {
         return transportRegistry.getKnownTransports();
     }
 
+    @Override
     public ClientTransport getTransport(String transport)
     {
         return transportRegistry.getTransport(transport);
@@ -896,11 +915,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         }
     }
 
+    @Override
     public Object getOption(String qualifiedName)
     {
         return options.get(qualifiedName);
     }
 
+    @Override
     public void setOption(String qualifiedName, Object value)
     {
         options.put(qualifiedName, value);
@@ -912,6 +933,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         }
     }
 
+    @Override
     public Set<String> getOptionNames()
     {
         return options.keySet();
@@ -1179,11 +1201,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private class PublishTransportListener implements TransportListener
     {
+        @Override
         public void onSending(List<? extends Message> messages)
         {
             BayeuxClient.this.onSending(messages);
         }
 
+        @Override
         public void onMessages(List<Message.Mutable> messages)
         {
             Runnable action = null;
@@ -1205,6 +1229,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             BayeuxClient.this.processMessage(message);
         }
 
+        @Override
         public void onFailure(Throwable failure, List<? extends Message> messages)
         {
             BayeuxClient.this.onFailure(failure, messages);

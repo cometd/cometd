@@ -62,16 +62,19 @@ public abstract class AbstractClientSession implements ClientSession
         return String.valueOf(_idGen.incrementAndGet());
     }
 
+    @Override
     public void addExtension(Extension extension)
     {
         _extensions.add(extension);
     }
 
+    @Override
     public void removeExtension(Extension extension)
     {
         _extensions.remove(extension);
     }
 
+    @Override
     public List<Extension> getExtensions()
     {
         return Collections.unmodifiableList(_extensions);
@@ -115,6 +118,7 @@ public abstract class AbstractClientSession implements ClientSession
 
     protected abstract AbstractSessionChannel newChannel(ChannelId channelId);
 
+    @Override
     public ClientSessionChannel getChannel(String channelName)
     {
         return getChannel(channelName, null);
@@ -145,6 +149,7 @@ public abstract class AbstractClientSession implements ClientSession
         return _channels;
     }
 
+    @Override
     public void startBatch()
     {
         _batch.incrementAndGet();
@@ -152,6 +157,7 @@ public abstract class AbstractClientSession implements ClientSession
 
     protected abstract void sendBatch();
 
+    @Override
     public boolean endBatch()
     {
         if (_batch.decrementAndGet() == 0)
@@ -162,6 +168,7 @@ public abstract class AbstractClientSession implements ClientSession
         return false;
     }
 
+    @Override
     public void batch(Runnable batch)
     {
         startBatch();
@@ -180,16 +187,19 @@ public abstract class AbstractClientSession implements ClientSession
         return _batch.get() > 0;
     }
 
+    @Override
     public Object getAttribute(String name)
     {
         return _attributes.getAttribute(name);
     }
 
+    @Override
     public Set<String> getAttributeNames()
     {
         return _attributes.getAttributeNameSet();
     }
 
+    @Override
     public Object removeAttribute(String name)
     {
         Object old = _attributes.getAttribute(name);
@@ -197,6 +207,7 @@ public abstract class AbstractClientSession implements ClientSession
         return old;
     }
 
+    @Override
     public void setAttribute(String name, Object value)
     {
         _attributes.setAttribute(name, value);
@@ -334,28 +345,33 @@ public abstract class AbstractClientSession implements ClientSession
             _id = id;
         }
 
+        @Override
         public ChannelId getChannelId()
         {
             return _id;
         }
 
+        @Override
         public void addListener(ClientSessionChannelListener listener)
         {
             throwIfReleased();
             _listeners.add(listener);
         }
 
+        @Override
         public void removeListener(ClientSessionChannelListener listener)
         {
             throwIfReleased();
             _listeners.remove(listener);
         }
 
+        @Override
         public List<ClientSessionChannelListener> getListeners()
         {
             return Collections.unmodifiableList(_listeners);
         }
 
+        @Override
         public void publish(Object data)
         {
             publish(data, null);
@@ -366,6 +382,7 @@ public abstract class AbstractClientSession implements ClientSession
             subscribe(listener, null);
         }
 
+        @Override
         public void subscribe(MessageListener listener, MessageListener callback)
         {
             throwIfReleased();
@@ -380,11 +397,13 @@ public abstract class AbstractClientSession implements ClientSession
 
         protected abstract void sendSubscribe(MessageListener listener, MessageListener callback);
 
+        @Override
         public void unsubscribe(MessageListener listener)
         {
             unsubscribe(listener, null);
         }
 
+        @Override
         public void unsubscribe(MessageListener listener, MessageListener callback)
         {
             boolean removed = removeSubscription(listener);
@@ -404,6 +423,7 @@ public abstract class AbstractClientSession implements ClientSession
 
         protected abstract void sendUnSubscribe(MessageListener callback);
 
+        @Override
         public void unsubscribe()
         {
             throwIfReleased();
@@ -411,11 +431,13 @@ public abstract class AbstractClientSession implements ClientSession
                 unsubscribe(listener);
         }
 
+        @Override
         public List<MessageListener> getSubscribers()
         {
             return Collections.unmodifiableList(_subscriptions);
         }
 
+        @Override
         public boolean release()
         {
             if (_released)
@@ -430,6 +452,7 @@ public abstract class AbstractClientSession implements ClientSession
             return false;
         }
 
+        @Override
         public boolean isReleased()
         {
             return _released;
@@ -445,31 +468,37 @@ public abstract class AbstractClientSession implements ClientSession
             }
         }
 
+        @Override
         public String getId()
         {
             return _id.toString();
         }
 
+        @Override
         public boolean isDeepWild()
         {
             return _id.isDeepWild();
         }
 
+        @Override
         public boolean isMeta()
         {
             return _id.isMeta();
         }
 
+        @Override
         public boolean isService()
         {
             return _id.isService();
         }
 
+        @Override
         public boolean isBroadcast()
         {
             return !isMeta() && !isService();
         }
 
+        @Override
         public boolean isWild()
         {
             return _id.isWild();
@@ -506,24 +535,28 @@ public abstract class AbstractClientSession implements ClientSession
             }
         }
 
+        @Override
         public void setAttribute(String name, Object value)
         {
             throwIfReleased();
             _attributes.setAttribute(name, value);
         }
 
+        @Override
         public Object getAttribute(String name)
         {
             throwIfReleased();
             return _attributes.getAttribute(name);
         }
 
+        @Override
         public Set<String> getAttributeNames()
         {
             throwIfReleased();
             return _attributes.getAttributeNameSet();
         }
 
+        @Override
         public Object removeAttribute(String name)
         {
             throwIfReleased();

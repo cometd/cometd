@@ -93,6 +93,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         }
     }
 
+    @Override
     public ServerSession getServerSession()
     {
         if (_session == null)
@@ -100,16 +101,19 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         return _session;
     }
 
+    @Override
     public void handshake()
     {
         handshake(null);
     }
 
+    @Override
     public void handshake(Map<String, Object> template)
     {
         handshake(template, null);
     }
 
+    @Override
     public void handshake(Map<String, Object> template, ClientSessionChannel.MessageListener callback)
     {
         if (_session != null)
@@ -146,11 +150,13 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         }
     }
 
+    @Override
     public void disconnect()
     {
         disconnect(null);
     }
 
+    @Override
     public void disconnect(ClientSessionChannel.MessageListener callback)
     {
         if (_session != null)
@@ -166,6 +172,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         }
     }
 
+    @Override
     public String getId()
     {
         if (_sessionId == null)
@@ -173,11 +180,13 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         return _sessionId;
     }
 
+    @Override
     public boolean isConnected()
     {
         return _session != null && _session.isConnected();
     }
 
+    @Override
     public boolean isHandshook()
     {
         return _session != null && _session.isHandshook();
@@ -246,6 +255,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             super(id);
         }
 
+        @Override
         public ClientSession getSession()
         {
             throwIfReleased();
