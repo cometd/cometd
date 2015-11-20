@@ -409,6 +409,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _policy;
     }
 
+    public JSONContext.Server getJSONContext()
+    {
+        return _jsonContext;
+    }
+
     public MarkedReference<ServerChannel> createChannelIfAbsent(String channelName, Initializer... initializers)
     {
         boolean initialized = false;
