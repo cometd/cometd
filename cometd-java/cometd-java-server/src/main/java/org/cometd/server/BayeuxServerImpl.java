@@ -367,11 +367,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return Boolean.parseBoolean(value.toString());
     }
 
+    @Override
     public Set<String> getOptionNames()
     {
         return _options.keySet();
     }
 
+    @Override
     public void setOption(String qualifiedName, Object value)
     {
         _options.put(qualifiedName, value);
@@ -393,17 +395,20 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _currentTransport.set(transport);
     }
 
+    @Override
     public ServerTransport getCurrentTransport()
     {
         return _currentTransport.get();
     }
 
+    @Override
     public BayeuxContext getContext()
     {
         ServerTransport transport = _currentTransport.get();
         return transport == null ? null : transport.getContext();
     }
 
+    @Override
     public SecurityPolicy getSecurityPolicy()
     {
         return _policy;
@@ -414,6 +419,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _jsonContext;
     }
 
+    @Override
     public MarkedReference<ServerChannel> createChannelIfAbsent(String channelName, Initializer... initializers)
     {
         boolean initialized = false;
@@ -494,11 +500,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
+    @Override
     public List<ServerSession> getSessions()
     {
         return Collections.unmodifiableList(new ArrayList<ServerSession>(_sessions.values()));
     }
 
+    @Override
     public ServerSession getSession(String clientId)
     {
         if (clientId == null)
@@ -572,11 +580,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return new ServerSessionImpl(this);
     }
 
+    @Override
     public LocalSession newLocalSession(String idHint)
     {
         return new LocalSessionImpl(this, idHint);
     }
 
+    @Override
     public ServerMessage.Mutable newMessage()
     {
         ServerMessageImpl result = new ServerMessageImpl();
@@ -592,26 +602,31 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return mutable;
     }
 
+    @Override
     public void setSecurityPolicy(SecurityPolicy securityPolicy)
     {
         _policy = securityPolicy;
     }
 
+    @Override
     public void addExtension(Extension extension)
     {
         _extensions.add(extension);
     }
 
+    @Override
     public void removeExtension(Extension extension)
     {
         _extensions.remove(extension);
     }
 
+    @Override
     public List<Extension> getExtensions()
     {
         return Collections.unmodifiableList(_extensions);
     }
 
+    @Override
     public void addListener(BayeuxServerListener listener)
     {
         if (listener == null)
@@ -619,6 +634,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _listeners.add(listener);
     }
 
+    @Override
     public ServerChannel getChannel(String channelId)
     {
         return getServerChannel(channelId);
@@ -632,6 +648,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return channel;
     }
 
+    @Override
     public List<ServerChannel> getChannels()
     {
         List<ServerChannel> result = new ArrayList<>();
@@ -643,6 +660,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return result;
     }
 
+    @Override
     public void removeListener(BayeuxServerListener listener)
     {
         _listeners.remove(listener);
@@ -1162,11 +1180,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return Collections.unmodifiableList(_listeners);
     }
 
+    @Override
     public Set<String> getKnownTransportNames()
     {
         return _transports.keySet();
     }
 
+    @Override
     public ServerTransport getTransport(String transport)
     {
         return _transports.get(transport);
@@ -1216,6 +1236,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     @ManagedAttribute(value = "The transports allowed by this server", readonly = true)
+    @Override
     public List<String> getAllowedTransports()
     {
         return Collections.unmodifiableList(_allowedTransports);
@@ -1439,6 +1460,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     private class SubscribeHandler extends HandlerListener
     {
+        @Override
         public void onMessage(final ServerSessionImpl from, final Mutable message)
         {
             ServerMessage.Mutable reply = message.getAssociated();
@@ -1531,6 +1553,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     private class UnsubscribeHandler extends HandlerListener
     {
+        @Override
         public void onMessage(final ServerSessionImpl from, final Mutable message)
         {
             ServerMessage.Mutable reply = message.getAssociated();
@@ -1591,6 +1614,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     private class DisconnectHandler extends HandlerListener
     {
+        @Override
         public void onMessage(final ServerSessionImpl session, final Mutable message)
         {
             ServerMessage.Mutable reply = message.getAssociated();
