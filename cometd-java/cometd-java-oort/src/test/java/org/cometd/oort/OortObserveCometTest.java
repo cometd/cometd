@@ -15,18 +15,6 @@
  */
 package org.cometd.oort;
 
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSession;
-import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.*;
-import org.cometd.client.BayeuxClient;
-import org.cometd.client.ext.AckExtension;
-import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,6 +22,23 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.client.BayeuxClient;
+import org.cometd.client.ext.AckExtension;
+import org.cometd.server.AbstractServerTransport;
+import org.cometd.server.ext.AcknowledgedMessagesExtension;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class OortObserveCometTest extends OortTest
 {
@@ -271,6 +276,48 @@ public class OortObserveCometTest extends OortTest
         connector2.start();
 
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+    }
+
+    @Test
+    public void testNetworkBrokenLongerThanMaxInterval() throws Exception
+    {
+        long maxInterval = 2000;
+        Map<String, String> options = new HashMap<>();
+        options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
+
+        Server server1 = startServer(0, options);
+        Oort oort1 = startOort(server1);
+
+        Server server2 = startServer(0, options);
+        Oort oort2 = startOort(server2);
+
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        OortComet oortComet21 = oort2.observeComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
+        int port1 = connector1.getLocalPort();
+        connector1.stop();
+
+        ServerConnector connector2 = (ServerConnector)server2.getConnectors()[0];
+        int port2 = connector2.getLocalPort();
+        connector2.stop();
+
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.UNCONNECTED));
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.UNCONNECTED));
+
+        // Wait until the servers sweep the sessions.
+        Thread.sleep(2 * maxInterval);
+
+        connector1.setPort(port1);
+        connector1.start();
+
+        connector2.setPort(port2);
+        connector2.start();
+
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
     }
 
     @Test

@@ -15,14 +15,41 @@
  */
 package org.cometd.oort;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EventListener;
+import java.util.EventObject;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.*;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
+import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
@@ -41,14 +68,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.MessageDigest;
-import java.security.SecureRandom;
-import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * <p>Oort is the cluster manager that links one CometD server to a set of other CometD servers.</p>
@@ -919,13 +938,21 @@ public class Oort extends ContainerLifeCycle
                 if (serverCometInfo.getServerSession().getId().equals(session.getId()))
                 {
                     if (_logger.isDebugEnabled())
-                        _logger.debug("Disconnected from comet {} with session {}", cometURL, session);
+                        _logger.debug("Disconnected from comet {} with server session {}", cometURL, session);
                     assert remoteOortId.equals(serverCometInfo.getOortId());
                     cometInfos.remove();
 
-                    ClientCometInfo clientCometInfo = _clientComets.remove(remoteOortId);
-                    if (clientCometInfo != null)
-                        clientCometInfo.getOortComet().disconnect();
+                    if (!timeout)
+                    {
+                        ClientCometInfo clientCometInfo = _clientComets.remove(remoteOortId);
+                        if (clientCometInfo != null)
+                        {
+                            OortComet oortComet = clientCometInfo.getOortComet();
+                            if (_logger.isDebugEnabled())
+                                _logger.debug("Disconnecting from comet {} with client session {}", cometURL, oortComet);
+                            oortComet.disconnect();
+                        }
+                    }
 
                     // Do not notify if we are stopping
                     if (isRunning())
