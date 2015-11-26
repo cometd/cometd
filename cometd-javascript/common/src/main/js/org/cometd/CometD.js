@@ -91,29 +91,31 @@ org.cometd.CometD = function(name) {
             }
 
             for (var propName in object) {
-                var prop = _fieldValue(object, propName);
-                var targ = _fieldValue(result, propName);
+                if (object.hasOwnProperty(propName)) {
+                    var prop = _fieldValue(object, propName);
+                    var targ = _fieldValue(result, propName);
 
-                // Avoid infinite loops
-                if (prop === target) {
-                    continue;
-                }
-                // Do not mixin undefined values
-                if (prop === undefined) {
-                    continue;
-                }
+                    // Avoid infinite loops
+                    if (prop === target) {
+                        continue;
+                    }
+                    // Do not mixin undefined values
+                    if (prop === undefined) {
+                        continue;
+                    }
 
-                if (deep && typeof prop === 'object' && prop !== null) {
-                    if (prop instanceof Array) {
-                        result[propName] = this._mixin(deep, targ instanceof Array ? targ : [], prop);
+                    if (deep && typeof prop === 'object' && prop !== null) {
+                        if (prop instanceof Array) {
+                            result[propName] = this._mixin(deep, targ instanceof Array ? targ : [], prop);
+                        }
+                        else {
+                            var source = typeof targ === 'object' && !(targ instanceof Array) ? targ : {};
+                            result[propName] = this._mixin(deep, source, prop);
+                        }
                     }
                     else {
-                        var source = typeof targ === 'object' && !(targ instanceof Array) ? targ : {};
-                        result[propName] = this._mixin(deep, source, prop);
+                        result[propName] = prop;
                     }
-                }
-                else {
-                    result[propName] = prop;
                 }
             }
         }
@@ -250,10 +252,12 @@ org.cometd.CometD = function(name) {
 
     function _clearSubscriptions() {
         for (var channel in _listeners) {
-            var subscriptions = _listeners[channel];
-            if (subscriptions) {
-                for (var i = 0; i < subscriptions.length; ++i) {
-                    _removeSubscription(subscriptions[i]);
+            if (_listeners.hasOwnProperty(channel)) {
+                var subscriptions = _listeners[channel];
+                if (subscriptions) {
+                    for (var i = 0; i < subscriptions.length; ++i) {
+                        _removeSubscription(subscriptions[i]);
+                    }
                 }
             }
         }

@@ -201,13 +201,15 @@ org.cometd.WebSocketTransport = function() {
 
         this._debug('Sending pending messages', _envelopes);
         for (var key in _envelopes) {
-            var element = _envelopes[key];
-            var envelope = element[0];
-            var metaConnect = element[1];
-            // Store the success callback, which is independent from the envelope,
-            // so that it can be used to notify arrival of messages.
-            _successCallback = envelope.onSuccess;
-            _webSocketSend.call(this, webSocket, envelope, metaConnect);
+            if (_envelopes.hasOwnProperty(key)) {
+                var element = _envelopes[key];
+                var envelope = element[0];
+                var metaConnect = element[1];
+                // Store the success callback, which is independent from the envelope,
+                // so that it can be used to notify arrival of messages.
+                _successCallback = envelope.onSuccess;
+                _webSocketSend.call(this, webSocket, envelope, metaConnect);
+            }
         }
     };
 
@@ -249,18 +251,20 @@ org.cometd.WebSocketTransport = function() {
         for (var j = 0; j < messageIds.length; ++j) {
             var id = messageIds[j];
             for (var key in _envelopes) {
-                var ids = key.split(',');
-                var index = org.cometd.Utils.inArray(id, ids);
-                if (index >= 0) {
-                    removed = true;
-                    ids.splice(index, 1);
-                    var envelope = _envelopes[key][0];
-                    var metaConnect = _envelopes[key][1];
-                    delete _envelopes[key];
-                    if (ids.length > 0) {
-                        _envelopes[ids.join(',')] = [envelope, metaConnect];
+                if (_envelopes.hasOwnProperty(key)) {
+                    var ids = key.split(',');
+                    var index = org.cometd.Utils.inArray(id, ids);
+                    if (index >= 0) {
+                        removed = true;
+                        ids.splice(index, 1);
+                        var envelope = _envelopes[key][0];
+                        var metaConnect = _envelopes[key][1];
+                        delete _envelopes[key];
+                        if (ids.length > 0) {
+                            _envelopes[ids.join(',')] = [envelope, metaConnect];
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
@@ -286,21 +290,25 @@ org.cometd.WebSocketTransport = function() {
         var timeouts = _timeouts;
         _timeouts = {};
         for (var id in timeouts) {
-            this.clearTimeout(timeouts[id]);
+            if (timeouts.hasOwnProperty(id)) {
+                this.clearTimeout(timeouts[id]);
+            }
         }
 
         var envelopes = _envelopes;
         _envelopes = {};
         for (var key in envelopes) {
-            var envelope = envelopes[key][0];
-            var metaConnect = envelopes[key][1];
-            if (metaConnect) {
-                _connected = false;
+            if (envelopes.hasOwnProperty(key)) {
+                var envelope = envelopes[key][0];
+                var metaConnect = envelopes[key][1];
+                if (metaConnect) {
+                    _connected = false;
+                }
+                this._notifyFailure(envelope.onFailure, webSocket, envelope.messages, {
+                    websocketCode: event.code,
+                    reason: event.reason
+                });
             }
-            this._notifyFailure(envelope.onFailure, webSocket, envelope.messages, {
-                websocketCode: event.code,
-                reason: event.reason
-            });
         }
 
         _webSocket = null;
