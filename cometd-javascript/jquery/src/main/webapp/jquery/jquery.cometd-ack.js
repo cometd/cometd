@@ -13,21 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function()
-{
-    function bind(AckExtension, cometd)
-    {
+(function() {
+    function bind(AckExtension, cometd) {
         var result = new AckExtension();
         cometd.registerExtension('ack', result);
         return result;
     }
 
-    if (typeof define === 'function' && define.amd)
-    {
+    if (typeof define === 'function' && define.amd) {
         define(['org/cometd/AckExtension', 'jquery.cometd'], bind);
     }
-    else
-    {
+    else {
         bind(org.cometd.AckExtension, jQuery.cometd);
     }
 })();

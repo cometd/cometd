@@ -6,48 +6,37 @@
 // The window object
 var window = this;
 
-(function()
-{
+(function() {
     // New JavaScript methods not defined by Rhino, but required by toolkits.
-    if (!Object.defineProperty)
-    {
-        Object.defineProperty = function(obj, prop, desc)
-        {
-            if (desc.value !== undefined)
-            {
+    if (!Object.defineProperty) {
+        Object.defineProperty = function(obj, prop, desc) {
+            if (desc.value !== undefined) {
                 obj[prop] = desc.value;
             }
-            if (desc.get !== undefined)
-            {
+            if (desc.get !== undefined) {
                 obj.__defineGetter__(prop, desc.get);
             }
-            if (desc.set !== undefined)
-            {
+            if (desc.set !== undefined) {
                 obj.__defineSetter__(prop, desc.set);
             }
         };
     }
 
-    if (!Array.isArray)
-    {
-        Array.isArray = function(obj)
-        {
+    if (!Array.isArray) {
+        Array.isArray = function(obj) {
             return Object.prototype.toString.call(obj) === '[object Array]';
         };
     }
 
     // Browser Navigator
     window.navigator = {
-        get appVersion()
-        {
+        get appVersion() {
             return '5.0 (X11; en-US)';
         },
-        get userAgent()
-        {
+        get userAgent() {
             return 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.4) Gecko/2008111318 Ubuntu/8.10 (intrepid) Firefox/3.0.4';
         },
-        get language()
-        {
+        get language() {
             return 'en-US';
         }
     };
@@ -55,8 +44,7 @@ var window = this;
 
     // Setup location properties
     var _location;
-    window.__defineSetter__("location", function(url)
-    {
+    window.__defineSetter__("location", function(url) {
         var urlParts = /(^https?:)\/\/(([^:\/\?#]+)(:(\d+))?)([^\?#]*)?(\?[^#]*)?(#.*)?/.exec(url);
         _location = {
             href: url,
@@ -69,22 +57,18 @@ var window = this;
             hash: urlParts[8] || ''
         };
     });
-    window.__defineGetter__("location", function()
-    {
+    window.__defineGetter__("location", function() {
         return _location;
     });
 
 
     // The output console
-    window.console = function()
-    {
+    window.console = function() {
         // Converts JavaScript objects to JSON.
         // We cannot use Crockford's JSON because it cannot handle
         // Rhino's and Java's objects properly, so we redo it here.
-        function _toJSON(object, ids)
-        {
-            switch (typeof object)
-            {
+        function _toJSON(object, ids) {
+            switch (typeof object) {
                 case 'string':
                     return '"' + object + '"';
                 case 'number':
@@ -94,23 +78,20 @@ var window = this;
                 case 'undefined':
                     return undefined;
                 case 'object':
-                    if (!object)
-                    {
+                    if (!object) {
                         return 'null';
                     }
-                    else if (object instanceof Array)
-                    {
-                        for (var aid = 0; aid < ids.length; ++aid)
+                    else if (object instanceof Array) {
+                        for (var aid = 0; aid < ids.length; ++aid) {
                             if (ids[aid] === object)
                                 return undefined;
+                        }
                         ids.push(object);
 
                         var arrayResult = '[';
-                        for (var i = 0; i < object.length; ++i)
-                        {
+                        for (var i = 0; i < object.length; ++i) {
                             var arrayValue = _toJSON(object[i], ids);
-                            if (arrayValue !== undefined)
-                            {
+                            if (arrayValue !== undefined) {
                                 if (i > 0)
                                     arrayResult += ',';
                                 arrayResult += arrayValue;
@@ -119,24 +100,21 @@ var window = this;
                         arrayResult += ']';
                         return arrayResult;
                     }
-                    else if (Packages.org.cometd.javascript.Utils.isJavaScriptObject(object))
-                    {
-                        for (var oid = 0; oid < ids.length; ++oid)
+                    else if (Packages.org.cometd.javascript.Utils.isJavaScriptObject(object)) {
+                        for (var oid = 0; oid < ids.length; ++oid) {
                             if (ids[oid] === object)
                                 return undefined;
+                        }
                         ids.push(object);
 
                         var objectResult = '{';
-                        for (var name in object)
-                        {
-                            if (Object.hasOwnProperty.call(object, name))
-                            {
+                        for (var name in object) {
+                            if (Object.hasOwnProperty.call(object, name)) {
                                 if (objectResult.length > 1)
                                     objectResult += ',';
                                 objectResult += '"' + name + '":';
                                 var objectValue = _toJSON(object[name], ids);
-                                if (objectValue !== undefined)
-                                {
+                                if (objectValue !== undefined) {
                                     objectResult += '' + objectValue;
                                 }
                             }
@@ -144,8 +122,7 @@ var window = this;
                         objectResult += '}';
                         return objectResult;
                     }
-                    else
-                    {
+                    else {
                         return '' + object;
                     }
                 case 'function':
@@ -155,11 +132,9 @@ var window = this;
             }
         }
 
-        function _log(level, args)
-        {
+        function _log(level, args) {
             var text = level;
-            for (var i = 0; i < args.length; ++i)
-            {
+            for (var i = 0; i < args.length; ++i) {
                 var element = args[i];
                 if (typeof element === 'object')
                     element = _toJSON(element, []);
@@ -173,24 +148,19 @@ var window = this;
         }
 
         return {
-            error: function()
-            {
+            error: function() {
                 _log('ERROR:', arguments);
             },
-            warn: function()
-            {
+            warn: function() {
                 _log('WARN:', arguments);
             },
-            info: function()
-            {
+            info: function() {
                 _log('INFO:', arguments);
             },
-            debug: function()
-            {
+            debug: function() {
                 _log('DEBUG:', arguments);
             },
-            log: function()
-            {
+            log: function() {
                 _log('', arguments);
             }
         };
@@ -199,35 +169,33 @@ var window = this;
 
     // Timers
     var _scheduler = new Packages.java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
-    window.setTimeout = function(fn, delay)
-    {
+    window.setTimeout = function(fn, delay) {
         return _scheduler.schedule(new Packages.java.lang.Runnable({
-            run: function() { threadModel.invoke(window, window, fn); }
+            run: function() {
+                threadModel.invoke(window, window, fn);
+            }
         }), delay, Packages.java.util.concurrent.TimeUnit.MILLISECONDS);
     };
-    window.clearTimeout = function(handle)
-    {
+    window.clearTimeout = function(handle) {
         if (handle)
             handle.cancel(true);
     };
-    window.setInterval = function(fn, period)
-    {
+    window.setInterval = function(fn, period) {
         return _scheduler.scheduleWithFixedDelay(new Packages.java.lang.Runnable({
-            run: function() { threadModel.invoke(window, window, fn); }
+            run: function() {
+                threadModel.invoke(window, window, fn);
+            }
         }), period, period, Packages.java.util.concurrent.TimeUnit.MILLISECONDS);
     };
-    window.clearInterval = function(handle)
-    {
+    window.clearInterval = function(handle) {
         handle.cancel(true);
     };
 
 
     // Window Events
     var _events = [{}];
-    window.addEventListener = function(type, fn)
-    {
-        if (!this.uuid || this == window)
-        {
+    window.addEventListener = function(type, fn) {
+        if (!this.uuid || this == window) {
             this.uuid = _events.length;
             _events[this.uuid] = {};
         }
@@ -238,10 +206,8 @@ var window = this;
         if (_events[this.uuid][type].indexOf(fn) < 0)
             _events[this.uuid][type].push(fn);
     };
-    window.removeEventListener = function(type, fn)
-    {
-        if (!this.uuid || this == window)
-        {
+    window.removeEventListener = function(type, fn) {
+        if (!this.uuid || this == window) {
             this.uuid = _events.length;
             _events[this.uuid] = {};
         }
@@ -250,21 +216,16 @@ var window = this;
             _events[this.uuid][type] = [];
 
         _events[this.uuid][type] =
-        _events[this.uuid][type].filter(function(f)
-        {
-            return f != fn;
-        });
+            _events[this.uuid][type].filter(function(f) {
+                return f != fn;
+            });
     };
-    window.dispatchEvent = function(event)
-    {
-        if (event.type)
-        {
+    window.dispatchEvent = function(event) {
+        if (event.type) {
             var self = this;
 
-            if (this.uuid && _events[this.uuid][event.type])
-            {
-                _events[this.uuid][event.type].forEach(function(fn)
-                {
+            if (this.uuid && _events[this.uuid][event.type]) {
+                _events[this.uuid][event.type].forEach(function(fn) {
                     fn.call(self, event);
                 });
             }
@@ -281,20 +242,16 @@ var window = this;
      *
      * @param script the script element injected
      */
-    function makeScriptRequest(script)
-    {
+    function makeScriptRequest(script) {
         var xhr = new XMLHttpRequest();
         xhr.open("GET", script.src, true);
-        xhr.onload = function()
-        {
+        xhr.onload = function() {
             eval(this.responseText);
 
-            if (script.onload && typeof script.onload === 'function')
-            {
+            if (script.onload && typeof script.onload === 'function') {
                 script.onload.call(script);
             }
-            else
-            {
+            else {
                 var event = window.document.createEvent();
                 event.initEvent('load', true, true);
                 script.dispatchEvent(event);
@@ -304,13 +261,13 @@ var window = this;
     }
 
     var _domNodes = new Packages.java.util.HashMap();
+
     /**
      * Helper method for generating the right javascript DOM objects based upon the node type.
      * If the java node exists, returns it, otherwise creates a corresponding javascript node.
      * @param javaNode the java node to convert to javascript node
      */
-    function makeNode(javaNode)
-    {
+    function makeNode(javaNode) {
         if (!javaNode) return null;
         if (_domNodes.containsKey(javaNode))
             return _domNodes.get(javaNode);
@@ -322,113 +279,87 @@ var window = this;
 
 
     // DOM Node
-    window.DOMNode = function(node)
-    {
+    window.DOMNode = function(node) {
         this._dom = node;
     };
     DOMNode.prototype = {
         // START OFFICIAL DOM
-        get nodeName()
-        {
+        get nodeName() {
             return this._dom.getNodeName();
         },
-        get nodeValue()
-        {
+        get nodeValue() {
             return this._dom.getNodeValue();
         },
-        get nodeType()
-        {
+        get nodeType() {
             return this._dom.getNodeType();
         },
-        get parentNode()
-        {
+        get parentNode() {
             return makeNode(this._dom.getParentNode());
         },
-        get childNodes()
-        {
+        get childNodes() {
             return new DOMNodeList(this._dom.getChildNodes());
         },
-        get firstChild()
-        {
+        get firstChild() {
             return makeNode(this._dom.getFirstChild());
         },
-        get lastChild()
-        {
+        get lastChild() {
             return makeNode(this._dom.getLastChild());
         },
-        get previousSibling()
-        {
+        get previousSibling() {
             return makeNode(this._dom.getPreviousSibling());
         },
-        get nextSibling()
-        {
+        get nextSibling() {
             return makeNode(this._dom.getNextSibling());
         },
-        get attributes()
-        {
+        get attributes() {
             var jsAttributes = {};
             var javaAttributes = this._dom.getAttributes();
-            for (var i = 0; i < javaAttributes.getLength(); ++i)
-            {
+            for (var i = 0; i < javaAttributes.getLength(); ++i) {
                 var javaAttribute = javaAttributes.item(i);
                 jsAttributes[javaAttribute.nodeName] = javaAttribute.nodeValue;
             }
             return jsAttributes;
         },
-        get ownerDocument()
-        {
+        get ownerDocument() {
             return _domNodes.get(this._dom.ownerDocument);
         },
-        insertBefore: function(node, before)
-        {
+        insertBefore: function(node, before) {
             return makeNode(this._dom.insertBefore(node._dom, before ? before._dom : before));
         },
-        replaceChild: function(newNode, oldNode)
-        {
+        replaceChild: function(newNode, oldNode) {
             return makeNode(this._dom.replaceChild(newNode._dom, oldNode._dom));
         },
-        removeChild: function(node)
-        {
+        removeChild: function(node) {
             return makeNode(this._dom.removeChild(node._dom));
         },
-        appendChild: function(node)
-        {
+        appendChild: function(node) {
             return makeNode(this._dom.appendChild(node._dom));
         },
-        hasChildNodes: function()
-        {
+        hasChildNodes: function() {
             return this._dom.hasChildNodes();
         },
-        cloneNode: function(deep)
-        {
+        cloneNode: function(deep) {
             return makeNode(this._dom.cloneNode(deep));
         },
-        normalize: function()
-        {
+        normalize: function() {
             this._dom.normalize();
         },
-        isSupported: function(feature, version)
-        {
+        isSupported: function(feature, version) {
             return this._dom.isSupported(feature, version);
         },
-        get namespaceURI()
-        {
+        get namespaceURI() {
             return this._dom.getNamespaceURI();
         },
-        get prefix()
-        {
+        get prefix() {
             return this._dom.getPrefix();
         },
-        set prefix(value)
-        {
+        set prefix(value) {
             this._dom.setPrefix(value);
         },
-        get localName()
-        {
+        get localName() {
             return this._dom.getLocalName();
         },
-        hasAttributes: function()
-        {
+        hasAttributes: function() {
             return this._dom.hasAttributes();
         },
         // END OFFICIAL DOM
@@ -437,24 +368,20 @@ var window = this;
         removeEventListener: window.removeEventListener,
         dispatchEvent: window.dispatchEvent,
 
-        get documentElement()
-        {
+        get documentElement() {
             return makeNode(this._dom.documentElement);
         },
-        toString: function()
-        {
+        toString: function() {
             return '"' + this.nodeValue + '"';
         },
-        get outerHTML()
-        {
+        get outerHTML() {
             return this.nodeValue;
         }
     };
 
 
     // DOM Document
-    window.DOMDocument = function(stream)
-    {
+    window.DOMDocument = function(stream) {
         this._file = stream;
         this._dom = Packages.javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(stream);
 
@@ -468,48 +395,39 @@ var window = this;
         // START OFFICIAL DOM
 //        doctype
 //        implementation
-        get documentElement()
-        {
+        get documentElement() {
             return makeNode(this._dom.getDocumentElement());
         },
-        createElement: function(name)
-        {
+        createElement: function(name) {
             return makeNode(this._dom.createElement(name.toLowerCase()));
         },
-        createDocumentFragment: function()
-        {
+        createDocumentFragment: function() {
             return makeNode(this._dom.createDocumentFragment());
         },
-        createTextNode: function(text)
-        {
+        createTextNode: function(text) {
             return makeNode(this._dom.createTextNode(text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")));
         },
-        createComment: function(text)
-        {
+        createComment: function(text) {
             return makeNode(this._dom.createComment(text));
         },
 //        createCDATASection
 //        createProcessingInstruction
 //        createAttribute
 //        createEntityReference
-        getElementsByTagName: function(name)
-        {
+        getElementsByTagName: function(name) {
             return new DOMNodeList(this._dom.getElementsByTagName(
-                    name.toLowerCase()));
+                name.toLowerCase()));
         },
-        importNode: function(node, deep)
-        {
+        importNode: function(node, deep) {
             return makeNode(this._dom.importNode(node._dom, deep));
         },
 //        createElementNS
 //        createAttributeNS
 //        getElementsByTagNameNS
-        getElementById: function(id)
-        {
+        getElementById: function(id) {
             var elems = this._dom.getElementsByTagName("*");
 
-            for (var i = 0; i < elems.length; i++)
-            {
+            for (var i = 0; i < elems.length; i++) {
                 var elem = elems.item(i);
                 if (elem.getAttribute("id") == id)
                     return makeNode(elem);
@@ -519,37 +437,28 @@ var window = this;
         },
         // END OFFICIAL DOM
 
-        get body()
-        {
+        get body() {
             return this.getElementsByTagName("body")[0];
         },
-        get ownerDocument()
-        {
+        get ownerDocument() {
             return null;
         },
-        get nodeName()
-        {
+        get nodeName() {
             return "#document";
         },
-        toString: function()
-        {
+        toString: function() {
             return "Document" + (typeof this._file == "string" ?
-                                 ": " + this._file : "");
+                ": " + this._file : "");
         },
-        get innerHTML()
-        {
+        get innerHTML() {
             return this.documentElement.outerHTML;
         },
-        get defaultView()
-        {
+        get defaultView() {
             return {
-                getComputedStyle: function(elem)
-                {
+                getComputedStyle: function(elem) {
                     return {
-                        getPropertyValue: function(prop)
-                        {
-                            prop = prop.replace(/\-(\w)/g, function(m, c)
-                            {
+                        getPropertyValue: function(prop) {
+                            prop = prop.replace(/\-(\w)/g, function(m, c) {
                                 return c.toUpperCase();
                             });
                             var val = elem.style[prop];
@@ -563,69 +472,58 @@ var window = this;
                 }
             };
         },
-        createEvent: function()
-        {
+        createEvent: function() {
             return {
                 type: "",
-                initEvent: function(type)
-                {
+                initEvent: function(type) {
                     this.type = type;
                 }
             };
         },
-        get cookie()
-        {
+        get cookie() {
             return cookies.get(window.location.protocol, window.location.host, window.location.pathname);
         },
-        set cookie(value)
-        {
+        set cookie(value) {
             cookies.set(window.location.protocol, window.location.host, window.location.pathname, value);
         },
-        get location()
-        {
+        get location() {
             return window.location;
         }
     });
 
 
     // DOM NodeList
-    window.DOMNodeList = function(list)
-    {
+    window.DOMNodeList = function(list) {
         this._dom = list;
         this.length = list.getLength();
 
-        for (var i = 0; i < this.length; i++)
-        {
+        for (var i = 0; i < this.length; i++) {
             var node = list.item(i);
             this[i] = makeNode(node);
         }
     };
     DOMNodeList.prototype = {
-        toString: function()
-        {
+        toString: function() {
             return "[ " +
-                   Array.prototype.join.call(this, ", ") + " ]";
+                Array.prototype.join.call(this, ", ") + " ]";
         },
-        get outerHTML()
-        {
+        get outerHTML() {
             return Array.prototype.map.call(
-                    this, function(node)
-            {return node.outerHTML;}).join('');
+                this, function(node) {
+                    return node.outerHTML;
+                }).join('');
         }
     };
 
 
     // DOM Element
-    window.DOMElement = function(elem)
-    {
+    window.DOMElement = function(elem) {
         this._dom = elem;
         this.style = {
-            get opacity()
-            {
+            get opacity() {
                 return this._opacity;
             },
-            set opacity(val)
-            {
+            set opacity(val) {
                 this._opacity = val + "";
             }
         };
@@ -633,29 +531,24 @@ var window = this;
         // Load CSS info
         var styles = (this.getAttribute("style") || "").split(/\s*;\s*/);
 
-        for (var i = 0; i < styles.length; i++)
-        {
+        for (var i = 0; i < styles.length; i++) {
             var style = styles[i].split(/\s*:\s*/);
             if (style.length == 2)
-                this.style[ style[0] ] = style[1];
+                this.style[style[0]] = style[1];
         }
     };
     DOMElement.prototype = extend(new DOMNode(), {
         // START OFFICIAL DOM
-        get tagName()
-        {
+        get tagName() {
             return this._dom.getTagName();
         },
-        getAttribute: function(name)
-        {
+        getAttribute: function(name) {
             return this._dom.hasAttribute(name) ? new String(this._dom.getAttribute(name)) : null;
         },
-        setAttribute: function(name, value)
-        {
+        setAttribute: function(name, value) {
             this._dom.setAttribute(name, value);
         },
-        removeAttribute: function(name)
-        {
+        removeAttribute: function(name) {
             this._dom.removeAttribute(name);
         },
 //        getAttributeNode
@@ -668,77 +561,72 @@ var window = this;
 //        getAttributeNodeNS
 //        setAttributeNodeNS
 //        getElementsByTagNameNS
-        hasAttribute: function(name)
-        {
+        hasAttribute: function(name) {
             return this._dom.hasAttribute(name);
         },
 //        hasAttributeNS
         // END OFFICIAL DOM
 
-        get nodeName()
-        {
+        get nodeName() {
             return this.tagName.toUpperCase();
         },
-        toString: function()
-        {
+        toString: function() {
             return "<" + this.tagName + (this.id ? "#" + this.id : "" ) + ">";
         },
-        get outerHTML()
-        {
+        get outerHTML() {
             var ret = "<" + this.tagName, attr = this.attributes;
 
-            for (var i in attr)
+            for (var i in attr) {
                 ret += " " + i + "='" + attr[i] + "'";
+            }
 
             if (this.childNodes.length || this.nodeName == "SCRIPT")
                 ret += ">" + this.childNodes.outerHTML +
-                       "</" + this.tagName + ">";
+                    "</" + this.tagName + ">";
             else
                 ret += "/>";
 
             return ret;
         },
-        get innerHTML()
-        {
+        get innerHTML() {
             return this.childNodes.outerHTML;
         },
-        set innerHTML(html)
-        {
-            html = html.replace(/<\/?([A-Z]+)/g, function(m)
-            {
+        set innerHTML(html) {
+            html = html.replace(/<\/?([A-Z]+)/g, function(m) {
                 return m.toLowerCase();
             });
 
             var nodes = this.ownerDocument.importNode(
-                    new DOMDocument(new Packages.java.io.ByteArrayInputStream(
-                            (new Packages.java.lang.String("<wrap>" + html + "</wrap>"))
-                                    .getBytes("UTF8"))).documentElement, true).childNodes;
+                new DOMDocument(new Packages.java.io.ByteArrayInputStream(
+                    (new Packages.java.lang.String("<wrap>" + html + "</wrap>"))
+                        .getBytes("UTF8"))).documentElement, true).childNodes;
 
-            while (this.firstChild)
+            while (this.firstChild) {
                 this.removeChild(this.firstChild);
+            }
 
-            for (var i = 0; i < nodes.length; i++)
+            for (var i = 0; i < nodes.length; i++) {
                 this.appendChild(nodes[i]);
+            }
         },
-        get textContent()
-        {
+        get textContent() {
             return nav(this.childNodes);
 
-            function nav(nodes)
-            {
+            function nav(nodes) {
                 var str = "";
-                for (var i = 0; i < nodes.length; i++)
+                for (var i = 0; i < nodes.length; i++) {
                     if (nodes[i].nodeType == 3)
                         str += nodes[i].nodeValue;
                     else if (nodes[i].nodeType == 1)
                         str += nav(nodes[i].childNodes);
+                }
                 return str;
             }
         },
-        set textContent(text)
-        {
-            while (this.firstChild)
+        set textContent(text) {
+            while (this.firstChild) {
                 this.removeChild(this.firstChild);
+            }
             this.appendChild(this.ownerDocument.createTextNode(text));
         },
         style: {},
@@ -746,44 +634,36 @@ var window = this;
         clientWidth: 0,
         offsetHeight: 0,
         offsetWidth: 0,
-        get disabled()
-        {
+        get disabled() {
             var val = this.getAttribute("disabled");
             return val != "false" && !!val;
         },
-        set disabled(val)
-        {
+        set disabled(val) {
             return this.setAttribute("disabled", val);
         },
-        get checked()
-        {
+        get checked() {
             var val = this.getAttribute("checked");
             return val != "false" && !!val;
         },
-        set checked(val)
-        {
+        set checked(val) {
             return this.setAttribute("checked", val);
         },
-        get selected()
-        {
-            if (!this._selectDone)
-            {
+        get selected() {
+            if (!this._selectDone) {
                 this._selectDone = true;
 
-                if (this.nodeName == "OPTION" && !this.parentNode.getAttribute("multiple"))
-                {
+                if (this.nodeName == "OPTION" && !this.parentNode.getAttribute("multiple")) {
                     var opt = this.parentNode.getElementsByTagName("option");
 
-                    if (this == opt[0])
-                    {
+                    if (this == opt[0]) {
                         var select = true;
 
-                        for (var i = 1; i < opt.length; i++)
-                            if (opt[i].selected)
-                            {
+                        for (var i = 1; i < opt.length; i++) {
+                            if (opt[i].selected) {
                                 select = false;
                                 break;
                             }
+                        }
 
                         if (select)
                             this.selected = true;
@@ -793,93 +673,74 @@ var window = this;
             var val = this.getAttribute("selected");
             return val != "false" && !!val;
         },
-        set selected(val)
-        {
+        set selected(val) {
             return this.setAttribute("selected", val);
         },
-        get className()
-        {
+        get className() {
             return this.getAttribute("class") || "";
         },
-        set className(val)
-        {
+        set className(val) {
             return this.setAttribute("class", val.replace(/(^\s*|\s*$)/g, ""));
         },
-        get type()
-        {
+        get type() {
             return this.getAttribute("type") || "";
         },
-        set type(val)
-        {
+        set type(val) {
             return this.setAttribute("type", val);
         },
-        get value()
-        {
+        get value() {
             return this.getAttribute("value") || "";
         },
-        set value(val)
-        {
+        set value(val) {
             return this.setAttribute("value", val);
         },
-        get src()
-        {
+        get src() {
             return this.getAttribute("src") || "";
         },
-        set src(val)
-        {
+        set src(val) {
             return this.setAttribute("src", val);
         },
-        get id()
-        {
+        get id() {
             return this.getAttribute("id") || "";
         },
-        set id(val)
-        {
+        set id(val) {
             return this.setAttribute("id", val);
         },
-        click: function()
-        {
+        click: function() {
             var event = document.createEvent();
             event.initEvent("click");
             this.dispatchEvent(event);
         },
-        submit: function()
-        {
+        submit: function() {
             var event = document.createEvent();
             event.initEvent("submit");
             this.dispatchEvent(event);
         },
-        focus: function()
-        {
+        focus: function() {
             var event = document.createEvent();
             event.initEvent("focus");
             this.dispatchEvent(event);
         },
-        blur: function()
-        {
+        blur: function() {
             var event = document.createEvent();
             event.initEvent("blur");
             this.dispatchEvent(event);
         },
-        get elements()
-        {
+        get elements() {
             return this.getElementsByTagName("*");
         },
-        get contentWindow()
-        {
+        get contentWindow() {
             return this.nodeName == "IFRAME" ? {
                 document: this.contentDocument
             } : null;
         },
-        get contentDocument()
-        {
-            if (this.nodeName == "IFRAME")
-            {
+        get contentDocument() {
+            if (this.nodeName == "IFRAME") {
                 if (!this._doc)
                     this._doc = new DOMDocument(
-                            new Packages.java.io.ByteArrayInputStream((new Packages.java.lang.String(
-                                    "<html><head></head><body></body></html>"))
-                                    .getBytes("UTF8")));
+                        new Packages.java.io.ByteArrayInputStream((new Packages.java.lang.String(
+                            "<html><head></head><body></body></html>"))
+                            .getBytes("UTF8")));
                 return this._doc;
             }
             else
@@ -890,19 +751,16 @@ var window = this;
 
     // Fake document object. Dojo needs a script element to work properly.
     window.document = new DOMDocument(new Packages.java.io.ByteArrayInputStream(
-            (new Packages.java.lang.String("<html><head><title></title><script></script></head><body></body></html>")).getBytes("UTF8")));
+        (new Packages.java.lang.String("<html><head><title></title><script></script></head><body></body></html>")).getBytes("UTF8")));
     window.document.head = window.document.getElementsByTagName('head')[0];
 
 
     // Helper method for extending one object with another
-    function extend(a, b)
-    {
-        for (var i in b)
-        {
+    function extend(a, b) {
+        for (var i in b) {
             var g = b.__lookupGetter__(i), s = b.__lookupSetter__(i);
 
-            if (g || s)
-            {
+            if (g || s) {
                 if (g)
                     a.__defineGetter__(i, g);
                 if (s)
@@ -917,8 +775,7 @@ var window = this;
     window.screen = {};
     window.innerWidth = 0;
 
-    window.assert = function(condition, text)
-    {
+    window.assert = function(condition, text) {
         if (!condition) throw 'ASSERTION FAILED' + (text ? ': ' + text : '');
     };
 
@@ -928,48 +785,39 @@ var window = this;
     // When using java.net.URL it happens that a long poll can be closed at any time,
     // just to be reissued using another socket.
     // Therefore we use helper classes that are based on Jetty's HttpClient, which offers full control.
-    window.XMLHttpRequest = function() {};
+    window.XMLHttpRequest = function() {
+    };
     window.XMLHttpRequest.UNSENT = 0;
     window.XMLHttpRequest.OPENED = 1;
     window.XMLHttpRequest.HEADERS_RECEIVED = 2;
     window.XMLHttpRequest.LOADING = 3;
     window.XMLHttpRequest.DONE = 4;
-    window.XMLHttpRequest.prototype = function()
-    {
+    window.XMLHttpRequest.prototype = function() {
         return {
-            get readyState()
-            {
+            get readyState() {
                 return this._exchange.readyState;
             },
-            get responseText()
-            {
+            get responseText() {
                 return this._exchange.responseText;
             },
-            get responseXML()
-            {
+            get responseXML() {
                 return null; // TODO
             },
-            get status()
-            {
+            get status() {
                 return this._exchange.responseStatus;
             },
-            get statusText()
-            {
+            get statusText() {
                 return this._exchange.responseStatusText;
             },
-            onreadystatechange: function()
-            {
+            onreadystatechange: function() {
                 // Dojo does not override this function (but uses a timer to poll state)
                 // so we do not throw if this function is called like we do with WebSocket below.
             },
-            onload: function()
-            {
+            onload: function() {
             },
-            onerror: function()
-            {
+            onerror: function() {
             },
-            open: function(method, url, async, user, password)
-            {
+            open: function(method, url, async, user, password) {
                 // Abort previous exchange
                 this.abort();
 
@@ -977,49 +825,41 @@ var window = this;
                 var absoluteURL = absolute ? url : window.location.href + url;
                 this._exchange = new XMLHttpRequestExchange(xhrClient, threadModel, this, method, absoluteURL, async);
             },
-            setRequestHeader: function(header, value)
-            {
+            setRequestHeader: function(header, value) {
                 if (this.readyState !== XMLHttpRequest.OPENED) throw 'INVALID_STATE_ERR: ' + this.readyState;
                 if (!header) throw 'SYNTAX_ERR';
                 if (value) this._exchange.addRequestHeader(header, value);
             },
-            send: function(data)
-            {
+            send: function(data) {
                 if (this.readyState !== XMLHttpRequest.OPENED) throw 'INVALID_STATE_ERR';
                 if (this._exchange.method == 'GET') data = null;
                 if (data) this._exchange.setRequestContent(data);
                 this._exchange.send();
             },
-            abort: function()
-            {
+            abort: function() {
                 if (this._exchange) this._exchange.abort();
             },
-            getAllResponseHeaders: function()
-            {
+            getAllResponseHeaders: function() {
                 if (this.readyState === XMLHttpRequest.UNSENT || this.readyState === XMLHttpRequest.OPENED)
                     throw 'INVALID_STATE_ERR';
                 return this._exchange.getAllResponseHeaders();
             },
-            getResponseHeader: function(header)
-            {
+            getResponseHeader: function(header) {
                 if (this.readyState === XMLHttpRequest.UNSENT || this.readyState === XMLHttpRequest.OPENED)
                     throw 'INVALID_STATE_ERR';
                 return this._exchange.getResponseHeader(header);
             },
-            get withCredentials()
-            {
+            get withCredentials() {
                 return !!this._withCredentials;
             },
-            set withCredentials(val)
-            {
+            set withCredentials(val) {
                 this._withCredentials = val;
             }
         };
     }();
 
     var wsIds = 0;
-    window.WebSocket = function(url, protocol)
-    {
+    window.WebSocket = function(url, protocol) {
         this._id = ++wsIds;
         this._url = url;
         this._ws = new WebSocketConnection(threadModel, this, wsConnector, url, protocol);
@@ -1028,35 +868,27 @@ var window = this;
     window.WebSocket.OPEN = 1;
     window.WebSocket.CLOSING = 2;
     window.WebSocket.CLOSED = 3;
-    window.WebSocket.prototype = function()
-    {
+    window.WebSocket.prototype = function() {
         return {
-            get url()
-            {
+            get url() {
                 return this._url;
             },
-            onopen: function(event)
-            {
+            onopen: function(event) {
                 window.assert(false, "onopen not assigned");
             },
-            onerror: function(event)
-            {
+            onerror: function(event) {
                 window.assert(false, "onerror not assigned");
             },
-            onclose: function(event)
-            {
+            onclose: function(event) {
                 window.assert(false, "onclose not assigned");
             },
-            onmessage: function(event)
-            {
+            onmessage: function(event) {
                 window.assert(false, "onmessage not assigned");
             },
-            send: function(data)
-            {
+            send: function(data) {
                 this._ws.send(data);
             },
-            close: function(code, reason)
-            {
+            close: function(code, reason) {
                 this._ws.close(code, reason);
             }
         };

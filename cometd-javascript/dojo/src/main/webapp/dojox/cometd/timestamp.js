@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 define(['org/cometd/TimeStampExtension', 'dojox/cometd'],
-        function(TimeStampExtension, cometd)
-{
-    var result = new TimeStampExtension();
-    cometd.registerExtension('timestamp', result);
-    return result;
-});
+    function(TimeStampExtension, cometd) {
+        var result = new TimeStampExtension();
+        cometd.registerExtension('timestamp', result);
+        return result;
+    });

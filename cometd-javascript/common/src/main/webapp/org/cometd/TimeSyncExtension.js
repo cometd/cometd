@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-(function()
-{
-    function bind(org_cometd)
-    {
+(function() {
+    function bind(org_cometd) {
         /**
          * With each handshake or connect, the extension sends timestamps within the
          * ext field like: <code>{ext:{timesync:{tc:12345567890,l:23,o:4567},...},...}</code>
@@ -57,8 +55,7 @@
          *
          * @param configuration
          */
-        return org_cometd.TimeSyncExtension = function(configuration)
-        {
+        return org_cometd.TimeSyncExtension = function(configuration) {
             var _cometd;
             var _maxSamples = configuration && configuration.maxSamples || 10;
             var _lags = [];
@@ -66,32 +63,26 @@
             var _lag = 0;
             var _offset = 0;
 
-            function _debug(text, args)
-            {
+            function _debug(text, args) {
                 _cometd._debug(text, args);
             }
 
-            this.registered = function(name, cometd)
-            {
+            this.registered = function(name, cometd) {
                 _cometd = cometd;
                 _debug('TimeSyncExtension: executing registration callback');
             };
 
-            this.unregistered = function()
-            {
+            this.unregistered = function() {
                 _debug('TimeSyncExtension: executing unregistration callback');
                 _cometd = null;
                 _lags = [];
                 _offsets = [];
             };
 
-            this.incoming = function(message)
-            {
+            this.incoming = function(message) {
                 var channel = message.channel;
-                if (channel && channel.indexOf('/meta/') === 0)
-                {
-                    if (message.ext && message.ext.timesync)
-                    {
+                if (channel && channel.indexOf('/meta/') === 0) {
+                    if (message.ext && message.ext.timesync) {
                         var timesync = message.ext.timesync;
                         _debug('TimeSyncExtension: server sent timesync', timesync);
 
@@ -101,8 +92,7 @@
 
                         _lags.push(l2);
                         _offsets.push(o2);
-                        if (_offsets.length > _maxSamples)
-                        {
+                        if (_offsets.length > _maxSamples) {
                             _offsets.shift();
                             _lags.shift();
                         }
@@ -110,8 +100,7 @@
                         var samples = _offsets.length;
                         var lagsSum = 0;
                         var offsetsSum = 0;
-                        for (var i = 0; i < samples; ++i)
-                        {
+                        for (var i = 0; i < samples; ++i) {
                             lagsSum += _lags[i];
                             offsetsSum += _offsets[i];
                         }
@@ -123,13 +112,10 @@
                 return message;
             };
 
-            this.outgoing = function(message)
-            {
+            this.outgoing = function(message) {
                 var channel = message.channel;
-                if (channel && channel.indexOf('/meta/') === 0)
-                {
-                    if (!message.ext)
-                    {
+                if (channel && channel.indexOf('/meta/') === 0) {
+                    if (!message.ext) {
                         message.ext = {};
                     }
                     message.ext.timesync = {
@@ -146,8 +132,7 @@
              * Get the estimated offset in ms from the clients clock to the
              * servers clock.  The server time is the client time plus the offset.
              */
-            this.getTimeOffset = function()
-            {
+            this.getTimeOffset = function() {
                 return _offset;
             };
 
@@ -155,24 +140,21 @@
              * Get an array of multiple offset samples used to calculate
              * the offset.
              */
-            this.getTimeOffsetSamples = function()
-            {
+            this.getTimeOffsetSamples = function() {
                 return _offsets;
             };
 
             /**
              * Get the estimated network lag in ms from the client to the server.
              */
-            this.getNetworkLag = function()
-            {
+            this.getNetworkLag = function() {
                 return _lag;
             };
 
             /**
              * Get the estimated server time in ms since the epoch.
              */
-            this.getServerTime = function()
-            {
+            this.getServerTime = function() {
                 return new Date().getTime() + _offset;
             };
 
@@ -180,8 +162,7 @@
              *
              * Get the estimated server time as a Date object
              */
-            this.getServerDate = function()
-            {
+            this.getServerDate = function() {
                 return new Date(this.getServerTime());
             };
 
@@ -191,13 +172,11 @@
              * @param atServerTimeOrDate a js Time or Date object representing the
              * server time at which the timeout should expire
              */
-            this.setTimeout = function(callback, atServerTimeOrDate)
-            {
+            this.setTimeout = function(callback, atServerTimeOrDate) {
                 var ts = (atServerTimeOrDate instanceof Date) ? atServerTimeOrDate.getTime() : (0 + atServerTimeOrDate);
                 var tc = ts - _offset;
                 var interval = tc - new Date().getTime();
-                if (interval <= 0)
-                {
+                if (interval <= 0) {
                     interval = 1;
                 }
                 return org_cometd.Utils.setTimeout(_cometd, callback, interval);
@@ -205,12 +184,10 @@
         };
     }
 
-    if (typeof define === 'function' && define.amd)
-    {
+    if (typeof define === 'function' && define.amd) {
         define(['org/cometd'], bind);
     }
-    else
-    {
+    else {
         bind(org.cometd);
     }
 })();

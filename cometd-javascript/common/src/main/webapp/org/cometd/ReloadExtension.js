@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-(function()
-{
-    function bind(org_cometd)
-    {
-        if (!org_cometd.COOKIE)
-        {
+(function() {
+    function bind(org_cometd) {
+        if (!org_cometd.COOKIE) {
             org_cometd.COOKIE = {};
-            org_cometd.COOKIE.set = function(name, value, options)
-            {
+            org_cometd.COOKIE.set = function(name, value, options) {
                 throw 'Abstract';
             };
-            org_cometd.COOKIE.get = function(name)
-            {
+            org_cometd.COOKIE.get = function(name) {
                 throw 'Abstract';
             };
         }
@@ -45,8 +40,7 @@
          * When the page is (re)loaded, this extension checks the cookie
          * and restores the cometd connection and the cometd subscriptions.
          */
-        return org_cometd.ReloadExtension = function(configuration)
-        {
+        return org_cometd.ReloadExtension = function(configuration) {
             var _cometd;
             var _debug;
             var _state = {};
@@ -56,14 +50,11 @@
             var _batch = false;
             var _reloading = false;
 
-            function _reload(config)
-            {
-                if (_state.handshakeResponse)
-                {
+            function _reload(config) {
+                if (_state.handshakeResponse) {
                     _reloading = true;
                     var transport = _cometd.getTransport();
-                    if (transport)
-                    {
+                    if (transport) {
                         transport.abort();
                     }
                     _configure(config);
@@ -78,8 +69,7 @@
                 }
             }
 
-            function _similarState(oldState)
-            {
+            function _similarState(oldState) {
                 // We want to check here that the CometD object
                 // did not change much between reloads.
                 // We just check the URL for now, but in future
@@ -88,20 +78,15 @@
                 return _state.url == oldState.url;
             }
 
-            function _configure(config)
-            {
-                if (config)
-                {
-                    if (typeof config.cookieMaxAge === 'number')
-                    {
+            function _configure(config) {
+                if (config) {
+                    if (typeof config.cookieMaxAge === 'number') {
                         _cookieMaxAge = config.cookieMaxAge;
                     }
-                    if (typeof config.cookieName === 'string')
-                    {
+                    if (typeof config.cookieName === 'string') {
                         _cookieName = config.cookieName;
                     }
-                    if (typeof config.cookiePath === 'string')
-                    {
+                    if (typeof config.cookiePath === 'string') {
                         _cookiePath = config.cookiePath;
                     }
                 }
@@ -109,23 +94,19 @@
 
             this.configure = _configure;
 
-            this.registered = function(name, cometd)
-            {
+            this.registered = function(name, cometd) {
                 _cometd = cometd;
                 _cometd.reload = _reload;
                 _debug = _cometd._debug;
             };
 
-            this.unregistered = function()
-            {
+            this.unregistered = function() {
                 delete _cometd.reload;
                 _cometd = null;
             };
 
-            this.outgoing = function(message)
-            {
-                switch (message.channel)
-                {
+            this.outgoing = function(message) {
+                switch (message.channel) {
                     case '/meta/handshake':
                     {
                         _state = {};
@@ -134,10 +115,8 @@
                         var cookie = org_cometd.COOKIE.get(_cookieName);
                         _debug('Reload extension found cookie value', cookie);
                         // Is there a saved handshake response from a prior load ?
-                        if (cookie)
-                        {
-                            try
-                            {
+                        if (cookie) {
+                            try {
                                 var oldState = org_cometd.JSON.fromJSON(cookie);
 
                                 // Remove the cookie, not needed anymore
@@ -147,8 +126,7 @@
                                     expires: -1
                                 });
 
-                                if (oldState.handshakeResponse && _similarState(oldState))
-                                {
+                                if (oldState.handshakeResponse && _similarState(oldState)) {
                                     _debug('Reload extension restoring state', oldState);
 
                                     // Since we are going to abort this message,
@@ -156,8 +134,7 @@
                                     // it when we replay the handshake response.
                                     var callback = _cometd._getCallback(message.id);
 
-                                    setTimeout(function ()
-                                    {
+                                    setTimeout(function() {
                                         _debug('Reload extension replaying handshake response', oldState.handshakeResponse);
                                         _state.handshakeResponse = oldState.handshakeResponse;
                                         _state.transportType = oldState.transportType;
@@ -169,7 +146,7 @@
                                             // Keep the response message id the same as the request.
                                             id: message.id,
                                             // Tells applications this is a handshake replayed by the reload extension.
-                                            ext: { reload: true }
+                                            ext: {reload: true}
                                         });
                                         // Use the same transport as before.
                                         response.supportedConnectionTypes = [_state.transportType];
@@ -182,8 +159,7 @@
                                     // This avoids that there is an old /meta/connect pending on server
                                     // that will be resumed to send messages to the client, when the
                                     // client has already closed the connection, thereby losing the messages.
-                                    if (!_batch)
-                                    {
+                                    if (!_batch) {
                                         _batch = true;
                                         _cometd.startBatch();
                                     }
@@ -191,13 +167,11 @@
                                     // This handshake is aborted, as we will replay the prior handshake response
                                     return null;
                                 }
-                                else
-                                {
+                                else {
                                     _debug('Reload extension could not restore state', oldState);
                                 }
                             }
-                            catch (x)
-                            {
+                            catch (x) {
                                 _debug('Reload extension error while trying to restore cookie', x);
                             }
                         }
@@ -205,8 +179,7 @@
                     }
                     case '/meta/connect':
                     {
-                        if (_reloading === true)
-                        {
+                        if (_reloading === true) {
                             // The reload causes the failure of the outstanding /meta/connect,
                             // which CometD will react to by sending another. Here we avoid
                             // that /meta/connect messages are sent between the reload and
@@ -217,8 +190,7 @@
                             return null;
                         }
 
-                        if (!_state.transportType)
-                        {
+                        if (!_state.transportType) {
                             _state.transportType = message.connectionType;
                             _debug('Reload extension tracked transport type', _state.transportType);
                         }
@@ -237,18 +209,14 @@
                 return message;
             };
 
-            this.incoming = function(message)
-            {
-                if (message.successful)
-                {
-                    switch (message.channel)
-                    {
+            this.incoming = function(message) {
+                if (message.successful) {
+                    switch (message.channel) {
                         case '/meta/handshake':
                         {
                             // If the handshake response is already present, then we're replaying it.
                             // Since the replay may have modified the handshake response, do not record it here.
-                            if (!_state.handshakeResponse)
-                            {
+                            if (!_state.handshakeResponse) {
                                 // Save successful handshake response
                                 _state.handshakeResponse = message;
                                 _debug('Reload extension tracked handshake response', message);
@@ -257,8 +225,7 @@
                         }
                         case '/meta/connect':
                         {
-                            if (_batch)
-                            {
+                            if (_batch) {
                                 _batch = false;
                                 _cometd.endBatch();
                             }
@@ -282,12 +249,10 @@
         };
     }
 
-    if (typeof define === 'function' && define.amd)
-    {
+    if (typeof define === 'function' && define.amd) {
         define(['org/cometd'], bind);
     }
-    else
-    {
+    else {
         bind(org.cometd);
     }
 })();

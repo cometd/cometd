@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-(function()
-{
-    function bind(org_cometd)
-    {
+(function() {
+    function bind(org_cometd) {
         /**
          * This client-side extension enables the client to acknowledge to the server
          * the messages that the client has received.
@@ -32,42 +30,34 @@
          * Messages are not acknowledged one by one, but instead a group of messages is
          * acknowledged when long poll returns.
          */
-        return org_cometd.AckExtension = function()
-        {
+        return org_cometd.AckExtension = function() {
             var _cometd;
             var _serverSupportsAcks = false;
             var _ackId = -1;
 
-            function _debug(text, args)
-            {
+            function _debug(text, args) {
                 _cometd._debug(text, args);
             }
 
-            this.registered = function(name, cometd)
-            {
+            this.registered = function(name, cometd) {
                 _cometd = cometd;
                 _debug('AckExtension: executing registration callback');
             };
 
-            this.unregistered = function()
-            {
+            this.unregistered = function() {
                 _debug('AckExtension: executing unregistration callback');
                 _cometd = null;
             };
 
-            this.incoming = function(message)
-            {
+            this.incoming = function(message) {
                 var channel = message.channel;
-                if (channel == '/meta/handshake')
-                {
+                if (channel == '/meta/handshake') {
                     _serverSupportsAcks = message.ext && message.ext.ack;
                     _debug('AckExtension: server supports acks', _serverSupportsAcks);
                 }
-                else if (channel == '/meta/connect' && message.successful && _serverSupportsAcks)
-                {
+                else if (channel == '/meta/connect' && message.successful && _serverSupportsAcks) {
                     var ext = message.ext;
-                    if (ext && typeof ext.ack === 'number')
-                    {
+                    if (ext && typeof ext.ack === 'number') {
                         _ackId = ext.ack;
                         _debug('AckExtension: server sent ack id', _ackId);
                     }
@@ -75,22 +65,17 @@
                 return message;
             };
 
-            this.outgoing = function(message)
-            {
+            this.outgoing = function(message) {
                 var channel = message.channel;
-                if (channel == '/meta/handshake')
-                {
-                    if (!message.ext)
-                    {
+                if (channel == '/meta/handshake') {
+                    if (!message.ext) {
                         message.ext = {};
                     }
                     message.ext.ack = _cometd && _cometd.ackEnabled !== false;
                     _ackId = -1;
                 }
-                else if (channel == '/meta/connect' && _serverSupportsAcks)
-                {
-                    if (!message.ext)
-                    {
+                else if (channel == '/meta/connect' && _serverSupportsAcks) {
+                    if (!message.ext) {
                         message.ext = {};
                     }
                     message.ext.ack = _ackId;
@@ -101,12 +86,10 @@
         };
     }
 
-    if (typeof define === 'function' && define.amd)
-    {
+    if (typeof define === 'function' && define.amd) {
         define(['org/cometd'], bind);
     }
-    else
-    {
+    else {
         bind(org.cometd);
     }
 })();
