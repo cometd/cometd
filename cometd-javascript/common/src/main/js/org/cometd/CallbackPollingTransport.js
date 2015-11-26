@@ -1,29 +1,23 @@
-org.cometd.CallbackPollingTransport = function()
-{
+org.cometd.CallbackPollingTransport = function() {
     var _super = new org.cometd.RequestTransport();
     var _self = org.cometd.Transport.derive(_super);
 
-    _self.accept = function(version, crossDomain, url)
-    {
+    _self.accept = function(version, crossDomain, url) {
         return true;
     };
 
-    _self.jsonpSend = function(packet)
-    {
+    _self.jsonpSend = function(packet) {
         throw 'Abstract';
     };
 
-    function _failTransportFn(envelope, request, x)
-    {
+    function _failTransportFn(envelope, request, x) {
         var self = this;
-        return function()
-        {
+        return function() {
             self.transportFailure(envelope, request, 'error', x);
         };
     }
 
-    _self.transportSend = function(envelope, request)
-    {
+    _self.transportSend = function(envelope, request) {
         var self = this;
 
         // Microsoft Internet Explorer has a 2083 URL max length
@@ -31,20 +25,17 @@ org.cometd.CallbackPollingTransport = function()
         var start = 0;
         var length = envelope.messages.length;
         var lengths = [];
-        while (length > 0)
-        {
+        while (length > 0) {
             // Encode the messages because all brackets, quotes, commas, colons, etc
             // present in the JSON will be URL encoded, taking many more characters
             var json = org.cometd.JSON.toJSON(envelope.messages.slice(start, start + length));
             var urlLength = envelope.url.length + encodeURI(json).length;
 
             var maxLength = this.getConfiguration().maxURILength;
-            if (urlLength > maxLength)
-            {
-                if (length === 1)
-                {
+            if (urlLength > maxLength) {
+                if (length === 1) {
                     var x = 'Bayeux message too big (' + urlLength + ' bytes, max is ' + maxLength + ') ' +
-                            'for transport ' + this.getType();
+                        'for transport ' + this.getType();
                     // Keep the semantic of calling response callbacks asynchronously after the request
                     this.setTimeout(_failTransportFn.call(this, envelope, request, x), 0);
                     return;
@@ -62,8 +53,7 @@ org.cometd.CallbackPollingTransport = function()
         // Here we are sure that the messages can be sent within the URL limit
 
         var envelopeToSend = envelope;
-        if (lengths.length > 1)
-        {
+        if (lengths.length > 1) {
             var begin = 0;
             var end = lengths[0];
             this._debug('Transport', this.getType(), 'split', envelope.messages.length, 'messages into', lengths.join(' + '));
@@ -72,8 +62,7 @@ org.cometd.CallbackPollingTransport = function()
             envelopeToSend.onSuccess = envelope.onSuccess;
             envelopeToSend.onFailure = envelope.onFailure;
 
-            for (var i = 1; i < lengths.length; ++i)
-            {
+            for (var i = 1; i < lengths.length; ++i) {
                 var nextEnvelope = this._mixin(false, {}, envelope);
                 begin = end;
                 end += lengths[i];
@@ -86,8 +75,7 @@ org.cometd.CallbackPollingTransport = function()
 
         this._debug('Transport', this.getType(), 'sending request', request.id, 'envelope', envelopeToSend);
 
-        try
-        {
+        try {
             var sameStack = true;
             this.jsonpSend({
                 transport: this,
@@ -95,62 +83,50 @@ org.cometd.CallbackPollingTransport = function()
                 sync: envelopeToSend.sync,
                 headers: this.getConfiguration().requestHeaders,
                 body: org.cometd.JSON.toJSON(envelopeToSend.messages),
-                onSuccess: function(responses)
-                {
+                onSuccess: function(responses) {
                     var success = false;
-                    try
-                    {
+                    try {
                         var received = self.convertToMessages(responses);
-                        if (received.length === 0)
-                        {
+                        if (received.length === 0) {
                             self.transportFailure(envelopeToSend, request, {
                                 httpCode: 204
                             });
                         }
-                        else
-                        {
+                        else {
                             success = true;
                             self.transportSuccess(envelopeToSend, request, received);
                         }
                     }
-                    catch (x)
-                    {
+                    catch (x) {
                         self._debug(x);
-                        if (!success)
-                        {
+                        if (!success) {
                             self.transportFailure(envelopeToSend, request, {
                                 exception: x
                             });
                         }
                     }
                 },
-                onError: function(reason, exception)
-                {
+                onError: function(reason, exception) {
                     var failure = {
                         reason: reason,
                         exception: exception
                     };
-                    if (sameStack)
-                    {
+                    if (sameStack) {
                         // Keep the semantic of calling response callbacks asynchronously after the request
-                        self.setTimeout(function()
-                        {
+                        self.setTimeout(function() {
                             self.transportFailure(envelopeToSend, request, failure);
                         }, 0);
                     }
-                    else
-                    {
+                    else {
                         self.transportFailure(envelopeToSend, request, failure);
                     }
                 }
             });
             sameStack = false;
         }
-        catch (xx)
-        {
+        catch (xx) {
             // Keep the semantic of calling response callbacks asynchronously after the request
-            this.setTimeout(function()
-            {
+            this.setTimeout(function() {
                 self.transportFailure(envelopeToSend, request, {
                     exception: xx
                 });

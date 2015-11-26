@@ -1,8 +1,7 @@
 /**
  * Base object with the common functionality for transports.
  */
-org.cometd.Transport = function()
-{
+org.cometd.Transport = function() {
     var _type;
     var _cometd;
 
@@ -12,8 +11,7 @@ org.cometd.Transport = function()
      * @param cometd the cometd object this transport has been registered to
      * @see #unregistered()
      */
-    this.registered = function(type, cometd)
-    {
+    this.registered = function(type, cometd) {
         _type = type;
         _cometd = cometd;
     };
@@ -22,39 +20,32 @@ org.cometd.Transport = function()
      * Function invoked just after a transport has been successfully unregistered.
      * @see #registered(type, cometd)
      */
-    this.unregistered = function()
-    {
+    this.unregistered = function() {
         _type = null;
         _cometd = null;
     };
 
-    this._debug = function()
-    {
+    this._debug = function() {
         _cometd._debug.apply(_cometd, arguments);
     };
 
-    this._mixin = function()
-    {
+    this._mixin = function() {
         return _cometd._mixin.apply(_cometd, arguments);
     };
 
-    this.getConfiguration = function()
-    {
+    this.getConfiguration = function() {
         return _cometd.getConfiguration();
     };
 
-    this.getAdvice = function()
-    {
+    this.getAdvice = function() {
         return _cometd.getAdvice();
     };
 
-    this.setTimeout = function(funktion, delay)
-    {
+    this.setTimeout = function(funktion, delay) {
         return org.cometd.Utils.setTimeout(_cometd, funktion, delay);
     };
 
-    this.clearTimeout = function(handle)
-    {
+    this.clearTimeout = function(handle) {
         org.cometd.Utils.clearTimeout(handle);
     };
 
@@ -63,30 +54,23 @@ org.cometd.Transport = function()
      * @param response the response to convert
      * @return an array of bayeux messages obtained by converting the response
      */
-    this.convertToMessages = function (response)
-    {
-        if (org.cometd.Utils.isString(response))
-        {
-            try
-            {
+    this.convertToMessages = function(response) {
+        if (org.cometd.Utils.isString(response)) {
+            try {
                 return org.cometd.JSON.fromJSON(response);
             }
-            catch(x)
-            {
+            catch (x) {
                 this._debug('Could not convert to JSON the following string', '"' + response + '"');
                 throw x;
             }
         }
-        if (org.cometd.Utils.isArray(response))
-        {
+        if (org.cometd.Utils.isArray(response)) {
             return response;
         }
-        if (response === undefined || response === null)
-        {
+        if (response === undefined || response === null) {
             return [];
         }
-        if (response instanceof Object)
-        {
+        if (response instanceof Object) {
             return [response];
         }
         throw 'Conversion Error ' + response + ', typeof ' + (typeof response);
@@ -99,8 +83,7 @@ org.cometd.Transport = function()
      * @return true if this transport can work for the given version and cross domain communication case,
      * false otherwise
      */
-    this.accept = function(version, crossDomain, url)
-    {
+    this.accept = function(version, crossDomain, url) {
         throw 'Abstract';
     };
 
@@ -108,35 +91,31 @@ org.cometd.Transport = function()
      * Returns the type of this transport.
      * @see #registered(type, cometd)
      */
-    this.getType = function()
-    {
+    this.getType = function() {
         return _type;
     };
 
-    this.send = function(envelope, metaConnect)
-    {
+    this.send = function(envelope, metaConnect) {
         throw 'Abstract';
     };
 
-    this.reset = function(init)
-    {
+    this.reset = function(init) {
         this._debug('Transport', _type, 'reset', init ? 'initial' : 'retry');
     };
 
-    this.abort = function()
-    {
+    this.abort = function() {
         this._debug('Transport', _type, 'aborted');
     };
 
-    this.toString = function()
-    {
+    this.toString = function() {
         return this.getType();
     };
 };
 
-org.cometd.Transport.derive = function(baseObject)
-{
-    function F() {}
+org.cometd.Transport.derive = function(baseObject) {
+    function F() {
+    }
+
     F.prototype = baseObject;
     return new F();
 };

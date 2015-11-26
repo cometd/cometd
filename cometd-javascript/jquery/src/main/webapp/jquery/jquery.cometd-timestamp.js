@@ -13,21 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function()
-{
-    function bind(TimeStampExtension, cometd)
-    {
+(function() {
+    function bind(TimeStampExtension, cometd) {
         var result = new TimeStampExtension();
         cometd.registerExtension('timestamp', result);
         return result;
     }
 
-    if (typeof define === 'function' && define.amd)
-    {
+    if (typeof define === 'function' && define.amd) {
         define(['org/cometd/TimeStampExtension', 'jquery.cometd'], bind);
     }
-    else
-    {
+    else {
         bind(org.cometd.TimeStampExtension, jQuery.cometd);
     }
 })();

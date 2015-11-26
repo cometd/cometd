@@ -1,17 +1,14 @@
-(function($)
-{
-    $(document).ready(function()
-    {
+(function($) {
+    $(document).ready(function() {
         // Check if there was a saved application state
-        var stateCookie = org.cometd.COOKIE?org.cometd.COOKIE.get('org.cometd.demo.state'):null;
+        var stateCookie = org.cometd.COOKIE ? org.cometd.COOKIE.get('org.cometd.demo.state') : null;
         var state = stateCookie ? org.cometd.JSON.fromJSON(stateCookie) : null;
         var chat = new Chat(state);
 
         // restore some values
-        if (state)
-        {
+        if (state) {
             $('#username').val(state.username);
-            $('#useServer').prop('checked',state.useServer);
+            $('#useServer').prop('checked', state.useServer);
             $('#altServer').val(state.altServer);
         }
 
@@ -19,29 +16,26 @@
         $('#join').show();
         $('#joined').hide();
         $('#altServer').prop('autocomplete', 'off');
-        $('#joinButton').click(function() { chat.join($('#username').val()); });
+        $('#joinButton').click(function() {
+            chat.join($('#username').val());
+        });
         $('#sendButton').click(chat.send);
         $('#leaveButton').click(chat.leave);
         $('#username').prop('autocomplete', 'off').focus();
-        $('#username').keyup(function(e)
-        {
-            if (e.keyCode == 13)
-            {
+        $('#username').keyup(function(e) {
+            if (e.keyCode == 13) {
                 chat.join($('#username').val());
             }
         });
         $('#phrase').prop('autocomplete', 'off');
-        $('#phrase').keyup(function(e)
-        {
-            if (e.keyCode == 13)
-            {
+        $('#phrase').keyup(function(e) {
+            if (e.keyCode == 13) {
                 chat.send();
             }
         });
     });
 
-    function Chat(state)
-    {
+    function Chat(state) {
         var _self = this;
         var _connected = false;
         var _username;
@@ -50,23 +44,19 @@
         var _chatSubscription;
         var _membersSubscription;
 
-        this.join = function(username)
-        {
+        this.join = function(username) {
             _disconnecting = false;
             _username = username;
-            if (!_username)
-            {
+            if (!_username) {
                 alert('Please enter a username');
                 return;
             }
 
             var cometdURL = location.protocol + "//" + location.host + config.contextPath + "/cometd";
             var useServer = $('#useServer').prop('checked');
-            if (useServer)
-            {
+            if (useServer) {
                 var altServer = $('#altServer').val();
-                if (altServer.length == 0)
-                {
+                if (altServer.length == 0) {
                     alert('Please enter a server address');
                     return;
                 }
@@ -84,10 +74,8 @@
             $('#phrase').focus();
         };
 
-        this.leave = function()
-        {
-            $.cometd.batch(function()
-            {
+        this.leave = function() {
+            $.cometd.batch(function() {
                 $.cometd.publish('/chat/demo', {
                     user: _username,
                     membership: 'leave',
@@ -106,8 +94,7 @@
             _disconnecting = true;
         };
 
-        this.send = function()
-        {
+        this.send = function() {
             var phrase = $('#phrase');
             var text = phrase.val();
             phrase.val('');
@@ -115,8 +102,7 @@
             if (!text || !text.length) return;
 
             var colons = text.indexOf('::');
-            if (colons > 0)
-            {
+            if (colons > 0) {
                 $.cometd.publish('/service/privatechat', {
                     room: '/chat/demo',
                     user: _username,
@@ -124,8 +110,7 @@
                     peer: text.substring(0, colons)
                 });
             }
-            else
-            {
+            else {
                 $.cometd.publish('/chat/demo', {
                     user: _username,
                     chat: text
@@ -133,34 +118,28 @@
             }
         };
 
-        this.receive = function(message)
-        {
+        this.receive = function(message) {
             var fromUser = message.data.user;
             var membership = message.data.membership;
             var text = message.data.chat;
 
-            if (!membership && fromUser == _lastUser)
-            {
+            if (!membership && fromUser == _lastUser) {
                 fromUser = '...';
             }
-            else
-            {
+            else {
                 _lastUser = fromUser;
                 fromUser += ':';
             }
 
             var chat = $('#chat');
-            if (membership)
-            {
+            if (membership) {
                 chat.append('<span class=\"membership\"><span class=\"from\">' + fromUser + '&nbsp;</span><span class=\"text\">' + text + '</span></span><br/>');
                 _lastUser = null;
             }
-            else if (message.data.scope == 'private')
-            {
+            else if (message.data.scope == 'private') {
                 chat.append('<span class=\"private\"><span class=\"from\">' + fromUser + '&nbsp;</span><span class=\"text\">[private]&nbsp;' + text + '</span></span><br/>');
             }
-            else
-            {
+            else {
                 chat.append('<span class=\"from\">' + fromUser + '&nbsp;</span><span class=\"text\">' + text + '</span><br/>');
             }
 
@@ -172,41 +151,33 @@
          * Updates the members list.
          * This function is called when a message arrives on channel /chat/members
          */
-        this.members = function(message)
-        {
+        this.members = function(message) {
             var list = '';
-            $.each(message.data, function()
-            {
+            $.each(message.data, function() {
                 list += this + '<br />';
             });
             $('#members').html(list);
         };
 
-        function _unsubscribe()
-        {
-            if (_chatSubscription)
-            {
+        function _unsubscribe() {
+            if (_chatSubscription) {
                 $.cometd.unsubscribe(_chatSubscription);
             }
             _chatSubscription = null;
-            if (_membersSubscription)
-            {
+            if (_membersSubscription) {
                 $.cometd.unsubscribe(_membersSubscription);
             }
             _membersSubscription = null;
         }
 
-        function _subscribe()
-        {
+        function _subscribe() {
             _chatSubscription = $.cometd.subscribe('/chat/demo', _self.receive);
             _membersSubscription = $.cometd.subscribe('/members/demo', _self.members);
         }
 
-        function _connectionInitialized()
-        {
+        function _connectionInitialized() {
             // first time connection for this client, so subscribe tell everybody.
-            $.cometd.batch(function()
-            {
+            $.cometd.batch(function() {
                 _subscribe();
                 $.cometd.publish('/chat/demo', {
                     user: _username,
@@ -216,8 +187,7 @@
             });
         }
 
-        function _connectionEstablished()
-        {
+        function _connectionEstablished() {
             // connection establish (maybe not for first time), so just
             // tell local user and update membership
             _self.receive({
@@ -232,8 +202,7 @@
             });
         }
 
-        function _connectionBroken()
-        {
+        function _connectionBroken() {
             _self.receive({
                 data: {
                     user: 'system',
@@ -243,8 +212,7 @@
             $('#members').empty();
         }
 
-        function _connectionClosed()
-        {
+        function _connectionClosed() {
             _self.receive({
                 data: {
                     user: 'system',
@@ -253,32 +221,25 @@
             });
         }
 
-        function _metaConnect(message)
-        {
-            if (_disconnecting)
-            {
+        function _metaConnect(message) {
+            if (_disconnecting) {
                 _connected = false;
                 _connectionClosed();
             }
-            else
-            {
+            else {
                 var wasConnected = _connected;
                 _connected = message.successful === true;
-                if (!wasConnected && _connected)
-                {
+                if (!wasConnected && _connected) {
                     _connectionEstablished();
                 }
-                else if (wasConnected && !_connected)
-                {
+                else if (wasConnected && !_connected) {
                     _connectionBroken();
                 }
             }
         }
 
-        function _metaHandshake(message)
-        {
-            if (message.successful)
-            {
+        function _metaHandshake(message) {
+            if (message.successful) {
                 _connectionInitialized();
             }
         }
@@ -287,20 +248,16 @@
         $.cometd.addListener('/meta/connect', _metaConnect);
 
         // Restore the state, if present
-        if (state)
-        {
-            setTimeout(function()
-            {
+        if (state) {
+            setTimeout(function() {
                 // This will perform the handshake
                 _self.join(state.username);
             }, 0);
         }
 
-        $(window).unload(function()
-        {
+        $(window).unload(function() {
             // Save the application state only if the user was chatting
-            if (_username)
-            {
+            if (_username) {
                 $.cometd.reload();
                 var expires = new Date();
                 expires.setTime(expires.getTime() + 5 * 1000);
@@ -308,11 +265,10 @@
                     username: _username,
                     useServer: $('#useServer').prop('checked'),
                     altServer: $('#altServer').val()
-                }), { 'max-age': 5, expires: expires });
+                }), {'max-age': 5, expires: expires});
                 $.cometd.getTransport().abort();
             }
-            else
-            {
+            else {
                 $.cometd.disconnect();
             }
         });

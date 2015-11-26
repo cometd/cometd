@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 angular.module('cometd-ack', ['cometd'])
-    .run(['cometd', function(cometd)
-    {
+    .run(['cometd', function(cometd) {
         cometd.registerExtension('ack', new org.cometd.AckExtension());
     }]);

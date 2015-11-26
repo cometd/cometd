@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 angular.module('cometd-reload', ['ngCookies', 'cometd'])
-    .run(['$cookies', 'cometd', function($cookies, cometd)
-    {
+    .run(['$cookies', 'cometd', function($cookies, cometd) {
         org.cometd.COOKIE.get = $cookies.get;
         org.cometd.COOKIE.set = $cookies.put;
 

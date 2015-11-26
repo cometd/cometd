@@ -2,7 +2,7 @@ angular.module('cometdAngularChat', ['cometd-reload'])
     .directive('cometdEnter', function() {
         return function(scope, element, attrs) {
             element.bind("keydown keypress", function(event) {
-                if(event.which === 13) {
+                if (event.which === 13) {
                     scope.$apply(function() {
                         scope.$eval(attrs.cometdEnter);
                     });
@@ -132,14 +132,12 @@ angular.module('cometdAngularChat', ['cometd-reload'])
             $scope.members = message.data;
         };
 
-        function _subscribe()
-        {
+        function _subscribe() {
             $scope.chatSubscription = cometd.subscribe('/chat/demo', $scope.receive);
             $scope.membersSubscription = cometd.subscribe('/members/demo', $scope.membership);
         }
 
-        function _connectionEstablished()
-        {
+        function _connectionEstablished() {
             // Connection established (maybe not for the first time),
             // so just tell the local user and update membership.
             $scope.receive({
@@ -154,8 +152,7 @@ angular.module('cometdAngularChat', ['cometd-reload'])
             });
         }
 
-        function _connectionBroken()
-        {
+        function _connectionBroken() {
             $scope.receive({
                 data: {
                     user: 'system',
@@ -165,8 +162,7 @@ angular.module('cometdAngularChat', ['cometd-reload'])
             $scope.members = [];
         }
 
-        function _connectionClosed()
-        {
+        function _connectionClosed() {
             $scope.receive({
                 data: {
                     user: 'system',
@@ -175,8 +171,7 @@ angular.module('cometdAngularChat', ['cometd-reload'])
             });
         }
 
-        function _metaHandshake(message)
-        {
+        function _metaHandshake(message) {
             if (message.successful) {
                 cometd.batch(function() {
                     _subscribe();
@@ -189,8 +184,7 @@ angular.module('cometdAngularChat', ['cometd-reload'])
             }
         }
 
-        function _metaConnect(message)
-        {
+        function _metaConnect(message) {
             if (!$scope.joined) {
                 $scope.connected = false;
                 _connectionClosed();

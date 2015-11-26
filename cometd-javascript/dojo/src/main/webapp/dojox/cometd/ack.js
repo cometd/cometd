@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 define(['org/cometd/AckExtension', 'dojox/cometd'],
-        function(AckExtension, cometd)
-{
-    var result = new AckExtension();
-    cometd.registerExtension('ack', result);
-    return result;
-});
+    function(AckExtension, cometd) {
+        var result = new AckExtension();
+        cometd.registerExtension('ack', result);
+        return result;
+    });

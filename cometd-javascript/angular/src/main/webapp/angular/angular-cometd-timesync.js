@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 angular.module('cometd-timesync', ['cometd'])
-    .run(['cometd', function(cometd)
-    {
+    .run(['cometd', function(cometd) {
         cometd.registerExtension('timesync', new org.cometd.TimeSyncExtension());
     }]);
