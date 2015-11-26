@@ -15,14 +15,14 @@
  */
 package org.cometd.javascript;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractCometDWebSocketTest
 {
@@ -62,14 +62,15 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         // First connect returns immediately (time = 0)
         // Second connect is delayed, but client is not aware of this
         // MaxNetworkDelay elapses, second connect is failed on the client (time = metaConnectPeriod + maxNetworkDelay)
-        //   + Connection is closed
+        //   + Connection is closed by client
         // Client sends third connect and is replied by the server
         // Fourth connect is sent and is held by the server
         // Delay elapses (time = metaConnectPeriod + 1.5 * maxNetworkDelay)
         // Second connect is processed on server and held
         //   + Fourth connect is canceled and not replied
+        //     + Connection is closed by server
         // MaxNetworkDelay elapses, fourth connect is failed on the client (time = 2 * metaConnectPeriod + 2 * maxNetworkDelay)
-        //   + Connection is closed
+        //   + Connection is closed by client
         // Client sends fifth connect and is replied by the server
         // Sixth connect is sent and is held by the server
         //   + Second connect is canceled and not replied

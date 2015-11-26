@@ -1,14 +1,14 @@
 (function($) {
     $(document).ready(function() {
         // Check if there was a saved application state
-        var stateCookie = org.cometd.COOKIE ? org.cometd.COOKIE.get('org.cometd.demo.state') : null;
+        var stateCookie = org.cometd.COOKIE?org.cometd.COOKIE.get('org.cometd.demo.state'):null;
         var state = stateCookie ? org.cometd.JSON.fromJSON(stateCookie) : null;
         var chat = new Chat(state);
 
         // restore some values
         if (state) {
             $('#username').val(state.username);
-            $('#useServer').prop('checked', state.useServer);
+            $('#useServer').prop('checked',state.useServer);
             $('#altServer').val(state.altServer);
         }
 

@@ -93,29 +93,31 @@ org.cometd.CometD = function(name) {
             }
 
             for (var propName in object) {
-                var prop = _fieldValue(object, propName);
-                var targ = _fieldValue(result, propName);
+                if (object.hasOwnProperty(propName)) {
+                    var prop = _fieldValue(object, propName);
+                    var targ = _fieldValue(result, propName);
 
-                // Avoid infinite loops
-                if (prop === target) {
-                    continue;
-                }
-                // Do not mixin undefined values
-                if (prop === undefined) {
-                    continue;
-                }
+                    // Avoid infinite loops
+                    if (prop === target) {
+                        continue;
+                    }
+                    // Do not mixin undefined values
+                    if (prop === undefined) {
+                        continue;
+                    }
 
-                if (deep && typeof prop === 'object' && prop !== null) {
-                    if (prop instanceof Array) {
-                        result[propName] = this._mixin(deep, targ instanceof Array ? targ : [], prop);
+                    if (deep && typeof prop === 'object' && prop !== null) {
+                        if (prop instanceof Array) {
+                            result[propName] = this._mixin(deep, targ instanceof Array ? targ : [], prop);
+                        }
+                        else {
+                            var source = typeof targ === 'object' && !(targ instanceof Array) ? targ : {};
+                            result[propName] = this._mixin(deep, source, prop);
+                        }
                     }
                     else {
-                        var source = typeof targ === 'object' && !(targ instanceof Array) ? targ : {};
-                        result[propName] = this._mixin(deep, source, prop);
+                        result[propName] = prop;
                     }
-                }
-                else {
-                    result[propName] = prop;
                 }
             }
         }
@@ -152,7 +154,7 @@ org.cometd.CometD = function(name) {
             if (_isFunction(logger)) {
                 var now = new Date();
                 [].splice.call(args, 0, 0, _zeroPad(now.getHours(), 2) + ':' + _zeroPad(now.getMinutes(), 2) + ':' +
-                    _zeroPad(now.getSeconds(), 2) + '.' + _zeroPad(now.getMilliseconds(), 3));
+                        _zeroPad(now.getSeconds(), 2) + '.' + _zeroPad(now.getMilliseconds(), 3));
                 logger.apply(window.console, args);
             }
         }
@@ -191,7 +193,7 @@ org.cometd.CometD = function(name) {
         _cometd._debug('Configuring cometd object with', configuration);
         // Support old style param, where only the Bayeux server URL was passed
         if (_isString(configuration)) {
-            configuration = {url: configuration};
+            configuration = { url: configuration };
         }
         if (!configuration) {
             configuration = {};
@@ -252,10 +254,12 @@ org.cometd.CometD = function(name) {
 
     function _clearSubscriptions() {
         for (var channel in _listeners) {
-            var subscriptions = _listeners[channel];
-            if (subscriptions) {
-                for (var i = 0; i < subscriptions.length; ++i) {
-                    _removeSubscription(subscriptions[i]);
+            if (_listeners.hasOwnProperty(channel)) {
+                var subscriptions = _listeners[channel];
+                if (subscriptions) {
+                    for (var i = 0; i < subscriptions.length; ++i) {
+                        _removeSubscription(subscriptions[i]);
+                    }
                 }
             }
         }
@@ -553,7 +557,7 @@ org.cometd.CometD = function(name) {
             // instead of being held by the server, so that connect listeners
             // can be notified that the connection has been re-established
             if (!_connected) {
-                bayeuxMessage.advice = {timeout: 0};
+                bayeuxMessage.advice = { timeout: 0 };
             }
 
             _setStatus('connecting');
@@ -1637,7 +1641,7 @@ org.cometd.CometD = function(name) {
                     error: '406::timeout',
                     successful: false,
                     failure: {
-                        message: bayeuxMessage,
+                        message : bayeuxMessage,
                         reason: 'Remote Call Timeout'
                     }
                 });
@@ -1821,7 +1825,7 @@ org.cometd.CometD = function(name) {
         if (_transport && typeof _config.urls === 'object') {
             var url = _config.urls[_transport.getType()];
             if (url) {
-                return url;
+                return  url;
             }
         }
         return _config.url;
