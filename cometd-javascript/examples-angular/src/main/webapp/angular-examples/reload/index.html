@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CometD Angular Reload Demo</title>
+    <script type="text/javascript" src="../../angular/angular-1.4.7.js"></script>
+    <script type="text/javascript" src="../../org/cometd.js"></script>
+    <script type="text/javascript" src="../../org/cometd/ReloadExtension.js"></script>
+    <script type="text/javascript" src="../../angular/angular-cometd.js"></script>
+    <script type="text/javascript" src="../../angular/angular-cometd-reload.js"></script>
+    <script type="text/javascript" src="application.js"></script>
+</head>
+<body ng-app="cometdReloadApp">
+
+<h1>CometD Reload Demo</h1>
+
+<a href="../..">Main Demo index</a>
+
+<br/>
+
+<p>
+    This test shows how a page can be loaded and resume a CometD connection with the same
+    client ID.  This allows site navigation and page loads to be done without needing to
+    reestablish an entire CometD session on the server (the client still needs to resubscribe
+    so that it can define local callbacks in the newly loaded page).
+</p>
+
+<blockquote>
+    <a href=".">RELOAD</a>,
+    <a href="../../dojo-examples/reload/">DOJO</a>,
+    <a href="../../jquery-examples/reload/">JQUERY</a>
+</blockquote>
+
+<p>
+    The ID's below should be the same after this page is reloaded:
+</p>
+
+<blockquote ng-controller="cometdReload">
+    <table>
+        <tr>
+            <td>Previous ID:</td>
+            <td><span id="previous">{{previous}}</span></td>
+        </tr>
+        <tr>
+            <td>Current ID:</td>
+            <td><span id="current">{{current}}</span></td>
+        </tr>
+        <tr>
+            <td>Advice:</td>
+            <td>
+                <pre id="advice">{{advice}}</pre>
+            </td>
+        </tr>
+    </table>
+</blockquote>
+
+<p>
+    A full fledged reload example is available in the <a href="../chat/">Angular Chat Demo</a>.
+</p>
+
+</body>
+</html>

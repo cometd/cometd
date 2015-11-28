@@ -58,7 +58,7 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest
         // Wait to allow the long poll to go to the server and tell it the ack id
         Thread.sleep(1000);
 
-        // Calling reload() results in the cookie being written
+        // Calling reload() results in the state being saved.
         evaluateScript("cometd.reload();");
 
         // Reload the page, and simulate that a message has been received meanwhile on server

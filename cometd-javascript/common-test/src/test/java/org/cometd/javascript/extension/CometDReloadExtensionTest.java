@@ -39,19 +39,18 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
-        String cookieName = "reload.test";
+        String attributeName = "reload.test";
         evaluateScript("" +
                 "cometd.unregisterExtension('reload');" +
                 "cometd.registerExtension('reload', new org.cometd.ReloadExtension({" +
-                "    cookieName: '" + cookieName + "'," +
-                "    cookiePath: '/test'," +
-                "    cookieMaxAge: 4" +
+                "    name: '" + attributeName + "'" +
                 "}));" +
                 "" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/connect', function(message) " +
-                "{ " +
-                "   if (message.successful) readyLatch.countDown(); " +
+                "cometd.addListener('/meta/connect', function(message) {" +
+                "   if (message.successful) {" +
+                "       readyLatch.countDown();" +
+                "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
@@ -60,8 +59,8 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         Thread.sleep(metaConnectPeriod / 2);
 
         evaluateScript("cometd.reload();");
-        String cookies = evaluateScript("window.document.cookie");
-        Assert.assertTrue(cookies.startsWith(cookieName + "="));
+        String reloadState = evaluateScript("window.sessionStorage.getItem('" + attributeName + "');");
+        Assert.assertNotNull(reloadState);
 
         evaluateScript("cometd.disconnect(true)");
     }
@@ -149,7 +148,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         // Wait that the long poll is established before reloading
         Thread.sleep(metaConnectPeriod / 2);
 
-        // Calling reload() results in the cookie being written
+        // Calling reload() results in the state being saved.
         evaluateScript("cometd.reload();");
 
         // Reload the page
@@ -224,7 +223,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         // Get the clientId
         String clientId = evaluateScript("cometd.getClientId();");
 
-        // Calling reload() results in the cookie being written
+        // Calling reload() results in the state being saved.
         evaluateScript("cometd.reload();");
 
         // Reload the page
@@ -256,9 +255,9 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         evaluateScript("cometd.disconnect();");
         Thread.sleep(1000);
 
-        // Be sure the cookie has been removed on disconnect
-        Boolean noCookie = evaluateScript("org.cometd.COOKIE.get('org.cometd.reload') == null;");
-        Assert.assertTrue(noCookie);
+        // Be sure the sessionStorage attribute has been removed on disconnect
+        Boolean reloadState = evaluateScript("window.sessionStorage.getItem('org.cometd.reload') == null;");
+        Assert.assertTrue(reloadState);
     }
 
     @Test
@@ -335,7 +334,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         Latch latch = get("latch");
         Assert.assertTrue(latch.await(5000));
 
-        // Calling reload() results in the cookie being written
+        // Calling reload() results in the state being saved.
         evaluateScript("cometd.reload();");
 
         // Reload the page

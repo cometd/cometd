@@ -59,6 +59,7 @@ public abstract class AbstractCometDTest
         }
     };
     private final JavaScriptCookieStore.Store cookieStore = new JavaScriptCookieStore.Store();
+    private final Map<String, String> sessionStore = new HashMap<>();
     protected TestProvider provider;
     protected Server server;
     protected ServerConnector connector;
@@ -213,6 +214,11 @@ public abstract class AbstractCometDTest
             jsContext.evaluateString(rootScope, "var wsConnector = new WebSocketConnector(cookies);", "wsConnector", 1, null);
             wsConnector = (WebSocketConnector)rootScope.get("wsConnector", rootScope);
             wsConnector.start();
+
+            ScriptableObject.defineClass(rootScope, SessionStorage.class);
+            jsContext.evaluateString(rootScope, "var sessionStorage = new SessionStorage();", "sessionStorage", 1, null);
+            SessionStorage sessionStorage = (SessionStorage)rootScope.get("sessionStorage", rootScope);
+            sessionStorage.setStore(sessionStore);
         }
         finally
         {

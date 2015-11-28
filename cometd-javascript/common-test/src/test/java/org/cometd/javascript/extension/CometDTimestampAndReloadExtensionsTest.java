@@ -40,14 +40,14 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTest
         // Get the clientId
         String clientId = evaluateScript("cometd.getClientId();");
 
-        // Calling reload() results in the cookie being written
+        // Calling reload() results in the state being saved.
         evaluateScript("cometd.reload();");
 
         // Reload the page
         destroyPage();
         initPage();
 
-        evaluateScript("cometd.setLogLevel('debug');");
+        evaluateScript("cometd.setLogLevel('" + getLogLevel() + "');");
         provideTimestampExtension();
         provideReloadExtension();
 

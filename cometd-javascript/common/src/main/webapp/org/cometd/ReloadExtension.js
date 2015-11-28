@@ -16,37 +16,25 @@
 
 (function() {
     function bind(org_cometd) {
-        if (!org_cometd.COOKIE) {
-            org_cometd.COOKIE = {};
-            org_cometd.COOKIE.set = function(name, value, options) {
-                throw 'Abstract';
-            };
-            org_cometd.COOKIE.get = function(name) {
-                throw 'Abstract';
-            };
-        }
-
         /**
          * The reload extension allows a page to be loaded (or reloaded)
          * without having to re-handshake in the new (or reloaded) page,
-         * therefore resuming the existing cometd connection.
+         * therefore resuming the existing CometD connection.
          *
-         * When the reload() method is called, the state of the cometd
-         * connection and of the cometd subscriptions is stored in a cookie
-         * with a short max-age.
+         * When the reload() method is called, the state of the CometD
+         * connection is stored in the window.sessionStorage object.
          * The reload() method must therefore be called by page unload
          * handlers, often provided by JavaScript toolkits.
          *
-         * When the page is (re)loaded, this extension checks the cookie
-         * and restores the cometd connection and the cometd subscriptions.
+         * When the page is (re)loaded, this extension checks the
+         * window.sessionStorage and restores the CometD connection,
+         * maintaining the same CometD clientId.
          */
         return org_cometd.ReloadExtension = function(configuration) {
             var _cometd;
             var _debug;
             var _state = {};
-            var _cookieName = 'org.cometd.reload';
-            var _cookiePath = '/';
-            var _cookieMaxAge = 5;
+            var _name = 'org.cometd.reload';
             var _batch = false;
             var _reloading = false;
 
@@ -58,14 +46,9 @@
                         transport.abort();
                     }
                     _configure(config);
-                    _state.cookiePath = _cookiePath;
-                    var cookie = org_cometd.JSON.toJSON(_state);
-                    _debug('Reload extension saving cookie value', cookie);
-                    org_cometd.COOKIE.set(_cookieName, cookie, {
-                        'max-age': _cookieMaxAge,
-                        path: _cookiePath,
-                        expires: new Date(new Date().getTime() + _cookieMaxAge * 1000)
-                    });
+                    var state = org_cometd.JSON.toJSON(_state);
+                    _debug('Reload extension saving state', state);
+                    sessionStorage.setItem(_name, state);
                 }
             }
 
@@ -80,14 +63,8 @@
 
             function _configure(config) {
                 if (config) {
-                    if (typeof config.cookieMaxAge === 'number') {
-                        _cookieMaxAge = config.cookieMaxAge;
-                    }
-                    if (typeof config.cookieName === 'string') {
-                        _cookieName = config.cookieName;
-                    }
-                    if (typeof config.cookiePath === 'string') {
-                        _cookiePath = config.cookiePath;
+                    if (typeof config.name === 'string') {
+                        _name = config.name;
                     }
                 }
             }
@@ -112,19 +89,15 @@
                         _state = {};
                         _state.url = _cometd.getURL();
 
-                        var cookie = org_cometd.COOKIE.get(_cookieName);
-                        _debug('Reload extension found cookie value', cookie);
+                        var state = sessionStorage.getItem(_name);
+                        _debug('Reload extension found state', state);
                         // Is there a saved handshake response from a prior load ?
-                        if (cookie) {
+                        if (state) {
                             try {
-                                var oldState = org_cometd.JSON.fromJSON(cookie);
+                                var oldState = org_cometd.JSON.fromJSON(state);
 
-                                // Remove the cookie, not needed anymore
-                                org_cometd.COOKIE.set(_cookieName, '', {
-                                    'max-age': -1,
-                                    path: oldState.cookiePath,
-                                    expires: -1
-                                });
+                                // Remove the state, not needed anymore
+                                sessionStorage.removeItem(_name);
 
                                 if (oldState.handshakeResponse && _similarState(oldState)) {
                                     _debug('Reload extension restoring state', oldState);
@@ -146,7 +119,9 @@
                                             // Keep the response message id the same as the request.
                                             id: message.id,
                                             // Tells applications this is a handshake replayed by the reload extension.
-                                            ext: {reload: true}
+                                            ext: {
+                                                reload: true
+                                            }
                                         });
                                         // Use the same transport as before.
                                         response.supportedConnectionTypes = [_state.transportType];
@@ -172,7 +147,7 @@
                                 }
                             }
                             catch (x) {
-                                _debug('Reload extension error while trying to restore cookie', x);
+                                _debug('Reload extension error while trying to restore state', x);
                             }
                         }
                         break;

@@ -894,4 +894,6 @@ var window = this;
         };
     }();
 
+    window.sessionStorage = sessionStorage;
+
 })();

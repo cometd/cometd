@@ -13,12 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-define(['org/cometd', 'dojo/cookie', 'org/cometd/ReloadExtension', 'dojox/cometd'],
-    function(org_cometd, cookie, ReloadExtension, cometd) {
-        // Remap cometd COOKIE functions to dojo cookie functions
-        org_cometd.COOKIE.set = cookie;
-        org_cometd.COOKIE.get = cookie;
-
+define(['org/cometd/ReloadExtension', 'dojox/cometd'],
+    function(ReloadExtension, cometd) {
         var result = new ReloadExtension();
         cometd.registerExtension('reload', result);
         return result;

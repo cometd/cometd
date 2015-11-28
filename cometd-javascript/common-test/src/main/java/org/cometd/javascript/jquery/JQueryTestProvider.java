@@ -58,7 +58,6 @@ public class JQueryTestProvider implements TestProvider
 
     public void provideReloadExtension(ThreadModel threadModel, String contextURL) throws Exception
     {
-        threadModel.evaluate(new URL(contextURL + "/jquery/jquery.cookie.js"));
         threadModel.evaluate(new URL(contextURL + "/org/cometd/ReloadExtension.js"));
         threadModel.evaluate(new URL(contextURL + "/jquery/jquery.cometd-reload.js"));
     }

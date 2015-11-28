@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-angular.module('cometd-reload', ['ngCookies', 'cometd'])
-    .run(['$cookies', 'cometd', function($cookies, cometd) {
-        org.cometd.COOKIE.get = $cookies.get;
-        org.cometd.COOKIE.set = $cookies.put;
-
+angular.module('cometd-reload', ['cometd'])
+    .run(['cometd', function(cometd) {
         cometd.registerExtension('reload', new org.cometd.ReloadExtension());
     }]);

@@ -8,18 +8,12 @@ require({
     ['jquery', 'jquery.cometd', 'jquery.cometd-reload'],
     function($, cometd) {
         $(document).ready(function() {
-            cometd.getExtension('reload').configure({cookieMaxAge: 10});
-
             /* handshake listener to report client IDs */
             cometd.addListener('/meta/handshake', function(message) {
                 if (message.successful) {
-                    $('#previous').html(org.cometd.COOKIE.get('demoLastCometDID'));
+                    $('#previous').html(sessionStorage.getItem('demoLastCometDID'));
                     $('#current').html(message.clientId);
-                    org.cometd.COOKIE.set('demoLastCometDID', message.clientId, {
-                        'max-age': 300,
-                        path: '/',
-                        expires: new Date(new Date().getTime() + 300 * 1000)
-                    });
+                    sessionStorage.setItem('demoLastCometDID', message.clientId);
                 }
                 else {
                     $('#previous').html('Handshake Failed');
@@ -43,9 +37,7 @@ require({
 
             /* Setup reload extension */
             $(window).unload(function() {
-                cometd.reload({
-                    cookieMaxAge: 8
-                });
+                cometd.reload();
             });
         });
     });

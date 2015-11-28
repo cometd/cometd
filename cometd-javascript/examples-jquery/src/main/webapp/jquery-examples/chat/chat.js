@@ -1,8 +1,10 @@
 (function($) {
+    var _stateAttribute = 'org.cometd.demo.state';
     $(document).ready(function() {
         // Check if there was a saved application state
-        var stateCookie = org.cometd.COOKIE?org.cometd.COOKIE.get('org.cometd.demo.state'):null;
-        var state = stateCookie ? org.cometd.JSON.fromJSON(stateCookie) : null;
+        var jsonState = sessionStorage.getItem(_stateAttribute);
+        sessionStorage.removeItem(_stateAttribute);
+        var state = jsonState ? org.cometd.JSON.fromJSON(jsonState) : null;
         var chat = new Chat(state);
 
         // restore some values
@@ -259,13 +261,11 @@
             // Save the application state only if the user was chatting
             if (_username) {
                 $.cometd.reload();
-                var expires = new Date();
-                expires.setTime(expires.getTime() + 5 * 1000);
-                org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
+                sessionStorage.setItem(_stateAttribute, org.cometd.JSON.toJSON({
                     username: _username,
                     useServer: $('#useServer').prop('checked'),
                     altServer: $('#altServer').val()
-                }), {'max-age': 5, expires: expires});
+                }));
                 $.cometd.getTransport().abort();
             }
             else {

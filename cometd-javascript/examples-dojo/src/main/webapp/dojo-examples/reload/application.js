@@ -10,13 +10,9 @@ require({
         /* handshake listener to report client IDs */
         cometd.addListener("/meta/handshake", function(message) {
             if (message.successful) {
-                dom.byId('previous').innerHTML = org.cometd.COOKIE.get('demoLastCometDID');
+                dom.byId('previous').innerHTML = sessionStorage.getItem('demoLastCometDID');
                 dom.byId('current').innerHTML = message.clientId;
-                org.cometd.COOKIE.set('demoLastCometDID', message.clientId, {
-                    'max-age': 300,
-                    path: '/',
-                    expires: new Date(new Date().getTime() + 300 * 1000)
-                });
+                sessionStorage.setItem('demoLastCometDID', message.clientId);
             }
             else {
                 dom.byId('previous').innerHTML = 'Handshake Failed';
