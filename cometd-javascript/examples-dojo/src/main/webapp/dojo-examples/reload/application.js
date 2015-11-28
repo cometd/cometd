@@ -23,7 +23,7 @@ require({
         /* connect listener to report advice */
         cometd.addListener("/meta/connect", function(message) {
             if (message.advice) {
-                dom.byId('advice').innerHTML = org.cometd.JSON.toJSON(message.advice);
+                dom.byId('advice').innerHTML = JSON.stringify(message.advice);
             }
         });
 

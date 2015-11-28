@@ -213,7 +213,7 @@ angular.module('cometdAngularChat', ['cometd-reload'])
         var item = $window.sessionStorage.getItem(stateKey);
         if (item) {
             $window.sessionStorage.removeItem(stateKey);
-            var state = org.cometd.JSON.fromJSON(item);
+            var state = JSON.parse(item);
             $scope.userName = state.userName;
             $scope.useServer = state.useServer;
             $scope.altServer = state.altServer;
@@ -227,7 +227,7 @@ angular.module('cometdAngularChat', ['cometd-reload'])
             // Save the application state only if the user was chatting.
             if ($scope.userName) {
                 cometd.reload();
-                $window.sessionStorage.setItem(stateKey, org.cometd.JSON.toJSON({
+                $window.sessionStorage.setItem(stateKey, JSON.stringify({
                     userName: $scope.userName,
                     useServer: $scope.useServer,
                     altServer: $scope.altServer

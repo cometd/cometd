@@ -123,7 +123,7 @@
                         l: _lag,
                         o: _offset
                     };
-                    _debug('TimeSyncExtension: client sending timesync', org_cometd.JSON.toJSON(message.ext.timesync));
+                    _debug('TimeSyncExtension: client sending timesync', message.ext.timesync);
                 }
                 return message;
             };

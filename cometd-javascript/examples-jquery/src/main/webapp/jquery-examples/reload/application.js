@@ -24,7 +24,7 @@ require({
             /* connect listener to report advice */
             cometd.addListener('/meta/connect', function(message) {
                 if (message.advice) {
-                    $('#advice').html(org.cometd.JSON.toJSON(message.advice));
+                    $('#advice').html(JSON.stringify(message.advice));
                 }
             });
 

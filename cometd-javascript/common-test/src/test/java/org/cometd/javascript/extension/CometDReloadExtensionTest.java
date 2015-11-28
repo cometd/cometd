@@ -121,8 +121,8 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
 
         evaluateScript("" +
                 "window.assert(ext !== undefined, 'ext must be present');" +
-                "window.assert(ext.reload === true, 'ext.reload must be true: ' + org.cometd.JSON.toJSON(ext));" +
-                "window.assert(ext.foo === true, 'ext.foo must be true: ' + org.cometd.JSON.toJSON(ext));");
+                "window.assert(ext.reload === true, 'ext.reload must be true: ' + JSON.stringify(ext));" +
+                "window.assert(ext.foo === true, 'ext.foo must be true: ' + JSON.stringify(ext));");
 
         evaluateScript("cometd.disconnect(true)");
     }
@@ -386,7 +386,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
                 "var _receive = cometd.receive;" +
                 "cometd.receive = function(message)" +
                 "{" +
-                "   cometd._debug('Received message', org.cometd.JSON.toJSON(message));" +
+                "   cometd._debug('Received message', JSON.stringify(message));" +
                 "   _receive(message);" +
                 "   if (message.channel === '/meta/handshake')" +
                 "       rcvHandshake = message;" +

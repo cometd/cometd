@@ -15,10 +15,6 @@
  */
 (function() {
     function bind($, org_cometd) {
-        // Remap cometd JSON functions to jquery JSON functions.
-        org_cometd.JSON.toJSON = JSON.stringify;
-        org_cometd.JSON.fromJSON = JSON.parse;
-
         function _setHeaders(xhr, headers) {
             if (headers) {
                 for (var headerName in headers) {

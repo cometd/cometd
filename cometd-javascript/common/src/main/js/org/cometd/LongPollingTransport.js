@@ -23,7 +23,7 @@ org.cometd.LongPollingTransport = function() {
                 url: envelope.url,
                 sync: envelope.sync,
                 headers: this.getConfiguration().requestHeaders,
-                body: org.cometd.JSON.toJSON(envelope.messages),
+                body: JSON.stringify(envelope.messages),
                 onSuccess: function(response) {
                     self._debug('Transport', self.getType(), 'received response', response);
                     var success = false;

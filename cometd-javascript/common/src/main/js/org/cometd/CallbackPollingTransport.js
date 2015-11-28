@@ -28,7 +28,7 @@ org.cometd.CallbackPollingTransport = function() {
         while (length > 0) {
             // Encode the messages because all brackets, quotes, commas, colons, etc
             // present in the JSON will be URL encoded, taking many more characters
-            var json = org.cometd.JSON.toJSON(envelope.messages.slice(start, start + length));
+            var json = JSON.stringify(envelope.messages.slice(start, start + length));
             var urlLength = envelope.url.length + encodeURI(json).length;
 
             var maxLength = this.getConfiguration().maxURILength;
@@ -82,7 +82,7 @@ org.cometd.CallbackPollingTransport = function() {
                 url: envelopeToSend.url,
                 sync: envelopeToSend.sync,
                 headers: this.getConfiguration().requestHeaders,
-                body: org.cometd.JSON.toJSON(envelopeToSend.messages),
+                body: JSON.stringify(envelopeToSend.messages),
                 onSuccess: function(responses) {
                     var success = false;
                     try {

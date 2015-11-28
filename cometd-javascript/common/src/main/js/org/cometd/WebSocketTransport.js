@@ -140,7 +140,7 @@ org.cometd.WebSocketTransport = function() {
     }
 
     function _webSocketSend(context, envelope, metaConnect) {
-        var json = org.cometd.JSON.toJSON(envelope.messages);
+        var json = JSON.stringify(envelope.messages);
         context.webSocket.send(json);
         this._debug('Transport', this.getType(), 'sent', envelope, 'metaConnect =', metaConnect);
 

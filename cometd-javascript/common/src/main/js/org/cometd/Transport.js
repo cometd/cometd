@@ -57,7 +57,7 @@ org.cometd.Transport = function() {
     this.convertToMessages = function(response) {
         if (org.cometd.Utils.isString(response)) {
             try {
-                return org.cometd.JSON.fromJSON(response);
+                return JSON.parse(response);
             }
             catch (x) {
                 this._debug('Could not convert to JSON the following string', '"' + response + '"');

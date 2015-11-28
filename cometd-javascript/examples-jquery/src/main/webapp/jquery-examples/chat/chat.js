@@ -1,10 +1,10 @@
 (function($) {
-    var _stateAttribute = 'org.cometd.demo.state';
+    var stateKey = 'org.cometd.demo.state';
     $(document).ready(function() {
         // Check if there was a saved application state
-        var jsonState = sessionStorage.getItem(_stateAttribute);
-        sessionStorage.removeItem(_stateAttribute);
-        var state = jsonState ? org.cometd.JSON.fromJSON(jsonState) : null;
+        var jsonState = sessionStorage.getItem(stateKey);
+        sessionStorage.removeItem(stateKey);
+        var state = jsonState ? JSON.parse(jsonState) : null;
         var chat = new Chat(state);
 
         // restore some values
@@ -261,7 +261,7 @@
             // Save the application state only if the user was chatting
             if (_username) {
                 $.cometd.reload();
-                sessionStorage.setItem(_stateAttribute, org.cometd.JSON.toJSON({
+                sessionStorage.setItem(stateKey, JSON.stringify({
                     username: _username,
                     useServer: $('#useServer').prop('checked'),
                     altServer: $('#altServer').val()

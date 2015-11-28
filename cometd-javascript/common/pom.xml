@@ -56,7 +56,6 @@
                                     <includes>
                                         <include>${jsTargetDir}/org/cometd/cometd-header.js</include>
                                         <include>${jsTargetDir}/org/cometd/cometd-namespace.js</include>
-                                        <include>${jsTargetDir}/org/cometd/cometd-json.js</include>
                                         <include>${jsTargetDir}/org/cometd/Utils.js</include>
                                         <include>${jsTargetDir}/org/cometd/TransportRegistry.js</include>
                                         <include>${jsTargetDir}/org/cometd/Transport.js</include>

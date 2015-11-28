@@ -15,9 +15,6 @@
  */
 angular.module('cometd', [])
     .factory('cometd', ['$rootScope', '$http', function($rootScope, $http) {
-        org.cometd.JSON.toJSON = angular.toJson;
-        org.cometd.JSON.fromJSON = angular.fromJson;
-
         function LongPollingTransport() {
             var _super = new org.cometd.LongPollingTransport();
             var that = org.cometd.Transport.derive(_super);

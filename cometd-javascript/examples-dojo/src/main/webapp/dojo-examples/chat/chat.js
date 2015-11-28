@@ -1,5 +1,6 @@
 require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "dojox/cometd/reload"],
     function(dojo, cometd) {
+        var stateKey = 'org.cometd.demo.state';
         var room = {
             _lastUser: null,
             _username: null,
@@ -40,10 +41,11 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
                 dojo.query("#leaveButton").onclick(room, "leave");
 
                 // Check if there was a saved application state
-                var stateCookie = dojo.cookie('org.cometd.demo.state');
-                var state = stateCookie ? dojo.fromJson(stateCookie) : null;
+                var stateCookie = sessionStorage.getItem(stateKey);
+                var state = stateCookie ? JSON.parse(stateCookie) : null;
                 // Restore the state, if present
                 if (state) {
+                    sessionStorage.removeItem(stateKey);
                     dojo.byId('username').value = state.username;
                     setTimeout(function() {
                         // This will perform the handshake
@@ -249,10 +251,9 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
         dojo.addOnUnload(function() {
             if (room._username) {
                 cometd.reload();
-                dojo.cookie('org.cometd.demo.state', dojo.toJson({
+                sessionStorage.setItem(stateKey, JSON.stringify({
                     username: room._username
-                }), {'max-age': 5});
-                cometd.getTransport().abort();
+                }));
             }
             else {
                 cometd.disconnect();

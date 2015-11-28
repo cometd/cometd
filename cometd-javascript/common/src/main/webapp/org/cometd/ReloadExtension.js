@@ -46,7 +46,7 @@
                         transport.abort();
                     }
                     _configure(config);
-                    var state = org_cometd.JSON.toJSON(_state);
+                    var state = JSON.stringify(_state);
                     _debug('Reload extension saving state', state);
                     sessionStorage.setItem(_name, state);
                 }
@@ -94,7 +94,7 @@
                         // Is there a saved handshake response from a prior load ?
                         if (state) {
                             try {
-                                var oldState = org_cometd.JSON.fromJSON(state);
+                                var oldState = JSON.parse(state);
 
                                 // Remove the state, not needed anymore
                                 sessionStorage.removeItem(_name);

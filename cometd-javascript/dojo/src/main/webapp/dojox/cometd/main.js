@@ -15,10 +15,6 @@
  */
 define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/request/script'],
     function(org_cometd, JSON, dojox, dojoXHR, dojoSCRIPT) {
-        // Remap cometd JSON functions to dojo JSON functions
-        org_cometd.JSON.toJSON = JSON.stringify;
-        org_cometd.JSON.fromJSON = JSON.parse;
-
         dojox.CometD = function(name) {
             var cometd = new org_cometd.CometD(name);
 

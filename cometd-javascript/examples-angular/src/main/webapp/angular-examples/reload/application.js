@@ -16,7 +16,7 @@ angular.module('cometdReloadApp', ['cometd-reload'])
         /* /meta/connect listener to report advice */
         cometd.addListener('/meta/connect', function(message) {
             if (message.advice) {
-                $scope.advice = org.cometd.JSON.toJSON(message.advice);
+                $scope.advice = JSON.stringify(message.advice);
             }
         });
 
