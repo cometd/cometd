@@ -15,15 +15,13 @@
  */
 package org.cometd.oort;
 
-import org.cometd.client.BayeuxClient;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.ProtocolFamily;
+import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
@@ -32,6 +30,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.cometd.client.BayeuxClient;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OortMulticastConfigurer extends AbstractLifeCycle
 {
@@ -192,25 +195,56 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
         DatagramChannel sender = DatagramChannel.open();
         sender.setOption(StandardSocketOptions.IP_MULTICAST_TTL, getTimeToLive());
 
+        if (groupAddress == null)
+            groupAddress = InetAddress.getByName("239.255.0.1");
+
+        ProtocolFamily protocolFamily = StandardProtocolFamily.INET;
+        if (groupAddress instanceof Inet6Address)
+            protocolFamily = StandardProtocolFamily.INET6;
+
         // Bind receiver to the given port and bind address
         InetAddress bindTo = getBindAddress();
         InetSocketAddress bindSocketAddress = bindTo == null ? new InetSocketAddress(groupPort) : new InetSocketAddress(bindTo, groupPort);
-        DatagramChannel receiver = DatagramChannel.open()
+        DatagramChannel receiver = DatagramChannel.open(protocolFamily)
                 .setOption(StandardSocketOptions.SO_REUSEADDR, true)
                 .bind(bindSocketAddress);
-
-        if (groupAddress == null)
-            groupAddress = InetAddress.getByName("239.255.0.1");
+        if (logger.isDebugEnabled())
+            logger.debug("Bound multicast receiver to {} with protocol family {}", bindSocketAddress, protocolFamily);
 
         List<NetworkInterface> groupInterfaces = getGroupInterfaces();
         if (groupInterfaces == null)
             groupInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+
+        boolean joined = false;
         for (NetworkInterface groupInterface : groupInterfaces)
         {
-            if (groupInterface.isLoopback() || groupInterface.isPointToPoint() || !groupInterface.supportsMulticast())
+            if (logger.isDebugEnabled())
+                logger.debug("Joining multicast group with {}", groupInterface);
+            if (groupInterface.isLoopback() ||
+                    groupInterface.isPointToPoint() ||
+                    !groupInterface.supportsMulticast() ||
+                    !groupInterface.getInetAddresses().hasMoreElements())
+            {
+                if (logger.isDebugEnabled())
+                    logger.debug("Skipped joining multicast group with {}", groupInterface);
                 continue;
-            receiver.join(groupAddress, groupInterface);
+            }
+
+            try
+            {
+                receiver.join(groupAddress, groupInterface);
+                if (logger.isDebugEnabled())
+                    logger.debug("Joined multicast group with {}", groupInterface);
+                joined = true;
+            }
+            catch (Exception x)
+            {
+                if (logger.isDebugEnabled())
+                    logger.debug("Exception joining multicast group with " + groupInterface, x);
+            }
         }
+        if (!joined)
+            throw new IOException("Could not join multicast group with " + groupInterfaces);
 
         active = true;
 
