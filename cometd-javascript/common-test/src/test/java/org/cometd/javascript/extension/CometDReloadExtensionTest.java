@@ -255,7 +255,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         evaluateScript("cometd.disconnect();");
         Thread.sleep(1000);
 
-        // Be sure the sessionStorage attribute has been removed on disconnect
+        // Be sure the sessionStorage item has been removed on disconnect.
         Boolean reloadState = evaluateScript("window.sessionStorage.getItem('org.cometd.reload') == null;");
         Assert.assertTrue(reloadState);
     }

@@ -40,12 +40,12 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
 
                 dojo.query("#leaveButton").onclick(room, "leave");
 
-                // Check if there was a saved application state
-                var stateCookie = sessionStorage.getItem(stateKey);
+                // Check if there was a saved application state.
+                var stateCookie = window.sessionStorage.getItem(stateKey);
                 var state = stateCookie ? JSON.parse(stateCookie) : null;
-                // Restore the state, if present
+                // Restore the state, if present.
                 if (state) {
-                    sessionStorage.removeItem(stateKey);
+                    window.sessionStorage.removeItem(stateKey);
                     dojo.byId('username').value = state.username;
                     setTimeout(function() {
                         // This will perform the handshake
@@ -251,7 +251,7 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
         dojo.addOnUnload(function() {
             if (room._username) {
                 cometd.reload();
-                sessionStorage.setItem(stateKey, JSON.stringify({
+                window.sessionStorage.setItem(stateKey, JSON.stringify({
                     username: room._username
                 }));
             }

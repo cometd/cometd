@@ -48,7 +48,7 @@
                     _configure(config);
                     var state = JSON.stringify(_state);
                     _debug('Reload extension saving state', state);
-                    sessionStorage.setItem(_name, state);
+                    window.sessionStorage.setItem(_name, state);
                 }
             }
 
@@ -89,7 +89,7 @@
                         _state = {};
                         _state.url = _cometd.getURL();
 
-                        var state = sessionStorage.getItem(_name);
+                        var state = window.sessionStorage.getItem(_name);
                         _debug('Reload extension found state', state);
                         // Is there a saved handshake response from a prior load ?
                         if (state) {
@@ -97,7 +97,7 @@
                                 var oldState = JSON.parse(state);
 
                                 // Remove the state, not needed anymore
-                                sessionStorage.removeItem(_name);
+                                window.sessionStorage.removeItem(_name);
 
                                 if (oldState.handshakeResponse && _similarState(oldState)) {
                                     _debug('Reload extension restoring state', oldState);

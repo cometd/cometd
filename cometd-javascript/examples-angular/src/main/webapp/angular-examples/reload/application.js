@@ -3,9 +3,9 @@ angular.module('cometdReloadApp', ['cometd-reload'])
         /* /meta/handshake listener to report client IDs */
         cometd.addListener('/meta/handshake', function(message) {
             if (message.successful) {
-                $scope.previous = sessionStorage.getItem('demoLastCometDID');
+                $scope.previous = $window.sessionStorage.getItem('demoLastCometDID');
                 $scope.current = message.clientId;
-                sessionStorage.setItem('demoLastCometDID', message.clientId);
+                $window.sessionStorage.setItem('demoLastCometDID', message.clientId);
             }
             else {
                 $scope.previous = 'Handshake Failed';

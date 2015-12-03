@@ -10,9 +10,9 @@ require({
         /* handshake listener to report client IDs */
         cometd.addListener("/meta/handshake", function(message) {
             if (message.successful) {
-                dom.byId('previous').innerHTML = sessionStorage.getItem('demoLastCometDID');
+                dom.byId('previous').innerHTML = window.sessionStorage.getItem('demoLastCometDID');
                 dom.byId('current').innerHTML = message.clientId;
-                sessionStorage.setItem('demoLastCometDID', message.clientId);
+                window.sessionStorage.setItem('demoLastCometDID', message.clientId);
             }
             else {
                 dom.byId('previous').innerHTML = 'Handshake Failed';

@@ -11,9 +11,9 @@ require({
             /* handshake listener to report client IDs */
             cometd.addListener('/meta/handshake', function(message) {
                 if (message.successful) {
-                    $('#previous').html(sessionStorage.getItem('demoLastCometDID'));
+                    $('#previous').html(window.sessionStorage.getItem('demoLastCometDID'));
                     $('#current').html(message.clientId);
-                    sessionStorage.setItem('demoLastCometDID', message.clientId);
+                    window.sessionStorage.setItem('demoLastCometDID', message.clientId);
                 }
                 else {
                     $('#previous').html('Handshake Failed');
