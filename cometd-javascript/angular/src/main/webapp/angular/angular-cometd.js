@@ -78,7 +78,7 @@ angular.module('cometd', [])
             var cometd = new org.cometd.CometD(name);
 
             // Registration order is important.
-            if (org.cometd.WebSocket) {
+            if (window.WebSocket) {
                 var ws = new org.cometd.WebSocketTransport();
                 ws._notifySuccess = _angularize(ws._notifySuccess);
                 ws._notifyFailure = _angularize(ws._notifyFailure);

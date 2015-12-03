@@ -94,7 +94,7 @@
             var cometd = new org_cometd.CometD(name);
 
             // Registration order is important.
-            if (org_cometd.WebSocket) {
+            if (window.WebSocket) {
                 cometd.registerTransport('websocket', new org_cometd.WebSocketTransport());
             }
             cometd.registerTransport('long-polling', new LongPollingTransport());

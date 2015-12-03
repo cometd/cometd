@@ -1842,7 +1842,4 @@ org.cometd.CometD = function(name) {
     this.getAdvice = function() {
         return this._mixin(true, {}, _advice);
     };
-
-    // Use an alias to be less dependent on browser's quirks.
-    org.cometd.WebSocket = window.WebSocket;
 };

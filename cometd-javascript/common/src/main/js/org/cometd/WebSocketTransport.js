@@ -67,7 +67,7 @@ org.cometd.WebSocketTransport = function() {
 
         try {
             var protocol = _cometd.getConfiguration().protocol;
-            context.webSocket = protocol ? new org.cometd.WebSocket(url, protocol) : new org.cometd.WebSocket(url);
+            context.webSocket = protocol ? new window.WebSocket(url, protocol) : new window.WebSocket(url);
             _connecting = context;
         }
         catch (x) {
@@ -338,7 +338,7 @@ org.cometd.WebSocketTransport = function() {
     _self.accept = function(version, crossDomain, url) {
         this._debug('Transport', this.getType(), 'accept, supported:', _webSocketSupported);
         // Using !! to return a boolean (and not the WebSocket object).
-        return _webSocketSupported && !!org.cometd.WebSocket && _cometd.websocketEnabled !== false;
+        return _webSocketSupported && !!window.WebSocket && _cometd.websocketEnabled !== false;
     };
 
     _self.send = function(envelope, metaConnect) {

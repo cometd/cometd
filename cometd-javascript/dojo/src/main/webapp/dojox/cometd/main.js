@@ -64,8 +64,8 @@ define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/request/scri
                 return that;
             }
 
-            // Registration order is important
-            if (org_cometd.WebSocket) {
+            // Registration order is important.
+            if (window.WebSocket) {
                 cometd.registerTransport('websocket', new org_cometd.WebSocketTransport());
             }
             cometd.registerTransport('long-polling', new LongPollingTransport());

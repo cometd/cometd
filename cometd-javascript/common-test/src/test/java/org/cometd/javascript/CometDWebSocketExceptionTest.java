@@ -27,7 +27,7 @@ public class CometDWebSocketExceptionTest extends AbstractCometDWebSocketTest
         evaluateScript("cometd.registerTransport('long-polling', originalTransports['long-polling']);");
 
         // Replace the WebSocket constructor to throw an exception
-        evaluateScript("org.cometd.WebSocket = function() { throw 'WebSocketException'; };");
+        evaluateScript("window.WebSocket = function() { throw 'WebSocketException'; };");
 
         defineClass(Latch.class);
 
