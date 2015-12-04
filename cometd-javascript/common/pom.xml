@@ -38,6 +38,15 @@
                         </configuration>
                     </execution>
                 </executions>
+                <dependencies>
+                    <!-- Workaround for MSHARED-325 -->
+                    <!-- Remove for maven-resources-plugin > 2.7 -->
+                    <dependency>
+                        <groupId>org.apache.maven.shared</groupId>
+                        <artifactId>maven-filtering</artifactId>
+                        <version>1.3</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>

@@ -4,6 +4,7 @@
 org.cometd.Transport = function() {
     var _type;
     var _cometd;
+    var _url;
 
     /**
      * Function invoked just after a transport has been successfully registered.
@@ -80,6 +81,7 @@ org.cometd.Transport = function() {
      * Returns whether this transport can work for the given version and cross domain communication case.
      * @param version a string indicating the transport version
      * @param crossDomain a boolean indicating whether the communication is cross domain
+     * @param url the URL to connect to
      * @return true if this transport can work for the given version and cross domain communication case,
      * false otherwise
      */
@@ -93,6 +95,14 @@ org.cometd.Transport = function() {
      */
     this.getType = function() {
         return _type;
+    };
+
+    this.getURL = function() {
+        return _url;
+    };
+
+    this.setURL = function(url) {
+        _url = url;
     };
 
     this.send = function(envelope, metaConnect) {

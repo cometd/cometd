@@ -23,8 +23,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Map;
-
 public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest
 {
     @Before
@@ -39,9 +37,9 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest
         defineClass(Latch.class);
 
         evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = (Latch)get("handshakeLatch");
+        Latch handshakeLatch = get("handshakeLatch");
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = (Latch)get("subscribeLatch");
+        Latch subscribeLatch = get("subscribeLatch");
         evaluateScript("" +
                 "cometd.addListener('/meta/handshake', function(message)" +
                 "{" +
@@ -72,9 +70,9 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest
         defineClass(Latch.class);
 
         evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = (Latch)get("handshakeLatch");
+        Latch handshakeLatch = get("handshakeLatch");
         evaluateScript("var publishLatch = new Latch(1);");
-        Latch publishLatch = (Latch)get("publishLatch");
+        Latch publishLatch = get("publishLatch");
         evaluateScript("" +
                 "cometd.addListener('/meta/handshake', function(message)" +
                 "{" +
@@ -104,8 +102,7 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest
         @Override
         public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
         {
-            Map<String,Object> ext = message.getExt();
-            return ext != null && ext.get("authn") != null;
+            return false;
         }
     }
 }

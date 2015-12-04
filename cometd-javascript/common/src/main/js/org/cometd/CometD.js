@@ -57,6 +57,7 @@ org.cometd.CometD = function(name) {
         requestHeaders: {},
         appendMessageTypeToURL: true,
         autoBatch: false,
+        urls: {},
         maxURILength: 2000,
         advice: {
             timeout: 60000,
@@ -176,6 +177,19 @@ org.cometd.CometD = function(name) {
         }
     };
 
+    function _splitURL(url) {
+        // [1] = protocol://,
+        // [2] = host:port,
+        // [3] = host,
+        // [4] = IPv6_host,
+        // [5] = IPv4_host,
+        // [6] = :port,
+        // [7] = port,
+        // [8] = uri,
+        // [9] = rest (query / fragment)
+        return /(^https?:\/\/)?(((\[[^\]]+\])|([^:\/\?#]+))(:(\d+))?)?([^\?#]*)(.*)?/.exec(url);
+    }
+
     /**
      * Returns whether the given hostAndPort is cross domain.
      * The default implementation checks against window.location.host
@@ -206,9 +220,8 @@ org.cometd.CometD = function(name) {
             throw 'Missing required configuration parameter \'url\' specifying the Bayeux server URL';
         }
 
-        // Check if we're cross domain
-        // [1] = protocol://, [2] = host:port, [3] = host, [4] = IPv6_host, [5] = IPv4_host, [6] = :port, [7] = port, [8] = uri, [9] = rest
-        var urlParts = /(^https?:\/\/)?(((\[[^\]]+\])|([^:\/\?#]+))(:(\d+))?)?([^\?#]*)(.*)?/.exec(url);
+        // Check if we're cross domain.
+        var urlParts = _splitURL(url);
         var hostAndPort = urlParts[2];
         var uri = urlParts[8];
         var afterURI = urlParts[9];
@@ -393,11 +406,11 @@ org.cometd.CometD = function(name) {
         _scheduledSend = null;
     }
 
-    function _delayedSend(operation) {
+    function _delayedSend(operation, delay) {
         _cancelDelayedSend();
-        var delay = _advice.interval + _backoff;
-        _cometd._debug('Function scheduled in', delay, 'ms, interval =', _advice.interval, 'backoff =', _backoff, operation);
-        _scheduledSend = org.cometd.Utils.setTimeout(_cometd, operation, delay);
+        var time = _advice.interval + delay;
+        _cometd._debug('Function scheduled in', time, 'ms, interval =', _advice.interval, 'backoff =', _backoff, operation);
+        _scheduledSend = org.cometd.Utils.setTimeout(_cometd, operation, time);
     }
 
     // Needed to break cyclic dependencies between function definitions
@@ -567,11 +580,11 @@ org.cometd.CometD = function(name) {
         }
     }
 
-    function _delayedConnect() {
+    function _delayedConnect(delay) {
         _setStatus('connecting');
         _delayedSend(function() {
             _connect();
-        });
+        }, delay);
     }
 
     function _updateAdvice(newAdvice) {
@@ -602,7 +615,7 @@ org.cometd.CometD = function(name) {
         }
     }
 
-    function _notifyTransportFailure(oldTransport, newTransport, failure) {
+    function _notifyTransportException(oldTransport, newTransport, failure) {
         var handler = _cometd.onTransportException;
         if (_isFunction(handler)) {
             _cometd._debug('Invoking transport exception handler', oldTransport, newTransport, failure);
@@ -700,7 +713,7 @@ org.cometd.CometD = function(name) {
         _send(false, [message], false, 'handshake');
     }
 
-    function _delayedHandshake() {
+    function _delayedHandshake(delay) {
         _setStatus('handshaking');
 
         // We will call _handshake() which will reset _clientId, but we want to avoid
@@ -710,7 +723,7 @@ org.cometd.CometD = function(name) {
 
         _delayedSend(function() {
             _handshake(_handshakeProps, _handshakeCallback);
-        });
+        }, delay);
     }
 
     function _notifyCallback(callback, message) {
@@ -774,48 +787,150 @@ org.cometd.CometD = function(name) {
         return false;
     }
 
-    function _failHandshake(message) {
+    this.onTransportFailure = function(message, failureInfo, actionFn) {
+        this._debug('Transport failure', failureInfo);
+
+        var actionInfo = {
+            delay: this.getBackoffPeriod(),
+            transport: this.getTransport()
+        };
+
+        var action = failureInfo.action;
+        if (action !== 'disconnect') {
+            // Different logic depending on whether we are handshaking or connecting.
+            if (message.channel === '/meta/handshake') {
+                if (!failureInfo.transport.valid) {
+                    // The transport is invalid, negotiate again.
+                    var url = this.getURL();
+                    var crossDomain = this._isCrossDomain(_splitURL(url)[2]);
+                    var version = '1.0';
+                    var transportTypes = _transports.findTransportTypes(version, crossDomain, url);
+                    var newTransport = _transports.negotiateTransport(transportTypes, version, crossDomain, url);
+                    if (!newTransport) {
+                        this._warn('Could not negotiate transport; client=[' + transportTypes + ']');
+                        _notifyTransportException(_transport.getType(), null, message.failure);
+                        action = 'disconnect';
+                    }
+                    else {
+                        this._debug('Transport', _transport.getType(), '->', newTransport.getType());
+                        _notifyTransportException(_transport.getType(), newTransport.getType(), message.failure);
+                        action = 'handshake';
+                        actionInfo.transport = newTransport;
+                    }
+                }
+            }
+            else {
+                var now = new Date().getTime();
+
+                // TODO: unconnectTime should be in failureInfo ?
+                if (_unconnectTime === 0) {
+                    _unconnectTime = now;
+                }
+
+                // Check whether we may switch to handshaking.
+                var maxInterval = _advice.maxInterval;
+                if (maxInterval > 0) {
+                    var expiration = _advice.timeout + _advice.interval + maxInterval;
+                    var unconnected = now - _unconnectTime;
+                    if (unconnected + _backoff > expiration) {
+                        action = 'handshake';
+                    }
+                }
+
+                if (action === 'handshake') {
+                    _transports.reset(false);
+                    _resetBackoff();
+                }
+            }
+        }
+
+        if (action !== 'disconnect') {
+            _increaseBackoff();
+        }
+
+        actionInfo.action = action;
+
+        actionFn.call(_cometd, actionInfo);
+    };
+
+    function _onTransportAction(actionInfo) {
+        _cometd._debug('Transport action', actionInfo);
+
+        if (actionInfo.transport) {
+            _transport = actionInfo.transport;
+        }
+
+        if (actionInfo.url) {
+            _transport.setURL(actionInfo.url);
+        }
+
+        var action = actionInfo.action;
+        var delay = actionInfo.delay || 0;
+        switch (action) {
+            case 'handshake':
+                _delayedHandshake(delay);
+                break;
+            case 'connect':
+                _delayedConnect(delay);
+                break;
+            case 'disconnect':
+                _disconnect(true);
+                break;
+            default:
+                throw 'Unknown action ' + action;
+        }
+    }
+
+    function _failHandshake(message, failureInfo) {
         _handleCallback(message);
         _notifyListeners('/meta/handshake', message);
         _notifyListeners('/meta/unsuccessful', message);
 
-        // Only try again if we haven't been disconnected and
-        // the advice permits us to retry the handshake
-        var retry = !_isDisconnected() && _advice.reconnect !== 'none';
-        if (retry) {
-            _increaseBackoff();
-            _delayedHandshake();
+        // The listeners may have disconnected.
+        if (_isDisconnected()) {
+            failureInfo.action = 'disconnect';
         }
-        else {
-            _disconnect(true);
-        }
+
+        _cometd.onTransportFailure.call(_cometd, message, failureInfo, _onTransportAction);
     }
 
     function _handshakeResponse(message) {
+        var url = _cometd.getURL();
         if (message.successful) {
-            // Save clientId, figure out transport, then follow the advice to connect
-            _clientId = message.clientId;
-
-            var url = _cometd.getURL();
-            var newTransport = _transports.negotiateTransport(message.supportedConnectionTypes, message.version, _crossDomain, url);
+            var crossDomain = _cometd._isCrossDomain(_splitURL(url)[2]);
+            var newTransport = _transports.negotiateTransport(message.supportedConnectionTypes, message.version, crossDomain, url);
             if (newTransport === null) {
                 var failure = 'Could not negotiate transport with server; client=[' +
                     _transports.findTransportTypes(message.version, _crossDomain, url) +
                     '], server=[' + message.supportedConnectionTypes + ']';
                 var oldTransport = _cometd.getTransport();
-                _notifyTransportFailure(oldTransport.getType(), null, {
+
+                // TODO: move this notification to onTransportFailure() ?
+                _notifyTransportException(oldTransport.getType(), null, {
                     reason: failure,
                     connectionType: oldTransport.getType(),
                     transport: oldTransport
                 });
-                _cometd._warn(failure);
-                _disconnect(true);
+
+                message.successful = false;
+                _failHandshake(message, {
+                    cause: 'negotiation',
+                    action: 'disconnect',
+                    transport: {
+                        type: _transport.getType(),
+                        url: url,
+                        valid: true
+                    }
+                });
+
                 return;
             }
             else if (_transport !== newTransport) {
                 _cometd._debug('Transport', _transport.getType(), '->', newTransport.getType());
                 _transport = newTransport;
             }
+
+            _clientId = message.clientId;
 
             // End the internal batch and allow held messages from the application
             // to go to the server (see _handshake() where we start the internal batch).
@@ -835,7 +950,7 @@ org.cometd.CometD = function(name) {
             switch (action) {
                 case 'retry':
                     _resetBackoff();
-                    _delayedConnect();
+                    _delayedConnect(_backoff);
                     break;
                 case 'none':
                     _disconnect(true);
@@ -845,72 +960,63 @@ org.cometd.CometD = function(name) {
             }
         }
         else {
-            _failHandshake(message);
+            var failAction = 'handshake';
+            if (_advice.reconnect === 'none') {
+                failAction = 'disconnect';
+            }
+
+            _failHandshake(message, {
+                cause: 'unsuccessful',
+                action: failAction,
+                transport: {
+                    type: _transport.getType(),
+                    url: url,
+                    valid: true
+                }
+            });
         }
     }
 
     function _handshakeFailure(message) {
-        var version = '1.0';
-        var url = _cometd.getURL();
-        var oldTransport = _cometd.getTransport();
-        var transportTypes = _transports.findTransportTypes(version, _crossDomain, url);
-        var newTransport = _transports.negotiateTransport(transportTypes, version, _crossDomain, url);
-        if (!newTransport) {
-            _notifyTransportFailure(oldTransport.getType(), null, message.failure);
-            _cometd._warn('Could not negotiate transport; client=[' + transportTypes + ']');
-            _disconnect(true);
-            _failHandshake(message);
+        var action = 'handshake';
+        if (_advice.reconnect === 'none') {
+            action = 'disconnect';
         }
-        else {
-            _cometd._debug('Transport', oldTransport.getType(), '->', newTransport.getType());
-            _notifyTransportFailure(oldTransport.getType(), newTransport.getType(), message.failure);
-            _failHandshake(message);
-            _transport = newTransport;
-        }
+
+        _failHandshake(message, {
+            cause: 'failure',
+            action: action,
+            transport: {
+                type: _transport.getType(),
+                url: _cometd.getURL(),
+                valid: false
+            }
+        });
     }
 
-    function _failConnect(message) {
+    function _failConnect(message, failureInfo) {
         // Notify the listeners after the status change but before the next action.
         _notifyListeners('/meta/connect', message);
         _notifyListeners('/meta/unsuccessful', message);
 
-        if (_unconnectTime === 0) {
-            _unconnectTime = new Date().getTime();
-        }
-
-        // This may happen when the server crashed, the current clientId
-        // will be invalid, and the server will ask to handshake again.
-        // Listeners can call disconnect(), so check the state after they run.
-        var action = _isDisconnected() ? 'none' : _advice.reconnect;
-
-        // Check whether we may switch to handshaking.
-        var maxInterval = _advice.maxInterval;
-        if (maxInterval > 0) {
-            var expiration = _advice.timeout + _advice.interval + maxInterval;
-            var unconnected = new Date().getTime() - _unconnectTime;
-            if (unconnected + _backoff > expiration) {
-                action = 'handshake';
-            }
-        }
-
-        switch (action) {
-            case 'retry':
-                _delayedConnect();
-                _increaseBackoff();
-                break;
+        var action = 'connect';
+        switch (_advice.reconnect) {
             case 'handshake':
-                // The current transport may be failed (e.g. network disconnection)
-                // Reset the transports so the new handshake picks up the right one.
-                _transports.reset(false);
-                _resetBackoff();
-                _delayedHandshake();
+                action = 'handshake';
                 break;
             case 'none':
-                _disconnect(true);
+                action = 'disconnect';
                 break;
-            default:
-                throw 'Unrecognized advice action' + action;
         }
+
+        // The listeners may have disconnected.
+        if (_isDisconnected()) {
+            action = 'disconnect';
+        }
+
+        failureInfo.action = action;
+
+        _cometd.onTransportFailure.call(_cometd, message, failureInfo, _onTransportAction);
     }
 
     function _connectResponse(message) {
@@ -927,10 +1033,9 @@ org.cometd.CometD = function(name) {
             switch (action) {
                 case 'retry':
                     _resetBackoff();
-                    _delayedConnect();
+                    _delayedConnect(_backoff);
                     break;
                 case 'none':
-                    // Wait for the /meta/disconnect to arrive.
                     _disconnect(false);
                     break;
                 default:
@@ -938,13 +1043,28 @@ org.cometd.CometD = function(name) {
             }
         }
         else {
-            _failConnect(message);
+            _failConnect(message, {
+                cause: 'unsuccessful',
+                transport: {
+                    type: _transport.getType(),
+                    url: _cometd.getURL(),
+                    valid: true
+                }
+            });
         }
     }
 
     function _connectFailure(message) {
         _connected = false;
-        _failConnect(message);
+
+        _failConnect(message, {
+            cause: 'failure',
+            transport: {
+                type: _transport.getType(),
+                url: _cometd.getURL(),
+                valid: false
+            }
+        });
     }
 
     function _failDisconnect(message) {
@@ -1822,10 +1942,14 @@ org.cometd.CometD = function(name) {
      * Returns the URL of the Bayeux server.
      */
     this.getURL = function() {
-        if (_transport && typeof _config.urls === 'object') {
-            var url = _config.urls[_transport.getType()];
+        if (_transport) {
+            var url = _transport.getURL();
             if (url) {
-                return  url;
+                return url;
+            }
+            url = _config.urls[_transport.getType()];
+            if (url) {
+                return url;
             }
         }
         return _config.url;

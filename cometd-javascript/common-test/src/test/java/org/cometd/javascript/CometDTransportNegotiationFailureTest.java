@@ -15,28 +15,81 @@
  */
 package org.cometd.javascript;
 
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDTransportNegotiationFailureTest extends AbstractCometDTest
 {
     @Test
+    public void testTransportNegotiationFailureForClientLongPollingServerCallbackPolling() throws Exception
+    {
+        // Only callback-polling on server (via extension), only long-polling on client.
+        bayeuxServer.setAllowedTransports("long-polling", "callback-polling");
+        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter()
+        {
+            @Override
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
+            {
+                if (Channel.META_HANDSHAKE.equals(message.getChannel()))
+                    message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, new String[]{"callback-polling"});
+                return true;
+            }
+        });
+
+        evaluateScript("keep_only_long_polling_transport",
+                "cometd.unregisterTransports();" +
+                        "cometd.registerTransport('long-polling', originalTransports['long-polling']);");
+
+        defineClass(Latch.class);
+        evaluateScript("var failureLatch = new Latch(2);");
+        Latch failureLatch = get("failureLatch");
+        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport)" +
+                "{" +
+                "    failureLatch.countDown();" +
+                "}");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("cometd.handshake(function(message) " +
+                "{ " +
+                "    if (message.successful === false) " +
+                "    { " +
+                "        failureLatch.countDown(); " +
+                "    }" +
+                "});");
+
+        Assert.assertTrue(failureLatch.await(5000));
+
+        evaluateScript("cometd.disconnect(true);");
+    }
+
+    @Test
     public void testTransportNegotiationFailureForClientLongPollingServerWebSocket() throws Exception
     {
-        // Only websocket on server, only long-polling on client
+        // Only websocket on server, only long-polling on client.
         bayeuxServer.setAllowedTransports("websocket");
         evaluateScript("keep_only_long_polling_transport",
                 "cometd.unregisterTransports();" +
                         "cometd.registerTransport('long-polling', originalTransports['long-polling']);");
 
         defineClass(Latch.class);
-        evaluateScript("var failureLatch = new Latch(1);");
+        evaluateScript("var failureLatch = new Latch(2);");
         Latch failureLatch = get("failureLatch");
         evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport)" +
                 "{" +
                 "    failureLatch.countDown();" +
                 "}");
-        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("cometd.handshake(function(message) " +
+                "{ " +
+                "    if (message.successful === false) " +
+                "    { " +
+                "        failureLatch.countDown(); " +
+                "    }" +
+                "});");
 
         Assert.assertTrue(failureLatch.await(5000));
 
@@ -46,20 +99,27 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTest
     @Test
     public void testTransportNegotiationFailureForClientWebSocketServerLongPolling() throws Exception
     {
-        // Only long-polling on server, only websocket on client
+        // Only long-polling on server, only websocket on client.
         bayeuxServer.setAllowedTransports("long-polling");
         evaluateScript("keep_only_websocket_transport",
                 "cometd.unregisterTransports();" +
                 "cometd.registerTransport('websocket', originalTransports['websocket']);");
 
         defineClass(Latch.class);
-        evaluateScript("var failureLatch = new Latch(1);");
+        evaluateScript("var failureLatch = new Latch(2);");
         Latch failureLatch = get("failureLatch");
         evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport)" +
                 "{" +
                 "    failureLatch.countDown();" +
                 "}");
-        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("cometd.handshake(function(message) " +
+                "{ " +
+                "    if (message.successful === false) " +
+                "    { " +
+                "        failureLatch.countDown(); " +
+                "    }" +
+                "});");
 
         Assert.assertTrue(failureLatch.await(5000));
         Assert.assertTrue((Boolean)evaluateScript("cometd.isDisconnected();"));

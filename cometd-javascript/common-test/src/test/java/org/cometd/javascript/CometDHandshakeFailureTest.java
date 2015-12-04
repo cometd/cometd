@@ -34,9 +34,9 @@ public class CometDHandshakeFailureTest extends AbstractCometDTest
 
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var handshakeLatch = new Latch(1);");
+        evaluateScript("var handshakeLatch = new Latch(2);");
         Latch handshakeLatch = get("handshakeLatch");
-        evaluateScript("var failureLatch = new Latch(1);");
+        evaluateScript("var failureLatch = new Latch(2);");
         Latch failureLatch = get("failureLatch");
         evaluateScript("cometd.addListener('/meta/handshake', handshakeLatch, handshakeLatch.countDown);");
         evaluateScript("cometd.addListener('/meta/unsuccessful', failureLatch, failureLatch.countDown);");
@@ -52,22 +52,25 @@ public class CometDHandshakeFailureTest extends AbstractCometDTest
         Assert.assertTrue(handshakeLatch.await(5000));
         Assert.assertTrue(failureLatch.await(5000));
 
-        // There is a failure, the backoff will be increased from 0 to backoffIncrement
+        // There were two failures: the initial handshake failed,
+        // it is retried after 0 ms, backoff incremented to 1000 ms;
+        // the first retry fails immediately (second failure), next
+        // retry will be after 1000 ms, backoff incremented to 2000 ms.
         Thread.sleep(backoffIncrement / 2); // Waits for the backoff to happen
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
         backoff = ((Number)get("backoff")).intValue();
-        Assert.assertEquals(backoffIncrement, backoff);
+        Assert.assertEquals(2 * backoffIncrement, backoff);
 
         handshakeLatch.reset(1);
         failureLatch.reset(1);
         Assert.assertTrue(handshakeLatch.await(backoffIncrement));
         Assert.assertTrue(failureLatch.await(backoffIncrement));
 
-        // Another failure, backoff will be increased to 2 * backoffIncrement
+        // Another failure, backoff will be increased to 3 * backoffIncrement
         Thread.sleep(backoffIncrement / 2); // Waits for the backoff to happen
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
         backoff = ((Number)get("backoff")).intValue();
-        Assert.assertEquals(2 * backoffIncrement, backoff);
+        Assert.assertEquals(3 * backoffIncrement, backoff);
 
         handshakeLatch.reset(1);
         failureLatch.reset(1);
