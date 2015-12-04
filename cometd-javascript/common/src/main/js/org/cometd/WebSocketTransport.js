@@ -346,7 +346,9 @@ org.cometd.WebSocketTransport = function() {
 
     _self.webSocketClose = function(context, code, reason) {
         try {
-            context.webSocket.close(code, reason);
+            if (context.webSocket) {
+                context.webSocket.close(code, reason);
+            }
         }
         catch (x) {
             this._debug(x);
