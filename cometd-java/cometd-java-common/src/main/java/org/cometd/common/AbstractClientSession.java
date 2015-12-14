@@ -15,16 +15,6 @@
  */
 package org.cometd.common;
 
-import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.ChannelId;
-import org.cometd.bayeux.MarkedReference;
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSession;
-import org.cometd.bayeux.client.ClientSessionChannel;
-import org.eclipse.jetty.util.AttributesMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +24,16 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
+import org.cometd.bayeux.MarkedReference;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
+import org.eclipse.jetty.util.AttributesMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Partial implementation of {@link ClientSession}.</p>
@@ -387,19 +387,18 @@ public abstract class AbstractClientSession implements ClientSession
 
         public void unsubscribe(MessageListener listener, MessageListener callback)
         {
-            boolean removed = removeSubscription(listener);
-            if (removed)
-            {
-                int count = _subscriptionCount.decrementAndGet();
-                if (count == 0)
-                    sendUnSubscribe(callback);
-            }
+            boolean removedLast = removeSubscription(listener);
+            if (removedLast)
+                sendUnSubscribe(callback);
         }
 
         private boolean removeSubscription(MessageListener listener)
         {
             throwIfReleased();
-            return _subscriptions.remove(listener);
+            boolean removed = _subscriptions.remove(listener);
+            if (removed)
+                return _subscriptionCount.decrementAndGet() == 0;
+            return false;
         }
 
         protected abstract void sendUnSubscribe(MessageListener callback);

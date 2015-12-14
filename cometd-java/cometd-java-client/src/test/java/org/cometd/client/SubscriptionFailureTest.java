@@ -15,20 +15,25 @@
  */
 package org.cometd.client;
 
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.transport.ClientTransport;
+import org.cometd.server.DefaultSecurityPolicy;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 public class SubscriptionFailureTest extends ClientServerTest
 {
@@ -137,6 +142,89 @@ public class SubscriptionFailureTest extends ClientServerTest
         // Publishing a message on server-side must not be notified on the client.
         bayeux.getChannel(channelName).publish(null, "data");
         Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testFailedSubscriptionDecrementsSubscriptionCount() throws Exception
+    {
+        startServer(null);
+
+        final String channelName = "/count";
+        bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
+        {
+            @Override
+            public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
+            {
+                boolean allowed = super.canSubscribe(server, session, channel, message);
+                Map<String, Object> ext = message.getExt();
+                return allowed && ext != null && (Boolean)ext.get("token");
+            }
+        });
+
+        BayeuxClient client = newBayeuxClient();
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        final AtomicBoolean allowed = new AtomicBoolean();
+        client.addExtension(new ClientSession.Extension.Adapter()
+        {
+            @Override
+            public boolean sendMeta(ClientSession session, Message.Mutable message)
+            {
+                if (Channel.META_SUBSCRIBE.equals(message.getChannel()) &&
+                        channelName.equals(message.get(Message.SUBSCRIPTION_FIELD)))
+                    message.getExt(true).put("token", allowed.get());
+                return true;
+            }
+        });
+
+        final CountDownLatch messageLatch = new CountDownLatch(1);
+        ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                messageLatch.countDown();
+            }
+        };
+        final CountDownLatch failedSubscription = new CountDownLatch(1);
+        ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (!message.isSuccessful())
+                    failedSubscription.countDown();
+            }
+        };
+        // First subscription fails, the subscription count should be
+        // decremented to zero so that a subsequent subscribe() could succeed.
+        client.getChannel(channelName).subscribe(messageCallback, subscriptionCallback);
+        Assert.assertTrue(failedSubscription.await(5, TimeUnit.SECONDS));
+
+        Assert.assertEquals(0, client.getChannel(channelName).getSubscribers().size());
+        Assert.assertEquals(0, bayeux.getChannel(channelName).getSubscribers().size());
+
+        // Now allow the subscription, we should be able to subscribe to the same channel.
+        allowed.set(true);
+        final CountDownLatch succeededSubscription = new CountDownLatch(1);
+        subscriptionCallback = new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isSuccessful())
+                    succeededSubscription.countDown();
+            }
+        };
+        client.getChannel(channelName).subscribe(messageCallback, subscriptionCallback);
+        Assert.assertTrue(succeededSubscription.await(5, TimeUnit.SECONDS));
+
+        Assert.assertEquals(1, client.getChannel(channelName).getSubscribers().size());
+        Assert.assertEquals(1, bayeux.getChannel(channelName).getSubscribers().size());
+
+        // Make sure the message can be received.
+        bayeux.getChannel(channelName).publish(null, "data");
+        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
