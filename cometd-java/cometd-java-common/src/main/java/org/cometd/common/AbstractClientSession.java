@@ -494,19 +494,18 @@ public abstract class AbstractClientSession implements ClientSession
         @Override
         public void unsubscribe(MessageListener listener, MessageListener callback)
         {
-            boolean removed = removeSubscription(listener);
-            if (removed)
-            {
-                int count = _subscriptionCount.decrementAndGet();
-                if (count == 0)
-                    sendUnSubscribe(callback);
-            }
+            boolean removedLast = removeSubscription(listener);
+            if (removedLast)
+                sendUnSubscribe(callback);
         }
 
         private boolean removeSubscription(MessageListener listener)
         {
             throwIfReleased();
-            return _subscriptions.remove(listener);
+            boolean removed = _subscriptions.remove(listener);
+            if (removed)
+                return _subscriptionCount.decrementAndGet() == 0;
+            return false;
         }
 
         protected void sendUnSubscribe(MessageListener callback)
