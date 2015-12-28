@@ -2,10 +2,24 @@ body {
     margin-left: auto;
     margin-right: auto;
     width: 50em;
+    font-family: "Varela Round", sans-serif;
+    color: #333;
 }
 
 input {
     margin: 0;
+    font-family: "Varela Round", sans-serif;
+}
+
+button {
+    font-family: "Varela Round", sans-serif;
+}
+
+a:hover, a:visited {
+    color: #333;
+}
+a:active {
+    color: #E52;
 }
 
 table td {

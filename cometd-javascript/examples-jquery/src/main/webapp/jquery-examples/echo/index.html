@@ -1,18 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Comet echo RPC</title>
+    <title>Comet Echo RPC Demo</title>
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Varela+Round">
     <script data-main="echo"  src="../require.js"></script>
+    <style>
+        body {
+            font-family: "Varela Round", sans-serif;
+            color: #333;
+        }
+        input {
+            margin: 0;
+            font-family: "Varela Round", sans-serif;
+        }
+        button {
+            font-family: "Varela Round", sans-serif;
+        }
+        a:hover, a:visited {
+            color: #333;
+        }
+        a:active {
+            color: #E52;
+        }
+    </style>
 </head>
 <body>
 
-<h1>Echo test</h1>
-<a href="../..">Main Demo index</a><br/>
+<h1>Echo Demo</h1>
+
+<a href="../..">Main Demo Index</a><br/>
 
 <p>
-    Echo data to ONLY this client using RPC style messaging over
-    cometd. Requires a server side component at /service/echo which echos
-    responses directly to the client.
+    Echoes data to ONLY this client using RPC style messaging via CometD.
+</p>
+<p>
+    Requires a server side component listening on channel "/service/echo"
+    which echoes messages directly to this client.
 </p>
 
 <div>

@@ -28,7 +28,6 @@ require(["dojo", "dojo/on", "dojo/keys", "dojox/cometd", "dojox/cometd/timestamp
             return false;
         });
 
-        cometd.websocketEnabled = false;
         cometd.configure({
             url: location.href.replace(/\/dojo-examples\/.*$/, "") + "/cometd",
             logLevel: "debug"

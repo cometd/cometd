@@ -37,7 +37,6 @@ require({
                 return false;
             });
 
-            cometd.websocketEnabled = false;
             cometd.configure({
                 url: location.href.replace(/\/jquery-examples\/.*$/, "") + "/cometd",
                 logLevel: "debug"
