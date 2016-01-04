@@ -517,6 +517,7 @@ org.cometd.CometD = function(name) {
         if (_backoff < _config.maxBackoff) {
             _backoff += _config.backoffIncrement;
         }
+        return _backoff;
     }
 
     /**
@@ -795,19 +796,34 @@ org.cometd.CometD = function(name) {
             transport: this.getTransport()
         };
 
+        var transports = this.getTransportRegistry();
+        var url = this.getURL();
+        var crossDomain = this._isCrossDomain(_splitURL(url)[2]);
+        var version = '1.0';
+        var transportTypes = transports.findTransportTypes(version, crossDomain, url);
         var action = failureInfo.action;
-        if (action !== 'disconnect') {
+        if (action === 'disconnect') {
+            if (message.channel === '/meta/handshake') {
+                if (failureInfo.cause === 'negotiation') {
+                    var failure = 'Could not negotiate transport, client=[' + transportTypes + '], server=[' + message.supportedConnectionTypes + ']';
+                    this._warn(failure);
+                    _notifyTransportException(_transport.getType(), null, {
+                        reason: failure,
+                        connectionType: _transport.getType(),
+                        transport: _transport
+                    });
+                    action = 'disconnect';
+                }
+            }
+        }
+        else {
             // Different logic depending on whether we are handshaking or connecting.
             if (message.channel === '/meta/handshake') {
                 if (!failureInfo.transport.valid) {
-                    // The transport is invalid, negotiate again.
-                    var url = this.getURL();
-                    var crossDomain = this._isCrossDomain(_splitURL(url)[2]);
-                    var version = '1.0';
-                    var transportTypes = _transports.findTransportTypes(version, crossDomain, url);
-                    var newTransport = _transports.negotiateTransport(transportTypes, version, crossDomain, url);
+                    // The transport is invalid, try to negotiate again.
+                    var newTransport = transports.negotiateTransport(transportTypes, version, crossDomain, url);
                     if (!newTransport) {
-                        this._warn('Could not negotiate transport; client=[' + transportTypes + ']');
+                        this._warn('Could not negotiate transport, client=[' + transportTypes + ']');
                         _notifyTransportException(_transport.getType(), null, message.failure);
                         action = 'disconnect';
                     }
@@ -822,7 +838,6 @@ org.cometd.CometD = function(name) {
             else {
                 var now = new Date().getTime();
 
-                // TODO: unconnectTime should be in failureInfo ?
                 if (_unconnectTime === 0) {
                     _unconnectTime = now;
                 }
@@ -838,14 +853,14 @@ org.cometd.CometD = function(name) {
                 }
 
                 if (action === 'handshake') {
-                    _transports.reset(false);
-                    _resetBackoff();
+                    transports.reset(false);
+                    this.resetBackoffPeriod();
                 }
             }
         }
 
         if (action !== 'disconnect') {
-            _increaseBackoff();
+            this.increaseBackoffPeriod();
         }
 
         actionInfo.action = action;
@@ -900,18 +915,6 @@ org.cometd.CometD = function(name) {
             var crossDomain = _cometd._isCrossDomain(_splitURL(url)[2]);
             var newTransport = _transports.negotiateTransport(message.supportedConnectionTypes, message.version, crossDomain, url);
             if (newTransport === null) {
-                var failure = 'Could not negotiate transport with server; client=[' +
-                    _transports.findTransportTypes(message.version, _crossDomain, url) +
-                    '], server=[' + message.supportedConnectionTypes + ']';
-                var oldTransport = _cometd.getTransport();
-
-                // TODO: move this notification to onTransportFailure() ?
-                _notifyTransportException(oldTransport.getType(), null, {
-                    reason: failure,
-                    connectionType: oldTransport.getType(),
-                    transport: oldTransport
-                });
-
                 message.successful = false;
                 _failHandshake(message, {
                     cause: 'negotiation',
@@ -922,7 +925,6 @@ org.cometd.CometD = function(name) {
                         valid: true
                     }
                 });
-
                 return;
             }
             else if (_transport !== newTransport) {
@@ -1365,13 +1367,6 @@ org.cometd.CometD = function(name) {
     };
 
     /**
-     * @return an array of all registered transport types
-     */
-    this.getTransportTypes = function() {
-        return _transports.getTransportTypes();
-    };
-
-    /**
      * Unregisters the transport with the given transport type.
      * @param type the transport type to unregister
      * @return the transport that has been unregistered,
@@ -1393,8 +1388,22 @@ org.cometd.CometD = function(name) {
         _transports.clear();
     };
 
+    /**
+     * @return an array of all registered transport types
+     */
+    this.getTransportTypes = function() {
+        return _transports.getTransportTypes();
+    };
+
     this.findTransport = function(name) {
         return _transports.find(name);
+    };
+
+    /**
+     * @returns the TransportRegistry object
+     */
+    this.getTransportRegistry = function() {
+        return _transports;
     };
 
     /**
@@ -1810,6 +1819,22 @@ org.cometd.CometD = function(name) {
      */
     this.getBackoffPeriod = function() {
         return _backoff;
+    };
+
+    /**
+     * Increases the backoff period up to the maximum value configured.
+     * @returns the backoff period after increment
+     * @see getBackoffIncrement
+     */
+    this.increaseBackoffPeriod = function() {
+        return _increaseBackoff();
+    };
+
+    /**
+     * Resets the backoff period to zero.
+     */
+    this.resetBackoffPeriod = function() {
+        _resetBackoff();
     };
 
     /**
