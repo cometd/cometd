@@ -13,8 +13,7 @@ require({
                 dom.byId('previous').innerHTML = window.sessionStorage.getItem('demoLastCometDID');
                 dom.byId('current').innerHTML = message.clientId;
                 window.sessionStorage.setItem('demoLastCometDID', message.clientId);
-            }
-            else {
+            } else {
                 dom.byId('previous').innerHTML = 'Handshake Failed';
                 dom.byId('current').innerHTML = 'Handshake Failed';
             }

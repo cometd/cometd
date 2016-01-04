@@ -1,22 +1,36 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CometD reload demo</title>
+    <title>CometD Reload Demo</title>
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Varela+Round">
     <script data-main="application"  src="../require.js"></script>
+    <style>
+        body {
+            font-family: "Varela Round", sans-serif;
+            color: #333;
+        }
+        a:hover, a:visited {
+            color: #333;
+        }
+        a:active {
+            color: #E52;
+        }
+    </style>
 </head>
 <body>
 
-<h1>Reload test</h1>
+<h1>Reload Demo</h1>
 
-<a href="../..">Main Demo index</a>
+<a href="../..">Main Demo Index</a>
 
 <br/>
 
 <p>
-    This test shows how a page can be loaded and resume a CometD connection with the same
-    client ID.  This allows site navigation and page loads to be done without needing to
-    reestablish an entire CometD session on the server (the client still needs to resubscribe
-    so that it can define local callbacks in the newly loaded page).
+    This test shows how a page can be loaded and resume a CometD connection with the same client ID.
+</p>
+<p>
+    This allows site navigation and page loads to be done without needing to
+    reestablish a different CometD session with the server.
 </p>
 
 <blockquote>

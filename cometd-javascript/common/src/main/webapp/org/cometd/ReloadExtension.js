@@ -141,12 +141,10 @@
 
                                     // This handshake is aborted, as we will replay the prior handshake response
                                     return null;
-                                }
-                                else {
+                                } else {
                                     _debug('Reload extension could not restore state', oldState);
                                 }
-                            }
-                            catch (x) {
+                            } catch (x) {
                                 _debug('Reload extension error while trying to restore state', x);
                             }
                         }
@@ -226,8 +224,7 @@
 
     if (typeof define === 'function' && define.amd) {
         define(['org/cometd'], bind);
-    }
-    else {
+    } else {
         bind(org.cometd);
     }
 })();

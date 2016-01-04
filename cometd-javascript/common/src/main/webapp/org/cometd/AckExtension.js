@@ -66,21 +66,18 @@
                                 _transientBatch = batch;
                                 _size = size;
                             }
-                        }
-                        else {
+                        } else {
                             // Old format.
                             _serverSupportsAcks = ackField === true;
                         }
                     }
                     _debug('AckExtension: server supports acknowledgements', _serverSupportsAcks);
-                }
-                else if (channel === '/meta/connect' && message.successful && _serverSupportsAcks) {
+                } else if (channel === '/meta/connect' && message.successful && _serverSupportsAcks) {
                     if (ext && typeof ext.ack === 'number') {
                         _batch = ext.ack;
                         _debug('AckExtension: server sent batch', _batch);
                     }
-                }
-                else if (!/^\/meta\//.test(channel)) {
+                } else if (!/^\/meta\//.test(channel)) {
                     if (_size > 0) {
                         --_size;
                         if (_size == 0) {
@@ -103,8 +100,7 @@
                     _transientBatch = 0;
                     _batch = 0;
                     _size = 0;
-                }
-                else if (channel == '/meta/connect') {
+                } else if (channel == '/meta/connect') {
                     if (_serverSupportsAcks) {
                         message.ext.ack = _batch;
                         _debug('AckExtension: client sending batch', _batch);
@@ -117,8 +113,7 @@
 
     if (typeof define === 'function' && define.amd) {
         define(['org/cometd'], bind);
-    }
-    else {
+    } else {
         bind(org.cometd);
     }
 })();

@@ -111,8 +111,7 @@
                     chat: text.substring(colons + 2),
                     peer: text.substring(0, colons)
                 });
-            }
-            else {
+            } else {
                 $.cometd.publish('/chat/demo', {
                     user: _username,
                     chat: text
@@ -127,8 +126,7 @@
 
             if (!membership && fromUser == _lastUser) {
                 fromUser = '...';
-            }
-            else {
+            } else {
                 _lastUser = fromUser;
                 fromUser += ':';
             }
@@ -137,11 +135,9 @@
             if (membership) {
                 chat.append('<span class=\"membership\"><span class=\"from\">' + fromUser + '&nbsp;</span><span class=\"text\">' + text + '</span></span><br/>');
                 _lastUser = null;
-            }
-            else if (message.data.scope == 'private') {
+            } else if (message.data.scope == 'private') {
                 chat.append('<span class=\"private\"><span class=\"from\">' + fromUser + '&nbsp;</span><span class=\"text\">[private]&nbsp;' + text + '</span></span><br/>');
-            }
-            else {
+            } else {
                 chat.append('<span class=\"from\">' + fromUser + '&nbsp;</span><span class=\"text\">' + text + '</span><br/>');
             }
 
@@ -227,14 +223,12 @@
             if (_disconnecting) {
                 _connected = false;
                 _connectionClosed();
-            }
-            else {
+            } else {
                 var wasConnected = _connected;
                 _connected = message.successful === true;
                 if (!wasConnected && _connected) {
                     _connectionEstablished();
-                }
-                else if (wasConnected && !_connected) {
+                } else if (wasConnected && !_connected) {
                     _connectionBroken();
                 }
             }
@@ -267,8 +261,7 @@
                     altServer: $('#altServer').val()
                 }));
                 $.cometd.getTransport().abort();
-            }
-            else {
+            } else {
                 $.cometd.disconnect();
             }
         });

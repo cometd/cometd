@@ -70,8 +70,7 @@ org.cometd.CometD = function(name) {
     function _fieldValue(object, name) {
         try {
             return object[name];
-        }
-        catch (x) {
+        } catch (x) {
             return undefined;
         }
     }
@@ -110,13 +109,11 @@ org.cometd.CometD = function(name) {
                     if (deep && typeof prop === 'object' && prop !== null) {
                         if (prop instanceof Array) {
                             result[propName] = this._mixin(deep, targ instanceof Array ? targ : [], prop);
-                        }
-                        else {
+                        } else {
                             var source = typeof targ === 'object' && !(targ instanceof Array) ? targ : {};
                             result[propName] = this._mixin(deep, source, prop);
                         }
-                    }
-                    else {
+                    } else {
                         result[propName] = prop;
                     }
                 }
@@ -232,8 +229,7 @@ org.cometd.CometD = function(name) {
             if (afterURI !== undefined && afterURI.length > 0) {
                 _cometd._info('Appending message type to URI ' + uri + afterURI + ' is not supported, disabling \'appendMessageTypeToURL\' configuration');
                 _config.appendMessageTypeToURL = false;
-            }
-            else {
+            } else {
                 var uriSegments = uri.split('/');
                 var lastSegmentIndex = uriSegments.length - 1;
                 if (uri.match(/\/$/)) {
@@ -297,19 +293,16 @@ org.cometd.CometD = function(name) {
     function _applyExtension(scope, callback, name, message, outgoing) {
         try {
             return callback.call(scope, message);
-        }
-        catch (x) {
+        } catch (x) {
             var handler = _cometd.onExtensionException;
             if (_isFunction(handler)) {
                 _cometd._debug('Invoking extension exception handler', name, x);
                 try {
                     handler.call(_cometd, x, name, outgoing, message);
-                }
-                catch (xx) {
+                } catch (xx) {
                     _cometd._info('Exception during execution of extension exception handler', name, xx);
                 }
-            }
-            else {
+            } else {
                 _cometd._info('Exception during execution of extension', name, x);
             }
             return message;
@@ -358,19 +351,16 @@ org.cometd.CometD = function(name) {
                 if (subscription) {
                     try {
                         subscription.callback.call(subscription.scope, message);
-                    }
-                    catch (x) {
+                    } catch (x) {
                         var handler = _cometd.onListenerException;
                         if (_isFunction(handler)) {
                             _cometd._debug('Invoking listener exception handler', subscription, x);
                             try {
                                 handler.call(_cometd, x, subscription, subscription.listener, message);
-                            }
-                            catch (xx) {
+                            } catch (xx) {
                                 _cometd._info('Exception during execution of listener exception handler', subscription, xx);
                             }
-                        }
-                        else {
+                        } else {
                             _cometd._info('Exception during execution of listener', subscription, message, x);
                         }
                     }
@@ -442,8 +432,7 @@ org.cometd.CometD = function(name) {
                 // Extensions may have modified the message id, but we need to own it.
                 message.id = messageId;
                 messages[i] = message;
-            }
-            else {
+            } else {
                 delete _callbacks[messageId];
                 messages.splice(i--, 1);
             }
@@ -471,8 +460,7 @@ org.cometd.CometD = function(name) {
             onSuccess: function(rcvdMessages) {
                 try {
                     _handleMessages.call(_cometd, rcvdMessages);
-                }
-                catch (x) {
+                } catch (x) {
                     _cometd._info('Exception during handling of messages', x);
                 }
             },
@@ -481,8 +469,7 @@ org.cometd.CometD = function(name) {
                     var transport = _cometd.getTransport();
                     failure.connectionType = transport ? transport.getType() : "unknown";
                     _handleFailure.call(_cometd, conduit, messages, failure);
-                }
-                catch (x) {
+                } catch (x) {
                     _cometd._info('Exception during handling of failure', x);
                 }
             }
@@ -494,8 +481,7 @@ org.cometd.CometD = function(name) {
     function _queueSend(message) {
         if (_batch > 0 || _internalBatch === true) {
             _messageQueue.push(message);
-        }
-        else {
+        } else {
             _send(false, [message], false);
         }
     }
@@ -622,8 +608,7 @@ org.cometd.CometD = function(name) {
             _cometd._debug('Invoking transport exception handler', oldTransport, newTransport, failure);
             try {
                 handler.call(_cometd, failure, oldTransport, newTransport);
-            }
-            catch (x) {
+            } catch (x) {
                 _cometd._info('Exception during execution of transport exception handler', x);
             }
         }
@@ -646,8 +631,7 @@ org.cometd.CometD = function(name) {
         if (_isDisconnected()) {
             _transports.reset(true);
             _updateAdvice(_config.advice);
-        }
-        else {
+        } else {
             // We are retrying the handshake, either because another handshake failed
             // and we're backing off, or because the server timed us out and asks us to
             // re-handshake: in both cases, make sure that if the handshake succeeds
@@ -730,19 +714,16 @@ org.cometd.CometD = function(name) {
     function _notifyCallback(callback, message) {
         try {
             callback.call(_cometd, message);
-        }
-        catch (x) {
+        } catch (x) {
             var handler = _cometd.onCallbackException;
             if (_isFunction(handler)) {
                 _cometd._debug('Invoking callback exception handler', x);
                 try {
                     handler.call(_cometd, x, message);
-                }
-                catch (xx) {
+                } catch (xx) {
                     _cometd._info('Exception during execution of callback exception handler', xx);
                 }
-            }
-            else {
+            } else {
                 _cometd._info('Exception during execution of message callback', x);
             }
         }
@@ -815,8 +796,7 @@ org.cometd.CometD = function(name) {
                     action = 'disconnect';
                 }
             }
-        }
-        else {
+        } else {
             // Different logic depending on whether we are handshaking or connecting.
             if (message.channel === '/meta/handshake') {
                 if (!failureInfo.transport.valid) {
@@ -826,16 +806,14 @@ org.cometd.CometD = function(name) {
                         this._warn('Could not negotiate transport, client=[' + transportTypes + ']');
                         _notifyTransportException(_transport.getType(), null, message.failure);
                         action = 'disconnect';
-                    }
-                    else {
+                    } else {
                         this._debug('Transport', _transport.getType(), '->', newTransport.getType());
                         _notifyTransportException(_transport.getType(), newTransport.getType(), message.failure);
                         action = 'handshake';
                         actionInfo.transport = newTransport;
                     }
                 }
-            }
-            else {
+            } else {
                 var now = new Date().getTime();
 
                 if (_unconnectTime === 0) {
@@ -926,8 +904,7 @@ org.cometd.CometD = function(name) {
                     }
                 });
                 return;
-            }
-            else if (_transport !== newTransport) {
+            } else if (_transport !== newTransport) {
                 _cometd._debug('Transport', _transport.getType(), '->', newTransport.getType());
                 _transport = newTransport;
             }
@@ -960,8 +937,7 @@ org.cometd.CometD = function(name) {
                 default:
                     throw 'Unrecognized advice action ' + action;
             }
-        }
-        else {
+        } else {
             var failAction = 'handshake';
             if (_advice.reconnect === 'none') {
                 failAction = 'disconnect';
@@ -1043,8 +1019,7 @@ org.cometd.CometD = function(name) {
                 default:
                     throw 'Unrecognized advice action ' + action;
             }
-        }
-        else {
+        } else {
             _failConnect(message, {
                 cause: 'unsuccessful',
                 transport: {
@@ -1082,8 +1057,7 @@ org.cometd.CometD = function(name) {
             _disconnect(false);
             _handleCallback(message);
             _notifyListeners('/meta/disconnect', message);
-        }
-        else {
+        } else {
             _failDisconnect(message);
         }
     }
@@ -1113,8 +1087,7 @@ org.cometd.CometD = function(name) {
         if (message.successful) {
             _handleCallback(message);
             _notifyListeners('/meta/subscribe', message);
-        }
-        else {
+        } else {
             _failSubscribe(message);
         }
     }
@@ -1133,8 +1106,7 @@ org.cometd.CometD = function(name) {
         if (message.successful) {
             _handleCallback(message);
             _notifyListeners('/meta/unsubscribe', message);
-        }
-        else {
+        } else {
             _failUnsubscribe(message);
         }
     }
@@ -1156,17 +1128,14 @@ org.cometd.CometD = function(name) {
             if (!_handleRemoteCall(message)) {
                 _notifyListeners(message.channel, message);
             }
-        }
-        else {
+        } else {
             if (message.successful === undefined) {
                 _cometd._warn('Unknown Bayeux Message', message);
-            }
-            else {
+            } else {
                 if (message.successful) {
                     _handleCallback(message);
                     _notifyListeners('/meta/publish', message);
-                }
-                else {
+                } else {
                     _failMessage(message);
                 }
             }
@@ -1284,8 +1253,7 @@ org.cometd.CometD = function(name) {
         if (_isFunction(scope)) {
             delegate.scope = undefined;
             delegate.method = scope;
-        }
-        else {
+        } else {
             if (_isString(callback)) {
                 if (!scope) {
                     throw 'Invalid scope ' + scope;
@@ -1294,8 +1262,7 @@ org.cometd.CometD = function(name) {
                 if (!_isFunction(delegate.method)) {
                     throw 'Invalid callback ' + callback + ' for scope ' + scope;
                 }
-            }
-            else if (!_isFunction(callback)) {
+            } else if (!_isFunction(callback)) {
                 throw 'Invalid callback ' + callback;
             }
         }
@@ -1513,8 +1480,7 @@ org.cometd.CometD = function(name) {
         try {
             delegate.method.call(delegate.scope);
             this.endBatch();
-        }
-        catch (x) {
+        } catch (x) {
             this._info('Exception during execution of batch', x);
             this.endBatch();
             throw x;
@@ -1703,8 +1669,7 @@ org.cometd.CometD = function(name) {
         if (_isFunction(content)) {
             publishCallback = content;
             content = publishProps = {};
-        }
-        else if (_isFunction(publishProps)) {
+        } else if (_isFunction(publishProps)) {
             publishCallback = publishProps;
             publishProps = {};
         }
@@ -1738,8 +1703,7 @@ org.cometd.CometD = function(name) {
             callback = content;
             content = {};
             timeout = _config.maxNetworkDelay;
-        }
-        else if (_isFunction(timeout)) {
+        } else if (_isFunction(timeout)) {
             callback = timeout;
             timeout = _config.maxNetworkDelay;
         }
@@ -1895,8 +1859,7 @@ org.cometd.CometD = function(name) {
             }
 
             return true;
-        }
-        else {
+        } else {
             this._info('Could not register extension with name', name, 'since another extension with the same name already exists');
             return false;
         }

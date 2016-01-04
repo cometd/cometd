@@ -22,8 +22,7 @@
 
     if (typeof define === 'function' && define.amd) {
         define(['org/cometd/TimeStampExtension', 'jquery.cometd'], bind);
-    }
-    else {
+    } else {
         bind(org.cometd.TimeStampExtension, jQuery.cometd);
     }
 })();
