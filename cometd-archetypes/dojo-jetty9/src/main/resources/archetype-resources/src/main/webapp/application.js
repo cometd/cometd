@@ -26,8 +26,7 @@ require(['dojo/dom', 'dojo/_base/unload', 'dojox/cometd', 'dojo/domReady!'],
             _connected = message.successful === true;
             if (!wasConnected && _connected) {
                 _connectionEstablished();
-            }
-            else if (wasConnected && !_connected) {
+            } else if (wasConnected && !_connected) {
                 _connectionBroken();
             }
         }

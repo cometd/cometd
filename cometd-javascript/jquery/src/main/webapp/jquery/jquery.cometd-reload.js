@@ -29,8 +29,7 @@
 
     if (typeof define === 'function' && define.amd) {
         define(['org/cometd', 'jquery.cookie', 'org/cometd/ReloadExtension', 'jquery.cometd'], bind);
-    }
-    else {
+    } else {
         bind(org.cometd, jQuery.cookie, org.cometd.ReloadExtension, jQuery.cometd);
     }
 })();

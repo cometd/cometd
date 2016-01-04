@@ -1,5 +1,4 @@
-var room =
-{
+var room = {
     _serviceRoot: "/service/auction/",
     _topicRoot: "/auction/chat/",
     _roomId: null,
@@ -11,9 +10,8 @@ var room =
 
         dojox.cometd.startBatch();
         this._chatSub = dojox.cometd.subscribe(room._topicRoot + roomid, chatDisplay, "displayMessage");
-        dojox.cometd.publish(room._topicRoot + roomid,
-            {
-                user: username,
+        dojox.cometd.publish(room._topicRoot + roomid, {
+            user: username,
                 join: true,
                 chat: username + " has joined"
             });
@@ -22,9 +20,8 @@ var room =
 
     leave: function(roomid, username) {
         dojox.cometd.startBatch();
-        dojox.cometd.publish(room._topicRoot + roomid,
-            {
-                user: username,
+        dojox.cometd.publish(room._topicRoot + roomid, {
+            user: username,
                 leave: true,
                 chat: username + (username.indexOf('elvis-') == 0 ? ' has left the building' : ' has left')
             });
@@ -37,41 +34,37 @@ var room =
     },
 
     sendMessage: function(roomid, username, text) {
-        if (!text || !text.length)
+        if (!text || !text.length) {
             return;
+        }
 
         var colons = text.indexOf("::");
         if (colons > 0) {
-            dojox.cometd.publish(room._serviceRoot + 'chat',
-                {
-                    room: room._topicRoot + roomid,
+            dojox.cometd.publish(room._serviceRoot + 'chat', {
+                room: room._topicRoot + roomid,
                     user: username,
                     chat: text.substring(colons + 2),
                     peer: text.substring(0, colons)
                 });
-        }
-        else {
-            dojox.cometd.publish(room._topicRoot + roomid,
-                {
-                    user: username,
+        } else {
+            dojox.cometd.publish(room._topicRoot + roomid, {
+                user: username,
                     chat: text
                 });
         }
     }
 };
 
-var bidHandler =
-{
+var bidHandler = {
     _bidder: null,
     _serviceRoot: "/service/auction/",
     _topicRoot: "/auction/item",
-    _subscriptions: new Array(),
+    _subscriptions: [],
 
     registerBidder: function(name) {
         if (name == null || name.length == 0) {
             return false;
-        }
-        else {
+        } else {
             dojox.cometd.publish(bidHandler._serviceRoot + 'bidder', name);
             return true;
         }
@@ -92,9 +85,8 @@ var bidHandler =
         if (validAmount != null) {
             amount = amount.replace(/\,/g, "");
 
-            dojox.cometd.publish(room._serviceRoot + 'bid',
-                {
-                    itemId: itemId,
+            dojox.cometd.publish(room._serviceRoot + 'bid', {
+                itemId: itemId,
                     amount: amount,
                     username: bidHandler._bidder.username
                 });
@@ -116,10 +108,8 @@ var bidHandler =
     }
 };
 
-var displayUtil =
-{
+var displayUtil = {
     show: function(element, displayStyle) {
-
         $(element).style.visibility = "visible";
         if (displayStyle != null)
             $(element).style.display = displayStyle;
@@ -149,9 +139,9 @@ var displayUtil =
     },
 
     validateCash: function(amountStr) {
-        var ok = true;
-        if (amountStr == null || amountStr == "")
+        if (amountStr == null || amountStr == "") {
             return "0";
+        }
         var str = amountStr.replace(/^\$/, "");
 
         var strNoCommas = str.replace(/\,/g, "");
@@ -167,19 +157,23 @@ var displayUtil =
 
     replace: function(string, text, by) {
         var strLength = string.length, txtLength = text.length;
-        if ((strLength == 0) || (txtLength == 0))
+        if ((strLength == 0) || (txtLength == 0)) {
             return string;
+        }
 
         var i = string.indexOf(text);
-        if ((!i) && (text != string.substring(0, txtLength)))
+        if ((!i) && (text != string.substring(0, txtLength))) {
             return string;
-        if (i == -1)
+        }
+        if (i == -1) {
             return string;
+        }
 
         var newstr = string.substring(0, i) + by;
 
-        if (i + txtLength < strLength)
+        if (i + txtLength < strLength) {
             newstr += displayUtil.replace(string.substring(i + txtLength, strLength), text, by);
+        }
 
         return newstr;
     }
@@ -187,9 +181,7 @@ var displayUtil =
 };
 
 // functions for DWRUtil.addRows
-var bidDisplay =
-{
-
+var bidDisplay = {
     _bidItemDisplay: [function(bid) {
         thename = document.createElement("p");
         thename.id = "Itm" + bid.itemId;
@@ -216,15 +208,14 @@ var bidDisplay =
         chatButton.itemName = bid.itemName;
         chatButton.innerHTML = "chat";
         chatButton.setAttribute("class", "chat");
-        chatButton.onclick = function(event) {
+        chatButton.onclick = function() {
             //close any previous chat
             chatDisplay.leaveRoom();
             //enter the new room
             chatDisplay.enterRoom(chatButton.id, bid.itemId, bidHandler._bidder.username);
-        }
+        };
         return chatButton;
-    }
-    ],
+    }],
 
     showRegistration: function(message) {
         if (message != null) {
@@ -261,26 +252,25 @@ var bidDisplay =
             var itemId = message.data.itemId;
             var bidder = message.data.bidder;
             var amount = message.data.amount;
-            if (itemId)
+            if (itemId) {
                 bidDisplay.displayBidDetails(itemId, null, amount, bidder);
+            }
         }
     },
 
     displayBidDetails: function(itemId, itemName, amount, bidder) {
-        var bidList = $("contents");
         var bidTr = document.getElementById(itemId);
         if (bidTr == null) {
-            var bid = new Object();
+            var bid = {};
             bid.itemId = itemId;
             bid.itemName = itemName;
             bid.amount = amount;
             bid.bidder = bidder;
-            var bids = new Array();
+            var bids = [];
             bids[0] = bid;
 
-            DWRUtil.addRows("contents", bids, bidDisplay._bidItemDisplay,
-                {
-                    rowCreator: function(options) {
+            DWRUtil.addRows("contents", bids, bidDisplay._bidItemDisplay, {
+                rowCreator: function(options) {
                         var row = document.createElement("tr");
                         var thedata = options.rowData;
                         row.id = thedata.itemId;
@@ -293,15 +283,12 @@ var bidDisplay =
                         if (options.cellNum == 1) {
                             cell.id = "Amnt" + thedata.itemId;
                             cell.className = "amountcell";
-                        }
-                        else if (options.cellNum == 2) {
+                        } else if (options.cellNum == 2) {
                             cell.id = "Bidder" + thedata.itemId;
                             cell.className = "biddercell";
-                        }
-                        else if (options.cellNum == 3) {
+                        } else if (options.cellNum == 3) {
                             cell.className = "bidcell";
-                        }
-                        else if (options.cellNum == 4) {
+                        } else if (options.cellNum == 4) {
                             cell.className = "chatcell";
                         }
                         return cell;
@@ -309,9 +296,8 @@ var bidDisplay =
                 });
 
             //add an inplace editor on the Bid button
-            new NonAjax.InPlaceEditor("Btn" + itemId, null,
-                {
-                    callback: function(form, val) {
+            new NonAjax.InPlaceEditor("Btn" + itemId, null, {
+                callback: function(form, val) {
                         if (!bidHandler.bid(val, bid.itemId, bid.itemName))
                             alert('Please enter a decimal amount without a leading $');
                     },
@@ -322,29 +308,26 @@ var bidDisplay =
                         textElement.value = dollars;
                     }
                 });
-        }
-        else {
+        } else {
             //update existing current bid and bidder in the row
             dollarValue = "";
-            if (amount != null && amount != "")
+            if (amount != null && amount != "") {
                 dollarValue = displayUtil.formatCash(amount);
+            }
             DWRUtil.setValue("Amnt" + itemId, dollarValue);
 
             if (bidder) {
                 var highBidder = bidder.username;
                 DWRUtil.setValue("Bidder" + itemId, highBidder);
                 if (highBidder == bidHandler._bidder.username) {
-                    new Effect.Highlight("Amnt" + itemId,
-                        {
-                            startcolor: '#ffffff',
+                    new Effect.Highlight("Amnt" + itemId, {
+                        startcolor: '#ffffff',
                             endcolor: '#ccffcc',
                             restorecolor: '#ccffcc'
                         });
-                }
-                else {
-                    new Effect.Highlight("Amnt" + itemId,
-                        {
-                            startcolor: '#ffffff',
+                } else {
+                    new Effect.Highlight("Amnt" + itemId, {
+                        startcolor: '#ffffff',
                             endcolor: '#ffcccc',
                             restorecolor: '#ffcccc'
                         });
@@ -354,9 +337,7 @@ var bidDisplay =
     }
 };
 
-
-var catalogDisplay =
-{
+var catalogDisplay = {
     _categorySelected: null,
 
     // Functions for DWRUtil.addRows
@@ -367,7 +348,6 @@ var catalogDisplay =
         var img = div.appendChild(document.createElement("img"));
         img.src = "images/" + item.itemId + ".jpg";
         div.appendChild(document.createElement("br"));
-
         return div;
     }, function(item) {
         var div = document.createElement("div");
@@ -396,7 +376,7 @@ var catalogDisplay =
         if (document.getElementById(item.itemId) != null) {
             btn.style.visibility = "hidden"; //hide ourselves if item shown in auction
         }
-        btn.onclick = function(event) {
+        btn.onclick = function() {
             //add to my auction, getting the highest bid
             bidDisplay.displayBidDetails(item.itemId, item.name, null, null);
 
@@ -404,42 +384,36 @@ var catalogDisplay =
             bidHandler.watch(item.itemId);
             btn.style.visibility = "hidden"; //hide ourselves once pressed
             //document.getElementById('phrase').focus();
-        }
+        };
 
         div.appendChild(document.createElement("br"));
 
         return div;
-    }
-    ],
+    }],
 
     displayItems: function(msg) {
         var auctionitems = msg.data;
         DWRUtil.removeAllRows("auctionitems");
         if (auctionitems.length == 0) {
             DWRUtil.setValue("itemhdr", "Items");
-        }
-        else {
+        } else {
             DWRUtil.addRows("auctionitems", auctionitems, catalogDisplay._itemsDisplay);
         }
     },
-
 
     // Functions for DWRUtil.addRows of categories
     _categoryItemDisplay: [function(categoryitem) {
         var link = document.createElement("span");
         link.itemId = categoryitem.categoryId;
         link.innerHTML = categoryitem.categoryName;
-
         return link;
-    }
-    ],
+    }],
 
     displayCategories: function(msg) {
         var categoryList = msg.data;
         DWRUtil.removeAllRows("categories");
-        DWRUtil.addRows("categories", categoryList, catalogDisplay._categoryItemDisplay,
-            {
-                rowCreator: function(options) {
+        DWRUtil.addRows("categories", categoryList, catalogDisplay._categoryItemDisplay, {
+            rowCreator: function() {
                     return document.createElement("tr");
                 },
                 cellCreator: function(options) {
@@ -447,7 +421,7 @@ var catalogDisplay =
                     var categoryData = options.rowData;
                     cell.id = "cat" + categoryData.categoryId;
                     cell.setAttribute("class", "noselect");
-                    cell.onclick = function(event) {
+                    cell.onclick = function() {
                         if (catalogDisplay._categorySelected != null) {
                             $(catalogDisplay._categorySelected).setAttribute("class", "noselect");
                             $(catalogDisplay._categorySelected).className = "noselect";
@@ -456,17 +430,17 @@ var catalogDisplay =
                         cell.setAttribute("class", "catselect");
                         cell.className = "catselect";
                         catalogDisplay.displayItemsByCategory(categoryData.categoryId, categoryData.categoryName);
-                    }
-                    cell.onmouseover = function(event) {
+                    };
+                    cell.onmouseover = function() {
                         if (cell.className != "catselect") {
                             cell.className = "hovered";
                         }
-                    }
-                    cell.onmouseout = function(event) {
+                    };
+                    cell.onmouseout = function() {
                         if (cell.className == "hovered") {
                             cell.className = "noselect";
                         }
-                    }
+                    };
                     return cell;
                 }
             });
@@ -477,7 +451,6 @@ var catalogDisplay =
     searchFormSubmitHandler: function() {
         var searchExp = $("searchbox").value;
         DWRUtil.setValue("searchbox", "");
-
         dojox.cometd.publish(room._serviceRoot + 'search', searchExp);
     },
 
@@ -486,15 +459,13 @@ var catalogDisplay =
         DWRUtil.setValue("itemhdr", categoryName);
         dojox.cometd.publish(room._serviceRoot + 'category', categoryId);
     }
-
 };
 
-var chatDisplay =
-{
+var chatDisplay = {
     displayMembers: function(memberList) {
         membersHTML = "";
         if (memberList != null) {
-            for (i = 0; i < memberList.length; i++) {
+            for (var i = 0; i < memberList.length; i++) {
                 membersHTML += "<p>" + memberList[i] + "</p>";
             }
         }
@@ -504,14 +475,12 @@ var chatDisplay =
     displayImage: function(itemId) {
         var imageSrc = "images/" + itemId + ".jpg";
         var imageHTML = "<center><img src='" + imageSrc + "'/></center>";
-
         $("chatitem").innerHTML = imageHTML;
     },
 
     displayMessage: function(message) {
         chatArea = $('chat');
         if (message) {
-
             if (message.data instanceof Array) {
                 chatDisplay.displayMembers(message.data);
                 return;
@@ -525,8 +494,7 @@ var chatDisplay =
                 //show the new joiner
                 chatArea.innerHTML += "<p><i>" + msg + "</i></p>";
                 chatDisplay.displayImage(roomId);
-            }
-            else {
+            } else {
                 chatArea.innerHTML += "<p>" + userId + ": " + msg + "</p>"
             }
             chatArea.scrollTop = chatArea.scrollHeight - chatArea.clientHeight;
@@ -557,30 +525,28 @@ var chatDisplay =
     }
 };
 
-var EvUtil =
-{
+var EvUtil = {
     getKeyCode: function(ev) {
         var keyc;
-        if (window.event)
+        if (window.event) {
             keyc = window.event.keyCode;
-        else
+        } else {
             keyc = ev.keyCode;
+        }
         return keyc;
     }
 };
 
-
-var auctionBehaviour =
-{
-
+var auctionBehaviour = {
     '#username': function(element) {
         element.setAttribute("autocomplete", "OFF");
         element.onkeyup = function(ev) {
             var keyc = EvUtil.getKeyCode(ev);
             if (keyc == 13 || keyc == 10) {
                 var name = $('username').value;
-                if (!bidHandler.registerBidder(name))
+                if (!bidHandler.registerBidder(name)) {
                     bidDisplay.showRegistration("Please enter a user name");
+                }
                 Behaviour.apply();
             }
             return true;
@@ -600,36 +566,35 @@ var auctionBehaviour =
     },
 
     '#joinbtn': function(element) {
-        element.onclick = function(event) {
+        element.onclick = function() {
             var name = $('username').value;
-            if (!bidHandler.registerBidder(name))
+            if (!bidHandler.registerBidder(name)) {
                 bidDisplay.showRegistration("Please enter a user name");
+            }
             Behaviour.apply();
             return true;
         }
     },
 
     '#chatclose': function(element) {
-        element.onclick = function(event) {
+        element.onclick = function() {
             chatDisplay.leaveRoom();
         }
     },
 
     '#searchbtn': function(element) {
-        element.onclick = function(event) {
+        element.onclick = function() {
             catalogDisplay.searchFormSubmitHandler();
         }
     },
 
     '#sendChat': function(element) {
-        element.onclick = function(event) {
+        element.onclick = function() {
             room.sendMessage($('chatclose').roomId, bidHandler._bidder.username, $('phrase').value);
             $('phrase').value = "";
             $('phrase').focus();
         }
     }
-
-
 };
 
 Behaviour.register(auctionBehaviour);
@@ -642,5 +607,3 @@ Behaviour.addLoadEvent(function() {
         dojox.cometd.subscribe(bidHandler._serviceRoot + 'bidder', bidHandler, "handleRegistration");
     }, 100);
 });
-
-

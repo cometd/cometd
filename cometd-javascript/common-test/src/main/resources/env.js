@@ -80,8 +80,7 @@ var window = this;
                 case 'object':
                     if (!object) {
                         return 'null';
-                    }
-                    else if (object instanceof Array) {
+                    } else if (object instanceof Array) {
                         for (var aid = 0; aid < ids.length; ++aid) {
                             if (ids[aid] === object)
                                 return undefined;
@@ -99,8 +98,7 @@ var window = this;
                         }
                         arrayResult += ']';
                         return arrayResult;
-                    }
-                    else if (Packages.org.cometd.javascript.Utils.isJavaScriptObject(object)) {
+                    } else if (Packages.org.cometd.javascript.Utils.isJavaScriptObject(object)) {
                         for (var oid = 0; oid < ids.length; ++oid) {
                             if (ids[oid] === object)
                                 return undefined;
@@ -121,8 +119,7 @@ var window = this;
                         }
                         objectResult += '}';
                         return objectResult;
-                    }
-                    else {
+                    } else {
                         return '' + object;
                     }
                 case 'function':
@@ -250,8 +247,7 @@ var window = this;
 
             if (script.onload && typeof script.onload === 'function') {
                 script.onload.call(script);
-            }
-            else {
+            } else {
                 var event = window.document.createEvent();
                 event.initEvent('load', true, true);
                 script.dispatchEvent(event);
@@ -580,11 +576,12 @@ var window = this;
                 ret += " " + i + "='" + attr[i] + "'";
             }
 
-            if (this.childNodes.length || this.nodeName == "SCRIPT")
+            if (this.childNodes.length || this.nodeName == "SCRIPT") {
                 ret += ">" + this.childNodes.outerHTML +
                     "</" + this.tagName + ">";
-            else
+            } else {
                 ret += "/>";
+            }
 
             return ret;
         },
@@ -615,10 +612,11 @@ var window = this;
             function nav(nodes) {
                 var str = "";
                 for (var i = 0; i < nodes.length; i++) {
-                    if (nodes[i].nodeType == 3)
+                    if (nodes[i].nodeType == 3) {
                         str += nodes[i].nodeValue;
-                    else if (nodes[i].nodeType == 1)
+                    } else if (nodes[i].nodeType == 1) {
                         str += nav(nodes[i].childNodes);
+                    }
                 }
                 return str;
             }
@@ -742,8 +740,7 @@ var window = this;
                             "<html><head></head><body></body></html>"))
                             .getBytes("UTF8")));
                 return this._doc;
-            }
-            else
+            } else
                 return null;
         }
     });
@@ -765,8 +762,7 @@ var window = this;
                     a.__defineGetter__(i, g);
                 if (s)
                     a.__defineSetter__(i, s);
-            }
-            else
+            } else
                 a[i] = b[i];
         }
         return a;

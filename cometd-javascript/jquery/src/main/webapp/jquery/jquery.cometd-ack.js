@@ -22,8 +22,7 @@
 
     if (typeof define === 'function' && define.amd) {
         define(['org/cometd/AckExtension', 'jquery.cometd'], bind);
-    }
-    else {
+    } else {
         bind(org.cometd.AckExtension, jQuery.cometd);
     }
 })();

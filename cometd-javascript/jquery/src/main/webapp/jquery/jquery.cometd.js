@@ -115,8 +115,7 @@
 
     if (typeof define === 'function' && define.amd) {
         define(['jquery', 'org/cometd'], bind);
-    }
-    else {
+    } else {
         bind(jQuery, org.cometd);
     }
 })();

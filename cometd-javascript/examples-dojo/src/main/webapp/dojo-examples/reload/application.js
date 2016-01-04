@@ -17,8 +17,7 @@ require({
                     path: '/',
                     expires: new Date(new Date().getTime() + 300 * 1000)
                 });
-            }
-            else {
+            } else {
                 dom.byId('previous').innerHTML = 'Handshake Failed';
                 dom.byId('current').innerHTML = 'Handshake Failed';
             }

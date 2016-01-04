@@ -10,12 +10,8 @@
         dojo.require("dojox.cometd.timesync");
 
         dojox.cometd.init(location.href.replace(/\/dojo-examples\/.*$/, '') + "/cometd");
-        dojox.cometd.subscribe("/chat/demo", function()
-        {
-        });
 
-        var tick = function()
-        {
+        var tick = function() {
             var now = dojox.cometd.timesync.getServerDate();
             dojo.byId("time").innerHTML = now.toUTCString();
             dojo.byId("offset").innerHTML = dojox.cometd.timesync.getTimeOffset() + "  from samples " + dojox.cometd.timesync.getTimeOffsetSamples().join();

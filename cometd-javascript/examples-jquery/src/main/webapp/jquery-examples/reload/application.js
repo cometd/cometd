@@ -20,8 +20,7 @@ require({
                         path: '/',
                         expires: new Date(new Date().getTime() + 300 * 1000)
                     });
-                }
-                else {
+                } else {
                     $('#previous').html('Handshake Failed');
                     $('#current').html('Handshake Failed');
                 }
