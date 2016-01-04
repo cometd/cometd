@@ -47,8 +47,7 @@ org.cometd.TransportRegistry = function() {
         if (!existing) {
             if (typeof index !== 'number') {
                 _types.push(type);
-            }
-            else {
+            } else {
                 _types.splice(index, 0, type);
             }
             _transports[type] = transport;

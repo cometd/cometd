@@ -34,13 +34,11 @@ org.cometd.LongPollingTransport = function() {
                             self.transportFailure(envelope, request, {
                                 httpCode: 204
                             });
-                        }
-                        else {
+                        } else {
                             success = true;
                             self.transportSuccess(envelope, request, received);
                         }
-                    }
-                    catch (x) {
+                    } catch (x) {
                         self._debug(x);
                         if (!success) {
                             _supportsCrossDomain = false;
@@ -65,15 +63,13 @@ org.cometd.LongPollingTransport = function() {
                         self.setTimeout(function() {
                             self.transportFailure(envelope, request, failure);
                         }, 0);
-                    }
-                    else {
+                    } else {
                         self.transportFailure(envelope, request, failure);
                     }
                 }
             });
             sameStack = false;
-        }
-        catch (x) {
+        } catch (x) {
             _supportsCrossDomain = false;
             // Keep the semantic of calling response callbacks asynchronously after the request
             this.setTimeout(function() {

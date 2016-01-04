@@ -1,7 +1,8 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html>
 <html>
 <head>
-    <title>CometD timesync demo</title>
+    <title>CometD TimeSync Demo</title>
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Varela+Round">
     <script type="text/javascript" src="../../dojo/dojo.js"></script>
     <script type="text/javascript">
         dojo.registerModulePath("org", "../org");
@@ -27,21 +28,39 @@
         setTimeout(tick, 1000);
         dojo.addOnUnload(dojox.cometd, "disconnect");
     </script>
+    <style>
+        body {
+            font-family: "Varela Round", sans-serif;
+            color: #333;
+        }
+        a:hover, a:visited {
+            color: #333;
+        }
+        a:active {
+            color: #E52;
+        }
+    </style>
 </head>
 <body>
 
-<h1>TimeSync test</h1>
-<a href="../..">Main Demo index</a><br/>
+<h1>TimeSync Demo</h1>
+
+<a href="../..">Main Demo Index</a><br/>
 
 <p>
     This test uses the timesync extension to calculate a timeoffset with the server.
+</p>
+<p>
     The time displayed below is the server time and should be the same for all clients
     no matter what their local clocks are set to.
 </p>
 
-<p>The accuracy should improve as each connect response is received. If the client and
-    server are on the same machine, then the algorithm will likely detect good accuracy and
-    not send any samples.
+<p>
+    The accuracy should improve as each connect response is received.
+</p>
+<p>
+    If the client and server are on the same machine, then the algorithm will likely
+    detect good accuracy and not send any further sample.
 </p>
 
 <div id="time"></div>

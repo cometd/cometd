@@ -14,10 +14,10 @@
         <jetty-version>9.2.14.v20151106</jetty-version>
         <!-- end::jetty-version[] -->
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
-        <slf4j-version>1.7.12</slf4j-version>
-        <spring-version>4.2.2.RELEASE</spring-version>
+        <slf4j-version>1.7.13</slf4j-version>
+        <spring-version>4.2.4.RELEASE</spring-version>
         <jackson1-version>1.9.13</jackson1-version>
-        <jackson2-version>2.6.3</jackson2-version>
+        <jackson2-version>2.6.4</jackson2-version>
         <dojo-version>1.10.4</dojo-version>
         <rhino-version>1.7R4</rhino-version>
     </properties>
@@ -387,12 +387,12 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>3.0.2</version>
+                    <version>3.0.3</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.felix</groupId>
                     <artifactId>maven-bundle-plugin</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.0.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.eclipse.jetty</groupId>
