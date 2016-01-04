@@ -186,8 +186,7 @@
 
     if (typeof define === 'function' && define.amd) {
         define(['org/cometd'], bind);
-    }
-    else {
+    } else {
         bind(org.cometd);
     }
 })();

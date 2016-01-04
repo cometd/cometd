@@ -22,8 +22,7 @@
 
     if (typeof define === 'function' && define.amd) {
         define(['org/cometd/TimeSyncExtension', 'jquery.cometd'], bind);
-    }
-    else {
+    } else {
         bind(org.cometd.TimeSyncExtension, jQuery.cometd);
     }
 })();

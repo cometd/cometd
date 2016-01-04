@@ -28,8 +28,7 @@
             _connected = message.successful === true;
             if (!wasConnected && _connected) {
                 _connectionEstablished();
-            }
-            else if (wasConnected && !_connected) {
+            } else if (wasConnected && !_connected) {
                 _connectionBroken();
             }
         }

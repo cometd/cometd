@@ -14,8 +14,7 @@ require({
                     $('#previous').html(window.sessionStorage.getItem('demoLastCometDID'));
                     $('#current').html(message.clientId);
                     window.sessionStorage.setItem('demoLastCometDID', message.clientId);
-                }
-                else {
+                } else {
                     $('#previous').html('Handshake Failed');
                     $('#current').html('Handshake Failed');
                 }

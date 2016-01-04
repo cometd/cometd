@@ -22,7 +22,7 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
                     }
                 });
 
-                dojo.query("#joinButton").onclick(function(e) {
+                dojo.query("#joinButton").onclick(function() {
                     room.join(dojo.byId('username').value);
                 });
 
@@ -34,15 +34,15 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
                     }
                 });
 
-                dojo.query("#sendButton").onclick(function(e) {
+                dojo.query("#sendButton").onclick(function() {
                     room.chat();
                 });
 
                 dojo.query("#leaveButton").onclick(room, "leave");
 
                 // Check if there was a saved application state.
-                var stateCookie = window.sessionStorage.getItem(stateKey);
-                var state = stateCookie ? JSON.parse(stateCookie) : null;
+                var stateItem = window.sessionStorage.getItem(stateKey);
+                var state = stateItem ? JSON.parse(stateItem) : null;
                 // Restore the state, if present.
                 if (state) {
                     window.sessionStorage.removeItem(stateKey);
@@ -129,8 +129,7 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
                         chat: text.substring(colons + 2),
                         peer: text.substring(0, colons)
                     });
-                }
-                else {
+                } else {
                     cometd.publish("/chat/demo", {
                         user: room._username,
                         chat: text
@@ -145,8 +144,7 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
 
                 if (!membership && fromUser == room._lastUser) {
                     fromUser = "...";
-                }
-                else {
+                } else {
                     room._lastUser = fromUser;
                     fromUser += ":";
                 }
@@ -155,11 +153,9 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
                 if (membership) {
                     chat.innerHTML += "<span class=\"membership\"><span class=\"from\">" + fromUser + "&nbsp;</span><span class=\"text\">" + text + "</span></span><br/>";
                     room._lastUser = null;
-                }
-                else if (message.data.scope == "private") {
+                } else if (message.data.scope == "private") {
                     chat.innerHTML += "<span class=\"private\"><span class=\"from\">" + fromUser + "&nbsp;</span><span class=\"text\">[private]&nbsp;" + text + "</span></span><br/>";
-                }
-                else {
+                } else {
                     chat.innerHTML += "<span class=\"from\">" + fromUser + "&nbsp;</span><span class=\"text\">" + text + "</span><br/>";
                 }
 
@@ -231,14 +227,12 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
                 if (room._disconnecting) {
                     room._connected = false;
                     room._connectionClosed();
-                }
-                else {
+                } else {
                     var wasConnected = room._connected;
                     room._connected = message.successful === true;
                     if (!wasConnected && room._connected) {
                         room._connectionEstablished();
-                    }
-                    else if (wasConnected && !room._connected) {
+                    } else if (wasConnected && !room._connected) {
                         room._connectionBroken();
                     }
                 }
