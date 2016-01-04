@@ -91,13 +91,11 @@ org.cometd.CallbackPollingTransport = function() {
                             self.transportFailure(envelopeToSend, request, {
                                 httpCode: 204
                             });
-                        }
-                        else {
+                        } else {
                             success = true;
                             self.transportSuccess(envelopeToSend, request, received);
                         }
-                    }
-                    catch (x) {
+                    } catch (x) {
                         self._debug(x);
                         if (!success) {
                             self.transportFailure(envelopeToSend, request, {
@@ -116,15 +114,13 @@ org.cometd.CallbackPollingTransport = function() {
                         self.setTimeout(function() {
                             self.transportFailure(envelopeToSend, request, failure);
                         }, 0);
-                    }
-                    else {
+                    } else {
                         self.transportFailure(envelopeToSend, request, failure);
                     }
                 }
             });
             sameStack = false;
-        }
-        catch (xx) {
+        } catch (xx) {
             // Keep the semantic of calling response callbacks asynchronously after the request
             this.setTimeout(function() {
                 self.transportFailure(envelopeToSend, request, {

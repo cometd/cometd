@@ -71,8 +71,7 @@ org.cometd.RequestTransport = function() {
         if (_requests.length < this.getConfiguration().maxConnections - 1) {
             _requests.push(request);
             _transportSend.call(this, envelope, request);
-        }
-        else {
+        } else {
             this._debug('Transport', this.getType(), 'queueing request', requestId, 'envelope', envelope);
             _envelopes.push([envelope, request]);
         }
@@ -107,8 +106,7 @@ org.cometd.RequestTransport = function() {
                 }
                 _queueSend.call(this, nextEnvelope);
                 this._debug('Transport completed request', request.id, nextEnvelope);
-            }
-            else {
+            } else {
                 // Keep the semantic of calling response callbacks asynchronously after the request
                 var self = this;
                 this.setTimeout(function() {
@@ -127,8 +125,7 @@ org.cometd.RequestTransport = function() {
     _self.complete = function(request, success, metaConnect) {
         if (metaConnect) {
             _metaConnectComplete.call(this, request);
-        }
-        else {
+        } else {
             _complete.call(this, request, success);
         }
     };
@@ -148,8 +145,7 @@ org.cometd.RequestTransport = function() {
             this.complete(request, true, request.metaConnect);
             if (responses && responses.length > 0) {
                 envelope.onSuccess(responses);
-            }
-            else {
+            } else {
                 envelope.onFailure(request.xhr, envelope.messages, {
                     httpCode: 204
                 });
@@ -184,8 +180,7 @@ org.cometd.RequestTransport = function() {
     _self.send = function(envelope, metaConnect) {
         if (metaConnect) {
             _metaConnectSend.call(this, envelope);
-        }
-        else {
+        } else {
             _queueSend.call(this, envelope);
         }
     };
@@ -223,8 +218,7 @@ org.cometd.RequestTransport = function() {
                 var state = xhr.readyState;
                 xhr.abort();
                 return state !== XMLHttpRequest.UNSENT;
-            }
-            catch (x) {
+            } catch (x) {
                 this._debug(x);
             }
         }
@@ -235,8 +229,7 @@ org.cometd.RequestTransport = function() {
         if (xhr) {
             try {
                 return xhr.status;
-            }
-            catch (x) {
+            } catch (x) {
                 this._debug(x);
             }
         }

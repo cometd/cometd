@@ -67,8 +67,7 @@ org.cometd.WebSocketTransport = function() {
             var protocol = _cometd.getConfiguration().protocol;
             context.webSocket = protocol ? new org.cometd.WebSocket(url, protocol) : new org.cometd.WebSocket(url);
             _connecting = context;
-        }
-        catch (x) {
+        } catch (x) {
             _webSocketSupported = false;
             this._debug('Exception while creating WebSocket object', x);
             throw x;
@@ -98,8 +97,7 @@ org.cometd.WebSocketTransport = function() {
                 _context = context;
                 _webSocketConnected = true;
                 self.onOpen(context);
-            }
-            else {
+            } else {
                 // We have a valid connection already, close this one.
                 _cometd._warn('Closing extra WebSocket connection', this, 'active connection', _context);
                 _forceClose.call(self, context, {code: 1000, reason: 'Extra Connection'});
@@ -185,13 +183,11 @@ org.cometd.WebSocketTransport = function() {
                     };
                 _storeEnvelope.call(this, context, envelope, metaConnect);
                 _websocketConnect.call(this, context);
-            }
-            else {
+            } else {
                 _storeEnvelope.call(this, context, envelope, metaConnect);
                 _webSocketSend.call(this, context, envelope, metaConnect);
             }
-        }
-        catch (x) {
+        } catch (x) {
             // Keep the semantic of calling response callbacks asynchronously after the request.
             var self = this;
             this.setTimeout(function() {
@@ -349,8 +345,7 @@ org.cometd.WebSocketTransport = function() {
             if (context.webSocket) {
                 context.webSocket.close(code, reason);
             }
-        }
-        catch (x) {
+        } catch (x) {
             this._debug(x);
         }
     };
