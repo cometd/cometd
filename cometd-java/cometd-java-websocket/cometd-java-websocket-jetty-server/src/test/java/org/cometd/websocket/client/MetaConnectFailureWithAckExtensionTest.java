@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2015 the original author or authors.
+ * Copyright (c) 2008-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,10 @@
  */
 package org.cometd.websocket.client;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -29,10 +33,6 @@ import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.websocket.ClientServerWebSocketTest;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class MetaConnectFailureWithAckExtensionTest extends ClientServerWebSocketTest
 {

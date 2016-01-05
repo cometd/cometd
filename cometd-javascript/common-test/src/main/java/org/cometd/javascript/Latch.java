@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2015 the original author or authors.
+ * Copyright (c) 2008-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 package org.cometd.javascript;
 
-import org.mozilla.javascript.ScriptableObject;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import org.mozilla.javascript.ScriptableObject;
 
 public class Latch extends ScriptableObject
 {

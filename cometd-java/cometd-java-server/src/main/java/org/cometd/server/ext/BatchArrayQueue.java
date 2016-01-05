@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2015 the original author or authors.
+ * Copyright (c) 2008-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
  */
 package org.cometd.server.ext;
 
-import org.eclipse.jetty.util.ArrayQueue;
-
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+
+import org.eclipse.jetty.util.ArrayQueue;
 
 public class BatchArrayQueue<T> extends ArrayQueue<T>
 {
