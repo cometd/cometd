@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2015 the original author or authors.
+ * Copyright (c) 2008-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 package org.cometd.common;
 
-import org.cometd.bayeux.Message;
-import org.eclipse.jetty.util.ajax.JSON;
-
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -25,6 +22,9 @@ import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
+
+import org.cometd.bayeux.Message;
+import org.eclipse.jetty.util.ajax.JSON;
 
 public abstract class JettyJSONContext<T extends Message.Mutable>
 {

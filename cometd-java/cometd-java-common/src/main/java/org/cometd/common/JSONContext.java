@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2015 the original author or authors.
+ * Copyright (c) 2008-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 package org.cometd.common;
 
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.server.ServerMessage;
-
 import java.io.InputStream;
 import java.io.Reader;
 import java.text.ParseException;
 import java.util.List;
+
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.ServerMessage;
 
 public interface JSONContext
 {
