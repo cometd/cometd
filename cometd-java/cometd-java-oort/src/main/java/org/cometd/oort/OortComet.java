@@ -152,7 +152,8 @@ public class OortComet extends BayeuxClient
                     subscribe(channels);
 
                     // Advertise the remote node that we have joined
-                    Map<String, Object> data = new HashMap<>(1);
+                    Map<String, Object> data = new HashMap<>(2);
+                    data.put(Oort.EXT_OORT_ID_FIELD, _oort.getId());
                     data.put(Oort.EXT_OORT_URL_FIELD, _oort.getURL());
                     getChannel(Oort.OORT_SERVICE_CHANNEL).publish(data);
 

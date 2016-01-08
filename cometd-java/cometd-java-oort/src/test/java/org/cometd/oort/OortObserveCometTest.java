@@ -279,6 +279,58 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
+    public void testNetworkBrokenShorterThanMaxInterval() throws Exception
+    {
+        long maxInterval = 4000;
+        Map<String, String> options = new HashMap<>();
+        options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
+
+        Server server1 = startServer(0, options);
+        Oort oort1 = startOort(server1);
+
+        Server server2 = startServer(0, options);
+        Oort oort2 = startOort(server2);
+
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        OortComet oortComet21 = oort2.observeComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
+        int port1 = connector1.getLocalPort();
+        connector1.stop();
+
+        ServerConnector connector2 = (ServerConnector)server2.getConnectors()[0];
+        int port2 = connector2.getLocalPort();
+        connector2.stop();
+
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.UNCONNECTED));
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.UNCONNECTED));
+
+        // Wait to let the comets handle the disconnection.
+        Thread.sleep(maxInterval / 4);
+
+        // Make sure that on reconnect the system does not emit a comet left event.
+        CountDownLatch leftLatch = new CountDownLatch(1);
+        oort1.addCometListener(new CometLeftListener(leftLatch));
+
+        connector1.setPort(port1);
+        connector1.start();
+
+        connector2.setPort(port2);
+        connector2.start();
+
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait until the maxInterval expires.
+        Thread.sleep(maxInterval);
+
+        // Verify that no comet left event has been emitted.
+        Assert.assertFalse(leftLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testNetworkBrokenLongerThanMaxInterval() throws Exception
     {
         long maxInterval = 2000;
@@ -318,6 +370,198 @@ public class OortObserveCometTest extends OortTest
 
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+    }
+
+    @Test
+    public void testCometDownLongerThanMaxInterval() throws Exception
+    {
+        long maxInterval = 2000;
+        Map<String, String> options = new HashMap<>();
+        options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
+
+        Server server1 = startServer(0, options);
+        Oort oort1 = startOort(server1);
+
+        Server server2 = startServer(0, options);
+        Oort oort2 = startOort(server2);
+
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        OortComet oortComet21 = oort2.observeComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Kill one comet.
+        ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
+        int port1 = connector1.getLocalPort();
+        connector1.stop();
+        // Break connectivity to avoid graceful shutdown when stopping the comet.
+        ServerConnector connector2 = (ServerConnector)server2.getConnectors()[0];
+        int port2 = connector2.getLocalPort();
+        connector2.stop();
+        stopOort(oort1);
+        stopServer(server1);
+
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.UNCONNECTED));
+
+        // Make sure that on reconnect the system emits
+        // comet events for the right comet at the right time.
+        final String oortId1 = oort1.getId();
+        final String oortURL1 = oort1.getURL();
+        final CountDownLatch joinedLatch = new CountDownLatch(1);
+        final CountDownLatch leftLatch = new CountDownLatch(1);
+        Oort.CometListener cometListener = new Oort.CometListener()
+        {
+            @Override
+            public void cometLeft(Event event)
+            {
+                Assert.assertEquals(oortId1, event.getCometId());
+                Assert.assertEquals(oortURL1, event.getCometURL());
+                // Left event must happen before joined event.
+                Assert.assertTrue(joinedLatch.getCount() > 0);
+                leftLatch.countDown();
+            }
+
+            @Override
+            public void cometJoined(Event event)
+            {
+                Assert.assertNotEquals(oortId1, event.getCometId());
+                Assert.assertEquals(oortURL1, event.getCometURL());
+                // Left event must happen before joined event.
+                Assert.assertEquals(0, leftLatch.getCount());
+                joinedLatch.countDown();
+            }
+        };
+        oort2.addCometListener(cometListener);
+
+        // Wait until the maxInterval expires.
+        Thread.sleep(2 * maxInterval);
+
+        // Restart the comet.
+        server1 = startServer(port1, options);
+        oort1 = startOort(server1);
+
+        // Restore the connectivity.
+        connector2.setPort(port2);
+        connector2.start();
+
+        // Poll until the connection is restored.
+        int polls = 0;
+        do
+        {
+            oortComet12 = oort1.getComet(oort2.getURL());
+            Thread.sleep(100);
+            ++polls;
+        }
+        while (oortComet12 == null && polls < 100);
+        Assert.assertNotNull(oortComet12);
+
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Verify that comet events have been emitted.
+        Assert.assertTrue(leftLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(joinedLatch.await(5, TimeUnit.SECONDS));
+
+        // Avoid assertions while stopping the test.
+        oort2.removeCometListener(cometListener);
+    }
+
+    @Test
+    public void testCometDownShorterThanMaxInterval() throws Exception
+    {
+        long maxInterval = 4000;
+        Map<String, String> options = new HashMap<>();
+        options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
+
+        Server server1 = startServer(0, options);
+        Oort oort1 = startOort(server1);
+
+        Server server2 = startServer(0, options);
+        Oort oort2 = startOort(server2);
+
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        OortComet oortComet21 = oort2.observeComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Kill one comet.
+        ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
+        int port1 = connector1.getLocalPort();
+        connector1.stop();
+        // Break connectivity to avoid graceful shutdown when stopping the comet.
+        ServerConnector connector2 = (ServerConnector)server2.getConnectors()[0];
+        int port2 = connector2.getLocalPort();
+        connector2.stop();
+        stopOort(oort1);
+        stopServer(server1);
+
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.UNCONNECTED));
+
+        // Wait to let the comets disconnect.
+        Thread.sleep(maxInterval / 4);
+
+        final String oortId1 = oort1.getId();
+
+        // Restart the comet.
+        server1 = startServer(port1, options);
+        oort1 = startOort(server1);
+
+        // Make sure that on reconnect the system emits a comet
+        // left event for the right comet at the right time.
+
+        CountDownLatch joinedLatch1 = new CountDownLatch(1);
+        oort1.addCometListener(new CometJoinedListener(joinedLatch1));
+
+        final String newOortId1 = oort1.getId();
+        final String oortURL1 = oort1.getURL();
+        final CountDownLatch joinedLatch2 = new CountDownLatch(1);
+        final CountDownLatch leftLatch2 = new CountDownLatch(1);
+        Oort.CometListener cometListener = new Oort.CometListener()
+        {
+            @Override
+            public void cometLeft(Event event)
+            {
+                Assert.assertEquals(oortId1, event.getCometId());
+                Assert.assertEquals(oortURL1, event.getCometURL());
+                // Left event must happen before joined event.
+                Assert.assertTrue(joinedLatch2.getCount() > 0);
+                leftLatch2.countDown();
+            }
+
+            @Override
+            public void cometJoined(Event event)
+            {
+                Assert.assertEquals(newOortId1, event.getCometId());
+                Assert.assertEquals(oortURL1, event.getCometURL());
+                // Left event must happen before joined event.
+                Assert.assertEquals(0, leftLatch2.getCount());
+                joinedLatch2.countDown();
+            }
+        };
+        oort2.addCometListener(cometListener);
+
+        // Restore the connectivity.
+        connector2.setPort(port2);
+        connector2.start();
+
+        // Wait until the maxInterval expires, meanwhile the comets reconnect.
+        Thread.sleep(maxInterval);
+
+        oortComet12 = oort1.getComet(oort2.getURL());
+        Assert.assertNotNull(oortComet12);
+
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Verify that comet events have been emitted.
+        Assert.assertTrue(leftLatch2.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(joinedLatch2.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(joinedLatch1.await(5, TimeUnit.SECONDS));
+
+        // Avoid assertions while stopping the test.
+        oort2.removeCometListener(cometListener);
     }
 
     @Test
