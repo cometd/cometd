@@ -56,7 +56,7 @@ public class OortMulticastConfigurer extends AbstractLifeCycle
 
     public OortMulticastConfigurer(Oort oort)
     {
-        this.logger = LoggerFactory.getLogger(getClass() + "." + Oort.replacePunctuation(oort.getURL(), '_'));
+        this.logger = LoggerFactory.getLogger(getClass().getName() + "." + Oort.replacePunctuation(oort.getURL(), '_'));
         this.oort = oort;
     }
 
