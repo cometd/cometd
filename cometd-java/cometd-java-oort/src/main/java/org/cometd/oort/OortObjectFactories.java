@@ -39,6 +39,11 @@ public class OortObjectFactories
         return new LongFactory(defaultValue);
     }
 
+    public static OortObject.Factory<String> forString(String defaultValue)
+    {
+        return new StringFactory(defaultValue);
+    }
+
     public static <K, V> OortObject.Factory<Map<K, V>> forMap()
     {
         return forMap(new HashMap<K, V>());
@@ -104,6 +109,26 @@ public class OortObjectFactories
             if (representation instanceof Number)
                 return ((Number)representation).longValue();
             throw new IllegalArgumentException();
+        }
+    }
+
+    private static class StringFactory implements OortObject.Factory<String>
+    {
+        private final String defaultValue;
+
+        public StringFactory(String defaultValue)
+        {
+            this.defaultValue = defaultValue;
+        }
+
+        @Override
+        public String newObject(Object representation)
+        {
+            if (representation == null)
+                return defaultValue;
+            if (representation instanceof String)
+                return (String)representation;
+            return String.valueOf(representation);
         }
     }
 
