@@ -15,6 +15,8 @@
  */
 package org.cometd.oort;
 
+import java.util.Map;
+
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -164,17 +166,20 @@ public abstract class OortConfigServlet extends HttpServlet
         @Override
         public void run()
         {
-            // Connect to myself until success.
-            // If the handshake fails, the normal
-            // BayeuxClient retry mechanism will kick-in.
+            // Connect to myself until success. If the handshake fails,
+            // the normal BayeuxClient retry mechanism will kick-in.
             if (LOG.isDebugEnabled())
                 LOG.debug("Connecting to self: {}", oort);
-            oortComet.handshake(new ClientSessionChannel.MessageListener()
+            Map<String, Object> fields = oort.newOortHandshakeFields(oort.getURL(), null);
+            oortComet.handshake(fields, new ClientSessionChannel.MessageListener()
             {
                 @Override
                 public void onMessage(ClientSessionChannel channel, Message message)
                 {
-                    if (message.isSuccessful())
+                    // If the handshake fails but has an advice field, it means it
+                    // reached the server but was denied e.g. by a SecurityPolicy.
+                    Map<String, Object> advice = message.getAdvice();
+                    if (message.isSuccessful() || advice != null)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Connected to self: {}", oort);

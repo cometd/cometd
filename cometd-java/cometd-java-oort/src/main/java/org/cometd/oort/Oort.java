@@ -53,7 +53,6 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.common.HashMapMessage;
 import org.cometd.common.JSONContext;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -328,17 +327,7 @@ public class Oort extends ContainerLifeCycle
         if (_logger.isDebugEnabled())
             _logger.debug("Connecting to comet {}", cometURL);
 
-        String b64Secret = encodeSecret(getSecret());
-        Message.Mutable fields = new HashMapMessage();
-        Map<String, Object> ext = fields.getExt(true);
-        Map<String, Object> oortExt = new HashMap<>(4);
-        ext.put(EXT_OORT_FIELD, oortExt);
-        oortExt.put(EXT_OORT_URL_FIELD, getURL());
-        oortExt.put(EXT_OORT_ID_FIELD, getId());
-        oortExt.put(EXT_OORT_SECRET_FIELD, b64Secret);
-        oortExt.put(EXT_COMET_URL_FIELD, cometURL);
-        if (oortAliasURL != null)
-            oortExt.put(EXT_OORT_ALIAS_URL_FIELD, oortAliasURL);
+        Map<String, Object> fields = newOortHandshakeFields(cometURL, oortAliasURL);
         connectComet(comet, fields);
         return comet;
     }
@@ -400,7 +389,7 @@ public class Oort extends ContainerLifeCycle
         }
     }
 
-    protected void connectComet(OortComet comet, Message.Mutable fields)
+    protected void connectComet(OortComet comet, Map<String, Object> fields)
     {
         comet.handshake(fields);
     }
@@ -557,6 +546,23 @@ public class Oort extends ContainerLifeCycle
         String b64RemoteSecret = (String)oortExt.get(EXT_OORT_SECRET_FIELD);
         String b64LocalSecret = encodeSecret(getSecret());
         return b64LocalSecret.equals(b64RemoteSecret);
+    }
+
+    protected Map<String, Object> newOortHandshakeFields(String cometURL, String oortAliasURL)
+    {
+        Map<String, Object> fields = new HashMap<>(1);
+        Map<String, Object> ext = new HashMap<>(1);
+        fields.put(Message.EXT_FIELD, ext);
+        Map<String, Object> oortExt = new HashMap<>(4);
+        ext.put(EXT_OORT_FIELD, oortExt);
+        oortExt.put(EXT_OORT_URL_FIELD, getURL());
+        oortExt.put(EXT_OORT_ID_FIELD, getId());
+        String b64Secret = encodeSecret(getSecret());
+        oortExt.put(EXT_OORT_SECRET_FIELD, b64Secret);
+        oortExt.put(EXT_COMET_URL_FIELD, cometURL);
+        if (oortAliasURL != null)
+            oortExt.put(EXT_OORT_ALIAS_URL_FIELD, oortAliasURL);
+        return fields;
     }
 
     /**
@@ -765,7 +771,8 @@ public class Oort extends ContainerLifeCycle
                 if (_id.equals(remoteOortId))
                 {
                     // Connecting to myself: disconnect
-                    _logger.warn("Detected self connect from {} to {}, disconnecting", remoteOortURL, cometURL);
+                    if (_logger.isDebugEnabled())
+                        _logger.debug("Detected self connect from {} to {}, disconnecting", remoteOortURL, cometURL);
                     disconnect(message);
                 }
                 else
