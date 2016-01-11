@@ -77,8 +77,10 @@ public abstract class OortConfigServlet extends HttpServlet
             if (secret != null)
                 oort.setSecret(secret);
 
-            boolean enableAckExtension = Boolean.parseBoolean(config.getInitParameter(OORT_ENABLE_ACK_EXTENSION_PARAM));
-            oort.setAckExtensionEnabled(enableAckExtension);
+            String enableAckExtension = config.getInitParameter(OORT_ENABLE_ACK_EXTENSION_PARAM);
+            if (enableAckExtension == null)
+                enableAckExtension = "true";
+            oort.setAckExtensionEnabled(Boolean.parseBoolean(enableAckExtension));
 
             String jsonContext = config.getInitParameter(OORT_JSON_CONTEXT_PARAM);
             if (jsonContext != null)
