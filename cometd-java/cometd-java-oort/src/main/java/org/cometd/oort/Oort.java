@@ -54,6 +54,7 @@ import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.JSONContext;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.websocket.client.WebSocketTransport;
@@ -519,7 +520,7 @@ public class Oort extends ContainerLifeCycle
                 return true;
         }
 
-        return false;
+        return session.getAttribute(COMET_URL_ATTRIBUTE) != null;
     }
 
     /**
@@ -601,8 +602,6 @@ public class Oort extends ContainerLifeCycle
                 _logger.debug("Comet {} is already known with {}", remoteOortURL, existing.getServerSession());
             return false;
         }
-
-        session.setAttribute(COMET_URL_ATTRIBUTE, remoteOortURL);
 
         // Be notified when the remote comet stops
         session.addListener(new OortCometDisconnectListener());
@@ -743,10 +742,10 @@ public class Oort extends ContainerLifeCycle
     protected class OortExtension extends Extension.Adapter
     {
         @Override
-        public boolean sendMeta(ServerSession to, Mutable message)
+        public boolean sendMeta(ServerSession session, Mutable message)
         {
             // Skip local sessions
-            if (to == null)
+            if (session == null)
                 return true;
 
             if (!Channel.META_HANDSHAKE.equals(message.getChannel()))
@@ -768,12 +767,15 @@ public class Oort extends ContainerLifeCycle
                 String remoteOortURL = (String)associatedOortExt.get(EXT_OORT_URL_FIELD);
                 String cometURL = (String)associatedOortExt.get(EXT_COMET_URL_FIELD);
                 String remoteOortId = (String)associatedOortExt.get(EXT_OORT_ID_FIELD);
+
+                session.setAttribute(COMET_URL_ATTRIBUTE, remoteOortURL);
+
                 if (_id.equals(remoteOortId))
                 {
                     // Connecting to myself: disconnect
                     if (_logger.isDebugEnabled())
                         _logger.debug("Detected self connect from {} to {}, disconnecting", remoteOortURL, cometURL);
-                    disconnect(message);
+                    disconnect(session, message);
                 }
                 else
                 {
@@ -787,7 +789,7 @@ public class Oort extends ContainerLifeCycle
                     oortExt.put(EXT_OORT_URL_FIELD, getURL());
                     oortExt.put(EXT_OORT_ID_FIELD, getId());
 
-                    boolean connectBack = incomingCometHandshake(Collections.unmodifiableMap(associatedOortExt), to);
+                    boolean connectBack = incomingCometHandshake(Collections.unmodifiableMap(associatedOortExt), session);
                     if (connectBack)
                     {
                         String cometAliasURL = (String)associatedOortExt.get(EXT_OORT_ALIAS_URL_FIELD);
@@ -807,7 +809,7 @@ public class Oort extends ContainerLifeCycle
                     }
                     else
                     {
-                        disconnect(message);
+                        disconnect(session, message);
                     }
                 }
             }
@@ -815,8 +817,9 @@ public class Oort extends ContainerLifeCycle
             return true;
         }
 
-        private void disconnect(Mutable message)
+        private void disconnect(ServerSession session, Mutable message)
         {
+            ((BayeuxServerImpl)_bayeux).removeServerSession(session, false);
             message.setSuccessful(false);
             Map<String, Object> advice = message.getAdvice(true);
             advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
