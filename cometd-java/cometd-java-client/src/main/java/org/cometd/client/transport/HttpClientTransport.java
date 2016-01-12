@@ -20,24 +20,11 @@ import java.util.Map;
 
 public abstract class HttpClientTransport extends ClientTransport
 {
-    private volatile String url;
     private volatile CookieStore cookieStore;
 
     protected HttpClientTransport(String name, String url, Map<String, Object> options)
     {
-        super(name, options);
-        this.url = url;
-    }
-
-    protected String getURL()
-    {
-        return url;
-    }
-
-    public void setURL(String url)
-    {
-        if (this.url == null)
-            this.url = url;
+        super(name, url, options);
     }
 
     protected CookieStore getCookieStore()

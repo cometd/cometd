@@ -507,6 +507,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     @Override
+    public boolean removeSession(ServerSession session)
+    {
+        return removeSession(session, false).getReference() != null;
+    }
+
+    @Override
     public ServerSession getSession(String clientId)
     {
         if (clientId == null)
@@ -543,13 +549,18 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      */
     public boolean removeServerSession(ServerSession session, boolean timedOut)
     {
+        return removeSession(session, timedOut).isMarked();
+    }
+
+    private MarkedReference<ServerSessionImpl> removeSession(ServerSession session, boolean timedOut)
+    {
         if (_logger.isDebugEnabled())
             _logger.debug("Removing session {}, timed out: {}", session, timedOut);
 
         ServerSessionImpl removed = _sessions.remove(session.getId());
 
         if (removed != session)
-            return false;
+            return new MarkedReference<>(null, false);
 
         // Invoke BayeuxServer.SessionListener first, so that the application
         // can be "pre-notified" that a session is being removed before the
@@ -557,10 +568,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         for (BayeuxServerListener listener : _listeners)
         {
             if (listener instanceof SessionListener)
-                notifySessionRemoved((SessionListener)listener, session, timedOut);
+                notifySessionRemoved((SessionListener)listener, removed, timedOut);
         }
 
-        return removed.removed(timedOut);
+        boolean connected = removed.removed(timedOut);
+
+        return new MarkedReference<>(removed, connected);
     }
 
     private void notifySessionRemoved(SessionListener listener, ServerSession session, boolean timedout)

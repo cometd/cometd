@@ -38,12 +38,24 @@ public abstract class ClientTransport extends AbstractTransport
     public static final String SCHEDULER_OPTION = "scheduler";
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
+    private String url;
     private long maxNetworkDelay;
     private JSONContext.Client jsonContext;
 
-    protected ClientTransport(String name, Map<String, Object> options)
+    protected ClientTransport(String name, String url, Map<String, Object> options)
     {
         super(name, options);
+        this.url = url;
+    }
+
+    public String getURL()
+    {
+        return url;
+    }
+
+    public void setURL(String url)
+    {
+        this.url = url;
     }
 
     public void init()
@@ -130,5 +142,34 @@ public abstract class ClientTransport extends AbstractTransport
     public interface Factory
     {
         public ClientTransport newClientTransport(String url, Map<String, Object> options);
+    }
+
+    public static class FailureInfo
+    {
+
+    }
+
+    public interface FailureAction
+    {
+        void perform(ActionInfo info);
+    }
+
+    public static class ActionInfo
+    {
+        private final ClientTransport transport;
+        private final String action;
+        private final long delay;
+
+        public ActionInfo(ClientTransport transport, String action)
+        {
+            this(transport, action, 0);
+        }
+
+        public ActionInfo(ClientTransport transport, String action, long delay)
+        {
+            this.transport = transport;
+            this.action = action;
+            this.delay = delay;
+        }
     }
 }
