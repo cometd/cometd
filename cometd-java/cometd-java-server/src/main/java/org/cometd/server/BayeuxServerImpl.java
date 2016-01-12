@@ -509,7 +509,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     @Override
     public boolean removeSession(ServerSession session)
     {
-        return removeSession(session, true).getReference() != null;
+        return removeSession(session, false).getReference() != null;
     }
 
     @Override
