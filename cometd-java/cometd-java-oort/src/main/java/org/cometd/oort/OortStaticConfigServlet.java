@@ -18,7 +18,6 @@ package org.cometd.oort;
 import javax.servlet.ServletConfig;
 
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.client.BayeuxClient;
 
 /**
  * <p>This servlet initializes and configures an instance of the {@link Oort}
@@ -28,7 +27,7 @@ import org.cometd.client.BayeuxClient;
  * <p>This servlet inherits from {@link OortConfigServlet} init parameters used
  * to configure the Oort instance, and adds the following init parameter:</p>
  * <ul>
- * <li><code>oort.cloud</code>, a comma separated list of the <code>oort.url</code>s
+ * <li>{@code oort.cloud}, a comma separated list of the {@code oort.url}s
  * of other known oort CometD cluster managers</li>
  * </ul>
  *
@@ -54,7 +53,6 @@ public class OortStaticConfigServlet extends OortConfigServlet
                     OortComet oortComet = oort.observeComet(comet);
                     if (oortComet == null)
                         throw new IllegalArgumentException("Invalid value for " + OORT_CLOUD_PARAM);
-                    oortComet.waitFor(1000, BayeuxClient.State.CONNECTED, BayeuxClient.State.DISCONNECTED);
                 }
             }
         }

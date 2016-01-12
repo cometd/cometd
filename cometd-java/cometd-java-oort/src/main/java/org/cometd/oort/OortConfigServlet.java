@@ -15,26 +15,33 @@
  */
 package org.cometd.oort;
 
+import java.util.Map;
+
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.client.BayeuxClient;
 import org.cometd.common.JSONContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>This servlet serves as a base class for initializing and configuring an
  * instance of the {@link Oort} CometD cluster manager.</p>
  * <p>The following servlet init parameters are used to configure the Oort instance:</p>
  * <ul>
- * <li><code>oort.url</code>, the absolute public URL to the CometD servlet</li>
- * <li><code>oort.secret</code>, the pre-shared secret that Oort servers use to authenticate
+ * <li>{@code oort.url}, the absolute public URL to the CometD servlet</li>
+ * <li>{@code oort.secret}, the pre-shared secret that Oort servers use to authenticate
  * connections from other Oort comets</li>
- * <li><code>oort.channels</code>, a comma separated list of channels that
+ * <li>{@code oort.channels}, a comma separated list of channels that
  * will be passed to {@link Oort#observeChannel(String)}</li>
- * <li><code>clientDebug</code>, a boolean that enables debugging of the
+ * <li>{@code clientDebug}, a boolean that enables debugging of the
  * clients connected to other oort cluster managers</li>
  * </ul>
  * <p>Override method {@link #newOort(BayeuxServer, String)} to return a customized
@@ -49,6 +56,7 @@ public abstract class OortConfigServlet extends HttpServlet
     public static final String OORT_CHANNELS_PARAM = "oort.channels";
     public static final String OORT_ENABLE_ACK_EXTENSION_PARAM = "enableAckExtension";
     public static final String OORT_JSON_CONTEXT_PARAM = "jsonContext";
+    protected static final Logger LOG = LoggerFactory.getLogger(OortConfigServlet.class);
 
     public void init(ServletConfig config) throws ServletException
     {
@@ -71,8 +79,10 @@ public abstract class OortConfigServlet extends HttpServlet
             if (secret != null)
                 oort.setSecret(secret);
 
-            boolean enableAckExtension = Boolean.parseBoolean(config.getInitParameter(OORT_ENABLE_ACK_EXTENSION_PARAM));
-            oort.setAckExtensionEnabled(enableAckExtension);
+            String enableAckExtension = config.getInitParameter(OORT_ENABLE_ACK_EXTENSION_PARAM);
+            if (enableAckExtension == null)
+                enableAckExtension = "true";
+            oort.setAckExtensionEnabled(Boolean.parseBoolean(enableAckExtension));
 
             String jsonContext = config.getInitParameter(OORT_JSON_CONTEXT_PARAM);
             if (jsonContext != null)
@@ -81,19 +91,7 @@ public abstract class OortConfigServlet extends HttpServlet
             oort.start();
             servletContext.setAttribute(Oort.OORT_ATTRIBUTE, oort);
 
-            configureCloud(config, oort);
-
-            String channels = config.getInitParameter(OORT_CHANNELS_PARAM);
-            if (channels != null)
-            {
-                String[] patterns = channels.split(",");
-                for (String channel : patterns)
-                {
-                    channel = channel.trim();
-                    if (channel.length() > 0)
-                        oort.observeChannel(channel);
-                }
-            }
+            new Thread(new Starter(config, oort)).start();
         }
         catch (Exception x)
         {
@@ -114,16 +112,6 @@ public abstract class OortConfigServlet extends HttpServlet
     }
 
     /**
-     * <p>Configures the Oort cloud by establishing connections with other Oort comets.</p>
-     * <p>Subclasses implement their own strategy to discover and link with other comets.</p>
-     *
-     * @param config the servlet configuration to read parameters from
-     * @param oort the Oort instance associated with this configuration servlet
-     * @throws Exception if the cloud configuration fails
-     */
-    protected abstract void configureCloud(ServletConfig config, Oort oort) throws Exception;
-
-    /**
      * <p>Creates and returns a new Oort instance.</p>
      *
      * @param bayeux the BayeuxServer instance to which the Oort instance should be associated to
@@ -134,6 +122,16 @@ public abstract class OortConfigServlet extends HttpServlet
     {
         return new Oort(bayeux, url);
     }
+
+    /**
+     * <p>Configures the Oort cloud by establishing connections with other Oort comets.</p>
+     * <p>Subclasses implement their own strategy to discover and link with other comets.</p>
+     *
+     * @param config the servlet configuration to read parameters from
+     * @param oort the Oort instance associated with this configuration servlet
+     * @throws Exception if the cloud configuration fails
+     */
+    protected abstract void configureCloud(ServletConfig config, Oort oort) throws Exception;
 
     public void destroy()
     {
@@ -148,6 +146,76 @@ public abstract class OortConfigServlet extends HttpServlet
         catch (Exception x)
         {
             throw new RuntimeException(x);
+        }
+    }
+
+    private class Starter implements Runnable
+    {
+        private final ServletConfig config;
+        private final Oort oort;
+        private final OortComet oortComet;
+
+        private Starter(ServletConfig config, Oort oort)
+        {
+            this.config = config;
+            this.oort = oort;
+            this.oortComet = oort.newOortComet(oort.getURL());
+            this.oortComet.setOption(BayeuxClient.MAX_BACKOFF_OPTION, 1000L);
+        }
+
+        @Override
+        public void run()
+        {
+            // Connect to myself until success. If the handshake fails,
+            // the normal BayeuxClient retry mechanism will kick-in.
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connecting to self: {}", oort);
+            Map<String, Object> fields = oort.newOortHandshakeFields(oort.getURL(), null);
+            oortComet.handshake(fields, new ClientSessionChannel.MessageListener()
+            {
+                @Override
+                public void onMessage(ClientSessionChannel channel, Message message)
+                {
+                    // If the handshake fails but has an advice field, it means it
+                    // reached the server but was denied e.g. by a SecurityPolicy.
+                    Map<String, Object> advice = message.getAdvice();
+                    if (message.isSuccessful() || advice != null)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Connected to self: {}", oort);
+                        oortComet.disconnect();
+                        joinCloud();
+                    }
+                }
+            });
+        }
+
+        private void joinCloud()
+        {
+            try
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Joining cloud: {}", oort);
+
+                configureCloud(config, oort);
+
+                String channels = config.getInitParameter(OORT_CHANNELS_PARAM);
+                if (channels != null)
+                {
+                    String[] patterns = channels.split(",");
+                    for (String channel : patterns)
+                    {
+                        channel = channel.trim();
+                        if (channel.length() > 0)
+                            oort.observeChannel(channel);
+                    }
+                }
+            }
+            catch (Throwable x)
+            {
+                LOG.warn("Could not start Oort", x);
+                destroy();
+            }
         }
     }
 }

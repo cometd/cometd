@@ -129,6 +129,16 @@ public interface BayeuxServer extends Bayeux
     List<ServerSession> getSessions();
 
     /**
+     * <p>Removes the given {@code session} from this BayeuxServer.</p>
+     * <p>This method triggers the invocation of all listeners that would be called
+     * if the session was disconnected or if the session timed out.</p>
+     *
+     * @param session the session to remove
+     * @return true if the session was known to this BayeuxServer and was removed
+     */
+    boolean removeSession(ServerSession session);
+
+    /**
      * <p>Creates a new {@link LocalSession}.</p>
      * <p>A {@link LocalSession} is a server-side ClientSession that allows
      * server-side code to have special clients (resident within the same JVM)
