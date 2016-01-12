@@ -36,22 +36,22 @@ import org.cometd.bayeux.server.BayeuxServer;
  * <p>This servlet inherits from {@link OortConfigServlet} init parameters used
  * to configure the Oort instance, and adds the following init parameters:</p>
  * <ul>
- * <li><code>oort.multicast.bindAddress</code>, to specify the bind address of the
+ * <li>{@code oort.multicast.bindAddress}, to specify the bind address of the
  * {@link MulticastSocket} that receives the advertisements; defaults to the wildcard
  * address</li>
- * <li><code>oort.multicast.groupAddress</code>, to specify the multicast group address
+ * <li>{@code oort.multicast.groupAddress}, to specify the multicast group address
  * to join to receive the advertisements; defaults to 239.255.0.1</li>
- * <li><code>oort.multicast.groupPort</code>, to specify the port over which advertisements
+ * <li>{@code oort.multicast.groupPort}, to specify the port over which advertisements
  * are sent and received; defaults to 5577</li>
- * <li><code>oort.multicast.groupInterfaces</code>, a comma separated list of IP addresses
+ * <li>{@code oort.multicast.groupInterfaces}, a comma separated list of IP addresses
  * that will join the multicast group; default to all interfaces that support multicast</li>
- * <li><code>oort.multicast.timeToLive</code>, to specify the time to live of advertisement packets;
+ * <li>{@code oort.multicast.timeToLive}, to specify the time to live of advertisement packets;
  * defaults to 1 (1 = same subnet, 32 = same site, 255 = global)</li>
- * <li><code>oort.multicast.advertiseInterval</code>, to specify the interval in milliseconds
+ * <li>{@code oort.multicast.advertiseInterval}, to specify the interval in milliseconds
  * at which advertisements are sent; defaults to 2000 ms</li>
- * <li><code>oort.multicast.connectTimeout</code>, to specify the timeout in milliseconds
+ * <li>{@code oort.multicast.connectTimeout}, to specify the timeout in milliseconds
  * that a node should wait to connect to another node; defaults to 2000 ms</li>
- * <li><code>oort.multicast.maxTransmissionLength</code>, to specify the maximum length in bytes
+ * <li>{@code oort.multicast.maxTransmissionLength}, to specify the maximum length in bytes
  * of the advertisement message, and should be smaller than the max transmission unit;
  * defaults to 1400 bytes</li>
  * </ul>

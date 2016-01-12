@@ -129,11 +129,12 @@ public interface BayeuxServer extends Bayeux
     List<ServerSession> getSessions();
 
     /**
-     * <p>Removes the given {@code session}.</p>
-     * <p>This method triggers the listeners that are notified when the session
-     * is disconnected normally or times out.</p>
+     * <p>Removes the given {@code session} from this BayeuxServer.</p>
+     * <p>This method triggers the invocation of all listeners that would be called
+     * if the session was disconnected or if the session timed out.</p>
+     *
      * @param session the session to remove
-     * @return whether the session has been removed
+     * @return true if the session was known to this BayeuxServer and was removed
      */
     boolean removeSession(ServerSession session);
 

@@ -24,13 +24,23 @@ import java.util.concurrent.atomic.AtomicMarkableReference;
  */
 public class MarkedReference<T>
 {
-    private final T reference;
-    private final boolean mark;
+    private static final MarkedReference<?> EMPTY = new MarkedReference<>(null, false);
 
-    public MarkedReference(T reference, boolean mark)
+    /**
+     * @return a null-reference, non-marked instance
+     */
+    public static <S> MarkedReference<S> empty()
+    {
+        return (MarkedReference<S>)EMPTY;
+    }
+
+    private final T reference;
+    private final boolean marked;
+
+    public MarkedReference(T reference, boolean marked)
     {
         this.reference = reference;
-        this.mark = mark;
+        this.marked = marked;
     }
 
     public T getReference()
@@ -40,6 +50,6 @@ public class MarkedReference<T>
 
     public boolean isMarked()
     {
-        return mark;
+        return marked;
     }
 }

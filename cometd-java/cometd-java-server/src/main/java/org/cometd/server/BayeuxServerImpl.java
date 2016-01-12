@@ -509,7 +509,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     @Override
     public boolean removeSession(ServerSession session)
     {
-        return removeSession(session, false).getReference() != null;
+        return removeSession(session, true).getReference() != null;
     }
 
     @Override
@@ -560,7 +560,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         ServerSessionImpl removed = _sessions.remove(session.getId());
 
         if (removed != session)
-            return new MarkedReference<>(null, false);
+            return MarkedReference.empty();
 
         // Invoke BayeuxServer.SessionListener first, so that the application
         // can be "pre-notified" that a session is being removed before the
