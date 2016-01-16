@@ -1,11 +1,11 @@
 ## The CometD Project ##
 
-Welcome to the [CometD](http://cometd.org) Project, a scalable comet (server push) implementation for the web.
+Welcome to the [CometD](https://cometd.org) Project, a scalable comet (server push) implementation for the web.
 
 
 ### DIRECTORY LAYOUT ###
 
-    cometd-archetypes - The Maven2 archetypes for quick application development
+    cometd-archetypes - The Maven archetypes for quick application development
     cometd-demo       - Demo of the Java server and of the Dojo/jQuery clients
     cometd-java       - The Java server and java client libraries
     cometd-javascript - The JavaScript (Dojo/jQuery) client libraries
@@ -13,7 +13,7 @@ Welcome to the [CometD](http://cometd.org) Project, a scalable comet (server pus
 
 ### RUNNING THE COMETD DEMO ###
 
-If you have [downloaded](http://download.cometd.org) the release bundle, then the CometD is already built for you.
+If you have [downloaded](https://download.cometd.org) the release bundle, then the CometD is already built for you.
 To run the demonstration with Maven, unzip the release bundle and execute:
 
     $ cd cometd-demo
@@ -21,8 +21,8 @@ To run the demonstration with Maven, unzip the release bundle and execute:
 
 then point your browser at http://localhost:8080
 
-Alternately you can deploy the CometD demo war into
-any servlet 2.5 or 3.0 server (e.g. jetty, tomcat, glassfish)
+Alternately you can deploy the CometD demo war file into
+any Servlet 2.5 or later server (e.g. jetty, tomcat, glassfish)
 with commands like:
 
     $ cp cometd-demo/target/cometd-demo/target/cometd-demo-*.war  $MY_SERVER/webapps/cometd.war
@@ -32,13 +32,13 @@ with commands like:
 
 ### REPORTING BUGS ###
 
-Bugs and requests for enhancements should be filed at http://bugs.cometd.org
+Bugs and requests for enhancements should be filed at https://bugs.cometd.org
 
 
 ### BUILDING COMETD ###
 
 If you have cloned the source release, follow the instructions at
-http://cometd.org/documentation/building, or just to
+https://docs.cometd.org/current/reference/#_build, or just do:
 
     $ mvn install
 
