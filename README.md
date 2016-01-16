@@ -3,12 +3,12 @@
 Welcome to the [CometD](https://cometd.org) Project, a scalable comet (server push) implementation for the web.
 
 
-## LICENSE ##
+## License ##
 
 The CometD source code is released under the Apache 2.0 License.
 
 
-### DIRECTORY LAYOUT ###
+### Directory Layout ###
 
     cometd-archetypes - The Maven archetypes for quick application development
     cometd-demo       - Demo of the Java server and of the Dojo/jQuery clients
@@ -16,7 +16,7 @@ The CometD source code is released under the Apache 2.0 License.
     cometd-javascript - The JavaScript (Dojo/jQuery) client libraries
 
 
-### RUNNING THE COMETD DEMO ###
+### Running the CometD Demo ###
 
 If you have [downloaded](https://download.cometd.org) the release bundle, then the CometD is already built for you.
 To run the demonstration with Maven, unzip the release bundle and execute:
@@ -35,12 +35,12 @@ with commands like:
     <command to run my server>
 
 
-### REPORTING BUGS ###
+### Reporting Issues ###
 
-Bugs and requests for enhancements should be filed at https://bugs.cometd.org
+Issues, bugs and requests for enhancements should be filed at https://bugs.cometd.org
 
 
-### BUILDING COMETD ###
+### Building CometD ###
 
 If you have cloned the source release, follow the instructions at
 https://docs.cometd.org/current/reference/#_build, or just do:
@@ -48,7 +48,7 @@ https://docs.cometd.org/current/reference/#_build, or just do:
     $ mvn install
 
 
-### LOAD TESTING COMETD ###
+### Load Testing CometD ###
 
 To run load testing, open two windows. In the server window run:
 
