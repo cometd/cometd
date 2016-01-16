@@ -3,6 +3,11 @@
 Welcome to the [CometD](https://cometd.org) Project, a scalable comet (server push) implementation for the web.
 
 
+## LICENSE ##
+
+The CometD source code is released under the Apache 2.0 License.
+
+
 ### DIRECTORY LAYOUT ###
 
     cometd-archetypes - The Maven archetypes for quick application development
