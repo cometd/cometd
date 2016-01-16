@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   id="cometd_logo"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   version="1.1"
+   height="68"
+   width="68">
+
+  <defs>
+    <linearGradient
+       gradientUnits="userSpaceOnUse"
+       y2="1985.5803"
+       x2="2095.248"
+       y1="2525.6565"
+       x1="2098.5293"
+       id="linearGradient4311"
+       xlink:href="#linearGradient3397" />
+    <linearGradient
+       id="linearGradient3397"
+       spreadMethod="pad"
+       gradientTransform="matrix(0,-56.5517,-60.7358,0,236.864,255.784)"
+       gradientUnits="userSpaceOnUse"
+       y2="0"
+       x2="1"
+       y1="0"
+       x1="0">
+      <stop
+         id="stop3399"
+         offset="0"
+         style="stop-opacity:1;stop-color:#91272e" />
+      <stop
+         id="stop3401"
+         offset="0.08"
+         style="stop-opacity:1;stop-color:#710b0e" />
+      <stop
+         id="stop3403"
+         offset="0.41"
+         style="stop-opacity:1;stop-color:#ed1c24" />
+      <stop
+         id="stop3405"
+         offset="1"
+         style="stop-opacity:1;stop-color:#fbc707" />
+    </linearGradient>
+  </defs>
+
+  <g
+     transform="translate(0,-984.36218)"
+     id="layer1">
+    <g
+       transform="matrix(0.13605349,0,0,-0.12647499,-251.49307,1303.7826)"
+       style="fill:url(#linearGradient4311)">
+
+        <path
+           d="m 2111.04,1988.64 c -79.2,66.24 -134.64,164.88 -97.92,253.44 21.6,61.92 89.28,91.44 137.52,156.24 51.84,71.28 20.16,115.92 -48.96,116.64 102.96,38.88 163.44,-27.36 133.92,-120.96 -23.76,-76.32 -97.92,-102.95 -116.64,-156.96 72,9.36 114.48,-25.2 107.28,-90 -69.12,56.88 -156.96,0 -115.2,-158.4 l 0,0 z m 35.28,432 c -69.12,-63.36 -198.72,-66.96 -223.2,-165.6 -29.52,-117.36 69.12,-202.31 162.72,-261.36 -33.84,33.12 -82.08,73.44 -96.48,140.4 -35.28,167.05 105.12,185.04 156.96,286.56 l 0,0 z M 2052,2000.88 c -138.24,76.32 -176.4,182.16 -137.52,303.12 -133.2,-149.04 -51.84,-259.2 137.52,-303.12 l 0,0 z m -123.12,307.44 c 80.64,65.52 18,91.44 29.52,136.8 -51.84,-44.64 -8.64,-91.44 -29.52,-136.8 l 0,0 z M 2146.32,2250 c 54,29.52 114.48,-19.44 164.16,46.8 -54,-16.55 -90,57.61 -164.16,-46.8 l 0,0 z m 69.12,69.12 c 42.48,28.08 96.48,-9.36 133.2,48.96 -43.92,-17.28 -78.48,42.48 -133.2,-48.96" />
+
+    </g>
+  </g>
+</svg>
