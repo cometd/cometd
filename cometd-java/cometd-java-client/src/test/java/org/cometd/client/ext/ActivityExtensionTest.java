@@ -158,6 +158,9 @@ public class ActivityExtensionTest extends ClientServerTest
         Assert.assertTrue(latch.get().await(2 * maxInactivityPeriod, TimeUnit.MILLISECONDS));
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
+        // Wait for the /meta/connect to return.
+        Thread.sleep(1000);
+
         // Handshake again
         latch.set(new CountDownLatch(2));
         client.handshake();

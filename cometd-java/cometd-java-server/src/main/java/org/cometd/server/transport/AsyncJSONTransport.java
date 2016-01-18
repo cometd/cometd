@@ -352,6 +352,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                 ServerMessage.Mutable reply = replies[0];
                 if (Channel.META_HANDSHAKE.equals(reply.getChannel()))
                 {
+                    if (isAllowMessageDeliveryDuringHandshake() && !messages.isEmpty())
+                        reply.put("x-messages", messages.size());
+                    getBayeux().freeze(reply);
                     output.write(toJSONBytes(reply, "UTF-8"));
                     needsComma = true;
                     ++replyIndex;
@@ -428,6 +431,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                         }
                         else
                         {
+                            getBayeux().freeze(reply);
                             output.write(toJSONBytes(reply, "UTF-8"));
                             needsComma = replyIndex < size;
                             ++replyIndex;

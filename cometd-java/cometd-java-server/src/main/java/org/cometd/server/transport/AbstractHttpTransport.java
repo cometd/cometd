@@ -379,17 +379,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         return reply;
     }
 
-    protected ServerMessage.Mutable processReply(ServerSessionImpl session, ServerMessage.Mutable reply)
-    {
-        if (reply != null)
-        {
-            reply = getBayeux().extendReply(session, session, reply);
-            if (reply != null)
-                getBayeux().freeze(reply);
-        }
-        return reply;
-    }
-
     protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean sendQueue, boolean startInterval, ServerMessage.Mutable... replies)
     {
         List<ServerMessage> messages = Collections.emptyList();

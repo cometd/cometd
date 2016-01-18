@@ -19,14 +19,17 @@ import java.net.CookieManager;
 import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -34,7 +37,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
@@ -101,22 +103,17 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     public static final String MAX_BACKOFF_OPTION = "maxBackoff";
     public static final String BAYEUX_VERSION = "1.0";
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + Integer.toHexString(System.identityHashCode(this)));
     private final TransportRegistry transportRegistry = new TransportRegistry();
     private final Map<String, Object> options = new ConcurrentHashMap<>();
-    private final AtomicReference<BayeuxClientState> bayeuxClientState = new AtomicReference<>();
     private final List<Message.Mutable> messageQueue = new ArrayList<>(32);
     private final CookieStore cookieStore = new CookieManager().getCookieStore();
-    private final TransportListener handshakeListener = new HandshakeTransportListener();
-    private final TransportListener connectListener = new ConnectTransportListener();
-    private final TransportListener disconnectListener = new DisconnectTransportListener();
-    private final TransportListener publishListener = new PublishTransportListener();
+    private final TransportListener messageListener = new MessageTransportListener();
     private final String url;
     private volatile ScheduledExecutorService scheduler;
     private volatile boolean shutdownScheduler;
     private volatile long backoffIncrement;
     private volatile long maxBackoff;
-    private int stateUpdaters;
 
     /**
      * <p>Creates a {@link BayeuxClient} that will connect to the Bayeux server at the given URL
@@ -158,7 +155,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             ClientTransport clientTransport = transportRegistry.getTransport(transportName);
             if (clientTransport instanceof MessageClientTransport)
             {
-                ((MessageClientTransport)clientTransport).setMessageTransportListener(publishListener);
+                ((MessageClientTransport)clientTransport).setMessageTransportListener(messageListener);
             }
             if (clientTransport instanceof HttpClientTransport)
             {
@@ -167,8 +164,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 httpTransport.setCookieStore(cookieStore);
             }
         }
-
-        bayeuxClientState.set(new DisconnectedState(null));
     }
 
     /**
@@ -242,57 +237,20 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     @Override
     public String getId()
     {
-        return bayeuxClientState.get().clientId;
+        return sessionState.getSessionId();
     }
 
     @Override
     public boolean isHandshook()
     {
-        return isHandshook(bayeuxClientState.get());
-    }
-
-    private boolean isHandshook(BayeuxClientState bayeuxClientState)
-    {
-        return bayeuxClientState.type == State.CONNECTING ||
-                bayeuxClientState.type == State.CONNECTED ||
-                bayeuxClientState.type == State.UNCONNECTED;
-    }
-
-    private boolean isHandshaking(BayeuxClientState bayeuxClientState)
-    {
-        return bayeuxClientState.type == State.HANDSHAKING ||
-                bayeuxClientState.type == State.REHANDSHAKING;
-    }
-
-    private boolean isConnecting(BayeuxClientState bayeuxClientState)
-    {
-        return bayeuxClientState.type == State.CONNECTING;
+        State state = getState();
+        return state == State.HANDSHAKEN || state == State.CONNECTING || state == State.CONNECTED || state == State.UNCONNECTED;
     }
 
     @Override
     public boolean isConnected()
     {
-        return isConnected(bayeuxClientState.get());
-    }
-
-    private boolean isConnected(BayeuxClientState bayeuxClientState)
-    {
-        return bayeuxClientState.type == State.CONNECTED;
-    }
-
-    private boolean isUnconnected(BayeuxClientState bayeuxClientState)
-    {
-        return bayeuxClientState.type == State.UNCONNECTED;
-    }
-
-    private boolean isDisconnecting(BayeuxClientState bayeuxClientState)
-    {
-        return bayeuxClientState.type == State.DISCONNECTING;
-    }
-
-    private boolean isDisconnected(BayeuxClientState bayeuxClientState)
-    {
-        return bayeuxClientState.type == State.DISCONNECTED;
+        return getState() == State.CONNECTED;
     }
 
     /**
@@ -300,8 +258,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      */
     public boolean isDisconnected()
     {
-        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
-        return isDisconnecting(bayeuxClientState) || isDisconnected(bayeuxClientState);
+        State state = getState();
+        return state == State.TERMINATING || state == State.DISCONNECTED;
     }
 
     /**
@@ -309,7 +267,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      */
     protected State getState()
     {
-        return bayeuxClientState.get().type;
+        return sessionState.getState();
     }
 
     @Override
@@ -330,22 +288,23 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     }
 
     @Override
-    public void handshake(final Map<String, Object> template, final ClientSessionChannel.MessageListener callback)
+    public void handshake(final Map<String, Object> fields, final ClientSessionChannel.MessageListener callback)
     {
         initialize();
 
         List<String> allowedTransports = getAllowedTransports();
         // Pick the first transport for the handshake, it will renegotiate if not right
-        final ClientTransport initialTransport = transportRegistry.negotiate(allowedTransports.toArray(), BAYEUX_VERSION).get(0);
-        prepareTransport(null, initialTransport);
+        final ClientTransport transport = transportRegistry.negotiate(allowedTransports.toArray(), BAYEUX_VERSION).get(0);
+        prepareTransport(null, transport);
         if (logger.isDebugEnabled())
-            logger.debug("Using initial transport {} from {}", initialTransport.getName(), allowedTransports);
+            logger.debug("Using initial transport {} from {}", transport.getName(), allowedTransports);
 
-        changeState(new BayeuxClientStateUpdater()
+        sessionState.submit(new Runnable()
         {
-            public BayeuxClientState create(BayeuxClientState oldState)
+            @Override
+            public void run()
             {
-                return new HandshakingState(template, callback, initialTransport);
+                sessionState.handshaking(transport, fields, callback);
             }
         });
     }
@@ -385,30 +344,29 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected boolean sendHandshake()
     {
-        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
-        if (isHandshaking(bayeuxClientState) || isUnconnected(bayeuxClientState))
-        {
-            Message.Mutable message = newMessage();
-            if (bayeuxClientState.handshakeFields != null)
-                message.putAll(bayeuxClientState.handshakeFields);
-            String messageId = newMessageId();
-            message.setId(messageId);
-            message.setChannel(Channel.META_HANDSHAKE);
-            List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
-            List<String> transportNames = new ArrayList<>(transports.size());
-            for (ClientTransport transport : transports)
-                transportNames.add(transport.getName());
-            message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, transportNames);
-            message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
-            registerCallback(messageId, bayeuxClientState.callback);
+        List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
+        List<String> transportNames = new ArrayList<>(transports.size());
+        for (ClientTransport transport : transports)
+            transportNames.add(transport.getName());
 
-            if (logger.isDebugEnabled())
-                logger.debug("Handshaking on transport {}: {}", bayeuxClientState.transport, message);
-            List<Message.Mutable> messages = new ArrayList<>(1);
-            messages.add(message);
-            return bayeuxClientState.send(handshakeListener, messages);
-        }
-        return false;
+        Message.Mutable message = newMessage();
+        Map<String, Object> handshakeFields = sessionState.getHandshakeFields();
+        if (handshakeFields != null)
+            message.putAll(handshakeFields);
+
+        String messageId = newMessageId();
+        message.setId(messageId);
+        message.setChannel(Channel.META_HANDSHAKE);
+        message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, transportNames);
+        message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
+        registerCallback(messageId, sessionState.getHandshakeCallback());
+
+        if (logger.isDebugEnabled())
+            logger.debug("Handshaking on transport {}: {}", getTransport(), message);
+
+        List<Message.Mutable> messages = new ArrayList<>(1);
+        messages.add(message);
+        return sendMessages(messages);
     }
 
     /**
@@ -421,18 +379,17 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      */
     public boolean waitFor(long waitMs, State state, State... states)
     {
-        long start = System.nanoTime();
         List<State> waitForStates = new ArrayList<>();
         waitForStates.add(state);
         waitForStates.addAll(Arrays.asList(states));
-        synchronized (this)
+
+        synchronized (sessionState)
         {
-            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-            while (elapsed < waitMs)
+            while (waitMs > 0)
             {
                 // This check is needed to avoid that we return from waitFor() too early,
                 // when the state has been set, but its effects (like notifying listeners)
-                // are not completed yet (COMETD-212).
+                // are not completed yet (issue #212).
                 // Transient states (like CONNECTING or DISCONNECTING) may "miss" the
                 // wake up in this way:
                 // * T1 goes in wait - releases lock
@@ -442,7 +399,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 // * T3 finishes update to CONNECTED - notifies lock
                 // * T1 wakes up, takes lock, sees status == CONNECTED - CONNECTING has been "missed"
                 // To avoid this, we use State.implies()
-                if (stateUpdaters == 0)
+                if (sessionState.isIdle())
                 {
                     State currentState = getState();
                     for (State s : waitForStates)
@@ -452,17 +409,18 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     }
                 }
 
-                try
-                {
-                    wait(waitMs - elapsed);
-                }
-                catch (InterruptedException x)
-                {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
+                if (logger.isDebugEnabled())
+                    logger.debug("Waiting {}ms for {}", waitMs, waitForStates);
 
-                elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+                long start = System.nanoTime();
+                if (sessionState.await(waitMs))
+                    break;
+                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+
+                if (logger.isDebugEnabled())
+                    logger.debug("Waited {}/{}ms for {}, state is {}", elapsed, waitMs, waitForStates, sessionState.getState());
+
+                waitMs -= elapsed;
             }
             return false;
         }
@@ -470,25 +428,26 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected boolean sendConnect()
     {
-        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
-        if (isHandshook(bayeuxClientState))
+        ClientTransport transport = sessionState.getTransport();
+
+        Message.Mutable message = newMessage();
+        message.setId(newMessageId());
+        message.setChannel(Channel.META_CONNECT);
+        message.put(Message.CONNECTION_TYPE_FIELD, transport.getName());
+
+        State state = getState();
+        if (state == State.CONNECTING || state == State.UNCONNECTED)
         {
-            Message.Mutable message = newMessage();
-            message.setId(newMessageId());
-            message.setChannel(Channel.META_CONNECT);
-            message.put(Message.CONNECTION_TYPE_FIELD, bayeuxClientState.transport.getName());
-            if (isConnecting(bayeuxClientState) || isUnconnected(bayeuxClientState))
-            {
-                // First connect after handshake or after failure, add advice
-                message.getAdvice(true).put("timeout", 0);
-            }
-            if (logger.isDebugEnabled())
-                logger.debug("Connecting, transport {}", bayeuxClientState.transport);
-            List<Message.Mutable> messages = new ArrayList<>(1);
-            messages.add(message);
-            return bayeuxClientState.send(connectListener, messages);
+            // First connect after handshake or after failure, add advice
+            message.getAdvice(true).put("timeout", 0);
         }
-        return false;
+
+        if (logger.isDebugEnabled())
+            logger.debug("Connecting, transport {}", transport);
+
+        List<Message.Mutable> messages = new ArrayList<>(1);
+        messages.add(message);
+        return sendMessages(messages);
     }
 
     @Override
@@ -518,7 +477,33 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected boolean sendMessages(List<Message.Mutable> messages)
     {
-        return bayeuxClientState.get().send(publishListener, messages);
+        for (Iterator<Message.Mutable> iterator = messages.iterator(); iterator.hasNext();)
+        {
+            Message.Mutable message = iterator.next();
+
+            String messageId = message.getId();
+            message.setClientId(sessionState.sessionId);
+
+            if (extendSend(message))
+            {
+                // Extensions may have changed the messageId, but we need to
+                // own it in case of meta messages to link requests to responses
+                // in non request/response transports such as WebSocket.
+                message.setId(messageId);
+            }
+            else
+            {
+                iterator.remove();
+            }
+        }
+
+        if (messages.isEmpty())
+            return false;
+
+        if (logger.isDebugEnabled())
+            logger.debug("Sending messages {}", messages);
+
+        return sessionState.send(messageListener, messages);
     }
 
     private List<Message.Mutable> takeMessages()
@@ -551,16 +536,24 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     @Override
     public void disconnect(final ClientSessionChannel.MessageListener callback)
     {
-        changeState(new BayeuxClientStateUpdater()
+        sessionState.submit(new Runnable()
         {
-            public BayeuxClientState create(BayeuxClientState oldState)
+            @Override
+            public void run()
             {
-                if (isConnecting(oldState) || isConnected(oldState))
-                    return new DisconnectingState(callback, oldState.transport, oldState.clientId);
-                else if (isDisconnecting(oldState))
-                    return new DisconnectingState(callback, oldState.transport, oldState.clientId);
-                else
-                    return new TerminatingState(oldState.transport);
+                if (sessionState.disconnecting())
+                {
+                    Message.Mutable message = newMessage();
+                    String messageId = newMessageId();
+                    message.setId(messageId);
+                    message.setChannel(Channel.META_DISCONNECT);
+
+                    registerCallback(messageId, callback);
+
+                    List<Message.Mutable> messages = new ArrayList<>(1);
+                    messages.add(message);
+                    sendMessages(messages);
+                }
             }
         });
     }
@@ -582,7 +575,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      */
     public boolean disconnect(long timeout)
     {
-        if (isDisconnected(bayeuxClientState.get()))
+        if (isDisconnected())
             return true;
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -616,12 +609,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         getChannel(Channel.META_CONNECT).removeListener(lastConnectListener);
 
         // Force termination.
-        changeState(new BayeuxClientStateUpdater()
+        sessionState.submit(new Runnable()
         {
             @Override
-            public BayeuxClientState create(BayeuxClientState oldState)
+            public void run()
             {
-                return new TerminatingState(oldState.transport);
+                sessionState.terminating();
             }
         });
 
@@ -636,24 +629,92 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      */
     public void abort()
     {
-        changeState(new BayeuxClientStateUpdater()
+        sessionState.submit(new Runnable()
         {
-            public BayeuxClientState create(BayeuxClientState oldState)
+            @Override
+            public void run()
             {
-                return new AbortingState(oldState.transport);
+                if (sessionState.update(State.TERMINATING))
+                    sessionState.terminate(true);
             }
         });
     }
 
-    protected Runnable processHandshake(final Message.Mutable handshake)
+    private void processMessages(List<Message.Mutable> messages)
     {
-        if (logger.isDebugEnabled())
-            logger.debug("Processing /meta/handshake {}", handshake);
+        for (Message.Mutable message : messages)
+        {
+            if (logger.isDebugEnabled())
+                logger.debug("Processing {}", message);
+
+            switch (message.getChannel())
+            {
+                case Channel.META_HANDSHAKE:
+                {
+                    processHandshake(message);
+                    break;
+                }
+                case Channel.META_CONNECT:
+                {
+                    processConnect(message);
+                    break;
+                }
+                case Channel.META_DISCONNECT:
+                {
+                    processDisconnect(message);
+                    break;
+                }
+                default:
+                {
+                    processMessage(message);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void messagesFailure(Throwable failure, List<? extends Message> messages)
+    {
+        for (Message message : messages)
+        {
+            if (logger.isDebugEnabled())
+                logger.debug("Failing {}", message);
+
+            switch (message.getChannel())
+            {
+                case Channel.META_HANDSHAKE:
+                {
+                    handshakeFailure(message, failure);
+                    break;
+                }
+                case Channel.META_CONNECT:
+                {
+                    connectFailure(message, failure);
+                    break;
+                }
+                case Channel.META_DISCONNECT:
+                {
+                    disconnectFailure(message, failure);
+                    break;
+                }
+                default:
+                {
+                    messageFailure(message, failure);
+                    break;
+                }
+            }
+        }
+    }
+
+    protected void processHandshake(final Message.Mutable handshake)
+    {
         if (handshake.isSuccessful())
         {
+            final ClientTransport oldTransport = getTransport();
+
             Object field = handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD);
             Object[] serverTransports = field instanceof List ? ((List)field).toArray() : (Object[])field;
-            List<ClientTransport> negotiatedTransports = transportRegistry.negotiate(serverTransports, BAYEUX_VERSION);
+            final List<ClientTransport> negotiatedTransports = transportRegistry.negotiate(serverTransports, BAYEUX_VERSION);
             if (negotiatedTransports.isEmpty())
             {
                 // Signal the failure
@@ -666,133 +727,179 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 handshake.setSuccessful(false);
                 handshake.put(Message.ERROR_FIELD, error);
 
-                return updateState(new BayeuxClientStateUpdater()
+                receive(handshake);
+
+                sessionState.submit(new Runnable()
                 {
                     @Override
-                    public BayeuxClientState create(BayeuxClientState oldState)
+                    public void run()
                     {
-                        onTransportFailure(oldState.transport.getName(), null, new TransportException(null));
-                        return new TerminatingState(oldState.transport);
-                    }
-
-                    @Override
-                    public void postCreate()
-                    {
-                        receive(handshake);
+                        if (sessionState.update(State.TERMINATING))
+                        {
+                            onTransportFailure(oldTransport.getName(), null, new TransportException(null));
+                            sessionState.terminate(false);
+                        }
                     }
                 });
             }
             else
             {
+                Number messagesField = (Number)handshake.get("x-messages");
+                final int messages = messagesField == null ? 0 : messagesField.intValue();
+
                 final ClientTransport newTransport = negotiatedTransports.get(0);
-                return updateState(new BayeuxClientStateUpdater()
+                if (newTransport != oldTransport)
+                    prepareTransport(oldTransport, newTransport);
+
+                sessionState.submit(new Runnable()
                 {
                     @Override
-                    public BayeuxClientState create(BayeuxClientState oldState)
+                    public void run()
                     {
-                        if (newTransport != oldState.transport)
-                            prepareTransport(oldState.transport, newTransport);
-
-                        String action = getAdviceAction(handshake.getAdvice(), Message.RECONNECT_RETRY_VALUE);
-                        if (Message.RECONNECT_RETRY_VALUE.equals(action))
-                            return new ConnectingState(oldState.handshakeFields, oldState.callback, handshake.getAdvice(), newTransport, handshake.getClientId());
-                        else if (Message.RECONNECT_NONE_VALUE.equals(action))
-                            return new TerminatingState(oldState.transport);
-                        return null;
-                    }
-
-                    @Override
-                    public void postCreate()
-                    {
-                        receive(handshake);
+                        if (sessionState.handshaken(newTransport, handshake.getAdvice(), handshake.getClientId(), messages))
+                        {
+                            receive(handshake);
+                            sendBatch();
+                            if (messages == 0)
+                                sessionState.connecting();
+                        }
                     }
                 });
             }
         }
         else
         {
-            return updateState(new BayeuxClientStateUpdater()
+            receive(handshake);
+
+            sessionState.submit(new Runnable()
             {
                 @Override
-                public BayeuxClientState create(BayeuxClientState oldState)
+                public void run()
                 {
-                    String action = getAdviceAction(handshake.getAdvice(), Message.RECONNECT_HANDSHAKE_VALUE);
-                    if (Message.RECONNECT_HANDSHAKE_VALUE.equals(action) || Message.RECONNECT_RETRY_VALUE.equals(action))
-                        return new RehandshakingState(oldState.handshakeFields, oldState.callback, oldState.transport, oldState.nextBackoff());
-                    else if (Message.RECONNECT_NONE_VALUE.equals(action))
-                        return new TerminatingState(oldState.transport);
-                    return null;
-                }
-
-                @Override
-                public void postCreate()
-                {
-                    receive(handshake);
+                    String action = sessionState.getAdviceAction(handshake.getAdvice(), Message.RECONNECT_HANDSHAKE_VALUE);
+                    if (action.equals(Message.RECONNECT_NONE_VALUE))
+                    {
+                        sessionState.terminating();
+                    }
+                    else
+                    {
+                        sessionState.rehandshaking(null, false);
+                    }
                 }
             });
         }
     }
 
-    protected Runnable processConnect(final Message.Mutable connect)
+    private void handshakeFailure(Message handshake, final Throwable failure)
     {
-        if (logger.isDebugEnabled())
-            logger.debug("Processing /meta/connect {}", connect);
-        return updateState(new BayeuxClientStateUpdater()
+        failMessage(handshake, failure);
+
+        final ClientTransport oldTransport = getTransport();
+        List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
+        if (transports.isEmpty())
+        {
+            sessionState.submit(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    if (sessionState.update(State.TERMINATING))
+                    {
+                        onTransportFailure(oldTransport.getName(), null, failure);
+                        sessionState.terminate(false);
+                    }
+                }
+            });
+        }
+        else
+        {
+            final ClientTransport newTransport = transports.get(0);
+            if (newTransport != oldTransport)
+                prepareTransport(oldTransport, newTransport);
+
+            sessionState.submit(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    // TODO: we should only notify if we could move into rehandshaking state, but before its actions.
+                    // TODO: beware that this could produce an NPE if one of the transport is null.
+                    onTransportFailure(oldTransport.getName(), newTransport.getName(), failure);
+                    sessionState.rehandshaking(newTransport, false);
+                }
+            });
+        }
+    }
+
+    protected void processConnect(final Message.Mutable connect)
+    {
+        receive(connect);
+
+        final Map<String, Object> advice = connect.getAdvice();
+        final String action = getAdviceAction(advice, Message.RECONNECT_RETRY_VALUE);
+
+        sessionState.submit(new Runnable()
         {
             @Override
-            public BayeuxClientState create(BayeuxClientState oldState)
+            public void run()
             {
-                Map<String, Object> advice = connect.getAdvice();
-                if (advice == null)
-                    advice = oldState.advice;
-
-                String action = getAdviceAction(advice, Message.RECONNECT_RETRY_VALUE);
-                if (connect.isSuccessful())
+                if (Message.RECONNECT_NONE_VALUE.equals(action))
                 {
-                    if (Message.RECONNECT_RETRY_VALUE.equals(action))
-                        return new ConnectedState(oldState.handshakeFields, oldState.callback, advice, oldState.transport, oldState.clientId);
-                    else if (Message.RECONNECT_NONE_VALUE.equals(action))
-                        // This case happens when the connect reply arrives after a disconnect
-                        // We do not go into a disconnected state to allow normal processing of the disconnect reply
-                        return new DisconnectingState(null, oldState.transport, oldState.clientId);
+                    sessionState.terminating();
+                }
+                else if (Message.RECONNECT_HANDSHAKE_VALUE.equals(action))
+                {
+                    sessionState.rehandshaking(null, true);
                 }
                 else
                 {
-                    if (Message.RECONNECT_HANDSHAKE_VALUE.equals(action))
-                        return new RehandshakingState(oldState.handshakeFields, oldState.callback, oldState.transport, 0);
-                    else if (Message.RECONNECT_RETRY_VALUE.equals(action))
-                        return new UnconnectedState(oldState.handshakeFields, oldState.callback, advice, oldState.transport, oldState.clientId, oldState.nextBackoff(), System.nanoTime());
-                    else if (Message.RECONNECT_NONE_VALUE.equals(action))
-                        return new TerminatingState(oldState.transport);
+                    if (connect.isSuccessful())
+                        sessionState.connected(advice);
+                    else
+                        sessionState.unconnected();
                 }
-                return null;
-            }
-
-            @Override
-            public void postCreate()
-            {
-                receive(connect);
             }
         });
     }
 
-    protected Runnable processDisconnect(final Message.Mutable disconnect)
+    private void connectFailure(Message connect, Throwable failure)
     {
-        if (logger.isDebugEnabled())
-            logger.debug("Processing /meta/disconnect {}", disconnect);
+        failMessage(connect, failure);
 
-        return updateState(new BayeuxClientStateUpdater()
+        sessionState.submit(new Runnable()
         {
             @Override
-            public BayeuxClientState create(BayeuxClientState oldState)
+            public void run()
             {
-                return new TerminatingState(oldState.transport);
+                sessionState.unconnected();
             }
+        });
+    }
 
+    protected void processDisconnect(final Message.Mutable disconnect)
+    {
+        receive(disconnect);
+
+        sessionState.submit(new Runnable()
+        {
             @Override
-            public void postCreate()
+            public void run()
             {
-                receive(disconnect);
+                sessionState.terminating();
+            }
+        });
+    }
+
+    private void disconnectFailure(Message disconnect, Throwable failure)
+    {
+        failMessage(disconnect, failure);
+
+        sessionState.submit(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                sessionState.terminating();
             }
         });
     }
@@ -802,6 +909,22 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         if (logger.isDebugEnabled())
             logger.debug("Processing message {}", message);
         receive(message);
+        if (getState() == State.HANDSHAKEN)
+        {
+            sessionState.submit(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    sessionState.connecting();
+                }
+            });
+        }
+    }
+
+    private void messageFailure(Message message, Throwable failure)
+    {
+        failMessage(message, failure);
     }
 
     private String getAdviceAction(Map<String, Object> advice, String defaultResult)
@@ -812,26 +935,30 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return action;
     }
 
-    protected boolean scheduleHandshake(long interval, long backoff)
+    protected boolean scheduleHandshake(long interval, long backOff)
     {
+        if (logger.isDebugEnabled())
+            logger.debug("Scheduled handshake in {}+{} ms", interval, backOff);
         return scheduleAction(new Runnable()
         {
             public void run()
             {
                 sendHandshake();
             }
-        }, interval, backoff);
+        }, interval, backOff);
     }
 
-    protected boolean scheduleConnect(long interval, long backoff)
+    protected boolean scheduleConnect(long interval, long backOff)
     {
+        if (logger.isDebugEnabled())
+            logger.debug("Scheduled connect in {}+{} ms", interval, backOff);
         return scheduleAction(new Runnable()
         {
             public void run()
             {
                 sendConnect();
             }
-        }, interval, backoff);
+        }, interval, backOff);
     }
 
     private boolean scheduleAction(Runnable action, long interval, long backoff)
@@ -876,8 +1003,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     public ClientTransport getTransport()
     {
-        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
-        return bayeuxClientState == null ? null : bayeuxClientState.transport;
+        return sessionState.getTransport();
     }
 
     protected void initialize()
@@ -977,7 +1103,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private boolean canSend()
     {
-        return !isBatching() && !isHandshaking(bayeuxClientState.get());
+        State state = getState();
+        boolean handshaking = state == State.HANDSHAKING || state == State.REHANDSHAKING;
+        return !isBatching() && !handshaking;
     }
 
     protected void failMessages(Throwable x, List<? extends Message> messages)
@@ -1005,7 +1133,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             if (fields != null)
                 failure.putAll(fields);
         }
-        failure.put(Message.CONNECTION_TYPE_FIELD, getTransport().getName());
+        ClientTransport transport = getTransport();
+        if (transport != null)
+            failure.put(Message.CONNECTION_TYPE_FIELD, transport.getName());
 
         receive(failed);
     }
@@ -1045,70 +1175,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             logger.debug("Messages failed " + messages, failure);
     }
 
-    private void changeState(BayeuxClientStateUpdater updater)
-    {
-        Runnable action = updateState(updater);
-        if (action != null)
-            action.run();
-    }
-
-    private Runnable updateState(BayeuxClientStateUpdater updater)
-    {
-        // Increase how many threads are updating the state.
-        // This is needed so that in waitFor() we can check
-        // the state being sure that nobody is updating it.
-        synchronized (this)
-        {
-            ++stateUpdaters;
-        }
-
-        // State update is non-blocking
-        try
-        {
-            BayeuxClientState newState = null;
-            BayeuxClientState oldState = bayeuxClientState.get();
-            boolean updated = false;
-            while (!updated)
-            {
-                newState = updater.create(oldState);
-                if (newState == null)
-                    throw new IllegalStateException();
-
-                if (!oldState.isUpdateableTo(newState))
-                {
-                    if (logger.isDebugEnabled())
-                        logger.debug("State not updateable: {} -> {}", oldState, newState);
-                    break;
-                }
-
-                updated = bayeuxClientState.compareAndSet(oldState, newState);
-                if (logger.isDebugEnabled())
-                    logger.debug("State update: {} -> {}{}", oldState, newState, updated ? "" : " failed (concurrent update)");
-                if (!updated)
-                    oldState = bayeuxClientState.get();
-            }
-
-            updater.postCreate();
-
-            if (!updated)
-                return null;
-
-            if (!oldState.getType().equals(newState.getType()))
-                newState.enter(oldState.getType());
-            return newState;
-        }
-        finally
-        {
-            // Notify threads waiting in waitFor()
-            synchronized (this)
-            {
-                --stateUpdaters;
-                if (stateUpdaters == 0)
-                    notifyAll();
-            }
-        }
-    }
-
     public String dump()
     {
         StringBuilder b = new StringBuilder();
@@ -1146,13 +1212,17 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
          */
         REHANDSHAKING,
         /**
+         * State assumed when the handshake is received, but before connecting
+         */
+        HANDSHAKEN(HANDSHAKING, REHANDSHAKING),
+        /**
          * State assumed when the connect is being sent for the first time
          */
-        CONNECTING(HANDSHAKING),
+        CONNECTING(HANDSHAKING, REHANDSHAKING, HANDSHAKEN),
         /**
          * State assumed when this {@link BayeuxClient} is connected to the Bayeux server
          */
-        CONNECTED(HANDSHAKING, CONNECTING),
+        CONNECTED(HANDSHAKING, REHANDSHAKING, HANDSHAKEN, CONNECTING),
         /**
          * State assumed when the disconnect is being sent
          */
@@ -1184,9 +1254,33 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             }
             return false;
         }
+
+        private boolean isUpdateableTo(State newState)
+        {
+            switch (this)
+            {
+                case DISCONNECTED:
+                    return newState == HANDSHAKING;
+                case HANDSHAKING:
+                case REHANDSHAKING:
+                    return EnumSet.of(REHANDSHAKING, HANDSHAKEN, DISCONNECTING, TERMINATING).contains(newState);
+                case HANDSHAKEN:
+                    return EnumSet.of(CONNECTING, DISCONNECTING, TERMINATING).contains(newState);
+                case CONNECTING:
+                case CONNECTED:
+                case UNCONNECTED:
+                    return EnumSet.of(REHANDSHAKING, CONNECTED, UNCONNECTED, DISCONNECTING, TERMINATING).contains(newState);
+                case DISCONNECTING:
+                    return newState == TERMINATING;
+                case TERMINATING:
+                    return newState == DISCONNECTED;
+                default:
+                    throw new IllegalStateException();
+            }
+        }
     }
 
-    private class PublishTransportListener implements TransportListener
+    private class MessageTransportListener implements TransportListener
     {
         @Override
         public void onSending(List<? extends Message> messages)
@@ -1195,137 +1289,17 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         }
 
         @Override
-        public void onMessages(List<Message.Mutable> messages)
+        public void onMessages(final List<Message.Mutable> messages)
         {
-            Runnable action = null;
             BayeuxClient.this.onMessages(messages);
-            for (Message.Mutable message : messages)
-            {
-                // Handle server-side disconnects.
-                if (Channel.META_DISCONNECT.equals(message.getChannel()))
-                    action = processDisconnect(message);
-                else
-                    processMessage(message);
-            }
-            if (action != null)
-                action.run();
-        }
-
-        protected void processMessage(Message.Mutable message)
-        {
-            BayeuxClient.this.processMessage(message);
+            processMessages(messages);
         }
 
         @Override
-        public void onFailure(Throwable failure, List<? extends Message> messages)
+        public void onFailure(final Throwable failure, final List<? extends Message> messages)
         {
             BayeuxClient.this.onFailure(failure, messages);
-            failMessages(failure, messages);
-        }
-    }
-
-    private class HandshakeTransportListener extends PublishTransportListener
-    {
-        @Override
-        public void onMessages(List<Message.Mutable> messages)
-        {
-            Runnable action = null;
-            BayeuxClient.this.onMessages(messages);
-            for (Message.Mutable message : messages)
-            {
-                if (Channel.META_HANDSHAKE.equals(message.getChannel()))
-                    action = processHandshake(message);
-                else
-                    processMessage(message);
-            }
-            if (action != null)
-                action.run();
-        }
-
-        @Override
-        public void onFailure(final Throwable failure, List<? extends Message> messages)
-        {
-            if (logger.isDebugEnabled())
-                logger.debug("Handshake failed: " + messages, failure);
-
-            List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
-            if (transports.isEmpty())
-            {
-                changeState(new BayeuxClientStateUpdater()
-                {
-                    @Override
-                    public BayeuxClientState create(BayeuxClientState oldState)
-                    {
-                        onTransportFailure(oldState.transport.getName(), null, failure);
-                        return new TerminatingState(oldState.transport);
-                    }
-                });
-            }
-            else
-            {
-                final ClientTransport newTransport = transports.get(0);
-                changeState(new BayeuxClientStateUpdater()
-                {
-                    @Override
-                    public BayeuxClientState create(BayeuxClientState oldState)
-                    {
-                        if (newTransport != oldState.transport)
-                            prepareTransport(oldState.transport, newTransport);
-                        onTransportFailure(oldState.transport.getName(), newTransport.getName(), failure);
-                        return new RehandshakingState(oldState.handshakeFields, oldState.callback, newTransport, oldState.nextBackoff());
-                    }
-                });
-            }
-            super.onFailure(failure, messages);
-        }
-    }
-
-    private class ConnectTransportListener extends PublishTransportListener
-    {
-        @Override
-        public void onMessages(List<Message.Mutable> messages)
-        {
-            Runnable action = null;
-            BayeuxClient.this.onMessages(messages);
-            for (Message.Mutable message : messages)
-            {
-                if (Channel.META_CONNECT.equals(message.getChannel()))
-                    action = processConnect(message);
-                else
-                    processMessage(message);
-            }
-            if (action != null)
-                action.run();
-        }
-
-        @Override
-        public void onFailure(Throwable failure, List<? extends Message> messages)
-        {
-            changeState(new BayeuxClientStateUpdater()
-            {
-                public BayeuxClientState create(BayeuxClientState oldState)
-                {
-                    long time = isUnconnected(oldState) ? ((UnconnectedState)oldState).unconnectTime : System.nanoTime();
-                    return new UnconnectedState(oldState.handshakeFields, oldState.callback, oldState.advice, oldState.transport, oldState.clientId, oldState.nextBackoff(), time);
-                }
-            });
-            super.onFailure(failure, messages);
-        }
-    }
-
-    private class DisconnectTransportListener extends PublishTransportListener
-    {
-        @Override
-        public void onFailure(Throwable failure, List<? extends Message> messages)
-        {
-            changeState(new BayeuxClientStateUpdater()
-            {
-                public BayeuxClientState create(BayeuxClientState oldState)
-                {
-                    return new TerminatingState(oldState.transport);
-                }
-            });
-            super.onFailure(failure, messages);
+            messagesFailure(failure, messages);
         }
     }
 
@@ -1347,396 +1321,421 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         }
     }
 
-    private abstract class BayeuxClientStateUpdater
+    private final SessionState sessionState = new SessionState();
+
+    private class SessionState
     {
-        public abstract BayeuxClientState create(BayeuxClientState oldState);
+        private final Queue<Runnable> actions = new ArrayDeque<>();
+        private State state = State.DISCONNECTED;
+        private ClientTransport transport;
+        private Map<String, Object> handshakeFields;
+        private ClientSessionChannel.MessageListener handshakeCallback;
+        private Map<String, Object> advice;
+        private String sessionId;
+        private long backOff;
+        private long unconnected;
+        private boolean active;
+        private boolean waiting;
+        private int handshakeMessages;
 
-        public void postCreate()
+        private void reset()
         {
-        }
-    }
-
-    private abstract class BayeuxClientState implements Runnable
-    {
-        protected final State type;
-        protected final Map<String, Object> handshakeFields;
-        protected final ClientSessionChannel.MessageListener callback;
-        protected final Map<String, Object> advice;
-        protected final ClientTransport transport;
-        protected final String clientId;
-        protected final long backoff;
-
-        private BayeuxClientState(State type,
-                                  Map<String, Object> handshakeFields,
-                                  ClientSessionChannel.MessageListener callback,
-                                  Map<String, Object> advice,
-                                  ClientTransport transport,
-                                  String clientId,
-                                  long backoff)
-        {
-            this.type = type;
-            this.handshakeFields = handshakeFields;
-            this.callback = callback;
-            this.advice = advice;
-            this.transport = transport;
-            this.clientId = clientId;
-            this.backoff = backoff;
+            actions.clear();
+            state = State.DISCONNECTED;
+            transport = null;
+            handshakeFields = null;
+            handshakeCallback = null;
+            advice = null;
+            sessionId = null;
+            backOff = 0;
+            unconnected = 0;
+            active = false;
+            waiting = false;
+            handshakeMessages = 0;
         }
 
-        protected long getTimeout()
+        private State getState()
         {
-            return getAdviceField(Message.TIMEOUT_FIELD);
+            synchronized (this)
+            {
+                return state;
+            }
         }
 
-        protected long getInterval()
+        private ClientTransport getTransport()
         {
-            return getAdviceField(Message.INTERVAL_FIELD);
+            synchronized (this)
+            {
+                return transport;
+            }
         }
 
-        protected long getMaxInterval()
+        private Map<String, Object> getHandshakeFields()
         {
-            return getAdviceField(Message.MAX_INTERVAL_FIELD);
+            synchronized (this)
+            {
+                return handshakeFields;
+            }
         }
 
-        private long getAdviceField(String field)
+        private ClientSessionChannel.MessageListener getHandshakeCallback()
         {
-            long result = 0;
-            if (advice != null && advice.containsKey(field))
-                result = ((Number)advice.get(field)).longValue();
+            synchronized (this)
+            {
+                return handshakeCallback;
+            }
+        }
+
+        private Map<String, Object> getAdvice()
+        {
+            synchronized (this)
+            {
+                return advice;
+            }
+        }
+
+        private String getSessionId()
+        {
+            synchronized (this)
+            {
+                return sessionId;
+            }
+        }
+
+        private long getBackOff()
+        {
+            synchronized (this)
+            {
+                return backOff;
+            }
+        }
+
+        public long getUnconnected()
+        {
+            synchronized (this)
+            {
+                if (unconnected == 0)
+                    return 0;
+                return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - unconnected);
+            }
+        }
+
+        private long getTimeout()
+        {
+            return getAdviceLong(Message.TIMEOUT_FIELD);
+        }
+
+        private long getInterval()
+        {
+            return getAdviceLong(Message.INTERVAL_FIELD);
+        }
+
+        private long getMaxInterval()
+        {
+            return getAdviceLong(Message.MAX_INTERVAL_FIELD);
+        }
+
+        private String getAdviceAction(Map<String, Object> advice, String defaultAction)
+        {
+            String result = null;
+            if (advice == null)
+                advice = getAdvice();
+            if (advice != null)
+                result = (String)advice.get(Message.RECONNECT_FIELD);
+            return result == null ? defaultAction : result;
+        }
+
+        private long getAdviceLong(String field)
+        {
+            synchronized (this)
+            {
+                long result = 0;
+                if (advice != null && advice.containsKey(field))
+                    result = ((Number)advice.get(field)).longValue();
+                return result;
+            }
+        }
+
+        private long nextBackOff()
+        {
+            synchronized (this)
+            {
+                return Math.min(backOff + getBackoffIncrement(), getMaxBackoff());
+            }
+        }
+
+        public boolean handshaking(ClientTransport transport, Map<String, Object> fields, ClientSessionChannel.MessageListener callback)
+        {
+            boolean result;
+            synchronized (this)
+            {
+                reset();
+                result = update(State.HANDSHAKING);
+                if (result)
+                {
+                    this.transport = transport;
+                    this.handshakeFields = fields;
+                    this.handshakeCallback = callback;
+                }
+            }
+            if (result)
+            {
+                resetSubscriptions();
+                sendHandshake();
+            }
             return result;
         }
 
-        protected boolean send(TransportListener listener, List<Message.Mutable> messages)
+        public boolean rehandshaking(ClientTransport transport, boolean resetBackOff)
         {
-            for (Iterator<Message.Mutable> iterator = messages.iterator(); iterator.hasNext();)
+            State oldState;
+            long oldBackOff;
+            boolean result;
+            synchronized (this)
             {
-                Message.Mutable message = iterator.next();
-
-                String messageId = message.getId();
-                message.setClientId(clientId);
-
-                if (extendSend(message))
+                oldState = this.state;
+                oldBackOff = resetBackOff ? 0 : this.backOff;
+                result = sessionState.update(State.REHANDSHAKING);
+                if (result)
                 {
-                    // Extensions may have changed the messageId, but we need to
-                    // own it in case of meta messages to link requests to responses
-                    // in non request/response transports such as WebSocket.
-                    message.setId(messageId);
-                }
-                else
-                {
-                    iterator.remove();
+                    this.backOff = resetBackOff ? 0 : nextBackOff();
+                    if (transport != null)
+                        this.transport = transport;
                 }
             }
-            if (messages.isEmpty())
-                return false;
-            if (logger.isDebugEnabled())
-                logger.debug("Sending messages {}", messages);
-            return transportSend(listener, messages);
-        }
 
-        protected boolean transportSend(TransportListener listener, List<Message.Mutable> messages)
-        {
-            transport.send(listener, messages);
-            return true;
-        }
-
-        private long nextBackoff()
-        {
-            return Math.min(backoff + getBackoffIncrement(), getMaxBackoff());
-        }
-
-        protected abstract boolean isUpdateableTo(BayeuxClientState newState);
-
-        /**
-         * <p>Callback invoked when the state changed from the given {@code oldState}
-         * to this state (and only when the two states are different).</p>
-         *
-         * @param oldState the previous state
-         * @see #run()
-         */
-        protected void enter(State oldState)
-        {
-        }
-
-        /**
-         * <p>Callback invoked when this state becomes the new state, even if the
-         * previous state was equal to this state.</p>
-         *
-         * @see #enter(State)
-         */
-        public abstract void run();
-
-        public State getType()
-        {
-            return type;
-        }
-
-        @Override
-        public String toString()
-        {
-            return type.toString();
-        }
-    }
-
-    private class DisconnectedState extends BayeuxClientState
-    {
-        private DisconnectedState(ClientTransport transport)
-        {
-            super(State.DISCONNECTED, null, null, null, transport, null, 0);
-        }
-
-        @Override
-        protected boolean transportSend(TransportListener listener, List<Message.Mutable> messages)
-        {
-            failMessages(new TransportException(null), messages);
-            return false;
-        }
-
-        @Override
-        protected boolean isUpdateableTo(BayeuxClientState newState)
-        {
-            return newState.type == State.HANDSHAKING;
-        }
-
-        @Override
-        public void run()
-        {
-        }
-    }
-
-    private class HandshakingState extends BayeuxClientState
-    {
-        private HandshakingState(Map<String, Object> handshakeFields, ClientSessionChannel.MessageListener callback, ClientTransport transport)
-        {
-            super(State.HANDSHAKING, handshakeFields, callback, null, transport, null, 0);
-        }
-
-        @Override
-        protected boolean isUpdateableTo(BayeuxClientState newState)
-        {
-            return newState.type == State.CONNECTING ||
-                    newState.type == State.REHANDSHAKING ||
-                    newState.type == State.TERMINATING;
-        }
-
-        @Override
-        protected void enter(State oldState)
-        {
-            // Always reset the subscriptions when a handshake has been requested.
-            resetSubscriptions();
-        }
-
-        @Override
-        public void run()
-        {
-            // The state could change between now and when sendHandshake() runs;
-            // in this case the handshake message will not be sent and will not
-            // be failed, because most probably the client has been disconnected.
-            sendHandshake();
-        }
-    }
-
-    private class RehandshakingState extends BayeuxClientState
-    {
-        public RehandshakingState(Map<String, Object> handshakeFields, ClientSessionChannel.MessageListener callback, ClientTransport transport, long backoff)
-        {
-            super(State.REHANDSHAKING, handshakeFields, callback, null, transport, null, backoff);
-        }
-
-        @Override
-        protected boolean isUpdateableTo(BayeuxClientState newState)
-        {
-            return newState.type == State.CONNECTING ||
-                    newState.type == State.REHANDSHAKING ||
-                    newState.type == State.TERMINATING;
-        }
-
-        @Override
-        protected void enter(State oldState)
-        {
-            // Reset the subscriptions if this is not a failure from a requested handshake.
-            // Subscriptions may be queued after requested handshakes.
-            if (oldState != State.HANDSHAKING)
-                resetSubscriptions();
-        }
-
-        @Override
-        public void run()
-        {
-            scheduleHandshake(getInterval(), backoff);
-        }
-    }
-
-    private class ConnectingState extends BayeuxClientState
-    {
-        private ConnectingState(Map<String, Object> handshakeFields, ClientSessionChannel.MessageListener callback, Map<String, Object> advice, ClientTransport transport, String clientId)
-        {
-            super(State.CONNECTING, handshakeFields, callback, advice, transport, clientId, 0);
-        }
-
-        @Override
-        protected boolean isUpdateableTo(BayeuxClientState newState)
-        {
-            return newState.type == State.CONNECTED ||
-                    newState.type == State.UNCONNECTED ||
-                    newState.type == State.REHANDSHAKING ||
-                    newState.type == State.DISCONNECTING ||
-                    newState.type == State.TERMINATING;
-        }
-
-        @Override
-        public void run()
-        {
-            // Send the messages that may have queued up before the handshake completed
-            sendBatch();
-            scheduleConnect(getInterval(), backoff);
-        }
-    }
-
-    private class ConnectedState extends BayeuxClientState
-    {
-        private ConnectedState(Map<String, Object> handshakeFields, ClientSessionChannel.MessageListener callback, Map<String, Object> advice, ClientTransport transport, String clientId)
-        {
-            super(State.CONNECTED, handshakeFields, callback, advice, transport, clientId, 0);
-        }
-
-        @Override
-        protected boolean isUpdateableTo(BayeuxClientState newState)
-        {
-            return newState.type == State.CONNECTED ||
-                    newState.type == State.UNCONNECTED ||
-                    newState.type == State.REHANDSHAKING ||
-                    newState.type == State.DISCONNECTING ||
-                    newState.type == State.TERMINATING;
-        }
-
-        @Override
-        public void run()
-        {
-            scheduleConnect(getInterval(), backoff);
-        }
-    }
-
-    private class UnconnectedState extends BayeuxClientState
-    {
-        private final long unconnectTime;
-
-        private UnconnectedState(Map<String, Object> handshakeFields, ClientSessionChannel.MessageListener callback, Map<String, Object> advice, ClientTransport transport, String clientId, long backoff, long unconnectTime)
-        {
-            super(State.UNCONNECTED, handshakeFields, callback, advice, transport, clientId, backoff);
-            this.unconnectTime = unconnectTime;
-        }
-
-        @Override
-        protected boolean isUpdateableTo(BayeuxClientState newState)
-        {
-            return newState.type == State.CONNECTED ||
-                    newState.type == State.UNCONNECTED ||
-                    newState.type == State.REHANDSHAKING ||
-                    newState.type == State.TERMINATING;
-        }
-
-        @Override
-        public void run()
-        {
-            long maxInterval = getMaxInterval();
-            if (maxInterval > 0)
+            if (result)
             {
-                long expiration = getTimeout() + getInterval() + maxInterval;
-                long unconnected = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - unconnectTime);
-                if (unconnected + backoff > expiration)
+                if (oldState != State.HANDSHAKING)
+                    resetSubscriptions();
+                scheduleHandshake(getInterval(), oldBackOff);
+            }
+
+            return result;
+        }
+
+        public boolean handshaken(ClientTransport transport, Map<String, Object> advice, String sessionId, int messages)
+        {
+            synchronized (this)
+            {
+                if (update(State.HANDSHAKEN))
+                {
+                    this.transport = transport;
+                    this.advice = advice;
+                    this.sessionId = sessionId;
+                    this.handshakeMessages = messages;
+                    this.backOff = 0;
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        public boolean connecting()
+        {
+            boolean result = false;
+            synchronized (this)
+            {
+                if (handshakeMessages > 0)
+                    --handshakeMessages;
+                if (handshakeMessages == 0)
+                    result = sessionState.update(State.CONNECTING);
+            }
+            if (result)
+                scheduleConnect(getInterval(), 0);
+            return result;
+        }
+
+        public boolean connected(Map<String, Object> advice)
+        {
+            long backOff;
+            boolean result;
+            synchronized (this)
+            {
+                backOff = this.backOff;
+                result = update(State.CONNECTED);
+                if (result && advice != null)
+                    this.advice = advice;
+            }
+
+            if (result)
+                scheduleConnect(getInterval(), backOff);
+
+            return result;
+        }
+
+        public boolean unconnected()
+        {
+            long backOff;
+            boolean handshake;
+            boolean result;
+            synchronized (this)
+            {
+                backOff = this.backOff;
+                handshake = false;
+                result = update(State.UNCONNECTED);
+                if (result)
+                {
+                    if (unconnected == 0)
+                        unconnected = System.nanoTime();
+
+                    long maxInterval = getMaxInterval();
+                    if (maxInterval > 0)
+                    {
+                        long expiration = getTimeout() + getInterval() + maxInterval;
+                        long unconnected = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - this.unconnected);
+                        handshake = unconnected + this.backOff > expiration;
+                    }
+
+                    if (handshake)
+                        this.backOff = backOff = 0;
+                    else
+                        this.backOff = backOff = nextBackOff();
+                }
+            }
+
+            if (result)
+            {
+                if (handshake)
                 {
                     if (logger.isDebugEnabled())
                         logger.debug("Switching to handshake retries");
-                    scheduleHandshake(getInterval(), backoff);
-                    return;
+                    scheduleHandshake(getInterval(), backOff);
+                }
+                else
+                {
+                    scheduleConnect(getInterval(), backOff);
                 }
             }
-            scheduleConnect(getInterval(), backoff);
-        }
-    }
 
-    private class DisconnectingState extends BayeuxClientState
-    {
-        private DisconnectingState(ClientSessionChannel.MessageListener callback, ClientTransport transport, String clientId)
-        {
-            super(State.DISCONNECTING, null, callback, null, transport, clientId, 0);
+            return result;
         }
 
-        @Override
-        protected boolean isUpdateableTo(BayeuxClientState newState)
+        private boolean disconnecting()
         {
-            return newState.type == State.TERMINATING;
+            return update(State.DISCONNECTING);
         }
 
-        @Override
-        public void run()
+        private void terminating()
         {
-            Message.Mutable message = newMessage();
-            String messageId = newMessageId();
-            message.setId(messageId);
-            message.setChannel(Channel.META_DISCONNECT);
-            registerCallback(messageId, callback);
-            List<Message.Mutable> messages = new ArrayList<>(1);
-            messages.add(message);
-            send(disconnectListener, messages);
-        }
-    }
-
-    private class TerminatingState extends BayeuxClientState
-    {
-        private TerminatingState(ClientTransport transport)
-        {
-            super(State.TERMINATING, null, null, null, transport, null, 0);
+            if (update(State.TERMINATING))
+                terminate(false);
         }
 
-        @Override
-        protected boolean transportSend(TransportListener listener, List<Message.Mutable> messages)
+        private boolean update(State newState)
         {
-            failMessages(new TransportException(null), messages);
-            return false;
-        }
-
-        @Override
-        protected boolean isUpdateableTo(BayeuxClientState newState)
-        {
-            return newState.type == State.DISCONNECTED;
-        }
-
-        @Override
-        public void run()
-        {
-            transport.terminate();
-            terminate();
-            changeState(new BayeuxClientStateUpdater()
+            synchronized (this)
             {
-                public BayeuxClientState create(BayeuxClientState oldState)
-                {
-                    return new DisconnectedState(oldState.transport);
-                }
-            });
-        }
-    }
-
-    private class AbortingState extends TerminatingState
-    {
-        private AbortingState(ClientTransport transport)
-        {
-            super(transport);
+                State oldState = state;
+                boolean result = state.isUpdateableTo(newState);
+                if (result)
+                    state = newState;
+                if (logger.isDebugEnabled())
+                    logger.debug("State {}updated: {} -> {}", result ? "" : "not ", oldState, newState);
+                return result;
+            }
         }
 
-        @Override
-        public void run()
+        private void terminate(boolean abort)
         {
-            transport.abort();
-            terminate();
-            changeState(new BayeuxClientStateUpdater()
+            if (abort)
+                transport.abort();
+            else
+                transport.terminate();
+            BayeuxClient.this.terminate();
+            update(State.DISCONNECTED);
+        }
+
+        private void submit(Runnable action)
+        {
+            boolean empty;
+            synchronized (this)
             {
-                public BayeuxClientState create(BayeuxClientState oldState)
+                empty = actions.isEmpty();
+                actions.offer(action);
+            }
+            if (empty && process())
+            {
+                synchronized (this)
                 {
-                    return new DisconnectedState(oldState.transport);
+                    if (waiting)
+                    {
+                        if (logger.isDebugEnabled())
+                            logger.debug("Notifying threads in waitFor()");
+                        notifyAll();
+                    }
                 }
-            });
+            }
+        }
+
+        private boolean process()
+        {
+            boolean looping = false;
+            while (true)
+            {
+                Runnable action;
+                synchronized (this)
+                {
+                    // Reentering is a no-operation.
+                    if (!looping && active)
+                        return false;
+
+                    action = actions.poll();
+                    if (action == null)
+                    {
+                        active = false;
+                        return true;
+                    }
+
+                    if (!looping)
+                        active = looping = true;
+                }
+
+                action.run();
+            }
+        }
+
+        private boolean send(TransportListener messageListener, List<Message.Mutable> messages)
+        {
+            if (isDisconnected())
+            {
+                failMessages(new TransportException(null), messages);
+                return false;
+            }
+            else
+            {
+                transport.send(messageListener, messages);
+                return true;
+            }
+        }
+
+        private boolean isIdle()
+        {
+            synchronized (this)
+            {
+                return !active;
+            }
+        }
+
+        private boolean await(long time)
+        {
+            synchronized (this)
+            {
+                waiting = true;
+                try
+                {
+                    wait(time);
+                    return false;
+                }
+                catch (InterruptedException x)
+                {
+                    return true;
+                }
+                finally
+                {
+                    waiting = false;
+                }
+            }
         }
     }
 }

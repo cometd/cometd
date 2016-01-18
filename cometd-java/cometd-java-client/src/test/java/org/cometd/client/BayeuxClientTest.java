@@ -261,11 +261,11 @@ public class BayeuxClientTest extends ClientServerTest
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
-            protected Runnable processHandshake(Message.Mutable message)
+            protected void processHandshake(Message.Mutable message)
             {
                 // Force no transports
                 message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, new Object[0]);
-                return super.processHandshake(message);
+                super.processHandshake(message);
             }
 
             @Override
@@ -386,15 +386,15 @@ public class BayeuxClientTest extends ClientServerTest
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
-            protected boolean scheduleConnect(long interval, long backoff)
+            protected boolean scheduleConnect(long interval, long backOff)
             {
                 int count = connects.get();
                 if (count > 0)
                 {
-                    Assert.assertEquals((count - 1) * getBackoffIncrement(), backoff);
+                    Assert.assertEquals((count - 1) * getBackoffIncrement(), backOff);
                     attempts.countDown();
                 }
-                return super.scheduleConnect(interval, backoff);
+                return super.scheduleConnect(interval, backOff);
             }
 
             @Override
@@ -407,9 +407,7 @@ public class BayeuxClientTest extends ClientServerTest
                 connect.setId(newMessageId());
                 connect.setChannel(Channel.META_CONNECT);
                 connect.setSuccessful(false);
-                Runnable action = processConnect(connect);
-                if (action != null)
-                    action.run();
+                processConnect(connect);
                 return false;
             }
         };
@@ -746,7 +744,7 @@ public class BayeuxClientTest extends ClientServerTest
             protected boolean sendMessages(List<Message.Mutable> messages)
             {
                 boolean result = super.sendMessages(messages);
-                if (result)
+                if (result && !messages.get(0).getChannelId().isMeta())
                     publishLatch.countDown();
                 return result;
             }
@@ -800,8 +798,11 @@ public class BayeuxClientTest extends ClientServerTest
             @Override
             protected boolean sendMessages(List<Message.Mutable> messages)
             {
-                abort();
-                publishLatch.get().countDown();
+                if (!messages.get(0).getChannelId().isMeta())
+                {
+                    abort();
+                    publishLatch.get().countDown();
+                }
                 return super.sendMessages(messages);
             }
         };
@@ -849,7 +850,7 @@ public class BayeuxClientTest extends ClientServerTest
         BayeuxClient client = newBayeuxClient();
 
         final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<>(new CountDownLatch(1));
-        final AtomicReference<CountDownLatch> disconnectedLatch = new AtomicReference<>(new CountDownLatch(2));
+        final AtomicReference<CountDownLatch> unconnectedLatch = new AtomicReference<>(new CountDownLatch(2));
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -857,20 +858,22 @@ public class BayeuxClientTest extends ClientServerTest
                 if (message.isSuccessful())
                     connectedLatch.get().countDown();
                 else
-                    disconnectedLatch.get().countDown();
+                    unconnectedLatch.get().countDown();
             }
         });
         client.handshake();
 
         // Wait for connect
-        Assert.assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(connectedLatch.get().await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
         Assert.assertTrue(client.isConnected());
         Thread.sleep(1000);
 
         // Stop server
         int port = connector.getLocalPort();
         server.stop();
-        Assert.assertTrue(disconnectedLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(unconnectedLatch.get().await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(client.waitFor(5000, State.UNCONNECTED));
         Assert.assertTrue(!client.isConnected());
 
         // restart server
@@ -879,7 +882,8 @@ public class BayeuxClientTest extends ClientServerTest
         server.start();
 
         // Wait for connect
-        Assert.assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(connectedLatch.get().await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
         Assert.assertTrue(client.isConnected());
 
         disconnectBayeuxClient(client);
@@ -1113,6 +1117,9 @@ public class BayeuxClientTest extends ClientServerTest
         Assert.assertTrue(disconnect);
         Assert.assertTrue(connect);
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+
+        // Wait for the /meta/connect to return.
+        Thread.sleep(1000);
 
         // Rehandshake
         client.handshake();

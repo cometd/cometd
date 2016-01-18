@@ -391,6 +391,9 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest
         bayeuxClient.disconnect();
         assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.DISCONNECTED));
 
+        // Wait for the /meta/connect to return.
+        Thread.sleep(1000);
+
         // Rehandshake
         bayeuxClient.handshake();
         assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
@@ -405,6 +408,9 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest
 
         boolean deprocessed = processor.deprocess(s);
         assertTrue(deprocessed);
+
+        // Wait for the /meta/connect to return.
+        Thread.sleep(1000);
 
         // Rehandshake
         bayeuxClient.handshake();

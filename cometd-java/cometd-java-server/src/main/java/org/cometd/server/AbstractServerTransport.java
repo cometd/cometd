@@ -225,6 +225,13 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     {
     }
 
+    protected ServerMessage.Mutable processReply(ServerSessionImpl session, ServerMessage.Mutable reply)
+    {
+        if (reply != null)
+            reply = getBayeux().extendReply(session, session, reply);
+        return reply;
+    }
+
     protected byte[] toJSONBytes(ServerMessage message, String encoding)
     {
         try
