@@ -214,6 +214,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         });
         client.handshake();
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         Assert.assertTrue(client.isConnected());
 
         disconnectBayeuxClient(client);
@@ -242,6 +243,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         // Wait for connect
         Assert.assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         Assert.assertTrue(client.isConnected());
         Thread.sleep(1000);
 
@@ -258,6 +260,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         // Wait for connect
         Assert.assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         Assert.assertTrue(client.isConnected());
 
         disconnectBayeuxClient(client);
@@ -330,6 +333,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         // Wait for connect
         Assert.assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         Assert.assertTrue(client.isConnected());
         Thread.sleep(1000);
 
@@ -346,6 +350,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         // Wait for connect
         Assert.assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         Assert.assertTrue(client.isConnected());
 
         disconnectBayeuxClient(client);
@@ -1187,7 +1192,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         final BayeuxClient client = newBayeuxClient();
         final String channelName = "/test";
-        final AtomicReference<CountDownLatch> rcv = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> rcv = new AtomicReference<>(new CountDownLatch(1));
         client.addExtension(new AckExtension());
         client.addExtension(new ClientSession.Extension.Adapter()
         {

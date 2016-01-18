@@ -26,12 +26,9 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.LongPollingTransport;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class BayeuxClientConcurrentTest extends ClientServerTest
 {
@@ -51,15 +48,15 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
             protected boolean sendHandshake()
             {
                 disconnect();
-                assertFalse(super.sendHandshake());
+                super.sendHandshake();
                 latch.countDown();
                 return false;
             }
         };
         client.handshake();
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        assertEquals(BayeuxClient.State.DISCONNECTED, client.getState());
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 
     @Test
@@ -72,15 +69,15 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
             protected boolean sendConnect()
             {
                 disconnect();
-                assertFalse(super.sendConnect());
+                super.sendConnect();
                 latch.countDown();
                 return false;
             }
         };
         client.handshake();
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 
     @Test
@@ -92,7 +89,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
             protected void enqueueSend(Message.Mutable message)
             {
                 disconnect();
-                assertTrue(waitFor(5000, State.DISCONNECTED));
+                Assert.assertTrue(waitFor(5000, State.DISCONNECTED));
                 super.enqueueSend(message);
             }
         };
@@ -101,12 +98,12 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                assertFalse(message.isSuccessful());
+                Assert.assertFalse(message.isSuccessful());
                 latch.countDown();
             }
         });
         client.handshake();
-        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         client.getChannel("/test").subscribe(new ClientSessionChannel.MessageListener()
         {
@@ -115,8 +112,8 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-        assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 
     @Test
@@ -131,7 +128,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
                 if (channelName.equals(message.getChannel()))
                 {
                     disconnect();
-                    assertTrue(waitFor(5000, State.DISCONNECTED));
+                    Assert.assertTrue(waitFor(5000, State.DISCONNECTED));
                 }
                 super.enqueueSend(message);
             }
@@ -141,7 +138,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                assertTrue(message.isSuccessful());
+                Assert.assertTrue(message.isSuccessful());
                 latch.countDown();
             }
         });
@@ -151,12 +148,12 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                assertFalse(message.isSuccessful());
+                Assert.assertFalse(message.isSuccessful());
                 failLatch.countDown();
             }
         });
         client.handshake();
-        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch publishLatch = new CountDownLatch(1);
         channel.subscribe(new ClientSessionChannel.MessageListener()
@@ -168,14 +165,14 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
         });
 
         // Wait to be subscribed
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         // Publish will fail
         channel.publish(new HashMap<>());
-        assertTrue(failLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(publishLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(failLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(publishLatch.await(1, TimeUnit.SECONDS));
 
-        assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 
     @Test
@@ -212,10 +209,10 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
         });
         client.handshake();
 
-        assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
 
         channel.publish(new HashMap<>());
-        assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -252,7 +249,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
         });
         client.handshake();
 
-        assertTrue(connectLatch.await(2 * sleep, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(connectLatch.await(2 * sleep, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -260,13 +257,18 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
     @Test
     public void testConcurrentHandshakeAndBatch() throws Exception
     {
+        final String channelName = "/foobar";
         final CountDownLatch sendLatch = new CountDownLatch(1);
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             protected boolean sendMessages(List<Message.Mutable> messages)
             {
-                sendLatch.countDown();
+                for (Message message : messages)
+                {
+                    if (message.getChannel().equals(channelName))
+                        sendLatch.countDown();
+                }
                 return super.sendMessages(messages);
             }
         };
@@ -294,7 +296,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
         {
             public void run()
             {
-                ClientSessionChannel channel = client.getChannel("/foobar");
+                ClientSessionChannel channel = client.getChannel(channelName);
                 channel.subscribe(new ClientSessionChannel.MessageListener()
                 {
                     public void onMessage(ClientSessionChannel channel, Message message)
@@ -309,7 +311,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
                 try
                 {
                     // Be sure messages are not sent (we're still batching)
-                    assertFalse(sendLatch.await(1, TimeUnit.SECONDS));
+                    Assert.assertFalse(sendLatch.await(1, TimeUnit.SECONDS));
                 }
                 catch (InterruptedException x)
                 {
@@ -320,8 +322,8 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
             }
         });
 
-        assertTrue(sendLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(sendLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

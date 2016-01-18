@@ -72,6 +72,9 @@ public class OortAuthenticationTest extends OortTest
         BayeuxClient client2 = startClient(oort1, null);
         Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
+        // Wait for the /meta/connect to return.
+        Thread.sleep(1000);
+
         // A client that forges an Oort comet authentication may not connect
         Message.Mutable forgedAuthFields = new HashMapMessage();
         Map<String, Object> ext = forgedAuthFields.getExt(true);

@@ -190,7 +190,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             _context = context;
         }
 
-        protected void send(S wsSession, List<ServerMessage> messages, int batchSize, Callback callback)
+        protected void send(S wsSession, List<? extends ServerMessage> messages, int batchSize, Callback callback)
         {
             if (messages.isEmpty())
             {
@@ -314,7 +314,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             boolean startInterval = false;
             boolean send = true;
             List<ServerMessage> queue = Collections.emptyList();
-            List<ServerMessage> replies = new ArrayList<>(messages.length);
+            List<ServerMessage.Mutable> replies = new ArrayList<>(messages.length);
             for (int i = 0; i < messages.length; i++)
             {
                 ServerMessage.Mutable message = messages[i];
@@ -450,18 +450,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
         }
 
-        private ServerMessage.Mutable processReply(ServerSessionImpl session, ServerMessage.Mutable reply)
-        {
-            if (reply != null)
-            {
-                reply = getBayeux().extendReply(session, session, reply);
-                if (reply != null)
-                    getBayeux().freeze(reply);
-            }
-            return reply;
-        }
-
-        protected void send(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage> replies)
+        protected void send(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage.Mutable> replies)
         {
             if (_logger.isDebugEnabled())
                 _logger.debug("Sending {}, replies={}, messages={}", session, replies, queue);
@@ -564,7 +553,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
         private void send(S wsSession, ServerSessionImpl session, boolean reply, ServerMessage.Mutable connectReply)
         {
-            List<ServerMessage> replies = Collections.emptyList();
+            List<ServerMessage.Mutable> replies = Collections.emptyList();
             if (reply)
             {
                 if (session.isDisconnected() && connectReply != null)
@@ -634,7 +623,21 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
                 S wsSession = entry._wsSession;
 
+                List<ServerMessage.Mutable> replies = entry._replies;
                 List<ServerMessage> queue = entry._queue;
+                if (replies.size() > 0)
+                {
+                    ServerMessage.Mutable reply = replies.get(0);
+                    if (Channel.META_HANDSHAKE.equals(reply.getChannel()))
+                    {
+                        if (isAllowMessageDeliveryDuringHandshake() && !queue.isEmpty())
+                            reply.put("x-messages", queue.size());
+                        getBayeux().freeze(reply);
+                        send(wsSession, replies, 1, this);
+                        return Action.SCHEDULED;
+                    }
+                }
+
                 if (!queue.isEmpty())
                 {
                     // Under load, it is possible that we have many bayeux messages and
@@ -661,9 +664,10 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         session.startIntervalTimeout(getInterval());
                 }
 
-                List<ServerMessage> replies = entry._replies;
                 if (_logger.isDebugEnabled())
                     _logger.debug("Processing replies {}", replies);
+                for (ServerMessage.Mutable reply : replies)
+                    getBayeux().freeze(reply);
                 send(wsSession, replies, replies.size(), this);
                 return Action.SCHEDULED;
             }
@@ -675,9 +679,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             private final ServerSessionImpl _session;
             private final boolean _startInterval;
             private final List<ServerMessage> _queue;
-            private final List<ServerMessage> _replies;
+            private final List<ServerMessage.Mutable> _replies;
 
-            private Entry(W wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage> replies)
+            private Entry(W wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage.Mutable> replies)
             {
                 this._wsSession = wsSession;
                 this._session = session;
