@@ -100,8 +100,8 @@
     </scm>
 
     <organization>
-        <name>Dojo Foundation</name>
-        <url>http://dojofoundation.org</url>
+        <name>The CometD Project</name>
+        <url>https://cometd.org</url>
     </organization>
 
     <modules>
