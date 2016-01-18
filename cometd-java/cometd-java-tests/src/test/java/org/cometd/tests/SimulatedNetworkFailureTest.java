@@ -246,19 +246,19 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest
         }
 
         @Override
-        protected Runnable processConnect(Message.Mutable connect)
+        protected void processConnect(Message.Mutable connect)
         {
             if (networkDown > 0)
                 connect.setSuccessful(false);
-            return super.processConnect(connect);
+            super.processConnect(connect);
         }
 
         @Override
-        protected boolean scheduleConnect(long interval, long backoff)
+        protected boolean scheduleConnect(long interval, long backOff)
         {
             if (networkDown > 0)
-                backoff = networkDown;
-            return super.scheduleConnect(interval, backoff);
+                backOff = networkDown;
+            return super.scheduleConnect(interval, backOff);
         }
 
         @Override

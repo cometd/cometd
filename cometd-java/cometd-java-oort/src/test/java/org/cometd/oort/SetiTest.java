@@ -246,7 +246,7 @@ public class SetiTest extends OortTest
         BayeuxClient client2 = new BayeuxClient(oort2.getURL(), new LongPollingTransport(null, httpClient))
         {
             @Override
-            protected Runnable processConnect(Message.Mutable connect)
+            protected void processConnect(Message.Mutable connect)
             {
                 // Send the login message, so Seti can associate this user
                 Map<String, Object> login2 = new HashMap<>();
@@ -258,7 +258,7 @@ public class SetiTest extends OortTest
                 session2.set(getId());
                 connect.setSuccessful(false);
                 connect.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                return super.processConnect(connect);
+                super.processConnect(connect);
             }
         };
         client2.handshake();
