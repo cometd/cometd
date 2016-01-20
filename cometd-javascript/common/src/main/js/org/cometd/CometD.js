@@ -750,14 +750,14 @@
             }
         }
 
-    this._getCallback = function(messageId) {
-        return _callbacks[messageId];
-    };
+        this._getCallback = function(messageId) {
+            return _callbacks[messageId];
+        };
 
-    this._putCallback = function(messageId, callback) {
-        var result = this._getCallback(messageId);
-        if (_isFunction(callback)) {
-            _callbacks[messageId] = callback;
+        this._putCallback = function(messageId, callback) {
+            var result = this._getCallback(messageId);
+            if (_isFunction(callback)) {
+                _callbacks[messageId] = callback;
             }
             return result;
         };
@@ -773,6 +773,7 @@
         function _handleRemoteCall(message) {
             var context = _remoteCalls[message.id];
             delete _remoteCalls[message.id];
+            _cometd._debug('Handling remote call response for', message, 'with context', context);
             if (context) {
                 // Clear the timeout, if present.
                 var timeout = context.timeout;
@@ -951,7 +952,7 @@
                 switch (action) {
                     case 'retry':
                         _resetBackoff();
-                     	if (_handshakeMessages === 0) {
+                    	if (_handshakeMessages === 0) {
                         	_delayedConnect(0);
                     	} else {
                         	_cometd._debug('Processing', _handshakeMessages, 'handshake-delivered messages');
@@ -981,8 +982,8 @@
             }
         }
 
-    function _handshakeFailure(message) {
-        var action = 'handshake';
+    	function _handshakeFailure(message) {
+        	var action = 'handshake';
             if (_advice.reconnect === 'none') {
                 action = 'disconnect';
             }
@@ -1143,37 +1144,37 @@
 
         function _failMessage(message) {
             if (!_handleRemoteCall(message)) {
-            	_handleCallback(message);
-            	_notifyListeners('/meta/publish', message);
-            	_notifyListeners('/meta/unsuccessful', message);
-        	}
-    	}
+            _handleCallback(message);
+            _notifyListeners('/meta/publish', message);
+            _notifyListeners('/meta/unsuccessful', message);
+            }
+        }
 
-    	function _messageResponse(message) {
-        	if (message.data !== undefined) {
-            	if (!_handleRemoteCall(message)) {
-                	_notifyListeners(message.channel, message);
-                	if (_handshakeMessages > 0) {
-                    	--_handshakeMessages;
-                    	if (_handshakeMessages === 0) {
-                        	_cometd._debug('Processed last handshake-delivered message');
-                        	_delayedConnect(0);
-                    	}
-                	}
-            	}
-        	} else {
-            	if (message.successful === undefined) {
-                	_cometd._warn('Unknown Bayeux Message', message);
-            	} else {
-                	if (message.successful) {
-                    	_handleCallback(message);
-                    	_notifyListeners('/meta/publish', message);
-                	} else {
-                    	_failMessage(message);
-                	}
-            	}
-        	}
-    	}
+        function _messageResponse(message) {
+            if (message.data !== undefined) {
+                if (!_handleRemoteCall(message)) {
+                    _notifyListeners(message.channel, message);
+                if (_handshakeMessages > 0) {
+                    --_handshakeMessages;
+                    if (_handshakeMessages === 0) {
+                        _cometd._debug('Processed last handshake-delivered message');
+                        _delayedConnect(0);
+                    }
+                }
+                }
+            } else {
+                if (message.successful === undefined) {
+                    _cometd._warn('Unknown Bayeux Message', message);
+                } else {
+                    if (message.successful) {
+                        _handleCallback(message);
+                        _notifyListeners('/meta/publish', message);
+                    } else {
+                        _failMessage(message);
+                    }
+                }
+            }
+        }
 
         function _messageFailure(failure) {
             _failMessage(failure);
