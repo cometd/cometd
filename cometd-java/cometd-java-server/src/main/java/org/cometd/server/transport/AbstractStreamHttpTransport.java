@@ -138,10 +138,13 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
                 // First message is always the handshake reply, if any.
                 if (replies.length > 0)
                 {
-                    ServerMessage.Mutable firstReply = replies[0];
-                    if (Channel.META_HANDSHAKE.equals(firstReply.getChannel()))
+                    ServerMessage.Mutable reply = replies[0];
+                    if (Channel.META_HANDSHAKE.equals(reply.getChannel()))
                     {
-                        writeMessage(response, output, session, firstReply);
+                        if (isAllowMessageDeliveryDuringHandshake() && !messages.isEmpty())
+                            reply.put("x-messages", messages.size());
+                        getBayeux().freeze(reply);
+                        writeMessage(response, output, session, reply);
                         needsComma = true;
                         ++replyIndex;
                     }
@@ -169,12 +172,13 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
             // Write the replies, if any.
             while (replyIndex < replies.length)
             {
-                ServerMessage reply = replies[replyIndex];
+                ServerMessage.Mutable reply = replies[replyIndex];
                 if (reply != null)
                 {
                     if (needsComma)
                         output.write(',');
                     needsComma = true;
+                    getBayeux().freeze(reply);
                     writeMessage(response, output, session, reply);
                 }
                 ++replyIndex;

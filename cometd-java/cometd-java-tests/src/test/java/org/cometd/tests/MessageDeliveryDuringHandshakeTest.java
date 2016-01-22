@@ -16,10 +16,14 @@
 package org.cometd.tests;
 
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -69,7 +73,7 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
         testMessagesInHandshakeResponse(client, true);
     }
 
-    private void testMessagesInHandshakeResponse(BayeuxClient client, final boolean sent) throws Exception
+    private void testMessagesInHandshakeResponse(BayeuxClient client, final boolean allowHandshakeMessages) throws Exception
     {
         final String channelName = "/test";
         bayeux.addListener(new BayeuxServer.SessionListener()
@@ -77,8 +81,9 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message)
             {
-                // Send a message during the handshake processing.
-                session.deliver(null, channelName, "data");
+                // Send messages during the handshake processing.
+                session.deliver(null, channelName, "data1");
+                session.deliver(null, channelName, "data2");
             }
 
             @Override
@@ -95,17 +100,41 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
                 // Check the queue when receiving the first /meta/connect.
-                if (((ServerSessionImpl)from).getQueue().isEmpty() == sent)
+                if (((ServerSessionImpl)from).getQueue().isEmpty() == allowHandshakeMessages)
                     messagesLatch.countDown();
                 metaConnectChannel.removeListener(this);
                 return true;
             }
         });
 
+        final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
+        {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                messages.offer(message);
+            }
+        };
+        client.getChannel(Channel.META_HANDSHAKE).addListener(listener);
+        client.getChannel(channelName).addListener(listener);
+        client.getChannel(Channel.META_CONNECT).addListener(listener);
+
         client.handshake();
 
         Assert.assertTrue(messagesLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Make sure that the messages arrive in the expected order.
+        Message message = messages.poll(1, TimeUnit.SECONDS);
+        Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
+        message = messages.poll(1, TimeUnit.SECONDS);
+        Assert.assertEquals(channelName, message.getChannel());
+        message = messages.poll(1, TimeUnit.SECONDS);
+        Assert.assertEquals(channelName, message.getChannel());
+        message = messages.poll(1, TimeUnit.SECONDS);
+        Assert.assertEquals(Channel.META_CONNECT, message.getChannel());
+
         disconnectBayeuxClient(client);
     }
 }
