@@ -69,14 +69,6 @@
             <name>Apache License Version 2.0</name>
             <url>http://www.apache.org/licenses/LICENSE-2.0</url>
         </license>
-        <license>
-            <name>The New BSD License</name>
-            <url>http://www.opensource.org/licenses/bsd-license.html</url>
-        </license>
-        <license>
-            <name>The Academic Free License, v. 2.1</name>
-            <url>http://opensource-definition.org/licenses/afl-2.1.html</url>
-        </license>
     </licenses>
 
     <distributionManagement>
