@@ -57,6 +57,10 @@ public class TimeExtensionsTest extends ClientServerTest
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait for the second /meta/connect.
+        Thread.sleep(1000);
+
         Assert.assertTrue(client.disconnect(5000));
 
         Assert.assertTrue(messages.size() > 0);
@@ -88,6 +92,10 @@ public class TimeExtensionsTest extends ClientServerTest
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait for the second /meta/connect.
+        Thread.sleep(1000);
+
         Assert.assertTrue(client.disconnect(5000));
 
         Assert.assertTrue(messages.size() > 0);

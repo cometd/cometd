@@ -1213,24 +1213,6 @@ public class BayeuxClientTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
-    private class DumpThread extends Thread
-    {
-        public void run()
-        {
-            try
-            {
-                if (server != null)
-                    server.dump();
-                if (httpClient != null)
-                    httpClient.dump();
-            }
-            catch (Exception x)
-            {
-                x.printStackTrace();
-            }
-        }
-    }
-
     private static class TestFilter implements Filter
     {
         volatile int code = 0;

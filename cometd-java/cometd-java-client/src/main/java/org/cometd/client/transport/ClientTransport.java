@@ -157,7 +157,7 @@ public abstract class ClientTransport extends AbstractTransport
         public String error;
         public String action;
         public String url;
-        public long backOff = -1;
+        public long delay;
 
         public BayeuxClient.State actionToState()
         {

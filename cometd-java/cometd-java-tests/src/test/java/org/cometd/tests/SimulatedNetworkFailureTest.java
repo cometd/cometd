@@ -279,7 +279,7 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest
             {
                 List<Message.Mutable> messages = new ArrayList<>(1);
                 messages.add(message);
-                failMessages(null, messages);
+                messagesFailure(null, messages);
             }
             else
             {
