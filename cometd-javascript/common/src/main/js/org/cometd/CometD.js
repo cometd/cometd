@@ -63,7 +63,7 @@ org.cometd.CometD = function(name) {
         advice: {
             timeout: 60000,
             interval: 0,
-            reconnect: 'retry',
+            reconnect: undefined,
             maxInterval: 0
         }
     };
@@ -632,12 +632,6 @@ org.cometd.CometD = function(name) {
         if (_isDisconnected()) {
             _transports.reset(true);
             _updateAdvice(_config.advice);
-        } else {
-            // We are retrying the handshake, either because another handshake failed
-            // and we're backing off, or because the server timed us out and asks us to
-            // re-handshake: in both cases, make sure that if the handshake succeeds
-            // the next action is a connect.
-            _updateAdvice(_cometd._mixin(false, _advice, {reconnect: 'retry'}));
         }
 
         _batch = 0;
@@ -771,23 +765,18 @@ org.cometd.CometD = function(name) {
         return false;
     }
 
-    this.onTransportFailure = function(message, failureInfo, actionFn) {
-        this._debug('Transport failure', failureInfo);
-
-        var actionInfo = {
-            delay: this.getBackoffPeriod(),
-            transport: this.getTransport()
-        };
+    this.onTransportFailure = function(message, failureInfo, failureHandler) {
+        this._debug('Transport failure', failureInfo, 'for', message);
 
         var transports = this.getTransportRegistry();
         var url = this.getURL();
         var crossDomain = this._isCrossDomain(_splitURL(url)[2]);
         var version = '1.0';
         var transportTypes = transports.findTransportTypes(version, crossDomain, url);
-        var action = failureInfo.action;
-        if (action === 'disconnect') {
+
+        if (failureInfo.action === 'none') {
             if (message.channel === '/meta/handshake') {
-                if (failureInfo.cause === 'negotiation') {
+                if (!failureInfo.transport) {
                     var failure = 'Could not negotiate transport, client=[' + transportTypes + '], server=[' + message.supportedConnectionTypes + ']';
                     this._warn(failure);
                     _notifyTransportException(_transport.getType(), null, {
@@ -795,25 +784,29 @@ org.cometd.CometD = function(name) {
                         connectionType: _transport.getType(),
                         transport: _transport
                     });
-                    action = 'disconnect';
                 }
             }
         } else {
+            failureInfo.delay = this.getBackoffPeriod();
             // Different logic depending on whether we are handshaking or connecting.
             if (message.channel === '/meta/handshake') {
-                if (!failureInfo.transport.valid) {
+                if (!failureInfo.transport) {
                     // The transport is invalid, try to negotiate again.
                     var newTransport = transports.negotiateTransport(transportTypes, version, crossDomain, url);
                     if (!newTransport) {
                         this._warn('Could not negotiate transport, client=[' + transportTypes + ']');
                         _notifyTransportException(_transport.getType(), null, message.failure);
-                        action = 'disconnect';
+                        failureInfo.action = 'none';
                     } else {
                         this._debug('Transport', _transport.getType(), '->', newTransport.getType());
                         _notifyTransportException(_transport.getType(), newTransport.getType(), message.failure);
-                        action = 'handshake';
-                        actionInfo.transport = newTransport;
+                        failureInfo.action = 'handshake';
+                        failureInfo.transport = newTransport;
                     }
+                }
+
+                if (failureInfo.action !== 'none') {
+                    this.increaseBackoffPeriod();
                 }
             } else {
                 var now = new Date().getTime();
@@ -822,53 +815,51 @@ org.cometd.CometD = function(name) {
                     _unconnectTime = now;
                 }
 
-                // Check whether we may switch to handshaking.
-                var maxInterval = _advice.maxInterval;
-                if (maxInterval > 0) {
-                    var expiration = _advice.timeout + _advice.interval + maxInterval;
-                    var unconnected = now - _unconnectTime;
-                    if (unconnected + _backoff > expiration) {
-                        action = 'handshake';
+                if (failureInfo.action === 'retry') {
+                    failureInfo.delay = this.increaseBackoffPeriod();
+                    // Check whether we may switch to handshaking.
+                    var maxInterval = _advice.maxInterval;
+                    if (maxInterval > 0) {
+                        var expiration = _advice.timeout + _advice.interval + maxInterval;
+                        var unconnected = now - _unconnectTime;
+                        if (unconnected + _backoff > expiration) {
+                            failureInfo.action = 'handshake';
+                        }
                     }
                 }
 
-                if (action === 'handshake') {
+                if (failureInfo.action === 'handshake') {
+                    failureInfo.delay = 0;
                     transports.reset(false);
                     this.resetBackoffPeriod();
                 }
             }
         }
 
-        if (action !== 'disconnect') {
-            this.increaseBackoffPeriod();
-        }
-
-        actionInfo.action = action;
-
-        actionFn.call(_cometd, actionInfo);
+        failureHandler.call(_cometd, failureInfo);
     };
 
-    function _onTransportAction(actionInfo) {
-        _cometd._debug('Transport action', actionInfo);
+    function _handleTransportFailure(failureInfo) {
+        _cometd._debug('Transport failure handling', failureInfo);
 
-        if (actionInfo.transport) {
-            _transport = actionInfo.transport;
+        if (failureInfo.transport) {
+            _transport = failureInfo.transport;
         }
 
-        if (actionInfo.url) {
-            _transport.setURL(actionInfo.url);
+        if (failureInfo.url) {
+            _transport.setURL(failureInfo.url);
         }
 
-        var action = actionInfo.action;
-        var delay = actionInfo.delay || 0;
+        var action = failureInfo.action;
+        var delay = failureInfo.delay || 0;
         switch (action) {
             case 'handshake':
                 _delayedHandshake(delay);
                 break;
-            case 'connect':
+            case 'retry':
                 _delayedConnect(delay);
                 break;
-            case 'disconnect':
+            case 'none':
                 _disconnect(true);
                 break;
             default:
@@ -883,10 +874,10 @@ org.cometd.CometD = function(name) {
 
         // The listeners may have disconnected.
         if (_isDisconnected()) {
-            failureInfo.action = 'disconnect';
+            failureInfo.action = 'none';
         }
 
-        _cometd.onTransportFailure.call(_cometd, message, failureInfo, _onTransportAction);
+        _cometd.onTransportFailure.call(_cometd, message, failureInfo, _handleTransportFailure);
     }
 
     function _handshakeResponse(message) {
@@ -898,12 +889,8 @@ org.cometd.CometD = function(name) {
                 message.successful = false;
                 _failHandshake(message, {
                     cause: 'negotiation',
-                    action: 'disconnect',
-                    transport: {
-                        type: _transport.getType(),
-                        url: url,
-                        valid: true
-                    }
+                    action: 'none',
+                    transport: null
                 });
                 return;
             } else if (_transport !== newTransport) {
@@ -929,7 +916,7 @@ org.cometd.CometD = function(name) {
 
             _handshakeMessages = message['x-messages'] || 0;
 
-            var action = _isDisconnected() ? 'none' : _advice.reconnect;
+            var action = _isDisconnected() ? 'none' : _advice.reconnect || 'retry';
             switch (action) {
                 case 'retry':
                     _resetBackoff();
@@ -946,37 +933,19 @@ org.cometd.CometD = function(name) {
                     throw 'Unrecognized advice action ' + action;
             }
         } else {
-            var failAction = 'handshake';
-            if (_advice.reconnect === 'none') {
-                failAction = 'disconnect';
-            }
-
             _failHandshake(message, {
                 cause: 'unsuccessful',
-                action: failAction,
-                transport: {
-                    type: _transport.getType(),
-                    url: url,
-                    valid: true
-                }
+                action: _advice.reconnect || 'handshake',
+                transport: _transport
             });
         }
     }
 
     function _handshakeFailure(message) {
-        var action = 'handshake';
-        if (_advice.reconnect === 'none') {
-            action = 'disconnect';
-        }
-
         _failHandshake(message, {
             cause: 'failure',
-            action: action,
-            transport: {
-                type: _transport.getType(),
-                url: _cometd.getURL(),
-                valid: false
-            }
+            action: 'handshake',
+            transport: null
         });
     }
 
@@ -985,24 +954,12 @@ org.cometd.CometD = function(name) {
         _notifyListeners('/meta/connect', message);
         _notifyListeners('/meta/unsuccessful', message);
 
-        var action = 'connect';
-        switch (_advice.reconnect) {
-            case 'handshake':
-                action = 'handshake';
-                break;
-            case 'none':
-                action = 'disconnect';
-                break;
-        }
-
         // The listeners may have disconnected.
         if (_isDisconnected()) {
-            action = 'disconnect';
+            failureInfo.action = 'none';
         }
 
-        failureInfo.action = action;
-
-        _cometd.onTransportFailure.call(_cometd, message, failureInfo, _onTransportAction);
+        _cometd.onTransportFailure.call(_cometd, message, failureInfo, _handleTransportFailure);
     }
 
     function _connectResponse(message) {
@@ -1015,7 +972,7 @@ org.cometd.CometD = function(name) {
             // and the server will hold the request, so when a response returns
             // we immediately call the server again (long polling).
             // Listeners can call disconnect(), so check the state after they run.
-            var action = _isDisconnected() ? 'none' : _advice.reconnect;
+            var action = _isDisconnected() ? 'none' : _advice.reconnect || 'retry';
             switch (action) {
                 case 'retry':
                     _resetBackoff();
@@ -1030,11 +987,8 @@ org.cometd.CometD = function(name) {
         } else {
             _failConnect(message, {
                 cause: 'unsuccessful',
-                transport: {
-                    type: _transport.getType(),
-                    url: _cometd.getURL(),
-                    valid: true
-                }
+                action: _advice.reconnect || 'retry',
+                transport: _transport
             });
         }
     }
@@ -1044,11 +998,8 @@ org.cometd.CometD = function(name) {
 
         _failConnect(message, {
             cause: 'failure',
-            transport: {
-                type: _transport.getType(),
-                url: _cometd.getURL(),
-                valid: false
-            }
+            action: 'retry',
+            transport: null
         });
     }
 

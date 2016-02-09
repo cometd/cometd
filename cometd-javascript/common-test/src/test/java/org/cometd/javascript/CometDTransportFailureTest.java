@@ -59,18 +59,17 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest
         // Replace the transport failure logic.
         evaluateScript("" +
                 "var oTF = cometd.onTransportFailure;" +
-                "cometd.onTransportFailure = function(message, failureInfo, actionFn) {" +
+                "cometd.onTransportFailure = function(message, failureInfo, failureHandler) {" +
                 "    if (message.channel === '/meta/connect') {" +
-                "        actionFn({" +
-                "           action: 'connect'," +
-                "           delay: 0," +
-                "           url: '" + newURL + "'" +
-                "        });" +
+                "        failureInfo.action = 'retry';" +
+                "        failureInfo.delay = 0;" +
+                "        failureInfo.url = '" + newURL + "';" +
+                "        failureHandler(failureInfo);" +
                 "        /* Reinstall the original function */" +
                 "        cometd.onTransportFailure = oTF;" +
                 "    }" +
                 "    else {" +
-                "        oTF.call(this, message, failureInfo, actionFn);" +
+                "        oTF.call(this, message, failureInfo, failureHandler);" +
                 "    }" +
                 "};");
 
@@ -122,18 +121,17 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest
         // Replace the transport failure logic.
         evaluateScript("" +
                 "var oTF = cometd.onTransportFailure;" +
-                "cometd.onTransportFailure = function(message, failureInfo, actionFn) {" +
+                "cometd.onTransportFailure = function(message, failureInfo, failureHandler) {" +
                 "    if (message.channel === '/meta/connect') {" +
-                "        actionFn({" +
-                "           action: 'connect'," +
-                "           delay: 0," +
-                "           transport: cometd.findTransport('websocket')" +
-                "        });" +
+                "        failureInfo.action = 'retry';" +
+                "        failureInfo.delay = 0;" +
+                "        failureInfo.transport = cometd.findTransport('websocket');" +
+                "        failureHandler(failureInfo);" +
                 "        /* Reinstall the original function */" +
                 "        cometd.onTransportFailure = oTF;" +
                 "    }" +
                 "    else {" +
-                "        oTF.call(this, message, failureInfo, actionFn);" +
+                "        oTF.call(this, message, failureInfo, failureHandler);" +
                 "    }" +
                 "};");
 

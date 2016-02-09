@@ -19,11 +19,8 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.DispatcherType;
@@ -74,55 +71,6 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     }
 
     @Test
-    public void testBatchingAfterHandshake() throws Exception
-    {
-        final BayeuxClient client = newBayeuxClient();
-        final AtomicBoolean connected = new AtomicBoolean();
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                connected.set(message.isSuccessful());
-            }
-        });
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                connected.set(false);
-            }
-        });
-        client.handshake();
-
-        final String channelName = "/foo/bar";
-        final BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
-        client.batch(new Runnable()
-        {
-            public void run()
-            {
-                // Subscribe and publish must be batched so that they are sent in order,
-                // otherwise it's possible that the subscribe arrives to the server after the publish
-                client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-                {
-                    public void onMessage(ClientSessionChannel channel, Message message)
-                    {
-                        messages.add(channel.getId());
-                        messages.add(message.getData().toString());
-                    }
-                });
-                client.getChannel(channelName).publish("hello");
-            }
-        });
-
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
-
-        Assert.assertEquals(channelName, messages.poll(1, TimeUnit.SECONDS));
-        Assert.assertEquals("hello", messages.poll(1, TimeUnit.SECONDS));
-
-        disconnectBayeuxClient(client);
-    }
-
-    @Test
     public void testHandshakeDenied() throws Exception
     {
         BayeuxClient client = newBayeuxClient();
@@ -160,101 +108,6 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
             bayeux.setSecurityPolicy(oldPolicy);
             disconnectBayeuxClient(client);
         }
-    }
-
-    @Test
-    public void testPerf() throws Exception
-    {
-        boolean stress = Boolean.getBoolean("STRESS");
-        Random random = new Random();
-
-        final int rooms = stress ? 100 : 1;
-        final int publish = stress ? 4000 : 100;
-        final int batch = stress ? 10 : 2;
-        final int pause = stress ? 50 : 10;
-        BayeuxClient[] clients = new BayeuxClient[stress ? 500 : 2 * rooms];
-
-        final AtomicInteger connections = new AtomicInteger();
-        final AtomicInteger received = new AtomicInteger();
-
-        for (int i = 0; i < clients.length; i++)
-        {
-            final AtomicBoolean connected = new AtomicBoolean();
-            final BayeuxClient client = newBayeuxClient();
-            final String room = "/channel/" + (i % rooms);
-            clients[i] = client;
-
-            client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-            {
-                public void onMessage(ClientSessionChannel channel, Message message)
-                {
-                    if (connected.getAndSet(false))
-                        connections.decrementAndGet();
-
-                    if (message.isSuccessful())
-                    {
-                        client.getChannel(room).subscribe(new ClientSessionChannel.MessageListener()
-                        {
-                            public void onMessage(ClientSessionChannel channel, Message message)
-                            {
-                                received.incrementAndGet();
-                            }
-                        });
-                    }
-                }
-            });
-
-            client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-            {
-                public void onMessage(ClientSessionChannel channel, Message message)
-                {
-                    if (!connected.getAndSet(message.isSuccessful()))
-                    {
-                        connections.incrementAndGet();
-                    }
-                }
-            });
-
-            clients[i].handshake();
-            client.waitFor(5000, State.CONNECTED);
-        }
-
-        Assert.assertEquals(clients.length, connections.get());
-
-        long start0 = System.currentTimeMillis();
-        for (int i = 0; i < publish; i++)
-        {
-            final int sender = random.nextInt(clients.length);
-            final String channel = "/channel/" + random.nextInt(rooms);
-
-            String data = "data from " + sender + " to " + channel;
-            // System.err.println(data);
-            clients[sender].getChannel(channel).publish(data);
-
-            if (i % batch == (batch - 1))
-            {
-                System.err.print('.');
-                Thread.sleep(pause);
-            }
-            if (i % 1000 == 999)
-                System.err.println();
-        }
-        System.err.println();
-
-        int expected = clients.length * publish / rooms;
-
-        long start = System.currentTimeMillis();
-        while (received.get() < expected && (System.currentTimeMillis() - start) < 10000)
-        {
-            Thread.sleep(100);
-            System.err.println("received " + received.get() + "/" + expected);
-        }
-        System.err.println((received.get() * 1000) / (System.currentTimeMillis() - start0) + " m/s");
-
-        Assert.assertEquals(expected, received.get());
-
-        for (BayeuxClient client : clients)
-            Assert.assertTrue(client.disconnect(stress ? 5000 : 2000));
     }
 
     @Test
