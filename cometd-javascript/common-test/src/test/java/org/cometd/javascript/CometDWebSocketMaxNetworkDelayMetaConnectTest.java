@@ -30,14 +30,16 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
     public void testMaxNetworkDelay() throws Exception
     {
         long maxNetworkDelay = 2000;
+        long backOffIncrement = 1000;
 
-        bayeuxServer.addExtension(new DelayingExtension(metaConnectPeriod + maxNetworkDelay + maxNetworkDelay / 2));
+        bayeuxServer.addExtension(new DelayingExtension(metaConnectPeriod + backOffIncrement + maxNetworkDelay + maxNetworkDelay / 2));
 
         defineClass(Latch.class);
         evaluateScript("var latch = new Latch(6);");
         Latch latch = get("latch");
         evaluateScript("cometd.configure({" +
                        "url: '" + cometdURL + "', " +
+                       "backoffIncrement: " + backOffIncrement + ", " +
                        "maxNetworkDelay: " + maxNetworkDelay + ", " +
                        "logLevel: '" + getLogLevel() + "'" +
                        "});");
@@ -65,7 +67,7 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         //   + Connection is closed by client
         // Client sends third connect and is replied by the server
         // Fourth connect is sent and is held by the server
-        // Delay elapses (time = metaConnectPeriod + 1.5 * maxNetworkDelay)
+        // Delay elapses (time = metaConnectPeriod + backOffIncrement + 1.5 * maxNetworkDelay)
         // Second connect is processed on server and held
         //   + Fourth connect is canceled and not replied
         //     + Connection is closed by server

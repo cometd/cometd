@@ -51,30 +51,35 @@ public class CometDConnectFailureTest extends AbstractCometDTest
 
         evaluateScript("cometd.handshake();");
 
-        // First connect after handshake will fail, will be retried immediately
-        // and fail again, then backoff kicks in
+        // Time = 0.
+        // First connect after handshake will fail,
+        // will be retried after a backoff.
         Assert.assertTrue(handshakeLatch.await(5000));
-        Assert.assertTrue(connectLatch.await(5000));
+        Assert.assertTrue(connectLatch.await(2 * backoffIncrement));
 
-        // The backoff period is always the backoff that will be waited on the *next* failure.
-        // The backoff period has been increased from 0 to 2 * backoffIncrement because
-        // there have been 2 failures already
-        Thread.sleep(backoffIncrement / 2); // Waits for the backoff to happen
+        // Time = 1.
+        // Waits for the backoff to happen.
+        Thread.sleep(backoffIncrement / 2);
+        // Time = 1.5.
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
         backoff = ((Number)get("backoff")).intValue();
+        // The backoff period is always the backoff that will be waited on the *next* failure.
         Assert.assertEquals(2 * backoffIncrement, backoff);
 
         connectLatch.reset(1);
-        Assert.assertTrue(connectLatch.await(backoffIncrement));
+        Assert.assertTrue(connectLatch.await(2 * backoffIncrement));
 
-        // Another failure, backoff will be increased to 3 * backoffIncrement
-        Thread.sleep(backoffIncrement / 2); // Waits for the backoff to happen
+        // Time = 3.
+        // Another failure, backoff will be increased to 3 * backoffIncrement.
+        // Waits for the backoff to happen.
+        Thread.sleep(backoffIncrement / 2);
+        // Time = 3.5.
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
         backoff = ((Number)get("backoff")).intValue();
         Assert.assertEquals(3 * backoffIncrement, backoff);
 
         connectLatch.reset(1);
-        Assert.assertTrue(connectLatch.await(2 * backoffIncrement));
+        Assert.assertTrue(connectLatch.await(3 * backoffIncrement));
 
         // Disconnect so that connect is not performed anymore
         evaluateScript("var disconnectLatch = new Latch(1);");
