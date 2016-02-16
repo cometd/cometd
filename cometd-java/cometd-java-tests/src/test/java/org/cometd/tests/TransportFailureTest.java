@@ -43,15 +43,12 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
 public class TransportFailureTest
 {
     private Server server;
     private ServerConnector connector;
-    private ServletContextHandler context;
     private String cometdURL;
     private BayeuxServerImpl bayeux;
     private HttpClient httpClient;
@@ -64,7 +61,7 @@ public class TransportFailureTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler(server, "/");
 
         WebSocketServerContainerInitializer.configureContext(context);
 
@@ -200,7 +197,7 @@ public class TransportFailureTest
                 failureLatch.countDown();
             }
         };
-        final CountDownLatch latch = new CountDownLatch(2);
+        final CountDownLatch latch = new CountDownLatch(1);
         client.handshake(new ClientSessionChannel.MessageListener()
         {
             @Override
@@ -230,7 +227,7 @@ public class TransportFailureTest
             protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure)
             {
                 Assert.assertEquals(longPollingTransport.getName(), oldTransportName);
-                Assert.assertNull(newTransportName);
+                Assert.assertEquals(longPollingTransport.getName(), newTransportName);
                 failureLatch.countDown();
             }
         };
@@ -247,7 +244,8 @@ public class TransportFailureTest
 
         Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+
+        client.disconnect(1000);
     }
 
     @Test
@@ -270,23 +268,32 @@ public class TransportFailureTest
             }
         });
 
-        final String newURL = "http://localhost:" + connector2.getLocalPort() + context.getContextPath() + cometdServletPath;
+        final String newURL = "http://localhost:" + connector2.getLocalPort() + cometdServletPath;
 
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
-//            @Override
-//            protected void onTransportFailure(Message message, ClientTransport.FailureInfo failureInfo, ClientTransport.FailureAction action)
-//            {
-//                if (Channel.META_CONNECT.equals(message.getChannel()))
-//                {
-//                    ClientTransport transport = getTransport();
-//                    transport.setURL(newURL);
-//                    action.perform(new ClientTransport.ActionInfo(transport, "connect"));
-//                }
-//            }
+            private int metaConnects;
+
+            @Override
+            protected void onTransportFailure(Message message, ClientTransport.FailureInfo failureInfo, ClientTransport.FailureHandler handler)
+            {
+                ++metaConnects;
+                if (metaConnects == 1 && Channel.META_CONNECT.equals(message.getChannel()))
+                {
+                    ClientTransport transport = getTransport();
+                    transport.setURL(newURL);
+                    failureInfo.transport = transport;
+                    handler.handle(failureInfo);
+                }
+                else
+                {
+                    super.onTransportFailure(message, failureInfo, handler);
+                }
+            }
         };
 
         // The second connect fails, the third connect should succeed on the new URL.
+        final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             private int metaConnects;
@@ -297,14 +304,15 @@ public class TransportFailureTest
                 ++metaConnects;
                 if (metaConnects == 3 && message.isSuccessful())
                 {
-                    // TODO: assert that transport URL has changed.
+                    if (client.getTransport().getURL().equals(newURL))
+                        latch.countDown();
                 }
             }
         });
 
         client.handshake();
 
-        // TODO: assert we are successfully connected.
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         client.disconnect(1000);
         connector2.stop();
@@ -328,10 +336,26 @@ public class TransportFailureTest
         LongPollingTransport longPollingTransport = new LongPollingTransport(null, httpClient);
         final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
         {
-            // TODO: override the right function
+            private int metaConnects;
+
+            @Override
+            protected void onTransportFailure(Message message, ClientTransport.FailureInfo failureInfo, ClientTransport.FailureHandler handler)
+            {
+                ++metaConnects;
+                if (metaConnects == 1 && Channel.META_CONNECT.equals(message.getChannel()))
+                {
+                    failureInfo.transport = webSocketTransport;
+                    handler.handle(failureInfo);
+                }
+                else
+                {
+                    super.onTransportFailure(message, failureInfo, handler);
+                }
+            }
         };
 
-        // The second connect fails, the third connect should succeed on the new URL.
+        // The second connect fails, the third connect should succeed on the new transport.
+        final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             private int metaConnects;
@@ -342,14 +366,15 @@ public class TransportFailureTest
                 ++metaConnects;
                 if (metaConnects == 3 && message.isSuccessful())
                 {
-                    // TODO: assert that transport has changed.
+                    if (client.getTransport().getName().equals(webSocketTransport.getName()))
+                        latch.countDown();
                 }
             }
         });
 
         client.handshake();
 
-        // TODO: assert we are successfully connected.
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         client.disconnect(1000);
     }

@@ -1152,7 +1152,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         newTransport.init();
     }
 
-    protected void onTransportFailure(Message message, ClientTransport.FailureInfo failureInfo, final ClientTransport.FailureHandler callback)
+    protected void onTransportFailure(Message message, ClientTransport.FailureInfo failureInfo, final ClientTransport.FailureHandler handler)
     {
         if (logger.isDebugEnabled())
             logger.debug("Transport failure: {} for {}", failureInfo, message);
@@ -1220,7 +1220,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             }
         }
 
-        callback.handle(failureInfo);
+        handler.handle(failureInfo);
     }
 
     protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure)
