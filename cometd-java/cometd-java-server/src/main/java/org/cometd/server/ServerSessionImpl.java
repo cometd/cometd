@@ -78,6 +78,7 @@ public class ServerSessionImpl implements ServerSession
     private long _intervalTimestamp;
     private boolean _nonLazyMessages;
     private boolean _broadcastToPublisher;
+    private boolean _allowMessageDeliveryDuringHandshake;
 
     protected ServerSessionImpl(BayeuxServerImpl bayeux)
     {
@@ -887,6 +888,16 @@ public class ServerSessionImpl implements ServerSession
     public boolean isMetaConnectDeliveryOnly()
     {
         return _metaConnectDelivery;
+    }
+
+    public boolean isAllowMessageDeliveryDuringHandshake()
+    {
+        return _allowMessageDeliveryDuringHandshake;
+    }
+
+    public void setAllowMessageDeliveryDuringHandshake(boolean allow)
+    {
+        _allowMessageDeliveryDuringHandshake = allow;
     }
 
     protected void subscribedTo(ServerChannelImpl channel)

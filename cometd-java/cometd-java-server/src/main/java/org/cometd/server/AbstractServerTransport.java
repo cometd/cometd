@@ -249,6 +249,12 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         }
     }
 
+    protected boolean allowMessageDeliveryDuringHandshake(ServerSessionImpl session)
+    {
+        return (session != null && session.isAllowMessageDeliveryDuringHandshake()) ||
+                isAllowMessageDeliveryDuringHandshake();
+    }
+
     public interface Scheduler
     {
         void cancel();

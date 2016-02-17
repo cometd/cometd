@@ -346,7 +346,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         reply = processReply(session, reply);
                         if (reply != null)
                             replies.add(reply);
-                        startInterval = isAllowMessageDeliveryDuringHandshake() && reply != null && reply.isSuccessful();
+                        startInterval = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
                         if (startInterval)
                             queue = session.takeQueue();
                         break;
@@ -630,7 +630,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     ServerMessage.Mutable reply = replies.get(0);
                     if (Channel.META_HANDSHAKE.equals(reply.getChannel()))
                     {
-                        if (isAllowMessageDeliveryDuringHandshake() && !queue.isEmpty())
+                        if (allowMessageDeliveryDuringHandshake(_session) && !queue.isEmpty())
                             reply.put("x-messages", queue.size());
                         getBayeux().freeze(reply);
                         send(wsSession, replies, 1, this);

@@ -141,7 +141,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
                     ServerMessage.Mutable reply = replies[0];
                     if (Channel.META_HANDSHAKE.equals(reply.getChannel()))
                     {
-                        if (isAllowMessageDeliveryDuringHandshake() && !messages.isEmpty())
+                        if (allowMessageDeliveryDuringHandshake(session) && !messages.isEmpty())
                             reply.put("x-messages", messages.size());
                         getBayeux().freeze(reply);
                         writeMessage(response, output, session, reply);

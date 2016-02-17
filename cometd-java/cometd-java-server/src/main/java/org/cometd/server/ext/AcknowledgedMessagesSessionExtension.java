@@ -130,38 +130,35 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         {
             BayeuxServerImpl bayeuxServer = _session.getBayeuxServer();
             ServerTransport transport = bayeuxServer.getCurrentTransport();
-            if (transport instanceof AbstractServerTransport)
+            if (allowMessageDeliveryDuringHandshake(_session, transport))
             {
-                if (((AbstractServerTransport)transport).isAllowMessageDeliveryDuringHandshake())
+                long batch;
+                long size;
+                synchronized (_session.getLock())
                 {
-                    long batch;
-                    long size;
-                    synchronized (_session.getLock())
-                    {
-                        batch = closeBatch();
-                        size = _queue.batchSize(batch);
-                    }
+                    batch = closeBatch();
+                    size = _queue.batchSize(batch);
+                }
 
-                    if (size == 0)
-                    {
-                        // No messages to send.
-                        ext.put("ack", Boolean.TRUE);
-                    }
-                    else
-                    {
-                        Map<String, Object> ack = new HashMap<>(3);
-                        ack.put("enabled", true);
-                        ack.put("batch", batch);
-                        ack.put("size", size);
-                        ext.put("ack", ack);
-                        if (_logger.isDebugEnabled())
-                            _logger.debug("Sending batch {} for {}", batch, _session);
-                    }
+                if (size == 0)
+                {
+                    // No messages to send.
+                    ext.put("ack", Boolean.TRUE);
                 }
                 else
                 {
-                    ext.put("ack", Boolean.TRUE);
+                    Map<String, Object> ack = new HashMap<>(3);
+                    ack.put("enabled", true);
+                    ack.put("batch", batch);
+                    ack.put("size", size);
+                    ext.put("ack", ack);
+                    if (_logger.isDebugEnabled())
+                        _logger.debug("Sending batch {} for {}", batch, _session);
                 }
+            }
+            else
+            {
+                ext.put("ack", Boolean.TRUE);
             }
         }
         else if (channel.equals(Channel.META_CONNECT))
@@ -209,5 +206,14 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     BatchArrayQueue<ServerMessage> getBatchArrayQueue()
     {
         return _queue;
+    }
+
+    private boolean allowMessageDeliveryDuringHandshake(ServerSessionImpl session, ServerTransport transport)
+    {
+        if (session.isAllowMessageDeliveryDuringHandshake())
+            return true;
+        if (transport instanceof AbstractServerTransport)
+            return ((AbstractServerTransport)transport).isAllowMessageDeliveryDuringHandshake();
+        return false;
     }
 }
