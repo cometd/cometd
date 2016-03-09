@@ -1310,6 +1310,19 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return reply;
     }
 
+    private void validateSubscriptions(List<String> subscriptions)
+    {
+        if (_validation)
+        {
+            for (int i = 0; i < subscriptions.size(); ++i)
+            {
+                String subscription = subscriptions.get(i);
+                if (!validate(subscription))
+                    throw new IllegalArgumentException("Invalid message subscription: " + subscription);
+            }
+        }
+    }
+
     @ManagedOperation(value = "Sweeps channels and sessions of this BayeuxServer", impact = "ACTION")
     public void sweep()
     {
@@ -1497,15 +1510,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 return;
             }
 
-            if (_validation)
-            {
-                for (int i = 0; i < subscriptions.size(); ++i)
-                {
-                    String subscription = subscriptions.get(i);
-                    if (!validate(subscription))
-                        throw new IllegalArgumentException("Invalid message subscription: " + subscription);
-                }
-            }
+            validateSubscriptions(subscriptions);
             reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
 
             for (String subscription : subscriptions)
@@ -1590,15 +1595,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 return;
             }
 
-            if (_validation)
-            {
-                for (int i = 0; i < subscriptions.size(); ++i)
-                {
-                    String subscription = subscriptions.get(i);
-                    if (!validate(subscription))
-                        throw new IllegalArgumentException("Invalid message subscription: " + subscription);
-                }
-            }
+            validateSubscriptions(subscriptions);
             reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
 
             for (String subscription : subscriptions)
