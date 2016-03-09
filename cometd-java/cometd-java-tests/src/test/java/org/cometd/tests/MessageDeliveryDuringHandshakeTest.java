@@ -134,6 +134,8 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
         Assert.assertEquals(channelName, message.getChannel());
         message = messages.poll(1, TimeUnit.SECONDS);
         Assert.assertEquals(Channel.META_CONNECT, message.getChannel());
+        message = messages.poll(1, TimeUnit.SECONDS);
+        Assert.assertNull(message);
 
         disconnectBayeuxClient(client);
     }
