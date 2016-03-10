@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.websocket.server;
+package org.cometd.websocket.server.common;
 
 import java.net.HttpCookie;
 import java.text.ParseException;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.websocket.server;
+package org.cometd.websocket.server.common;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -230,7 +230,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             AbstractWebSocketTransport.this.send(wsSession, _session, builder.toString(), callback);
         }
 
-        protected void onClose(int code, String reason)
+        public void onClose(int code, String reason)
         {
             final ServerSessionImpl session = _session;
             if (session != null)
@@ -247,7 +247,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             AbstractWebSocketTransport.this.onClose(code, reason);
         }
 
-        protected void onError(Throwable failure)
+        public void onError(Throwable failure)
         {
             if (failure instanceof SocketTimeoutException || failure instanceof TimeoutException)
             {
@@ -278,7 +278,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             return true;
         }
 
-        protected void onMessage(S wsSession, String data)
+        public void onMessage(S wsSession, String data)
         {
             _bayeuxContext.set(_context);
             getBayeux().setCurrentTransport(AbstractWebSocketTransport.this);
