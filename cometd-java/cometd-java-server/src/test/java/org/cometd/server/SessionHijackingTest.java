@@ -15,11 +15,17 @@
  */
 package org.cometd.server;
 
+import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
@@ -33,10 +39,35 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testSessionHijacking() throws Exception
+    public void testSessionHijackingForbidden() throws Exception
     {
+        // Default settings forbid session hijacking.
         startServer(null);
 
+        // Message should fail.
+        Message.Mutable[] messages = testSessionHijacking();
+        Assert.assertEquals(1, messages.length);
+        Message message = messages[0];
+        Assert.assertFalse(message.isSuccessful());
+        Assert.assertTrue(((String)message.get(Message.ERROR_FIELD)).startsWith("402"));
+    }
+
+    @Test
+    public void testSessionHijackingAllowed() throws Exception
+    {
+        Map<String, String> settings = new HashMap<>();
+        settings.put(AbstractHttpTransport.TRUST_CLIENT_SESSION, String.valueOf(true));
+        startServer(settings);
+
+        // Message should succeed.
+        Message.Mutable[] messages = testSessionHijacking();
+        Assert.assertEquals(1, messages.length);
+        Message message = messages[0];
+        Assert.assertTrue(message.isSuccessful());
+    }
+
+    private Message.Mutable[] testSessionHijacking() throws UnsupportedEncodingException, InterruptedException, TimeoutException, ExecutionException, java.text.ParseException
+    {
         String cookieName = "BAYEUX_BROWSER";
 
         Request handshake1 = newBayeuxRequest("[{" +
@@ -47,7 +78,6 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest
         ContentResponse response1 = handshake1.send();
         Assert.assertEquals(200, response1.getStatus());
 
-        String clientId1 = extractClientId(response1);
         String cookie1 = extractCookie(cookieName);
         // Reset cookies to control what cookies this test sends.
         httpClient.getCookieStore().removeAll();
@@ -61,7 +91,6 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(200, response2.getStatus());
 
         String clientId2 = extractClientId(response2);
-        String cookie2 = extractCookie(cookieName);
         // Reset cookies to control what cookies this test sends.
         httpClient.getCookieStore().removeAll();
 
@@ -75,12 +104,7 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest
         response1 = publish1.send();
         Assert.assertEquals(200, response1.getStatus());
 
-        // Message should fail.
         JSONContext.Client parser = new JettyJSONContextClient();
-        Message.Mutable[] messages = parser.parse(response1.getContentAsString());
-        Assert.assertEquals(1, messages.length);
-        Message message = messages[0];
-        Assert.assertFalse(message.isSuccessful());
-        Assert.assertTrue(((String)message.get(Message.ERROR_FIELD)).startsWith("402"));
+        return parser.parse(response1.getContentAsString());
     }
 }
