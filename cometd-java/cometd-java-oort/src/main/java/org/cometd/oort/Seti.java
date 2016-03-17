@@ -225,7 +225,10 @@ public class Seti extends AbstractLifeCycle implements Dumpable
             }
             boolean result = locations.add(location);
             if (_logger.isDebugEnabled())
-                _logger.debug("Associations {}", _uid2Location);
+                _logger.debug("Associations: {}", _uid2Location.size());
+            // Logging below can generate hugely long lines.
+            if (_logger.isTraceEnabled())
+                _logger.trace("Associations: {}", _uid2Location);
             return result;
         }
     }
@@ -385,7 +388,10 @@ public class Seti extends AbstractLifeCycle implements Dumpable
                     _uid2Location.remove(userId);
             }
             if (_logger.isDebugEnabled())
-                _logger.debug("Associations {}", _uid2Location);
+                _logger.debug("Associations: {}", _uid2Location.size());
+            // Logging below can generate hugely long lines.
+            if (_logger.isTraceEnabled())
+                _logger.trace("Associations: {}", _uid2Location);
             return result;
         }
     }
