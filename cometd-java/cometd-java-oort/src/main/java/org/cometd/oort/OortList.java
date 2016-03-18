@@ -104,7 +104,7 @@ public class OortList<E> extends OortObject<List<E>>
      */
     public boolean addAndShare(E... elements)
     {
-        Data<Boolean> data = new Data<Boolean>(6);
+        Data<Boolean> data = new Data<>(6);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
@@ -131,7 +131,7 @@ public class OortList<E> extends OortObject<List<E>>
      */
     public boolean removeAndShare(E... elements)
     {
-        Data<Boolean> data = new Data<Boolean>(6);
+        Data<Boolean> data = new Data<>(6);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());

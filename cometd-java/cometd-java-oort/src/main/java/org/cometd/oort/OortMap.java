@@ -98,7 +98,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         entry.put(KEY_FIELD, key);
         entry.put(VALUE_FIELD, value);
 
-        Data<V> data = new Data<V>(6);
+        Data<V> data = new Data<>(6);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
@@ -127,11 +127,11 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
      */
     public V putIfAbsentAndShare(K key, V value)
     {
-        Map<String, Object> entry = new HashMap<String, Object>(2);
+        Map<String, Object> entry = new HashMap<>(2);
         entry.put(KEY_FIELD, key);
         entry.put(VALUE_FIELD, value);
 
-        Data<V> data = new Data<V>(6);
+        Data<V> data = new Data<>(6);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
@@ -161,7 +161,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         Map<String, Object> entry = new HashMap<>(1);
         entry.put(KEY_FIELD, key);
 
-        Data<V> data = new Data<V>(6);
+        Data<V> data = new Data<>(6);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
