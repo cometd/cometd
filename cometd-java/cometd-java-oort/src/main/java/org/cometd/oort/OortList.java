@@ -17,13 +17,12 @@ package org.cometd.oort;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.server.BayeuxServer;
 
 /**
@@ -41,7 +40,7 @@ import org.cometd.bayeux.server.BayeuxServer;
  *
  * @param <E> the element type
  */
-public class OortList<E> extends OortObject<List<E>>
+public class OortList<E> extends OortContainer<List<E>>
 {
     private static final String TYPE_FIELD_ELEMENT_VALUE = "oort.list.element";
     private static final String ACTION_FIELD_ADD_VALUE = "oort.list.add";
@@ -148,70 +147,55 @@ public class OortList<E> extends OortObject<List<E>>
     }
 
     @Override
-    protected void onObject(Map<String, Object> data)
+    protected boolean isItemUpdate(Map<String, Object> data)
     {
-        if (TYPE_FIELD_ELEMENT_VALUE.equals(data.get(Info.TYPE_FIELD)))
+        return TYPE_FIELD_ELEMENT_VALUE.equals(data.get(Info.TYPE_FIELD));
+    }
+
+    @Override
+    protected void onItem(Info<List<E>> info, Map<String, Object> data)
+    {
+        // Retrieve elements.
+        Object object = data.get(Info.OBJECT_FIELD);
+        if (object instanceof Object[])
+            object = Arrays.asList((Object[])object);
+        @SuppressWarnings("unchecked")
+        List<E> elements = (List<E>)object;
+
+        // Perform the action.
+        List<E> list = info.getObject();
+        boolean result;
+        String action = (String)data.get(Info.ACTION_FIELD);
+        switch (action)
         {
-            String action = (String)data.get(Info.ACTION_FIELD);
-            final boolean remove = ACTION_FIELD_REMOVE_VALUE.equals(action);
-            if (!ACTION_FIELD_ADD_VALUE.equals(action) && !remove)
+            case ACTION_FIELD_ADD_VALUE:
+                result = list.addAll(elements);
+                break;
+            case ACTION_FIELD_REMOVE_VALUE:
+                result = list.removeAll(elements);
+                break;
+            default:
                 throw new IllegalArgumentException(action);
-
-            String oortURL = (String)data.get(Info.OORT_URL_FIELD);
-            Info<List<E>> info = getInfo(oortURL);
-            if (info != null)
-            {
-                // Retrieve elements
-                Object object = data.get(Info.OBJECT_FIELD);
-                if (object instanceof Object[])
-                    object = Arrays.asList((Object[])object);
-                @SuppressWarnings("unchecked")
-                final List<E> elements = (List<E>)object;
-
-                // Set the new Info
-                Info<List<E>> newInfo = new Info<>(getOort().getURL(), data);
-                final List<E> list = info.getObject();
-                newInfo.put(Info.OBJECT_FIELD, list);
-                final AtomicBoolean result = new AtomicBoolean();
-                MarkedReference<Info<List<E>>> old = setInfo(newInfo, new Runnable()
-                {
-                    public void run()
-                    {
-                        if (remove)
-                            result.set(list.removeAll(elements));
-                        else
-                            result.set(list.addAll(elements));
-                    }
-                });
-
-                if (logger.isDebugEnabled())
-                    logger.debug("{} {} list {} of {}",
-                        old.isMarked() ? "Performed" : "Skipped",
-                        newInfo.isLocal() ? "local" : "remote",
-                        remove ? "remove" : "add",
-                        elements);
-
-                if (old.isMarked())
-                {
-                    if (remove)
-                        notifyElementsRemoved(info, elements);
-                    else
-                        notifyElementsAdded(info, elements);
-                }
-
-                if (data instanceof Data)
-                    ((Data<Boolean>)data).setResult(result.get());
-            }
-            else
-            {
-                if (logger.isDebugEnabled())
-                    logger.debug("No info for {}", oortURL);
-            }
         }
-        else
+
+        // Update the version.
+        info.put(Info.VERSION_FIELD, data.get(Info.VERSION_FIELD));
+
+        // Notify.
+        if (logger.isDebugEnabled())
+            logger.debug("{} list {} of {}", info.isLocal() ? "Local" : "Remote", action, elements);
+        switch (action)
         {
-            super.onObject(data);
+            case ACTION_FIELD_ADD_VALUE:
+                notifyElementsAdded(info, elements);
+                break;
+            case ACTION_FIELD_REMOVE_VALUE:
+                notifyElementsRemoved(info, elements);
+                break;
         }
+
+        if (data instanceof Data)
+            ((Data<Boolean>)data).setResult(result);
     }
 
     private void notifyElementsAdded(Info<List<E>> info, List<E> elements)
@@ -310,11 +294,14 @@ public class OortList<E> extends OortObject<List<E>>
 
         public void onUpdated(Info<List<E>> oldInfo, Info<List<E>> newInfo)
         {
-            List<E> added = new ArrayList<>(newInfo.getObject());
-            added.removeAll(oldInfo.getObject());
+            List<E> oldList = oldInfo == null ? Collections.<E>emptyList() : oldInfo.getObject();
+            List<E> newList = newInfo.getObject();
 
-            List<E> removed = new ArrayList<>(oldInfo.getObject());
-            removed.removeAll(newInfo.getObject());
+            List<E> added = new ArrayList<>(newList);
+            added.removeAll(oldList);
+
+            List<E> removed = new ArrayList<>(oldList);
+            removed.removeAll(newList);
 
             if (!added.isEmpty())
                 oortList.notifyElementsAdded(newInfo, added);

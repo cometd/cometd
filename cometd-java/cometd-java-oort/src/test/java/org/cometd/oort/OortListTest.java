@@ -16,8 +16,10 @@
 package org.cometd.oort;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -36,8 +38,8 @@ public class OortListTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
-        OortList<Long> oortList1 = new OortList<Long>(oort1, name, factory);
-        OortList<Long> oortList2 = new OortList<Long>(oort2, name, factory);
+        OortList<Long> oortList1 = new OortList<>(oort1, name, factory);
+        OortList<Long> oortList2 = new OortList<>(oort2, name, factory);
         startOortObjects(oortList1, oortList2);
 
         final long element = 1;
@@ -62,8 +64,8 @@ public class OortListTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
-        OortList<Long> oortList1 = new OortList<Long>(oort1, name, factory);
-        OortList<Long> oortList2 = new OortList<Long>(oort2, name, factory);
+        OortList<Long> oortList1 = new OortList<>(oort1, name, factory);
+        OortList<Long> oortList2 = new OortList<>(oort2, name, factory);
         startOortObjects(oortList1, oortList2);
 
         final CountDownLatch setLatch = new CountDownLatch(2);
@@ -104,8 +106,8 @@ public class OortListTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
-        OortList<String> oortList1 = new OortList<String>(oort1, name, factory);
-        OortList<String> oortList2 = new OortList<String>(oort2, name, factory);
+        OortList<String> oortList1 = new OortList<>(oort1, name, factory);
+        OortList<String> oortList2 = new OortList<>(oort2, name, factory);
         startOortObjects(oortList1, oortList2);
 
         final CountDownLatch setLatch1 = new CountDownLatch(2);
@@ -134,11 +136,11 @@ public class OortListTest extends AbstractOortObjectTest
         newList.add(elementC);
         newList.add(elementD);
 
-        final List<String> adds = new ArrayList<String>();
-        final List<String> removes = new ArrayList<String>();
-        final AtomicReference<CountDownLatch> setLatch2 = new AtomicReference<CountDownLatch>(new CountDownLatch(4));
-        oortList1.addListener(new OortList.DeltaListener<String>(oortList1));
-        oortList2.addListener(new OortList.DeltaListener<String>(oortList2));
+        final List<String> adds = new ArrayList<>();
+        final List<String> removes = new ArrayList<>();
+        final AtomicReference<CountDownLatch> setLatch2 = new AtomicReference<>(new CountDownLatch(4));
+        oortList1.addListener(new OortList.DeltaListener<>(oortList1));
+        oortList2.addListener(new OortList.DeltaListener<>(oortList2));
         OortList.ElementListener<String> elementListener = new OortList.ElementListener<String>()
         {
             public void onAdded(OortObject.Info<List<String>> info, List<String> elements)
@@ -176,8 +178,8 @@ public class OortListTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
-        OortList<String> oortList1 = new OortList<String>(oort1, name, factory);
-        OortList<String> oortList2 = new OortList<String>(oort2, name, factory);
+        OortList<String> oortList1 = new OortList<>(oort1, name, factory);
+        OortList<String> oortList2 = new OortList<>(oort2, name, factory);
         startOortObjects(oortList1, oortList2);
 
         final CountDownLatch setLatch = new CountDownLatch(2);
@@ -223,5 +225,73 @@ public class OortListTest extends AbstractOortObjectTest
 
         oortList2.removeElementListener(addedListener);
         oortList1.removeElementListener(addedListener);
+    }
+
+    @Test
+    public void testConcurrent() throws Exception
+    {
+        String name = "concurrent";
+        OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
+        final OortList<String> oortList1 = new OortList<>(oort1, name, factory);
+        OortList<String> oortList2 = new OortList<>(oort2, name, factory);
+        startOortObjects(oortList1, oortList2);
+
+        int threads = 64;
+        final int iterations = 32;
+        final CyclicBarrier barrier = new CyclicBarrier(threads + 1);
+        final CountDownLatch latch1 = new CountDownLatch(threads);
+        final CountDownLatch latch2 = new CountDownLatch(threads * iterations);
+
+        oortList2.addListener(new OortList.DeltaListener<>(oortList2));
+        oortList2.addElementListener(new OortList.ElementListener.Adapter<String>()
+        {
+            @Override
+            public void onAdded(OortObject.Info<List<String>> info, List<String> elements)
+            {
+                for (int i = 0; i < elements.size(); ++i)
+                    latch2.countDown();
+            }
+        });
+
+        for (int i = 0; i < threads; ++i)
+        {
+            final int index = i;
+            new Thread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        barrier.await();
+                        for (int j = 0; j < iterations; ++j)
+                        {
+                            String element = String.valueOf(index * iterations + j);
+                            oortList1.addAndShare(element);
+                        }
+                    }
+                    catch (Throwable x)
+                    {
+                        x.printStackTrace();
+                    }
+                    finally
+                    {
+                        latch1.countDown();
+                    }
+                }
+            }).start();
+        }
+        // Wait for all threads to be ready.
+        barrier.await();
+
+        // Wait for all threads to finish.
+        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+
+        List<String> list1 = oortList1.merge(OortObjectMergers.<String>listUnion());
+        Collections.sort(list1);
+        List<String> list2 = oortList2.merge(OortObjectMergers.<String>listUnion());
+        Collections.sort(list2);
+        Assert.assertEquals(list1, list2);
     }
 }

@@ -88,6 +88,8 @@ public abstract class AbstractOortObjectTest extends OortTest
         Assert.assertTrue(initialListener.await(5, TimeUnit.SECONDS));
         oortObjects.add(oortObject1);
         oortObjects.add(oortObject2);
+        logger.info("oort_object_1 -> {}", oortObject1.getOort().getURL());
+        logger.info("oort_object_2 -> {}", oortObject2.getOort().getURL());
     }
 
     /**

@@ -17,8 +17,10 @@ package org.cometd.oort;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -37,8 +39,8 @@ public class OortStringMapTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
-        OortStringMap<String> oortMap1 = new OortStringMap<String>(oort1, name, factory);
-        OortStringMap<String> oortMap2 = new OortStringMap<String>(oort2, name, factory);
+        OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
+        OortStringMap<String> oortMap2 = new OortStringMap<>(oort2, name, factory);
         startOortObjects(oortMap1, oortMap2);
 
         final CountDownLatch setLatch = new CountDownLatch(2);
@@ -82,8 +84,8 @@ public class OortStringMapTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
-        OortStringMap<String> oortMap1 = new OortStringMap<String>(oort1, name, factory);
-        OortStringMap<String> oortMap2 = new OortStringMap<String>(oort2, name, factory);
+        OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
+        OortStringMap<String> oortMap2 = new OortStringMap<>(oort2, name, factory);
         startOortObjects(oortMap1, oortMap2);
 
         final CountDownLatch setLatch = new CountDownLatch(2);
@@ -126,8 +128,8 @@ public class OortStringMapTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
-        OortStringMap<String> oortMap1 = new OortStringMap<String>(oort1, name, factory);
-        OortStringMap<String> oortMap2 = new OortStringMap<String>(oort2, name, factory);
+        OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
+        OortStringMap<String> oortMap2 = new OortStringMap<>(oort2, name, factory);
         startOortObjects(oortMap1, oortMap2);
 
         final CountDownLatch setLatch1 = new CountDownLatch(2);
@@ -158,11 +160,11 @@ public class OortStringMapTest extends AbstractOortObjectTest
         String valueC = "valueC";
         newMap.put(key3, valueC);
 
-        final List<OortMap.Entry<String, String>> puts = new ArrayList<OortMap.Entry<String, String>>();
-        final List<OortMap.Entry<String, String>> removes = new ArrayList<OortMap.Entry<String, String>>();
-        final AtomicReference<CountDownLatch> setLatch2 = new AtomicReference<CountDownLatch>(new CountDownLatch(6));
-        oortMap1.addListener(new OortMap.DeltaListener<String, String>(oortMap1));
-        oortMap2.addListener(new OortMap.DeltaListener<String, String>(oortMap2));
+        final List<OortMap.Entry<String, String>> puts = new ArrayList<>();
+        final List<OortMap.Entry<String, String>> removes = new ArrayList<>();
+        final AtomicReference<CountDownLatch> setLatch2 = new AtomicReference<>(new CountDownLatch(6));
+        oortMap1.addListener(new OortMap.DeltaListener<>(oortMap1));
+        oortMap2.addListener(new OortMap.DeltaListener<>(oortMap2));
         OortMap.EntryListener<String, String> entryListener = new OortMap.EntryListener<String, String>()
         {
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry)
@@ -200,8 +202,8 @@ public class OortStringMapTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
-        OortStringMap<String> oortMap1 = new OortStringMap<String>(oort1, name, factory);
-        OortStringMap<String> oortMap2 = new OortStringMap<String>(oort2, name, factory);
+        OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
+        OortStringMap<String> oortMap2 = new OortStringMap<>(oort2, name, factory);
         startOortObjects(oortMap1, oortMap2);
 
         final CountDownLatch putLatch = new CountDownLatch(4);
@@ -244,5 +246,217 @@ public class OortStringMapTest extends AbstractOortObjectTest
 
         oortMap2.removeEntryListener(putListener);
         oortMap1.removeEntryListener(putListener);
+    }
+
+    @Test
+    public void testConcurrent() throws Exception
+    {
+        String name = "concurrent";
+        OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
+        final OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
+        OortStringMap<String> oortMap2 = new OortStringMap<>(oort2, name, factory);
+        startOortObjects(oortMap1, oortMap2);
+
+        int threads = 64;
+        final int iterations = 32;
+        final CyclicBarrier barrier = new CyclicBarrier(threads + 1);
+        final CountDownLatch latch1 = new CountDownLatch(threads);
+        final CountDownLatch latch2 = new CountDownLatch(threads * iterations);
+
+        oortMap2.addListener(new OortMap.DeltaListener<>(oortMap2));
+        oortMap2.addEntryListener(new OortMap.EntryListener.Adapter<String, String>()
+        {
+            @Override
+            public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry)
+            {
+                latch2.countDown();
+            }
+        });
+
+        for (int i = 0; i < threads; ++i)
+        {
+            final int index = i;
+            new Thread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        barrier.await();
+                        for (int j = 0; j < iterations; ++j)
+                        {
+                            String key = String.valueOf(index * iterations + j);
+                            oortMap1.putAndShare(key, key);
+                        }
+                    }
+                    catch (Throwable x)
+                    {
+                        x.printStackTrace();
+                    }
+                    finally
+                    {
+                        latch1.countDown();
+                    }
+                }
+            }).start();
+        }
+        // Wait for all threads to be ready.
+        barrier.await();
+
+        // Wait for all threads to finish.
+        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+
+        ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        Assert.assertEquals(map1, map2);
+    }
+
+    @Test
+    public void testEntryBeforeMap() throws Exception
+    {
+        String name = "entry_before_map";
+        OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
+        OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
+        OortStringMap<String> oortMap2 = new OortStringMap<String>(oort2, name, factory)
+        {
+            private int peerMessages;
+            @Override
+            protected void onObject(Map<String, Object> data)
+            {
+                super.onObject(data);
+                String oortURL = (String)data.get(Info.OORT_URL_FIELD);
+                if (!getOort().getURL().equals(oortURL))
+                {
+                    ++peerMessages;
+                    // Simulate that the first message from the
+                    // other peer for the whole map gets lost.
+                    if (peerMessages == 1)
+                        removeInfo(oortURL);
+                }
+            }
+        };
+        startOortObjects(oortMap1, oortMap2);
+
+        Assert.assertNull(oortMap2.getInfo(oortMap1.getOort().getURL()));
+
+        final CountDownLatch objectLatch = new CountDownLatch(1);
+        oortMap2.addListener(new OortObject.Listener.Adapter<ConcurrentMap<String, String>>()
+        {
+            @Override
+            public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo)
+            {
+                objectLatch.countDown();
+            }
+        });
+
+        // Put an entry in oortMap1, the update should arrive to oortMap2
+        // which does not have the Info object, so it should pull it.
+        oortMap1.putAndShare("key1", "value1");
+
+        Assert.assertTrue(objectLatch.await(5, TimeUnit.SECONDS));
+
+        ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        Assert.assertEquals(map1, map2);
+
+        final AtomicReference<CountDownLatch> putLatch = new AtomicReference<>(new CountDownLatch(1));
+        oortMap2.addEntryListener(new OortMap.EntryListener.Adapter<String, String>()
+        {
+            @Override
+            public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry)
+            {
+                putLatch.get().countDown();
+            }
+        });
+
+        // Put another entry in oortMap1, the objects should sync.
+        oortMap1.putAndShare("key2", "value2");
+
+        Assert.assertTrue(putLatch.get().await(5, TimeUnit.SECONDS));
+
+        map1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        map2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        Assert.assertEquals(map1, map2);
+
+        // And again.
+        putLatch.set(new CountDownLatch(1));
+        oortMap1.putAndShare("key3", "value3");
+
+        Assert.assertTrue(putLatch.get().await(5, TimeUnit.SECONDS));
+
+        map1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        map2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        Assert.assertEquals(map1, map2);
+    }
+
+    @Test
+    public void testLostEntry() throws Exception
+    {
+        String name = "lost_entry";
+        OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
+        OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
+        OortStringMap<String> oortMap2 = new OortStringMap<String>(oort2, name, factory)
+        {
+            private int peerMessages;
+            @Override
+            protected void onObject(Map<String, Object> data)
+            {
+                String oortURL = (String)data.get(Info.OORT_URL_FIELD);
+                if (!getOort().getURL().equals(oortURL))
+                {
+                    if ("oort.map.entry".equals(data.get(Info.TYPE_FIELD)))
+                    {
+                        ++peerMessages;
+                        // Simulate that the second entry update gets lost.
+                        if (peerMessages == 2)
+                            return;
+                    }
+                }
+                super.onObject(data);
+            }
+        };
+        startOortObjects(oortMap1, oortMap2);
+
+        final String key1 = "key1";
+        oortMap1.putAndShare(key1, "value1");
+        oortMap1.removeAndShare(key1);
+
+        // Wait for the update to be lost.
+        Thread.sleep(1000);
+
+        // Verify that the objects are out-of-sync.
+        Assert.assertNull(oortMap1.get(key1));
+        Assert.assertNotNull(oortMap2.find(key1));
+
+        // Update again, the maps should sync.
+        final String key2 = "key2";
+        final CountDownLatch latch = new CountDownLatch(2);
+        oortMap2.addListener(new OortMap.DeltaListener<>(oortMap2));
+        oortMap2.addEntryListener(new OortMap.EntryListener<String, String>()
+        {
+            @Override
+            public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry)
+            {
+                if (entry.getKey().equals(key2))
+                    latch.countDown();
+            }
+
+            @Override
+            public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry)
+            {
+                if (entry.getKey().equals(key1))
+                    latch.countDown();
+            }
+        });
+        oortMap1.putAndShare(key2, "value2");
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        // Make sure that the maps are in sync.
+        ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        Assert.assertEquals(map1, map2);
     }
 }
