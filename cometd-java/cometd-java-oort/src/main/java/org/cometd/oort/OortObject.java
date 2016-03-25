@@ -15,6 +15,7 @@
  */
 package org.cometd.oort;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -23,12 +24,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.cometd.bayeux.MarkedReference;
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
@@ -119,17 +121,21 @@ import org.slf4j.LoggerFactory;
 public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServerChannel.Initializer, Oort.CometListener, Iterable<OortObject.Info<T>>
 {
     public static final String OORT_OBJECTS_CHANNEL = "/oort/objects";
+    private static final String ACTION_FIELD_PULL_VALUE = "oort.object.pull";
 
-    private final AtomicLong versions = new AtomicLong();
-    private final ConcurrentMap<String, Holder<T>> infos = new ConcurrentHashMap<>();
+    private final Map<String, Info<T>> infos = new ConcurrentHashMap<>();
     private final List<Listener<T>> listeners = new CopyOnWriteArrayList<>();
+    private final AtomicLong versions = new AtomicLong();
+    private final Processor processor = new Processor();
     protected final Logger logger;
     private final Oort oort;
     private final String name;
     private final Factory<T> factory;
     private final LocalSession sender;
-    private final String channelName;
-    private final ServerChannel.MessageListener messageListener;
+    private final String broadcastChannel;
+    private final ServerChannel.MessageListener broadcastListener;
+    private final String serviceChannel;
+    private final ServerChannel.MessageListener serviceListener;
 
     public OortObject(Oort oort, String name, Factory<T> factory)
     {
@@ -138,29 +144,31 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         this.factory = factory;
         this.logger = LoggerFactory.getLogger(getClass().getName() + "." + Oort.replacePunctuation(oort.getURL(), '_') + "." + name);
         this.sender = oort.getBayeuxServer().newLocalSession(getClass().getSimpleName() + "." + name);
-        this.channelName = OORT_OBJECTS_CHANNEL + "/" + name;
-        this.messageListener = new MessageListener();
+        this.broadcastChannel = OORT_OBJECTS_CHANNEL + "/" + name;
+        this.broadcastListener = new BroadcastListener();
+        this.serviceChannel = Channel.SERVICE + broadcastChannel;
+        this.serviceListener = new ServiceListener();
     }
 
     @Override
     protected void doStart() throws Exception
     {
-        Holder<T> holder = new Holder<>();
         Info<T> info = newInfo(factory.newObject(null));
-        holder.set(info, null);
-        infos.put(oort.getURL(), holder);
+        infos.put(oort.getURL(), info);
         if (logger.isDebugEnabled())
             logger.debug("Set local {}", info);
 
         sender.handshake();
         oort.addCometListener(this);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
-        ServerChannel channel = bayeuxServer.createChannelIfAbsent(channelName, this).getReference();
-        channel.addListener(messageListener);
-        oort.observeChannel(channelName);
+        ServerChannel channel = bayeuxServer.createChannelIfAbsent(broadcastChannel, this).getReference();
+        channel.addListener(broadcastListener);
+        oort.observeChannel(broadcastChannel);
+        bayeuxServer.createChannelIfAbsent(serviceChannel, this).getReference().addListener(serviceListener);
 
         // Notify other nodes of our initial value.
-        // Must be done after registering listeners, to avoid missing responses from other nodes.
+        // Must be done after registering listeners,
+        // to avoid missing responses from other nodes.
         channel.publish(getLocalSession(), info);
 
         if (logger.isDebugEnabled())
@@ -170,13 +178,17 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     @Override
     protected void doStop() throws Exception
     {
-        oort.deobserveChannel(channelName);
-        ServerChannel channel = oort.getBayeuxServer().getChannel(channelName);
+        oort.deobserveChannel(broadcastChannel);
+        BayeuxServer bayeuxServer = oort.getBayeuxServer();
+        ServerChannel channel = bayeuxServer.getChannel(broadcastChannel);
         if (channel != null)
-            channel.removeListener(messageListener);
+            channel.removeListener(broadcastListener);
+        channel = bayeuxServer.getChannel(serviceChannel);
+        if (channel != null)
+            channel.removeListener(serviceListener);
         oort.removeCometListener(this);
         sender.disconnect();
-        infos.remove(oort.getURL());
+        infos.clear();
         if (logger.isDebugEnabled())
             logger.debug("{} stopped", this);
     }
@@ -235,7 +247,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      */
     public String getChannelName()
     {
-        return channelName;
+        return broadcastChannel;
     }
 
     /**
@@ -295,17 +307,17 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         String remoteOortURL = event.getCometURL();
         if (logger.isDebugEnabled())
             logger.debug("Oort {} joined", remoteOortURL);
-        pushInfo(remoteOortURL, getInfo(oort.getURL()));
+        pushInfo(remoteOortURL, null);
     }
 
     public void cometLeft(Event event)
     {
+        String remoteOortURL = event.getCometURL();
         if (logger.isDebugEnabled())
-            logger.debug("Oort {} left", event.getCometURL());
-        Holder<T> holder = infos.remove(event.getCometURL());
-        if (holder != null)
+            logger.debug("Oort {} left", remoteOortURL);
+        Info<T> info = removeInfo(remoteOortURL);
+        if (info != null)
         {
-            Info<T> info = holder.get();
             if (logger.isDebugEnabled())
                 logger.debug("Removed remote {}", info);
             notifyRemoved(info);
@@ -326,8 +338,12 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      */
     public Info<T> getInfo(String oortURL)
     {
-        Holder<T> holder = infos.get(oortURL);
-        return holder == null ? null : holder.get();
+        return infos.get(oortURL);
+    }
+
+    Info<T> removeInfo(String oortURL)
+    {
+        return infos.remove(oortURL);
     }
 
     /**
@@ -405,25 +421,32 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
     protected void onObject(Map<String, Object> data)
     {
-        boolean isLocal = oort.getURL().equals(data.get(Info.OORT_URL_FIELD));
+        String oortURL = (String)data.get(Info.OORT_URL_FIELD);
+        boolean isLocal = oort.getURL().equals(oortURL);
         Object object = data.get(Info.OBJECT_FIELD);
         if (!isLocal)
+        {
             object = deserialize(object);
-        // Convert the object, for example from a JSON serialized Map to a ConcurrentMap
-        data.put(Info.OBJECT_FIELD, getFactory().newObject(object));
+            // Convert the object, for example from a JSON serialized Map to a ConcurrentMap.
+            object = getFactory().newObject(object);
+        }
+
+        Info<T> oldInfo = getInfo(oortURL);
         Info<T> newInfo = new Info<>(oort.getURL(), data);
+        newInfo.put(Info.OBJECT_FIELD, object);
 
-        MarkedReference<Info<T>> old = setInfo(newInfo, null);
+        boolean updated = oldInfo == null || oldInfo.getVersion() < newInfo.getVersion();
+        if (updated)
+            infos.put(oortURL, newInfo);
 
-        Info<T> oldInfo = old.getReference();
         if (logger.isDebugEnabled())
             logger.debug("{} {} update of {} with {}",
-                old.isMarked() ? "Performed" : "Skipped",
+                updated ? "Performed" : "Skipped",
                 newInfo.isLocal() ? "local" : "remote",
                 oldInfo, newInfo);
 
-        // Notify only if we could replace
-        if (old.isMarked())
+        // Notify only if we could replace.
+        if (updated)
             notifyUpdated(oldInfo, newInfo);
 
         // If we did not have an info for the new Oort, then it's a
@@ -433,54 +456,55 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             // We want to avoid an additional message at initialization.
             // We are A, we just received infoB from B, which we did not have,
             // so we push infoA to B. Very likely, B will receive infoA, find
-            // that is did not have info for A and will push infoB to A, again.
+            // that it does not have info for A and push infoB to A, again.
             // Therefore we add a "peer" field, that tells whether the push
             // of the info comes from, and we skip the extra push.
             if (!oort.getURL().equals(data.get(Info.PEER_FIELD)))
             {
-                Map<String, Object> localInfo = new HashMap<>(getInfo(oort.getURL()));
-                String oortURL = newInfo.getOortURL();
-                localInfo.put(Info.PEER_FIELD, oortURL);
-                pushInfo(oortURL, localInfo);
+                Map<String, Object> fields = new HashMap<>();
+                fields.put(Info.PEER_FIELD, oortURL);
+                pushInfo(oortURL, fields);
             }
         }
 
         // Set the result
         if (data instanceof Data)
-        {
             ((Data<T>)data).setResult(oldInfo == null ? null : oldInfo.getObject());
-        }
     }
 
-    protected MarkedReference<Info<T>> setInfo(Info<T> newInfo, Runnable action)
-    {
-        String newOortURL = newInfo.getOortURL();
-        Holder<T> holder = infos.get(newOortURL);
-        if (holder == null)
-        {
-            holder = new Holder<>();
-            Holder<T> existing = infos.putIfAbsent(newOortURL, holder);
-            if (existing != null)
-                holder = existing;
-        }
-        return holder.set(newInfo, action);
-    }
-
-    protected void pushInfo(String oortURL, Map<String, Object> info)
+    protected void pushInfo(String oortURL, Map<String, Object> fields)
     {
         OortComet oortComet = oort.getComet(oortURL);
-        if (logger.isDebugEnabled())
-            logger.debug("Pushing (to {}) local {}", oortURL, info);
         if (oortComet != null)
-            oortComet.getChannel(channelName).publish(info);
+        {
+            Map<String, Object> message = fields;
+            if (message == null)
+                message = new HashMap<>();
+            message.putAll(getInfo(oort.getURL()));
+            if (logger.isDebugEnabled())
+                logger.debug("Pushing (to {}): {}", oortURL, message);
+            oortComet.getChannel(serviceChannel).publish(message);
+        }
+    }
+
+    protected void pullInfo(String oortURL)
+    {
+        OortComet oortComet = oort.getComet(oortURL);
+        if (oortComet != null)
+        {
+            Map<String, Object> message = new HashMap<>();
+            message.put(Info.OORT_URL_FIELD, getOort().getURL());
+            message.put(Info.NAME_FIELD, getName());
+            message.put(Info.ACTION_FIELD, ACTION_FIELD_PULL_VALUE);
+            if (logger.isDebugEnabled())
+                logger.debug("Pulling (from {}): {}", oortURL, message);
+            oortComet.getChannel(serviceChannel).publish(message);
+        }
     }
 
     protected Collection<Info<T>> getInfos()
     {
-        List<Info<T>> result = new ArrayList<>(infos.size());
-        for (Holder<T> holders : infos.values())
-            result.add(holders.get());
-        return result;
+        return new ArrayList<>(infos.values());
     }
 
     @Override
@@ -517,13 +541,10 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         protected Info(String oortURL, Map<? extends String, ?> map)
         {
             this(((Number)map.get(VERSION_FIELD)).longValue(), oortURL);
-            // Discard metadata, only keep data
-            put(OORT_URL_FIELD, map.get(OORT_URL_FIELD));
-            put(NAME_FIELD, map.get(NAME_FIELD));
-            put(OBJECT_FIELD, map.get(OBJECT_FIELD));
+            putAll(map);
         }
 
-        protected long getId()
+        protected long getVersion()
         {
             return ((Number)get(VERSION_FIELD)).longValue();
         }
@@ -554,7 +575,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         }
 
         /**
-         * @return whether this {@link Info} is local to this node
+         * @return whether this Info is local to this node
          */
         public boolean isLocal()
         {
@@ -566,7 +587,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         {
             T object = getObject();
             String objectString = object instanceof Object[] ? Arrays.toString((Object[])object) : String.valueOf(object);
-            return String.format("%s[%s/%d] (from %s): %s", getClass().getSimpleName(), getName(), getId(), getOortURL(), objectString);
+            return String.format("%s[%s/%d] (from %s): %s", getClass().getSimpleName(), getName(), getVersion(), getOortURL(), objectString);
         }
     }
 
@@ -638,7 +659,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         /**
          * Callback method invoked when the object value is updated.
          *
-         * @param oldInfo the {@link Info} before the change
+         * @param oldInfo the {@link Info} before the change, may be null
          * @param newInfo the {@link Info} after the change
          */
         public void onUpdated(Info<T> oldInfo, Info<T> newInfo);
@@ -668,50 +689,104 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         }
     }
 
-    private static class Holder<T>
+    private class BroadcastListener implements ServerChannel.MessageListener
     {
-        private Info<T> info;
-
-        private MarkedReference<Info<T>> set(Info<T> newInfo, Runnable action)
+        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
         {
-            synchronized (this)
-            {
-                Info<T> oldInfo = info;
-                boolean marked = false;
-                if (oldInfo == null || oldInfo.getId() < newInfo.getId())
-                {
-                    info = newInfo;
-                    marked = true;
-                    if (action != null)
-                        action.run();
-                }
-                return new MarkedReference<>(oldInfo, marked);
-            }
-        }
-
-        private Info<T> get()
-        {
-            synchronized (this)
-            {
-                return info;
-            }
+            if (logger.isDebugEnabled())
+                logger.debug("Received broadcast {}", message);
+            boolean local = from == getLocalSession().getServerSession();
+            processor.process(local, message);
+            return true;
         }
     }
 
-    private class MessageListener implements ServerChannel.MessageListener
+    private class ServiceListener implements ServerChannel.MessageListener
     {
-        @SuppressWarnings("unchecked")
+        @Override
         public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
         {
-            Map<String, Object> data = message.getDataAsMap();
-            boolean sameName = getName().equals(data.get(Info.NAME_FIELD));
-            if (sameName)
-            {
-                if (logger.isDebugEnabled())
-                    logger.debug("Received {}", data);
-                onObject(data);
-            }
+            if (logger.isDebugEnabled())
+                logger.debug("Received service {}", message);
+            boolean local = from == getLocalSession().getServerSession();
+            processor.process(local, message);
             return true;
+        }
+    }
+
+    /**
+     * Messages are processed one after the other
+     * so that implementations of {@link #onObject(Map)}
+     * do not need to worry about concurrency.
+     */
+    private class Processor
+    {
+        private final Queue<ServerMessage> messages = new ArrayDeque<>();
+        private boolean active;
+
+        private void process(boolean local, ServerMessage msg)
+        {
+            synchronized (this)
+            {
+                messages.offer(msg);
+                if (local)
+                {
+                    while (active)
+                    {
+                        if (!await())
+                            return;
+                    }
+                }
+                else
+                {
+                    if (active)
+                        return;
+                }
+                active = true;
+            }
+
+            while (true)
+            {
+                ServerMessage message;
+                synchronized (this)
+                {
+                    message = messages.poll();
+                    if (message == null)
+                    {
+                        active = false;
+                        notifyAll();
+                        return;
+                    }
+                }
+
+                Map<String, Object> data = message.getDataAsMap();
+                boolean sameName = getName().equals(data.get(Info.NAME_FIELD));
+                if (sameName)
+                {
+                    if (ACTION_FIELD_PULL_VALUE.equals(data.get(Info.ACTION_FIELD)))
+                    {
+                        String oortURL = (String)data.get(Info.OORT_URL_FIELD);
+                        pushInfo(oortURL, null);
+                    }
+                    else
+                    {
+                        onObject(data);
+                    }
+                }
+            }
+        }
+
+        private boolean await()
+        {
+            try
+            {
+                wait();
+                return true;
+            }
+            catch (InterruptedException x)
+            {
+                return false;
+            }
         }
     }
 }

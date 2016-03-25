@@ -51,7 +51,7 @@ public class OortObjectFactories
 
     public static <K, V> OortObject.Factory<Map<K, V>> forMap(Map<K, V> defaultValue)
     {
-        return new MapFactory<K, V>(defaultValue);
+        return new MapFactory<>(defaultValue);
     }
 
     public static <K, V> OortObject.Factory<ConcurrentMap<K, V>> forConcurrentMap()
@@ -61,7 +61,7 @@ public class OortObjectFactories
 
     public static <K, V> OortObject.Factory<ConcurrentMap<K, V>> forConcurrentMap(Map<K, V> defaultValue)
     {
-        return new ConcurrentMapFactory<K, V>(defaultValue);
+        return new ConcurrentMapFactory<>(defaultValue);
     }
 
     public static <E> OortObject.Factory<List<E>> forConcurrentList()
@@ -71,7 +71,7 @@ public class OortObjectFactories
 
     public static <E> OortObject.Factory<List<E>> forConcurrentList(List<E> defaultValue)
     {
-        return new ConcurrentListFactory<E>(defaultValue);
+        return new ConcurrentListFactory<>(defaultValue);
     }
 
     private static class BooleanFactory implements OortObject.Factory<Boolean>
@@ -145,7 +145,7 @@ public class OortObjectFactories
         public Map<K, V> newObject(Object representation)
         {
             if (representation == null)
-                return new HashMap<K, V>(defaultValue);
+                return new HashMap<>(defaultValue);
             if (representation instanceof Map)
                 return (Map<K, V>)representation;
             throw new IllegalArgumentException();
@@ -165,11 +165,11 @@ public class OortObjectFactories
         public ConcurrentMap<K, V> newObject(Object representation)
         {
             if (representation == null)
-                return new ConcurrentHashMap<K, V>(defaultValue);
+                return new ConcurrentHashMap<>(defaultValue);
             if (representation instanceof ConcurrentMap)
                 return (ConcurrentMap<K, V>)representation;
             if (representation instanceof Map)
-                return new ConcurrentHashMap<K, V>((Map<K, V>)representation);
+                return new ConcurrentHashMap<>((Map<K, V>)representation);
             throw new IllegalArgumentException();
         }
     }
@@ -187,14 +187,14 @@ public class OortObjectFactories
         public List<E> newObject(Object representation)
         {
             if (representation == null)
-                return new CopyOnWriteArrayList<E>(defaultValue);
+                return new CopyOnWriteArrayList<>(defaultValue);
             if (representation instanceof CopyOnWriteArrayList)
                 return (List<E>)representation;
             if (representation instanceof List)
-                return new CopyOnWriteArrayList<E>((List<E>)representation);
+                return new CopyOnWriteArrayList<>((List<E>)representation);
             if (representation instanceof Object[])
             {
-                List<E> result = new CopyOnWriteArrayList<E>();
+                List<E> result = new CopyOnWriteArrayList<>();
                 for (Object element : (Object[])representation)
                     result.add((E)element);
                 return result;

@@ -40,7 +40,7 @@ public class OortLongMap<V> extends OortMap<Long, V>
         Map<String, V> map = (Map<String, V>)object;
         if (map.isEmpty())
             return object;
-        Map<Long, V> result = new HashMap<Long, V>(map.size());
+        Map<Long, V> result = new HashMap<>(map.size());
         for (Map.Entry<String, V> entry : map.entrySet())
             result.put(Long.parseLong(entry.getKey()), entry.getValue());
         return result;

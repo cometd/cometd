@@ -44,6 +44,8 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
 public abstract class OortTest
@@ -61,6 +63,7 @@ public abstract class OortTest
 
     @Rule
     public final TestTracker testName = new TestTracker();
+    protected Logger logger = LoggerFactory.getLogger(getClass());
     private final List<Server> servers = new ArrayList<>();
     private final List<Oort> oorts = new ArrayList<>();
     private final List<BayeuxClient> clients = new ArrayList<>();

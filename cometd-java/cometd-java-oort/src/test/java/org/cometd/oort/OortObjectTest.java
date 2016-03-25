@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.server.BayeuxServer;
@@ -42,8 +43,8 @@ public class OortObjectTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
 
         final String key1 = "key1";
@@ -101,8 +102,8 @@ public class OortObjectTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
 
         Map<String, Object> object1 = factory.newObject(null);
@@ -128,8 +129,8 @@ public class OortObjectTest extends AbstractOortObjectTest
         OortComet oortComet32 = oort3.observeComet(oort2.getURL());
         Assert.assertTrue(oortComet32.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        OortObject<Map<String, Object>> oortObject3 = new OortObject<Map<String, Object>>(oort3, name, factory);
-        OortObjectInitialListener<Map<String, Object>> initialListener = new OortObjectInitialListener<Map<String, Object>>(2);
+        OortObject<Map<String, Object>> oortObject3 = new OortObject<>(oort3, name, factory);
+        OortObjectInitialListener<Map<String, Object>> initialListener = new OortObjectInitialListener<>(2);
         oortObject3.addListener(initialListener);
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(oortObject1.getChannelName(), 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
@@ -173,8 +174,8 @@ public class OortObjectTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
 
         Map<String, Object> object1 = factory.newObject(null);
@@ -206,8 +207,8 @@ public class OortObjectTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
 
         Map<String, Object> object1 = factory.newObject(null);
@@ -225,7 +226,7 @@ public class OortObjectTest extends AbstractOortObjectTest
         // Wait for shared objects to synchronize
         Thread.sleep(1000);
 
-        List<OortObject.Info<Map<String, Object>>> infos = new ArrayList<OortObject.Info<Map<String, Object>>>();
+        List<OortObject.Info<Map<String, Object>>> infos = new ArrayList<>();
         for (OortObject.Info<Map<String, Object>> info : oortObject1)
             infos.add(info);
         Assert.assertEquals(2, infos.size());
@@ -244,8 +245,8 @@ public class OortObjectTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<Long> factory = OortObjectFactories.forLong(0);
-        OortObject<Long> oortObject1 = new OortObject<Long>(oort1, name, factory);
-        OortObject<Long> oortObject2 = new OortObject<Long>(oort2, name, factory);
+        OortObject<Long> oortObject1 = new OortObject<>(oort1, name, factory);
+        OortObject<Long> oortObject2 = new OortObject<>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
 
         final CountDownLatch latch1 = new CountDownLatch(2);
@@ -287,8 +288,8 @@ public class OortObjectTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<Long> factory = OortObjectFactories.forLong(0);
-        final OortObject<Long> oortObject1 = new OortObject<Long>(oort1, name, factory);
-        OortObject<Long> oortObject2 = new OortObject<Long>(oort2, name, factory);
+        final OortObject<Long> oortObject1 = new OortObject<>(oort1, name, factory);
+        OortObject<Long> oortObject2 = new OortObject<>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
 
         final CountDownLatch latch1 = new CountDownLatch(2);
@@ -351,5 +352,61 @@ public class OortObjectTest extends AbstractOortObjectTest
 
         long valueAtNode2 = oortObject2.getInfo(oort1.getURL()).getObject();
         Assert.assertEquals(value3, valueAtNode2);
+    }
+
+    @Test
+    public void testConcurrent() throws Exception
+    {
+        String name = "concurrent";
+        OortObject.Factory<String> factory = OortObjectFactories.forString("");
+        final OortObject<String> oortObject1 = new OortObject<>(oort1, name, factory);
+        OortObject<String> oortObject2 = new OortObject<>(oort2, name, factory);
+        startOortObjects(oortObject1, oortObject2);
+
+        int threads = 64;
+        final int iterations = 32;
+        final CyclicBarrier barrier = new CyclicBarrier(threads + 1);
+        final CountDownLatch latch1 = new CountDownLatch(threads);
+
+        for (int i = 0; i < threads; ++i)
+        {
+            final int index = i;
+            new Thread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        barrier.await();
+                        for (int j = 0; j < iterations; ++j)
+                        {
+                            String value = String.valueOf(index * iterations + j);
+                            oortObject1.setAndShare(value);
+                        }
+                    }
+                    catch (Throwable x)
+                    {
+                        x.printStackTrace();
+                    }
+                    finally
+                    {
+                        latch1.countDown();
+                    }
+                }
+            }).start();
+        }
+        // Wait for all threads to be ready.
+        barrier.await();
+
+        // Wait for all threads to finish.
+        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+
+        // Wait some time for the last updates to be processed.
+        Thread.sleep(1000);
+
+        String object1 = oortObject1.getInfo(oort1.getURL()).getObject();
+        String object2 = oortObject2.getInfo(oort1.getURL()).getObject();
+        Assert.assertEquals(object1, object2);
     }
 }

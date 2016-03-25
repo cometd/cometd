@@ -36,17 +36,17 @@ public class OortObjectMergers
 
     public static <K, V> OortObject.Merger<Map<K, V>, Map<K, V>> mapUnion()
     {
-        return new MapUnionMerger<K, V>();
+        return new MapUnionMerger<>();
     }
 
     public static <K, V> OortObject.Merger<ConcurrentMap<K, V>, ConcurrentMap<K, V>> concurrentMapUnion()
     {
-        return new ConcurrentMapUnionMerger<K, V>();
+        return new ConcurrentMapUnionMerger<>();
     }
 
     public static <E> OortObject.Merger<List<E>, List<E>> listUnion()
     {
-        return new ListUnionMerger<E>();
+        return new ListUnionMerger<>();
     }
 
     private static class LongSumMerger implements OortObject.Merger<Long, Long>
@@ -64,7 +64,7 @@ public class OortObjectMergers
     {
         public Map<K, V> merge(Collection<OortObject.Info<Map<K, V>>> infos)
         {
-            Map<K, V> result = new HashMap<K, V>();
+            Map<K, V> result = new HashMap<>();
             for (OortObject.Info<Map<K, V>> value : infos)
                 result.putAll(value.getObject());
             return result;
@@ -75,7 +75,7 @@ public class OortObjectMergers
     {
         public ConcurrentMap<K, V> merge(Collection<OortObject.Info<ConcurrentMap<K, V>>> infos)
         {
-            ConcurrentMap<K, V> result = new ConcurrentHashMap<K, V>();
+            ConcurrentMap<K, V> result = new ConcurrentHashMap<>();
             for (OortObject.Info<ConcurrentMap<K, V>> value : infos)
                 result.putAll(value.getObject());
             return result;
@@ -86,7 +86,7 @@ public class OortObjectMergers
     {
         public List<E> merge(Collection <OortObject.Info<List<E>>> infos)
         {
-            List<E> result = new ArrayList<E>();
+            List<E> result = new ArrayList<>();
             for (OortObject.Info<List<E>> value : infos)
                 result.addAll(value.getObject());
             return result;

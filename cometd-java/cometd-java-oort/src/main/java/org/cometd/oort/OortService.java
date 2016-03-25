@@ -528,7 +528,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
          */
         public static <S> Result<S> success(S result)
         {
-            return new Result<S>(true, result);
+            return new Result<>(true, result);
         }
 
         /**
@@ -540,7 +540,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
          */
         public static <S> Result<S> failure(Object failure)
         {
-            return new Result<S>(false, failure);
+            return new Result<>(false, failure);
         }
 
         /**
@@ -552,7 +552,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
          */
         public static <S> Result<S> ignore(Object data)
         {
-            return new Result<S>(null, data);
+            return new Result<>(null, data);
         }
 
         private boolean succeeded()

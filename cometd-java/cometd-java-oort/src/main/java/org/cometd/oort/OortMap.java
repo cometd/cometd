@@ -22,9 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 
-import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.server.BayeuxServer;
 
 /**
@@ -55,7 +53,7 @@ import org.cometd.bayeux.server.BayeuxServer;
  * @param <K> the key type
  * @param <V> the value type
  */
-public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
+public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
 {
     private static final String TYPE_FIELD_ENTRY_VALUE = "oort.map.entry";
     private static final String ACTION_FIELD_PUT_VALUE = "oort.map.put";
@@ -98,7 +96,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         entry.put(KEY_FIELD, key);
         entry.put(VALUE_FIELD, value);
 
-        Data<V> data = new Data<V>(6);
+        Data<V> data = new Data<>(6);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
@@ -127,11 +125,11 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
      */
     public V putIfAbsentAndShare(K key, V value)
     {
-        Map<String, Object> entry = new HashMap<String, Object>(2);
+        Map<String, Object> entry = new HashMap<>(2);
         entry.put(KEY_FIELD, key);
         entry.put(VALUE_FIELD, value);
 
-        Data<V> data = new Data<V>(6);
+        Data<V> data = new Data<>(6);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
@@ -161,7 +159,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         Map<String, Object> entry = new HashMap<>(1);
         entry.put(KEY_FIELD, key);
 
-        Data<V> data = new Data<V>(6);
+        Data<V> data = new Data<>(6);
         data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
@@ -225,77 +223,63 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
     }
 
     @Override
-    protected void onObject(Map<String, Object> data)
+    protected boolean isItemUpdate(Map<String, Object> data)
     {
-        if (TYPE_FIELD_ENTRY_VALUE.equals(data.get(Info.TYPE_FIELD)))
+        return TYPE_FIELD_ENTRY_VALUE.equals(data.get(Info.TYPE_FIELD));
+    }
+
+    @Override
+    protected void onItem(Info<ConcurrentMap<K, V>> info, Map<String, Object> data)
+    {
+        // Retrieve entry.
+        @SuppressWarnings("unchecked")
+        Map<String, Object> object = (Map<String, Object>)data.get(Info.OBJECT_FIELD);
+        @SuppressWarnings("unchecked")
+        final K key = (K)object.get(KEY_FIELD);
+        @SuppressWarnings("unchecked")
+        final V value = (V)object.get(VALUE_FIELD);
+
+        // Perform the action.
+        ConcurrentMap<K, V> map = info.getObject();
+        V result;
+        String action = (String)data.get(Info.ACTION_FIELD);
+        switch (action)
         {
-            String action = (String)data.get(Info.ACTION_FIELD);
-            final boolean remove = ACTION_FIELD_REMOVE_VALUE.equals(action);
-            final boolean putAbsent = ACTION_FIELD_PUT_ABSENT_VALUE.equals(action);
-            if (!remove && !putAbsent && !ACTION_FIELD_PUT_VALUE.equals(action))
+            case ACTION_FIELD_PUT_VALUE:
+                result = map.put(key, value);
+                break;
+            case ACTION_FIELD_PUT_ABSENT_VALUE:
+                result = map.putIfAbsent(key, value);
+                break;
+            case ACTION_FIELD_REMOVE_VALUE:
+                result = map.remove(key);
+                break;
+            default:
                 throw new IllegalArgumentException(action);
-
-            String oortURL = (String)data.get(Info.OORT_URL_FIELD);
-            Info<ConcurrentMap<K, V>> info = getInfo(oortURL);
-            if (info != null)
-            {
-                // Retrieve entry
-                @SuppressWarnings("unchecked")
-                Map<String, Object> object = (Map<String, Object>)data.get(Info.OBJECT_FIELD);
-                @SuppressWarnings("unchecked")
-                final K key = (K)object.get(KEY_FIELD);
-                @SuppressWarnings("unchecked")
-                final V value = (V)object.get(VALUE_FIELD);
-
-                // Set the new Info
-                Info<ConcurrentMap<K, V>> newInfo = new Info<>(getOort().getURL(), data);
-                final ConcurrentMap<K, V> map = info.getObject();
-                newInfo.put(Info.OBJECT_FIELD, map);
-                final AtomicReference<V> resultRef = new AtomicReference<>();
-                MarkedReference<Info<ConcurrentMap<K, V>>> old = setInfo(newInfo, new Runnable()
-                {
-                    public void run()
-                    {
-                        if (remove)
-                            resultRef.set(map.remove(key));
-                        else if (putAbsent)
-                            resultRef.set(map.putIfAbsent(key, value));
-                        else
-                            resultRef.set(map.put(key, value));
-                    }
-                });
-
-                V result = resultRef.get();
-                Entry<K, V> entry = new Entry<>(key, result, value);
-
-                if (logger.isDebugEnabled())
-                    logger.debug("{} {} map {} of {}",
-                        old.isMarked() ? "Performed" : "Skipped",
-                        newInfo.isLocal() ? "local" : "remote",
-                        remove ? "remove" : "put",
-                        entry);
-
-                if (old.isMarked())
-                {
-                    if (remove)
-                        notifyEntryRemoved(info, entry);
-                    if (!putAbsent || result == null)
-                        notifyEntryPut(info, entry);
-                }
-
-                if (data instanceof Data)
-                    ((Data<V>)data).setResult(result);
-            }
-            else
-            {
-                if (logger.isDebugEnabled())
-                    logger.debug("No info for {}", oortURL);
-            }
         }
-        else
+
+        // Update the version.
+        info.put(Info.VERSION_FIELD, data.get(Info.VERSION_FIELD));
+
+        // Notify.
+        Entry<K, V> entry = new Entry<>(key, result, value);
+        if (logger.isDebugEnabled())
+            logger.debug("{} map {} of {}", info.isLocal() ? "Local" : "Remote", action, entry);
+        switch (action)
         {
-            super.onObject(data);
+            case ACTION_FIELD_PUT_VALUE:
+                notifyEntryPut(info, entry);
+                break;
+            case ACTION_FIELD_PUT_ABSENT_VALUE:
+                if (result == null)
+                    notifyEntryPut(info, entry);
+                break;
+            case ACTION_FIELD_REMOVE_VALUE:
+                notifyEntryRemoved(info, entry);
         }
+
+        if (data instanceof Data)
+            ((Data<V>)data).setResult(result);
     }
 
     private void notifyEntryPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry)
@@ -428,6 +412,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
      * <p>For example, if an entity map:</p>
      * <pre>
      * {
+     *     key0: value0,
      *     key1: value1,
      *     key2: value2
      * }
@@ -435,6 +420,7 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
      * <p>is replaced by a map:</p>
      * <pre>
      * {
+     *     key0: value0,
      *     key1: valueA,
      *     key3: valueB
      * }
@@ -448,6 +434,8 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
      * <pre>
      * (key2, value2, null)
      * </pre>
+     * <p>Note that no event is emitted for {@code key0}; the values for {@code key0} of the two
+     * maps are tested via {@link Object#equals(Object)} and if they are equal no event is generated.</p>
      *
      * @param <K> the key type
      * @param <V> the value type
@@ -468,11 +456,12 @@ public abstract class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
             for (Map.Entry<K, V> oldEntry : oldMap.entrySet())
             {
                 K key = oldEntry.getKey();
+                V oldValue = oldEntry.getValue();
                 V newValue = newMap.remove(key);
-                Entry<K, V> entry = new Entry<>(key, oldEntry.getValue(), newValue);
+                Entry<K, V> entry = new Entry<>(key, oldValue, newValue);
                 if (newValue == null)
                     oortMap.notifyEntryRemoved(newInfo, entry);
-                else
+                else if (!newValue.equals(oldValue))
                     oortMap.notifyEntryPut(newInfo, entry);
             }
             for (Map.Entry<K, V> newEntry : newMap.entrySet())
