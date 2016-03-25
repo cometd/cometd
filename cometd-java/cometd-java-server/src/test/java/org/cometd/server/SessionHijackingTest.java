@@ -39,20 +39,6 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testSessionHijackingForbidden() throws Exception
-    {
-        // Default settings forbid session hijacking.
-        startServer(null);
-
-        // Message should fail.
-        Message.Mutable[] messages = testSessionHijacking();
-        Assert.assertEquals(1, messages.length);
-        Message message = messages[0];
-        Assert.assertFalse(message.isSuccessful());
-        Assert.assertTrue(((String)message.get(Message.ERROR_FIELD)).startsWith("402"));
-    }
-
-    @Test
     public void testSessionHijackingAllowed() throws Exception
     {
         Map<String, String> settings = new HashMap<>();
