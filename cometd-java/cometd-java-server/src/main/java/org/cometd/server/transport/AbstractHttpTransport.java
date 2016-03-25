@@ -70,6 +70,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
     public final static String MULTI_SESSION_INTERVAL_OPTION = "multiSessionInterval";
     public final static String AUTOBATCH_OPTION = "autoBatch";
     public final static String ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION = "allowMultiSessionsNoBrowser";
+    public final static String TRUST_CLIENT_SESSION = "trustClientSession";
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<>();
@@ -85,6 +86,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
     private long _multiSessionInterval;
     private boolean _autoBatch;
     private boolean _allowMultiSessionsNoBrowser;
+    private boolean _trustClientSession;
     private long _lastSweep;
 
     protected AbstractHttpTransport(BayeuxServerImpl bayeux, String name)
@@ -106,6 +108,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         _multiSessionInterval = getOption(MULTI_SESSION_INTERVAL_OPTION, 2000);
         _autoBatch = getOption(AUTOBATCH_OPTION, true);
         _allowMultiSessionsNoBrowser = getOption(ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION, false);
+        _trustClientSession = getOption(TRUST_CLIENT_SESSION, false);
     }
 
     protected long getMultiSessionInterval()
@@ -159,9 +162,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                     _logger.debug("Processing {}", message);
 
                 // Try to find the session.
+                String clientId = message.getClientId();
                 if (sessions != null)
                 {
-                    String clientId = message.getClientId();
                     if (clientId != null)
                     {
                         for (ServerSessionImpl s : sessions)
@@ -174,6 +177,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                         }
                     }
                 }
+
+                if (session == null && _trustClientSession)
+                    session = (ServerSessionImpl)getBayeux().getSession(clientId);
 
                 if (session != null)
                 {
