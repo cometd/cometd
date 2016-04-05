@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,12 +29,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.AbstractService;
+import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
@@ -1191,6 +1194,111 @@ public class SetiTest extends OortTest
             String peer = (String)data.get("peer");
             seti.sendMessage(peer, message.getChannel(), data);
         }
+    }
+
+    @Test
+    public void testConcurrent() throws Exception
+    {
+        Server server1 = startServer(0);
+        final Oort oort1 = startOort(server1);
+        Server server2 = startServer(0);
+        Oort oort2 = startOort(server2);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        oort2.addCometListener(new CometJoinedListener(latch));
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        OortComet oortComet21 = oort2.findComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        final Seti seti1 = startSeti(oort1);
+        Seti seti2 = startSeti(oort2);
+
+        int threads = 64;
+        final int iterations = 32;
+        final CyclicBarrier barrier = new CyclicBarrier(threads + 1);
+
+        CountDownLatch presentLatch = new CountDownLatch(threads * iterations);
+        seti2.addPresenceListener(new UserPresentListener(presentLatch));
+        CountDownLatch absentLatch = new CountDownLatch(threads * iterations);
+        seti2.addPresenceListener(new UserAbsentListener(absentLatch));
+
+        for (int i = 0; i < threads; ++i)
+        {
+            final int index = i;
+            new Thread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        Map<String, ServerSession> sessions = new HashMap<>();
+
+                        barrier.await();
+                        for (int j = 0; j < iterations; ++j)
+                        {
+                            String key = String.valueOf(index * iterations + j);
+                            LocalSession localSession = oort1.getBayeuxServer().newLocalSession(key);
+                            localSession.handshake();
+                            ServerSession session = localSession.getServerSession();
+                            sessions.put(key, session);
+                            seti1.associate(key, session);
+                        }
+
+                        barrier.await();
+                        for (Map.Entry<String, ServerSession> entry : sessions.entrySet())
+                        {
+                            seti1.disassociate(entry.getKey(), entry.getValue());
+                        }
+                    }
+                    catch (Throwable x)
+                    {
+                        x.printStackTrace();
+                    }
+                }
+            }).start();
+        }
+
+        // Wait for all threads to be ready.
+        barrier.await();
+
+        // Wait for all threads to finish associations.
+        Assert.assertTrue(presentLatch.await(10, TimeUnit.SECONDS));
+
+        // The 2 Setis should be in sync.
+        Assert.assertEquals(seti1.getUserIds(), seti2.getUserIds());
+
+        // Start disassociations.
+        barrier.await();
+
+        // Wait for all threads to finish disassociations.
+        Assert.assertTrue(absentLatch.await(10, TimeUnit.SECONDS));
+
+        // The 2 Setis should be empty.
+        Assert.assertEquals(0, seti1.getAssociatedUserIds().size());
+        Assert.assertEquals(0, seti1.getUserIds().size());
+        Assert.assertEquals(0, seti2.getUserIds().size());
+    }
+
+    @Test
+    public void testDisassociationRemovesListeners() throws Exception
+    {
+        Server server1 = startServer(0);
+        Oort oort1 = startOort(server1);
+
+        Seti seti1 = startSeti(oort1);
+
+        String user = "user";
+        LocalSession localSession = oort1.getBayeuxServer().newLocalSession(user);
+        localSession.handshake();
+        ServerSession session = localSession.getServerSession();
+
+        seti1.associate(user, session);
+        seti1.disassociate(user, session);
+
+        Assert.assertEquals(0, ((ServerSessionImpl)session).getListeners().size());
     }
 
     private static class UserPresentListener extends Seti.PresenceListener.Adapter
