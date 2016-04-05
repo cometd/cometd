@@ -507,6 +507,11 @@ public class ServerSessionImpl implements ServerSession
         _listeners.remove(listener);
     }
 
+    public List<ServerSessionListener> getListeners()
+    {
+        return Collections.unmodifiableList(_listeners);
+    }
+
     public void setScheduler(AbstractServerTransport.Scheduler newScheduler)
     {
         if (newScheduler == null)

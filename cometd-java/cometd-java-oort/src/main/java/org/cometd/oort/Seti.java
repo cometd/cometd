@@ -195,9 +195,12 @@ public class Seti extends AbstractLifeCycle implements Dumpable
 
         if (added)
         {
-            session.addListener(location);
             if (_logger.isDebugEnabled())
                 _logger.debug("Associated session {} to user {}", session, userId);
+
+            session.addListener(location);
+            session.setAttribute(LocalLocation.class.getName(), location);
+
             if (!wasAssociated)
             {
                 if (_logger.isDebugEnabled())
@@ -350,26 +353,32 @@ public class Seti extends AbstractLifeCycle implements Dumpable
     {
         LocalLocation location = new LocalLocation(userId, session);
         boolean removed = disassociate(userId, location);
+
         if (removed)
+        {
             if (_logger.isDebugEnabled())
                 _logger.debug("Disassociated session {} from user {}", session, userId);
 
-        // Seti is stopped before BayeuxServer, but it may happen that RemoveListeners
-        // call Seti when BayeuxServer is stopping, and they will find that Seti is already stopped.
-        // Do not do any action in this case, because exceptions are thrown if the action is
-        // attempted (as _session is already disconnected).
-        // Also, we only broadcast the presence message if no associations are left for the user,
-        // because remote comets are not aware of multiple associations.
-        // Consider the case where the same user is associated twice to a comet, and then only
-        // one association is disassociated. The other comets do not know that the comet had multiple
-        // associations, and if a presence message is sent, the remote comets will wrongly think
-        // that the user is gone, while in reality it is still associated with the remaining association.
-        if (_session.isConnected() && !isAssociated(userId))
-        {
-            if (_logger.isDebugEnabled())
-                _logger.debug("Broadcasting association removal for user {}", userId);
-            // Let everyone in the cluster know that this session is not here anymore
-            _session.getChannel(SETI_ALL_CHANNEL).publish(new SetiPresence(false, userId));
+            location = (LocalLocation)session.removeAttribute(LocalLocation.class.getName());
+            session.removeListener(location);
+
+            // Seti is stopped before BayeuxServer, but it may happen that RemoveListeners
+            // call Seti when BayeuxServer is stopping, and they will find that Seti is already stopped.
+            // Do not do any action in this case, because exceptions are thrown if the action is
+            // attempted (as _session is already disconnected).
+            // Also, we only broadcast the presence message if no associations are left for the user,
+            // because remote comets are not aware of multiple associations.
+            // Consider the case where the same user is associated twice to a comet, and then only
+            // one association is disassociated. The other comets do not know that the comet had multiple
+            // associations, and if a presence message is sent, the remote comets will wrongly think
+            // that the user is gone, while in reality it is still associated with the remaining association.
+            if (_session.isConnected() && !isAssociated(userId))
+            {
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Broadcasting association removal for user {}", userId);
+                // Let everyone in the cluster know that this session is not here anymore
+                _session.getChannel(SETI_ALL_CHANNEL).publish(new SetiPresence(false, userId));
+            }
         }
 
         return removed;
