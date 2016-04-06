@@ -16,7 +16,9 @@
 package org.cometd.oort;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -44,9 +46,14 @@ public abstract class AbstractOortObjectTest extends OortTest
     @Before
     public void prepare() throws Exception
     {
-        Server server1 = startServer(0);
+        prepare(new HashMap<String, String>());
+    }
+
+    protected void prepare(Map<String, String> options) throws Exception
+    {
+        Server server1 = startServer(0, options);
         oort1 = startOort(server1);
-        Server server2 = startServer(0);
+        Server server2 = startServer(0, options);
         oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(2);
