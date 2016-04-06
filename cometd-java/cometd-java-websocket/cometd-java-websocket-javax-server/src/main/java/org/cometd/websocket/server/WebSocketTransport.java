@@ -42,6 +42,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.websocket.server.common.AbstractBayeuxContext;
+import org.cometd.websocket.server.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 
