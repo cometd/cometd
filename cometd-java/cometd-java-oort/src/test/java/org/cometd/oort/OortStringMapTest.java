@@ -16,6 +16,7 @@
 package org.cometd.oort;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -24,6 +25,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.cometd.client.BayeuxClient;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -458,5 +460,77 @@ public class OortStringMapTest extends AbstractOortObjectTest
         ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion());
         ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion());
         Assert.assertEquals(map1, map2);
+    }
+
+    @Test
+    public void testNodeSyncWithLargeMap() throws Exception
+    {
+        // Reconfigure the Oorts.
+        stop();
+        Map<String, String> options = new HashMap<>();
+        options.put("ws.maxMessageSize", String.valueOf(64 * 1024 * 1024));
+        prepare(options);
+
+        String name = "large_sync";
+        OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
+        OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
+        OortStringMap<String> oortMap2 = new OortStringMap<String>(oort2, name, factory);
+        startOortObjects(oortMap1, oortMap2);
+
+        // Disconnect one node.
+        CountDownLatch leftLatch = new CountDownLatch(2);
+        CometLeftListener leftListener = new CometLeftListener(leftLatch);
+        oort1.addCometListener(leftListener);
+        oort2.addCometListener(leftListener);
+        OortComet comet12 = oort1.findComet(oort2.getURL());
+        OortComet comet21 = oort2.findComet(oort1.getURL());
+        comet21.disconnect();
+        Assert.assertTrue(leftLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(comet12.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(comet21.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+
+        // Update node1 with a large number of map entries.
+        final int size = 64 * 1024;
+        for (int i = 0; i < size; ++i)
+            oortMap1.putAndShare(String.valueOf(i), i + "_abcdefghijklmnopqrstuvwxyz0123456789");
+
+        int size1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion()).size();
+        Assert.assertEquals(size, size1);
+        int size2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion()).size();
+        Assert.assertEquals(0, size2);
+
+        final CountDownLatch syncLatch = new CountDownLatch(1);
+        oortMap2.addListener(new OortObject.Listener.Adapter<ConcurrentMap<String, String>>()
+        {
+            @Override
+            public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo)
+            {
+                if (newInfo.getOortURL().equals(oort1.getURL()))
+                {
+                    if (newInfo.getObject().size() == size)
+                        syncLatch.countDown();
+                }
+            }
+        });
+
+        // Reconnect the node.
+        CountDownLatch joinedLatch = new CountDownLatch(2);
+        CometJoinedListener joinedListener = new CometJoinedListener(joinedLatch);
+        oort1.addCometListener(joinedListener);
+        oort2.addCometListener(joinedListener);
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(joinedLatch.await(5, TimeUnit.SECONDS));
+        OortComet oortComet21 = oort2.findComet(oort1.getURL());
+        Assert.assertNotNull(oortComet21);
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait for the maps to sync.
+        Assert.assertTrue(syncLatch.await(5, TimeUnit.SECONDS));
+
+        // Verify that the maps are in sync.
+        size1 = oortMap1.getInfo(oort1.getURL()).getObject().size();
+        size2 = oortMap2.getInfo(oort1.getURL()).getObject().size();
+        Assert.assertEquals(size1, size2);
     }
 }
