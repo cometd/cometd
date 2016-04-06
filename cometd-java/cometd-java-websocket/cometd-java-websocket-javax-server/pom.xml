@@ -10,6 +10,21 @@
     <artifactId>cometd-java-websocket-javax-server</artifactId>
     <name>CometD :: Java :: WebSocket :: JSR 356 Server</name>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=javax.websocket.server.ServerEndpointConfig$Configurator)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)"</Require-Capability>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>javax.servlet</groupId>

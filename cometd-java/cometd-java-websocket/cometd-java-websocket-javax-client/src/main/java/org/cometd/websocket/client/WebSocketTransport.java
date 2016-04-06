@@ -43,6 +43,7 @@ import javax.websocket.WebSocketContainer;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
+import org.cometd.websocket.client.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public class WebSocketTransport extends AbstractWebSocketTransport
