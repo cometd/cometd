@@ -336,17 +336,21 @@ public class Oort extends ContainerLifeCycle
     protected OortComet newOortComet(String cometURL)
     {
         Map<String, Object> options = new HashMap<>(2);
+        options.put(ClientTransport.SCHEDULER_OPTION, _scheduler);
+
         JSONContext.Client jsonContext = getJSONContextClient();
         if (jsonContext != null)
             options.put(ClientTransport.JSON_CONTEXT_OPTION, jsonContext);
+
         String maxMessageSizeOption = WebSocketTransport.PREFIX + "." + WebSocketTransport.MAX_MESSAGE_SIZE_OPTION;
         Object option = _bayeux.getOption(maxMessageSizeOption);
         if (option != null)
-        {
-            long value = option instanceof Number ? ((Number)option).longValue() : Long.parseLong(option.toString());
-            options.put(maxMessageSizeOption, value);
-        }
-        options.put(ClientTransport.SCHEDULER_OPTION, _scheduler);
+            options.put(maxMessageSizeOption, option);
+
+        String idleTimeoutOption = WebSocketTransport.PREFIX + "." + WebSocketTransport.IDLE_TIMEOUT_OPTION;
+        option = _bayeux.getOption(idleTimeoutOption);
+        if (option != null)
+            options.put(idleTimeoutOption, option);
 
         List<ClientTransport> transports = new ArrayList<>();
         for (ClientTransport.Factory factory : getClientTransportFactories())
