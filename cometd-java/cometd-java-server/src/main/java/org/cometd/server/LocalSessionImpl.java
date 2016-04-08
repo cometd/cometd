@@ -186,7 +186,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     @Override
     public String toString()
     {
-        return "L:" + (_sessionId == null ? _idHint + "_" : _session.getId());
+        return "L:" + (_sessionId == null ? _idHint + "_<disconnected>" : _sessionId);
     }
 
     /**
