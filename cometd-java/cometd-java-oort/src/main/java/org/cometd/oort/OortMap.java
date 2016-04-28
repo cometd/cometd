@@ -30,11 +30,11 @@ import org.cometd.bayeux.server.BayeuxServer;
  * <p>{@link OortMap} specializes {@code OortObject} and allows optimized replication of map entries
  * across the cluster: instead of replicating the whole map, that may be contain a lot of entries,
  * only entries that are modified are replicated.</p>
- * <p>Applications can use {@link #putAndShare(Object, Object)} and {@link #removeAndShare(Object)}
- * to broadcast changes related to single entries, as well as {@link #setAndShare(Object)} to
+ * <p>Applications can use {@link #putAndShare(Object, Object, Result)} and {@link #removeAndShare(Object, Result)}
+ * to broadcast changes related to single entries, as well as {@link #setAndShare(Object, Result)} to
  * change the whole map.</p>
  * <p>When a single entry is changed, {@link EntryListener}s are notified.
- * {@link DeltaListener} converts whole map updates triggered by {@link #setAndShare(Object)}
+ * {@link DeltaListener} converts whole map updates triggered by {@link #setAndShare(Object, Result)}
  * into events for {@link EntryListener}s, giving applications a single listener type to implement
  * their business logic.</p>
  * <p>The type parameter for keys, {@code K}, must be a String to be able to use this class as-is,
@@ -80,24 +80,43 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
     }
 
     /**
-     * <p>Updates a single entry of the local entity map with the given {@code key} and {@code value},
-     * and broadcasts the operation to all nodes in the cluster.</p>
-     * <p>Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes.</p>
+     * <p>Blocking version of {@link #putAndShare(Object, Object, Result)}, but deprecated.</p>
+     * <p>This method will be removed in a future release.</p>
      *
      * @param key   the key to associate the value to
      * @param value the value associated with the key
      * @return the previous value associated with the key, or null if no previous value was associated with the key
-     * @see #putIfAbsentAndShare(Object, Object)
-     * @see #removeAndShare(Object)
+     * @deprecated use {@link #putAndShare(Object, Object, Result)} instead
      */
+    @Deprecated
     public V putAndShare(K key, V value)
+    {
+        Result.Deferred<V> result = new Result.Deferred<>();
+        putAndShare(key, value, result);
+        return result.get();
+    }
+
+    /**
+     * <p>Updates a single entry of the local entity map with the given {@code key} and {@code value},
+     * and broadcasts the operation to all nodes in the cluster.</p>
+     * <p>Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes.</p>
+     * <p>The entry is guaranteed to be put not when this method returns,
+     * but when the {@link Result} parameter is notified.</p>
+     *
+     * @param key   the key to associate the value to
+     * @param value the value associated with the key
+     * @param callback the callback invoked with the old value,
+     *                 or {@code null} if there is no interest in the old value
+     * @see #putIfAbsentAndShare(Object, Object, Result)
+     * @see #removeAndShare(Object, Result)
+     */
+    public void putAndShare(K key, V value, Result<V> callback)
     {
         Map<String, Object> entry = new HashMap<>(2);
         entry.put(KEY_FIELD, key);
         entry.put(VALUE_FIELD, value);
 
-        Data<V> data = new Data<>(6);
-        data.put(Info.VERSION_FIELD, nextVersion());
+        Data<V> data = new Data<>(6, callback);
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
         data.put(Info.OBJECT_FIELD, entry);
@@ -108,8 +127,23 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
             logger.debug("Sharing map put {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
+    }
 
-        return data.getResult();
+    /**
+     * <p>Blocking version of {@link #putIfAbsentAndShare(Object, Object, Result)}, but deprecated.</p>
+     * <p>This method will be removed in a future release.</p>
+     *
+     * @param key   the key to associate the value to
+     * @param value the value associated with the key
+     * @return the previous value associated with the key, or null if no previous value was associated with the key
+     * @deprecated use {@link #putAndShare(Object, Object, Result)} instead
+     */
+    @Deprecated
+    public V putIfAbsentAndShare(K key, V value)
+    {
+        Result.Deferred<V> result = new Result.Deferred<>();
+        putIfAbsentAndShare(key, value, result);
+        return result.get();
     }
 
     /**
@@ -117,20 +151,22 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      * if it does not exist yet, and broadcasts the operation to all nodes in the cluster.</p>
      * <p>Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes,
      * only if the key did not exist.</p>
+     * <p>The entry is guaranteed to be put not when this method returns,
+     * but when the {@link Result} parameter is notified.</p>
      *
      * @param key   the key to associate the value to
      * @param value the value associated with the key
-     * @return the previous value associated with the key, or null if no previous value was associated with the key
-     * @see #putAndShare(Object, Object)
+     * @param callback the callback invoked with the old value,
+     *                 or {@code null} if there is no interest in the old value
+     * @see #putAndShare(Object, Object, Result)
      */
-    public V putIfAbsentAndShare(K key, V value)
+    public void putIfAbsentAndShare(K key, V value, Result<V> callback)
     {
         Map<String, Object> entry = new HashMap<>(2);
         entry.put(KEY_FIELD, key);
         entry.put(VALUE_FIELD, value);
 
-        Data<V> data = new Data<>(6);
-        data.put(Info.VERSION_FIELD, nextVersion());
+        Data<V> data = new Data<>(6, callback);
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
         data.put(Info.OBJECT_FIELD, entry);
@@ -141,26 +177,42 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
             logger.debug("Sharing map putIfAbsent {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
+    }
 
-        return data.getResult();
+    /**
+     * <p>Blocking version of {@link #removeAndShare(Object, Result)}, but deprecated.</p>
+     * <p>This method will be removed in a future release.</p>
+     *
+     * @param key the key to remove
+     * @return the value associated with the key, or null if no value was associated with the key
+     * @deprecated use {@link #removeAndShare(Object, Result)} instead
+     */
+    @Deprecated
+    public V removeAndShare(K key)
+    {
+        Result.Deferred<V> result = new Result.Deferred<>();
+        removeAndShare(key, result);
+        return result.get();
     }
 
     /**
      * <p>Removes the given {@code key} from the local entity map,
      * and broadcasts the operation to all nodes in the cluster.</p>
      * <p>Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes.</p>
+     * <p>The entry is guaranteed to be removed not when this method returns,
+     * but when the {@link Result} parameter is notified.</p>
      *
      * @param key the key to remove
-     * @return the value associated with the key, or null if no value was associated with the key
-     * @see #putAndShare(Object, Object)
+     * @param callback the callback invoked with the value,
+     *                 or {@code null} if there is no interest in the value
+     * @see #putAndShare(Object, Object, Result)
      */
-    public V removeAndShare(K key)
+    public void removeAndShare(K key, Result<V> callback)
     {
         Map<String, Object> entry = new HashMap<>(1);
         entry.put(KEY_FIELD, key);
 
-        Data<V> data = new Data<>(6);
-        data.put(Info.VERSION_FIELD, nextVersion());
+        Data<V> data = new Data<>(6, callback);
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
         data.put(Info.OBJECT_FIELD, entry);
@@ -171,8 +223,6 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
             logger.debug("Sharing map remove {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
-
-        return data.getResult();
     }
 
     /**

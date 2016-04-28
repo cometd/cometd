@@ -55,7 +55,9 @@ public class OortListTest extends AbstractOortObjectTest
             }
         });
 
-        Assert.assertTrue(oortList1.addAndShare(element));
+        OortObject.Result.Deferred<Boolean> result = new OortObject.Result.Deferred<>();
+        oortList1.addAndShare(result, element);
+        Assert.assertTrue(result.get(5, TimeUnit.SECONDS));
         Assert.assertTrue(addLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -82,7 +84,7 @@ public class OortListTest extends AbstractOortObjectTest
         List<Long> list = factory.newObject(null);
         final long element = 1;
         list.add(element);
-        oortList1.setAndShare(list);
+        oortList1.setAndShare(list, null);
         Assert.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
@@ -97,7 +99,9 @@ public class OortListTest extends AbstractOortObjectTest
             }
         });
 
-        Assert.assertTrue(oortList1.removeAndShare(element));
+        OortObject.Result.Deferred<Boolean> result = new OortObject.Result.Deferred<>();
+        oortList1.removeAndShare(result, element);
+        Assert.assertTrue(result.get(5, TimeUnit.SECONDS));
         Assert.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -126,7 +130,7 @@ public class OortListTest extends AbstractOortObjectTest
         String elementB = "B";
         oldList.add(elementA);
         oldList.add(elementB);
-        oortList1.setAndShare(oldList);
+        oortList1.setAndShare(oldList, null);
         Assert.assertTrue(setLatch1.await(5, TimeUnit.SECONDS));
 
         List<String> newList = factory.newObject(null);
@@ -157,7 +161,7 @@ public class OortListTest extends AbstractOortObjectTest
         };
         oortList1.addElementListener(elementListener);
         oortList2.addElementListener(elementListener);
-        oortList1.setAndShare(newList);
+        oortList1.setAndShare(newList, null);
 
         Assert.assertTrue(setLatch2.get().await(5, TimeUnit.SECONDS));
         Assert.assertEquals(4, adds.size());
@@ -193,7 +197,7 @@ public class OortListTest extends AbstractOortObjectTest
         };
         oortList1.addListener(listener);
         oortList2.addListener(listener);
-        oortList1.setAndShare(factory.newObject(null));
+        oortList1.setAndShare(factory.newObject(null), null);
         Assert.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch addLatch = new CountDownLatch(4);
@@ -207,10 +211,12 @@ public class OortListTest extends AbstractOortObjectTest
         };
         oortList1.addElementListener(addedListener);
         oortList2.addElementListener(addedListener);
+
+        OortObject.Result<Boolean> nullResult = null;
         String element1A = "1A";
-        oortList1.addAndShare(element1A);
+        oortList1.addAndShare(nullResult, element1A);
         String element2A = "2A";
-        oortList2.addAndShare(element2A);
+        oortList2.addAndShare(nullResult, element2A);
         Assert.assertTrue(addLatch.await(5, TimeUnit.SECONDS));
 
         Assert.assertTrue(oortList1.contains(element1A));
@@ -267,7 +273,7 @@ public class OortListTest extends AbstractOortObjectTest
                         for (int j = 0; j < iterations; ++j)
                         {
                             String element = String.valueOf(index * iterations + j);
-                            oortList1.addAndShare(element);
+                            oortList1.addAndShare((OortObject.Result<Boolean>)null, element);
                         }
                     }
                     catch (Throwable x)

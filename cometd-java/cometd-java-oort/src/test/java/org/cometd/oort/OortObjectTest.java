@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
@@ -82,7 +83,7 @@ public class OortObjectTest extends AbstractOortObjectTest
         // Change the object and share the change
         Map<String, Object> object1 = factory.newObject(null);
         object1.put(key1, value1);
-        oortObject1.setAndShare(object1);
+        oortObject1.setAndShare(object1, null);
 
         Assert.assertTrue(objectLatch1.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(objectLatch2.await(5, TimeUnit.SECONDS));
@@ -110,13 +111,13 @@ public class OortObjectTest extends AbstractOortObjectTest
         String key1 = "key1";
         String value1 = "value1";
         object1.put(key1, value1);
-        oortObject1.setAndShare(object1);
+        oortObject1.setAndShare(object1, null);
 
         Map<String, Object> object2 = factory.newObject(null);
         String key2 = "key2";
         String value2 = "value2";
         object2.put(key2, value2);
-        oortObject2.setAndShare(object2);
+        oortObject2.setAndShare(object2, null);
 
         // Wait for shared objects to synchronize
         Thread.sleep(1000);
@@ -155,7 +156,7 @@ public class OortObjectTest extends AbstractOortObjectTest
         oortObject1.addListener(objectListener);
         oortObject2.addListener(objectListener);
         oortObject3.addListener(objectListener);
-        oortObject3.setAndShare(object3);
+        oortObject3.setAndShare(object3, null);
         Assert.assertTrue(objectsLatch.await(5, TimeUnit.SECONDS));
 
         OortObject.Merger<Map<String, Object>, Map<String, Object>> merger = OortObjectMergers.mapUnion();
@@ -182,13 +183,13 @@ public class OortObjectTest extends AbstractOortObjectTest
         String key1 = "key1";
         String value1 = "value1";
         object1.put(key1, value1);
-        oortObject1.setAndShare(object1);
+        oortObject1.setAndShare(object1, null);
 
         Map<String, Object> object2 = factory.newObject(null);
         String key2 = "key2";
         String value2 = "value2";
         object2.put(key2, value2);
-        oortObject2.setAndShare(object2);
+        oortObject2.setAndShare(object2, null);
 
         // Wait for shared objects to synchronize
         Thread.sleep(1000);
@@ -215,13 +216,13 @@ public class OortObjectTest extends AbstractOortObjectTest
         String key1 = "key1";
         String value1 = "value1";
         object1.put(key1, value1);
-        oortObject1.setAndShare(object1);
+        oortObject1.setAndShare(object1, null);
 
         Map<String, Object> object2 = factory.newObject(null);
         String key2 = "key2";
         String value2 = "value2";
         object2.put(key2, value2);
-        oortObject2.setAndShare(object2);
+        oortObject2.setAndShare(object2, null);
 
         // Wait for shared objects to synchronize
         Thread.sleep(1000);
@@ -261,7 +262,7 @@ public class OortObjectTest extends AbstractOortObjectTest
         oortObject1.addListener(objectListener1);
         oortObject2.addListener(objectListener1);
         long value1 = 2;
-        oortObject1.setAndShare(value1);
+        oortObject1.setAndShare(value1, null);
         Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch latch2 = new CountDownLatch(2);
@@ -276,7 +277,7 @@ public class OortObjectTest extends AbstractOortObjectTest
         oortObject1.addListener(objectListener2);
         oortObject2.addListener(objectListener2);
         long value2 = 3;
-        oortObject2.setAndShare(value2);
+        oortObject2.setAndShare(value2, null);
         Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
 
         long sum = oortObject1.merge(OortObjectMergers.longSum());
@@ -303,8 +304,8 @@ public class OortObjectTest extends AbstractOortObjectTest
         };
         oortObject1.addListener(objectListener1);
         oortObject2.addListener(objectListener1);
-        long value1 = 1;
-        oortObject1.setAndShare(value1);
+        final long value1 = 1;
+        oortObject1.setAndShare(value1, null);
         Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
 
         // Update "concurrently": the concurrence will be simulated
@@ -345,8 +346,14 @@ public class OortObjectTest extends AbstractOortObjectTest
                 return true;
             }
         });
-        Assert.assertEquals(value1, (long)oortObject1.setAndShare(value2));
-        Assert.assertEquals(value2, (long)oortObject1.setAndShare(value3));
+
+        OortObject.Result.Deferred<Long> result1 = new OortObject.Result.Deferred<>();
+        oortObject1.setAndShare(value2, result1);
+        Assert.assertEquals(value1, result1.get(5, TimeUnit.SECONDS).longValue());
+
+        OortObject.Result.Deferred<Long> result2 = new OortObject.Result.Deferred<>();
+        oortObject1.setAndShare(value3, result2);
+        Assert.assertEquals(value2, result2.get(5, TimeUnit.SECONDS).longValue());
 
         Thread.sleep(2 * delay);
 
@@ -382,7 +389,7 @@ public class OortObjectTest extends AbstractOortObjectTest
                         for (int j = 0; j < iterations; ++j)
                         {
                             String value = String.valueOf(index * iterations + j);
-                            oortObject1.setAndShare(value);
+                            oortObject1.setAndShare(value, null);
                         }
                     }
                     catch (Throwable x)
@@ -408,5 +415,67 @@ public class OortObjectTest extends AbstractOortObjectTest
         String object1 = oortObject1.getInfo(oort1.getURL()).getObject();
         String object2 = oortObject2.getInfo(oort1.getURL()).getObject();
         Assert.assertEquals(object1, object2);
+    }
+
+    @Test(timeout = 5000)
+    public void testApplicationLocking() throws Exception
+    {
+        String name = "locking";
+        OortObject.Factory<String> factory = OortObjectFactories.forString("initial");
+        OortObject<String> oortObject1 = new OortObject<>(oort1, name, factory);
+        OortObject<String> oortObject2 = new OortObject<>(oort2, name, factory);
+        startOortObjects(oortObject1, oortObject2);
+
+        final ReentrantLock lock = new ReentrantLock();
+        final CountDownLatch updatedLatch = new CountDownLatch(1);
+        oortObject1.addListener(new OortObject.Listener.Adapter<String>()
+        {
+            @Override
+            public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo)
+            {
+                lock.lock();
+                try
+                {
+                    updatedLatch.countDown();
+                }
+                finally
+                {
+                    lock.unlock();
+                }
+            }
+        });
+
+        OortObject.Result.Deferred<String> result = new OortObject.Result.Deferred<>();
+        lock.lock();
+        try
+        {
+            // We own the lock here.
+            // Trigger the second OortObject to update the first, which
+            // will cause an attempt to grab the lock in onUpdated();
+            // the thread that calls onUpdated() is now blocked there.
+            oortObject2.setAndShare("2", null);
+
+            // Wait until the lock is attempted.
+            while (true)
+            {
+                if (lock.hasQueuedThreads())
+                    break;
+                Thread.sleep(1);
+            }
+
+            // Calling a blocking setAndShare() here would cause a deadlock.
+            // We call the asynchronous version which will queue the operation
+            // and return immediately, releasing the lock, so that the thread
+            // blocked in onUpdated() can proceed.
+            // oortObject1.setAndShare("1");
+            oortObject1.setAndShare("1", result);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+
+        Assert.assertTrue(updatedLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertNotNull(result.get(5, TimeUnit.SECONDS));
     }
 }

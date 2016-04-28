@@ -145,7 +145,7 @@ public class BayeuxServerTest
     public void testLocalSessions() throws Exception
     {
         LocalSession session0 = _bayeux.newLocalSession("s0");
-        Assert.assertEquals("L:s0_", session0.toString());
+        Assert.assertEquals("L:s0_<disconnected>", session0.toString());
         session0.handshake();
         Assert.assertNotEquals("L:s0_", session0.toString());
         Assert.assertTrue(session0.toString().startsWith("L:s0_"));
