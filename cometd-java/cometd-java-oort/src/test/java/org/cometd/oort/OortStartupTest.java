@@ -186,7 +186,7 @@ public class OortStartupTest
                 ids = new OortObject<>(oort, NAME, OortObjectFactories.forString(""));
                 getServletContext().setAttribute(NAME, ids);
                 ids.start();
-                ids.setAndShare(oort.getId());
+                ids.setAndShare(oort.getId(), null);
             }
             catch (Throwable x)
             {

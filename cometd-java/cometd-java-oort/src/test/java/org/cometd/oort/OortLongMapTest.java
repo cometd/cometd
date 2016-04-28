@@ -36,8 +36,8 @@ public class OortLongMapTest extends AbstractOortObjectTest
     {
         String name = "test";
         OortObject.Factory<ConcurrentMap<Long, Object>> factory = OortObjectFactories.forConcurrentMap();
-        OortLongMap<Object> oortMap1 = new OortLongMap<Object>(oort1, name, factory);
-        OortLongMap<Object> oortMap2 = new OortLongMap<Object>(oort2, name, factory);
+        OortLongMap<Object> oortMap1 = new OortLongMap<>(oort1, name, factory);
+        OortLongMap<Object> oortMap2 = new OortLongMap<>(oort2, name, factory);
         startOortObjects(oortMap1, oortMap2);
 
         final long key1 = 13L;
@@ -75,7 +75,7 @@ public class OortLongMapTest extends AbstractOortObjectTest
         // Change the object and share the change
         ConcurrentMap<Long, Object> object1 = factory.newObject(null);
         object1.put(key1, value1);
-        oortMap1.setAndShare(object1);
+        oortMap1.setAndShare(object1, null);
 
         Assert.assertTrue(objectLatch1.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(objectLatch2.await(5, TimeUnit.SECONDS));
@@ -98,12 +98,12 @@ public class OortLongMapTest extends AbstractOortObjectTest
 
         String name = "test";
         OortObject.Factory<ConcurrentMap<Long, Map<String, Boolean>>> factory = OortObjectFactories.forConcurrentMap();
-        OortLongMap<Map<String, Boolean>> oortMap1 = new OortLongMap<Map<String, Boolean>>(oort1, name, factory);
-        OortLongMap<Map<String, Boolean>> oortMap2 = new OortLongMap<Map<String, Boolean>>(oort2, name, factory);
+        OortLongMap<Map<String, Boolean>> oortMap1 = new OortLongMap<>(oort1, name, factory);
+        OortLongMap<Map<String, Boolean>> oortMap2 = new OortLongMap<>(oort2, name, factory);
         startOortObjects(oortMap1, oortMap2);
 
         long key = 13L;
-        Map<String, Boolean> node1Value = new HashMap<String, Boolean>();
+        Map<String, Boolean> node1Value = new HashMap<>();
 
         final CountDownLatch putLatch1 = new CountDownLatch(2);
         OortMap.EntryListener.Adapter<Long, Map<String, Boolean>> listener1 = new OortMap.EntryListener.Adapter<Long, Map<String, Boolean>>()
@@ -117,8 +117,10 @@ public class OortLongMapTest extends AbstractOortObjectTest
         oortMap1.addEntryListener(listener1);
         oortMap2.addEntryListener(listener1);
         // First problem is how concurrent threads may insert the initial value for a certain key:
-        // solution is to use putIfAbsentAndShare()
-        Map<String, Boolean> existing = oortMap1.putIfAbsentAndShare(key, node1Value);
+        // solution is to use putIfAbsentAndShare().
+        OortObject.Result.Deferred<Map<String, Boolean>> result = new OortObject.Result.Deferred<>();
+        oortMap1.putIfAbsentAndShare(key, node1Value, result);
+        Map<String, Boolean> existing = result.get(5, TimeUnit.SECONDS);
         if (existing != null)
             node1Value = existing;
 
@@ -153,7 +155,7 @@ public class OortLongMapTest extends AbstractOortObjectTest
         oortMap2.addEntryListener(listener2);
 
         // Share the value notifying EntryListeners
-        oortMap1.putAndShare(key, node1Value);
+        oortMap1.putAndShare(key, node1Value, null);
         Assert.assertTrue(putLatch2.await(5, TimeUnit.SECONDS));
         oortMap1.removeEntryListener(listener2);
         oortMap2.removeEntryListener(listener2);

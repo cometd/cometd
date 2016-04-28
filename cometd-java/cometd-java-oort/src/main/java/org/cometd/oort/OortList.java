@@ -30,11 +30,11 @@ import org.cometd.bayeux.server.BayeuxServer;
  * <p>{@link OortList} specializes {@code OortObject} and allows optimized replication of elements
  * across the cluster: instead of replicating the whole list, that may be contain a lot of elements,
  * only elements that are added or removed are replicated.</p>
- * <p>Applications can use {@link #addAndShare(Object[])} and {@link #removeAndShare(Object[])}
- * to broadcast changes related to elements, as well as {@link #setAndShare(Object)} to
+ * <p>Applications can use {@link #addAndShare(Result, Object[])} and {@link #removeAndShare(Result, Object[])}
+ * to broadcast changes related to elements, as well as {@link #setAndShare(Object, Result)} to
  * change the whole list.</p>
  * <p>When one or more elements are changed, {@link ElementListener}s are notified.
- * {@link DeltaListener} converts whole list updates triggered by {@link #setAndShare(Object)}
+ * {@link DeltaListener} converts whole list updates triggered by {@link #setAndShare(Object, Result)}
  * into events for {@link ElementListener}s, giving applications a single listener type to implement
  * their business logic.</p>
  *
@@ -93,18 +93,36 @@ public class OortList<E> extends OortContainer<List<E>>
     }
 
     /**
+     * <p>Blocking version of {@link #addAndShare(Result, Object[])}, but deprecated.</p>
+     * <p>This method will be removed in a future release.</p>
+     *
+     * @param elements the elements to add
+     * @return whether at least one of the elements was added to the local entity list
+     * @deprecated use {@link #addAndShare(Result, Object[])} instead
+     */
+    @Deprecated
+    public boolean addAndShare(E... elements)
+    {
+        Result.Deferred<Boolean> result = new Result.Deferred<>();
+        addAndShare(result, elements);
+        return result.get();
+    }
+
+    /**
      * <p>Adds the given {@code elements} to the local entity list,
      * and then broadcasts the addition to all nodes in the cluster.</p>
      * <p>Calling this method triggers notifications {@link ElementListener}s,
      * both on this node and on remote nodes.</p>
+     * <p>The element is guaranteed to be added not when this method returns,
+     * but when the {@link Result} parameter is notified.</p>
      *
+     * @param callback the callback invoked with whether at least one of the elements was added to the local entity list
+     *                 or {@code null} if there is no interest in knowing whether elements were added
      * @param elements the elements to add
-     * @return whether at least one of the elements was added to the local entity list
      */
-    public boolean addAndShare(E... elements)
+    public void addAndShare(Result<Boolean> callback, E... elements)
     {
-        Data<Boolean> data = new Data<>(6);
-        data.put(Info.VERSION_FIELD, nextVersion());
+        Data<Boolean> data = new Data<>(6, callback);
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
         data.put(Info.OBJECT_FIELD, elements);
@@ -115,8 +133,22 @@ public class OortList<E> extends OortContainer<List<E>>
             logger.debug("Sharing list add {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
+    }
 
-        return data.getResult();
+    /**
+     * <p>Blocking version of {@link #removeAndShare(Result, Object[])}, but deprecated.</p>
+     * <p>This method will be removed in a future release.</p>
+     *
+     * @param elements the elements to remove
+     * @return whether at least one of the elements was removed from the local entity list
+     * @deprecated use {@link #removeAndShare(Result, Object[])} instead
+     */
+    @Deprecated
+    public boolean removeAndShare(E... elements)
+    {
+        Result.Deferred<Boolean> result = new Result.Deferred<>();
+        removeAndShare(result, elements);
+        return result.get();
     }
 
     /**
@@ -124,14 +156,16 @@ public class OortList<E> extends OortContainer<List<E>>
      * and then broadcasts the removal to all nodes in the cluster.</p>
      * <p>Calling this method triggers notifications {@link ElementListener}s,
      * both on this node and on remote nodes.</p>
+     * <p>The element is guaranteed to be removed not when this method returns,
+     * but when the {@link Result} parameter is notified.</p>
      *
+     * @param callback the callback invoked with whether at least one of the elements was removed to the local entity list
+     *                 or {@code null} if there is no interest in knowing whether elements were removed
      * @param elements the elements to remove
-     * @return whether at least one of the elements was removed from the local entity list
      */
-    public boolean removeAndShare(E... elements)
+    public void removeAndShare(Result<Boolean> callback, E... elements)
     {
-        Data<Boolean> data = new Data<>(6);
-        data.put(Info.VERSION_FIELD, nextVersion());
+        Data<Boolean> data = new Data<>(6, callback);
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
         data.put(Info.OBJECT_FIELD, elements);
@@ -142,8 +176,6 @@ public class OortList<E> extends OortContainer<List<E>>
             logger.debug("Sharing list remove {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
-
-        return data.getResult();
     }
 
     @Override

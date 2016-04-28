@@ -60,7 +60,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
         final String value1 = "value1";
         ConcurrentMap<String, String> map = factory.newObject(null);
         map.put(key, value1);
-        oortMap1.setAndShare(map);
+        oortMap1.setAndShare(map, null);
         Assert.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
         final String value2 = "value2";
@@ -77,7 +77,10 @@ public class OortStringMapTest extends AbstractOortObjectTest
             }
         });
 
-        Assert.assertEquals(value1, oortMap1.putAndShare(key, value2));
+        OortObject.Result.Deferred<String> result = new OortObject.Result.Deferred<>();
+        oortMap1.putAndShare(key, value2, result);
+        Assert.assertEquals(value1, result.get(5, TimeUnit.SECONDS));
+
         Assert.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -105,7 +108,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
         final String value1 = "value1";
         ConcurrentMap<String, String> map = factory.newObject(null);
         map.put(key, value1);
-        oortMap1.setAndShare(map);
+        oortMap1.setAndShare(map, null);
         Assert.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
@@ -121,7 +124,9 @@ public class OortStringMapTest extends AbstractOortObjectTest
             }
         });
 
-        Assert.assertEquals(value1, oortMap1.removeAndShare(key));
+        OortObject.Result.Deferred<String> result = new OortObject.Result.Deferred<>();
+        oortMap1.removeAndShare(key, result);
+        Assert.assertEquals(value1, result.get(5, TimeUnit.SECONDS));
         Assert.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -152,7 +157,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
         String key2 = "key2";
         String valueB = "valueB";
         oldMap.put(key2, valueB);
-        oortMap1.setAndShare(oldMap);
+        oortMap1.setAndShare(oldMap, null);
         Assert.assertTrue(setLatch1.await(5, TimeUnit.SECONDS));
 
         ConcurrentMap<String, String> newMap = factory.newObject(null);
@@ -183,7 +188,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
         };
         oortMap1.addEntryListener(entryListener);
         oortMap2.addEntryListener(entryListener);
-        oortMap1.setAndShare(newMap);
+        oortMap1.setAndShare(newMap, null);
 
         Assert.assertTrue(setLatch2.get().await(5, TimeUnit.SECONDS));
         Assert.assertEquals(4, puts.size());
@@ -221,10 +226,10 @@ public class OortStringMapTest extends AbstractOortObjectTest
         oortMap2.addEntryListener(putListener);
         final String keyA = "keyA";
         final String valueA = "valueA";
-        oortMap1.putAndShare(keyA, valueA);
+        oortMap1.putAndShare(keyA, valueA, null);
         final String keyB = "keyB";
         final String valueB = "valueB";
-        oortMap2.putAndShare(keyB, valueB);
+        oortMap2.putAndShare(keyB, valueB, null);
         Assert.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
 
         Assert.assertEquals(valueA, oortMap1.get(keyA));
@@ -289,7 +294,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
                         for (int j = 0; j < iterations; ++j)
                         {
                             String key = String.valueOf(index * iterations + j);
-                            oortMap1.putAndShare(key, key);
+                            oortMap1.putAndShare(key, key, null);
                         }
                     }
                     catch (Throwable x)
@@ -355,7 +360,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
 
         // Put an entry in oortMap1, the update should arrive to oortMap2
         // which does not have the Info object, so it should pull it.
-        oortMap1.putAndShare("key1", "value1");
+        oortMap1.putAndShare("key1", "value1", null);
 
         Assert.assertTrue(objectLatch.await(5, TimeUnit.SECONDS));
 
@@ -374,7 +379,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
         });
 
         // Put another entry in oortMap1, the objects should sync.
-        oortMap1.putAndShare("key2", "value2");
+        oortMap1.putAndShare("key2", "value2", null);
 
         Assert.assertTrue(putLatch.get().await(5, TimeUnit.SECONDS));
 
@@ -384,7 +389,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
 
         // And again.
         putLatch.set(new CountDownLatch(1));
-        oortMap1.putAndShare("key3", "value3");
+        oortMap1.putAndShare("key3", "value3", null);
 
         Assert.assertTrue(putLatch.get().await(5, TimeUnit.SECONDS));
 
@@ -398,7 +403,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
     {
         String name = "lost_entry";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
-        OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
+        final OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
         OortStringMap<String> oortMap2 = new OortStringMap<String>(oort2, name, factory)
         {
             private int peerMessages;
@@ -422,8 +427,10 @@ public class OortStringMapTest extends AbstractOortObjectTest
         startOortObjects(oortMap1, oortMap2);
 
         final String key1 = "key1";
-        oortMap1.putAndShare(key1, "value1");
-        oortMap1.removeAndShare(key1);
+        OortObject.Result.Deferred<String> result1 = new OortObject.Result.Deferred<>();
+        oortMap1.putAndShare(key1, "value1", result1);
+        result1.get(5, TimeUnit.SECONDS);
+        oortMap1.removeAndShare(key1, null);
 
         // Wait for the update to be lost.
         Thread.sleep(1000);
@@ -452,7 +459,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
                     latch.countDown();
             }
         });
-        oortMap1.putAndShare(key2, "value2");
+        oortMap1.putAndShare(key2, "value2", null);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -474,7 +481,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
         String name = "large_sync";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
-        OortStringMap<String> oortMap2 = new OortStringMap<String>(oort2, name, factory);
+        OortStringMap<String> oortMap2 = new OortStringMap<>(oort2, name, factory);
         startOortObjects(oortMap1, oortMap2);
 
         // Disconnect one node.
@@ -492,7 +499,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
         // Update node1 with a large number of map entries.
         final int size = 64 * 1024;
         for (int i = 0; i < size; ++i)
-            oortMap1.putAndShare(String.valueOf(i), i + "_abcdefghijklmnopqrstuvwxyz0123456789");
+            oortMap1.putAndShare(String.valueOf(i), i + "_abcdefghijklmnopqrstuvwxyz0123456789", null);
 
         int size1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion()).size();
         Assert.assertEquals(size, size1);

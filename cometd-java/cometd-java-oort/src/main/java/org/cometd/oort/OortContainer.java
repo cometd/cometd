@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class OortContainer<T> extends OortObject<T>
 {
+    private static final Map<String, Object> STALE_UPDATE = new HashMap<>();
+
     private final Map<String, Updater> updaters = new ConcurrentHashMap<>();
 
     public OortContainer(Oort oort, String name, Factory<T> factory)
@@ -34,28 +36,22 @@ public abstract class OortContainer<T> extends OortObject<T>
     @Override
     protected void doStop() throws Exception
     {
-        updaters.clear();
         super.doStop();
+        updaters.clear();
     }
 
     @Override
     public void cometLeft(Event event)
     {
-        updaters.remove(event.getCometURL());
         super.cometLeft(event);
+        updaters.remove(event.getCometURL());
     }
 
     @Override
     protected void onObject(Map<String, Object> data)
     {
         String oortURL = (String)data.get(Info.OORT_URL_FIELD);
-        Updater updater = updaters.get(oortURL);
-        if (updater == null)
-        {
-            updater = new Updater();
-            updaters.put(oortURL, updater);
-        }
-
+        Updater updater = updater(oortURL);
         if (isItemUpdate(data))
         {
             Info<T> info = getInfo(oortURL);
@@ -81,9 +77,21 @@ public abstract class OortContainer<T> extends OortObject<T>
         {
             super.onObject(data);
             Info<T> info = getInfo(oortURL);
+            updater.pulling = false;
             updater.version = info.getVersion();
             process(info, updater);
         }
+    }
+
+    private Updater updater(String oortURL)
+    {
+        Updater updater = updaters.get(oortURL);
+        if (updater == null)
+        {
+            updater = new Updater();
+            updaters.put(oortURL, updater);
+        }
+        return updater;
     }
 
     private void process(Info<T> info, Updater updater)
@@ -93,9 +101,13 @@ public abstract class OortContainer<T> extends OortObject<T>
             Map<String, Object> data = updater.dequeue();
             if (data == null)
                 return;
-            if (data == updater.STALE)
+            if (data == STALE_UPDATE)
             {
-                pullInfo(info.getOortURL());
+                if (!updater.pulling)
+                {
+                    updater.pulling = true;
+                    pullInfo(info.getOortURL());
+                }
                 return;
             }
             onItem(info, data);
@@ -114,8 +126,8 @@ public abstract class OortContainer<T> extends OortObject<T>
      */
     private class Updater
     {
-        private final Map<String, Object> STALE = new HashMap<>();
         private final Queue<Map<String, Object>> updates = new PriorityQueue<>(2, new VersionComparator());
+        private boolean pulling;
         private long version;
 
         private void enqueue(Map<String, Object> data)
@@ -141,7 +153,7 @@ public abstract class OortContainer<T> extends OortObject<T>
                 {
                     long expected = version + 1;
                     if (actual > expected)
-                        return STALE;
+                        return STALE_UPDATE;
                     version = expected;
                     return updates.poll();
                 }

@@ -123,7 +123,7 @@ public class OortLong extends AbstractLifeCycle
     public long addAndGet(long delta)
     {
         long result = atomic.addAndGet(delta);
-        value.setAndShare(result);
+        value.setAndShare(result, null);
         return result;
     }
 
@@ -134,7 +134,7 @@ public class OortLong extends AbstractLifeCycle
     public long getAndAdd(long delta)
     {
         long result = atomic.getAndAdd(delta);
-        value.setAndShare(result);
+        value.setAndShare(result, null);
         return result;
     }
 
@@ -145,7 +145,7 @@ public class OortLong extends AbstractLifeCycle
     public long getAndSet(long newValue)
     {
         long result = atomic.getAndSet(newValue);
-        value.setAndShare(newValue);
+        value.setAndShare(newValue, null);
         return result;
     }
 
@@ -158,7 +158,7 @@ public class OortLong extends AbstractLifeCycle
     {
         boolean result = atomic.compareAndSet(expected, newValue);
         if (result)
-            value.setAndShare(newValue);
+            value.setAndShare(newValue, null);
         return result;
     }
 
