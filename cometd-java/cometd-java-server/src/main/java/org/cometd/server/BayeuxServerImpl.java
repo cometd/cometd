@@ -1040,28 +1040,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             return null;
 
         if (to != null)
-        {
-            if (reply.isMeta())
-            {
-                if (!to.extendSendMeta(reply))
-                    return null;
-            }
-            else
-            {
-                ServerMessage newReply = to.extendSendMessage(reply);
-                if (newReply == null)
-                {
-                    reply = null;
-                }
-                else if (newReply != reply)
-                {
-                    if (newReply instanceof ServerMessage.Mutable)
-                        reply = (ServerMessage.Mutable)newReply;
-                    else
-                        reply = newMessage(newReply);
-                }
-            }
-        }
+            reply = to.extendSend(reply);
 
         return reply;
     }
