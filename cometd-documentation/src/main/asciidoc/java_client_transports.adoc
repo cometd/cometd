@@ -1,0 +1,186 @@
+
+[[_java_client_transports]]
+==== Client Transports
+
+You can configure `org.cometd.client.BayeuxClient` class to use multiple transports.
+It currently supports the `long-polling` transport (that in turn depends on
+Jetty's asynchronous https://www.eclipse.org/jetty/documentation/current/http-client.html[HttpClient])
+and the `websocket` transport (that in turn depends on Jetty's asynchronous
+https://www.eclipse.org/jetty/documentation/current/websocket-java.html[WebSocketClient]).
+
+There are two WebSocket transports available:
+
+* one based on https://jcp.org/en/jsr/detail?id=356[JSR 356], the standard Java WebSocket APIs
+  named `org.cometd.websocket.client.WebSocketTransport` and provided by the artifact
+  `org.cometd.java:cometd-java-websocket-javax-client`
+* one based on the Jetty WebSocket APIs named `org.cometd.websocket.client.JettyWebSocketTransport`
+  and provided by the artifact `org.cometd.java:cometd-java-websocket-jetty-client`
+
+You should configure `BayeuxClient` with the `websocket` transport before the
+`long-polling` transport, so that `BayeuxClient` can fall back to the `long-polling`
+if the `websocket` transport fails.
+You do so by listing the WebSocket transport before the HTTP transport on the
+`BayeuxClient` constructor, for example:
+
+====
+[source,java]
+----
+// Prepare the JSR 356 WebSocket transport
+WebSocketContainer webSocketContainer = ContainerProvider.getWebSocketContainer();
+
+// The WebSocketContainer must be started, but JSR 356 APIs do not define any
+// lifecycle APIs, so a Jetty specific cast would be required.
+// However, this is avoidable by piggybacking on HttpClient like shown below.
+// ((LifeCycle)webSocketContainer).start();
+
+ClientTransport wsTransport = new WebSocketTransport(null, null, webSocketContainer);
+
+// Prepare the HTTP transport
+HttpClient httpClient = new HttpClient();
+
+// Add the webSocketContainer as a dependent bean of HttpClient
+// so that it follows HttpClient's lifecycle.
+httpClient.addBean(webSocketContainer, true);
+httpClient.start();
+
+ClientTransport httpTransport = new LongPollingTransport(null, httpClient);
+
+// Configure the BayeuxClient, with the websocket transport listed before the http transport
+BayeuxClient client = new BayeuxClient("http://localhost:8080/cometd", wsTransport, httpTransport);
+
+// Handshake
+client.handshake();
+----
+====
+
+It is always recommended that the WebSocket transport is never used without a
+fallback transport such as `LongPollingTransport`. This is how you configure
+the Jetty WebSocket transport:
+
+====
+[source,java]
+----
+// Prepare the Jetty WebSocket transport
+WebSocketClient webSocketClient = new WebSocketClient();
+webSocketClient.start();
+ClientTransport wsTransport = new JettyWebSocketTransport(null, null, webSocketClient);
+
+// Prepare the HTTP transport
+HttpClient httpClient = new HttpClient();
+httpClient.start();
+ClientTransport  httpTransport = new LongPollingTransport(null, httpClient);
+
+// Configure the BayeuxClient, with the websocket transport listed before the http transport
+BayeuxClient client = new BayeuxClient("http://localhost:8080/cometd", wsTransport, httpTransport);
+
+// Handshake
+client.handshake();
+----
+====
+
+===== Client Transports Configuration
+
+The transports used by `BayeuxClient` can be configured with a number of parameters.
+Below you can find the parameters that are common to all transports, and those specific
+for each transport.
+
+.Client Transports Common Parameters
+[cols="^2,^1,^3,<10"]
+|===
+| Parameter Name
+| Required
+| Default Value
+| Parameter Description
+
+| jsonContext
+| no
+| `org.cometd.common.JettyJSONContextClient`
+| The `JSONContext.Client` class name (see also <<_java_json,the JSON section>>)
+|===
+
+.Long Polling Client Transport Parameters
+[cols="^2,^1,^3,<10"]
+|===
+| Parameter Name
+| Required
+| Default Value
+| Parameter Description
+
+| maxNetworkDelay
+| no
+| `HttpClient` request timeout
+| The maximum number of milliseconds to wait before considering a request to the Bayeux server failed
+
+| maxBufferSize
+| no
+| 1048576
+| The maximum number of bytes of a HTTP response, which may contain many Bayeux messages
+|===
+
+.WebSocket Client Transport Parameters
+[cols="^2,^1,^3,<10"]
+|===
+| Parameter Name
+| Required
+| Default Value
+| Parameter Description
+
+| maxNetworkDelay
+| no
+| 15000
+| The maximum number of milliseconds to wait before considering a message to the Bayeux server failed
+
+| connectTimeout
+| no
+| 30000
+| The maximum number of milliseconds to wait for a WebSocket connection to be opened
+
+| idleTimeout
+| no
+| 60000
+| The maximum number of milliseconds a WebSocket connection is kept idle before being closed
+
+| maxMessageSize
+| no
+| 8192
+| The maximum number of bytes allowed for each WebSocket message (each WebSocket message
+  may carry many Bayeux messages)
+
+| stickyReconnect
+| no
+| true
+| Whether to stick using the WebSocket transport when a WebSocket transport
+  failure has been detected after the WebSocket transport was able to successfully
+  connect to the server
+|===
+
+===== Long-polling Transport Dependencies
+
+If you are building your application with http://maven.apache.org[Maven]
+(the recommended way), your application just needs to declare dependencies for:
+
+* `org.cometd.java:cometd-java-client` (Maven automatically pulls the Jetty
+  dependencies that the `cometd-java-client` artifact needs).
+* an http://slf4j.org[SLF4J] (the logging library) implementation such as
+  `org.slf4j:slf4j-simple` (recommended: `org.slf4j:slf4j-log4j12`
+  or `ch.qos.logback:logback-classic`).
+
+With these dependencies in place, you can use the `long-polling` transport out of the box.
+
+===== WebSocket Transport Dependencies
+
+The dependencies for the JSR 356 WebSocket transport are:
+
+* `org.cometd.java:cometd-java-websocket-javax-client` (and transitive dependencies)
+* an http://slf4j.org[SLF4J] (the logging library) implementation such as
+  `org.slf4j:slf4j-simple` (recommended: `org.slf4j:slf4j-log4j12`
+  or `ch.qos.logback:logback-classic`).
+
+The dependencies for the Jetty WebSocket transport are:
+
+* `org.cometd.java:cometd-java-websocket-jetty-client` (and transitive dependencies)
+* an http://slf4j.org[SLF4J] (the logging library) implementation such as
+  `org.slf4j:slf4j-simple` (recommended: `org.slf4j:slf4j-log4j12`
+  or `ch.qos.logback:logback-classic`).
+
+Maven will automatically pull the transitive dependencies that each artifact needs.

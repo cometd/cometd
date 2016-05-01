@@ -1,0 +1,23 @@
+
+[[_java_server_services]]
+==== Using Services
+
+A CometD _service_ is a Java class that allows a developer to specify the code
+to run when Bayeux channels receive Bayeux messages.
+When a message arrives on a channel to which the service instance subscribes,
+CometD invokes a callback method to execute user-specific code.
+
+CometD services can be of two kinds:
+
+* <<_java_server_services_inherited,inherited>>
+* <<_java_server_services_annotated,annotated>>
+
+You can also integrate CometD services with the Spring Framework as explained
+in <<_java_server_services_integration_spring,the Spring Framework integration section>>.
+
+The following sections present details about Java Server Services. 
+
+include::java_server_services_inherited.adoc[]
+include::java_server_services_annotated.adoc[]
+include::java_server_services_integration.adoc[]
+include::java_server_services_integration_spring.adoc[]

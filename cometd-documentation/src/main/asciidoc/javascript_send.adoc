@@ -1,0 +1,165 @@
+
+[[_javascript_send]]
+=== Sending Messages
+
+CometD allows you to send messages in three ways:
+
+. publish/subscribe: you publish a message onto a broadcast channel for
+  subscribers to receive the message
+. peer-to-peer: you publish a message onto a service channel for a particular
+  recipient to receive the message
+. remote procedure call: you remote call a target on the server to perform
+  an action, and receive a response back
+
+For the first and second case the API to use is `publish()`.
+For the third case the API to use is `remoteCall()`.
+
+[[_javascript_publish]]
+==== Publishing
+
+The `publish()` function allows you to publish data onto a certain channel:
+
+====
+[source,javascript]
+----
+cometd.publish('/mychannel', { mydata: { foo: 'bar' } });
+----
+====
+
+You cannot (and it makes no sense to) publish to a meta channel, but you can
+publish to a service or broadcast channel even if you are not subscribed to that channel.
+However, you have to handshake (see
+<<_javascript_handshake,the handshake section>>) before you can publish.
+
+As with other JavaScript CometD API, `publish()` involves a communication with
+the server and it is asynchronous: it returns immediately, well before the Bayeux
+server has received the message.
+
+When the message you published arrives to the server, the server replies to
+the client with a publish acknowledgment; this allows clients to be sure that
+the message reached the server.
+The publish acknowledgment arrives on the same channel the message was published
+to, with the same message `id`, with a `successful` field.
+If the message publish fails for any reason, for example because server cannot
+be reached, then a publish failure will be emitted, similarly to a publish acknowledgment.
+
+For historical reasons, publish acknowledgments and failures are notified on
+the `/meta/publish` channel (only in the JavaScript library), even if the
+`/meta/publish` channel is not part of <<_bayeux,the Bayeux protocol>>.
+
+In order to be notified of publish acknowledgments or failures, is it recommended
+that you use this variant of the `publish()` function, passing a callback function:
+
+====
+[source,javascript]
+----
+cometd.publish('/mychannel', { mydata: { foo: 'bar' } }, function(publishAck)
+{
+    if (publishAck.successful)
+    {
+        // The message reached the server
+    }
+});
+----
+====
+
+[NOTE]
+====
+Calling `publish()` _ does not _ mean that you have published the message
+when `publish()` returns.
+====
+
+If you need to publish several messages, possibly to different channels, you might want
+to use <<_javascript_batch,the javascript batch section>>.
+
+When you publish to a broadcast channel, the server will automatically deliver
+the message to all subscribers for that channel.
+This is the publish/subscribe messaging style.
+
+When you publish to a service channel, the server will receive the message but
+the message journey will end on the server, and the message will not be delivered
+to any remote client. The message should contain an application-specific identifier
+of the recipient of the message, so that application-specific code on
+the server can extract this identifier and deliver the message to that particular
+recipient.
+This is the peer-to-peer messaging style.
+
+[[_javascript_rpc]]
+==== Remote Calls
+
+When you need to just call the server to perform some action, such as retrieving
+data from a database, or updating some server state, you want to use a remote call:
+
+====
+[source,javascript]
+----
+cometd.remoteCall('target', { foo: 'bar' }, 5000, function(response)
+{
+    if (response.successful)
+    {
+        // The action was performed
+        var data = response.data;
+    }
+});
+----
+====
+
+The first argument of `remoteCall()` is the _target_ of the remote call.
+You can think of it as a method name to invoke on the server, or you can think
+of it as the action you want to perform.
+It may or may not have a leading `/` character, and may be composed of multiple
+segments such as `target/subtarget`.
+
+The second argument of `remoteCall()` is an object with the arguments of the
+remote call.
+You can think of it as the arguments of the remote method call, reified as
+an object, or you can think of it as the data needed to perform the action.
+
+The third, optional, argument of `remoteCall()` is the timeout, in milliseconds,
+for the remote call to complete. If the timeout expires, the callback function
+will be invoked with a response object whose `successful` field is set to `false`,
+and whose `error` field is set to `'406::timeout'`.
+The default value of the timeout is the value specified by the `maxNetworkDelay`
+<<_javascript_configure,parameter>>. A negative value or `0` disables the timeout.
+
+The last argument of `remoteCall()` is the callback function invoked when
+the remote call returns, or when it fails (for example due to network failures),
+or when it times out.
+
+The following table shows what response fields are present in the response object
+passed to the callback, in what cases:
+
+[cols="<8,^1a,^4,^2a"]
+|===
+| Case | response.successful | response.data | response.error
+
+| Action performed successfully by the server
+| `true`
+| action data from the server
+| N/A
+
+| Action failed by the server +
+  (for example, exception thrown)
+| `false`
+| failure data from the server
+| N/A
+
+| Network failure
+| `false`
+| N/A
+| N/A
+
+| Timeout
+| `false`
+| N/A
+| `'406::timeout'`
+|===
+
+Internally, remote calls are translated to messages published to a service channel,
+and handled on the server side by means of an
+<<_java_server_services_annotated,annotated service>>, in particular one with a
+`@RemoteCall` <<_java_server_services_annotated_server_side_remote_call,annotation>>.
+
+However, remote calls are much simpler to use than service channels since the
+correlation between request and response is performed by CometD, along with error
+handling. In this way, application have a much simpler API to use.

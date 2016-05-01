@@ -1,0 +1,133 @@
+
+[[_java_client_subscribe]]
+==== Subscribing and Unsubscribing
+
+The following sections provide information about subscribing and unsubscribing to channels. 
+
+===== Subscribing to Broadcast Channels
+
+Subscribing (or unsubscribing) involves first retrieving the channel you want
+to subscribe to (or unsubscribe from) and then calling the `subscribe()` (or
+`unsubscribe()`) methods:
+
+====
+[source,java]
+----
+public class Example
+{
+    private static final String CHANNEL = "/foo";
+    private final ClientSessionChannel.MessageListener fooListener = new FooListener();
+
+    public void attach()
+    {
+        ClientTransport transport = ...
+        ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transport);
+        client.handshake();
+        boolean handshaken = client.waitFor(1000, BayeuxClient.State.CONNECTED);
+        if (handshaken)
+        {
+            client.getChannel(CHANNEL).subscribe(fooListener);
+        }
+    }
+
+    private static class FooListener implements ClientSessionChannel.MessageListener
+    {
+        public void onMessage(ClientSessionChannel channel, Message message)
+        {
+            // Here you received a message on the channel
+        }
+    }
+}
+----
+====
+
+[NOTE]
+====
+You can subscribe and unsubscribe only after the handshake is completed.
+Calling `subscribe()` (or `unsubscribe()` _does not_ mean that you have completed
+the subscription (or unsubscription) with the server when the method returns.
+====
+
+Unsubscribing is straightforward: if you unsubscribe to a channel, CometD does
+not deliver messages on that channel to message listeners.
+Using the `Example` class above:
+
+====
+[source,java]
+----
+public class Example
+{
+    ...
+    public void detach()
+    {
+        client.getChannel(CHANNEL).unsubscribe(fooListener);
+    }
+}
+----
+====
+
+If you need to know whether your subscription (or unsubscription) was received
+and processed by the server, you can pass a callback `MessageListener` to the
+`subscribe()` (or `unsubscribe()`) methods:
+
+====
+[source,java]
+----
+final BayeuxClient client = ...;
+final ClientSessionChannel.MessageListener messageHandler = ...;
+client.handshake(new ClientSessionChannel.MessageListener()
+{
+    public void onMessage(ClientSessionChannel channel, Message message)
+    {
+        if (message.isSuccessful())
+        {
+            // Subscribe
+            client.getChannel("/foo").subscribe(messageHandler, new ClientSessionChannel.MessageListener()
+            {
+                public void onMessage(ClientSessionChannel channel, Message message)
+                {
+                    if (message.isSuccessful())
+                    {
+                        // Subscription successful.
+                    }
+                }
+            }
+        }
+    }
+});
+----
+====
+
+As in <<_javascript_subscribe,the JavaScript subscribe section>>, a good place
+to perform subscriptions is a `handshake(...)` callback or a `/meta/handshake`
+listener, because they are invoked transparently if the server requests a new handshake.
+
+Applications do not need to unsubscribe in case of re-handshake; the CometD library
+removes the subscriptions upon re-handshake, so that when the `/meta/handshake`
+listener executes again the subscriptions are correctly restored (and not duplicated).
+
+===== Listening to Meta Channels
+
+The internal implementation of the Bayeux protocol uses meta channels, and it
+does not make any sense to subscribe to them because they are not broadcast channels.
+It does make sense, however, to listen to messages that arrive on those channels. 
+
+====
+[source,java]
+----
+public class Example
+{
+    public void init()
+    {
+        ClientSession client = ...;
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                // Here you received a handshake response message
+            }
+        });
+    }
+}
+----
+====

@@ -1,0 +1,40 @@
+
+[[_java_server_multiple_sessions]]
+==== Multiple Sessions
+
+The http://ietf.org/rfc/rfc2616.txt[HTTP protocol] recommends a connection
+limit of two connections per domain.
+While modern browsers are configured by default with more than two connections
+per domain, it is not safe to make such an assumption; thus any iframes, tabs
+or windows on the same browser connecting to the same host need to share two connections.
+
+If two iframes/tabs/windows initiate a Bayeux communication, both start a
+long poll connect request and both connections are consumed, making it impossible
+to send another Bayeux request (for example, a publish) until one of the two
+long polls returns.
+
+The CometD Server implements the `multiple-clients` advice (see also
+<<_bayeux_multiple_clients_advice,this section>>). The server uses `BAYEUX_BROWSER`
+cookie to detect multiple CometD clients from the same browser.
+
+If the CometD server detects multiple clients, only one long poll connection
+is allowed, and subsequent long poll requests do not wait for messages before returning.
+They return immediately with the `multiple-clients` field of the advice object set to true.
+The advice also contains an `interval` field set to the value of the `multiSessionInterval`
+servlet init parameter (see also <<_java_server_configuration,the server configuration section>>).
+This instructs the client not to send another poll until that interval has elapsed.
+The effect of this advice is that additional client connections normally poll
+the server with a period of `multiSessionInterval`.
+This avoids consuming both HTTP connections at the cost of some latency for
+the additional iframes/tabs/windows.
+
+The recommendation is that the client application monitors the `/meta/connect`
+channel for `multiple-clients` field in the advice.
+If detected, the application might ask the user to close the additional tabs,
+or it could automatically close them, or take some other action.
+
+Non-browser clients (or browsers with cookies disabled) must handle the `BAYEUX_BROWSER`
+cookie with the same semantic of browsers, or configure the server to allow
+multiple sessions even without `BAYEUX_BROWSER` information via the
+`allowMultiSessionsNoBrowser` servlet init parameter (see also
+<<_java_server_configuration,the server configuration section>>).

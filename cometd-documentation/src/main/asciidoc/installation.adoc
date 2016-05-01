@@ -1,0 +1,166 @@
+
+[[_installation]]
+== Installation
+
+=== Requirements and Dependencies
+
+In order to run CometD applications, you need the Java Development Kit
+(JDK) – version 7.0 or greater, and a compliant Servlet 3.0 or greater
+Servlet Container such as http://eclipse.org/jetty[Jetty].
+
+The CometD implementation depends on few Jetty libraries, such as
+`jetty-util-ajax-<version>.jar` and others.
+These Jetty dependencies are typically packaged in the `WEB-INF/lib`
+directory of your application `.war` file, and do not require you to
+deploy your application `.war` file in Jetty: you CometD-based application
+will work exactly in the same way in any other compliant Servlet 3.0 or
+greater Servlet Container.
+
+The current Jetty version CometD depends on is:
+
+[source,xml,indent=0]
+----
+include::{github}/pom.xml[tags=jetty-version]
+----
+
+=== Downloading and Installing
+
+You can download the CometD distribution from http://download.cometd.org/. 
+
+Then unpack the distribution in a directory of your choice:
+
+----
+$ tar zxvf cometd-<version>-distribution.tgz
+$ cd cometd-<version>/
+----
+
+[[_installation_demos]]
+=== Running the Demos
+
+The CometD Demos contain: 
+
+* Two full chat applications (one developed with Dojo, one with jQuery). 
+* Examples of extensions such as message acknowledgement, reload, timesync and timestamp. 
+* An example of how to echo private messages to a particular client only. 
+* Clustered Auction demo (using the <<_oort,Oort clustering>>).
+
+==== Running the Demos with Maven
+
+This mode of running the CometD Demos is suggested if you want to take a quick
+look at the CometD Demos and if you are prototyping/experimenting with your
+application, but it's not the recommended way to deploy a CometD application
+in production. See the <<_installation_jetty,next section>> for the suggested
+way to deploy your CometD application in production.
+
+Maven requires you to set up the `JAVA_HOME` environment variable to point to
+your JDK installation.
+
+After that, running the CometD demos is very simple.
+Assuming that `$COMETD` is the CometD installation directory, and that you have
+the `mvn` executable in your path:
+
+----
+$ cd $COMETD
+$ cd cometd-demo
+$ mvn jetty:run
+----
+
+The last command starts an embedded Jetty that listens on port 8080.
+Now point your browser to http://localhost:8080, to see the CometD Demos main page. 
+
+=== Deploying your CometD Application
+
+When you develop a CometD application, you develop a standard Java EE Web Application
+that is then packaged into a `.war` file.
+You can follow <<_primer,the Primer section>> or the
+http://docs.cometd.org/tutorials[CometD Tutorials] for examples of how to build
+and package your CometD application.
+
+Once you have your CometD application packaged into a `.war` file, you can
+deploy it to a any Servlet Container that supports Servlet 3.0 or greater.
+
+Refer to <<_java_server_configuration_servlet_30,this section>> for further
+information and for specific instructions related to deployment on Servlet 3.0
+(or greater) Containers.
+
+[[_installation_jetty]]
+==== Deploying your CometD Application in Jetty
+
+The instructions below describe a very minimal Jetty setup that is needed
+to run CometD applications.
+Refer to the official http://www.eclipse.org/jetty/documentation/current/[Jetty documentation]
+for further details about configuring Jetty.
+
+Follow these steps to deploy your CometD application into Jetty.
+These instructions are valid for Unix/Linux operative systems,
+but can be easily translated for the Windows operative system.
+
+Download the Jetty distribution from the
+http://download.eclipse.org/jetty[Eclipse Jetty Downloads].
+
+Then unpack the Jetty distribution in a directory of your choice,
+for example `/tmp`:
+
+----
+$ cd /tmp
+$ tar zxvf jetty-distribution-<version>.tar.gz
+----
+
+This creates a directory called `/tmp/jetty-distribution-<version>/`
+that is referred to as the `JETTY_HOME`.
+
+Create another directory of your choice, for example in your home
+directory:
+
+----
+$ cd ~
+$ mkdir jetty_cometd
+----
+
+This creates a directory called `~/jetty_cometd` that is referred to as
+the `JETTY_BASE`.
+
+Since Jetty is a highly modular Servlet Container, the `JETTY_BASE` is
+the directory where you configure Jetty with the Jetty modules that are
+needed to run your CometD application.
+
+In order to run CometD applications, Jetty needs to be configured with
+these modules:
+
+* the `http` module, that provides support for the HTTP protocol
+* the `websocket` module, that provides support for the WebSocket protocol
+* the `deploy` module, that provides support for the deployment of `.war`
+  files
+
+Therefore:
+
+----
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http,websocket,deploy
+----
+
+Now Jetty is configured to run CometD applications, and you just need
+to deploy your `.war` file to Jetty (you can use the CometD Demos `.war`
+file if you have not built your application yet):
+
+----
+$ cp /path/to/cometd_application.war $JETTY_BASE/webapps/
+----
+
+Now you can start Jetty:
+
+----
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar
+----
+
+This last command starts Jetty, which deploys your `.war` file and makes
+your CometD application "live".
+
+==== Running the Demos with Another Servlet Container
+
+Steps similar to what described above for Jetty are what you need to do
+to deploy your CometD application to different Servlet Containers.
+
+Refer to the specific Servlet Container configuration manual for how to deploy
+the CometD application `.war` file in the Servlet Container of your choice.

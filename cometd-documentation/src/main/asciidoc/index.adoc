@@ -1,0 +1,31 @@
+= The CometD Reference Book – {version}
+Simone Bordet
+:doctype: book
+:numbered:
+:toc: left
+:toclevels: 3
+:sectnumlevels: 5
+:icons: font
+
+{localdate} +
+Copyright (C) The Original Author(s) +
+Licensed under a https://creativecommons.org/licenses/by-sa/4.0/[Creative Commons Attribution-ShareAlike 4.0 International License].
+
+image::https://i.creativecommons.org/l/by-sa/3.0/88x31.png[link="http://creativecommons.org/licenses/by-sa/4.0/"]
+
+include::preface.adoc[]
+include::support.adoc[]
+include::contribute.adoc[]
+include::installation.adoc[]
+include::troubleshooting.adoc[]
+include::primer.adoc[]
+include::concepts.adoc[]
+include::security.adoc[]
+include::javascript.adoc[]
+include::java.adoc[]
+include::extensions.adoc[]
+include::benchmarking.adoc[]
+include::build.adoc[]
+include::migration.adoc[]
+include::bayeux.adoc[]
+include::release.adoc[]

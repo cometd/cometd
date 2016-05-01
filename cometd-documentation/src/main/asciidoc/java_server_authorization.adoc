@@ -1,0 +1,85 @@
+
+[[_java_server_authorization]]
+==== Authorization
+
+You can configure the `BayeuxServer` object with an `org.cometd.bayeux.server.SecurityPolicy`
+object, which allows you to control various steps of the Bayeux protocol such
+as handshake, subscription, and publish.
+By default, the `BayeuxServer` object has a default `SecurityPolicy`, that
+allows almost any operation.
+
+The `org.cometd.bayeux.server.SecurityPolicy` interface has a default
+implementation in `org.cometd.server.DefaultSecurityPolicy`, that is useful
+as a base class to customize the `SecurityPolicy`
+(see <<_java_server_authentication,the authentication section>> for an example).
+
+The `org.cometd.bayeux.server.SecurityPolicy` methods are:
+
+====
+[source,java]
+----
+boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message);
+
+boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message);
+
+boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage);
+
+boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage);
+----
+====
+
+Those methods control, respectively, whether a handshake, a channel creation,
+a subscription to a channel or a publish to a channel are to be authorized.
+
+[IMPORTANT]
+====
+The `SecurityPolicy` methods are invoked for `ServerSession` that correspond
+to both local clients and remote clients (see also <<_concepts_sessions,the sessions section>>).
+
+Application code can determine whether a `ServerSession` correspond to a
+local client by calling method `ServerSession.isLocalSession()`.
+
+In almost all cases, local clients should be authorized because they are
+created on the server by the application (for example, by services – see also
+<<_java_server_services_inherited,the inherited services section>>) and
+therefore are trusted clients.
+====
+
+The default implementation `org.cometd.server.DefaultSecurityPolicy`:
+
+* Allows any handshake.
+* Allows creation of a channel only from clients that performed a handshake,
+and only if the channel is not a meta channel.
+* Allows subscription from clients that performed a handshake, but not if
+the channel is a meta channel.
+* Allows publish from clients that performed a handshake to any channel that
+is not a meta channel.
+
+A typical custom `SecurityPolicy` may override the `canHandshake(...)`
+method to control authentication:
+
+====
+[source,java]
+----
+public class CustomSecurityPolicy extends DefaultSecurityPolicy
+{
+    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
+    {
+        // Always allow local clients
+        if (session.isLocalSession())
+            return true;
+
+        // Implement custom authentication logic
+        boolean authenticated = authenticate(server, session, message);
+
+        return authenticated;
+    }
+}
+----
+====
+
+To understand how to install your custom `SecurityPolicy` on the `BayeuxServer`
+object, see how it is done in <<_java_server_authentication,the authentication section>>.
+
+Follow also <<_java_server_authorizers,the authorizers section>> for further
+information about authorization.

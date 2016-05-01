@@ -1,0 +1,75 @@
+
+[[_troubleshooting]]
+== Troubleshooting
+
+[[_troubleshooting_logging]]
+=== Logging
+
+When CometD does not work, the first thing that you want to do is to enable debug logging.
+This is helpful because by reading the debug logs you get a better understanding
+of what is going on in the system (and that alone may give you the answers you
+need to fix the problem), and because CometD developers will probably need the
+debug logs to help you.
+
+[[_troubleshooting_logging_javascript]]
+==== Enabling Debug Logging in the JavaScript Library
+
+To enable debug logging on the JavaScript client library
+(see also <<_javascript,the JavaScript library section>>) you must pass the `logLevel` field to the
+configuration of the `cometd` object, with value `'debug'` (see also
+<<_javascript_configure,the JavaScript library configuration section>> for other
+configuration options):
+
+====
+[source,javascript]
+----
+cometd.configure({
+    url: 'http://localhost:8080/cometd',
+    logLevel: 'debug'
+});
+----
+====
+
+The CometD JavaScript library uses the `window.console` object to output log statements.
+
+Once you have logging enabled on the JavaScript client library, you can see the
+debug logs in the browser JavaScript console.
+For example, in Firefox you can open the JavaScript console by clicking on
+_Tools -> Web Developer -> Web Console_, while in Chrome you can open the JavaScript
+console by clicking on _Tools -> Developer Tools_.
+
+[NOTE]
+====
+Internet Explorer does not define the `window.console` object as other browsers do,
+resulting in CometD not being able to output logs in the JavaScript console,
+depending on the Internet Explorer version.
+====
+
+[[_troubleshooting_logging_java_server]]
+==== Enabling Debug Logging in the Java Server Library
+
+The CometD Java libraries (both client and server) use http://slf4j.org[SLF4J]
+as logging framework.
+The Java server library uses the SLF4J APIs, but it does not bind to any specific
+logging implementation. You have to choose what implementation you want to use.
+By default, SLF4J comes with with a simple binding that _does not_ log statements
+produced at debug level.
+
+Therefore you must configure SLF4J with a more advanced binding such as
+http://logging.apache.org/log4j[Log4J] or http://logback.qos.ch/[Logback].
+Refer to the SLF4J documentation and the binding implementation documentation on
+how to configure logging when using the advanced bindings.
+
+Therefore, to enable CometD debug logging for your application you need to
+configure whatever SLF4J binding you have chosen to use.
+
+As a simple example, for Log4J it is usually enough to add the SLF4J-Log4J binding jar
+(`slf4j-log4j12-<slf4j-version>.jar`) and the Log4J jar (`log4j-<log4j-version>.jar`)
+in `WEB-INF/lib`, and then add a properly configured `log4j.properties` file in
+`WEB-INF/classes`.
+You don't want to add these files manually; they are reported here just as a simple reference.
+Usually these dependencies are configured in the build system that you use to create your web application. 
+
+Once you have logging enabled on the Java server library, you can see the debug
+logs in the terminal where you launched your Servlet Container (or in its log
+files, depending on how it is configured).
