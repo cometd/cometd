@@ -1,0 +1,306 @@
+
+[[_benchmarking]]
+== Benchmarking CometD
+
+The CometD project comes with a load test tool that can be used to benchmark
+how CometD scales.
+
+The recommendation is to start from the out-of-the-box CometD benchmark.
+If you want to write your own benchmark for your specific needs, start from
+the CometD benchmark code, study it, and modify it for your needs, rather
+than starting from scratch.
+
+The CometD benchmark has been carefully adjusted and tuned over the years to
+avoid common benchmark mistakes and to use the best tools available to produce
+meaningful results.
+Any improvement you may have for the CometD benchmark module is welcome:
+benchmarking is continuously evolving, so the benchmark code can always be
+improved.
+
+[NOTE]
+====
+Like any benchmark, your mileage may vary, and while the benchmark may give
+you good information about how CometD scales on your infrastructure, it may
+well be that when deployed in production your application behaves differently
+because the load from remote users, the network infrastructure, the TCP stack
+settings, the OS settings, the JVM settings, the application settings, etc.
+are different from what you benchmarked.
+====
+
+=== Benchmark Setup
+
+Load testing can be very stressful to the OS, TCP stack and network, so you may
+need to tune a few values to avoid that the OS, TCP stack or network become a
+bottleneck, making you think the CometD does not scale. CometD does scale.
+The setup must be done on both client(s) and server(s) hosts.
+
+A suggested Linux configuration follows, and you should try to match it for
+other operative systems if you don't use Linux.
+
+The most important parameter to tune is the number of open files.
+This is by default a small number like 1024, and must be increased, for example:
+
+----
+# ulimit -n 65536
+----
+
+You can make this setting persistent across reboots by modifying
+`/etc/security/limits.conf`.
+
+Another setting that you may want to tune, in particular in the client hosts,
+is the range of ephemeral ports that the application can use.
+If this range is too small, it will limit the number of CometD sessions that
+the benchmark will be able to establish from a client host.
+A typical range is `32768-61000` which gives about 28k ephemeral ports, but
+you may need to increase it for very large benchmarks:
+
+----
+# sysctl -w net.ipv4.ip_local_port_range="2000 64000"
+----
+
+As before, you can make this setting persistent across reboots by modifying
+`/etc/security/limits.conf`.
+
+Another important parameter that you may want to tune, in both the client
+and the server hosts, is the maximum number of threads for the thread pools.
+This parameter, called `max threads`, is by default 256 and may be too small
+for benchmarks with a large number of clients.
+
+The `max threads` parameter can be configured when you run the
+<<_benchmarking_server,server>> and the <<_benchmarking_client,client>>.
+
+Another important parameter that you want to tune, especially for benchmarks
+with a large number of users, is the JVM max heap size.
+This is by default 2 GiB for both the client JVM and server JVM, but must be
+increased for larger benchmarks by modifying the JVM startup options present
+in the `pom.xml` file in the benchmark client module directory
+(`$COMETD/cometd-java/cometd-java-benchmark/cometd-java-benchmark-client/pom.xml`)
+and in the benchmark server module directory
+(`$COMETD/cometd-java/cometd-java-benchmark/cometd-java-benchmark-server/pom.xml`),
+respectively for client and server.
+
+A typical configuration for one client host and one server host (possibly the
+same host) for a small number of users, say less than 5000, could be:
+
+----
+max open files -> 65536
+local port range -> 32768-61000 (default; on client host only)
+max threads -> 256 (default)
+max heap size -> 2 GiB (default)
+----
+
+A typical configuration for larger number of users, say 10k or more, could be:
+
+----
+max open files -> 1048576
+local port range -> 2000-64000 (on client host only)
+max threads -> 2048
+max heap size -> 8 GiB
+----
+
+The values above are just an example to make you aware of the fact that they
+heavily impact the benchmark results. You have to try yourself and tune those
+parameters depending on your benchmark goals, your operative system and your
+hardware.
+
+=== Running the Benchmark
+
+The benchmark consists of a real chat application, and simulates remote users
+sending messages to a chat room. The messages are broadcast to all room members.
+
+The benchmark stresses one core feature of CometD, namely the capability of
+receiving one message from a remote user and then fan-out this message to
+all room members.
+
+The benchmark client will measure the message latency for all room members,
+that is, the time it takes for each room member to get the message sent by
+original user.
+
+The latencies are then displayed in ASCII-graphical form, along with other
+interesting information about the benchmark run.
+
+[[_benchmarking_server]]
+==== Running the Server
+
+The benchmark server is run from the
+`$COMETD/cometd-java/cometd-java-benchmark/cometd-java-benchmark-server/`
+directory.
+
+The `pom.xml` file in that directory can be modified to configure the `java`
+executable to use, and the command line JVM parameters, in particular the
+max heap size to use and the GC algorithm to use (and others you may want to
+add).
+
+Once you are satisfied with the JVM configuration specified in the `pom.xml`
+file, you can run the benchmark server in a terminal window:
+
+----
+$ cd $COMETD/cometd-java/cometd-java-benchmark/cometd-java-benchmark-server/
+$ mvn exec:exec
+----
+
+The benchmark prompts you for a number of configuration parameters such as the
+TCP port to listen to, the max thread pool size, etc.
+
+A typical output is:
+
+----
+listen port [8080]:
+use ssl [false]:
+selectors [8]:
+max threads [256]:
+2015-05-18 11:01:13,529 main [ INFO][util.log] Logging initialized @112655ms
+transports (jsrws,jettyws,http,asynchttp) [jsrws,http]:
+record statistics [true]:
+record latencies [true]:
+detect long requests [false]:
+2015-05-18 11:01:17,521 main [ INFO][server.Server] jetty-9.2.10.v20150310
+2015-05-18 11:01:17,868 main [ INFO][handler.ContextHandler] Started o.e.j.s.ServletContextHandler@37374a5e{/cometd,null,AVAILABLE}
+2015-05-18 11:01:17,882 main [ INFO][server.ServerConnector] Started ServerConnector@5ebec15{HTTP/1.1}{0.0.0.0:8080}
+2015-05-18 11:01:17,882 main [ INFO][server.Server] Started @117011ms
+----
+
+To exit the benchmark server, just hit `ctrl+c` on the terminal window.
+
+[[_benchmarking_client]]
+==== Running the Client
+
+The benchmark client can be run on the same host as the benchmark server, but
+it is recommended to run it on a different host, or on many different hosts,
+than the server.
+
+The benchmark client is run from the
+$COMETD/cometd-java/cometd-java-benchmark/cometd-java-benchmark-client/
+directory.
+
+The `pom.xml` file in that directory can be modified to configure the `java`
+executable to use, and the command line JVM parameters, in particular the
+max heap size to use and the GC algorithm to use (and others you may want to
+add).
+
+Once you are satisfied with the JVM configuration specified in the `pom.xml`
+file, you can run the benchmark client in a terminal window:
+
+----
+$ cd $COMETD/cometd-java/cometd-java-benchmark/cometd-java-benchmark-client/
+$ mvn exec:exec
+----
+
+The benchmark prompts you for a number of configuration parameters such as the
+host to connect to, the TCP port to connect to, the max thread pool size, etc.
+
+A typical output is:
+
+----
+server [localhost]:
+port [8080]:
+transports:
+  0 - long-polling
+  1 - jsr-websocket
+  2 - jetty-websocket
+transport [0]:
+use ssl [false]:
+max threads [256]:
+context [/cometd]:
+channel [/chat/demo]:
+rooms [100]:
+rooms per client [10]:
+enable ack extension [false]:
+2015-05-18 11:10:08,180 main [ INFO][util.log] Logging initialized @6095ms
+
+clients [1000]:
+Waiting for clients to be ready...
+Waiting for clients 998/1000
+Clients ready: 1000
+batch count [1000]:
+batch size [10]:
+batch pause (µs) [10000]:
+message size [50]:
+randomize sends [false]:
+----
+
+The default configuration creates 100 chat rooms, and each user is a member
+of 10, randomly chosen, rooms.
+
+The default configuration connects 1000 users to the server at `localhost:8080`
+and sends 1000 batches of 10 messages each, each message of 50 bytes size.
+
+When the benchmark run is complete, the message latency graph is displayed:
+
+----
+Outgoing: Elapsed = 12760 ms | Rate = 783 messages/s - 78 requests/s - ~0.299 Mib/s
+Waiting for messages to arrive 998910/999669
+All messages arrived 999669/999669
+Messages - Success/Expected = 999669/999669
+Incoming - Elapsed = 12781 ms | Rate = 78211 messages/s - 33690 responses/s(43.08%) - ~29.835 Mib/s
+                 @    _  14,639 µs (323157, 32.33%)
+                   @  _  29,278 µs (389645, 38.98%) ^50%
+       @              _  43,917 µs (135915, 13.60%)
+   @                  _  58,556 µs (55470, 5.55%) ^85%
+  @                   _  73,195 µs (29921, 2.99%)
+ @                    _  87,834 µs (17204, 1.72%) ^95%
+ @                    _  102,473 µs (11824, 1.18%)
+ @                    _  117,112 µs (11505, 1.15%)
+@                     _  131,751 µs (8812, 0.88%)
+@                     _  146,390 µs (5557, 0.56%)
+@                     _  161,029 µs (2941, 0.29%) ^99%
+@                     _  175,668 µs (2074, 0.21%)
+@                     _  190,307 µs (2975, 0.30%)
+@                     _  204,946 µs (1641, 0.16%)
+@                     _  219,585 µs (693, 0.07%) ^99.9%
+@                     _  234,224 µs (283, 0.03%)
+@                     _  248,863 µs (33, 0.00%)
+@                     _  263,502 µs (11, 0.00%)
+@                     _  278,141 µs (3, 0.00%)
+@                     _  292,780 µs (0, 0.00%)
+@                     _  307,419 µs (5, 0.00%)
+Messages - Latency: 999669 samples | min/avg/50th%/99th%/max = 296/28,208/19,906/149,946/293,076 µs
+----
+
+In the example above, the benchmark client sent messages to the server at
+a nominal rate of 1 batch every 10 ms (therefore at a nominal rate of 1000
+messages/s), but the real outgoing rate was of 783 messages/s, as reported
+in the first line.
+
+Because there were 100 rooms, and each user was subscribed to 10 rooms, there
+were 100 members per room in average, and therefore each message was broadcast
+to about 100 other users.
+This yielded an incoming nominal message rate of 100000 messages/s, but the
+real incoming rate was 78211 messages/s (on par with the outgoing rate),
+with a median latency of 20 ms and a max latency of 293 ms.
+
+The ASCII graph represent the message latency distribution.
+Imagine to rotate the latency distribution graph 90 degrees counter-clockwise.
+Then you will see a bell-shaped curve (strongly shifted to the left) with the peak
+at around 29 ms and a long tail towards 300 ms.
+
+For each interval of time, the curve reports the number of messages received and
+their percentage over the total (in parenthesis) and where various percentiles fall.
+
+To exit gracefully the benchmark client, just type `0` for the number of users.
+
+==== Running Multiple Clients
+
+If you want to run the CometD benchmark using multiple client hosts, you will need
+to adjust few parameters on each benchmark client.
+
+Recall that the benchmark simulates a chat application, and that the message
+latency times are recorded on the same client host.
+
+Because the benchmark client waits for all messages to arrive in order to measure
+their latency, it is necessary that each user receiving the message live on the
+same host as the user sending the message.
+
+Each benchmark client defines a number of rooms (by default 100) and a root
+channel to which messages are sent (by default `/chat/demo`).
+Messages to the first room, `room0`, go to channel `/chat/demo/0` and so forth.
+
+When you are using multiple benchmark client hosts, you must specify different
+root channels for each benchmark client host, to avoid that the benchmark client
+host waits for messages that will not arrive because they are being delivered
+to other benchmark client hosts.
+Also, it would be very difficult to correlate a timestamp generated in one host
+with a timestamp obtained in another host.
+The recommended configuration is therefore to specify a different root channel
+for each benchmark client, so that users from each host will send and receive
+messages only from users living in the same host.

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <groupId>org.cometd</groupId>
+        <artifactId>cometd-project</artifactId>
+        <version>3.0.10-SNAPSHOT</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>cometd-documentation</artifactId>
+    <name>CometD :: Reference Book</name>
+    <packaging>pom</packaging>
+
+    <properties>
+        <html.directory>${project.build.directory}/html/current/reference</html.directory>
+    </properties>
+
+    <build>
+        <defaultGoal>install</defaultGoal>
+        <plugins>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-assets</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/resources</directory>
+                                    <includes>
+                                        <include>**</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                            <outputDirectory>${html.directory}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.asciidoctor</groupId>
+                <artifactId>asciidoctor-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>output-html</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>process-asciidoc</goal>
+                        </goals>
+                        <configuration>
+                            <backend>html5</backend>
+                            <doctype>book</doctype>
+                            <sourceDocumentName>index.adoc</sourceDocumentName>
+                            <imagesDir>images</imagesDir>
+                            <outputDirectory>${html.directory}</outputDirectory>
+                            <sourceHighlighter>coderay</sourceHighlighter>
+                            <attributes>
+                                <version>${project.version}</version>
+                                <github>https://raw.github.com/cometd/cometd/3.0.x</github>
+                                <linkcss>true</linkcss>
+                                <allow-uri-read>true</allow-uri-read>
+                            </attributes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

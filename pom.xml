@@ -102,6 +102,7 @@
         <module>cometd-javascript</module>
         <module>cometd-demo</module>
         <module>cometd-distribution</module>
+        <module>cometd-documentation</module>
     </modules>
 
     <profiles>
@@ -395,6 +396,11 @@
                     <groupId>net.alchim31.maven</groupId>
                     <artifactId>yuicompressor-maven-plugin</artifactId>
                     <version>1.5.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.asciidoctor</groupId>
+                    <artifactId>asciidoctor-maven-plugin</artifactId>
+                    <version>1.5.3</version>
                 </plugin>
             </plugins>
         </pluginManagement>

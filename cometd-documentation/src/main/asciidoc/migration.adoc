@@ -1,0 +1,211 @@
+
+:numbered!:
+
+[appendix]
+[[_migration]]
+== Migrating from CometD 2
+
+=== Required JDK Version Changes
+
+[cols="1,1", options="header"]
+|===
+| CometD 2 | CometD 3
+| JDK 5    | JDK 7
+|===
+
+=== Servlet Specification Changes
+
+[cols="1,1", options="header"]
+|===
+| CometD 2 | CometD 3
+| Servlet 2.5 | Servlet 3.0 (recommended Servlet 3.1 with JSR 356's `javax.websocket` support)
+|===
+
+=== Class Names Changes
+
+Package names did not change.
+
+[cols="1,1", options="header"]
+|===
+| CometD 2 | CometD 3
+| CometdServlet | CometDServlet
+| AnnotationCometdServlet | AnnotationCometDServlet
+|===
+
+NOTE: Pay attention to the capital `D' of Comet**D**
+
+=== Maven Artifacts Changes
+
+Only the WebSocket artifacts have changed.
+
+[cols="1,1", options="header"]
+|===
+| CometD 2
+| CometD 3
+
+| `org.cometd.java:cometd-websocket-jetty`
+| `org.cometd.java:cometd-java-websocket-javax-server` (JSR 356 WebSocket Server)
+| `org.cometd.java:cometd-java-websocket-jetty-server` (Jetty WebSocket Server)
+| `org.cometd.java:cometd-java-websocket-javax-client` (JSR 356 WebSocket Client)
+| `org.cometd.java:cometd-java-websocket-jetty-client` (Jetty WebSocket Client)
+|===
+
+=== `web.xml` Changes
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 2
+| CometD 3
+
+|
+====
+[source,xml]
+----
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+         version="2.5">
+    ...
+    <servlet>
+        <servlet-name>cometd</servlet-name>
+        <servlet-class>org.cometd.server.CometdServlet</servlet-class>
+    </servlet>
+    ...
+</web-app>
+----
+====
+
+|
+====
+[source,xml]
+----
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" <1>
+         version="3.0"> <2>
+    ...
+    <servlet>
+        <servlet-name>cometd</servlet-name>
+        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+        <load-on-startup>1</load-on-startup> <3>
+        <async-supported>true</async-supported> <4>
+    </servlet>
+</web-app>
+----
+====
+<1> `schemaLocation` attribute changed from `2.5` to `3.0` (or to `3.1`)
+<2> `version` attribute changed from `2.5` to `3.0` (or to `3.1`)
+<3> `load-on-startup` element now required
+<4> `async-supported` element now required
+|===
+
+[NOTE]
+====
+The `load-on-startup` element is now required in order to use the `websocket` transport,
+unless Spring is used to configure the `BayeuxServer` object (see
+<<_java_server_services_integration_spring_xml_based_spring_configuration,this section>>).
+If `load-on-startup` is not specified, the first request will lazily start the CometD Servlet,
+which will start the `BayeuxServer` object, which will configure the `websocket` transport, but
+at this point it is too late for the `websocket` transport to handle the request, which will be
+handled by the next transport (typically the `long-polling` transport).
+====
+
+=== CometD Servlet Parameters Changes
+
+[cols="1,1,10", options="header"]
+|===
+| CometD 2
+| CometD 3
+| Notes
+
+| `logLevel`
+|
+| The parameter has been removed in CometD 3. +
+  In CometD 3 logging levels are controlled by the logging framework
+  implementation (for example, Log4J).
+
+| `transports`
+| `transports`
+| The parameter changed its meaning. +
+  In CometD 2 it is a comma separated list of class names of _additional_
+  server transports. In CometD 3 it is a comma separated list of the server
+  transports. +
+  For example, in CometD 3
+  `transports="org.cometd.websocket.server.JettyWebSocketTransport"`
+  defines just one server transport: a `websocket` server transport based on
+  Jetty WebSocket APIs.
+
+|
+| `ws.cometdURLMapping`
+| A new, *mandatory*, parameter for WebSocket server transports. +
+  It's a comma separated list of the `url-pattern` strings defined by the
+  `servlet-mapping` of the CometD Servlet, for example `+/cometd/*+`.
+|===
+
+=== Method Signature Changes
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 2
+| CometD 3
+
+| `BayeuxServer`::
+    `createIfAbsent(String, ConfigurableServerChannel.Initializer...)`
+| `BayeuxServer`::
+    `create**Channel**IfAbsent(String, ConfigurableServerChannel.Initializer...)`
+
+| `BayeuxServer.SessionListener`::
+    `sessionAdded(ServerSession)`
+| `BayeuxServer.SessionListener`::
+    `sessionAdded(ServerSession, *ServerMessage*)`
+
+| `BayeuxServer.SubscriptionListener`::
+    `subscribed(ServerSession, ServerChannel)`
+| `BayeuxServer.SubscriptionListener`::
+    `subscribed(ServerSession, ServerChannel, *ServerMessage*)`
+
+| `BayeuxServer.SubscriptionListener`::
+    `unsubscribed(ServerSession, ServerChannel)`
+| `BayeuxServer.SubscriptionListener`::
+    `unsubscribed(ServerSession, ServerChannel, *ServerMessage*)`
+
+| `ServerChannel`::
+    `publish(Session, Object, *String*)`
+| `ServerChannel`::
+    `publish(Session, Object)`
+
+| `ServerChannel.SubscriptionListener`::
+    `subscribed(ServerSession, ServerChannel)`
+| `ServerChannel.SubscriptionListener`::
+    `subscribed(ServerSession, ServerChannel, *ServerMessage*)`
+
+| `ServerChannel.SubscriptionListener`::
+    `unsubscribed(ServerSession, ServerChannel)`
+| `ServerChannel.SubscriptionListener`::
+    `unsubscribed(ServerSession, ServerChannel, *ServerMessage*)`
+
+| `ServerSession`::
+    `deliver(Session, String, Object, *String*)`
+| `ServerSession`::
+    `deliver(Session, String, Object)`
+
+| `MaxQueueListener`::
+    `queueMaxed(ServerSession, Session, Message)`
+| `MaxQueueListener`::
+    `queueMaxed(ServerSession, *Queue<ServerMessage>*, *ServerSession*, *Message*)`
+|===
+
+=== Inherited Services Service Method Signature Changes
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 2
+| CometD 3
+
+| `class MyService extends AbstractService`::
+    `myMethod(ServerSession, [String], Object, [String])`
+| `class MyService extends AbstractService`::
+    `myMethod(ServerSession, *ServerMessage*)`
+|===
+
+:numbered:

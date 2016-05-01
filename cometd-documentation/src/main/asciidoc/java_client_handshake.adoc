@@ -1,0 +1,115 @@
+
+[[_java_client_handshake]]
+==== Handshaking
+
+To initiate the communication with the Bayeux server, you need to call: 
+
+====
+[source,java]
+----
+BayeuxClient client = ...;
+client.handshake()
+----
+====
+
+The following is a typical use: 
+
+====
+[source,java]
+----
+// Create (and eventually set up) Jetty's HttpClient:
+HttpClient httpClient = new HttpClient();
+// Here set up Jetty's HttpClient, for example:
+// httpClient.setMaxConnectionsPerDestination(2);
+httpClient.start();
+
+// Prepare the transport
+Map<String, Object> options = new HashMap<String, Object>();
+ClientTransport transport = new LongPollingTransport(options, httpClient);
+
+// Create the BayeuxClient
+ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transport);
+
+// Here set up the BayeuxClient, for example:
+// client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() { ... });
+----
+====
+
+`BayeuxClient` must be instantiated passing the absolute URL (and therefore
+including the scheme, host, optionally the port and the path) of the Bayeux server.
+The scheme of the URL must always be either "http" or "https". The CometD
+Java Client implementation will transparently take care of converting the scheme
+to "ws" or "wss" in case of usage of the WebSocket protocol.
+
+When `BayeuxClient.handshake()` is called, the `BayeuxClient` performs the
+handshake with the Bayeux server and establishes the long poll connection asynchronously.
+
+[NOTE]
+====
+Calling `handshake()` _does not_ mean that you have completed the handshake
+with the server when `handshake()` returns.
+====
+
+To verify that the handshake is successful, you can pass a callback
+`MessageListener` to `BayeuxClient.handshake()`:
+
+====
+[source,java]
+----
+ClientTransport transport = ...
+ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transport);
+client.handshake(new ClientSessionChannel.MessageListener()
+{
+    public void onMessage(ClientSessionChannel channel, Message message)
+    {
+        if (message.isSuccessful())
+        {
+            // Here handshake is successful
+        }
+    }
+});
+----
+====
+
+An alternative, equivalent, way is to add a `MessageListener` before calling
+`BayeuxClient.handshake()`:
+
+====
+[source,java]
+----
+ClientTransport transport = ...
+ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transport);
+client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+{
+    public void onMessage(ClientSessionChannel channel, Message message)
+    {
+        if (message.isSuccessful())
+        {
+            // Here handshake is successful
+        }
+    }
+});
+client.handshake();
+----
+====
+
+Another alternative is to use the built-in synchronous features of the `BayeuxClient`
+and wait for the handshake to complete:
+
+====
+[source,java]
+----
+ClientTransport transport = ...
+BayeuxClient client = new BayeuxClient("http://localhost:8080/cometd", transport);
+client.handshake();
+boolean handshaken = client.waitFor(1000, BayeuxClient.State.CONNECTED);
+if (handshaken)
+{
+    // Here handshake is successful
+}
+----
+====
+
+The `BayeuxClient.waitFor()` method waits the given timeout (in milliseconds)
+for the `BayeuxClient` to reach the given state, and returns true if the state
+is reached before the timeout expires.

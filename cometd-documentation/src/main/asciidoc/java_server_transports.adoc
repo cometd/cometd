@@ -1,0 +1,82 @@
+
+[[_java_server_transports]]
+==== Server Transports
+
+<<_bayeux,The Bayeux protocol>> defines two mandatory transports:
+`long-polling` and `callback-polling`.
+These two transports are automatically configured in the `BayeuxServer`
+instance, and there is no need to explicitly specify them in the configuration.
+The respective implementation classes are named `org.cometd.server.transport.JSONTransport`
+and `org.cometd.server.transport.JSONPTransport`.
+
+For the `websocket` transport there exist two transport implementations:
+
+* one based on the standard Java APIs provided by
+  https://jcp.org/en/jsr/detail?id=356[JSR 356]. If these APIs are available,
+  CometD will use a `websocket` transport based on the standard WebSocket APIs,
+  whose implementation class is named `org.cometd.websocket.server.WebSocketTransport`
+* one based on the Jetty WebSocket APIs, whose implementation class is named
+  `org.cometd.websocket.server.JettyWebSocketTransport`.
+  CometD will _not_ attempt to use this transport automatically; applications
+  that want to make use of the extra features provided by this transport
+  must explicitly configure it (typically along with a HTTP transport such as
+  `long-polling`) using the `transports` parameter as described in
+  <<_java_server_configuration,the server configuration section>>.
+
+The order of preference for the server transport is:
+`[websocket, long-polling, callback-polling]`.
+
+[NOTE]
+====
+The CometD project borrows many libraries from the http://eclipse.org/jetty[Jetty]
+project, but all of them are portable across Servlet Containers, so you can
+deploy your CometD web application to _any_ Servlet Container.
+====
+
+[IMPORTANT]
+====
+The `websocket` _server_ transport will be enabled _only_ if your Servlet Container
+supports JSR 356 and if that supports is enabled (some container may make it
+optional).
+
+It is possible to use the `websocket` _client_ transport on the server (for
+example to communicate with another WebSocket CometD server) without any problem
+because it is fully portable (provided you ship all the dependencies in your
+web application).
+For example, it is possible to have a client communicating via HTTP to a CometD
+web application running in Tomcat, which communicates via WebSocket to another
+CometD web application running in Jetty.
+====
+
+The CometD server tries to lookup the JSR 356 APIs via reflection on startup;
+if they are available, then it creates the `websocket` transport based on the
+JSR 356 APIs.
+
+[IMPORTANT]
+====
+Remember that the availability of the JSR 356 APIs is not enough, you need to
+make sure that your web application contains the required CometD dependencies.
+====
+
+The JSR 356 `websocket` transport requires the dependency
+`org.cometd.java:cometd-java-websocket-javax-server` (and transitive dependencies).
+
+The Jetty `websocket` transport requires the dependency
+`org.cometd.java:cometd-java-websocket-jetty-server` (and transitive dependencies).
+
+Including the right dependencies in your web application is very easy if you
+use Maven: just declare the above dependency in your web application's `pom.xml`
+file.
+
+If you are not using Maven, you need to make sure that above dependency and its
+transitive dependencies are present in the `WEB-INF/lib` directory of your web
+application `.war` file.
+
+If you have configured your web application to support cross-domain HTTP calls
+(see also <<_java_server_configuration_advanced,this section>>), you do not
+need to worry because the `CrossOriginFilter` is by default disabled for the
+WebSocket protocol.
+
+If you plan to use the `websocket` _client_ transport in your web application,
+and you are not using Maven, make sure to read
+<<_java_client_transports,the Java client transports section>>.

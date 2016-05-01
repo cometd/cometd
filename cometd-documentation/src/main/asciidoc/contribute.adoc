@@ -1,0 +1,104 @@
+
+[[_contribute]]
+== Contributing to CometD
+
+You can contribute to the CometD projects in several ways.
+The CometD project values your contribution, of _any_ kind, and participating
+in mailing lists, submitting bugs or documentation enhancements is equally
+important as contributing code.
+
+[[_contribute_mailing_lists]]
+=== Contributing via Mailing Lists
+
+The simplest way to contribute to the CometD project is to subscribe to the
+CometD mailing lists. There are two mailing lists:
+
+* *cometd-users@googlegroups.com*, to be used for discussions about how to use CometD.
+  This is a low traffic mailing list.
+  To subscribe to this list, go to the http://groups.google.com/group/cometd-users/[mailing list home page]
+  and follow the instructions to apply for membership.
+* *cometd-dev@googlegroups.com*, to be used for discussions about the CometD implementation.
+  This is a low traffic mailing list.
+  To subscribe to this list, go to the http://groups.google.com/group/cometd-dev/[mailing list home page]
+  and follow the instructions to apply for membership.
+  New members can join immediately the mailing list and receive messages,
+  but their first post will be subject to moderation.
+
+If you post for the first time, please allow some hour to moderators to review
+the message and approve your post.
+This is done to reduce spam to the minimum possible.
+
+[[_contribute_issue_reporting]]
+=== Contributing by Reporting Issues
+
+The CometD project uses https://github.com/cometd/cometd/issues[GitHub Issues] to track
+issues about the CometD project, from bugs to feature requests, to documentation tasks, etc.
+Virtually every activity is tracked in this issue tracker.
+
+The address https://bugs.cometd.org is an alias for the CometD GitHub Issue Tracker.
+
+In order to submit an issue, you must have a valid GitHub login.
+If you do not have a GitHub login already, you can create one by
+visiting https://github.com/join[this link].
+
+[[_contribute_code]]
+=== Contributing Code Fixes and Enhancements
+
+The CometD project code is hosted at https://github.com/cometd[GitHub CometD Organization].
+The repository for the CometD libraries is https://github.com/cometd/cometd.
+You can build the CometD project yourself by following the instruction in
+<<_build,the build section>>.
+
+In order to contribute code, you need to certify the
+http://developercertificate.org/[Developer Certificate of Origin] and sign-off your
+`git` commits using `git commit --signoff`.
+
+By signing off your `git` commits, you agree that you can certify
+what stated by the Developer Certificate of Origin.
+That is enough for the CometD project to accept your contribution.
+
+The Developer Certificate of Origin (from http://developercertificate.org/):
+
+====
+[source,text]
+----
+include::http://developercertificate.org/[lines=14..49]
+----
+====
+
+To contribute code, follow these steps:
+
+* Create an issue at http://bugs.cometd.org.
+* Commit your changes:
+** If you have multiple commits, squash them into one commit only.
+** Make sure that the email in the `Author` field of the commits
+corresponds to your GitHub email.
+** Signoff your commit using `git commit --signoff`.
+** The commit message should reference the issue number with the
+format `#<issue_number>`, so that GitHub can properly link the
+commit with the issue.
+* Issue a https://help.github.com/articles/using-pull-requests[GitHub pull request].
+
+For example:
+----
+commit  0123456789abcdef0123456789abcdef01234567
+Author: John Doe <john.doe@nowhere.com>
+Date:   Sun Jan 01 00:00:00 1970 +0000
+
+    Issue #XYZ - <issue title>
+
+    <description of the changes>
+
+    Signed-off-by: John Doe <john.doe@nowhere.com>
+----
+
+[[_contribute_documentation]]
+=== Contributing to Documentation & Tutorials
+
+The repository for the CometD documentation is https://github.com/cometd/cometd-documentation,
+while the repository for the CometD tutorials is https://github.com/cometd/cometd-tutorials.
+The CometD documentation and tutorials are written in http://asciidoc.org/[AsciiDoc],
+and built using Maven and the http://asciidoctor.org[AsciiDoctor] Maven Plugin.
+
+To contribute fixes or enhancements to the documentation or the tutorials, you can just issue
+https://help.github.com/articles/using-pull-requests[GitHub pull requests].
