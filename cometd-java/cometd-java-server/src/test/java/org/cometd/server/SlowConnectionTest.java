@@ -31,7 +31,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JettyJSONContextClient;
@@ -110,73 +109,6 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testSessionSweptConcurrentlyDoesNotSendReconnectNoneAdvice() throws Exception
-    {
-        final long maxInterval = 1000;
-        Map<String, String> options = new HashMap<>();
-        options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
-        startServer(options);
-
-        final CountDownLatch sweeperLatch = new CountDownLatch(1);
-        bayeux.addListener(new BayeuxServer.SessionListener()
-        {
-            public void sessionAdded(ServerSession session, ServerMessage message)
-            {
-            }
-
-            public void sessionRemoved(ServerSession session, boolean timedout)
-            {
-                if (timedout)
-                    sweeperLatch.countDown();
-            }
-        });
-
-        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
-                try
-                {
-                    // Wait to make the sweeper sweep this session
-                    TimeUnit.MILLISECONDS.sleep(2 * maxInterval);
-                    return true;
-                }
-                catch (InterruptedException x)
-                {
-                    return false;
-                }
-            }
-        });
-
-        Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
-        ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
-
-        String clientId = extractClientId(response);
-
-        Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
-        response = connect1.send();
-        Assert.assertEquals(200, response.getStatus());
-
-        Assert.assertTrue(sweeperLatch.await(maxInterval, TimeUnit.MILLISECONDS));
-
-        Message.Mutable reply = new JettyJSONContextClient().parse(response.getContentAsString())[0];
-        Assert.assertEquals(Channel.META_CONNECT, reply.getChannel());
-        Map<String, Object> advice = reply.getAdvice(false);
-        if (advice != null)
-            Assert.assertFalse(Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)));
-    }
-
-    @Test
     public void testSessionSweptWhileWritingQueueDoesNotSendReconnectNoneAdvice() throws Exception
     {
         final long maxInterval = 1000;
@@ -194,7 +126,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
                 {
                     if (channelName.equals(message.getChannel()))
                     {
-                        session.startIntervalTimeout(0);
+                        session.scheduleExpiration(0);
                         TimeUnit.MILLISECONDS.sleep(2 * maxInterval);
                     }
                     super.writeMessage(response, output, session, message);

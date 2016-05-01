@@ -239,7 +239,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 // because the connection may have been closed for a reload, so
                 // just null out the current session to have it retrieved again
                 _session = null;
-                session.startIntervalTimeout(getInterval());
+                session.scheduleExpiration(getInterval());
                 cancelMetaConnectTask(session);
             }
             if (_logger.isDebugEnabled())
@@ -311,7 +311,6 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         {
             ServerSessionImpl session = _session;
 
-            boolean startInterval = false;
             boolean send = true;
             List<ServerMessage> queue = Collections.emptyList();
             List<ServerMessage.Mutable> replies = new ArrayList<>(messages.length);
@@ -346,8 +345,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         reply = processReply(session, reply);
                         if (reply != null)
                             replies.add(reply);
-                        startInterval = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
-                        if (startInterval)
+                        if (session != null && allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful())
                             queue = session.takeQueue();
                         break;
                     }
@@ -357,8 +355,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         reply = processReply(session, reply);
                         if (reply != null)
                             replies.add(reply);
-                        send = startInterval = reply != null;
-                        if (send && session != null)
+                        send = reply != null;
+                        if (session != null && send)
                         {
                             if (isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly())
                                 queue = session.takeQueue();
@@ -377,7 +375,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
 
             if (send)
-                send(wsSession, session, startInterval, queue, replies);
+                send(wsSession, session, queue, replies);
         }
 
         private ServerMessage.Mutable processMetaHandshake(ServerSessionImpl session, ServerMessage.Mutable message)
@@ -450,11 +448,11 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
         }
 
-        protected void send(S wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage.Mutable> replies)
+        protected void send(S wsSession, ServerSessionImpl session, List<ServerMessage> queue, List<ServerMessage.Mutable> replies)
         {
             if (_logger.isDebugEnabled())
                 _logger.debug("Sending {}, replies={}, messages={}", session, replies, queue);
-            flusher.queue(new Entry<>(wsSession, session, startInterval, queue, replies));
+            flusher.queue(new Entry<>(wsSession, session, queue, replies));
             flusher.iterate();
         }
 
@@ -570,7 +568,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
             if (_logger.isDebugEnabled())
                 _logger.debug("Flushing {} metaConnectReply={}, messages={}", session, connectReply, queue);
-            send(wsSession, session, reply, queue, replies);
+            send(wsSession, session, queue, replies);
         }
 
         private class MetaConnectReplyTask implements Runnable
@@ -657,12 +655,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 // Start the interval timeout after writing the messages
                 // since they may take time to be written, even in case
                 // of exceptions to make sure the session can be swept.
-                if (entry._startInterval)
-                {
-                    ServerSessionImpl session = entry._session;
-                    if (session != null)
-                        session.startIntervalTimeout(getInterval());
-                }
+                ServerSessionImpl session = entry._session;
+                if (session != null)
+                    session.scheduleExpiration(getInterval());
 
                 if (_logger.isDebugEnabled())
                     _logger.debug("Processing replies {}", replies);
@@ -677,15 +672,13 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         {
             private final W _wsSession;
             private final ServerSessionImpl _session;
-            private final boolean _startInterval;
             private final List<ServerMessage> _queue;
             private final List<ServerMessage.Mutable> _replies;
 
-            private Entry(W wsSession, ServerSessionImpl session, boolean startInterval, List<ServerMessage> queue, List<ServerMessage.Mutable> replies)
+            private Entry(W wsSession, ServerSessionImpl session, List<ServerMessage> queue, List<ServerMessage.Mutable> replies)
             {
                 this._wsSession = wsSession;
                 this._session = session;
-                this._startInterval = startInterval;
                 this._queue = queue;
                 this._replies = replies;
             }

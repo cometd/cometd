@@ -69,13 +69,13 @@ public class ServerSessionImpl implements ServerSession
     private long _timeout = -1;
     private long _interval = -1;
     private long _maxInterval = -1;
-    private long _maxServerInterval = -1;
+    private long _maxProcessing = -1;
     private long _maxLazy = -1;
     private boolean _metaConnectDelivery;
     private int _batch;
     private String _userAgent;
-    private long _connectTimestamp = -1;
-    private long _intervalTimestamp;
+    private long _messageTime = -1;
+    private long _expireTime;
     private boolean _nonLazyMessages;
     private boolean _broadcastToPublisher;
     private boolean _allowMessageDeliveryDuringHandshake;
@@ -111,10 +111,7 @@ public class ServerSessionImpl implements ServerSession
 
         ServerTransport transport = _bayeux.getCurrentTransport();
         if (transport != null)
-        {
             _maxInterval = transport.getMaxInterval();
-            _intervalTimestamp = System.currentTimeMillis() + transport.getMaxInterval();
-        }
 
         _broadcastToPublisher = _bayeux.isBroadcastToPublisher();
     }
@@ -149,17 +146,17 @@ public class ServerSessionImpl implements ServerSession
         Scheduler scheduler = null;
         synchronized (getLock())
         {
-            if (_intervalTimestamp == 0)
+            if (_expireTime == 0)
             {
-                if (_maxServerInterval > 0 && now > _connectTimestamp + _maxServerInterval)
+                if (_maxProcessing > 0 && now > _messageTime + _maxProcessing)
                 {
-                    _logger.info("Emergency sweeping session {}", this);
+                    _logger.info("Sweeping session during processing {}", this);
                     remove = true;
                 }
             }
             else
             {
-                if (now > _intervalTimestamp)
+                if (now > _expireTime)
                 {
                     if (_logger.isDebugEnabled())
                         _logger.debug("Sweeping session {}", this);
@@ -366,7 +363,7 @@ public class ServerSessionImpl implements ServerSession
         {
             _maxQueue = transport.getOption(AbstractServerTransport.MAX_QUEUE_OPTION, -1);
             _maxInterval = transport.getMaxInterval();
-            _maxServerInterval = transport.getOption("maxServerInterval", -1);
+            _maxProcessing = transport.getOption(AbstractServerTransport.MAX_PROCESSING_OPTION, -1);
             _maxLazy = transport.getMaxLazyTimeout();
         }
     }
@@ -374,7 +371,6 @@ public class ServerSessionImpl implements ServerSession
     protected void connected()
     {
         _connected.set(true);
-        cancelIntervalTimeout();
     }
 
     public void disconnect()
@@ -610,23 +606,23 @@ public class ServerSessionImpl implements ServerSession
             scheduler.cancel();
     }
 
-    public void cancelIntervalTimeout()
+    public void cancelExpiration()
     {
         long now = System.currentTimeMillis();
         synchronized (getLock())
         {
-            _connectTimestamp = now;
-            _intervalTimestamp = 0;
+            _messageTime = now;
+            _expireTime = 0;
         }
     }
 
-    public void startIntervalTimeout(long defaultInterval)
+    public void scheduleExpiration(long defaultInterval)
     {
         long interval = calculateInterval(defaultInterval);
         long now = System.currentTimeMillis();
         synchronized (getLock())
         {
-            _intervalTimestamp = now + interval + _maxInterval;
+            _expireTime = now + interval + _maxInterval;
         }
     }
 
@@ -637,7 +633,7 @@ public class ServerSessionImpl implements ServerSession
 
     long getIntervalTimestamp()
     {
-        return _intervalTimestamp;
+        return _expireTime;
     }
 
     public Object getAttribute(String name)
@@ -939,7 +935,7 @@ public class ServerSessionImpl implements ServerSession
     @Override
     public String toString()
     {
-        return String.format("%s - last connect %d ms ago", _id, System.currentTimeMillis() - _connectTimestamp);
+        return String.format("%s - last message %d ms ago", _id, System.currentTimeMillis() - _messageTime);
     }
 
     public long calculateTimeout(long defaultTimeout)

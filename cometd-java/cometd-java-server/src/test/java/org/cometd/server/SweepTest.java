@@ -114,10 +114,10 @@ public class SweepTest
         bayeuxServer.setOption("sweepIntervalMs", -1);
         long maxInterval = 1000;
         bayeuxServer.setOption("maxInterval", maxInterval);
-        bayeuxServer.setOption("maxServerInterval", maxInterval);
+        bayeuxServer.setOption("maxProcessing", maxInterval);
         bayeuxServer.start();
         ServerTransport serverTransport = bayeuxServer.getTransport("long-polling");
-        bayeuxServer.setCurrentTransport((AbstractServerTransport)serverTransport);
+        bayeuxServer.setCurrentTransport(serverTransport);
 
         // LocalSessions do not perform heartbeat so we should not sweep them until disconnected
         LocalSession localSession = bayeuxServer.newLocalSession("test_sweep");

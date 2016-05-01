@@ -91,7 +91,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
     }
 
     @Override
-    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean startInterval, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
+    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
     {
         AsyncContext asyncContext = request.getAsyncContext();
         try
@@ -99,7 +99,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             // Always write asynchronously
             response.setContentType("application/json;charset=UTF-8");
             ServletOutputStream output = response.getOutputStream();
-            output.setWriteListener(new Writer(request, response, asyncContext, session, startInterval, messages, replies));
+            output.setWriteListener(new Writer(request, response, asyncContext, session, messages, replies));
         }
         catch (Exception x)
         {
@@ -260,7 +260,6 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         private final HttpServletResponse response;
         private final AsyncContext asyncContext;
         private final ServerSessionImpl session;
-        private final boolean startInterval;
         private final List<ServerMessage> messages;
         private final ServerMessage.Mutable[] replies;
         private int messageIndex;
@@ -268,13 +267,12 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         private boolean needsComma;
         private State state = State.BEGIN;
 
-        protected Writer(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, boolean startInterval, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
+        protected Writer(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
         {
             this.request = request;
             this.response = response;
             this.asyncContext = asyncContext;
             this.session = session;
-            this.startInterval = startInterval;
             this.messages = messages;
             this.replies = replies;
         }
@@ -374,7 +372,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                     {
                         // Start the interval timeout after writing the
                         // messages since they may take time to be written.
-                        startInterval();
+                        startExpiration();
                         return true;
                     }
                     else
@@ -399,15 +397,15 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             {
                 // Start the interval timeout also in case of
                 // exceptions to ensure the session can be swept.
-                startInterval();
+                startExpiration();
                 throw x;
             }
         }
 
-        private void startInterval()
+        private void startExpiration()
         {
-            if (startInterval && session != null && session.isConnected())
-                session.startIntervalTimeout(getInterval());
+            if (session != null && session.isConnected())
+                session.scheduleExpiration(getInterval());
         }
 
         private boolean writeReplies(ServletOutputStream output) throws IOException

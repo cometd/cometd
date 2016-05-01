@@ -707,16 +707,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     private void handle(ServerSessionImpl session, Mutable message, Mutable reply)
     {
-        String channelName = message.getChannel();
+        if (session != null)
+            session.cancelExpiration();
 
-        ServerChannelImpl channel;
+        String channelName = message.getChannel();
         if (channelName == null)
         {
             error(reply, "400::channel missing");
         }
         else
         {
-            channel = getServerChannel(channelName);
+            ServerChannelImpl channel = getServerChannel(channelName);
             if (channel == null)
             {
                 if (session == null)
