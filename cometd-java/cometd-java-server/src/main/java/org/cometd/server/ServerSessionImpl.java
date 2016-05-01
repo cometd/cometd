@@ -298,7 +298,7 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    private ServerMessage.Mutable extendSend(ServerMessage.Mutable mutable)
+    protected ServerMessage.Mutable extendSend(ServerMessage.Mutable mutable)
     {
         ServerMessage.Mutable message = null;
         if (mutable.isMeta())
@@ -767,7 +767,7 @@ public class ServerSessionImpl implements ServerSession
             if (result instanceof ServerMessage.Mutable)
                 return (ServerMessage.Mutable)result;
             else
-                return _bayeux.newMessage(result);
+                return result == null ? null : _bayeux.newMessage(result);
         }
         catch (Throwable x)
         {
