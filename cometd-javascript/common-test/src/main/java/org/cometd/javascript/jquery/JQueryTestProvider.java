@@ -32,7 +32,7 @@ public class JQueryTestProvider implements TestProvider
         // so we need to remove the Java package to avoid clashes.
         threadModel.remove("org");
         threadModel.evaluate("window_location", "window.location = '" + contextURL + "'");
-        threadModel.evaluate(new URL(contextURL + "/jquery/jquery-2.1.4.js"));
+        threadModel.evaluate(new URL(contextURL + "/jquery/jquery-2.2.3.js"));
         threadModel.evaluate(new URL(contextURL + "/org/cometd.js"));
         threadModel.evaluate(new URL(contextURL + "/jquery/jquery.cometd.js"));
         threadModel.evaluate("cometd", "var cometd = $.cometd;");
