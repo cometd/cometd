@@ -7,7 +7,7 @@ server to calculate the offset between the client's clock and the server's clock
 This is independent from <<_extensions_timestamp,the timestamp extension section>>,
 which uses the local clock for all timestamps.
 This extension requires both a client-side extension and a server-side extension.
-The server-side extension is available in Java. 
+The server-side extension is available in Java.
 
 ==== Enabling the Server-side Extension
 
@@ -29,8 +29,7 @@ Dojo, and it is sufficient to use Dojo's `dojo.require` mechanism:
 ====
 [source,javascript]
 ----
-require(["dojox/cometd", "dojox/cometd/timesync"], function(cometd)
-{
+require(["dojox/cometd", "dojox/cometd/timesync"], function(cometd) {
     ...
 });
 ----
@@ -60,7 +59,7 @@ the default `cometd` object under the name "timesync".
 The timesync extension allows the client and server to exchange time information
 on every handshake and connect message so that the client can calculate an
 approximate offset from its own clock epoch to that of the server.
-The algorithm used is very similar to the http://en.wikipedia.org/wiki/Network_Time_Protocol[NTP algorithm]. 
+The algorithm used is very similar to the http://en.wikipedia.org/wiki/Network_Time_Protocol[NTP algorithm].
 
 With each handshake or connect, the extension sends timestamps within the
 ext field, for example:
@@ -72,7 +71,7 @@ ext field, for example:
 ----
 ====
 
-where: 
+where:
 
 * _tc_ is the client timestamp in ms since 1970 of when the message was sent
 * _l_ is the network lag that the client has calculated
@@ -92,7 +91,7 @@ The response is an `ext` field, for example:
 ----
 ====
 
-where: 
+where:
 
 * _tc_ is the client timestamp of when the message was sent
 * _ts_ is the server timestamp of when the message was received
@@ -102,7 +101,7 @@ where:
 On receipt of the response, the client is able to use current time to determine
 the total trip time, from which it subtracts _p_ to determine an approximate two
 way network traversal time.
-Thus: 
+Thus:
 
 * lag = (now-tc-p)/2
 * offset = ts-tc-lag

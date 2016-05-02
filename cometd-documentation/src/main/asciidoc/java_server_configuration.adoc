@@ -391,10 +391,8 @@ method that atomically creates and initializes server channels:
 [source,java]
 ----
 BayeuxServer bayeuxServer = ...;
-MarkedReference<ServerChannel> ref = bayeuxServer.createChannelIfAbsent("/my/channel", new ServerChannel.Initializer()
-{
-    public void configureChannel(ConfigurableServerChannel channel)
-    {
+MarkedReference<ServerChannel> ref = bayeuxServer.createChannelIfAbsent("/my/channel", new ServerChannel.Initializer() {
+    public void configureChannel(ConfigurableServerChannel channel) {
         // Here configure the channel
     }
 });
@@ -415,10 +413,8 @@ so that the sweeper does not remove the channel:
 [source,java]
 ----
 BayeuxServer bayeuxServer = ...;
-MarkedReference<ServerChannel> ref = bayeuxServer.createChannelIfAbsent("/my/channel", new ServerChannel.Initializer()
-{
-    public void configureChannel(ConfigurableServerChannel channel)
-    {
+MarkedReference<ServerChannel> ref = bayeuxServer.createChannelIfAbsent("/my/channel", new ServerChannel.Initializer() {
+    public void configureChannel(ConfigurableServerChannel channel) {
         channel.setPersistent(true);
     }
 });
@@ -439,10 +435,8 @@ was created or if it existed already:
 ----
 BayeuxServer bayeuxServer = ...;
 String channelName = "/my/channel";
-MarkedReference<ServerChannel> ref = bayeuxServer.createChannelIfAbsent(channelName, new ServerChannel.Initializer()
-{
-    public void configureChannel(ConfigurableServerChannel channel)
-    {
+MarkedReference<ServerChannel> ref = bayeuxServer.createChannelIfAbsent(channelName, new ServerChannel.Initializer() {
+    public void configureChannel(ConfigurableServerChannel channel) {
         channel.setPersistent(true);
     }
 });

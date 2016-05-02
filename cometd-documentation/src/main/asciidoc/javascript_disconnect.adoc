@@ -34,10 +34,8 @@ request, you can pass a callback function to the `disconnect()` function:
 ====
 [source,javascript]
 ----
-cometd.disconnect(function(disconnectReply)
-{
-    if (disconnectReply.successful)
-    {
+cometd.disconnect(function(disconnectReply) {
+    if (disconnectReply.successful) {
         // Server truly received the disconnect request
     }
 });
@@ -52,8 +50,7 @@ Like other APIs, also `disconnect()` may take an additional object that is sent 
 var additional = {
     com.acme.reset: false
 };
-cometd.disconnect(additional, function(disconnectReply)
-{
+cometd.disconnect(additional, function(disconnectReply) {
     // Your logic here.
 });
 ----

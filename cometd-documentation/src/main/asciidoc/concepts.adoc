@@ -441,20 +441,16 @@ need to do so in a separate thread, for example:
 [source,java]
 ----
 @Service
-public class MyService
-{
+public class MyService {
     @Inject
     private BayeuxServer bayeuxServer;
     @Session
     private LocalSession localSession;
 
     @Listener("/service/query")
-    public void processQuery(final ServerSession remoteSession, final ServerMessage message)
-    {
-        new Thread()
-        {
-            public void run()
-            {
+    public void processQuery(final ServerSession remoteSession, final ServerMessage message) {
+        new Thread() {
+            public void run() {
                 Map<String, Object> data = performTimeConsumingTask(message);
 
                 // Send data to client once the time consuming task is finished
@@ -485,14 +481,11 @@ the handshake request:
 ====
 [source,java]
 ----
-public class MySecurityPolicy extends DefaultSecurityPolicy
-{
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-    {
+public class MySecurityPolicy extends DefaultSecurityPolicy {
+    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
         boolean authenticated = authenticate(session, message);
 
-        if (!authenticated)
-        {
+        if (!authenticated) {
             ServerMessage.Mutable reply = message.getAssociated();
             // Here you can customize the reply
         }
@@ -577,14 +570,12 @@ set up so that a server channel listener routes messages arriving to
 [source,java]
 ----
 @Service
-public class PrivateMessageService
-{
+public class PrivateMessageService {
     @Session
     private ServerSession session;
 
     @Listener("/service/private")
-    public void handlePrivateMessage(ServerSession sender, ServerMessage message)
-    {
+    public void handlePrivateMessage(ServerSession sender, ServerMessage message) {
         // Retrieve the userId from the message
         String userId = message.get("targetUserId");
 
@@ -610,12 +601,10 @@ event handler just needs a reference to `BayeuxServer` to broadcast messages:
 ====
 [source,java]
 ----
-public class ExternalEventBroadcaster
-{
+public class ExternalEventBroadcaster {
     private final BayeuxServer bayeuxServer;
 
-    public ExternalEventBroadcaster(BayeuxServer bayeuxServer)
-    {
+    public ExternalEventBroadcaster(BayeuxServer bayeuxServer) {
         this.bayeuxServer = bayeuxServer;
 
         // Create a local session that will act as the "sender"
@@ -623,13 +612,11 @@ public class ExternalEventBroadcaster
         this.session.handshake();
     }
 
-    public void onExternalEvent(ExternalEvent event)
-    {
+    public void onExternalEvent(ExternalEvent event) {
         // Retrieve the channel to broadcast to, for example
         // based on the "type" property of the external event
         ServerChannel channel = this.bayeuxServer.getChannel("/events/" + event.getType());
-        if (channel != null)
-        {
+        if (channel != null) {
             // Create the data to broadcast by converting the external event
             Map<String, Object> data = convertExternalEvent(event);
 

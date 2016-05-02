@@ -2,7 +2,7 @@
 [[_java_client_disconnect]]
 ==== Disconnecting
 
-Disconnecting is straightforward: 
+Disconnecting is straightforward:
 
 ====
 [source,java]
@@ -19,12 +19,9 @@ that the server received and processed the disconnect request:
 [source,java]
 ----
 BayeuxClient client = ...;
-client.disconnect(new ClientSessionChannel.MessageListener()
-{
-    public void onMessage(ClientSessionChannel channel, Message message)
-    {
-        if (message.isSuccessful())
-        {
+client.disconnect(new ClientSessionChannel.MessageListener() {
+    public void onMessage(ClientSessionChannel channel, Message message) {
+        if (message.isSuccessful()) {
             // Server processed the disconnect request.
         }
     }
@@ -32,7 +29,7 @@ client.disconnect(new ClientSessionChannel.MessageListener()
 ----
 ====
 
-Alternatively, you can wait for the disconnect to complete: 
+Alternatively, you can wait for the disconnect to complete:
 
 ====
 [source,java]

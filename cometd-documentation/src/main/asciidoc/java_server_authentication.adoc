@@ -24,11 +24,9 @@ cometd.configure({
 });
 
 // Register a listener to be notified of authentication success or failure
-cometd.addListener('/meta/handshake', function(message)
-{
+cometd.addListener('/meta/handshake', function(message) {
     var authn = message.ext && message.ext['com.myapp.authn'];
-    if (authn && authn.failed === true)
-    {
+    if (authn && authn.failed === true) {
         // Authentication failed, tell the user
         window.alert('Authentication failed!');
     }
@@ -66,19 +64,16 @@ below using a configuration servlet:
 ====
 [source,java]
 ----
-public class MyAppInitializer extends GenericServlet
-{
+public class MyAppInitializer extends GenericServlet {
     @Override
-    public void init() throws ServletException
-    {
+    public void init() throws ServletException {
         BayeuxServer bayeux = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
         MyAppAuthenticator authenticator = new MyAppAuthenticator();
         bayeux.setSecurityPolicy(authenticator);
     }
 
     @Override
-    public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
-    {
+    public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
         throw new ServletException();
     }
 }
@@ -90,27 +85,29 @@ Below you can find the code for the `MyAppAuthenticator` class referenced above:
 ====
 [source,java]
 ----
-public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerSession.RemoveListener <1>
-{
+public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerSession.RemoveListener { <1>
     @Override
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) <2>
-    {
-        if (session.isLocalSession()) <3>
+    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) { <2>
+        if (session.isLocalSession()) { <3>
             return true;
+        }
 
         Map<String, Object> ext = message.getExt();
-        if (ext == null)
+        if (ext == null) {
             return false;
+        }
 
         Map<String, Object> authentication = (Map<String, Object>)ext.get("com.myapp.authn");
-        if (authentication == null)
+        if (authentication == null) {
             return false;
+        }
 
         Object authenticationData = verify(authentication); <4>
-        if (authenticationData == null)
+        if (authenticationData == null) {
             return false;
+        }
 
-        // Authentication successful                                      
+        // Authentication successful
 
         // Link authentication data to the session <5>
 
@@ -120,8 +117,7 @@ public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerS
         return true;
     }
 
-    public void removed(ServerSession session, boolean expired) <7>
-    {
+    public void removed(ServerSession session, boolean expired) { <7>
         // Unlink authentication data from the remote client <8>
     }
 }
@@ -158,31 +154,32 @@ other code of the application, for example:
 ====
 [source,java]
 ----
-public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerSession.RemoveListener
-{
+public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerSession.RemoveListener {
     private final Users users;
 
-    public MyAppAuthenticator(Users users)
-    {
+    public MyAppAuthenticator(Users users) {
         this.users = users;
     }
 
     @Override
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-    {
-        if (session.isLocalSession())
+    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+        if (session.isLocalSession()) {
             return true;
+        }
 
         Map<String, Object> ext = message.getExt();
-        if (ext == null)
+        if (ext == null) {
             return false;
+        }
 
         Map<String, Object> authentication = (Map<String, Object>)ext.get("com.myapp.authn");
-        if (authentication == null)
+        if (authentication == null) {
             return false;
+        }
 
-        if (!verify(authentication))
+        if (!verify(authentication)) {
             return false;
+        }
 
         // Authentication successful.
 
@@ -195,8 +192,7 @@ public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerS
         return true;
     }
 
-    public void removed(ServerSession session, boolean expired)
-    {
+    public void removed(ServerSession session, boolean expired) {
         // Unlink authentication data from the remote client
         users.remove(session);
     }
@@ -209,18 +205,15 @@ And below you can find a very simple implementation of the `Users` class:
 ====
 [source,java]
 ----
-public class Users
-{
+public class Users {
     private final ConcurrentMap<String, ServerSession> users = new ConcurrentHashMap<>();
 
-    public void put(ServerSession session, Map<String, Object> credentials)
-    {
+    public void put(ServerSession session, Map<String, Object> credentials) {
         String user = (String)credentials.get("user");
         users.put(user, session);
     }
 
-    public void remove(ServerSession session)
-    {
+    public void remove(ServerSession session) {
         users.values().remove(session);
     }
 }
@@ -244,16 +237,13 @@ BayeuxServer bayeuxServer = ...;
 
 final Users users = ...;
 
-bayeuxServer.addListener(new BayeuxServer.SessionListener()
-{
-    public void sessionAdded(ServerSession session, ServerMessage message)
-    {
+bayeuxServer.addListener(new BayeuxServer.SessionListener() {
+    public void sessionAdded(ServerSession session, ServerMessage message) {
         Map<String, Object> authentication = (Map<String, Object>)ext.get("com.myapp.authn");
         users.put(session, authentication);
     }
 
-    public void sessionRemoved(ServerSession session, boolean timedout)
-    {
+    public void sessionRemoved(ServerSession session, boolean timedout) {
         users.remove(session);
     }
 });
@@ -289,12 +279,9 @@ the `SecurityPolicy` implementation:
 ====
 [source,java]
 ----
-public class MySecurityPolicy extends DefaultSecurityPolicy
-{
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-    {
-        if (!canAuthenticate(session, message))
-        {
+public class MySecurityPolicy extends DefaultSecurityPolicy {
+    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+        if (!canAuthenticate(session, message)) {
             // Retrieve the handshake response
             ServerMessage.Mutable handshakeReply = message.getAssociated();
 
@@ -322,14 +309,10 @@ implementing a `BayeuxServer.Extension`:
 ====
 [source,java]
 ----
-public class HandshakeExtension implements BayeuxServer.Extension
-{
-    public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-    {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel()))
-        {
-            if (!message.isSuccessful())
-            {
+public class HandshakeExtension implements BayeuxServer.Extension {
+    public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
+        if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
+            if (!message.isSuccessful()) {
                 Map advice = message.getAdvice(true);
                 advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);
 

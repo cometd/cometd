@@ -75,34 +75,29 @@ where the `NameEditService` is defined as follows:
 [source,java]
 ----
 @Service(NameEditService.NAME)
-public class NameEditService extends OortService<String, Boolean>
-{
+public class NameEditService extends OortService<String, Boolean> {
     public static final String NAME = "name_edit";
 
-    public NameEditService(Oort oort)
-    {
+    public NameEditService(Oort oort) {
         super(oort, NAME);
     }
 
     // Lifecycle methods triggered by standard lifecycle annotations
 
     @PostConstruct
-    public void construct() throws Exception
-    {
+    public void construct() throws Exception {
         start();
     }
 
     @PreDestroy
-    public void destroy() throws Exception
-    {
+    public void destroy() throws Exception {
         stop();
     }
 
     // CometD's listener method on channel "/service/edit"
 
     @org.cometd.annotation.Listener("/service/edit")
-    public void editName(final ServerSession remote, final ServerMessage message)
-    {
+    public void editName(final ServerSession remote, final ServerMessage message) {
         // Step #1: remote client sends an action request.
         // This runs in the requesting node.
 
@@ -123,13 +118,11 @@ public class NameEditService extends OortService<String, Boolean>
     }
 
     @Override
-    protected Result<Boolean> onForward(Request request)
-    {
+    protected Result<Boolean> onForward(Request request) {
         // Step #3: perform the action.
         // This runs in the owner node.
 
-        try
-        {
+        try {
             Map<String, Object> actionData = request.getDataAsMap();
             // Edit the name.
             // Applications must implement this method.
@@ -137,17 +130,14 @@ public class NameEditService extends OortService<String, Boolean>
 
             // Return the action result.
             return Result.success(result);
-        }
-        catch (Exception x)
-        {
+        } catch (Exception x) {
             // Return the action failure.
             return Result.failure("Could not edit name, reason: " + x.getMessage());
         }
     }
 
     @Override
-    protected void onForwardSucceeded(Boolean result, ServerContext context)
-    {
+    protected void onForwardSucceeded(Boolean result, ServerContext context) {
         // Step #4: successful result.
         // This runs in the requesting node.
 
@@ -156,8 +146,7 @@ public class NameEditService extends OortService<String, Boolean>
     }
 
     @Override
-    protected void onForwardFailed(Object failure, ServerContext context)
-    {
+    protected void onForwardFailed(Object failure, ServerContext context) {
         // Step #5: failure result.
         // This runs in the requesting node.
 

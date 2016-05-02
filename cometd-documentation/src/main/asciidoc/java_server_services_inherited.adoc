@@ -10,16 +10,13 @@ class defines:
 ====
 [source,java]
 ----
-public class EchoService extends AbstractService <1>
-{
-    public EchoService(BayeuxServer bayeuxServer) <2>
-    {
+public class EchoService extends AbstractService { <1>
+    public EchoService(BayeuxServer bayeuxServer) { <2>
         super(bayeuxServer, "echo"); <3>
         addService("/echo", "processEcho"); <4>
     }
 
-    public void processEcho(ServerSession remote, ServerMessage message) <5>
-    {
+    public void processEcho(ServerSession remote, ServerMessage message) { <5>
         remote.deliver(getServerSession(), "/echo", message.getData()); <6>
     }
 }
@@ -56,16 +53,13 @@ wildcard, for example:
 ====
 [source,java]
 ----
-public class BaseballTeamService extends AbstractService
-{
-    public BaseballTeamService(BayeuxServer bayeux)
-    {
+public class BaseballTeamService extends AbstractService {
+    public BaseballTeamService(BayeuxServer bayeux) {
         super(bayeux, "baseballTeam");
         addService("/baseball/team/*", "processBaseballTeam");
     }
 
-    public void processBaseballTeam(ServerSession remote, ServerMessage message)
-    {
+    public void processBaseballTeam(ServerSession remote, ServerMessage message) {
         // Upon receiving a message on channel /baseball/team/*, forward to channel /events/baseball/team/*
         getBayeux().getChannel("/events" + message.getChannel()).publish(getServerSession(), message.getData());
     }
@@ -85,27 +79,21 @@ may be even added and removed dynamically:
 ====
 [source,java]
 ----
-public class GameService extends AbstractService
-{
-    public GameService(BayeuxServer bayeux)
-    {
+public class GameService extends AbstractService {
+    public GameService(BayeuxServer bayeux) {
         super(bayeux, "game");
         addService("/service/game/*", "processGameCommand");
         addService("/game/event", "processGameEvent");
     }
 
-    public void processGameCommand(ServerSession remote, ServerMessage message)
-    {
+    public void processGameCommand(ServerSession remote, ServerMessage message) {
         GameCommand command = (GameCommand)message.getData();
-        switch (command.getType())
-        {
-            case GAME_START:
-            {
+        switch (command.getType()) {
+            case GAME_START: {
                 addService("/game/" + command.getGameId(), "processGame");
                 break;
             }
-            case GAME_END:
-            {
+            case GAME_END: {
                 removeService("/game/" + command.getGameId());
                 break;
             }
@@ -113,13 +101,11 @@ public class GameService extends AbstractService
         }
     }
 
-    public void processGameEvent(ServerSession remote, ServerMessage message)
-    {
+    public void processGameEvent(ServerSession remote, ServerMessage message) {
         ...
     }
 
-    public void processGame(ServerSession remote, ServerMessage message)
-    {
+    public void processGame(ServerSession remote, ServerMessage message) {
         ...
     }
 }

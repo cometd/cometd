@@ -30,13 +30,11 @@ A typical usage in a `SecurityPolicy` (see also
 ====
 [source,java]
 ----
-public class OneClientPerAddressSecurityPolicy extends DefaultSecurityPolicy
-{
+public class OneClientPerAddressSecurityPolicy extends DefaultSecurityPolicy {
     private final Set<String> addresses = new HashSet<String>();
 
     @Override
-    public boolean canHandshake(BayeuxServer bayeuxServer, ServerSession session, ServerMessage message)
-    {
+    public boolean canHandshake(BayeuxServer bayeuxServer, ServerSession session, ServerMessage message) {
         BayeuxContext context = bayeuxServer.getContext();
 
         // Get the remote address of the client
@@ -47,10 +45,8 @@ public class OneClientPerAddressSecurityPolicy extends DefaultSecurityPolicy
         boolean notPresent = addresses.add(remoteAddress);
 
         // Avoid to leak addresses
-        session.addListener(new ServerSession.RemoveListener()
-        {
-            public void removed(ServerSession session, boolean timeout);
-            {
+        session.addListener(new ServerSession.RemoveListener() {
+            public void removed(ServerSession session, boolean timeout) {
                 addresses.remove(remoteAddress);
             }
         });

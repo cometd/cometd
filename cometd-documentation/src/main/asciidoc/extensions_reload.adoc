@@ -5,7 +5,7 @@
 The reload extension allows CometD to load or reload a page without having
 to re-handshake in the new (or reloaded) page, thereby resuming the existing
 CometD connection.
-This extension requires only the client-side extension. 
+This extension requires only the client-side extension.
 
 ==== Enabling the Client-side Extension
 
@@ -15,8 +15,7 @@ Dojo, and it is sufficient to use Dojo's `dojo.require` mechanism:
 ====
 [source,javascript]
 ----
-require(["dojox/cometd", "dojox/cometd/reload"], function(cometd)
-{
+require(["dojox/cometd", "dojox/cometd/reload"], function(cometd) {
     ...
 });
 ----
@@ -45,7 +44,7 @@ on the default `cometd` object under the name "reload".
 
 ==== Configuring the Reload Extension
 
-The reload extension accepts the following configuration parameters: 
+The reload extension accepts the following configuration parameters:
 
 [cols="1,1,10", options="header"]
 |===
@@ -68,9 +67,9 @@ The reload extension accepts the following configuration parameters:
 
 The JavaScript `cometd` object is normally already configured with the
 default reload extension configuration.
-To reconfigure the reload extension: 
+To reconfigure the reload extension:
 
-* Reconfigure the extension at startup: 
+* Reconfigure the extension at startup:
 +
 ====
 [source,javascript]
@@ -174,7 +173,7 @@ cleared yet, so you are advised to test this feature very carefully
 in a variety of conditions.
 ====
 
-A simple example follows: 
+A simple example follows:
 
 ====
 [source,html]
@@ -184,15 +183,12 @@ A simple example follows:
         <script type="text/javascript" src="dojo.js"></script>
         <script type="text/javascript">
             require(["dojo", "dojo/on", "dojox/cometd", "dojox/cometd/reload", "dojo/domReady!"],
-            function(dojo, on, cometd)
-            {
+            function(dojo, on, cometd) {
                 cometd.configure({ url: "http://localhost:8080/context/cometd", logLevel: "info" });
 
                 // Always subscribe to channels from successful handshake listeners.
-                cometd.addListener("/meta/handshake", new function(m)
-                {
-                    if (m.successful)
-                    {
+                cometd.addListener("/meta/handshake", new function(m) {
+                    if (m.successful) {
                         cometd.subscribe("/some/channel", function() { ... });
                         cometd.subscribe("/some/other/channel", function() { ... });
                     }

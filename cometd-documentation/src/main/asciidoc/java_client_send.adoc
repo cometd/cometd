@@ -49,13 +49,10 @@ this variant of the `publish()` method:
 Map<String, Object> data = new HashMap<String, Object>();
 // Fill in the data
 
-client.getChannel("/game/table/1").publish(data, new ClientSessionChannel.MessageListener()
-{
+client.getChannel("/game/table/1").publish(data, new ClientSessionChannel.MessageListener() {
     @Override
-    public void onMessage(ClientSessionChannel channel, Message message)
-    {
-        if (message.isSuccessful())
-        {
+    public void onMessage(ClientSessionChannel channel, Message message) {
+        if (message.isSuccessful()) {
             // The message reached the server
         }
     }
@@ -76,10 +73,8 @@ Message batching is also available:
 final ClientSession client = ...;
 client.handshake();
 
-client.batch (new Runnable()
-{
-    public void run()
-    {
+client.batch (new Runnable() {
+    public void run() {
         Map<String, Object> data1 = new HashMap<String, Object>();
         // Fill in the data1 map object
         client.getChannel("/game/table/1").publish(data1);
