@@ -1,0 +1,151 @@
+
+[[_java_client_send]]
+==== Sending Messages
+
+CometD allows you to send messages in two ways:
+
+. by <<_java_client_publish,publishing>> a message onto a channel
+. by performing a <<_java_client_rpc,remote procedure call>>
+
+The first case is covered by the `ClientSessionChannel.publish()` API.
+The second case is covered by the `ClientSession.remoteCall()` API.
+
+[[_java_client_publish]]
+===== Publishing
+
+The following is a typical example of publishing a message on a channel:
+
+====
+[source,java]
+----
+ClientTransport transport = ...
+ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transport);
+client.handshake();
+
+Map<String, Object> data = new HashMap<String, Object>();
+// Fill in the data
+
+ClientSessionChannel channel = client.getChannel("/game/table/1");
+channel.publish(data);
+----
+====
+
+Publishing data on a channel is an asynchronous operation.
+
+When the message you published arrives to the server, the server replies to
+the client with a publish acknowledgment; this allows clients to be sure that
+the message reached the server.
+The publish acknowledgment arrives on the same channel the message was published
+to, with the same message `id`, with a `successful` field.
+If the message publish fails for any reason, for example because server cannot
+be reached, then a publish failure will be emitted, similarly to publish acknowledgments.
+
+In order to be notified of publish acknowledgments or failures, you can use
+this variant of the `publish()` method:
+
+====
+[source,java]
+----
+Map<String, Object> data = new HashMap<String, Object>();
+// Fill in the data
+
+client.getChannel("/game/table/1").publish(data, new ClientSessionChannel.MessageListener()
+{
+    @Override
+    public void onMessage(ClientSessionChannel channel, Message message)
+    {
+        if (message.isSuccessful())
+        {
+            // The message reached the server
+        }
+    }
+});
+----
+====
+
+[NOTE]
+====
+Calling `publish()` _does not_ mean that you have published the message when `publish()` returns.
+====
+
+Message batching is also available:
+
+====
+[source,java]
+----
+final ClientSession client = ...;
+client.handshake();
+
+client.batch (new Runnable()
+{
+    public void run()
+    {
+        Map<String, Object> data1 = new HashMap<String, Object>();
+        // Fill in the data1 map object
+        client.getChannel("/game/table/1").publish(data1);
+
+        Map<String, Object> data2 = new HashMap<String, Object>();
+        // Fill in the data2 map object<
+        client.getChannel("/game/chat/1").publish(data2);
+    }
+});
+----
+====
+
+[WARNING]
+====
+The `ClientSession` API also allows you to batch using `startBatch()` and
+`endBatch()`, but remember to call `endBatch()` after having called `startBatch()`,
+for example in a `finally` block.
+If you don't, your messages continue to queue up, and your application
+does not work as expected.
+====
+
+[[_java_client_rpc]]
+===== Remote Calls
+
+Remote calls are used when the client only wants to call the server to
+perform some action, rather than sending a message to other clients.
+
+The typical usage is the following:
+
+====
+[source,java]
+----
+ClientSession client = ...;
+client.handshake();
+
+...
+Object data = ...;
+client.remoteCall("target", data, new MessageListener() {
+    @Override
+    public void onMessage(Message message) {
+        if (message.isSuccessful()) {
+            String result = (String)message.getData();
+            // Use the result.
+        } else {
+            // Remote call failed.
+        }
+    }
+}
+----
+====
+
+The first argument of `remoteCall()` is the _target_ of the remote call.
+You can think of it as a method name to invoke on the server, or you can think
+of it as the action you want to perform.
+It may or may not have a leading `/` character, and may be composed of multiple
+segments such as `target/subtarget`.
+It must match a server-side service annotated with `@RemoteCall` as explained
+<<_java_server_services_annotated_server_side_remote_call,in this section>>.
+
+The second argument of `remoteCall()` is an object with the arguments of the
+remote call.
+You can think of it as the arguments of the remote method call, reified as
+an object, or you can think of it as the data needed to perform the action.
+
+The third argument of `remoteCall()` is the callback invoked when the remote
+call returns, or when it fails (for example due to network failures), with
+the response message.
+Data returned by the server via `RemoteCall.Caller.result()` or
+`RemoteCall.Caller.failure()` will be available in the response message.

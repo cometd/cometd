@@ -6,7 +6,7 @@ You can use the CometD client implementation in any JSE(TM) or JEE(TM) applicati
 It consists of one main class, `org.cometd.client.BayeuxClient`, which
 implements the `org.cometd.bayeux.client.ClientSession` interface.
 
-Typical uses of the CometD Java client include: 
+Typical uses of the CometD Java client include:
 
 * The transport for a rich thick Java UI (for example, Swing or Android) to communicate
   to a Bayeux Server (also via firewalls).
@@ -18,6 +18,6 @@ implementation secrets.
 
 include::java_client_handshake.adoc[]
 include::java_client_subscribe.adoc[]
-include::java_client_publish.adoc[]
+include::java_client_send.adoc[]
 include::java_client_disconnect.adoc[]
 include::java_client_transports.adoc[]
