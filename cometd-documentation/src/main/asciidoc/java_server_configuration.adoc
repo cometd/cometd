@@ -123,6 +123,12 @@ that different server transports accept:
   `/meta/connect` message from a client before that client is considered invalid
   and is removed.
 
+| maxProcessing
+| -1
+| The maximum period of time, in milliseconds, that the server waits for the
+  processing of a message before considering the session invalid and removing it.
+  A negative value means to wait forever.
+
 | maxLazyTimeout
 | 5000
 | The maximum period of time, in milliseconds, that the server waits before delivering
