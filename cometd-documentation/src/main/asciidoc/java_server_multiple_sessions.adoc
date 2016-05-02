@@ -2,31 +2,48 @@
 [[_java_server_multiple_sessions]]
 ==== Multiple Sessions
 
-The http://ietf.org/rfc/rfc2616.txt[HTTP protocol] recommends a connection
-limit of two connections per domain.
-While modern browsers are configured by default with more than two connections
-per domain, it is not safe to make such an assumption; thus any iframes, tabs
-or windows on the same browser connecting to the same host need to share two connections.
+In the HTTP/1.1 protocol, clients such as browsers open a limited number of
+connections for each domain, typically 6.
 
-If two iframes/tabs/windows initiate a Bayeux communication, both start a
-long poll connect request and both connections are consumed, making it impossible
-to send another Bayeux request (for example, a publish) until one of the two
-long polls returns.
+https://tools.ietf.org/html/rfc2616[RFC 2616] recommended that client opened no
+more than two connections per domain.
+This limit has been removed in https://tools.ietf.org/html/rfc7230[RFC 7230],
+but it is still not a good idea to open too many connections to a domain.
+
+In browsers, all the tabs pointing to the same domain will share the limited
+connection pool.
+If a user opens 6 browser tabs to the same CometD application (and therefore,
+the same domain), then 6 long poll requests will be sent to the server,
+therefore consuming all available connections.
+This means that any further communication with the server (for example,
+the publish of a message) will be queued and will wait for one of the long
+polls to return before taking the chance to be sent to the server.
+
+This is not good because for the application user experience.
+An interaction of the user with the application should result in some immediate
+feedback, but instead the message is queued for many seconds, leaving the
+user with the doubt that interaction with the user interface really happened,
+causing frustration in using the application.
 
 The CometD Server implements the `multiple-clients` advice (see also
 <<_bayeux_multiple_clients_advice,this section>>). The server uses `BAYEUX_BROWSER`
 cookie to detect multiple CometD clients from the same browser.
 
-If the CometD server detects multiple clients, only one long poll connection
-is allowed, and subsequent long poll requests do not wait for messages before returning.
-They return immediately with the `multiple-clients` field of the advice object set to true.
+If the CometD server detects multiple clients, it uses the parameter
+`maxSessionsPerBrowser` (by default set to 1) to decide how many long polls are
+allowed for that browser (see also
+<<_java_server_configuration,the server configuration section>>).
+Additional long poll requests will be returned immediately by the server
+with the `multiple-clients` field of the advice object set to true.
+A negative value for `maxSessionsPerBrowser` allows unlimited number of long polls.
+
 The advice also contains an `interval` field set to the value of the `multiSessionInterval`
-servlet init parameter (see also <<_java_server_configuration,the server configuration section>>).
+parameter (see also <<_java_server_configuration,the server configuration section>>).
 This instructs the client not to send another poll until that interval has elapsed.
-The effect of this advice is that additional client connections normally poll
-the server with a period of `multiSessionInterval`.
-This avoids consuming both HTTP connections at the cost of some latency for
-the additional iframes/tabs/windows.
+The effect of this advice is that additional client connections will perform
+normal polls (not long polls) to the server with a period of `multiSessionInterval`.
+This avoids consuming all the HTTP connections at the cost of some latency for
+the additional tabs.
 
 The recommendation is that the client application monitors the `/meta/connect`
 channel for `multiple-clients` field in the advice.
@@ -34,7 +51,15 @@ If detected, the application might ask the user to close the additional tabs,
 or it could automatically close them, or take some other action.
 
 Non-browser clients (or browsers with cookies disabled) must handle the `BAYEUX_BROWSER`
-cookie with the same semantic of browsers, or configure the server to allow
-multiple sessions even without `BAYEUX_BROWSER` information via the
-`allowMultiSessionsNoBrowser` servlet init parameter (see also
+cookie with the same semantic of browsers.
+If these clients cannot receive and send cookies, they must configure the
+server to allow multiple sessions even without `BAYEUX_BROWSER` information
+via the `allowMultiSessionsNoBrowser` parameter (see also
 <<_java_server_configuration,the server configuration section>>).
+
+The parameter `maxSessionsPerBrowser` controls the number of
+long polling sessions when the server can detect the `BAYEUX_BROWSER` cookie.
+The parameter `allowMultiSessionsNoBrowser` allows long polling sessions
+when the server cannot detect the `BAYEUX_BROWSER` cookie.
+Both can be specified in the configuration, to handle different clients that
+have different cookie capabilities.
