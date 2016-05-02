@@ -194,9 +194,9 @@ Spring's `applicationContext.xml` is as follows:
 ----
 ====
 
-Spring scans the classpath for classes that qualify as Spring beans in the given base package. 
+Spring scans the classpath for classes that qualify as Spring beans in the given base package.
 
-The CometD annotated service needs some additional annotation to make it qualify as a Spring bean: 
+The CometD annotated service needs some additional annotation to make it qualify as a Spring bean:
 
 ====
 [source,java]
@@ -204,22 +204,19 @@ The CometD annotated service needs some additional annotation to make it qualify
 @javax.inject.Named // Tells Spring that this is a bean
 @javax.inject.Singleton // Tells Spring that this is a singleton
 @Service("echoService")
-public class EchoService
-{
+public class EchoService {
     @Inject
     private BayeuxServer bayeux;
     @Session
     private ServerSession serverSession;
 
     @PostConstruct
-    public void init()
-    {
+    public void init() {
         System.out.println("Echo Service Initialized");
     }
 
     @Listener("/echo")
-    public void echo(ServerSession remote, ServerMessage.Mutable message)
-    {
+    public void echo(ServerSession remote, ServerMessage.Mutable message) {
         String channel = message.getChannel();
         Object data = message.getData();
         remote.deliver(serverSession, channel, data);
@@ -235,58 +232,50 @@ the CometD annotations; do so using a Spring component:
 [source,java]
 ----
 @Configuration
-public class Configurer implements DestructionAwareBeanPostProcessor, ServletContextAware
-{
+public class Configurer implements DestructionAwareBeanPostProcessor, ServletContextAware {
     private BayeuxServer bayeuxServer;
     private ServerAnnotationProcessor processor;
 
     @Inject
-    private void setBayeuxServer(BayeuxServer bayeuxServer)
-    {
+    private void setBayeuxServer(BayeuxServer bayeuxServer) {
         this.bayeuxServer = bayeuxServer;
     }
 
     @PostConstruct
-    private void init()
-    {
+    private void init() {
         this.processor = new ServerAnnotationProcessor(bayeuxServer);
     }
 
-    public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException
-    {
+    public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException {
         processor.processDependencies(bean);
         processor.processConfigurations(bean);
         processor.processCallbacks(bean);
         return bean;
     }
 
-    public Object postProcessAfterInitialization(Object bean, String name) throws BeansException
-    {
+    public Object postProcessAfterInitialization(Object bean, String name) throws BeansException {
         return bean;
     }
 
-    public void postProcessBeforeDestruction(Object bean, String name) throws BeansException
-    {
+    public void postProcessBeforeDestruction(Object bean, String name) throws BeansException {
         processor.deprocessCallbacks(bean);
     }
 
     @Bean(initMethod = "start", destroyMethod = "stop")
-    public BayeuxServer bayeuxServer()
-    {
+    public BayeuxServer bayeuxServer() {
         BayeuxServerImpl bean = new BayeuxServerImpl();
         bean.setOption(BayeuxServerImpl.LOG_LEVEL, "3");
         return bean;
     }
 
-    public void setServletContext(ServletContext servletContext)
-    {
+    public void setServletContext(ServletContext servletContext) {
         servletContext.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
     }
 }
 ----
 ====
 
-Summary: 
+Summary:
 
 * This Spring component is the factory for the BayeuxServer object via the
   `bayeuxServer()` method (annotated with Spring's `@Bean`).

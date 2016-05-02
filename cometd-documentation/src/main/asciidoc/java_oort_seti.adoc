@@ -78,25 +78,24 @@ In practice, the best way to associate a `userId` with a `ServerSession` is in a
 ====
 [source,java]
 ----
-public class MySecurityPolicy extends DefaultSecurityPolicy
-{
+public class MySecurityPolicy extends DefaultSecurityPolicy {
     private final Seti seti;
 
-    public MySecurityPolicy(Seti seti)
-    {
+    public MySecurityPolicy(Seti seti) {
         this.seti = seti;
     }
 
     @Override
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-    {
-        if (session.isLocalSession())
+    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+        if (session.isLocalSession()) {
             return true;
+        }
 
         // Authenticate
         String userId = performAuthentication(session, message);
-        if (userId == null)
+        if (userId == null) {
             return false;
+        }
 
         // Associate
         seti.associate(userId, session);
@@ -146,15 +145,12 @@ message arrives at a `Seti` instance:
 [source,java]
 ----
 Seti seti = ...;
-seti.addPresenceListener(new Seti.PresenceListener()
-{
-    public void presenceAdded(Event event)
-    {
+seti.addPresenceListener(new Seti.PresenceListener() {
+    public void presenceAdded(Event event) {
         System.out.printf("User ID %s is now present in node %s%n", event.getUserId(), event.getURL());
     }
 
-    public void presenceRemoved(Event event)
-    {
+    public void presenceRemoved(Event event) {
         System.out.printf("User ID %s is now absent in node %s%n", event.getUserId(), event.getURL());
     }
 });
@@ -169,10 +165,8 @@ publish messages (or to subscribe to additional channels):
 [source,java]
 ----
 final Seti seti = ...;
-seti.addPresenceListener(new Seti.PresenceListener()
-{
-    public void presenceAdded(Event event)
-    {
+seti.addPresenceListener(new Seti.PresenceListener() {
+    public void presenceAdded(Event event) {
         Oort oort = seti.getOort();
         String oortURL = event.getURL();
         OortComet oortComet = oort.getComet(oortURL);
@@ -184,8 +178,7 @@ seti.addPresenceListener(new Seti.PresenceListener()
         oortComet.getChannel("/service/sync").publish(data);
     }
 
-    public void presenceRemoved(Event event)
-    {
+    public void presenceRemoved(Event event) {
     }
 });
 ----
@@ -200,14 +193,12 @@ can send messages to a particular user in the cluster.
 [source,java]
 ----
 @Service("seti_forwarder");
-public class SetiForwarder
-{
+public class SetiForwarder {
     @Inject
     private Seti seti;
 
     @Listener("/service/forward")
-    public void forward(ServerSession session, ServerMessage message)
-    {
+    public void forward(ServerSession session, ServerMessage message) {
         Map<String,Object> data = message.getDataAsMap();
         String targetUserId = (String)data.get("targetUserId");
         seti.sendMessage(targetUserId, message.getChannel(), data);

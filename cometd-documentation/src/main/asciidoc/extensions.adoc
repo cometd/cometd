@@ -57,7 +57,7 @@ An extension is a JavaScript object with four optional functions:
 * `unregistered()` – called when the extension is unregistered
 
 These functions are optional; you can use only one, or maybe two, three, or all of them.
-If they are present, CometD invokes them at the proper time. 
+If they are present, CometD invokes them at the proper time.
 
 Writing an extension that logs and counts the long polls is quite easy:
 you need a reference to the `cometd` object that has the logging functions,
@@ -66,21 +66,17 @@ and you need only the outgoing extension function:
 ====
 [source,javascript]
 ----
-var LoggerExt = function()
-{
+var LoggerExt = function() {
     var _cometd;
     var _counter;
 
-    this.registered = function(name, cometd)
-    {
+    this.registered = function(name, cometd) {
         // Store the cometd object reference
         _cometd = cometd;
     };
 
-    this.outgoing = function(message)
-    {
-        if (message.channel == '/meta/connect')
-        {
+    this.outgoing = function(message) {
+        if (message.channel == '/meta/connect') {
             // Log the long poll
             _cometd._info('bayeux connect');
 
@@ -120,7 +116,7 @@ for incoming extensions).
 
 If the extension function returns `null`, the processing should stop: other
 extensions do not process the message, and CometD does not further process it.
-CometD does not send the message to the server, nor notify listeners. 
+CometD does not send the message to the server, nor notify listeners.
 
 [[_extensions_registering]]
 === Registering the Extension
@@ -131,7 +127,7 @@ The JavaScript CometD API defines three functions to manage extensions:
 * `unregisterExtension(name)` – unregisters the extension previously registered with the given name
 * `getExtension(name)` – obtains a reference to the extension previously registered with the given name
 
-Following the example above, you can register the extension like this: 
+Following the example above, you can register the extension like this:
 
 ====
 [source,javascript]
@@ -143,7 +139,7 @@ cometd.registerExtension('loggerExt', new LoggerExt());
 From now on, the meta connect messages are modified to carry the counter
 from the example extension above.
 
-Unregistering the extension is similar: 
+Unregistering the extension is similar:
 
 ====
 [source,javascript]
@@ -152,7 +148,7 @@ cometd.unregisterExtension('loggerExt');
 ----
 ====
 
-It is not possible to register two extensions under the same name. 
+It is not possible to register two extensions under the same name.
 
 You can register more than one extension, and CometD supplies them in
 registration order: outgoing extensions functions are called in registration
@@ -177,15 +173,13 @@ undefined object):
 ====
 [source,javascript]
 ----
-cometd.onExtensionException = function(exception, extensionName, outgoing, message)
-{
+cometd.onExtensionException = function(exception, extensionName, outgoing, message) {
     // Uh-oh, something went wrong, disable this extension
     // Object "this" points to the CometD object
     this.unregisterExtension(extensionName);
 
     // If the message is going to the server, add the error to the message
-    if (outgoing)
-    {
+    if (outgoing) {
         // Assume you have created the message structure below
         var badExtension = message.ext.badExtensions[extensionName];
         badExtension.exception = exception;
@@ -206,7 +200,7 @@ To learn about a similar mechanism for listeners and subscribers, see also
 <<_javascript_configure,the JavaScript library configuration section>>.
 ====
 
-The next sections explain in detail the use of the extensions CometD provides. 
+The next sections explain in detail the use of the extensions CometD provides.
 
 include::extensions_activity.adoc[]
 include::extensions_acknowledge.adoc[]

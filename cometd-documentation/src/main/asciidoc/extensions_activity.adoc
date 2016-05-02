@@ -22,7 +22,7 @@ If the server's `web.xml` is configured with a `<session-timeout>` element,
 that destroys the `HttpSession` after 30 minutes of inactivity, then the `HttpSession`
 will never be destroyed because the heart-beat mechanism looks like a legitimate
 HTTP request to the server, and it never stops.
-The server cannot know that those POSTs are just heart-beats. 
+The server cannot know that those POSTs are just heart-beats.
 
 The `ActivityExtension` solves this problem.
 
@@ -49,7 +49,7 @@ bayeuxServer.addExtension(new ActivityExtension(ActivityExtension.Activity.CLIEN
 The example above configures the `ActivityExtension` to monitor client-only activity,
 and disconnects inactive clients after 15 minutes (or 15 * 60 * 1000 ms) of inactivity.
 
-Similarly, to monitor client-server activity: 
+Similarly, to monitor client-server activity:
 
 ====
 [source,java]
@@ -74,13 +74,12 @@ session for which you want to monitor inactivity, for example:
 ====
 [source,java]
 ----
-public class MyPolicy extends DefaultSecurityPolicy
-{
+public class MyPolicy extends DefaultSecurityPolicy {
     @Override
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-    {
-        if (!isAdminUser(session, message))
+    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+        if (!isAdminUser(session, message)) {
             session.addExtension(new ActivityExtension.SessionExtension(ActivityExtension.Activity.CLIENT, 10 * 60 * 1000L));
+        }
         return true;
     }
 }
@@ -98,15 +97,13 @@ Alternatively, you can write a `BayeuxServer` extension that installs the
 ====
 [source,java]
 ----
-public class MyExtension extends BayeuxServer.Extension.Adapter
-{
+public class MyExtension extends BayeuxServer.Extension.Adapter {
     @Override
-    public boolean sendMeta(ServerSession session, ServerMessage.Mutable message)
-    {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful())
-        {
-            if (!isAdminUser(session, message))
+    public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
+        if (Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful()) {
+            if (!isAdminUser(session, message)) {
                 session.addExtension(new ActivityExtension.SessionExtension(ActivityExtension.Activity.CLIENT, 10 * 60 * 1000L));
+            }
         }
         return true;
     }

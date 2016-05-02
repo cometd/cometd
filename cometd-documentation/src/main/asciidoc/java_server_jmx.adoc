@@ -53,7 +53,7 @@ are stored in the servlet context, and as such are candidate to use the same
 mechanism to be exposed as MBeans, provided that you define the right Jetty
 JMX MBean metadata descriptors.
 
-This is all you need to do to export CometD MBeans when running within Jetty. 
+This is all you need to do to export CometD MBeans when running within Jetty.
 
 [[_java_server_jmx_others]]
 ===== JMX Integration in Other Servlet Containers
@@ -77,7 +77,7 @@ small initializer class.
 Refer to <<_java_server_services_integration,the services integration section>>
 for a broader discussion of how to initialize CometD components.
 
-A simple example of such initializer class is the following: 
+A simple example of such initializer class is the following:
 
 ====
 [source,java]
@@ -91,42 +91,32 @@ import javax.servlet.ServletResponse;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.eclipse.jetty.jmx.MBeanContainer;
 
-public class CometDJMXExporter extends GenericServlet
-{
+public class CometDJMXExporter extends GenericServlet {
     private volatile MBeanContainer mbeanContainer;
 
     @Override
-    public void init() throws ServletException
-    {
-        try
-        {
+    public void init() throws ServletException {
+        try {
             mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
             BayeuxServer bayeuxServer = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
             mbeanContainer.addBean(bayeuxServer);
             // Add other components
             mbeanContainer.start();
-        }
-        catch (Exception x)
-        {
+        } catch (Exception x) {
             throw new ServletException(x);
         }
     }
 
     @Override
-    public void service(ServletRequest servletRequest, ServletResponse servletResponse) throws ServletException, IOException
-    {
+    public void service(ServletRequest servletRequest, ServletResponse servletResponse) throws ServletException, IOException {
         throw new ServletException();
     }
 
     @Override
-    public void destroy()
-    {
-        try
-        {
+    public void destroy() {
+        try {
             mbeanContainer.stop();
-        }
-        catch (Exception ignored)
-        {
+        } catch (Exception ignored) {
         }
     }
 }

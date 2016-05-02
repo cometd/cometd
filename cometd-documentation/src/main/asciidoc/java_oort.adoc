@@ -377,10 +377,8 @@ Oort node URLs cannot be known a priori, but can be known at runtime), for examp
 ====
 [source,java]
 ----
-public class OortConfigurationServlet extends GenericServlet
-{
-    public void init() throws ServletException
-    {
+public class OortConfigurationServlet extends GenericServlet {
+    public void init() throws ServletException {
         // Grab the Oort object
         Oort oort = (Oort)getServletContext().getAttribute(Oort.OORT_ATTRIBUTE);
 
@@ -388,16 +386,15 @@ public class OortConfigurationServlet extends GenericServlet
         List<String> urls = ...;
 
         // Connect to the other Oort nodes
-        for (String url : urls)
-        {
+        for (String url : urls) {
             OortComet oortComet = oort.observeComet(url);
-            if (!oortComet.waitFor(1000, BayeuxClient.State.CONNECTED))
+            if (!oortComet.waitFor(1000, BayeuxClient.State.CONNECTED)) {
                 throw new ServletException("Cannot connect to Oort node " + url);
+            }
         }
     }
 
-    public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException
-    {
+    public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException {
         throw new ServletException();
     }
 }
@@ -453,15 +450,12 @@ the cluster and when a node leaves the cluster:
 [source,java]
 ----
 Oort oort = ...;
-oort.addCometListener(new Oort.CometListener()
-{
-    public void cometJoined(Event event)
-    {
+oort.addCometListener(new Oort.CometListener() {
+    public void cometJoined(Event event) {
         System.out.printf("Comet joined the cluster %s%n", event.getCometURL());
     }
 
-    public void cometLeft(Event event)
-    {
+    public void cometLeft(Event event) {
         System.out.printf("Comet left the cluster %s%n", event.getCometURL());
     }
 });
@@ -479,10 +473,8 @@ connected to the remote Oort via `Oort.observeComet(String)`, and publish messag
 [source,java]
 ----
 final Oort oort = ...;
-oort.addCometListener(new Oort.CometListener()
-{
-    public void cometJoined(Event event)
-    {
+oort.addCometListener(new Oort.CometListener() {
+    public void cometJoined(Event event) {
         String cometURL = event.getCometURL();
         OortComet oortComet = oort.observeComet(cometURL);
 
@@ -490,8 +482,7 @@ oort.addCometListener(new Oort.CometListener()
         oortComet.getChannel("/service/foo").publish("bar");
     }
 
-    public void cometLeft(Event event)
-    {
+    public void cometLeft(Event event) {
     }
 });
 ----
@@ -543,25 +534,24 @@ implementation of `SecurityPolicy` as follows (see also
 ====
 [source,java]
 ----
-public class OortSecurityPolicy extends DefaultSecurityPolicy
-{
+public class OortSecurityPolicy extends DefaultSecurityPolicy {
     private final Oort oort;
 
-    private OortSecurityPolicy(Oort oort)
-    {
+    private OortSecurityPolicy(Oort oort) {
         this.oort = oort;
     }
 
     @Override
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-    {
+    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
         // Local sessions can always handshake
-        if (session.isLocalSession())
+        if (session.isLocalSession()) {
             return true;
+        }
 
         // Remote Oort nodes are allowed to handshake
-        if (oort.isOortHandshake(message))
+        if (oort.isOortHandshake(message)) {
             return true;
+        }
 
         // Remote clients must have a valid token
         Map<String, Object> ext = message.getExt();

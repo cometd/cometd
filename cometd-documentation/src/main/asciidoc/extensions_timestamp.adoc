@@ -7,7 +7,7 @@ message the client and/or server sends.
 It is a non-standard extension because it does not add the additional fields
 to the `ext` field, but to the message object itself.
 This extension requires both a client-side extension and a server-side extension.
-The server-side extension is available in Java. 
+The server-side extension is available in Java.
 
 ==== Enabling the Server-side Extension
 
@@ -29,8 +29,7 @@ Dojo, and it is sufficient to use Dojo's `dojo.require` mechanism:
 ====
 [source,javascript]
 ----
-require(["dojox/cometd", "dojox/cometd/timestamp"], function(cometd)
-{
+require(["dojox/cometd", "dojox/cometd/timestamp"], function(cometd) {
     ...
 });
 ----

@@ -243,10 +243,8 @@ package com.acme;
 
 import org.cometd.common.JettyJSONContextClient;
 
-public class MyCustomJSONContextClient extends JettyJSONContextClient
-{
-    public MyCustomJSONContextClient()
-    {
+public class MyCustomJSONContextClient extends JettyJSONContextClient {
+    public MyCustomJSONContextClient() {
         getJSON().addConvertor(UserInfo.class, new UserInfoConvertor());
     }
 }
@@ -269,19 +267,16 @@ A typical implementation of the convertor could be (assuming that your
 import java.util.Map;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class UserInfoConvertor implements JSON.Convertor
-{
+public class UserInfoConvertor implements JSON.Convertor {
     @Override
-    public void toJSON(Object obj, JSON.Output out)
-    {
+    public void toJSON(Object obj, JSON.Output out) {
         UserInfo userInfo = (UserInfo)obj;
         out.addClass(UserInfo.class);
         out.add("id", userInfo.getId());
     }
 
     @Override
-    public Object fromJSON(Map object)
-    {
+    public Object fromJSON(Map object) {
         String id = (String)object.get("id");
         return new UserInfo(id);
     }
@@ -336,10 +331,8 @@ package com.acme;
 
 import org.cometd.server.JettyJSONContextServer;
 
-public class MyCustomJSONContextServer extends JettyJSONContextServer
-{
-    public MyCustomJSONContextServer()
-    {
+public class MyCustomJSONContextServer extends JettyJSONContextServer {
+    public MyCustomJSONContextServer() {
         getJSON().addConvertor(UserInfo.class, new UserInfoConvertor());
     }
 }
@@ -445,24 +438,20 @@ interface:
 ----
 // At initialization time, create the OortObject and add the listener
 final OortObject<Long> userCount = new ...;
-userCount.addListener(new OortObject.Listener()
-{
-    public void onUpdated(OortObject.Info<T> oldInfo, OortObject.Info<T> newInfo)
-    {
+userCount.addListener(new OortObject.Listener() {
+    public void onUpdated(OortObject.Info<T> oldInfo, OortObject.Info<T> newInfo) {
         // The user count changed somewhere, broadcast the new value
         long count = userCount.merge(OortObjectMergers.longSum());
         broadcastUserCount(count);
     }
 
-    public void onRemoved(OortObject.Info<T> info);
-    {
+    public void onRemoved(OortObject.Info<T> info) {
         // A node disappeared, broadcast the new user count
         long count = userCount.merge(OortObjectMergers.longSum());
         broadcastUserCount(count);
     }
 
-    private void broadcastUserCount(long count)
-    {
+    private void broadcastUserCount(long count) {
         // Publish a message on "/user/count" to update the remote clients connected to this node
         BayeuxServer bayeuxServer = userCount.getOort().getBayeuxServer();
         bayeuxServer.getChannel("/user/count").publish(userCount.getLocalSession(), count);

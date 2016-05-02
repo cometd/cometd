@@ -12,7 +12,7 @@ The default implementation uses the Jetty library.
 These two libraries are among the fastest available; it turns out that,
 for CometD, the Jackson library is faster than Jetty's in both parsing
 and generating.
-Distinctions between them include: 
+Distinctions between them include:
 
 * The Jetty library allows you to plug in custom serializers and deserializers,
   to fine control the conversion from object to JSON and vice versa, via a custom API.
@@ -43,7 +43,7 @@ generates JSON from and parses JSON to `org.cometd.bayeux.server.ServerMessage` 
 On the client, the `org.cometd.common.JSONContext.Client` instance must be
 passed directly into the transport configuration; if omitted, the default
 Jetty JSON library is used.
-For example: 
+For example:
 
 ====
 [source,java]
@@ -71,18 +71,14 @@ in the following way:
 ====
 [source,java]
 ----
-public class MyJacksonJSONContextClient extends org.cometd.common.JacksonJSONContextClient
-{
-    public MyJacksonJSONContextClient()
-    {
+public class MyJacksonJSONContextClient extends org.cometd.common.JacksonJSONContextClient {
+    public MyJacksonJSONContextClient() {
         org.codehaus.jackson.map.ObjectMapper objectMapper = getObjectMapper();
         objectMapper.registerModule(new MyModule());
     }
 
-    private class MyModule extends org.codehaus.jackson.map.module.SimpleModule
-    {
-        public MyModule()
-        {
+    private class MyModule extends org.codehaus.jackson.map.module.SimpleModule {
+        public MyModule() {
             // Add your custom serializers/deserializers here
             addSerializer(Foo.class, new FooSerializer());
         }
@@ -104,10 +100,8 @@ files, and of course convert into custom objects (see also
 ====
 [source,java]
 ----
-public EchoInfo readFromConfigFile(BayeuxServer bayeuxServer) throws ParseException
-{
-    try (FileReader reader = new FileReader("echo.json"))
-    {
+public EchoInfo readFromConfigFile(BayeuxServer bayeuxServer) throws ParseException {
+    try (FileReader reader = new FileReader("echo.json")) {
         JSONContext.Server jsonContext = (JSONContext.Server)bayeuxServer.getOption("jsonContext");
         EchoInfo info = jsonContext.getParser().parse(reader, EchoInfo.class);
         return info;
@@ -116,16 +110,14 @@ public EchoInfo readFromConfigFile(BayeuxServer bayeuxServer) throws ParseExcept
 ----
 ====
 
-Similarly, objects can be converted into JSON: 
+Similarly, objects can be converted into JSON:
 
 ====
 [source,java]
 ----
-public EchoInfo writeToConfigFile(BayeuxServer bayeuxServer, EchoInfo info) throws IOException
-{
+public EchoInfo writeToConfigFile(BayeuxServer bayeuxServer, EchoInfo info) throws IOException {
     // JDK 7's try-with-resources
-    try (FileWriter writer = new FileWriter("echo.json"))
-    {
+    try (FileWriter writer = new FileWriter("echo.json")) {
         JSONContext.Server jsonContext = (JSONContext.Server)bayeuxServer.getOption("jsonContext");
         String json = jsonContext.getGenerator().generate(info);
         writer.write(json);
@@ -141,7 +133,7 @@ On the server, you can specify the fully qualified name of a class implementing
 `org.cometd.common.JSONContext.Server` as init-parameter of the `CometDServlet`
 (see also <<_java_server_configuration,the server configuration section>>);
 if omitted, the default Jetty library is used.
-For example: 
+For example:
 
 ====
 [source,xml]
@@ -174,7 +166,7 @@ For example:
 
 The class specified must be instantiable using the default parameterless
 constructor, and it must implement `org.cometd.common.JSONContext.Server`.
-You can customize it by adding serializers/deserializers as explained above. 
+You can customize it by adding serializers/deserializers as explained above.
 
 [[_java_json_oort_config]]
 ===== Oort Configuration
@@ -205,7 +197,7 @@ JSON arrays.
 Similarly, Jackson produces `java.lang.Integer` where the Jetty library
 produces `java.lang.Long`.
 
-To write portable application code, use the following code patterns: 
+To write portable application code, use the following code patterns:
 
 ====
 [source,java]
@@ -275,42 +267,35 @@ Finally, these are the `EchoInfoConvertor` and `EchoInfo` classes:
 ====
 [source,java]
 ----
-public class EchoInfoConvertor implements JSON.Convertor
-{
-    public void toJSON(Object obj, JSON.Output out)
-    {
+public class EchoInfoConvertor implements JSON.Convertor {
+    public void toJSON(Object obj, JSON.Output out) {
         EchoInfo echoInfo = (EchoInfo)obj;
         out.addClass(EchoInfo.class);
         out.add("id", echoInfo.getId());
         out.add("echo", echoInfo.getEcho());
     }
 
-    public Object fromJSON(Map map)
-    {
+    public Object fromJSON(Map map) {
         String id = (String)map.get("id");
         String echo = (String)map.get("echo");
         return new EchoInfo(id, echo);
     }
 }
 
-public class EchoInfo
-{
+public class EchoInfo {
     private final String id;
     private final String echo;
 
-    public EchoInfo(String id, String echo)
-    {
+    public EchoInfo(String id, String echo) {
         this.id = id;
         this.echo = echo;
     }
 
-    public String getId()
-    {
+    public String getId() {
         return id;
     }
 
-    public String getEcho()
-    {
+    public String getEcho() {
         return echo;
     }
 }
@@ -330,10 +315,8 @@ jsonContext.getJSON().addConvertor(EchoInfo.class, new EchoInfoConvertor());
 // Later in the application
 BayeuxClient bayeuxClient = ...;
 
-bayeuxClient.getChannel("/echo").subscribe(new ClientSessionChannel.MessageListener()
-{
-    public void onMessage(ClientSessionChannel channel, Message message)
-    {
+bayeuxClient.getChannel("/echo").subscribe(new ClientSessionChannel.MessageListener() {
+    public void onMessage(ClientSessionChannel channel, Message message) {
         // Receive directly EchoInfo objects
         EchoInfo data = (EchoInfo)message.getData();
     }

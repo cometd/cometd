@@ -71,8 +71,7 @@ a minimal support for required CometD objects (such as the BayeuxServer instance
 [source,java]
 ----
 @org.cometd.annotation.Service("echoService")
-public class EchoService
-{
+public class EchoService {
     @javax.inject.Inject
     private BayeuxServer bayeux;
 }
@@ -83,10 +82,8 @@ public class EchoService
 ====
 [source,java]
 ----
-public class EchoService extends AbstractService
-{
-    public EchoService(BayeuxServer bayeux)
-    {
+public class EchoService extends AbstractService {
+    public EchoService(BayeuxServer bayeux) {
         super(bayeux, "echoService");
     }
 }
@@ -124,14 +121,12 @@ In annotated services, you can use the `@Configure` annotation on methods:
 [source,java]
 ----
 @Service("echoService")
-public class EchoService
-{
+public class EchoService {
     @Inject
     private BayeuxServer bayeux;
 
     @Configure("/echo")
-    public void configure(ConfigurableServerChannel channel)
-    {
+    public void configure(ConfigurableServerChannel channel) {
         channel.setLazy(true);
         channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
     }
@@ -151,8 +146,7 @@ In annotated services, this is accomplished using the `@Session` annotation:
 [source,java]
 ----
 @Service("echoService")
-public class EchoService
-{
+public class EchoService {
     @Inject
     private BayeuxServer bayeux;
 
@@ -189,28 +183,26 @@ The CometD implementation invokes `@Listener` methods with the following paramet
 * The `ServerMessage` that the server is processing.
 * Zero or more `String` arguments corresponding to channel parameters.
 
-The callback method must have the following signature, or a covariant version of it: 
+The callback method must have the following signature, or a covariant version of it:
 
 [cols="1a,1a", options="header"]
 |===
 | Annotated Style
 | Inherited Style
 
-| 
+|
 ====
 [source,java]
 ----
 @Service("echoService")
-public class EchoService
-{
+public class EchoService {
     @Inject
     private BayeuxServer bayeux;
     @Session
     private ServerSession serverSession;
 
     @org.cometd.annotation.Listener("/echo")
-    public void echo(ServerSession remote, ServerMessage.Mutable message)
-    {
+    public void echo(ServerSession remote, ServerMessage.Mutable message) {
         String channel = message.getChannel();
         Object data = message.getData();
         remote.deliver(serverSession, channel, data);
@@ -223,16 +215,13 @@ public class EchoService
 ====
 [source,java]
 ----
-public class EchoService extends AbstractService
-{
-    public EchoService(BayeuxServer bayeux)
-    {
+public class EchoService extends AbstractService {
+    public EchoService(BayeuxServer bayeux) {
         super(bayeux, "echoService");
         addService("/echo", "echo");
     }
 
-    public void echo(ServerSession remote, ServerMessage.Mutable message)
-    {
+    public void echo(ServerSession remote, ServerMessage.Mutable message) {
         String channel = message.getChannel();
         Object data = message.getData();
         remote.deliver(getServerSession(), channel, data);
@@ -258,11 +247,9 @@ order:
 [source,java]
 ----
 @Service
-public class ParametrizedService
-{
+public class ParametrizedService {
     @Listener("/news/{category}/{event}")
-    public void serviceNews(ServerSession remote, ServerMessage message, @Param("category") String category, @Param("event") String event)
-    {
+    public void serviceNews(ServerSession remote, ServerMessage message, @Param("category") String category, @Param("event") String event) {
         ...
     }
 }
@@ -317,16 +304,14 @@ The callback method signature must be:
 [source,java]
 ----
 @Service("echoService")
-public class EchoService
-{
+public class EchoService {
     @Inject
     private BayeuxServer bayeux;
     @Session
     private ServerSession serverSession;
 
     @org.cometd.annotation.Subscription("/echo")
-    public void echo(Message message)
-    {
+    public void echo(Message message) {
         System.out.println("Echo service published " + message);
     }
 }
@@ -362,29 +347,22 @@ response Bayeux message back to the sender.
 [source,java]
 ----
 @Service
-public class RemoteCallService
-{
+public class RemoteCallService {
     @RemoteCall("contacts")
-    public void retrieveContacts(final RemoteCall.Caller caller, final Object data)
-    {
+    public void retrieveContacts(final RemoteCall.Caller caller, final Object data) {
         // Perform a lengthy query to the database to
         // retrieve the contacts in a separate thread.
-        new Thread(new Runnable()
-        {
+        new Thread(new Runnable() {
             @Override
-            public void run()
-            {
-                try
-                {
+            public void run() {
+                try {
                     Map<String, Object> arguments = (Map<String, Object>)data;
                     String userId = (String)arguments.get("userId");
                     List<String> contacts = retrieveContactsFromDatabase(userId);
 
                     // We got the contacts, respond.
                     caller.result(contacts);
-                }
-                catch (Exception x)
-                {
+                } catch (Exception x) {
                     // Uh-oh, something went wrong.
                     caller.failure(x.getMessage());
                 }
@@ -468,25 +446,22 @@ CometD introduced client-side services to reduce the boilerplate code required:
 | Annotated Style
 | Traditional Style
 
-| 
+|
 ====
 [source,java]
 ----
 @Service
-public class Service
-{
+public class Service {
     @Session
     private ClientSession bayeuxClient;
 
     @Listener(Channel.META_CONNECT)
-    public void metaConnect(Message connect)
-    {
+    public void metaConnect(Message connect) {
         // Connect handling...
     }
 
     @Subscription("/foo")
-    public void foo(Message message)
-    {
+    public void foo(Message message) {
         // Message handling...
     }
 }
@@ -499,10 +474,8 @@ public class Service
 ----
 ClientSession bayeuxClient = ...;
 
-bayeuxClient.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-{
-    public void onMessage(ClientSessionChannel channel, Message message)
-    {
+bayeuxClient.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+    public void onMessage(ClientSessionChannel channel, Message message) {
         // Connect handling...
     }
 });
@@ -510,10 +483,8 @@ bayeuxClient.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChann
 bayeuxClient.handshake();
 bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED);
 
-bayeuxClient.getChannel("/foo").subscribe(new ClientSessionChannel.MessageListener()
-{
-    public void onMessage(ClientSessionChannel channel, Message message)
-    {
+bayeuxClient.getChannel("/foo").subscribe(new ClientSessionChannel.MessageListener() {
+    public void onMessage(ClientSessionChannel channel, Message message) {
         // Message handling...
     }
 });
@@ -543,8 +514,7 @@ and `ClientSession` instances.
 [source,java]
 ----
 @Service
-public class Service
-{
+public class Service {
     @org.cometd.annotation.Session
     private ClientSession bayeuxClient;
 }
@@ -555,37 +525,33 @@ public class Service
 
 In client-side annotated services, methods annotated with `@Listener` represent
 callbacks that are called upon receipt of messages on meta channels.
-Do not use listener callbacks to subscribe to broadcast channels. 
+Do not use listener callbacks to subscribe to broadcast channels.
 
 [cols="1a,1a", options="header"]
 |===
 | Annotated Style
 | Traditional Style
 
-| 
+|
 ====
 [source,java]
 ----
 @Service
-public class Service
-{
+public class Service {
     @Listener(Channel.META_CONNECT)
-    public void metaConnect(Message connect)
-    {
+    public void metaConnect(Message connect) {
         // Connect handling...
     }
 }
 ----
 ====
 
-| 
+|
 ====
 [source,java]
 ----
-bayeuxClient.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-{
-    public void onMessage(ClientSessionChannel channel, Message message)
-    {
+bayeuxClient.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+    public void onMessage(ClientSessionChannel channel, Message message) {
         // Connect handling...
     }
 });
@@ -603,30 +569,26 @@ represent callbacks that are called upon receipt of messages on broadcast channe
 | Annotated Style
 | Traditional Style
 
-| 
+|
 ====
 [source,java]
 ----
 @Service
-public class Service
-{
+public class Service {
     @Listener("/foo/*")
-    public void foos(Message message)
-    {
+    public void foos(Message message) {
        // Message handling...
     }
 }
 ----
 ====
 
-| 
+|
 ====
 [source,java]
 ----
-bayeuxClient.getChannel("/foo/*").subscribe(new ClientSessionChannel.MessageListener()
-{
-    public void onMessage(ClientSessionChannel channel, Message message)
-    {
+bayeuxClient.getChannel("/foo/*").subscribe(new ClientSessionChannel.MessageListener() {
+    public void onMessage(ClientSessionChannel channel, Message message) {
         // Message handling...
     }
 });

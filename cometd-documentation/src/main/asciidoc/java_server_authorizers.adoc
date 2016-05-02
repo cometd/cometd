@@ -15,10 +15,8 @@ that channel can happen) in the following way:
 [source,java]
 ----
 BayeuxServer bayeuxServer = ...;
-bayeuxServer.createChannelIfAbsent("/my/channel", new ConfigurableServerChannel.Initializer()
-{
-    public void configureChannel(ConfigurableServerChannel channel)
-    {
+bayeuxServer.createChannelIfAbsent("/my/channel", new ConfigurableServerChannel.Initializer() {
+    public void configureChannel(ConfigurableServerChannel channel) {
         channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
     }
 });
@@ -92,8 +90,7 @@ One of three possible results must be returned:
 ====
 [source,java]
 ----
-public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message);
-{
+public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
     return Result.grant();
 }
 ----
@@ -112,8 +109,7 @@ could be denied by another authorizer in the set of authorizers for that channel
 ====
 [source,java]
 ----
-public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message);
-{
+public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
     return Result.ignore();
 }
 ----
@@ -129,8 +125,7 @@ public Result authorize(Operation operation, ChannelId channel, ServerSession se
 ====
 [source,java]
 ----
-public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message);
-{
+public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
     return Result.deny("reason to deny");
 }
 ----
@@ -186,18 +181,18 @@ for that game, for example `/game/123` (where `123` is the gameId):
 ====
 [source,java]
 ----
-gameStarStar.addAuthorizer(new Authorizer()
-{
-    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message)
-    {
+gameStarStar.addAuthorizer(new Authorizer() {
+    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
         // Always grant authorization to local clients
-        if (session.isLocalSession())
+        if (session.isLocalSession()) {
             return Result.grant();
+        }
 
         boolean isCaptain = isCaptain(session);
         boolean isGameChannel = !channel.isWild() && new ChannelId("/game").isParentOf(channel);
-        if (operation == Operation.CREATE && isCaptain && isGameChannel)
+        if (operation == Operation.CREATE && isCaptain && isGameChannel) {
             return Result.grant();
+        }
         return Result.ignore();
     }
 });
@@ -219,17 +214,17 @@ Only players can play:
 [source,java]
 ----
 ServerChannel gameChannel = bayeuxServer.getChannel("/game/" + gameId);
-gameChannel.addAuthorizer(new Authorizer()
-{
-    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message)
-    {
+gameChannel.addAuthorizer(new Authorizer() {
+    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
         // Always grant authorization to local clients
-        if (session.isLocalSession())
+        if (session.isLocalSession()) {
             return Result.grant();
+        }
 
         boolean isPlayer = isPlayer(session, channel);
-        if (operation == Operation.PUBLISH && isPlayer)
+        if (operation == Operation.PUBLISH && isPlayer) {
             return Result.grant();
+        }
         return Result.ignore();
     }
 });
@@ -254,17 +249,17 @@ allows everyone to watch games):
 ====
 [source,java]
 ----
-gameStarStar.addAuthorizer(new Authorizer()
-{
-    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message)
-    {
+gameStarStar.addAuthorizer(new Authorizer() {
+    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
         // Always grant authorization to local clients
-        if (session.isLocalSession())
+        if (session.isLocalSession()) {
             return Result.grant();
+        }
 
         boolean isCriminalSupporter = isCriminalSupporter(session);
-        if (operation == Operation.SUBSCRIBE && isCriminalSupporter)
+        if (operation == Operation.SUBSCRIBE && isCriminalSupporter) {
             return Result.deny("criminal_supporter");
+        }
         return Result.ignore();
     }
 });

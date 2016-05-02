@@ -45,8 +45,7 @@ and it is sufficient to use Dojo's `require()` mechanism:
 ====
 [source,javascript]
 ----
-require(["dojox/cometd", "dojox/cometd/ack"], function(cometd)
-{
+require(["dojox/cometd", "dojox/cometd/ack"], function(cometd) {
     ...
 });
 ----
@@ -131,7 +130,7 @@ deliver the messages present in the `ServerSession` queue along with a
 `/meta/connect` response, so that the messages delivered to the remote
 client are: `[{/meta/connect response message}, {queued message 1}, {queued message 2}, ...]`.
 
-Direct delivery depends on the transport. 
+Direct delivery depends on the transport.
 
 For polling transports it means that the server will deliver the messages
 present in the `ServerSession` queue along with some other response message
@@ -189,7 +188,7 @@ There is an example of acknowledged messages in the Dojo chat demo that comes
 bundled with the CometD distribution, and instruction on how to run the CometD
 demos in <<_installation_demos,the installation demos section>>.
 
-To run the acknowledgement demo, follow these steps: 
+To run the acknowledgement demo, follow these steps:
 
 . Start CometD
 +

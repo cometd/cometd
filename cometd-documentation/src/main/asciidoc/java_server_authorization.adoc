@@ -61,13 +61,12 @@ method to control authentication:
 ====
 [source,java]
 ----
-public class CustomSecurityPolicy extends DefaultSecurityPolicy
-{
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-    {
+public class CustomSecurityPolicy extends DefaultSecurityPolicy {
+    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
         // Always allow local clients
-        if (session.isLocalSession())
+        if (session.isLocalSession()) {
             return true;
+        }
 
         // Implement custom authentication logic
         boolean authenticated = authenticate(server, session, message);

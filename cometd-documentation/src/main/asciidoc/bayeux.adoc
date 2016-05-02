@@ -554,13 +554,11 @@ event sent from a client to a server:
 ====
 [source,json]
 ----
-[
-  {
+[{
     "channel": "/some/name",
     "clientId": "83js73jsh29sjd92",
     "data": { "myapp" : "specific data", value: 100 }
-  }
-]
+}]
 ----
 ====
 
@@ -654,11 +652,11 @@ An example advice field sent by the server is:
 [source,json]
 ----
 "advice": {
-   "reconnect": "retry",
-   "timeout": 30000,
-   "interval": 1000,
-   "callback-polling": {
-       "reconnect": "handshake"
+    "reconnect": "retry",
+    "timeout": 30000,
+    "interval": 1000,
+    "callback-polling": {
+        "reconnect": "handshake"
     }
 }
 ----
@@ -670,7 +668,7 @@ An example advice field sent by the client is:
 [source,json]
 ----
 "advice": {
-   "timeout": 0
+    "timeout": 0
 }
 ----
 ====
@@ -889,14 +887,12 @@ An example handshake request is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/meta/handshake",
-     "version": "1.0",
-     "minimumVersion": "1.0beta",
-     "supportedConnectionTypes": ["long-polling", "callback-polling", "iframe"]
-   }
-]
+[{
+    "channel": "/meta/handshake",
+    "version": "1.0",
+    "minimumVersion": "1.0beta",
+    "supportedConnectionTypes": ["long-polling", "callback-polling", "iframe"]
+}]
 ----
 ====
 
@@ -954,18 +950,16 @@ An example successful handshake response is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/meta/handshake",
-     "version": "1.0",
-     "minimumVersion": "1.0beta",
-     "supportedConnectionTypes": ["long-polling","callback-polling"],
-     "clientId": "Un1q31d3nt1f13r",
-     "successful": true,
-     "authSuccessful": true,
-     "advice": { "reconnect": "retry" }
-   }
-]
+[{
+    "channel": "/meta/handshake",
+    "version": "1.0",
+    "minimumVersion": "1.0beta",
+    "supportedConnectionTypes": ["long-polling","callback-polling"],
+    "clientId": "Un1q31d3nt1f13r",
+    "successful": true,
+    "authSuccessful": true,
+    "advice": { "reconnect": "retry" }
+}]
 ----
 ====
 
@@ -1010,17 +1004,15 @@ An example unsuccessful handshake response is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/meta/handshake",
-     "version": "1.0",
-     "minimumVersion": "1.0beta",
-     "supportedConnectionTypes": ["long-polling","callback-polling"],
-     "successful": false,
-     "error": "Authentication failed",
-     "advice": { "reconnect": "none" }
-   }
-]
+[{
+    "channel": "/meta/handshake",
+    "version": "1.0",
+    "minimumVersion": "1.0beta",
+    "supportedConnectionTypes": ["long-polling","callback-polling"],
+    "successful": false,
+    "error": "Authentication failed",
+    "advice": { "reconnect": "none" }
+}]
 ----
 ====
 
@@ -1072,13 +1064,11 @@ An example connect request is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/meta/connect",
-     "clientId": "Un1q31d3nt1f13r",
-     "connectionType": "long-polling"
-   }
-]
+[{
+    "channel": "/meta/connect",
+    "clientId": "Un1q31d3nt1f13r",
+    "connectionType": "long-polling"
+}]
 ----
 ====
 
@@ -1125,15 +1115,13 @@ An example connect response is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/meta/connect",
-     "successful": true,
-     "error": "",
-     "clientId": "Un1q31d3nt1f13r",
-     "advice": { "reconnect": "retry" }
-   }
-]
+[{
+    "channel": "/meta/connect",
+    "successful": true,
+    "error": "",
+    "clientId": "Un1q31d3nt1f13r",
+    "advice": { "reconnect": "retry" }
+}]
 ----
 ====
 
@@ -1177,12 +1165,10 @@ An example disconnect request is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/meta/disconnect",
-     "clientId": "Un1q31d3nt1f13r"
-   }
-]
+[{
+    "channel": "/meta/disconnect",
+    "clientId": "Un1q31d3nt1f13r"
+}]
 ----
 ====
 
@@ -1217,12 +1203,10 @@ An example disconnect response is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/meta/disconnect",
-     "successful": true
-   }
-]
+[{
+    "channel": "/meta/disconnect",
+    "successful": true
+}]
 ----
 ====
 
@@ -1258,13 +1242,11 @@ An example subscribe request is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/meta/subscribe",
-     "clientId": "Un1q31d3nt1f13r",
-     "subscription": "/foo/**"
-   }
-]
+[{
+    "channel": "/meta/subscribe",
+    "clientId": "Un1q31d3nt1f13r",
+    "subscription": "/foo/**"
+}]
 ----
 ====
 
@@ -1308,15 +1290,13 @@ An example successful subscribe response is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/meta/subscribe",
-     "clientId": "Un1q31d3nt1f13r",
-     "subscription": "/foo/**",
-     "successful": true,
-     "error": ""
-   }
-]
+[{
+    "channel": "/meta/subscribe",
+    "clientId": "Un1q31d3nt1f13r",
+    "subscription": "/foo/**",
+    "successful": true,
+    "error": ""
+}]
 ----
 ====
 
@@ -1325,15 +1305,13 @@ An example failed subscribe response is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/meta/subscribe",
-     "clientId": "Un1q31d3nt1f13r",
-     "subscription": "/bar/baz",
-     "successful": false,
-     "error": "403:/bar/baz:Permission Denied"
-   }
-]
+[{
+    "channel": "/meta/subscribe",
+    "clientId": "Un1q31d3nt1f13r",
+    "subscription": "/bar/baz",
+    "successful": false,
+    "error": "403:/bar/baz:Permission Denied"
+}]
 ----
 ====
 
@@ -1370,13 +1348,11 @@ An example unsubscribe request is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/meta/unsubscribe",
-     "clientId": "Un1q31d3nt1f13r",
-     "subscription": "/foo/**"
-   }
-]
+[{
+    "channel": "/meta/unsubscribe",
+    "clientId": "Un1q31d3nt1f13r",
+    "subscription": "/foo/**"
+}]
 ----
 ====
 
@@ -1422,15 +1398,13 @@ An example unsubscribe response is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/meta/unsubscribe",
-     "clientId": "Un1q31d3nt1f13r",
-     "subscription": "/foo/**",
-     "successful": true,
-     "error": ""
-   }
-]
+[{
+    "channel": "/meta/unsubscribe",
+    "clientId": "Un1q31d3nt1f13r",
+    "subscription": "/foo/**",
+    "successful": true,
+    "error": ""
+}]
 ----
 ====
 
@@ -1479,14 +1453,12 @@ An example event message is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/some/channel",
-     "clientId": "Un1q31d3nt1f13r",
-     "data": "some application string or JSON encoded object",
-     "id": "some unique message id"
-  }
-]
+[{
+    "channel": "/some/channel",
+    "clientId": "Un1q31d3nt1f13r",
+    "data": "some application string or JSON encoded object",
+    "id": "some unique message id"
+}]
 ----
 ====
 
@@ -1519,13 +1491,11 @@ An example event response message is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/some/channel",
-     "successful": true,
-     "id": "some unique message id"
-  }
-]
+[{
+    "channel": "/some/channel",
+    "successful": true,
+    "id": "some unique message id"
+}]
 ----
 ====
 
@@ -1564,13 +1534,11 @@ An example event deliver message is:
 ====
 [source,json]
 ----
-[
-  {
-     "channel": "/some/channel",
-     "data": "some application string or JSON encoded object",
-     "id": "some unique message id"
-  }
-]
+[{
+    "channel": "/some/channel",
+    "data": "some application string or JSON encoded object",
+    "id": "some unique message id"
+}]
 ----
 ====
 

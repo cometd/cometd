@@ -2,7 +2,7 @@
 [[_java_client_handshake]]
 ==== Handshaking
 
-To initiate the communication with the Bayeux server, you need to call: 
+To initiate the communication with the Bayeux server, you need to call:
 
 ====
 [source,java]
@@ -12,7 +12,7 @@ client.handshake()
 ----
 ====
 
-The following is a typical use: 
+The following is a typical use:
 
 ====
 [source,java]
@@ -58,12 +58,9 @@ To verify that the handshake is successful, you can pass a callback
 ----
 ClientTransport transport = ...
 ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transport);
-client.handshake(new ClientSessionChannel.MessageListener()
-{
-    public void onMessage(ClientSessionChannel channel, Message message)
-    {
-        if (message.isSuccessful())
-        {
+client.handshake(new ClientSessionChannel.MessageListener() {
+    public void onMessage(ClientSessionChannel channel, Message message) {
+        if (message.isSuccessful()) {
             // Here handshake is successful
         }
     }
@@ -79,12 +76,9 @@ An alternative, equivalent, way is to add a `MessageListener` before calling
 ----
 ClientTransport transport = ...
 ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transport);
-client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-{
-    public void onMessage(ClientSessionChannel channel, Message message)
-    {
-        if (message.isSuccessful())
-        {
+client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+    public void onMessage(ClientSessionChannel channel, Message message) {
+        if (message.isSuccessful()) {
             // Here handshake is successful
         }
     }
@@ -103,8 +97,7 @@ ClientTransport transport = ...
 BayeuxClient client = new BayeuxClient("http://localhost:8080/cometd", transport);
 client.handshake();
 boolean handshaken = client.waitFor(1000, BayeuxClient.State.CONNECTED);
-if (handshaken)
-{
+if (handshaken) {
     // Here handshake is successful
 }
 ----

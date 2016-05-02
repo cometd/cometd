@@ -53,10 +53,8 @@ that you use this variant of the `publish()` function, passing a callback functi
 ====
 [source,javascript]
 ----
-cometd.publish('/mychannel', { mydata: { foo: 'bar' } }, function(publishAck)
-{
-    if (publishAck.successful)
-    {
+cometd.publish('/mychannel', { mydata: { foo: 'bar' } }, function(publishAck) {
+    if (publishAck.successful) {
         // The message reached the server
     }
 });
@@ -93,10 +91,8 @@ data from a database, or updating some server state, you want to use a remote ca
 ====
 [source,javascript]
 ----
-cometd.remoteCall('target', { foo: 'bar' }, 5000, function(response)
-{
-    if (response.successful)
-    {
+cometd.remoteCall('target', { foo: 'bar' }, 5000, function(response) {
+    if (response.successful) {
         // The action was performed
         var data = response.data;
     }

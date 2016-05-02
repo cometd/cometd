@@ -40,15 +40,11 @@ cometd.configure({
 });
 
 // Handshake with callback
-cometd.init(function(handshakeReply)
-{
-    if (handshakeReply.successful)
-    {
+cometd.init(function(handshakeReply) {
+    if (handshakeReply.successful) {
         // Successfully connected to the server.
         // Now it is possible to subscribe or send messages
-    }
-    else
-    {
+    } else {
         // Cannot handshake with the server, alert user.
     }
 });
@@ -58,7 +54,7 @@ cometd.init(function(handshakeReply)
 Passing a callback function to `handshake()` is equivalent to register a
 `/meta/handshake` listener (see also <<_javascript_subscribe_vs_listen,this section>>).
 
-The handshake might fail for several reasons: 
+The handshake might fail for several reasons:
 
 * You mistyped the server URL.
 * The transport could not be negotiated successfully.
@@ -96,7 +92,7 @@ the Bayeux server.
 Since the API is asynchronous, you have no way of knowing synchronously (that is, by having
 `handshake()` function return an error code or by throwing an exception) that the handshake failed.
 
-The right way is the following: 
+The right way is the following:
 
 ====
 [source,javascript]
@@ -106,10 +102,8 @@ cometd.configure({
 });
 
 // Handshake
-cometd.handshake(function(handshakeReply)
-{
-    if (handshakeReply.successful)
-    {
+cometd.handshake(function(handshakeReply) {
+    if (handshakeReply.successful) {
         // Publish to a channel
         cometd.publish('/foo', { foo: 'bar' });
     }
@@ -134,10 +128,8 @@ var additional = {
         token: 'xyzsecretabc'
     }
 };
-cometd.handshake(additional, function(handshakeReply)
-{
-    if (handshakeReply.successful)
-    {
+cometd.handshake(additional, function(handshakeReply) {
+    if (handshakeReply.successful) {
         // Your logic here.
     }
 });
@@ -154,11 +146,9 @@ from a `/meta/handshake` listener, for example using annotated services
 [source,java]
 ----
 @Service
-public class MyService
-{
+public class MyService {
     @Listener(Channel.META_HANDSHAKE)
-    public void metaHandshake(ServerSession remote, ServerMessage message)
-    {
+    public void metaHandshake(ServerSession remote, ServerMessage message) {
         // Parameter "remote" will be null here.
 
         Map<String, Object> credentials = (Map<String, Object>)message.get("com.acme.credentials");

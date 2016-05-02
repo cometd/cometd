@@ -58,10 +58,8 @@ This is the code for the `ConfigurationServlet`:
 ====
 [source,java]
 ----
-public class ConfigurationServlet extends GenericServlet
-{
-    public void init() throws ServletException
-    {
+public class ConfigurationServlet extends GenericServlet {
+    public void init() throws ServletException {
         // Grab the Bayeux object
         BayeuxServer bayeux = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
         new EchoService(bayeux);
@@ -71,8 +69,7 @@ public class ConfigurationServlet extends GenericServlet
         // by adding extensions or specifying a SecurityPolicy
     }
 
-    public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException
-    {
+    public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException {
         throw new ServletException();
     }
 }
@@ -121,12 +118,9 @@ This is the code for the `BayeuxInitializer`:
 ====
 [source,java]
 ----
-public class BayeuxInitializer implements ServletContextAttributeListener
-{
-    public void attributeAdded(ServletContextAttributeEvent event)
-    {
-        if (Bayeux.ATTRIBUTE.equals(event.getName()))
-        {
+public class BayeuxInitializer implements ServletContextAttributeListener {
+    public void attributeAdded(ServletContextAttributeEvent event) {
+        if (Bayeux.ATTRIBUTE.equals(event.getName())) {
             // Grab the Bayeux object
             BayeuxServer bayeux = (BayeuxServer)event.getValue();
             new EchoService(bayeux);
@@ -137,12 +131,10 @@ public class BayeuxInitializer implements ServletContextAttributeListener
         }
     }
 
-    public void attributeRemoved(ServletContextAttributeEvent event)
-    {
+    public void attributeRemoved(ServletContextAttributeEvent event) {
     }
 
-    public void attributeReplaced(ServletContextAttributeEvent event)
-    {
+    public void attributeReplaced(ServletContextAttributeEvent event) {
     }
 }
 ----
@@ -161,13 +153,11 @@ For example, the `ConfigurationServlet` becomes:
 ====
 [source,java]
 ----
-public class ConfigurationServlet extends GenericServlet
-{
-    private final List<Object> services = new ArrayList<Object>();
+public class ConfigurationServlet extends GenericServlet {
+    private final List<Object> services = new ArrayList<>();
     private ServerAnnotationProcessor processor;
 
-    public void init() throws ServletException
-    {
+    public void init() throws ServletException {
         // Grab the BayeuxServer object
         BayeuxServer bayeux = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
 
@@ -185,15 +175,14 @@ public class ConfigurationServlet extends GenericServlet
         // by adding extensions or specifying a SecurityPolicy
     }
 
-    public void destroy() throws ServletException
-    {
+    public void destroy() throws ServletException {
         // Deprocess the services that have been created
-        for (Object service : services)
+        for (Object service : services) {
             processor.deprocess(service);
+        }
     }
 
-    public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException
-    {
+    public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException {
         throw new ServletException();
     }
 }
@@ -247,10 +236,8 @@ For example, `FooService` can be retrieved using the following code:
 ====
 [source,java]
 ----
-public class AnotherServlet extends HttpServlet
-{
-    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-    {
+public class AnotherServlet extends HttpServlet {
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         FooService service = (FooService)getServletContext().getAttribute("com.acme.cometd.FooService");
         // Use the foo service here
     }

@@ -87,10 +87,8 @@ function to `subscribe()`:
 ====
 [source,javascript]
 ----
-cometd.subscribe('/foo', function(message) { ... }, function(subscribeReply)
-{
-    if (subscribeReply.successful)
-    {
+cometd.subscribe('/foo', function(message) { ... }, function(subscribeReply) {
+    if (subscribeReply.successful) {
         // The server successfully subscribed this client to the "/foo" channel.
     }
 });
@@ -111,8 +109,7 @@ additional object to the `subscribe()` function:
 var additional = {
     com.acme.priority: 10
 };
-cometd.subscribe('/foo', function(message) { ... }, additional, function(subscribeReply)
-{
+cometd.subscribe('/foo', function(message) { ... }, additional, function(subscribeReply) {
     // Your logic here.
 });
 ----
@@ -154,8 +151,7 @@ var subscription1 = cometd.subscribe('/foo/bar/', function() { ... });
 var additional = {
     com.acme.discard: true
 }
-cometd.unsubscribe(subscription1, additional, function(unsubscribeReply)
-{
+cometd.unsubscribe(subscription1, additional, function(unsubscribeReply) {
     // Your logic here.
 });
 ----
@@ -197,14 +193,11 @@ one, resulting in multiple notifications of the same messages.
 [source,javascript]
 ----
 var _reportListener;
-cometd.addListener('/meta/handshake', function(message)
-{
+cometd.addListener('/meta/handshake', function(message) {
     // Only subscribe if the handshake is successful
-    if (message.successful)
-    {
+    if (message.successful) {
         // Batch all subscriptions together
-        cometd.batch(function()
-        {
+        cometd.batch(function() {
             // Correct to subscribe to broadcast channels
             cometd.subscribe('/members', function(m) { ... });
 
@@ -212,8 +205,7 @@ cometd.addListener('/meta/handshake', function(message)
             cometd.subscribe('/service/status', function(m) { ... });
 
             // Messy to add listeners after removal, prefer using cometd.subscribe(...)
-            if (_reportListener)
-            {
+            if (_reportListener) {
                 cometd.removeListener(_reportListener);
                 _reportListener = cometd.addListener('/service/report', function(m) { ... });
             }
@@ -252,22 +244,17 @@ to dynamically unsubscribe from the channel upon user demand:
 [source,javascript]
 ----
 var _subscription;
-function Controller()
-{
-    this.dynamicSubscribe = function()
-    {
+function Controller() {
+    this.dynamicSubscribe = function() {
        _subscription = cometd.subscribe('/dynamic', this.onEvent);
     };
 
-    this.onEvent = function(message)
-    {
+    this.onEvent = function(message) {
         ...
     };
 
-    this.dynamicUnsubscribe = function()
-    {
-        if (_subscription)
-        {
+    this.dynamicUnsubscribe = function() {
+        if (_subscription) {
             cometd.unsubscribe(_subscription);
             _subscription = undefined;
         }
@@ -286,18 +273,14 @@ was called (above in function `dynamicSubscribe()`), so applications can just ca
 ====
 [source,javascript]
 ----
-cometd.addListener('/meta/handshake', function(message)
-{
-    if (message.successful)
-    {
-        cometd.batch(function()
-        {
+cometd.addListener('/meta/handshake', function(message) {
+    if (message.successful) {
+        cometd.batch(function() {
             // Static subscription, no need to remember the subscription handle
             cometd.subscribe('/static', staticFunction);
 
             // Dynamic re-subscription
-            if (_subscription)
-            {
+            if (_subscription) {
                 _subscription = cometd.resubscribe(_subscription);
             }
         });
@@ -317,14 +300,14 @@ exception handler that is invoked every time a listener or subscriber throws an 
 ====
 [source,javascript]
 ----
-cometd.onListenerException = function(exception, subscriptionHandle, isListener, message)
-{
+cometd.onListenerException = function(exception, subscriptionHandle, isListener, message) {
     // Uh-oh, something went wrong, disable this listener/subscriber
     // Object "this" points to the CometD object
-    if (isListener)
+    if (isListener) {
         this.removeListener(subscriptionHandle);
-    else
+    } else {
         this.unsubscribe(subscriptionHandle);
+    }
 }
 ----
 ====
@@ -405,29 +388,22 @@ Here is a common pattern using the `/meta/connect` and `/meta/disconnect` channe
 ----
 var _connected = false;
 
-cometd.addListener('/meta/connect', function(message)
-{
-    if (cometd.isDisconnected())
-    {
+cometd.addListener('/meta/connect', function(message) {
+    if (cometd.isDisconnected()) {
         return;
     }
 
     var wasConnected = _connected;
     _connected = message.successful;
-    if (!wasConnected && _connected)
-    {
+    if (!wasConnected && _connected) {
         // Reconnected
-    }
-    else if (wasConnected && !_connected)
-    {
+    } else if (wasConnected && !_connected) {
         // Disconnected
     }
 });
 
-cometd.addListener('/meta/disconnect', function(message)
-{
-    if (message.successful)
-    {
+cometd.addListener('/meta/disconnect', function(message) {
+    if (message.successful) {
         _connected = false;
     }
 }

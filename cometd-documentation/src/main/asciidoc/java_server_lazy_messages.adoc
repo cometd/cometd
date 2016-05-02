@@ -29,15 +29,13 @@ on the message instance itself, for example:
 [source,java]
 ----
 @Service
-public class LazyService
-{
+public class LazyService {
     @Inject
     private BayeuxServer bayeuxServer;
     @Session
     private LocalSession session;
 
-    public void receiveNewsFromExternalSystem(NewsInfo news)
-    {
+    public void receiveNewsFromExternalSystem(NewsInfo news) {
         ServerMessage.Mutable message = this.bayeuxServer.newMessage();
         message.setChannel("/news");
         message.setData(news);
@@ -68,21 +66,18 @@ them as lazy at creation time, for example:
 [source,java]
 ----
 @Service
-public class LazyService
-{
+public class LazyService {
     @Inject
     private BayeuxServer bayeuxServer;
     @Session
     private LocalSession session;
 
     @Configure("/news")
-    public void setupNewsChannel(ConfigurableServerChannel channel)
-    {
+    public void setupNewsChannel(ConfigurableServerChannel channel) {
         channel.setLazy(true);
     }
 
-    public void receiveNewsFromExternalSystem(NewsInfo news)
-    {
+    public void receiveNewsFromExternalSystem(NewsInfo news) {
         this.bayeuxServer.getChannel("/news").publish(this.session, news);
     }
 }
@@ -100,19 +95,16 @@ for different server channels, for example:
 [source,java]
 ----
 @Service
-public class LazyService
-{
+public class LazyService {
     ...
 
     @Configure("/news")
-    public void setupNewsChannel(ConfigurableServerChannel channel)
-    {
+    public void setupNewsChannel(ConfigurableServerChannel channel) {
         channel.setLazy(true);
     }
 
     @Configure("/chat")
-    public void setupChatChannel(ConfigurableServerChannel channel)
-    {
+    public void setupChatChannel(ConfigurableServerChannel channel) {
         channel.setLazyTimeout(2000);
     }
 
