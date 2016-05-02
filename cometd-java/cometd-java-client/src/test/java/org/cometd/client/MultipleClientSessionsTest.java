@@ -36,7 +36,6 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -52,22 +51,20 @@ public class MultipleClientSessionsTest extends ClientServerTest
 {
     private final long timeout = 7000L;
 
-    @Before
-    public void init() throws Exception
+    private Map<String, String> serverOptions()
     {
-        Map<String, String> params = new HashMap<>();
-        params.put("timeout", String.valueOf(timeout));
-        startServer(params);
+        Map<String, String> options = new HashMap<>();
+        options.put("timeout", String.valueOf(timeout));
+        return options;
     }
 
     @Test
     public void testMultipleClientSession_WithOneMaxSessionPerBrowser_WithNoMultiSessionInterval() throws Exception
     {
-        AbstractHttpTransport transport = (AbstractHttpTransport)bayeux.getTransport("long-polling");
-        transport.setOption(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
-        transport.setOption(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, 0);
-        // Force re-initialization
-        transport.init();
+        Map<String, String> options = serverOptions();
+        options.put(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, "1");
+        options.put(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, "0");
+        startServer(options);
 
         BayeuxClient client1 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
@@ -126,12 +123,10 @@ public class MultipleClientSessionsTest extends ClientServerTest
     public void testMultipleClientSession_WithOneMaxSessionPerBrowser_WithMultiSessionInterval() throws Exception
     {
         long multiSessionInterval = 1500;
-
-        AbstractHttpTransport transport = (AbstractHttpTransport)bayeux.getTransport("long-polling");
-        transport.setOption(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
-        transport.setOption(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
-        // Force re-initialization
-        transport.init();
+        Map<String, String> options = serverOptions();
+        options.put(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, "1");
+        options.put(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, String.valueOf(multiSessionInterval));
+        startServer(options);
 
         BayeuxClient client1 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
@@ -258,12 +253,10 @@ public class MultipleClientSessionsTest extends ClientServerTest
     public void testMultipleClientSession_WithTwoMaxSessionPerBrowser_WithMultiSessionInterval() throws Exception
     {
         long multiSessionInterval = 1500;
-
-        AbstractHttpTransport transport = (AbstractHttpTransport)bayeux.getTransport("long-polling");
-        transport.setOption(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 2);
-        transport.setOption(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
-        // Force re-initialization
-        transport.init();
+        Map<String, String> options = serverOptions();
+        options.put(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, "2");
+        options.put(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, String.valueOf(multiSessionInterval));
+        startServer(options);
 
         BayeuxClient client1 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
@@ -365,12 +358,10 @@ public class MultipleClientSessionsTest extends ClientServerTest
     public void testMultipleClientSession_WhenSameClientSendsTwoConnects() throws Exception
     {
         long multiSessionInterval = 1500;
-
-        AbstractHttpTransport transport = (AbstractHttpTransport)bayeux.getTransport("long-polling");
-        transport.setOption(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
-        transport.setOption(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
-        // Force re-initialization
-        transport.init();
+        Map<String, String> options = serverOptions();
+        options.put(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, "1");
+        options.put(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, String.valueOf(multiSessionInterval));
+        startServer(options);
 
         JSONContext.Client parser = new JettyJSONContextClient();
 
@@ -474,5 +465,54 @@ public class MultipleClientSessionsTest extends ClientServerTest
         Message.Mutable message = messages[0];
         Map<String, Object> advice = message.getAdvice(true);
         assertFalse(advice.containsKey("multiple-clients"));
+    }
+
+    @Test
+    public void testMultipleClientSession_WithNoMaxSessionPerBrowser() throws Exception
+    {
+        Map<String, String> options = serverOptions();
+        options.put(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, "-1");
+        startServer(options);
+
+        BayeuxClient client1 = newBayeuxClient();
+        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
+        client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isSuccessful())
+                    connects1.offer(message);
+            }
+        });
+        client1.handshake();
+        assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        HttpCookie browserCookie = client1.getCookie("BAYEUX_BROWSER");
+        assertNotNull(browserCookie);
+
+        // Wait for /meta/connect to be held.
+        Thread.sleep(1000);
+
+        BayeuxClient client2 = newBayeuxClient();
+        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
+        client2.putCookie(browserCookie);
+        client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                connects2.offer(message);
+            }
+        });
+        client2.handshake();
+        assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait for /meta/connect to be held.
+        Thread.sleep(1000);
+
+        // At this point, both clients should have their /meta/connect held.
+        assertEquals(1, connects1.size());
+        assertEquals(1, connects2.size());
+
+        disconnectBayeuxClient(client1);
+        disconnectBayeuxClient(client2);
     }
 }

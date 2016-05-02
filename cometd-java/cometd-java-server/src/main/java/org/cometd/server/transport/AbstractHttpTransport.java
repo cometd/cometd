@@ -322,9 +322,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         {
             if (!session.hasNonLazyMessages() && reply.isSuccessful())
             {
-                // Detect if we have multiple sessions from the same browser
-                // Note that CORS requests do not send cookies, so we need to handle them specially
-                // CORS requests always have the Origin header
+                // Detect if we have multiple sessions from the same browser.
+                // Note that CORS requests may not send cookies, so we need to
+                // handle them specially: they always have the Origin header.
                 String browserId = findBrowserId(request);
                 boolean allowSuspendConnect;
                 if (browserId != null)
@@ -493,7 +493,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
 
     protected void decBrowserId(String browserId, ServerSession session)
     {
-        if (browserId == null)
+        if (_maxSessionsPerBrowser <= 0 || browserId == null)
             return;
 
         int sessions = -1;
