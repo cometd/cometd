@@ -167,6 +167,7 @@ var window = this;
     // Timers
     var _scheduler = new Packages.java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
     window.setTimeout = function(fn, delay) {
+        delay = delay || 0;
         return _scheduler.schedule(new Packages.java.lang.Runnable({
             run: function() {
                 threadModel.invoke(window, window, fn);
@@ -812,6 +813,8 @@ var window = this;
             onload: function() {
             },
             onerror: function() {
+            },
+            onabort: function() {
             },
             open: function(method, url, async, user, password) {
                 // Abort previous exchange
