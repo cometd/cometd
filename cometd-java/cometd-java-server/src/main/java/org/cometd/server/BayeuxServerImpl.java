@@ -15,18 +15,21 @@
  */
 package org.cometd.server;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -61,13 +64,15 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ManagedObject("The CometD server")
-public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
+public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer, Dumpable
 {
     private static final boolean[] VALID = new boolean[256];
     static
@@ -117,6 +122,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private JSONContext.Server _jsonContext;
     private boolean _validation;
     private boolean _broadcastToPublisher;
+    private boolean _detailedDump;
 
     @Override
     protected void doStart() throws Exception
@@ -1267,33 +1273,99 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             session.sweep(now);
     }
 
+    @ManagedAttribute("Reports additional details in the dump")
+    public boolean isDetailedDump()
+    {
+        return _detailedDump;
+    }
+
+    public void setDetailedDump(boolean detailedDump)
+    {
+        _detailedDump = detailedDump;
+    }
+
     @ManagedOperation(value = "Dumps the BayeuxServer state", impact = "INFO")
     public String dump()
     {
-        StringBuilder b = new StringBuilder();
+        return ContainerLifeCycle.dump(this);
+    }
 
-        ArrayList<Object> children = new ArrayList<>();
-        if (_policy != null)
-            children.add(_policy);
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        ContainerLifeCycle.dumpObject(out, this);
 
-        for (ServerChannelImpl channel : _channels.values())
+        List<Object> children = new ArrayList<>();
+        SecurityPolicy securityPolicy = getSecurityPolicy();
+        if (securityPolicy != null)
+            children.add(securityPolicy);
+
+        children.add(new Dumpable()
         {
-            if (channel.getChannelId().depth() == 1)
-                children.add(channel);
-        }
+            @Override
+            public String dump()
+            {
+                return null;
+            }
 
-        int leaves = children.size();
-        int i = 0;
-        for (Object child : children)
+            @Override
+            public void dump(Appendable out, String indent) throws IOException
+            {
+                List<String> allowedTransports = getAllowedTransports();
+                ContainerLifeCycle.dumpObject(out, "transports: " + allowedTransports.size());
+                ContainerLifeCycle.dump(out, indent, allowedTransports);
+            }
+        });
+
+        children.add(new Dumpable()
         {
-            b.append(" +-");
-            if (child instanceof ServerChannelImpl)
-                ((ServerChannelImpl)child).dump(b, ((++i == leaves) ? "   " : " | "));
-            else
-                b.append(child.toString()).append("\n");
-        }
+            @Override
+            public String dump()
+            {
+                return null;
+            }
 
-        return b.toString();
+            @Override
+            public void dump(Appendable out, String indent) throws IOException
+            {
+                Set<String> channels = _channels.keySet();
+                ContainerLifeCycle.dumpObject(out, "channels: " + channels.size());
+                if (isDetailedDump())
+                    ContainerLifeCycle.dump(out, indent, new TreeSet<>(channels));
+            }
+        });
+
+        children.add(new Dumpable()
+        {
+            @Override
+            public String dump()
+            {
+                return null;
+            }
+
+            @Override
+            public void dump(Appendable out, String indent) throws IOException
+            {
+                List<ServerSession> sessions = new ArrayList<ServerSession>(_sessions.values());
+                ContainerLifeCycle.dumpObject(out, "sessions: " + sessions.size());
+                if (isDetailedDump())
+                {
+                    List<ServerSession> locals = new ArrayList<>();
+                    for (Iterator<ServerSession> iterator = sessions.iterator(); iterator.hasNext();)
+                    {
+                        ServerSession session = iterator.next();
+                        if (session.isLocalSession())
+                        {
+                            locals.add(session);
+                            iterator.remove();
+                        }
+                    }
+                    ContainerLifeCycle.dump(out, indent, locals, sessions);
+                }
+            }
+        });
+
+        ContainerLifeCycle.dump(out, indent, children);
     }
 
     abstract class HandlerListener implements ServerChannel.ServerChannelListener

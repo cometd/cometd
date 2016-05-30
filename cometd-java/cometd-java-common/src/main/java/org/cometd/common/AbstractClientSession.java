@@ -15,6 +15,9 @@
  */
 package org.cometd.common;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +35,8 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * <p>Partial implementation of {@link ClientSession}.</p>
  * <p>It handles extensions and batching, and provides utility methods to be used by subclasses.</p>
  */
-public abstract class AbstractClientSession implements ClientSession
+public abstract class AbstractClientSession implements ClientSession, Dumpable
 {
     protected static final String SUBSCRIBER_KEY = "org.cometd.client.subscriber";
     protected static final String CALLBACK_KEY = "org.cometd.client.callback";
@@ -302,25 +307,43 @@ public abstract class AbstractClientSession implements ClientSession
         return _subscribers.remove(messageId);
     }
 
-    public void dump(StringBuilder b, String indent)
+    @Override
+    public String dump()
     {
-        b.append(toString());
-        b.append('\n');
+        return ContainerLifeCycle.dump(this);
+    }
 
-        int leaves = _channels.size();
-        int i = 0;
-        for (AbstractSessionChannel child : _channels.values())
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        ContainerLifeCycle.dumpObject(out, this);
+
+        List<Dumpable> children = new ArrayList<>();
+
+        children.add(new Dumpable()
         {
-            b.append(indent);
-            b.append(" +-");
-            child.dump(b, indent + ((++i == leaves) ? "   " : " | "));
-        }
+            @Override
+            public String dump()
+            {
+                return null;
+            }
+
+            @Override
+            public void dump(Appendable out, String indent) throws IOException
+            {
+                Collection<AbstractSessionChannel> channels = getChannels().values();
+                ContainerLifeCycle.dumpObject(out, "channels: " + channels.size());
+                ContainerLifeCycle.dump(out, indent, channels);
+            }
+        });
+
+        ContainerLifeCycle.dump(out, indent, children);
     }
 
     /**
      * <p>A channel scoped to a {@link ClientSession}.</p>
      */
-    protected abstract class AbstractSessionChannel implements ClientSessionChannel
+    protected abstract class AbstractSessionChannel implements ClientSessionChannel, Dumpable
     {
         private final ChannelId _id;
         private final AttributesMap _attributes = new AttributesMap();
@@ -531,31 +554,60 @@ public abstract class AbstractClientSession implements ClientSession
             return old;
         }
 
-        protected void dump(StringBuilder b, String indent)
-        {
-            b.append(toString());
-            b.append('\n');
-
-            for (ClientSessionChannelListener child : _listeners)
-            {
-                b.append(indent);
-                b.append(" +-");
-                b.append(child);
-                b.append('\n');
-            }
-            for (MessageListener child : _subscriptions)
-            {
-                b.append(indent);
-                b.append(" +-");
-                b.append(child);
-                b.append('\n');
-            }
-        }
-
         protected void throwIfReleased()
         {
             if (isReleased())
                 throw new IllegalStateException("Channel " + this + " has been released");
+        }
+
+        @Override
+        public String dump()
+        {
+            return ContainerLifeCycle.dump(this);
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            ContainerLifeCycle.dumpObject(out, this);
+
+            List<Dumpable> children = new ArrayList<>();
+
+            children.add(new Dumpable()
+            {
+                @Override
+                public String dump()
+                {
+                    return null;
+                }
+
+                @Override
+                public void dump(Appendable out, String indent) throws IOException
+                {
+                    List<ClientSessionChannelListener> listeners = getListeners();
+                    ContainerLifeCycle.dumpObject(out, "listeners: " + listeners.size());
+                    ContainerLifeCycle.dump(out, indent, listeners);
+                }
+            });
+
+            children.add(new Dumpable()
+            {
+                @Override
+                public String dump()
+                {
+                    return null;
+                }
+
+                @Override
+                public void dump(Appendable out, String indent) throws IOException
+                {
+                    List<MessageListener> subscribers = getSubscribers();
+                    ContainerLifeCycle.dumpObject(out, "subscribers: " + subscribers.size());
+                    ContainerLifeCycle.dump(out, indent, subscribers);
+                }
+            });
+
+            ContainerLifeCycle.dump(out, indent, children);
         }
 
         @Override

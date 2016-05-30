@@ -21,7 +21,6 @@ import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.EventObject;
@@ -701,8 +700,10 @@ public class Oort extends ContainerLifeCycle
     public void dump(Appendable out, String indent) throws IOException
     {
         super.dump(out, indent);
-        final String eol = System.getProperty("line.separator");
-        Dumpable comets = new Dumpable()
+
+        List<Dumpable> children = new ArrayList<>();
+
+        children.add(new Dumpable()
         {
             public String dump()
             {
@@ -712,11 +713,12 @@ public class Oort extends ContainerLifeCycle
             public void dump(Appendable out, String indent) throws IOException
             {
                 Set<String> knownComets = getKnownComets();
-                out.append("Connected comets: ").append(String.valueOf(knownComets.size())).append(eol);
+                ContainerLifeCycle.dumpObject(out, "connected comets: " + knownComets.size());
                 ContainerLifeCycle.dump(out, indent, knownComets);
             }
-        };
-        Dumpable channels = new Dumpable()
+        });
+
+        children.add(new Dumpable()
         {
             public String dump()
             {
@@ -726,11 +728,12 @@ public class Oort extends ContainerLifeCycle
             public void dump(Appendable out, String indent) throws IOException
             {
                 Set<String> observedChannels = getObservedChannels();
-                out.append("Observed channels: ").append(String.valueOf(observedChannels.size())).append(eol);
+                ContainerLifeCycle.dumpObject(out, "observed channels: " + observedChannels.size());
                 ContainerLifeCycle.dump(out, indent, observedChannels);
             }
-        };
-        ContainerLifeCycle.dump(out, indent, Arrays.asList(comets, channels));
+        });
+
+        ContainerLifeCycle.dump(out, indent, children);
     }
 
     public String toString()
