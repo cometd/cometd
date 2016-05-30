@@ -70,6 +70,7 @@
                     <stopPort>8989</stopPort>
                     <stopKey>QUIT</stopKey>
                     <scanIntervalSeconds>1</scanIntervalSeconds>
+                    <jettyXml>src/config/etc/jetty-jmx.xml</jettyXml>
                     <webApp>
                         <contextPath>/</contextPath>
                     </webApp>
