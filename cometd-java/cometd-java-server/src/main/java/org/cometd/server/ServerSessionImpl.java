@@ -15,6 +15,7 @@
  */
 package org.cometd.server;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,10 +42,12 @@ import org.cometd.server.AbstractServerTransport.Scheduler;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServerSessionImpl implements ServerSession
+public class ServerSessionImpl implements ServerSession, Dumpable
 {
     private static final AtomicLong _idCount = new AtomicLong();
 
@@ -74,7 +77,7 @@ public class ServerSessionImpl implements ServerSession
     private boolean _metaConnectDelivery;
     private int _batch;
     private String _userAgent;
-    private long _messageTime = -1;
+    private long _messageTime;
     private long _expireTime;
     private boolean _nonLazyMessages;
     private boolean _broadcastToPublisher;
@@ -911,33 +914,6 @@ public class ServerSessionImpl implements ServerSession
         _subscribedTo.remove(channel);
     }
 
-    protected void dump(StringBuilder b, String indent)
-    {
-        b.append(toString());
-        b.append('\n');
-
-        for (ServerSessionListener child : _listeners)
-        {
-            b.append(indent);
-            b.append(" +-");
-            b.append(child);
-            b.append('\n');
-        }
-
-        if (isLocalSession())
-        {
-            b.append(indent);
-            b.append(" +-");
-            _localSession.dump(b, indent + "   ");
-        }
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s - last message %d ms ago", _id, System.currentTimeMillis() - _messageTime);
-    }
-
     public long calculateTimeout(long defaultTimeout)
     {
         if (_transientTimeout >= 0)
@@ -986,6 +962,54 @@ public class ServerSessionImpl implements ServerSession
     public void updateTransientInterval(long interval)
     {
         _transientInterval = interval;
+    }
+
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        ContainerLifeCycle.dumpObject(out, this);
+
+        List<Object> children = new ArrayList<>();
+
+        children.add(new Dumpable()
+        {
+            @Override
+            public String dump()
+            {
+                return null;
+            }
+
+            @Override
+            public void dump(Appendable out, String indent) throws IOException
+            {
+                List<ServerSessionListener> listeners = getListeners();
+                ContainerLifeCycle.dumpObject(out, "listeners: " + listeners.size());
+                if (_bayeux.isDetailedDump())
+                    ContainerLifeCycle.dump(out, indent, listeners);
+            }
+        });
+
+        ContainerLifeCycle.dump(out, indent, children);
+    }
+
+    @Override
+    public String toString()
+    {
+        long last;
+        long expire;
+        long now = System.currentTimeMillis();
+        synchronized (getLock())
+        {
+            last = now - _messageTime;
+            expire = _expireTime == 0 ? 0 : _expireTime - now;
+        }
+        return String.format("%s,last=%d,expire=%d", _id, last, expire);
     }
 
     private class LazyTask implements Runnable

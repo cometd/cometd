@@ -1138,13 +1138,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             logger.debug("Messages failed " + messages, failure);
     }
 
-    public String dump()
-    {
-        StringBuilder b = new StringBuilder();
-        dump(b, "");
-        return b.toString();
-    }
-
     private void prepareTransport(ClientTransport oldTransport, ClientTransport newTransport)
     {
         if (oldTransport != null)

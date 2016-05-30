@@ -149,7 +149,7 @@ that different server transports accept:
   `org.cometd.bayeux.server.ServerSession.MaxQueueListener` when the max queue size is exceeded.
 |===
 
-.+Long Polling & Callback Polling `ServerTransport` Configuration Parameters
+.Long Polling & Callback Polling `ServerTransport` Configuration Parameters
 [cols="^2,^3,<10"]
 |===
 | Parameter Name

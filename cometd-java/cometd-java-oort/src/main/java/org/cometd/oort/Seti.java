@@ -37,6 +37,7 @@ import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
+import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -753,13 +754,33 @@ public class Seti extends AbstractLifeCycle implements Dumpable
     public void dump(Appendable out, String indent) throws IOException
     {
         ContainerLifeCycle.dumpObject(out, this);
-        List<String> state = new ArrayList<>();
-        synchronized (_uid2Location)
+
+        List<Dumpable> children = new ArrayList<>();
+
+        children.add(new Dumpable()
         {
-            for (Map.Entry<String, Set<Location>> entry : _uid2Location.entrySet())
-                state.add(String.format("%s @ %s", entry.getKey(), entry.getValue()));
-        }
-        ContainerLifeCycle.dump(out, indent, state);
+            @Override
+            public String dump()
+            {
+                return null;
+            }
+
+            @Override
+            public void dump(Appendable out, String indent) throws IOException
+            {
+                List<String> state = new ArrayList<>();
+                synchronized (_uid2Location)
+                {
+                    for (Map.Entry<String, Set<Location>> entry : _uid2Location.entrySet())
+                        state.add(String.format("%s @ %s", entry.getKey(), entry.getValue()));
+                }
+                ContainerLifeCycle.dumpObject(out, "locations: " + state.size());
+                if (((BayeuxServerImpl)getOort().getBayeuxServer()).isDetailedDump())
+                    ContainerLifeCycle.dump(out, indent, state);
+            }
+        });
+
+        ContainerLifeCycle.dump(out, indent, children);
     }
 
     @Override
