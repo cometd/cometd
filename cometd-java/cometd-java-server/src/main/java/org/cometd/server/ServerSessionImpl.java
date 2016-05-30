@@ -78,6 +78,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable
     private int _batch;
     private String _userAgent;
     private long _messageTime;
+    private long _scheduleTime;
     private long _expireTime;
     private boolean _nonLazyMessages;
     private boolean _broadcastToPublisher;
@@ -609,14 +610,19 @@ public class ServerSessionImpl implements ServerSession, Dumpable
             scheduler.cancel();
     }
 
-    public void cancelExpiration()
+    public void cancelExpiration(boolean metaConnect)
     {
         long now = System.currentTimeMillis();
         synchronized (getLock())
         {
             _messageTime = now;
-            _expireTime = 0;
+            if (metaConnect)
+                _expireTime = 0;
+            else if (_expireTime != 0)
+                _expireTime += now - _scheduleTime;
         }
+        if (_logger.isDebugEnabled())
+            _logger.debug("{} expiration for {}", metaConnect ? "Cancelling" : "Delaying", this);
     }
 
     public void scheduleExpiration(long defaultInterval)
@@ -625,8 +631,11 @@ public class ServerSessionImpl implements ServerSession, Dumpable
         long now = System.currentTimeMillis();
         synchronized (getLock())
         {
+            _scheduleTime = now;
             _expireTime = now + interval + _maxInterval;
         }
+        if (_logger.isDebugEnabled())
+            _logger.debug("Scheduled expiration for {}", this);
     }
 
     protected long getMaxInterval()

@@ -713,10 +713,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
     private void handle(ServerSessionImpl session, Mutable message, Mutable reply)
     {
-        if (session != null)
-            session.cancelExpiration();
-
         String channelName = message.getChannel();
+
+        if (session != null)
+            session.cancelExpiration(Channel.META_CONNECT.equals(channelName));
+
         if (channelName == null)
         {
             error(reply, "400::channel missing");
@@ -1338,6 +1339,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     @ManagedOperation(value = "Dumps the BayeuxServer state", impact = "INFO")
+    @Override
     public String dump()
     {
         return ContainerLifeCycle.dump(this);

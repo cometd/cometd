@@ -142,7 +142,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
 
     protected abstract HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout);
 
-    protected abstract void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, List<ServerMessage> messages, ServerMessage.Mutable[] replies);
+    protected abstract void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies);
 
     protected void processMessages(HttpServletRequest request, HttpServletResponse response, ServerMessage.Mutable[] messages) throws IOException
     {
@@ -152,6 +152,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         boolean batch = false;
         boolean sendQueue = true;
         boolean sendReplies = true;
+        boolean scheduleExpiration = true;
         try
         {
             for (int i = 0; i < messages.length; ++i)
@@ -213,6 +214,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
                         messages[i] = processReply(session, reply);
                         sendQueue = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
+                        sendReplies = reply != null;
                         break;
                     }
                     case Channel.META_CONNECT:
@@ -228,13 +230,14 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                         messages[i] = processReply(session, reply);
                         if (isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly())
                             sendQueue = false;
+                        scheduleExpiration = false;
                         break;
                     }
                 }
             }
 
-            if (sendReplies || sendQueue)
-                flush(request, response, session, sendQueue, messages);
+            if (sendQueue || sendReplies)
+                flush(request, response, session, sendQueue, scheduleExpiration, messages);
         }
         finally
         {
@@ -386,12 +389,12 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         return reply;
     }
 
-    protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean sendQueue, ServerMessage.Mutable... replies)
+    protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean sendQueue, boolean scheduleExpiration, ServerMessage.Mutable... replies)
     {
         List<ServerMessage> messages = Collections.emptyList();
         if (sendQueue && session != null)
             messages = session.takeQueue();
-        write(request, response, session, messages, replies);
+        write(request, response, session, scheduleExpiration, messages, replies);
     }
 
     protected void resume(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply)
@@ -403,7 +406,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         if (session.isDisconnected())
             reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
 
-        flush(request, response, session, true, processReply(session, reply));
+        flush(request, response, session, true, true, processReply(session, reply));
     }
 
     public BayeuxContext getContext()

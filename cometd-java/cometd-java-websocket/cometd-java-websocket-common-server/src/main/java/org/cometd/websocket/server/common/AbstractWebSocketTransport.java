@@ -311,8 +311,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         {
             ServerSessionImpl session = _session;
 
-            boolean send = true;
-            List<ServerMessage> queue = Collections.emptyList();
+            boolean sendQueue = true;
+            boolean sendReplies = true;
+            boolean scheduleExpiration = true;
             List<ServerMessage.Mutable> replies = new ArrayList<>(messages.length);
             for (int i = 0; i < messages.length; i++)
             {
@@ -345,8 +346,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         reply = processReply(session, reply);
                         if (reply != null)
                             replies.add(reply);
-                        if (session != null && allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful())
-                            queue = session.takeQueue();
+                        sendQueue = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
+                        sendReplies = reply != null;
                         break;
                     }
                     case Channel.META_CONNECT:
@@ -355,12 +356,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         reply = processReply(session, reply);
                         if (reply != null)
                             replies.add(reply);
-                        send = reply != null;
-                        if (session != null && send)
-                        {
-                            if (isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly())
-                                queue = session.takeQueue();
-                        }
+                        boolean deliver = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
+                        sendQueue = deliver && reply != null;
+                        sendReplies = reply != null;
                         break;
                     }
                     default:
@@ -369,13 +367,15 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         reply = processReply(session, reply);
                         if (reply != null)
                             replies.add(reply);
+                        sendQueue = false;
+                        scheduleExpiration = false;
                         break;
                     }
                 }
             }
 
-            if (send)
-                send(wsSession, session, queue, replies);
+            if (sendQueue || sendReplies)
+                send(wsSession, session, sendQueue, scheduleExpiration, replies);
         }
 
         private ServerMessage.Mutable processMetaHandshake(ServerSessionImpl session, ServerMessage.Mutable message)
@@ -448,11 +448,14 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
         }
 
-        protected void send(S wsSession, ServerSessionImpl session, List<ServerMessage> queue, List<ServerMessage.Mutable> replies)
+        protected void send(S wsSession, ServerSessionImpl session, boolean sendQueue, boolean scheduleExpiration, List<ServerMessage.Mutable> replies)
         {
+            List<ServerMessage> queue = Collections.emptyList();
+            if (sendQueue && session != null)
+                queue = session.takeQueue();
             if (_logger.isDebugEnabled())
                 _logger.debug("Sending {}, replies={}, messages={}", session, replies, queue);
-            flusher.queue(new Entry<>(wsSession, session, queue, replies));
+            flusher.queue(new Entry<>(wsSession, session, scheduleExpiration, queue, replies));
             flusher.iterate();
         }
 
@@ -563,12 +566,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     replies.add(connectReply);
                 }
             }
-
-            List<ServerMessage> queue = session.takeQueue();
-
             if (_logger.isDebugEnabled())
-                _logger.debug("Flushing {} metaConnectReply={}, messages={}", session, connectReply, queue);
-            send(wsSession, session, queue, replies);
+                _logger.debug("Sending {} metaConnectReply={}", session, connectReply);
+            send(wsSession, session, true, reply, replies);
         }
 
         private class MetaConnectReplyTask implements Runnable
@@ -655,9 +655,12 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 // Start the interval timeout after writing the messages
                 // since they may take time to be written, even in case
                 // of exceptions to make sure the session can be swept.
-                ServerSessionImpl session = entry._session;
-                if (session != null)
-                    session.scheduleExpiration(getInterval());
+                if (entry._scheduleExpiration)
+                {
+                    ServerSessionImpl session = entry._session;
+                    if (session != null)
+                        session.scheduleExpiration(getInterval());
+                }
 
                 if (_logger.isDebugEnabled())
                     _logger.debug("Processing replies {}", replies);
@@ -672,13 +675,15 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         {
             private final W _wsSession;
             private final ServerSessionImpl _session;
+            private final boolean _scheduleExpiration;
             private final List<ServerMessage> _queue;
             private final List<ServerMessage.Mutable> _replies;
 
-            private Entry(W wsSession, ServerSessionImpl session, List<ServerMessage> queue, List<ServerMessage.Mutable> replies)
+            private Entry(W wsSession, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> queue, List<ServerMessage.Mutable> replies)
             {
                 this._wsSession = wsSession;
                 this._session = session;
+                this._scheduleExpiration = scheduleExpiration;
                 this._queue = queue;
                 this._replies = replies;
             }

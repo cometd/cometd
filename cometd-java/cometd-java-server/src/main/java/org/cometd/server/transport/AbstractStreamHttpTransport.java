@@ -124,7 +124,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
 
     @Override
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
+    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
     {
         try
         {
@@ -165,7 +165,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
                 // Start the interval timeout after writing the messages
                 // since they may take time to be written, even in case
                 // of exceptions to make sure the session can be swept.
-                if (session != null && session.isConnected())
+                if (scheduleExpiration && session != null && (session.isHandshook() || session.isConnected()))
                     session.scheduleExpiration(getInterval());
             }
 

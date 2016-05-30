@@ -91,7 +91,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
     }
 
     @Override
-    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
+    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
     {
         AsyncContext asyncContext = request.getAsyncContext();
         try
@@ -99,7 +99,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             // Always write asynchronously
             response.setContentType("application/json;charset=UTF-8");
             ServletOutputStream output = response.getOutputStream();
-            output.setWriteListener(new Writer(request, response, asyncContext, session, messages, replies));
+            output.setWriteListener(new Writer(request, response, asyncContext, session, scheduleExpiration, messages, replies));
         }
         catch (Exception x)
         {
@@ -260,6 +260,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         private final HttpServletResponse response;
         private final AsyncContext asyncContext;
         private final ServerSessionImpl session;
+        private final boolean scheduleExpiration;
         private final List<ServerMessage> messages;
         private final ServerMessage.Mutable[] replies;
         private int messageIndex;
@@ -267,12 +268,13 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         private boolean needsComma;
         private State state = State.BEGIN;
 
-        protected Writer(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
+        protected Writer(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
         {
             this.request = request;
             this.response = response;
             this.asyncContext = asyncContext;
             this.session = session;
+            this.scheduleExpiration = scheduleExpiration;
             this.messages = messages;
             this.replies = replies;
         }
@@ -404,7 +406,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
 
         private void startExpiration()
         {
-            if (session != null && session.isConnected())
+            if (scheduleExpiration && session != null && (session.isHandshook() || session.isConnected()))
                 session.scheduleExpiration(getInterval());
         }
 
