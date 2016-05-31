@@ -15,9 +15,9 @@
  */
 package org.cometd.server.ext;
 
+import java.util.ArrayDeque;
 import java.util.Queue;
 
-import org.eclipse.jetty.util.ArrayQueue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,7 +34,7 @@ public class BatchArrayQueueTest
 
         queue.offer("B");
 
-        Queue<String> target = new ArrayQueue<>();
+        Queue<String> target = new ArrayDeque<>();
         queue.exportMessagesToBatch(target, batch);
 
         Assert.assertEquals(1, target.size());
@@ -90,7 +90,7 @@ public class BatchArrayQueueTest
         queue.offer("B2");
         queue.offer("B3");
 
-        Queue<String> target = new ArrayQueue<>();
+        Queue<String> target = new ArrayDeque<>();
         queue.exportMessagesToBatch(target, batch);
 
         Assert.assertEquals(3, target.size());
@@ -99,7 +99,7 @@ public class BatchArrayQueueTest
 
         queue.clearToBatch(batch);
 
-        for (String element: queue)
+        for (String element : queue)
             Assert.assertTrue(element.startsWith("B"));
     }
 }
