@@ -122,8 +122,12 @@ sent to the server.
 See also <<_javascript_handshake,the javascript handshake section>> for further
 information about passing additional objects.
 
-Both `addListener()` and `subscribe()` return a subscription object that must be
-passed to, respectively, `removeListener()` and `unsubscribe()`:
+Both `addListener()` and `subscribe()` return a subscription object that is
+opaque to applications (that is, applications should not try to use the fields
+of this object since its format may vary across CometD releases).
+
+The returned subscription object should be passed to, respectively,
+`removeListener()` and `unsubscribe()`:
 
 ====
 [source,javascript]

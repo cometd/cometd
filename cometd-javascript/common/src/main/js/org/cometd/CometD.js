@@ -32,6 +32,7 @@ org.cometd.CometD = function(name) {
     var _batch = 0;
     var _messageQueue = [];
     var _internalBatch = false;
+    var _listenerId = 0;
     var _listeners = {};
     var _backoff = 0;
     var _scheduledSend = null;
@@ -267,8 +268,10 @@ org.cometd.CometD = function(name) {
             if (_listeners.hasOwnProperty(channel)) {
                 var subscriptions = _listeners[channel];
                 if (subscriptions) {
-                    for (var i = 0; i < subscriptions.length; ++i) {
-                        _removeSubscription(subscriptions[i]);
+                    for (var id in subscriptions) {
+                        if (subscriptions.hasOwnProperty(id)) {
+                            _removeSubscription(subscriptions[id]);
+                        }
                     }
                 }
             }
@@ -345,24 +348,26 @@ org.cometd.CometD = function(name) {
 
     function _notify(channel, message) {
         var subscriptions = _listeners[channel];
-        if (subscriptions && subscriptions.length > 0) {
-            for (var i = 0; i < subscriptions.length; ++i) {
-                var subscription = subscriptions[i];
-                // Subscriptions may come and go, so the array may have 'holes'
-                if (subscription) {
-                    try {
-                        subscription.callback.call(subscription.scope, message);
-                    } catch (x) {
-                        var handler = _cometd.onListenerException;
-                        if (_isFunction(handler)) {
-                            _cometd._debug('Invoking listener exception handler', subscription, x);
-                            try {
-                                handler.call(_cometd, x, subscription, subscription.listener, message);
-                            } catch (xx) {
-                                _cometd._info('Exception during execution of listener exception handler', subscription, xx);
+        if (subscriptions) {
+            for (var id in subscriptions) {
+                if (subscriptions.hasOwnProperty(id)) {
+                    var subscription = subscriptions[id];
+                    // Subscriptions may come and go, so the array may have 'holes'
+                    if (subscription) {
+                        try {
+                            subscription.callback.call(subscription.scope, message);
+                        } catch (x) {
+                            var handler = _cometd.onListenerException;
+                            if (_isFunction(handler)) {
+                                _cometd._debug('Invoking listener exception handler', subscription, x);
+                                try {
+                                    handler.call(_cometd, x, subscription, subscription.listener, message);
+                                } catch (xx) {
+                                    _cometd._info('Exception during execution of listener exception handler', subscription, xx);
+                                }
+                            } else {
+                                _cometd._info('Exception during execution of listener', subscription, message, x);
                             }
-                        } else {
-                            _cometd._info('Exception during execution of listener', subscription, message, x);
                         }
                     }
                 }
@@ -1028,12 +1033,13 @@ org.cometd.CometD = function(name) {
     function _failSubscribe(message) {
         var subscriptions = _listeners[message.subscription];
         if (subscriptions) {
-            for (var i = subscriptions.length - 1; i >= 0; --i) {
-                var subscription = subscriptions[i];
-                if (subscription && !subscription.listener) {
-                    delete subscriptions[i];
-                    _cometd._debug('Removed failed subscription', subscription);
-                    break;
+            for (var id in subscriptions) {
+                if (subscriptions.hasOwnProperty(id)) {
+                    var subscription = subscriptions[id];
+                    if (subscription && !subscription.listener) {
+                        delete subscriptions[id];
+                        _cometd._debug('Removed failed subscription', subscription);
+                    }
                 }
             }
         }
@@ -1202,9 +1208,11 @@ org.cometd.CometD = function(name) {
     function _hasSubscriptions(channel) {
         var subscriptions = _listeners[channel];
         if (subscriptions) {
-            for (var i = 0; i < subscriptions.length; ++i) {
-                if (subscriptions[i]) {
-                    return true;
+            for (var id in subscriptions) {
+                if (subscriptions.hasOwnProperty(id)) {
+                    if (subscriptions[id]) {
+                        return true;
+                    }
                 }
             }
         }
@@ -1242,7 +1250,9 @@ org.cometd.CometD = function(name) {
         var delegate = _resolveScopedCallback(scope, callback);
         _cometd._debug('Adding', isListener ? 'listener' : 'subscription', 'on', channel, 'with scope', delegate.scope, 'and callback', delegate.method);
 
+        var id = ++_listenerId;
         var subscription = {
+            id: id,
             channel: channel,
             scope: delegate.scope,
             callback: delegate.method,
@@ -1251,22 +1261,13 @@ org.cometd.CometD = function(name) {
 
         var subscriptions = _listeners[channel];
         if (!subscriptions) {
-            subscriptions = [];
+            subscriptions = {};
             _listeners[channel] = subscriptions;
         }
 
-        // Pushing onto an array appends at the end and returns the id associated with the element increased by 1.
-        // Note that if:
-        // a.push('a'); var hb=a.push('b'); delete a[hb-1]; var hc=a.push('c');
-        // then:
-        // hc==3, a.join()=='a',,'c', a.length==3
-        subscription.id = subscriptions.push(subscription) - 1;
+        subscriptions[id] = subscription;
 
         _cometd._debug('Added', isListener ? 'listener' : 'subscription', subscription);
-
-        // For backward compatibility: we used to return [channel, subscription.id]
-        subscription[0] = channel;
-        subscription[1] = subscription.id;
 
         return subscription;
     }
