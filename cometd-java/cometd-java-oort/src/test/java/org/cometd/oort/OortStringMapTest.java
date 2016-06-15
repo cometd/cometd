@@ -533,7 +533,7 @@ public class OortStringMapTest extends AbstractOortObjectTest
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the maps to sync.
-        Assert.assertTrue(syncLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(syncLatch.await(60, TimeUnit.SECONDS));
 
         // Verify that the maps are in sync.
         size1 = oortMap1.getInfo(oort1.getURL()).getObject().size();
