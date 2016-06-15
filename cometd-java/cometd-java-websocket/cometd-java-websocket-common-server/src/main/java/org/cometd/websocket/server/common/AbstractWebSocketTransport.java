@@ -708,6 +708,15 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 this._replies = replies;
             }
 
+            private void startInterval()
+            {
+                if (_startInterval)
+                {
+                    if (_session != null)
+                        _session.startIntervalTimeout(getInterval());
+                }
+            }
+
             @Override
             public String toString()
             {
@@ -716,15 +725,6 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         hashCode(),
                         _queue.size(),
                         _replies.size());
-            }
-
-            private void startInterval()
-            {
-                if (_startInterval)
-                {
-                    if (_session != null)
-                        _session.startIntervalTimeout(getInterval());
-                }
             }
         }
     }
