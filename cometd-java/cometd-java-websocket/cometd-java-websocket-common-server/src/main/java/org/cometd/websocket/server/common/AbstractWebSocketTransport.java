@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.text.ParseException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +41,6 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -455,8 +455,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 queue = session.takeQueue();
             if (_logger.isDebugEnabled())
                 _logger.debug("Sending {}, replies={}, messages={}", session, replies, queue);
-            flusher.queue(new Entry<>(wsSession, session, scheduleExpiration, queue, replies));
-            flusher.iterate();
+            boolean queued = flusher.queue(new Entry<>(wsSession, session, scheduleExpiration, queue, replies));
+            if (queued)
+                flusher.iterate();
         }
 
         protected abstract void close(int code, String reason);
@@ -602,17 +603,31 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
         private class Flusher extends IteratingCallback
         {
-            private final Queue<Entry<S>> _entries = new ConcurrentArrayQueue<>();
+            private final Queue<Entry<S>> _entries = new ArrayDeque<>();
+            private Entry<S> entry;
+            private boolean terminated;
 
             private boolean queue(Entry<S> entry)
             {
-                return _entries.offer(entry);
+                synchronized (this)
+                {
+                    if (!terminated)
+                        return _entries.offer(entry);
+                }
+                // If we are terminated, we still need to schedule
+                // the expiration so that the session can be swept.
+                entry.scheduleExpiration();
+                return false;
             }
 
             @Override
             protected Action process() throws Exception
             {
-                Entry<S> entry = _entries.peek();
+                Entry<S> entry;
+                synchronized (this)
+                {
+                    entry = this.entry = _entries.peek();
+                }
                 if (_logger.isDebugEnabled())
                     _logger.debug("Processing {}", entry);
 
@@ -650,17 +665,14 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     return Action.SCHEDULED;
                 }
 
-                _entries.poll();
-
-                // Start the interval timeout after writing the messages
-                // since they may take time to be written, even in case
-                // of exceptions to make sure the session can be swept.
-                if (entry._scheduleExpiration)
+                synchronized (this)
                 {
-                    ServerSessionImpl session = entry._session;
-                    if (session != null)
-                        session.scheduleExpiration(getInterval());
+                    _entries.poll();
                 }
+
+                // Start the interval timeout after writing the
+                // messages since they may take time to be written.
+                entry.scheduleExpiration();
 
                 if (_logger.isDebugEnabled())
                     _logger.debug("Processing replies {}", replies);
@@ -668,6 +680,19 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     getBayeux().freeze(reply);
                 send(wsSession, replies, replies.size(), this);
                 return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable x)
+            {
+                Entry<S> entry;
+                synchronized (this)
+                {
+                    terminated = true;
+                    entry = this.entry;
+                }
+                if (entry != null)
+                    entry.scheduleExpiration();
             }
         }
 
@@ -686,6 +711,15 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 this._scheduleExpiration = scheduleExpiration;
                 this._queue = queue;
                 this._replies = replies;
+            }
+
+            private void scheduleExpiration()
+            {
+                if (_scheduleExpiration)
+                {
+                    if (_session != null)
+                        _session.scheduleExpiration(getInterval());
+                }
             }
 
             @Override
