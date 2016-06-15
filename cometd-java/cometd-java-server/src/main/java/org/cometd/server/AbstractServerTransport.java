@@ -26,6 +26,8 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.JSONContext;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * call the variants of {@link #getOption(String)} to obtained the configured
  * value for the option.</p>
  */
-public abstract class AbstractServerTransport extends AbstractTransport implements ServerTransport
+public abstract class AbstractServerTransport extends AbstractTransport implements ServerTransport, Dumpable
 {
     public static final String TIMEOUT_OPTION = "timeout";
     public static final String INTERVAL_OPTION = "interval";
@@ -214,6 +216,24 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         {
             throw new UnsupportedCharsetException(encoding);
         }
+    }
+
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        ContainerLifeCycle.dumpObject(out, this);
+    }
+
+    @Override
+    public String toString()
+    {
+        return getName();
     }
 
     public interface Scheduler

@@ -1313,7 +1313,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             {
                 List<String> allowedTransports = getAllowedTransports();
                 ContainerLifeCycle.dumpObject(out, "transports: " + allowedTransports.size());
-                ContainerLifeCycle.dump(out, indent, allowedTransports);
+                if (isDetailedDump())
+                {
+                    List<ServerTransport> transports = new ArrayList<>();
+                    for (String allowedTransport : allowedTransports)
+                        transports.add(getTransport(allowedTransport));
+                    ContainerLifeCycle.dump(out, indent, transports);
+                }
+                else
+                {
+                    ContainerLifeCycle.dump(out, indent, allowedTransports);
+                }
             }
         });
 
