@@ -78,7 +78,6 @@ public abstract class ClientServerWebSocketTest
     protected ServletContextHandler context;
     protected String cometdServletPath;
     protected HttpClient httpClient;
-    protected QueuedThreadPool wsThreadPool;
     protected WebSocketContainer wsClientContainer;
     protected WebSocketClient wsClient;
     protected String cometdURL;
@@ -126,7 +125,9 @@ public abstract class ClientServerWebSocketTest
 
     protected void prepareServer(int port, String servletPath, Map<String, String> initParams, boolean eager, String wsTransportClass) throws Exception
     {
-        server = new Server();
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
 
         connector = new ServerConnector(server);
         connector.setPort(port);
@@ -168,8 +169,8 @@ public abstract class ClientServerWebSocketTest
                 httpClient.addBean(wsClientContainer, true);
                 break;
             case WEBSOCKET_JETTY:
-                wsThreadPool = new QueuedThreadPool();
-                wsThreadPool.setName(wsThreadPool.getName() + "-client");
+                QueuedThreadPool wsThreadPool = new QueuedThreadPool();
+                wsThreadPool.setName("client");
                 wsClient = new WebSocketClient();
                 wsClient.setExecutor(wsThreadPool);
                 httpClient.addBean(wsClient);
