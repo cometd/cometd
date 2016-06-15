@@ -18,8 +18,10 @@ package org.cometd.oort;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -370,10 +372,21 @@ public class OortObjectTest extends AbstractOortObjectTest
         OortObject<String> oortObject2 = new OortObject<>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
 
+        final BlockingQueue<String> values = new LinkedBlockingQueue<>();
+        oortObject2.addListener(new OortObject.Listener.Adapter<String>()
+        {
+            @Override
+            public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo)
+            {
+                String value = newInfo.getObject();
+                values.offer(value);
+            }
+        });
+
         int threads = 64;
         final int iterations = 32;
         final CyclicBarrier barrier = new CyclicBarrier(threads + 1);
-        final CountDownLatch latch1 = new CountDownLatch(threads);
+        final CountDownLatch latch = new CountDownLatch(threads);
 
         for (int i = 0; i < threads; ++i)
         {
@@ -398,7 +411,7 @@ public class OortObjectTest extends AbstractOortObjectTest
                     }
                     finally
                     {
-                        latch1.countDown();
+                        latch.countDown();
                     }
                 }
             }).start();
@@ -407,12 +420,24 @@ public class OortObjectTest extends AbstractOortObjectTest
         barrier.await();
 
         // Wait for all threads to finish.
-        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        // Wait some time for the last updates to be processed.
-        Thread.sleep(1000);
-
+        // Verify that the last value set (randomly) on the first OortObject is also
+        // the same value on the second OortObject when all updates have arrived.
         String object1 = oortObject1.getInfo(oort1.getURL()).getObject();
+
+        while (true)
+        {
+            String object2 = values.take();
+            if (object2.equals(object1))
+            {
+                // Make sure there are no more values.
+                Assert.assertNull(values.poll(1, TimeUnit.SECONDS));
+                break;
+            }
+        }
+
+        // Re-verify.
         String object2 = oortObject2.getInfo(oort1.getURL()).getObject();
         Assert.assertEquals(object1, object2);
     }
