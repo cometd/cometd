@@ -134,6 +134,7 @@ public class Oort extends ContainerLifeCycle
     protected void doStart() throws Exception
     {
         ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(1);
+        scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
         scheduler.setRemoveOnCancelPolicy(true);
         _scheduler = scheduler;
 
@@ -208,7 +209,7 @@ public class Oort extends ContainerLifeCycle
 
         _bayeux.removeExtension(_oortExtension);
 
-        _scheduler.shutdownNow();
+        _scheduler.shutdown();
 
         super.doStop();
     }

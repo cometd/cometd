@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -85,7 +86,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     @Override
     public void destroy()
     {
-        _scheduler.shutdownNow();
+        _scheduler.shutdown();
 
         Executor threadPool = _executor;
         if (threadPool instanceof ExecutorService)
@@ -102,7 +103,10 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
     protected ScheduledExecutorService newScheduledExecutor()
     {
-        return Executors.newSingleThreadScheduledExecutor();
+        ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(1);
+        scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+        scheduler.setRemoveOnCancelPolicy(true);
+        return scheduler;
     }
 
     public Executor getExecutor()
