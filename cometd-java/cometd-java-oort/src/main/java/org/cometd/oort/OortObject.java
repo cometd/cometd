@@ -499,7 +499,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
     protected void pushInfo(String oortURL, Map<String, Object> fields)
     {
-        OortComet oortComet = oort.getComet(oortURL);
+        OortComet oortComet = oort.findComet(oortURL);
         Info<T> info = getInfo(oort.getURL());
         if (oortComet != null && info != null)
         {
@@ -755,11 +755,13 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         {
             Map<String, Object> data = message.getDataAsMap();
             String oortURL = (String)data.get(Info.OORT_URL_FIELD);
+
             // Pulls are messages that read the local object, not
             // the object specified by the data's OORT_URL_FIELD,
             // and as such they must be queued to the local ObjectPart.
             if (ACTION_FIELD_PULL_VALUE.equals(data.get(Info.ACTION_FIELD)))
                 oortURL = oort.getURL();
+
             ObjectPart part = part(oortURL);
 
             if (logger.isDebugEnabled())

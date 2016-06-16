@@ -33,9 +33,9 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Bayeux;
@@ -112,7 +112,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private final SessionState sessionState = new SessionState();
     private final String url;
     private ScheduledExecutorService scheduler;
-    private boolean shutdownScheduler;
     private long backoffIncrement;
     private long maxBackoff;
 
@@ -1016,10 +1015,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         this.maxBackoff = maxBackoff;
 
         if (scheduler == null)
-        {
-            scheduler = Executors.newSingleThreadScheduledExecutor();
-            shutdownScheduler = true;
-        }
+            scheduler = new BayeuxClientScheduler();
     }
 
     protected void terminate()
@@ -1029,10 +1025,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         cookieStore.removeAll();
 
-        if (shutdownScheduler)
+        if (scheduler instanceof BayeuxClientScheduler)
         {
-            shutdownScheduler = false;
-            scheduler.shutdownNow();
+            scheduler.shutdown();
             scheduler = null;
         }
     }
@@ -1807,6 +1802,16 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     }
                 }
             });
+        }
+    }
+
+    private static class BayeuxClientScheduler extends ScheduledThreadPoolExecutor
+    {
+        public BayeuxClientScheduler()
+        {
+            super(1);
+            setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+            setRemoveOnCancelPolicy(true);
         }
     }
 }

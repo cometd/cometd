@@ -77,9 +77,13 @@ public abstract class OortContainer<T> extends OortObject<T>
         {
             super.onObject(data);
             Info<T> info = getInfo(oortURL);
-            updater.pulling = false;
-            updater.version = info.getVersion();
-            process(info, updater);
+            // Info may be null if the OortObject is stopped concurrently.
+            if (info != null)
+            {
+                updater.pulling = false;
+                updater.version = info.getVersion();
+                process(info, updater);
+            }
         }
     }
 

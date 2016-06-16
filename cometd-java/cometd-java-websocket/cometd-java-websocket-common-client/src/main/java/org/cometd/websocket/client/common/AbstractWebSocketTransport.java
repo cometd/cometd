@@ -50,7 +50,6 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     public final static String STICKY_RECONNECT_OPTION = "stickyReconnect";
 
     private ScheduledExecutorService _scheduler;
-    private boolean _shutdownScheduler;
     private String _protocol;
     private long _connectTimeout;
     private long _idleTimeout;
@@ -85,11 +84,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
         if (_scheduler == null)
         {
-            _shutdownScheduler = true;
             int threads = Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
-            ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(threads);
-            scheduler.setRemoveOnCancelPolicy(true);
-            _scheduler = scheduler;
+            _scheduler = new WebSocketTransportScheduler(threads);
         }
 
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
@@ -140,10 +136,9 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
     private void shutdownScheduler()
     {
-        if (_shutdownScheduler)
+        if (_scheduler instanceof WebSocketTransportScheduler)
         {
-            _shutdownScheduler = false;
-            _scheduler.shutdownNow();
+            _scheduler.shutdown();
             _scheduler = null;
         }
     }
@@ -492,6 +487,16 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
         public String toString()
         {
             return getClass().getSimpleName() + " " + message;
+        }
+    }
+
+    private static class WebSocketTransportScheduler extends ScheduledThreadPoolExecutor
+    {
+        public WebSocketTransportScheduler(int threads)
+        {
+            super(threads);
+            setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+            setRemoveOnCancelPolicy(true);
         }
     }
 }
