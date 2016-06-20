@@ -312,8 +312,8 @@ public class OortStringMapTest extends AbstractOortObjectTest
         barrier.await();
 
         // Wait for all threads to finish.
-        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch1.await(15, TimeUnit.SECONDS));
+        Assert.assertTrue(latch2.await(15, TimeUnit.SECONDS));
 
         ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion());
         ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion());

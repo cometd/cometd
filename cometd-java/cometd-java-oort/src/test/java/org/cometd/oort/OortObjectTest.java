@@ -133,7 +133,10 @@ public class OortObjectTest extends AbstractOortObjectTest
         Assert.assertTrue(oortComet32.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         OortObject<Map<String, Object>> oortObject3 = new OortObject<>(oort3, name, factory);
-        OortObjectInitialListener<Map<String, Object>> initialListener = new OortObjectInitialListener<>(2);
+        // Latch with 4 counts for node1 and node2 receiving from node3 + node3 receiving from node1 and node2.
+        OortObjectInitialListener<Map<String, Object>> initialListener = new OortObjectInitialListener<>(4);
+        oortObject1.addListener(initialListener);
+        oortObject2.addListener(initialListener);
         oortObject3.addListener(initialListener);
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(oortObject1.getChannelName(), 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
