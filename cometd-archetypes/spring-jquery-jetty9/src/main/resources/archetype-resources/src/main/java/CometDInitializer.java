@@ -37,6 +37,7 @@ public class CometDInitializer implements ServletContextAware
         return bean;
     }
 
+    @Override
     public void setServletContext(ServletContext servletContext)
     {
         this.servletContext = servletContext;
@@ -60,6 +61,7 @@ public class CometDInitializer implements ServletContextAware
         {
         }
 
+        @Override
         public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException
         {
             processor.processDependencies(bean);
@@ -68,14 +70,22 @@ public class CometDInitializer implements ServletContextAware
             return bean;
         }
 
+        @Override
         public Object postProcessAfterInitialization(Object bean, String name) throws BeansException
         {
             return bean;
         }
 
+        @Override
         public void postProcessBeforeDestruction(Object bean, String name) throws BeansException
         {
             processor.deprocessCallbacks(bean);
+        }
+
+        @Override
+        public boolean requiresDestruction(Object bean)
+        {
+            return true;
         }
     }
 }

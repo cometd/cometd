@@ -77,6 +77,12 @@ public class Configurator implements DestructionAwareBeanPostProcessor
         processor.deprocessCallbacks(bean);
     }
 
+    @Override
+    public boolean requiresDestruction(Object bean)
+    {
+        return true;
+    }
+
     @Bean(initMethod = "start", destroyMethod = "stop")
     public BayeuxServer bayeuxServer()
     {

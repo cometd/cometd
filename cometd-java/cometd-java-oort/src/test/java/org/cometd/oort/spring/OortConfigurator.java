@@ -73,6 +73,12 @@ public class OortConfigurator implements DestructionAwareBeanPostProcessor, Serv
     }
 
     @Override
+    public boolean requiresDestruction(Object bean)
+    {
+        return true;
+    }
+
+    @Override
     public void setServletContext(ServletContext servletContext)
     {
         this.servletContext = servletContext;
