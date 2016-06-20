@@ -313,6 +313,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         info.put(Info.OORT_URL_FIELD, oort.getURL());
         info.put(Info.NAME_FIELD, getName());
         info.put(Info.OBJECT_FIELD, local);
+        info.put(Info.VERSION_FIELD, 0);
         return info;
     }
 
@@ -910,7 +911,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
                         active = false;
                         return;
                     }
-                    current = info == null ? 0 : info.getVersion();
+                    current = info == null ? -1 : info.getVersion();
                 }
 
                 if (ACTION_FIELD_PULL_VALUE.equals(data.get(Info.ACTION_FIELD)))
