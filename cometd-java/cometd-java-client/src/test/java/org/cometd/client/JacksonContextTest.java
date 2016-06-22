@@ -16,7 +16,6 @@
 package org.cometd.client;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -30,51 +29,25 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.HashMapMessage;
-import org.cometd.common.Jackson1JSONContextClient;
-import org.cometd.common.Jackson2JSONContextClient;
+import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.AbstractService;
-import org.cometd.server.Jackson1JSONContextServer;
-import org.cometd.server.Jackson2JSONContextServer;
+import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.ServerMessageImpl;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(Parameterized.class)
 public class JacksonContextTest extends ClientServerTest
 {
-    @Parameters(name= "{index}: Jackson Context Server: {0} Jackson Context Client: {1}")
-     public static Iterable<Object[]> data()
-     {
-         return Arrays.asList(new Object[][]
-                 {
-                     { Jackson2JSONContextServer.class, Jackson2JSONContextClient.class },
-                     { Jackson1JSONContextServer.class, Jackson1JSONContextClient.class },
-                 }
-         );
-     }
-
-    private final String jacksonContextServerClassName;
-    private final String jacksonContextClientClassName;
-
-    public JacksonContextTest(final Class<?> jacksonContextServerClass, final Class<?> jacksonContextClientClass)
-    {
-        this.jacksonContextServerClassName = jacksonContextServerClass.getName();
-        this.jacksonContextClientClassName = jacksonContextClientClass.getName();
-    }
-
     @Test
     public void testAllMessagesUseJackson() throws Exception
     {
         Map<String, String> serverParams = new HashMap<>();
-        serverParams.put(AbstractServerTransport.JSON_CONTEXT_OPTION, jacksonContextServerClassName);
+        serverParams.put(AbstractServerTransport.JSON_CONTEXT_OPTION, JacksonJSONContextServer.class.getName());
         startServer(serverParams);
 
         Map<String, Object> clientParams = new HashMap<>();
-        clientParams.put(ClientTransport.JSON_CONTEXT_OPTION, jacksonContextClientClassName);
+        clientParams.put(ClientTransport.JSON_CONTEXT_OPTION, JacksonJSONContextClient.class.getName());
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientParams, httpClient));
 
         client.handshake();

@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server;
+package org.cometd.common;
 
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.common.JSONContext;
-import org.cometd.common.Jackson2JSONContext;
+import org.cometd.bayeux.Message;
 
-public class Jackson2JSONContextServer extends Jackson2JSONContext<ServerMessage.Mutable, ServerMessageImpl> implements JSONContext.Server
+public class JacksonJSONContextClient extends JacksonJSONContext<Message.Mutable, HashMapMessage> implements JSONContext.Client
 {
     @Override
-    protected Class<ServerMessageImpl[]> rootArrayClass()
+    protected Class<HashMapMessage[]> rootArrayClass()
     {
-        return ServerMessageImpl[].class;
+        return HashMapMessage[].class;
     }
 }

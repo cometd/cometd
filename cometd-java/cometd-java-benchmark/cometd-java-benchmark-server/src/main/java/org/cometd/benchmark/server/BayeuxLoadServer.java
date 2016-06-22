@@ -50,7 +50,7 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
-import org.cometd.server.Jackson1JSONContextServer;
+import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.transport.AsyncJSONTransport;
 import org.cometd.server.transport.JSONTransport;
@@ -250,7 +250,7 @@ public class BayeuxLoadServer
         // Explicitly set the timeout value
         bayeuxServer.setOption(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(Config.META_CONNECT_TIMEOUT));
         // Use the faster JSON parser/generator
-        bayeuxServer.setOption(AbstractServerTransport.JSON_CONTEXT_OPTION, Jackson1JSONContextServer.class.getName());
+        bayeuxServer.setOption(AbstractServerTransport.JSON_CONTEXT_OPTION, JacksonJSONContextServer.class.getName());
         bayeuxServer.setOption("ws.cometdURLMapping", cometdURLMapping);
         bayeuxServer.setOption(ServletContext.class.getName(), context.getServletContext());
 

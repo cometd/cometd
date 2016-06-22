@@ -35,8 +35,7 @@ public class JettyJacksonComparisonTest
      {
          return Arrays.asList(new Object[][]
                  {
-                         {Jackson1JSONProvider.class},
-                         {Jackson2JSONProvider.class},
+                         {JacksonJSONProvider.class},
                          {JettyJSONProvider.class}
                  }
          );
@@ -51,49 +50,26 @@ public class JettyJacksonComparisonTest
         String generate(Message.Mutable message) throws Exception;
     }
 
-    public static class Jackson1JSONProvider implements JSONProvider
+    public static class JacksonJSONProvider implements JSONProvider
     {
-        private final Jackson1JSONContextClient jackson1ContextClient = new Jackson1JSONContextClient();
+        private final JacksonJSONContextClient jacksonContextClient = new JacksonJSONContextClient();
 
         @Override
         public String getName()
         {
-            return "jackson1";
-        }
-
-        @Override
-        public Message.Mutable[] parse(String json) throws Exception
-        {
-            return jackson1ContextClient.parse(json);
-        }
-
-        @Override
-        public String generate(Message.Mutable message) throws Exception
-        {
-            return jackson1ContextClient.generate(message);
-        }
-    }
-
-    public static class Jackson2JSONProvider implements JSONProvider
-    {
-        private final Jackson2JSONContextClient jackson2ContextClient = new Jackson2JSONContextClient();
-
-        @Override
-        public String getName()
-        {
-            return "jackson2";
+            return "jackson";
         }
 
         @Override
         public org.cometd.bayeux.Message.Mutable[] parse(String json) throws Exception
         {
-            return jackson2ContextClient.parse(json);
+            return jacksonContextClient.parse(json);
         }
 
         @Override
         public String generate(Message.Mutable message) throws Exception
         {
-            return jackson2ContextClient.generate(message);
+            return jacksonContextClient.generate(message);
         }
     }
 

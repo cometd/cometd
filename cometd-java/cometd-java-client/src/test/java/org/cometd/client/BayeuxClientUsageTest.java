@@ -29,12 +29,10 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.common.Jackson1JSONContextClient;
-import org.cometd.common.Jackson2JSONContextClient;
+import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.Jackson1JSONContextServer;
-import org.cometd.server.Jackson2JSONContextServer;
+import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.JettyJSONContextServer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
@@ -59,8 +57,7 @@ public class BayeuxClientUsageTest extends ClientServerTest
      {
          return Arrays.asList(new Object[][]
                  {
-                         {Jackson2JSONContextServer.class, Jackson2JSONContextClient.class},
-                         {Jackson1JSONContextServer.class, Jackson1JSONContextClient.class},
+                         {JacksonJSONContextServer.class, JacksonJSONContextClient.class},
                          {JettyJSONContextServer.class, JettyJSONContextClient.class}
                  }
          );

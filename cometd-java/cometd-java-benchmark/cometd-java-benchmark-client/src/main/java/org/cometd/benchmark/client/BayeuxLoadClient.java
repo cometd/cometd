@@ -50,7 +50,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.common.Jackson1JSONContextClient;
+import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.websocket.client.JettyWebSocketTransport;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
@@ -452,14 +452,14 @@ public class BayeuxLoadClient implements MeasureConverter
             case LONG_POLLING:
             {
                 Map<String, Object> options = new HashMap<>();
-                options.put(ClientTransport.JSON_CONTEXT_OPTION, new Jackson1JSONContextClient());
+                options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
                 return new LongPollingTransport(options, httpClient);
             }
             case JSR_WEBSOCKET:
             {
                 Map<String, Object> options = new HashMap<>();
-                options.put(ClientTransport.JSON_CONTEXT_OPTION, new Jackson1JSONContextClient());
+                options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
                 // Differently from HTTP where the idle timeout is adjusted if it is a /meta/connect
                 // for WebSocket we need an idle timeout that is longer than the /meta/connect timeout.
@@ -469,7 +469,7 @@ public class BayeuxLoadClient implements MeasureConverter
             case JETTY_WEBSOCKET:
             {
                 Map<String, Object> options = new HashMap<>();
-                options.put(ClientTransport.JSON_CONTEXT_OPTION, new Jackson1JSONContextClient());
+                options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
                 // Differently from HTTP where the idle timeout is adjusted if it is a /meta/connect
                 // for WebSocket we need an idle timeout that is longer than the /meta/connect timeout.

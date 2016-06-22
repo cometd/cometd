@@ -18,9 +18,9 @@ package org.cometd.oort;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.cometd.common.Jackson1JSONContextClient;
+import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.Jackson1JSONContextServer;
+import org.cometd.server.JacksonJSONContextServer;
 import org.eclipse.jetty.server.Server;
 
 public class JacksonOortObjectTest extends OortObjectTest
@@ -35,7 +35,7 @@ public class JacksonOortObjectTest extends OortObjectTest
     {
         if (options == null)
             options = new HashMap<>();
-        options.put(AbstractServerTransport.JSON_CONTEXT_OPTION, Jackson1JSONContextServer.class.getName());
+        options.put(AbstractServerTransport.JSON_CONTEXT_OPTION, JacksonJSONContextServer.class.getName());
         return super.startServer(port, options);
     }
 
@@ -43,7 +43,7 @@ public class JacksonOortObjectTest extends OortObjectTest
     protected Oort startOort(Server server) throws Exception
     {
         Oort oort = super.startOort(server);
-        oort.setJSONContextClient(new Jackson1JSONContextClient());
+        oort.setJSONContextClient(new JacksonJSONContextClient());
         return oort;
     }
 }

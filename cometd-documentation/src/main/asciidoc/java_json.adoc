@@ -7,11 +7,8 @@ incoming JSON into Bayeux messages and generate JSON from Bayeux messages.
 
 Two implementations are available, one based on Jetty's
 `org.eclipse.jetty.util.ajax.JSON` class, and the other based on the
-http://jackson.codehaus.org[Jackson] library.
+https://github.com/FasterXML/jackson[Jackson] library.
 The default implementation uses the Jetty library.
-These two libraries are among the fastest available; it turns out that,
-for CometD, the Jackson library is faster than Jetty's in both parsing
-and generating.
 Distinctions between them include:
 
 * The Jetty library allows you to plug in custom serializers and deserializers,
@@ -22,7 +19,7 @@ Distinctions between them include:
 * The Jackson library offers a rich API based on annotations to customize
   JSON generation, but less so to customize JSON parsing and obtain objects
   of custom classes.
-  Refer to the http://jackson.codehaus.org/Documentation[Jackson documentation]
+  Refer to the https://github.com/FasterXML/jackson[Jackson] documentation
   for further details.
 
 [[_java_json_api]]
@@ -64,28 +61,6 @@ BayeuxClient client = new BayeuxClient(cometdURL, transport);
 
 All client transports can share the `org.cometd.common.JSONContext.Client`
 instance (since only one transport is used at any time).
-
-You can customize the Jackson implementation and add your own serializers/deserializer
-in the following way:
-
-====
-[source,java]
-----
-public class MyJacksonJSONContextClient extends org.cometd.common.JacksonJSONContextClient {
-    public MyJacksonJSONContextClient() {
-        org.codehaus.jackson.map.ObjectMapper objectMapper = getObjectMapper();
-        objectMapper.registerModule(new MyModule());
-    }
-
-    private class MyModule extends org.codehaus.jackson.map.module.SimpleModule {
-        public MyModule() {
-            // Add your custom serializers/deserializers here
-            addSerializer(Foo.class, new FooSerializer());
-        }
-    }
-}
-----
-====
 
 The `JSONContext.Server` and `JSONContext.Client` classes also offer methods
 to obtain a JSON parser (to deserialize JSON into objects) and a JSON generator
@@ -189,12 +164,11 @@ It is possible to switch from one implementation of the JSON library to
 another – for example from the Jetty library to the Jackson library, provided
 that you write the application code carefully.
 
-As of version 1.8.4, Jackson can only produce instances of `java.util.List`
-when deserializing JSON arrays.
+Jackson may produce instances of `java.util.List` when deserializing JSON arrays.
 The Jetty library, however, produces `java.lang.Object[]` when deserializing
 JSON arrays.
 
-Similarly, Jackson produces `java.lang.Integer` where the Jetty library
+Similarly, Jackson may produce `java.lang.Integer` where the Jetty library
 produces `java.lang.Long`.
 
 To write portable application code, use the following code patterns:

@@ -15,8 +15,7 @@
         <!-- end::jetty-version[] -->
         <slf4j-version>1.7.21</slf4j-version>
         <spring-version>4.3.0.RELEASE</spring-version>
-        <jackson1-version>1.9.13</jackson1-version>
-        <jackson2-version>2.7.5</jackson2-version>
+        <jackson-version>2.7.5</jackson-version>
         <dojo-version>1.11.2</dojo-version>
         <rhino-version>1.7R4</rhino-version>
     </properties>
