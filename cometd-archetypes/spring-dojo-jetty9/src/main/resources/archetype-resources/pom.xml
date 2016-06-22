@@ -9,6 +9,12 @@
     <packaging>war</packaging>
     <version>${version}</version>
 
+    <properties>
+        <cometd-version>${cometdVersion}</cometd-version>
+        <jetty-version>${jettyVersion}</jetty-version>
+        <spring-version>${springVersion}</spring-version>
+    </properties>
+
     <build>
         <defaultGoal>install</defaultGoal>
         <plugins>
@@ -36,7 +42,7 @@
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
-                <version>${jettyVersion}</version>
+                <version>${jetty-version}</version>
                 <configuration>
                     <scanIntervalSeconds>10</scanIntervalSeconds>
                     <webAppConfig>
@@ -57,38 +63,53 @@
         <dependency>
             <groupId>org.cometd.java</groupId>
             <artifactId>bayeux-api</artifactId>
-            <version>${cometdVersion}</version>
+            <version>${cometd-version}</version>
         </dependency>
         <dependency>
             <groupId>org.cometd.javascript</groupId>
             <artifactId>cometd-javascript-dojo</artifactId>
-            <version>${cometdVersion}</version>
+            <version>${cometd-version}</version>
             <type>war</type>
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>
             <artifactId>cometd-java-server</artifactId>
-            <version>${cometdVersion}</version>
+            <version>${cometd-version}</version>
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>
             <artifactId>cometd-java-websocket-javax-server</artifactId>
-            <version>${cometdVersion}</version>
+            <version>${cometd-version}</version>
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>
             <artifactId>cometd-java-annotations</artifactId>
-            <version>${cometdVersion}</version>
+            <version>${cometd-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-jmx</artifactId>
+            <version>${jetty-version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlets</artifactId>
-            <version>${jettyVersion}</version>
+            <version>${jetty-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+            <version>${jetty-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-util-ajax</artifactId>
+            <version>${jetty-version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
-            <version>${springVersion}</version>
+            <version>${spring-version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

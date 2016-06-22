@@ -7,7 +7,7 @@
 
 === Requirements
 
-Building the CometD project has 2 minimum requirements: 
+Building the CometD project has 2 minimum requirements:
 
 * http://java.sun.com[JDK 7] or greater, to compile the Java code
 * http://maven.apache.org[Maven 3] or greater, the build tool
@@ -28,7 +28,7 @@ $ tar zxvf cometd-<version>-distribution.tar.gz
 $ cd cometd-<version>
 ----
 
-If you want to use the latest code, clone the GitHub repository with the following commands: 
+If you want to use the latest code, clone the GitHub repository with the following commands:
 
 ----
 $ git clone git://github.com/cometd/cometd.git cometd
@@ -37,27 +37,46 @@ $ cd cometd
 
 === Performing the Build
 
-Once you have obtained the source code, you need to issue the following command to build it: 
+Once you have obtained the source code, you need to issue the following command to build it:
 
 ----
 $ mvn clean install
 ----
 
-If you want to save some time, you can skip the execution of the test suite using the following command: 
+If you want to save some time, you can skip the execution of the test suite using the following command:
 
 ----
 $ mvn clean install -DskipTests=true
 ----
 
+If you want to build CometD with a different Jetty version, issue the following command:
+
+----
+$ mvn clean install -Djetty-version=<alternate-jetty-version>
+----
+
+for example:
+
+----
+$ mvn clean install -Djetty-version=9.3.10.v20160621 -DskipTests=true
+----
+
 === Trying out your Build
 
-To try out your build just follow these steps (after having built following the above instructions): 
+To try out your build just follow these steps (after having built following the above instructions):
 
 ----
 $ cd cometd-demo
 $ mvn jetty:run
 ----
 
-Then point your browser at http://localhost:8080 and you should see the CometD Demo page. 
+Then point your browser at http://localhost:8080 and you should see the CometD Demo page.
+
+If you want to try out your build using a different Jetty version, replace the
+last command above with:
+
+----
+$ mvn jetty:run -Djetty-version=<alternate-jetty-version>
+----
 
 :numbered:

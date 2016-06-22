@@ -20,7 +20,7 @@ but other build tools can apply the same concepts.
 .Windows Users
 If you are working in the Windows OS, avoid at all costs using a path that contains
 spaces, such as "C:\Document And Settings\", as your base path.
-Use a base path such as "C:\CometD\" instead. 
+Use a base path such as "C:\CometD\" instead.
 ====
 
 === Setting Up the Project
@@ -28,7 +28,7 @@ Use a base path such as "C:\CometD\" instead.
 You can set up the project in two ways: using <<_primer_maven_way,the Maven way>>
 or <<_primer_non_maven_way,the non Maven way>>.
 For both, you can follow <<_primer_setup_details,setup section>>
-to see how some of the files of the project are set up. 
+to see how some of the files of the project are set up.
 
 [[_primer_maven_way]]
 ==== The Maven Way
@@ -81,6 +81,12 @@ Y: :
 [INFO] BUILD SUCCESS
 ----
 
+[NOTE]
+====
+Do not worry for now about the Jetty version that is being used to generate
+the application skeleton, since it can be easily changed afterwards.
+====
+
 Then:
 
 ----
@@ -111,7 +117,8 @@ $ tree .
 The skeleton project is ready for you to run using the following command:
 
 ----
-$ mvn install jetty:run
+$ mvn clean install
+$ mvn jetty:run
 ----
 
 Now point your browser at http://localhost:8080/dojo-jetty9-primer, and you should see this message:
@@ -122,7 +129,30 @@ Server Says: Hello, World
 ----
 
 That's it.
-You have already written your first CometD application :-) 
+You have already written your first CometD application :-)
+
+If you want to use a Jetty version different from CometD's default Jetty version,
+you can easily do so by opening the main `pom.xml` file and modifying the value
+of the `jetty-version` element, for example:
+
+.`pom.xml`
+----
+<project ... >
+
+    ....
+
+    <properties>
+        ...
+        <jetty-version>9.2.17.v20160517</jetty-version>
+        ....
+    </properties>
+
+    ...
+
+</project>
+----
+
+Then you just need to re-build and re-run the project as explained above.
 
 [[_primer_non_maven_way]]
 ==== The Non-Maven Way
@@ -156,7 +186,7 @@ dojox/cometd
 . Add the `org` directory from the `cometd-javascript-dojo-<version>.war`, and
   all its content, at the same level of the `dojox` directory in `$DOJO/`.
 
-The final content, equivalent to that produced by the Maven way, should be like this: 
+The final content, equivalent to that produced by the Maven way, should be like this:
 
 ----
 .
@@ -247,7 +277,7 @@ that the JavaScript application might need. This is totally optional.
 
 The JavaScript application, contained in the `application.js` file, configures
 the `cometd` object and starts the application.
-The archetypes provide: 
+The archetypes provide:
 
 ====
 [source,javascript]
@@ -256,7 +286,7 @@ include::{github}/cometd-archetypes/dojo-jetty9/src/main/resources/archetype-res
 ----
 ====
 
-Notice the following: 
+Notice the following:
 
 * The use of the `dojo/domReady!` dependency to wait for the document to load up before
   executing the `cometd` object initialization.

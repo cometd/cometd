@@ -12,20 +12,26 @@ The CometD implementation depends on few Jetty libraries, such as
 `jetty-util-ajax-<version>.jar` and others.
 These Jetty dependencies are typically packaged in the `WEB-INF/lib`
 directory of your application `.war` file, and do not require you to
-deploy your application `.war` file in Jetty: you CometD-based application
+deploy your application `.war` file in Jetty: your CometD-based application
 will work exactly in the same way in any other compliant Servlet 3.0 or
 greater Servlet Container.
 
-The current Jetty version CometD depends on is:
+The current Jetty version CometD depends on by default is:
 
 [source,xml,indent=0]
 ----
 include::{github}/pom.xml[tags=jetty-version]
 ----
 
+It is possible to use a different Jetty version, starting from Jetty
+9.2.x, with CometD.
+You can find the examples of how to <<_build,build CometD with a different Jetty
+version>>, how to <<_installation_demos,run the CometD demos with a different Jetty version>>
+and how to <<_primer_maven_way,create your web applications with a different Jetty version>>.
+
 === Downloading and Installing
 
-You can download the CometD distribution from http://download.cometd.org/. 
+You can download the CometD distribution from http://download.cometd.org/.
 
 Then unpack the distribution in a directory of your choice:
 
@@ -37,11 +43,11 @@ $ cd cometd-<version>/
 [[_installation_demos]]
 === Running the Demos
 
-The CometD Demos contain: 
+The CometD Demos contain:
 
-* Two full chat applications (one developed with Dojo, one with jQuery). 
-* Examples of extensions such as message acknowledgement, reload, timesync and timestamp. 
-* An example of how to echo private messages to a particular client only. 
+* Three full chat applications (one developed with Dojo, one with jQuery and one with Angular 1).
+* Examples of extensions such as message acknowledgement, reload, timesync and timestamp.
+* An example of how to echo private messages to a particular client only.
 * Clustered Auction demo (using the <<_oort,Oort clustering>>).
 
 ==== Running the Demos with Maven
@@ -66,7 +72,26 @@ $ mvn jetty:run
 ----
 
 The last command starts an embedded Jetty that listens on port 8080.
-Now point your browser to http://localhost:8080, to see the CometD Demos main page. 
+Now point your browser to http://localhost:8080, to see the CometD Demos main page.
+
+If you want to run the CometD Demos with a different Jetty version, change the
+last command to be:
+
+----
+$ mvn jetty:run -Djetty-version=<alternate-jetty-version>
+----
+
+for example:
+
+----
+$ mvn jetty:run -Djetty-version=9.3.10.v20160621
+----
+
+[IMPORTANT]
+====
+Running CometD with Jetty 9.2.x requires at least JDK 7.
+Running CometD with Jetty 9.3.x or greater requires at least JDK 8.
+====
 
 === Deploying your CometD Application
 
