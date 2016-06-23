@@ -63,9 +63,9 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         if (context == null)
             throw new IllegalArgumentException("Missing ServletContext");
 
-        String cometdURLMapping = (String)getOption(COMETD_URL_MAPPING);
+        String cometdURLMapping = (String)getOption(COMETD_URL_MAPPING_OPTION);
         if (cometdURLMapping == null)
-            throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING + "' parameter");
+            throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING_OPTION + "' parameter");
 
         ServerContainer container = (ServerContainer)context.getAttribute(ServerContainer.class.getName());
         if (container == null)

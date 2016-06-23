@@ -55,8 +55,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     public static final String BUFFER_SIZE_OPTION = "bufferSize";
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
-    public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
-    public static final String COMETD_URL_MAPPING = "cometdURLMapping";
+    public static final String THREAD_POOL_MAX_SIZE_OPTION = "threadPoolMaxSize";
+    public static final String COMETD_URL_MAPPING_OPTION = "cometdURLMapping";
     public static final String REQUIRE_HANDSHAKE_PER_CONNECTION_OPTION = "requireHandshakePerConnection";
 
     private final ThreadLocal<BayeuxContext> _bayeuxContext = new ThreadLocal<>();
@@ -97,7 +97,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
     protected Executor newExecutor()
     {
-        int size = getOption(THREAD_POOL_MAX_SIZE, 64);
+        int size = getOption(THREAD_POOL_MAX_SIZE_OPTION, 64);
         return Executors.newFixedThreadPool(size);
     }
 

@@ -55,9 +55,9 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         if (context == null)
             throw new IllegalArgumentException("Missing ServletContext");
 
-        String cometdURLMapping = (String)getOption(COMETD_URL_MAPPING);
+        String cometdURLMapping = (String)getOption(COMETD_URL_MAPPING_OPTION);
         if (cometdURLMapping == null)
-            throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING + "' parameter");
+            throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING_OPTION + "' parameter");
 
         WebSocketUpgradeFilter wsFilter = (WebSocketUpgradeFilter)context.getAttribute(WebSocketUpgradeFilter.class.getName());
         if (wsFilter == null)
