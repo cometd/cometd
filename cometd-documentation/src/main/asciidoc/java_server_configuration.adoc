@@ -233,6 +233,18 @@ that different server transports accept:
 | false
 | Whether every new WebSocket connection requires a handshake, see
   <<_security,the security section>>.
+
+| ws.enableExtension.<extension_name>
+| true
+| Whether the WebSocket extension with the given `extension_name` (for example
+  `ws.enableExtension.permessage-deflate`) should be enabled if client and
+  server could negotiate it.
+  If either the client or the server does not support the extension, then the
+  extension cannot be negotiated and this option has no effect.
+  Otherwise, both client and server support the extension, which is negotiated
+  only if this option evaluates to true (i.e. either this option is absent or
+  explicitly set to `true`); if this option evaluates to `false`, the extension
+  is not negotiated.
 |===
 
 [[_java_server_configuration_advanced]]

@@ -58,6 +58,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     public static final String THREAD_POOL_MAX_SIZE_OPTION = "threadPoolMaxSize";
     public static final String COMETD_URL_MAPPING_OPTION = "cometdURLMapping";
     public static final String REQUIRE_HANDSHAKE_PER_CONNECTION_OPTION = "requireHandshakePerConnection";
+    public static final String ENABLE_EXTENSION_PREFIX_OPTION = "enableExtension.";
 
     private final ThreadLocal<BayeuxContext> _bayeuxContext = new ThreadLocal<>();
     private Executor _executor;

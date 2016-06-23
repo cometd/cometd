@@ -15,6 +15,7 @@
  */
 package org.cometd.websocket.server;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
@@ -83,6 +85,16 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
                         origin = request.getHeader("Sec-WebSocket-Origin");
                     if (checkOrigin(request, origin))
                     {
+                        List<ExtensionConfig> negotiated = new ArrayList<>();
+                        for (ExtensionConfig extensionConfig : request.getExtensions())
+                        {
+                            String name = extensionConfig.getName();
+                            boolean option = getOption(ENABLE_EXTENSION_PREFIX_OPTION + name, true);
+                            if (option)
+                                negotiated.add(extensionConfig);
+                        }
+                        response.setExtensions(negotiated);
+
                         modifyUpgrade(request, response);
 
                         List<String> allowedTransports = getBayeux().getAllowedTransports();

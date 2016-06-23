@@ -16,6 +16,7 @@
 package org.cometd.websocket.server;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -80,11 +81,13 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         String protocol = getProtocol();
         List<String> protocols = protocol == null ? null : Collections.singletonList(protocol);
 
+        Configurator configurator = new Configurator(context);
+
         for (String mapping : normalizeURLMapping(cometdURLMapping))
         {
             ServerEndpointConfig config = ServerEndpointConfig.Builder.create(WebSocketScheduler.class, mapping)
                     .subprotocols(protocols)
-                    .configurator(new Configurator(context))
+                    .configurator(configurator)
                     .build();
             try
             {
@@ -286,7 +289,15 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session>
         @Override
         public List<Extension> getNegotiatedExtensions(List<Extension> installed, List<Extension> requested)
         {
-            return super.getNegotiatedExtensions(installed, requested);
+            List<Extension> negotiated = new ArrayList<>();
+            for (Extension extension : requested)
+            {
+                String name = extension.getName();
+                boolean option = getOption(ENABLE_EXTENSION_PREFIX_OPTION + name, true);
+                if (option)
+                    negotiated.add(extension);
+            }
+            return negotiated;
         }
 
         @Override
