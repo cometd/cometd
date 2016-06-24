@@ -1265,7 +1265,7 @@ public class SetiTest extends OortTest
         barrier.await();
 
         // Wait for all threads to finish associations.
-        Assert.assertTrue(presentLatch.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(presentLatch.await(30, TimeUnit.SECONDS));
 
         // The 2 Setis should be in sync.
         Assert.assertEquals(seti1.getUserIds(), seti2.getUserIds());
@@ -1274,7 +1274,7 @@ public class SetiTest extends OortTest
         barrier.await();
 
         // Wait for all threads to finish disassociations.
-        Assert.assertTrue(absentLatch.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(absentLatch.await(30, TimeUnit.SECONDS));
 
         // The 2 Setis should be empty.
         Assert.assertEquals(0, seti1.getAssociatedUserIds().size());
