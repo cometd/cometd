@@ -385,6 +385,39 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         return removed;
     }
 
+    /**
+     * <p>Disassociates the given userId from all sessions.</p>
+     * <p>If this user had sessions on this comet, broadcast this information
+     * on the Oort cloud, so that other comets will know that the given userId no longer is on this comet.</p>
+     *
+     * @param userId the user identifier to disassociate
+     * @return set of sessions that were disassociated
+     * @see #associate(String, ServerSession)
+     */
+    public Set<ServerSession> disassociate(final String userId)
+    {
+        final Set<LocalLocation> userLocations = new HashSet<>();
+        synchronized (_uid2Location)
+        {
+            for (Location location : _uid2Location.get(userId))
+            {
+                if (location instanceof LocalLocation)
+                    userLocations.add((LocalLocation)location);
+            }
+        }
+
+        final Set<ServerSession> removedUserSessions = new HashSet<>();
+        for (LocalLocation location : userLocations)
+        {
+            final ServerSession session = location._session;
+            boolean removed = disassociate(userId, session);
+            if (removed)
+                removedUserSessions.add(session);
+        }
+
+        return removedUserSessions;
+    }
+
     protected boolean disassociate(String userId, Location location)
     {
         synchronized (_uid2Location)
