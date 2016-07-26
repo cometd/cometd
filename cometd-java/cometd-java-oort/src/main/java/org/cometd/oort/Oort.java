@@ -112,6 +112,7 @@ public class Oort extends ContainerLifeCycle
     private final String _id;
     private final Logger _logger;
     private final LocalSession _oortSession;
+    private final Object _lock = this;
     private ScheduledExecutorService _scheduler;
     private String _secret;
     private boolean _ackExtensionEnabled;
@@ -181,7 +182,7 @@ public class Oort extends ContainerLifeCycle
         _oortSession.disconnect();
 
         List<OortComet> comets = new ArrayList<>();
-        synchronized (this)
+        synchronized (_lock)
         {
             comets.addAll(_pendingComets.values());
             _pendingComets.clear();
@@ -311,7 +312,7 @@ public class Oort extends ContainerLifeCycle
             _logger.debug("Observing comet {}", cometURL);
 
         OortComet oortComet;
-        synchronized (this)
+        synchronized (_lock)
         {
             oortComet = getComet(cometURL);
             if (oortComet != null)
@@ -416,7 +417,7 @@ public class Oort extends ContainerLifeCycle
             return null;
 
         OortComet comet;
-        synchronized (this)
+        synchronized (_lock)
         {
             comet = _pendingComets.remove(cometURL);
             if (comet != null)
@@ -454,7 +455,7 @@ public class Oort extends ContainerLifeCycle
     public Set<String> getKnownComets()
     {
         Set<String> result = new HashSet<>();
-        synchronized (this)
+        synchronized (_lock)
         {
             for (ClientCometInfo cometInfo : _clientComets.values())
                 result.add(cometInfo.getOortURL());
@@ -468,7 +469,7 @@ public class Oort extends ContainerLifeCycle
      */
     public OortComet getComet(String cometURL)
     {
-        synchronized (this)
+        synchronized (_lock)
         {
             for (ClientCometInfo cometInfo : _clientComets.values())
             {
@@ -486,7 +487,7 @@ public class Oort extends ContainerLifeCycle
      */
     protected OortComet findComet(String cometURL)
     {
-        synchronized (this)
+        synchronized (_lock)
         {
             OortComet result = _pendingComets.get(cometURL);
             if (result == null)
@@ -518,7 +519,7 @@ public class Oort extends ContainerLifeCycle
         {
             Set<String> observedChannels = getObservedChannels();
             List<OortComet> oortComets = new ArrayList<>();
-            synchronized (this)
+            synchronized (_lock)
             {
                 for (ClientCometInfo cometInfo : _clientComets.values())
                     oortComets.add(cometInfo.getOortComet());
@@ -534,7 +535,7 @@ public class Oort extends ContainerLifeCycle
         if (_channels.remove(channelId) != null)
         {
             List<OortComet> oortComets = new ArrayList<>();
-            synchronized (this)
+            synchronized (_lock)
             {
                 for (ClientCometInfo cometInfo : _clientComets.values())
                     oortComets.add(cometInfo.getOortComet());
@@ -1025,7 +1026,7 @@ public class Oort extends ContainerLifeCycle
                     if (!timeout)
                     {
                         ClientCometInfo clientCometInfo;
-                        synchronized (this)
+                        synchronized (_lock)
                         {
                             clientCometInfo = _clientComets.remove(remoteOortId);
                         }
@@ -1090,7 +1091,7 @@ public class Oort extends ContainerLifeCycle
             String oortURL = (String)oortExt.get(Oort.EXT_OORT_URL_FIELD);
 
             ClientCometInfo cometInfo;
-            synchronized (this)
+            synchronized (_lock)
             {
                 _pendingComets.remove(cometURL);
 
