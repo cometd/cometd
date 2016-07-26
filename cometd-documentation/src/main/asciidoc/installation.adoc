@@ -167,7 +167,7 @@ would start via command line.
 Below you can find an example that shows how to setup Jetty embedded and
 CometD with support for HTTP, HTTPS and WebSocket transports:
 
-[source,xml,indent=0]
+[source,java,indent=0]
 ----
 include::{github}/cometd-demo/src/test/java/org/cometd/demo/Demo.java[tags=embedded-cometd]
 ----
