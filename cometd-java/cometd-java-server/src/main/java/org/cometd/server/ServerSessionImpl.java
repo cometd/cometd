@@ -16,6 +16,7 @@
 package org.cometd.server;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,7 +41,6 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.AbstractServerTransport.Scheduler;
 import org.cometd.server.transport.AbstractHttpTransport;
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -56,7 +56,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable
     private final String _id;
     private final List<ServerSessionListener> _listeners = new CopyOnWriteArrayList<>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<>();
-    private final ArrayQueue<ServerMessage> _queue = new ArrayQueue<>(8, 16, this);
+    private final Queue<ServerMessage> _queue = new ArrayDeque<>();
     private final LocalSessionImpl _localSession;
     private final AttributesMap _attributes = new AttributesMap();
     private final AtomicBoolean _connected = new AtomicBoolean();
@@ -448,12 +448,6 @@ public class ServerSessionImpl implements ServerSession, Dumpable
         }
     }
 
-    private void clearQueue()
-    {
-        _queue.clear();
-        _nonLazyMessages = false;
-    }
-
     protected void addMessage(ServerMessage message)
     {
         synchronized (getLock())
@@ -484,8 +478,10 @@ public class ServerSessionImpl implements ServerSession, Dumpable
             {
                 copy = new ArrayList<>(size);
                 copy.addAll(_queue);
+                _queue.clear();
             }
-            clearQueue();
+
+            _nonLazyMessages = false;
         }
         return copy;
     }

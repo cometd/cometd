@@ -109,7 +109,7 @@ information and for specific instructions related to deployment on Servlet 3.0
 (or greater) Containers.
 
 [[_installation_jetty]]
-==== Deploying your CometD Application in Jetty
+==== Deploying your CometD Application in Standalone Jetty
 
 The instructions below describe a very minimal Jetty setup that is needed
 to run CometD applications.
@@ -181,6 +181,22 @@ $ java -jar $JETTY_HOME/start.jar
 
 This last command starts Jetty, which deploys your `.war` file and makes
 your CometD application "live".
+
+[[_installation_jetty_embedded]]
+==== Deploying your CometD Application using Embedded Jetty
+
+You can also deploy your CometD application programmatically, using the Jetty
+APIs to embed your web application as a normal Java application that you
+would start via command line.
+
+Below you can find an {github}/cometd-demo/src/test/java/org/cometd/demo/Demo.java[example] 
+that shows how to setup Jetty embedded and CometD with support for HTTP, 
+HTTPS and WebSocket transports:
+
+[source,java,indent=0]
+----
+include::{github}/cometd-demo/src/test/java/org/cometd/demo/Demo.java[tags=embedded-cometd]
+----
 
 ==== Running the Demos with Another Servlet Container
 
