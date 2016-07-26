@@ -47,7 +47,7 @@ public class Demo
     {
         // NOTE: this code is referenced by the documentation
         
-        // tag::embedded-cometd
+        // tag::embedded-cometd[]
         // Setup and configure the thread pool.
         QueuedThreadPool threadPool = new QueuedThreadPool();
 
@@ -99,7 +99,7 @@ public class Demo
         // Add your own listeners/filters/servlets here.
 
         server.start();
-        // end::embedded-cometd
+        // end::embedded-cometd[]
         
         return server;
     }
