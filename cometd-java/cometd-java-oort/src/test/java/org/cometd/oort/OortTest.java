@@ -117,7 +117,8 @@ public abstract class OortTest
     protected Oort startOort(Server server) throws Exception
     {
         String url = (String)server.getAttribute(OortConfigServlet.OORT_URL_PARAM);
-        final BayeuxServer bayeuxServer = (BayeuxServer)server.getAttribute(BayeuxServer.ATTRIBUTE);
+        BayeuxServer bayeuxServer = (BayeuxServer)server.getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeuxServer.setOption(Server.class.getName(), server);
         Oort oort = new Oort(bayeuxServer, url);
         oort.start();
         oorts.add(oort);

@@ -124,6 +124,7 @@ import org.slf4j.LoggerFactory;
 public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServerChannel.Initializer, Oort.CometListener, Iterable<OortObject.Info<T>>
 {
     public static final String OORT_OBJECTS_CHANNEL = "/oort/objects";
+    private static final String ACTION_FIELD_PUSH_VALUE = "oort.object.push";
     private static final String ACTION_FIELD_PULL_VALUE = "oort.object.pull";
 
     private final ConcurrentMap<String, ObjectPart> parts = new ConcurrentHashMap<>();
@@ -473,11 +474,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             // Therefore we add a "peer" field, that tells whether the push
             // of the info comes from, and we skip the extra push.
             if (!oort.getURL().equals(data.get(Info.PEER_FIELD)))
-            {
-                Map<String, Object> fields = new HashMap<>();
-                fields.put(Info.PEER_FIELD, oortURL);
-                pushInfo(oortURL, fields);
-            }
+                pushInfoReply(oortURL);
         }
 
         // Set the result
@@ -508,10 +505,18 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             if (message == null)
                 message = new HashMap<>();
             message.putAll(info);
+            message.put(Info.ACTION_FIELD, ACTION_FIELD_PUSH_VALUE);
             if (logger.isDebugEnabled())
                 logger.debug("Pushing (to {}): {}", oortURL, message);
             oortComet.getChannel(serviceChannel).publish(message);
         }
+    }
+
+    private void pushInfoReply(String oortURL)
+    {
+        Map<String, Object> fields = new HashMap<>();
+        fields.put(Info.PEER_FIELD, oortURL);
+        pushInfo(oortURL, fields);
     }
 
     protected void pullInfo(String oortURL)
@@ -914,19 +919,28 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
                     current = info == null ? -1 : info.getVersion();
                 }
 
+                String oortURL = (String)data.get(Info.OORT_URL_FIELD);
+
                 if (ACTION_FIELD_PULL_VALUE.equals(data.get(Info.ACTION_FIELD)))
                 {
-                    String oortURL = (String)data.get(Info.OORT_URL_FIELD);
-                    pushInfo(oortURL, null);
+                    pushInfoReply(oortURL);
+                    continue;
                 }
-                else
+                
+                if (ACTION_FIELD_PUSH_VALUE.equals(data.get(Info.ACTION_FIELD)))
                 {
-                    long version = ((Number)data.get(Info.VERSION_FIELD)).longValue();
-                    if (logger.isDebugEnabled())
-                        logger.debug("Processing update, version={}, data={}", current, data);
-                    if (version > current)
-                        onObject(data);
+                    if (!oort.getURL().equals(data.get(Info.PEER_FIELD)))
+                    {
+                        // If it was explicitly pushed, no matter what, we push back.
+                        pushInfoReply(oortURL);
+                    }
                 }
+                
+                long version = ((Number)data.get(Info.VERSION_FIELD)).longValue();
+                if (logger.isDebugEnabled())
+                    logger.debug("Processing update, version={}, data={}", current, data);
+                if (version > current)
+                    onObject(data);
             }
         }
     }

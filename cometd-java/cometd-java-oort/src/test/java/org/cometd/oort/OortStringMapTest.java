@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.client.BayeuxClient;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -539,5 +541,75 @@ public class OortStringMapTest extends AbstractOortObjectTest
         size1 = oortMap1.getInfo(oort1.getURL()).getObject().size();
         size2 = oortMap2.getInfo(oort1.getURL()).getObject().size();
         Assert.assertEquals(size1, size2);
+    }
+
+    @Test
+    public void testNodeHalfDisconnected() throws Exception
+    {
+        stop();
+        long timeout = 5000;
+        long maxInterval = 3000;
+        Map<String, String> options = new HashMap<>();
+        options.put("timeout", String.valueOf(timeout));
+        options.put("maxInterval", String.valueOf(maxInterval));
+        prepare(options);
+        String name = "half_disconnection";
+        OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
+        final OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
+        OortStringMap<String> oortMap2 = new OortStringMap<>(oort2, name, factory);
+        startOortObjects(oortMap1, oortMap2);
+
+        final CountDownLatch putLatch = new CountDownLatch(4);
+        OortMap.EntryListener<String, String> putListener = new OortMap.EntryListener.Adapter<String, String>()
+        {
+            @Override
+            public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry)
+            {
+                putLatch.countDown();
+            }
+        };
+        oortMap1.addEntryListener(putListener);
+        oortMap2.addEntryListener(putListener);
+        oortMap1.putAndShare("key1", "value1", null);
+        oortMap2.putAndShare("key2", "value2", null);
+        Assert.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
+        
+        // Stop only one of the connectors, so that the communication is half-disconnected.
+        final CountDownLatch leftLatch = new CountDownLatch(2);
+        oortMap1.getOort().addCometListener(new CometLeftListener(leftLatch));
+        oortMap1.addListener(new OortObject.Listener.Adapter<ConcurrentMap<String, String>>()
+        {
+            @Override
+            public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info)
+            {
+                leftLatch.countDown();
+            }
+        });
+        Server server1 = (Server)oortMap1.getOort().getBayeuxServer().getOption(Server.class.getName());
+        ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
+        int port1 = connector1.getLocalPort();
+        connector1.stop();
+        Assert.assertTrue(leftLatch.await(2 * (timeout + maxInterval), TimeUnit.SECONDS));
+
+        // Give some time before reconnecting.
+        Thread.sleep(1000);
+
+        final CountDownLatch joinLatch = new CountDownLatch(2);
+        oortMap1.getOort().addCometListener(new CometJoinedListener(joinLatch));
+        oortMap1.addListener(new OortObject.Listener.Adapter<ConcurrentMap<String, String>>()
+        {
+            @Override
+            public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo)
+            {
+                if (oldInfo == null)
+                    joinLatch.countDown();
+            }
+        });
+        connector1.setPort(port1);
+        connector1.start();
+        Assert.assertTrue(joinLatch.await(15, TimeUnit.SECONDS));
+
+        String value2 = oortMap1.find("key2");
+        Assert.assertNotNull(value2);
     }
 }
