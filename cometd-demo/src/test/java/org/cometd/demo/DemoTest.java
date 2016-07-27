@@ -26,11 +26,13 @@ import javax.websocket.WebSocketContainer;
 
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.websocket.client.JettyWebSocketTransport;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -55,6 +57,10 @@ public class DemoTest
         // NOTE: due to limitations of the JSR specification, this client only works over clear-text.
         WebSocketContainer jsrWebSocketClient = ContainerProvider.getWebSocketContainer();
 
+        // Jetty's WebSocket client works also over TLS.
+        WebSocketClient jettyWebSocketClient = new WebSocketClient(sslContextFactory);
+        jettyWebSocketClient.start();
+
         try
         {
             // Test clear-text communication.
@@ -74,7 +80,14 @@ public class DemoTest
 
             client.disconnect();
             Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
-            
+
+            client = new BayeuxClient(confidentialURL, new JettyWebSocketTransport(null, null, jettyWebSocketClient));
+            client.handshake();
+            Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+            client.disconnect();
+            Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+
             // Test JMX.
             MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
             Set<ObjectInstance> objectInstances = mbeanServer.queryMBeans(ObjectName.getInstance("org.cometd.server:*"), null);
@@ -82,6 +95,7 @@ public class DemoTest
         }
         finally
         {
+            jettyWebSocketClient.stop();
             if (jsrWebSocketClient instanceof LifeCycle)
                 ((LifeCycle)jsrWebSocketClient).stop();
             httpClient.stop();
