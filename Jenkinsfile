@@ -11,7 +11,7 @@ node {
 
     checkout scm
 
-    stage 'Compile'
+    stage 'Build'
 
     withEnv(mvnEnv) {
         sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
