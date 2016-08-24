@@ -457,7 +457,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         {
             // Start the interval timeout also in case of
             // errors to ensure the session can be swept.
-            startInterval();
+            startExpiration();
             error(request, response, asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
