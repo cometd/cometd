@@ -20,6 +20,7 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -277,6 +278,87 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         Assert.assertTrue(sendLatch.await(5, TimeUnit.SECONDS));
         socket.close();
         closeLatch.countDown();
+
+        // The session must be swept even if the server could not write a response
+        // to the connect because of the exception.
+        Assert.assertTrue(removeLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testLargeMessageOnSlowConnection() throws Exception
+    {
+        Map<String, String> options = new HashMap<>();
+        long maxInterval = 5000;
+        options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
+        startServer(options);
+        connector.setIdleTimeout(1000);
+
+        Request handshake = newBayeuxRequest("[{" +
+                "\"channel\": \"/meta/handshake\"," +
+                "\"version\": \"1.0\"," +
+                "\"minimumVersion\": \"1.0\"," +
+                "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                "}]");
+        ContentResponse response = handshake.send();
+        Assert.assertEquals(200, response.getStatus());
+
+        String clientId = extractClientId(response);
+        String cookieName = "BAYEUX_BROWSER";
+        String browserId = extractCookie(cookieName);
+
+        String channelName = "/foo";
+        Request subscribe = newBayeuxRequest("[{" +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"channel\": \"/meta/subscribe\"," +
+                "\"subscription\": \"" + channelName + "\"" +
+                "}]");
+        response = subscribe.send();
+        Assert.assertEquals(200, response.getStatus());
+
+        Request connect1 = newBayeuxRequest("[{" +
+                "\"channel\": \"/meta/connect\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"connectionType\": \"long-polling\"" +
+                "}]");
+        response = connect1.send();
+        Assert.assertEquals(200, response.getStatus());
+
+        // Send a server-side message so it gets written to the client
+        char[] chars = new char[64 * 1024 * 1024];
+        Arrays.fill(chars, 'z');
+        String data = new String(chars);
+        bayeux.getChannel(channelName).publish(null, data);
+
+        Socket socket = new Socket("localhost", port);
+        OutputStream output = socket.getOutputStream();
+        byte[] content = ("[{" +
+                "\"channel\": \"/meta/connect\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"connectionType\": \"long-polling\"" +
+                "}]").getBytes("UTF-8");
+        String request = "" +
+                "POST " + new URI(cometdURL).getPath() + "/connect HTTP/1.1\r\n" +
+                "Host: localhost:" + port + "\r\n" +
+                "Content-Type: application/json;charset=UTF-8\r\n" +
+                "Content-Length: " + content.length + "\r\n" +
+                "Cookie: " + cookieName + "=" + browserId + "\r\n" +
+                "\r\n";
+        output.write(request.getBytes("UTF-8"));
+        output.write(content);
+        output.flush();
+
+        final CountDownLatch removeLatch = new CountDownLatch(1);
+        ServerSession session = bayeux.getSession(clientId);
+        session.addListener(new ServerSession.RemoveListener()
+        {
+            @Override
+            public void removed(ServerSession session, boolean timeout)
+            {
+                removeLatch.countDown();
+            }
+        });
+
+        // Do not read, the server should idle timeout and close the connection.
 
         // The session must be swept even if the server could not write a response
         // to the connect because of the exception.
