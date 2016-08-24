@@ -30,6 +30,14 @@ node {
         step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
     }
 
+    stage 'Build JDK 8 - Jetty 9.3.x'
+
+    withEnv(mvnEnv8) {
+        sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty.version=9.3.11.v20160721"
+        // Report failures in the jenkins UI
+        step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+    }
+
     stage 'Javadoc'
 
     withEnv(mvnEnv8) {
