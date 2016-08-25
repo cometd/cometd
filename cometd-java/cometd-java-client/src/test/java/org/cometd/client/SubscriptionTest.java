@@ -24,11 +24,9 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SubscriptionTest extends ClientServerTest
-{
+public class SubscriptionTest extends ClientServerTest {
     @Test
-    public void testSubscriptionToMetaChannelFails() throws Exception
-    {
+    public void testSubscriptionToMetaChannelFails() throws Exception {
         startServer(null);
 
         BayeuxClient client = newBayeuxClient();
@@ -38,17 +36,13 @@ public class SubscriptionTest extends ClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         String channelName = Channel.META_CONNECT;
         ClientSessionChannel channel = client.getChannel(channelName);
-        channel.subscribe(new ClientSessionChannel.MessageListener()
-        {
+        channel.subscribe(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
             }
-        }, new ClientSessionChannel.MessageListener()
-        {
+        }, new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertFalse(message.isSuccessful());
                 latch.countDown();
             }
@@ -62,8 +56,7 @@ public class SubscriptionTest extends ClientServerTest
     }
 
     @Test
-    public void testSubscriptionToServiceChannelIsANoOperation() throws Exception
-    {
+    public void testSubscriptionToServiceChannelIsANoOperation() throws Exception {
         startServer(null);
 
         BayeuxClient client = newBayeuxClient();
@@ -74,19 +67,15 @@ public class SubscriptionTest extends ClientServerTest
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         final CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
-        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
-        {
+        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
         };
-        channel.subscribe(listener, new ClientSessionChannel.MessageListener()
-        {
+        channel.subscribe(listener, new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertTrue(message.isSuccessful());
                 subscribeLatch.countDown();
             }
@@ -101,11 +90,9 @@ public class SubscriptionTest extends ClientServerTest
         Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
-        channel.unsubscribe(listener, new ClientSessionChannel.MessageListener()
-        {
+        channel.unsubscribe(listener, new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertTrue(message.isSuccessful());
                 unsubscribeLatch.countDown();
             }

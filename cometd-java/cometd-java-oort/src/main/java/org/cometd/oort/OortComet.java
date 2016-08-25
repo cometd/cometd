@@ -32,15 +32,13 @@ import org.cometd.client.transport.ClientTransport;
 /**
  * <p>The Oort comet client connects a local Oort comet server to a remote Oort comet server.</p>
  */
-public class OortComet extends BayeuxClient
-{
+public class OortComet extends BayeuxClient {
     private final ConcurrentMap<String, ClientSessionChannel.MessageListener> _subscriptions = new ConcurrentHashMap<>();
     private final Oort _oort;
     private final String _cometURL;
     private volatile boolean _subscriptionsAllowed;
 
-    public OortComet(Oort oort, String cometURL, ScheduledExecutorService scheduler, ClientTransport transport, ClientTransport... transports)
-    {
+    public OortComet(Oort oort, String cometURL, ScheduledExecutorService scheduler, ClientTransport transport, ClientTransport... transports) {
         super(cometURL, scheduler, transport, transports);
         _oort = oort;
         _cometURL = cometURL;
@@ -48,23 +46,22 @@ public class OortComet extends BayeuxClient
         getChannel(Channel.META_HANDSHAKE).addListener(new HandshakeListener());
     }
 
-    protected void subscribe(Set<String> observedChannels)
-    {
+    protected void subscribe(Set<String> observedChannels) {
         // Guard against concurrent subscription clearing from the handshake callback
-        if (!_subscriptionsAllowed)
+        if (!_subscriptionsAllowed) {
             return;
+        }
 
-        for (String channel : observedChannels)
-        {
-            if (_subscriptions.containsKey(channel))
+        for (String channel : observedChannels) {
+            if (_subscriptions.containsKey(channel)) {
                 continue;
+            }
 
-            ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
-            {
-                public void onMessage(ClientSessionChannel channel, Message message)
-                {
-                    if (logger.isDebugEnabled())
+            ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
+                public void onMessage(ClientSessionChannel channel, Message message) {
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Republishing message {} from {}", message, _cometURL);
+                    }
                     // BayeuxServer may sweep channels, so calling bayeux.getChannel(...)
                     // may return null, and therefore we use the client to send the message
                     _oort.getOortSession().getChannel(message.getChannel()).publish(message.getData());
@@ -72,66 +69,63 @@ public class OortComet extends BayeuxClient
             };
 
             ClientSessionChannel.MessageListener existing = _subscriptions.putIfAbsent(channel, listener);
-            if (existing == null)
-            {
-                if (logger.isDebugEnabled())
+            if (existing == null) {
+                if (logger.isDebugEnabled()) {
                     logger.debug("Subscribing to messages on {} from {}", channel, _cometURL);
+                }
                 getChannel(channel).subscribe(listener);
             }
         }
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Subscriptions to messages on {} from {}", _subscriptions, _cometURL);
+        }
     }
 
-    protected void unsubscribe(String channel)
-    {
+    protected void unsubscribe(String channel) {
         ClientSessionChannel.MessageListener listener = _subscriptions.remove(channel);
-        if (listener != null)
-        {
-            if (logger.isDebugEnabled())
+        if (listener != null) {
+            if (logger.isDebugEnabled()) {
                 logger.debug("Unsubscribing to messages on {} from {}", channel, _cometURL);
+            }
             getChannel(channel).unsubscribe(listener);
         }
     }
 
-    protected void clearSubscriptions()
-    {
-        for (String channel : _oort.getObservedChannels())
+    protected void clearSubscriptions() {
+        for (String channel : _oort.getObservedChannels()) {
             unsubscribe(channel);
+        }
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return _cometURL + "@" + getId();
     }
 
-    private class HandshakeListener implements ClientSessionChannel.MessageListener
-    {
-        public void onMessage(ClientSessionChannel channel, Message message)
-        {
-            if (!message.isSuccessful())
+    private class HandshakeListener implements ClientSessionChannel.MessageListener {
+        public void onMessage(ClientSessionChannel channel, Message message) {
+            if (!message.isSuccessful()) {
                 return;
+            }
 
-            Map<String,Object> ext = message.getExt();
-            if (ext == null)
+            Map<String, Object> ext = message.getExt();
+            if (ext == null) {
                 return;
+            }
 
             Object oortExtObject = ext.get(Oort.EXT_OORT_FIELD);
-            if (!(oortExtObject instanceof Map))
+            if (!(oortExtObject instanceof Map)) {
                 return;
+            }
 
-            batch(new Runnable()
-            {
-                public void run()
-                {
+            batch(new Runnable() {
+                public void run() {
                     // Subscribe to cloud notifications
-                    getChannel(Oort.OORT_CLOUD_CHANNEL).subscribe(new ClientSessionChannel.MessageListener()
-                    {
-                        public void onMessage(ClientSessionChannel channel, Message message)
-                        {
-                            if (message.isSuccessful())
+                    getChannel(Oort.OORT_CLOUD_CHANNEL).subscribe(new ClientSessionChannel.MessageListener() {
+                        public void onMessage(ClientSessionChannel channel, Message message) {
+                            if (message.isSuccessful()) {
                                 _oort.joinComets(message);
+                            }
                         }
                     });
 
@@ -147,8 +141,9 @@ public class OortComet extends BayeuxClient
                     _subscriptionsAllowed = true;
 
                     Set<String> channels = _oort.getObservedChannels();
-                    if (logger.isDebugEnabled())
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Handshake completed, observing channels {}", channels);
+                    }
                     subscribe(channels);
 
                     // Advertise the remote node that we have joined

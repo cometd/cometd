@@ -27,30 +27,25 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BadJSONTest extends AbstractBayeuxClientServerTest
-{
-    public BadJSONTest(String serverTransport)
-    {
+public class BadJSONTest extends AbstractBayeuxClientServerTest {
+    public BadJSONTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testBadJSON() throws Exception
-    {
-        JSONTransport transport = new JSONTransport(bayeux)
-        {
+    public void testBadJSON() throws Exception {
+        JSONTransport transport = new JSONTransport(bayeux) {
             @Override
-            protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws IOException
-            {
+            protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws IOException {
                 // Suppress logging during tests
-                if (!response.isCommitted())
+                if (!response.isCommitted()) {
                     response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                }
             }
         };
         transport.init();
@@ -81,14 +76,13 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"");
-                //"}]"); Bad JSON, missing this line
+        //"}]"); Bad JSON, missing this line
         response = badConnect.send();
         Assert.assertEquals(400, response.getStatus());
     }
 
     @Test
-    public void testValidation() throws Exception
-    {
+    public void testValidation() throws Exception {
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +

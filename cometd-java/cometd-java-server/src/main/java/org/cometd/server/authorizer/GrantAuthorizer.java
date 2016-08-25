@@ -27,8 +27,7 @@ import org.cometd.bayeux.server.ServerSession;
  * for a set of operations defined at construction time.</p>
  * <p>If the operation does not match, it ignores the authorization request.</p>
  */
-public class GrantAuthorizer implements Authorizer
-{
+public class GrantAuthorizer implements Authorizer {
     /**
      * Grants {@link Operation#CREATE} authorization
      */
@@ -66,20 +65,18 @@ public class GrantAuthorizer implements Authorizer
 
     private final EnumSet<Authorizer.Operation> _operations;
 
-    private GrantAuthorizer(final EnumSet<Authorizer.Operation> operations)
-    {
+    private GrantAuthorizer(final EnumSet<Authorizer.Operation> operations) {
         _operations = operations;
     }
 
-    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message)
-    {
-        if (_operations.contains(operation))
+    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
+        if (_operations.contains(operation)) {
             return Result.grant();
+        }
         return Result.ignore();
     }
 
-    public String toString()
-    {
+    public String toString() {
         return getClass().getSimpleName() + _operations;
     }
 }

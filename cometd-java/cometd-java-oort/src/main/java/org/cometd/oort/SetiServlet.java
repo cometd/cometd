@@ -31,46 +31,38 @@ import javax.servlet.http.HttpServlet;
  *
  * @see OortMulticastConfigServlet
  */
-public class SetiServlet extends HttpServlet
-{
-    public void init(ServletConfig config) throws ServletException
-    {
+public class SetiServlet extends HttpServlet {
+    public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
         ServletContext servletContext = config.getServletContext();
         Oort oort = (Oort)servletContext.getAttribute(Oort.OORT_ATTRIBUTE);
-        if (oort == null)
+        if (oort == null) {
             throw new UnavailableException("Missing " + Oort.OORT_ATTRIBUTE + " attribute");
+        }
 
-        try
-        {
+        try {
             Seti seti = newSeti(oort);
             seti.start();
             servletContext.setAttribute(Seti.SETI_ATTRIBUTE, seti);
-        }
-        catch (Exception x)
-        {
+        } catch (Exception x) {
             throw new ServletException(x);
         }
     }
 
-    protected Seti newSeti(Oort oort)
-    {
+    protected Seti newSeti(Oort oort) {
         return new Seti(oort);
     }
 
-    public void destroy()
-    {
-        try
-        {
+    public void destroy() {
+        try {
             ServletContext servletContext = getServletConfig().getServletContext();
             Seti seti = (Seti)servletContext.getAttribute(Seti.SETI_ATTRIBUTE);
             servletContext.removeAttribute(Seti.SETI_ATTRIBUTE);
-            if (seti != null)
+            if (seti != null) {
                 seti.stop();
-        }
-        catch (Exception x)
-        {
+            }
+        } catch (Exception x) {
             throw new RuntimeException(x);
         }
     }

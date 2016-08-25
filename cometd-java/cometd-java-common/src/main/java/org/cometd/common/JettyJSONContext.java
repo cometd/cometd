@@ -26,18 +26,15 @@ import java.util.Map;
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public abstract class JettyJSONContext<T extends Message.Mutable>
-{
+public abstract class JettyJSONContext<T extends Message.Mutable> {
     private final FieldJSON _jsonParser = new FieldJSON();
     private final FieldJSON _messageParser = new MessageJSON();
     private final FieldJSON _messagesParser = new MessagesJSON();
 
-    protected JettyJSONContext()
-    {
+    protected JettyJSONContext() {
     }
 
-    public JSON getJSON()
-    {
+    public JSON getJSON() {
         return _jsonParser;
     }
 
@@ -45,148 +42,120 @@ public abstract class JettyJSONContext<T extends Message.Mutable>
 
     protected abstract T[] newRootArray(int size);
 
-    public T[] parse(InputStream stream) throws ParseException
-    {
+    public T[] parse(InputStream stream) throws ParseException {
         return parse(new InputStreamReader(stream, Charset.forName("UTF-8")));
     }
 
-    public T[] parse(Reader reader) throws ParseException
-    {
-        try
-        {
+    public T[] parse(Reader reader) throws ParseException {
+        try {
             Object object = _messagesParser.parse(new JSON.ReaderSource(reader));
             return adapt(object);
-        }
-        catch (Exception x)
-        {
+        } catch (Exception x) {
             throw (ParseException)new ParseException("", -1).initCause(x);
         }
     }
 
-    public T[] parse(String json) throws ParseException
-    {
-        try
-        {
+    public T[] parse(String json) throws ParseException {
+        try {
             Object object = _messagesParser.parse(new JSON.StringSource(json));
             return adapt(object);
-        }
-        catch (Exception x)
-        {
+        } catch (Exception x) {
             throw (ParseException)new ParseException(json, -1).initCause(x);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private T[] adapt(Object object)
-    {
-        if (object == null)
+    private T[] adapt(Object object) {
+        if (object == null) {
             return null;
-        if (object.getClass().isArray())
+        }
+        if (object.getClass().isArray()) {
             return (T[])object;
+        }
         T[] result = newRootArray(1);
         result[0] = (T)object;
         return result;
     }
 
-    public String generate(T message)
-    {
+    public String generate(T message) {
         return _messageParser.toJSON(message);
     }
 
-    public String generate(List<T> messages)
-    {
+    public String generate(List<T> messages) {
         return _messagesParser.toJSON(messages);
     }
 
-    public JSONContext.Parser getParser()
-    {
+    public JSONContext.Parser getParser() {
         return new JSONParser();
     }
 
-    public JSONContext.Generator getGenerator()
-    {
+    public JSONContext.Generator getGenerator() {
         return new JSONGenerator();
     }
 
-    private class FieldJSON extends JSON
-    {
+    private class FieldJSON extends JSON {
         // Allows for optimizations
 
         // Overridden for visibility
         @Override
-        protected Convertor getConvertor(Class forClass)
-        {
+        protected Convertor getConvertor(Class forClass) {
             return super.getConvertor(forClass);
         }
     }
 
-    private class MessageJSON extends FieldJSON
-    {
+    private class MessageJSON extends FieldJSON {
         @Override
-        protected Map<String, Object> newMap()
-        {
+        protected Map<String, Object> newMap() {
             return newRoot();
         }
 
         @Override
-        protected JSON contextFor(String field)
-        {
+        protected JSON contextFor(String field) {
             return getJSON();
         }
 
         @Override
-        protected Convertor getConvertor(Class forClass)
-        {
+        protected Convertor getConvertor(Class forClass) {
             return _jsonParser.getConvertor(forClass);
         }
     }
 
-    private class MessagesJSON extends FieldJSON
-    {
+    private class MessagesJSON extends FieldJSON {
         @Override
-        protected Map<String, Object> newMap()
-        {
+        protected Map<String, Object> newMap() {
             return newRoot();
         }
 
         @Override
-        protected Object[] newArray(int size)
-        {
+        protected Object[] newArray(int size) {
             return newRootArray(size);
         }
 
         @Override
-        protected JSON contextFor(String field)
-        {
+        protected JSON contextFor(String field) {
             return getJSON();
         }
 
         @Override
-        protected JSON contextForArray()
-        {
+        protected JSON contextForArray() {
             return _messageParser;
         }
 
         @Override
-        protected Convertor getConvertor(Class forClass)
-        {
+        protected Convertor getConvertor(Class forClass) {
             return _messageParser.getConvertor(forClass);
         }
     }
 
-    private class JSONParser implements JSONContext.Parser
-    {
+    private class JSONParser implements JSONContext.Parser {
         @SuppressWarnings("unchecked")
-        public <T> T parse(Reader reader, Class<T> type) throws ParseException
-        {
+        public <T> T parse(Reader reader, Class<T> type) throws ParseException {
             return (T)getJSON().parse(new JSON.ReaderSource(reader));
         }
     }
 
-    private class JSONGenerator implements JSONContext.Generator
-    {
-        public String generate(Object object)
-        {
+    private class JSONGenerator implements JSONContext.Generator {
+        public String generate(Object object) {
             return getJSON().toJSON(object);
         }
     }

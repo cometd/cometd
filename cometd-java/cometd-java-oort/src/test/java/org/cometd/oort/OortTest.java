@@ -48,18 +48,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
-public abstract class OortTest
-{
-    @Parameterized.Parameters(name= "{index}: transport: {0}")
-     public static Iterable<Object[]> data()
-     {
-         return Arrays.asList(new Object[][]
-                 {
-                         {WebSocketTransport.class.getName()},
-                         {JettyWebSocketTransport.class.getName()}
-                 }
-         );
-     }
+public abstract class OortTest {
+    @Parameterized.Parameters(name = "{index}: transport: {0}")
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[][]
+                {
+                        {WebSocketTransport.class.getName()},
+                        {JettyWebSocketTransport.class.getName()}
+                }
+        );
+    }
 
     @Rule
     public final TestTracker testName = new TestTracker();
@@ -69,18 +67,15 @@ public abstract class OortTest
     private final List<BayeuxClient> clients = new ArrayList<>();
     private final String serverTransport;
 
-    protected OortTest(String serverTransport)
-    {
+    protected OortTest(String serverTransport) {
         this.serverTransport = serverTransport;
     }
 
-    protected Server startServer(int port) throws Exception
-    {
+    protected Server startServer(int port) throws Exception {
         return startServer(port, new HashMap<String, String>());
     }
 
-    protected Server startServer(int port, Map<String, String> options) throws Exception
-    {
+    protected Server startServer(int port, Map<String, String> options) throws Exception {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(port);
@@ -98,8 +93,9 @@ public abstract class OortTest
         String transports = serverTransport + "," + JSONTransport.class.getName();
         cometdServletHolder.setInitParameter("transports", transports);
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
-        for (Map.Entry<String, String> entry : options.entrySet())
+        for (Map.Entry<String, String> entry : options.entrySet()) {
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
+        }
         cometdServletHolder.setInitOrder(1);
         context.addServlet(cometdServletHolder, cometdURLMapping);
 
@@ -114,8 +110,7 @@ public abstract class OortTest
         return server;
     }
 
-    protected Oort startOort(Server server) throws Exception
-    {
+    protected Oort startOort(Server server) throws Exception {
         String url = (String)server.getAttribute(OortConfigServlet.OORT_URL_PARAM);
         BayeuxServer bayeuxServer = (BayeuxServer)server.getAttribute(BayeuxServer.ATTRIBUTE);
         bayeuxServer.setOption(Server.class.getName(), server);
@@ -125,8 +120,7 @@ public abstract class OortTest
         return oort;
     }
 
-    protected BayeuxClient startClient(Oort oort, Map<String, Object> handshakeFields) throws Exception
-    {
+    protected BayeuxClient startClient(Oort oort, Map<String, Object> handshakeFields) throws Exception {
         HttpClient httpClient = new HttpClient();
         httpClient.start();
         BayeuxClient client = new BayeuxClient(oort.getURL(), new LongPollingTransport(null, httpClient));
@@ -137,120 +131,101 @@ public abstract class OortTest
     }
 
     @After
-    public void stop() throws Exception
-    {
+    public void stop() throws Exception {
         stopClients();
         stopOorts();
         stopServers();
     }
 
-    protected void stopClients() throws Exception
-    {
-        for (int i = clients.size() - 1; i >= 0; --i)
+    protected void stopClients() throws Exception {
+        for (int i = clients.size() - 1; i >= 0; --i) {
             stopClient(clients.get(i));
+        }
     }
 
-    protected void stopClient(BayeuxClient client) throws Exception
-    {
+    protected void stopClient(BayeuxClient client) throws Exception {
         client.disconnect(1000);
         ((HttpClient)client.getAttribute(HttpClient.class.getName())).stop();
     }
 
-    protected void stopOorts() throws Exception
-    {
-        for (int i = oorts.size() - 1; i >= 0; --i)
+    protected void stopOorts() throws Exception {
+        for (int i = oorts.size() - 1; i >= 0; --i) {
             stopOort(oorts.get(i));
+        }
     }
 
-    protected void stopOort(Oort oort) throws Exception
-    {
+    protected void stopOort(Oort oort) throws Exception {
         oort.stop();
     }
 
-    protected void stopServers() throws Exception
-    {
-        for (int i = servers.size() - 1; i >= 0; --i)
+    protected void stopServers() throws Exception {
+        for (int i = servers.size() - 1; i >= 0; --i) {
             stopServer(servers.get(i));
+        }
     }
 
-    protected void stopServer(Server server) throws Exception
-    {
+    protected void stopServer(Server server) throws Exception {
         server.stop();
         server.join();
     }
 
-    protected static class LatchListener implements ClientSessionChannel.MessageListener
-    {
+    protected static class LatchListener implements ClientSessionChannel.MessageListener {
         private final AtomicInteger count = new AtomicInteger();
         private volatile CountDownLatch latch;
 
-        protected LatchListener()
-        {
+        protected LatchListener() {
             this(1);
         }
 
-        protected LatchListener(int counts)
-        {
+        protected LatchListener(int counts) {
             reset(counts);
         }
 
-        public void onMessage(ClientSessionChannel channel, Message message)
-        {
-            if (!message.isMeta() || message.isSuccessful())
-            {
+        public void onMessage(ClientSessionChannel channel, Message message) {
+            if (!message.isMeta() || message.isSuccessful()) {
                 count.incrementAndGet();
                 countDown();
             }
         }
 
-        public void countDown()
-        {
+        public void countDown() {
             latch.countDown();
         }
 
-        public boolean await(int timeout, TimeUnit unit) throws InterruptedException
-        {
+        public boolean await(int timeout, TimeUnit unit) throws InterruptedException {
             return latch.await(timeout, unit);
         }
 
-        public void reset(int counts)
-        {
+        public void reset(int counts) {
             count.set(0);
             latch = new CountDownLatch(counts);
         }
 
-        public int count()
-        {
+        public int count() {
             return count.get();
         }
     }
 
-    protected static class CometJoinedListener extends Oort.CometListener.Adapter
-    {
+    protected static class CometJoinedListener extends Oort.CometListener.Adapter {
         private final CountDownLatch latch;
 
-        public CometJoinedListener(CountDownLatch latch)
-        {
+        public CometJoinedListener(CountDownLatch latch) {
             this.latch = latch;
         }
 
-        public void cometJoined(Event event)
-        {
+        public void cometJoined(Event event) {
             latch.countDown();
         }
     }
 
-    protected static class CometLeftListener extends Oort.CometListener.Adapter
-    {
+    protected static class CometLeftListener extends Oort.CometListener.Adapter {
         private final CountDownLatch latch;
 
-        public CometLeftListener(CountDownLatch latch)
-        {
+        public CometLeftListener(CountDownLatch latch) {
             this.latch = latch;
         }
 
-        public void cometLeft(Event event)
-        {
+        public void cometLeft(Event event) {
             latch.countDown();
         }
     }

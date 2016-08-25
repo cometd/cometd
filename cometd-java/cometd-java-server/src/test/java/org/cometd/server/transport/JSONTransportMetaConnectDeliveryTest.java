@@ -27,16 +27,13 @@ import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientServerTest
-{
-    public JSONTransportMetaConnectDeliveryTest(String serverTransport)
-    {
+public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientServerTest {
+    public JSONTransportMetaConnectDeliveryTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testJSONTransportMetaConnectDelivery() throws Exception
-    {
+    public void testJSONTransportMetaConnectDelivery() throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put("long-polling.json.metaConnectDeliverOnly", "true");
         startServer(options);

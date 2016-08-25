@@ -1,6 +1,6 @@
-#set( $symbol_pound = '#' )
-#set( $symbol_dollar = '$' )
-#set( $symbol_escape = '\' )
+#set($symbol_pound='#')
+#set($symbol_dollar='$')
+#set($symbol_escape='\')
 
 package ${package};
 
@@ -22,21 +22,18 @@ import org.cometd.annotation.Session;
 @Named
 @Singleton
 @Service("helloService")
-public class HelloService
-{
+public class HelloService {
     @Inject
     private BayeuxServer bayeux;
     @Session
     private ServerSession serverSession;
 
     @PostConstruct
-    public void init()
-    {
+    public void init() {
     }
 
     @Listener("/service/hello")
-    public void processHello(ServerSession remote, ServerMessage message)
-    {
+    public void processHello(ServerSession remote, ServerMessage message) {
         Map<String, Object> input = message.getDataAsMap();
         String name = (String)input.get("name");
 

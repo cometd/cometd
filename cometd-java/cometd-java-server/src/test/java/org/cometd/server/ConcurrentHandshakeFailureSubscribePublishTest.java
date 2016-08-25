@@ -21,22 +21,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBayeuxClientServerTest
-{
-    public ConcurrentHandshakeFailureSubscribePublishTest(String serverTransport)
-    {
+public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBayeuxClientServerTest {
+    public ConcurrentHandshakeFailureSubscribePublishTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testConcurrentHandshakeFailureAndSubscribe() throws Exception
-    {
+    public void testConcurrentHandshakeFailureAndSubscribe() throws Exception {
         // A bad sequence of messages results in the server rejecting them.
         String channelName = "/foo";
         Request handshake = newBayeuxRequest("[{" +
@@ -54,8 +50,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
     }
 
     @Test
-    public void testConcurrentHandshakeFailureAndPublish() throws Exception
-    {
+    public void testConcurrentHandshakeFailureAndPublish() throws Exception {
         // A bad sequence of messages results in the server rejecting them.
         String channelName = "/foo";
         Request handshake = newBayeuxRequest("[{" +

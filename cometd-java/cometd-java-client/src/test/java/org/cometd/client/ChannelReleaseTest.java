@@ -24,11 +24,9 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ChannelReleaseTest extends ClientServerTest
-{
+public class ChannelReleaseTest extends ClientServerTest {
     @Test
-    public void testChannelReleased() throws Exception
-    {
+    public void testChannelReleased() throws Exception {
         startServer(null);
 
         BayeuxClient client = newBayeuxClient();
@@ -52,8 +50,7 @@ public class ChannelReleaseTest extends ClientServerTest
     }
 
     @Test
-    public void testChannelWithListenersNotReleased() throws Exception
-    {
+    public void testChannelWithListenersNotReleased() throws Exception {
         startServer(null);
 
         BayeuxClient client = newBayeuxClient();
@@ -65,8 +62,7 @@ public class ChannelReleaseTest extends ClientServerTest
 
         String channelName = "/foo";
         ClientSessionChannel channel = client.getChannel(channelName);
-        channel.addListener(new ClientSessionChannel.ClientSessionChannelListener()
-        {
+        channel.addListener(new ClientSessionChannel.ClientSessionChannelListener() {
         });
         boolean released = channel.release();
 
@@ -80,8 +76,7 @@ public class ChannelReleaseTest extends ClientServerTest
     }
 
     @Test
-    public void testChannelWithSubscriberNotReleased() throws Exception
-    {
+    public void testChannelWithSubscriberNotReleased() throws Exception {
         startServer(null);
 
         BayeuxClient client = newBayeuxClient();
@@ -94,14 +89,10 @@ public class ChannelReleaseTest extends ClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         String channelName = "/foo";
         final ClientSessionChannel channel = client.getChannel(channelName);
-        client.batch(new Runnable()
-        {
-            public void run()
-            {
-                channel.subscribe(new ClientSessionChannel.MessageListener()
-                {
-                    public void onMessage(ClientSessionChannel channel, Message message)
-                    {
+        client.batch(new Runnable() {
+            public void run() {
+                channel.subscribe(new ClientSessionChannel.MessageListener() {
+                    public void onMessage(ClientSessionChannel channel, Message message) {
                         latch.countDown();
                     }
                 });
@@ -121,8 +112,7 @@ public class ChannelReleaseTest extends ClientServerTest
     }
 
     @Test
-    public void testChannelWithListenerRemovedIsReleased() throws Exception
-    {
+    public void testChannelWithListenerRemovedIsReleased() throws Exception {
         startServer(null);
 
         BayeuxClient client = newBayeuxClient();
@@ -134,8 +124,7 @@ public class ChannelReleaseTest extends ClientServerTest
 
         String channelName = "/foo";
         ClientSessionChannel channel = client.getChannel(channelName);
-        ClientSessionChannel.ClientSessionChannelListener listener = new ClientSessionChannel.ClientSessionChannelListener()
-        {
+        ClientSessionChannel.ClientSessionChannelListener listener = new ClientSessionChannel.ClientSessionChannelListener() {
         };
         channel.addListener(listener);
         boolean released = channel.release();
@@ -152,8 +141,7 @@ public class ChannelReleaseTest extends ClientServerTest
     }
 
     @Test
-    public void testChannelWithSubscriberRemovedIsReleased() throws Exception
-    {
+    public void testChannelWithSubscriberRemovedIsReleased() throws Exception {
         startServer(null);
 
         BayeuxClient client = newBayeuxClient();
@@ -166,17 +154,13 @@ public class ChannelReleaseTest extends ClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         String channelName = "/foo";
         final ClientSessionChannel channel = client.getChannel(channelName);
-        final ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        final ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 latch.countDown();
             }
         };
-        client.batch(new Runnable()
-        {
-            public void run()
-            {
+        client.batch(new Runnable() {
+            public void run() {
                 channel.subscribe(listener);
                 channel.publish("");
             }
@@ -187,10 +171,8 @@ public class ChannelReleaseTest extends ClientServerTest
         Assert.assertFalse(released);
 
         final CountDownLatch unsubscribe = new CountDownLatch(1);
-        client.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 unsubscribe.countDown();
             }
         });
@@ -205,8 +187,7 @@ public class ChannelReleaseTest extends ClientServerTest
     }
 
     @Test
-    public void testReleasedChannelCannotOperate() throws Exception
-    {
+    public void testReleasedChannelCannotOperate() throws Exception {
         startServer(null);
 
         BayeuxClient client = newBayeuxClient();
@@ -221,103 +202,70 @@ public class ChannelReleaseTest extends ClientServerTest
         Assert.assertTrue(channel.release());
         Assert.assertTrue(channel.isReleased());
 
-        ClientSessionChannel.ClientSessionChannelListener channelListener = new ClientSessionChannel.ClientSessionChannelListener()
-        {
+        ClientSessionChannel.ClientSessionChannelListener channelListener = new ClientSessionChannel.ClientSessionChannelListener() {
         };
-        try
-        {
+        try {
             channel.addListener(channelListener);
             Assert.fail();
-        }
-        catch (IllegalStateException expected)
-        {
+        } catch (IllegalStateException expected) {
         }
 
-        try
-        {
+        try {
             channel.removeListener(channelListener);
             Assert.fail();
-        }
-        catch (IllegalStateException expected)
-        {
+        } catch (IllegalStateException expected) {
         }
 
-        try
-        {
+        try {
             channel.setAttribute("foo", "bar");
             Assert.fail();
-        }
-        catch (IllegalStateException expected)
-        {
+        } catch (IllegalStateException expected) {
         }
 
-        try
-        {
+        try {
             channel.removeAttribute("foo");
             Assert.fail();
-        }
-        catch (IllegalStateException expected)
-        {
+        } catch (IllegalStateException expected) {
         }
 
-        try
-        {
+        try {
             channel.getAttributeNames();
             Assert.fail();
-        }
-        catch (IllegalStateException expected)
-        {
+        } catch (IllegalStateException expected) {
         }
 
-        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
             }
         };
-        try
-        {
+        try {
             channel.subscribe(listener);
             Assert.fail();
-        }
-        catch (IllegalStateException expected)
-        {
+        } catch (IllegalStateException expected) {
         }
 
-        try
-        {
+        try {
             channel.unsubscribe(listener);
             Assert.fail();
-        }
-        catch (IllegalStateException expected)
-        {
+        } catch (IllegalStateException expected) {
         }
 
-        try
-        {
+        try {
             channel.unsubscribe();
             Assert.fail();
-        }
-        catch (IllegalStateException expected)
-        {
+        } catch (IllegalStateException expected) {
         }
 
-        try
-        {
+        try {
             channel.publish("");
             Assert.fail();
-        }
-        catch (IllegalStateException expected)
-        {
+        } catch (IllegalStateException expected) {
         }
 
-        try
-        {
+        try {
             channel.getSession();
             Assert.fail();
-        }
-        catch (IllegalStateException expected)
-        {
+        } catch (IllegalStateException expected) {
         }
 
         disconnectBayeuxClient(client);

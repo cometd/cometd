@@ -21,16 +21,13 @@ import org.cometd.client.BayeuxClient;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SessionHijackingTest extends AbstractClientServerTest
-{
-    public SessionHijackingTest(Transport transport)
-    {
+public class SessionHijackingTest extends AbstractClientServerTest {
+    public SessionHijackingTest(Transport transport) {
         super(transport);
     }
 
     @Test
-    public void testSessionHijacking() throws Exception
-    {
+    public void testSessionHijacking() throws Exception {
         startServer(serverOptions());
 
         BayeuxClient client1 = newBayeuxClient();
@@ -42,11 +39,9 @@ public class SessionHijackingTest extends AbstractClientServerTest
         Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Client1 tries to impersonate Client2.
-        client1.addExtension(new ClientSession.Extension.Adapter()
-        {
+        client1.addExtension(new ClientSession.Extension.Adapter() {
             @Override
-            public boolean send(ClientSession session, Message.Mutable message)
-            {
+            public boolean send(ClientSession session, Message.Mutable message) {
                 message.setClientId(client2.getId());
                 return true;
             }

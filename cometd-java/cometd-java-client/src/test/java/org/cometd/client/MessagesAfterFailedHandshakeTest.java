@@ -35,24 +35,19 @@ import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class MessagesAfterFailedHandshakeTest extends ClientServerTest
-{
+public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
     @Before
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         startServer(null);
         bayeux.setSecurityPolicy(new Policy());
     }
 
     @Test
-    public void testSubscribeAfterFailedHandshake() throws Exception
-    {
+    public void testSubscribeAfterFailedHandshake() throws Exception {
         final CountDownLatch serverLatch = new CountDownLatch(1);
         final String channelName = "/test_subscribe_after_failed_handshake";
-        bayeux.getChannel(Channel.META_SUBSCRIBE).addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+        bayeux.getChannel(Channel.META_SUBSCRIBE).addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 serverLatch.countDown();
                 return true;
             }
@@ -61,16 +56,11 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest
         final BayeuxClient client = newBayeuxClient();
 
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
-                {
-                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-                    {
-                        public void onMessage(ClientSessionChannel channel, Message message)
-                        {
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
+                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+                        public void onMessage(ClientSessionChannel channel, Message message) {
                         }
                     });
                     handshakeLatch.countDown();
@@ -78,12 +68,11 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest
             }
         });
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
+        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
                     subscribeLatch.countDown();
+                }
             }
         });
         client.handshake();
@@ -96,15 +85,12 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest
     }
 
     @Test
-    public void testPublishAfterFailedHandshake() throws Exception
-    {
+    public void testPublishAfterFailedHandshake() throws Exception {
         final CountDownLatch serverLatch = new CountDownLatch(1);
         final String channelName = "/test_subscribe_after_failed_handshake";
         MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
-        channel.getReference().addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+        channel.getReference().addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 serverLatch.countDown();
                 return true;
             }
@@ -113,24 +99,20 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest
         final BayeuxClient client = newBayeuxClient();
 
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
-                {
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
                     client.getChannel(channelName).publish(new HashMap<String, Object>());
                     handshakeLatch.countDown();
                 }
             }
         });
         final CountDownLatch publishLatch = new CountDownLatch(1);
-        client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
+        client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
                     publishLatch.countDown();
+                }
             }
         });
         client.handshake();
@@ -142,12 +124,10 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
-    private class Policy extends DefaultSecurityPolicy
-    {
+    private class Policy extends DefaultSecurityPolicy {
         @Override
-        public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-        {
-            Map<String,Object> ext = message.getExt();
+        public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+            Map<String, Object> ext = message.getExt();
             return ext != null && ext.get("authn") != null;
         }
     }

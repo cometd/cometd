@@ -48,8 +48,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class WebSocketTransportFailureTest
-{
+public class WebSocketTransportFailureTest {
     private Server server;
     private ServerConnector connector;
     private ServletContextHandler context;
@@ -57,16 +56,16 @@ public class WebSocketTransportFailureTest
     private BayeuxServerImpl bayeux;
 
     @After
-    public void dispose() throws Exception
-    {
-        if (client != null)
+    public void dispose() throws Exception {
+        if (client != null) {
             client.stop();
-        if (server != null)
+        }
+        if (server != null) {
             server.stop();
+        }
     }
 
-    private void startServer(Map<String, String> params) throws Exception
-    {
+    private void startServer(Map<String, String> params) throws Exception {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
@@ -82,10 +81,10 @@ public class WebSocketTransportFailureTest
         cometdServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
-        if (params != null)
-        {
-            for (Map.Entry<String, String> entry : params.entrySet())
+        if (params != null) {
+            for (Map.Entry<String, String> entry : params.entrySet()) {
                 cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
+            }
         }
         cometdServletHolder.setInitOrder(1);
         context.addServlet(cometdServletHolder, cometdURLMapping);
@@ -94,8 +93,7 @@ public class WebSocketTransportFailureTest
         bayeux = (BayeuxServerImpl)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
     }
 
-    private void startClient() throws Exception
-    {
+    private void startClient() throws Exception {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         client = new WebSocketClient(clientThreads);
@@ -103,8 +101,7 @@ public class WebSocketTransportFailureTest
     }
 
     @Test
-    public void testClientAbortsAfterFirstMetaConnect() throws Exception
-    {
+    public void testClientAbortsAfterFirstMetaConnect() throws Exception {
         long maxInterval = 2000;
 
         Map<String, String> params = new HashMap<>();
@@ -114,18 +111,13 @@ public class WebSocketTransportFailureTest
 
         final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
         final JSONContext.Client jsonContext = new JettyJSONContextClient();
-        final Session session = client.connect(new WebSocketAdapter()
-        {
+        final Session session = client.connect(new WebSocketAdapter() {
             @Override
-            public void onWebSocketText(String message)
-            {
-                try
-                {
+            public void onWebSocketText(String message) {
+                try {
                     Message.Mutable[] mutables = jsonContext.parse(message);
                     Collections.addAll(messages, mutables);
-                }
-                catch (Throwable x)
-                {
+                } catch (Throwable x) {
                     disconnect(getSession());
                 }
             }
@@ -146,11 +138,9 @@ public class WebSocketTransportFailureTest
         Assert.assertTrue(message.isSuccessful());
         String clientId = message.getClientId();
 
-        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener()
-        {
+        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
             @Override
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 // Disconnect the client abruptly.
                 disconnect(session);
                 // Add messages for the client; the first message is written to
@@ -180,14 +170,10 @@ public class WebSocketTransportFailureTest
         Assert.assertTrue(container.getOpenSessions().isEmpty());
     }
 
-    private void disconnect(Session session)
-    {
-        try
-        {
+    private void disconnect(Session session) {
+        try {
             session.disconnect();
-        }
-        catch (Throwable x)
-        {
+        } catch (Throwable x) {
             x.printStackTrace();
         }
     }

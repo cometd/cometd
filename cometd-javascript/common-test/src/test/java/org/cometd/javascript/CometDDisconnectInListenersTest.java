@@ -20,11 +20,9 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
-public class CometDDisconnectInListenersTest extends AbstractCometDTest
-{
+public class CometDDisconnectInListenersTest extends AbstractCometDTest {
     @Test
-    public void testDisconnectInHandshakeListener() throws Exception
-    {
+    public void testDisconnectInHandshakeListener() throws Exception {
         // Dojo has a bug where aborting an XHR from the
         // handshake listener does not notify the XHR error
         // handlers, so the disconnect listener is not invoked.
@@ -62,8 +60,7 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTest
     }
 
     @Test
-    public void testDisconnectInConnectListener() throws Exception
-    {
+    public void testDisconnectInConnectListener() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("var connectLatch = new Latch(2);");

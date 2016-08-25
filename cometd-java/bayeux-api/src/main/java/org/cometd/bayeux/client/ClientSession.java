@@ -27,10 +27,10 @@ import org.cometd.bayeux.Session;
  * interface provides method to configure extension, access channels
  * and to initiate the communication with a Bayeux server(s).</p>
  */
-public interface ClientSession extends Session
-{
+public interface ClientSession extends Session {
     /**
      * Adds an extension to this session.
+     *
      * @param extension the extension to add
      * @see #removeExtension(Extension)
      */
@@ -38,6 +38,7 @@ public interface ClientSession extends Session
 
     /**
      * Removes an extension from this session.
+     *
      * @param extension the extension to remove
      * @see #addExtension(Extension)
      */
@@ -92,6 +93,7 @@ public interface ClientSession extends Session
      *     clientSession.getChannel("/foo/bar").publish("Hello");
      *     clientSession.getChannel("/meta/*").addListener(myMetaChannelListener);
      * </pre>
+     *
      * @param channelName specific or wild channel name.
      * @return a channel scoped by this session.
      */
@@ -106,10 +108,10 @@ public interface ClientSession extends Session
      *
      * @see ClientSession#addExtension(Extension)
      */
-    public interface Extension
-    {
+    public interface Extension {
         /**
          * Callback method invoked every time a normal message is received.
+         *
          * @param session the session object that is receiving the message
          * @param message the message received
          * @return true if message processing should continue, false if it should stop
@@ -118,6 +120,7 @@ public interface ClientSession extends Session
 
         /**
          * Callback method invoked every time a meta message is received.
+         *
          * @param session the session object that is receiving the meta message
          * @param message the meta message received
          * @return true if message processing should continue, false if it should stop
@@ -126,6 +129,7 @@ public interface ClientSession extends Session
 
         /**
          * Callback method invoked every time a normal message is being sent.
+         *
          * @param session the session object that is sending the message
          * @param message the message being sent
          * @return true if message processing should continue, false if it should stop
@@ -134,6 +138,7 @@ public interface ClientSession extends Session
 
         /**
          * Callback method invoked every time a meta message is being sent.
+         *
          * @param session the session object that is sending the message
          * @param message the meta message being sent
          * @return true if message processing should continue, false if it should stop
@@ -143,25 +148,20 @@ public interface ClientSession extends Session
         /**
          * Empty implementation of {@link Extension}.
          */
-        public static class Adapter implements Extension
-        {
-            public boolean rcv(ClientSession session, Message.Mutable message)
-            {
+        public static class Adapter implements Extension {
+            public boolean rcv(ClientSession session, Message.Mutable message) {
                 return true;
             }
 
-            public boolean rcvMeta(ClientSession session, Message.Mutable message)
-            {
+            public boolean rcvMeta(ClientSession session, Message.Mutable message) {
                 return true;
             }
 
-            public boolean send(ClientSession session, Message.Mutable message)
-            {
+            public boolean send(ClientSession session, Message.Mutable message) {
                 return true;
             }
 
-            public boolean sendMeta(ClientSession session, Message.Mutable message)
-            {
+            public boolean sendMeta(ClientSession session, Message.Mutable message) {
                 return true;
             }
         }

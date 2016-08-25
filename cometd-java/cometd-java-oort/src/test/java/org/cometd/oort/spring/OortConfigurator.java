@@ -31,14 +31,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.context.ServletContextAware;
 
 @Configuration
-public class OortConfigurator implements DestructionAwareBeanPostProcessor, ServletContextAware
-{
+public class OortConfigurator implements DestructionAwareBeanPostProcessor, ServletContextAware {
     private ServletContext servletContext;
     private ServerAnnotationProcessor processor;
 
     @PostConstruct
-    private void init()
-    {
+    private void init() {
         BayeuxServer bayeuxServer = bayeuxServer();
         bayeuxServer.setSecurityPolicy(policy());
         this.processor = new ServerAnnotationProcessor(bayeuxServer);
@@ -52,8 +50,7 @@ public class OortConfigurator implements DestructionAwareBeanPostProcessor, Serv
     }
 
     @Override
-    public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException
-    {
+    public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException {
         processor.processDependencies(bean);
         processor.processConfigurations(bean);
         processor.processCallbacks(bean);
@@ -61,32 +58,27 @@ public class OortConfigurator implements DestructionAwareBeanPostProcessor, Serv
     }
 
     @Override
-    public Object postProcessAfterInitialization(Object bean, String name) throws BeansException
-    {
+    public Object postProcessAfterInitialization(Object bean, String name) throws BeansException {
         return bean;
     }
 
     @Override
-    public void postProcessBeforeDestruction(Object bean, String name) throws BeansException
-    {
+    public void postProcessBeforeDestruction(Object bean, String name) throws BeansException {
         processor.deprocessCallbacks(bean);
     }
 
     @Override
-    public boolean requiresDestruction(Object bean)
-    {
+    public boolean requiresDestruction(Object bean) {
         return true;
     }
 
     @Override
-    public void setServletContext(ServletContext servletContext)
-    {
+    public void setServletContext(ServletContext servletContext) {
         this.servletContext = servletContext;
     }
 
     @Bean(initMethod = "start", destroyMethod = "stop")
-    public BayeuxServer bayeuxServer()
-    {
+    public BayeuxServer bayeuxServer() {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
         bayeuxServer.setOption(ServletContext.class.getName(), servletContext);
         bayeuxServer.setOption("ws.cometdURLMapping", "/cometd/*");
@@ -95,24 +87,21 @@ public class OortConfigurator implements DestructionAwareBeanPostProcessor, Serv
     }
 
     @Bean(initMethod = "start", destroyMethod = "stop")
-    public Oort oort()
-    {
+    public Oort oort() {
         Oort oort = new Oort(bayeuxServer(), "http://localhost:8080/cometd");
         servletContext.setAttribute(Oort.OORT_ATTRIBUTE, oort);
         return oort;
     }
 
     @Bean(initMethod = "start", destroyMethod = "stop")
-    public Seti seti()
-    {
+    public Seti seti() {
         Seti seti = new Seti(oort());
         servletContext.setAttribute(Seti.SETI_ATTRIBUTE, seti);
         return seti;
     }
 
     @Bean
-    public SecurityPolicy policy()
-    {
+    public SecurityPolicy policy() {
         return new OortSecurityPolicy(seti());
     }
 }

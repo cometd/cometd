@@ -27,17 +27,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CometDURLPathTest extends AbstractCometDLongPollingTest
-{
+public class CometDURLPathTest extends AbstractCometDLongPollingTest {
     @Before
-    public void init()
-    {
+    public void init() {
         bayeuxServer.addExtension(new BayeuxURLExtension(bayeuxServer));
     }
 
     @Test
-    public void testURLPath() throws Exception
-    {
+    public void testURLPath() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");
@@ -72,8 +69,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
     }
 
     @Test
-    public void testURLPathWithFile() throws Exception
-    {
+    public void testURLPathWithFile() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");
@@ -108,8 +104,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
     }
 
     @Test
-    public void testURLPathWithParameters() throws Exception
-    {
+    public void testURLPathWithParameters() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");
@@ -144,8 +139,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
     }
 
     @Test
-    public void testURLPathDisabled() throws Exception
-    {
+    public void testURLPathDisabled() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");
@@ -179,26 +173,21 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
         Assert.assertFalse(disconnectURI.endsWith("/disconnect"));
     }
 
-    public static class BayeuxURLExtension extends Extension.Adapter
-    {
+    public static class BayeuxURLExtension extends Extension.Adapter {
         private final BayeuxServerImpl bayeux;
 
-        public BayeuxURLExtension(BayeuxServerImpl bayeux)
-        {
+        public BayeuxURLExtension(BayeuxServerImpl bayeux) {
             this.bayeux = bayeux;
         }
 
         @Override
-        public boolean sendMeta(ServerSession to, Mutable message)
-        {
+        public boolean sendMeta(ServerSession to, Mutable message) {
             if (Channel.META_HANDSHAKE.equals(message.getChannel()) ||
-                Channel.META_CONNECT.equals(message.getChannel()) ||
-                Channel.META_DISCONNECT.equals(message.getChannel()))
-            {
+                    Channel.META_CONNECT.equals(message.getChannel()) ||
+                    Channel.META_DISCONNECT.equals(message.getChannel())) {
                 AbstractHttpTransport transport = (AbstractHttpTransport)bayeux.getCurrentTransport();
                 HttpServletRequest request = transport.getCurrentRequest();
-                if (request != null)
-                {
+                if (request != null) {
                     String uri = request.getRequestURI();
                     message.getExt(true).put("uri", uri);
                 }

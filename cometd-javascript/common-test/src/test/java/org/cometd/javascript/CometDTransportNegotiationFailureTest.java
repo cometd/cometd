@@ -18,11 +18,9 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDTransportNegotiationFailureTest extends AbstractCometDTest
-{
+public class CometDTransportNegotiationFailureTest extends AbstractCometDTest {
     @Test
-    public void testTransportNegotiationFailureForClientLongPollingServerWebSocket() throws Exception
-    {
+    public void testTransportNegotiationFailureForClientLongPollingServerWebSocket() throws Exception {
         // Only websocket on server, only long-polling on client
         bayeuxServer.setAllowedTransports("websocket");
         evaluateScript("keep_only_long_polling_transport",
@@ -44,13 +42,12 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTest
     }
 
     @Test
-    public void testTransportNegotiationFailureForClientWebSocketServerLongPolling() throws Exception
-    {
+    public void testTransportNegotiationFailureForClientWebSocketServerLongPolling() throws Exception {
         // Only long-polling on server, only websocket on client
         bayeuxServer.setAllowedTransports("long-polling");
         evaluateScript("keep_only_websocket_transport",
                 "cometd.unregisterTransports();" +
-                "cometd.registerTransport('websocket', originalTransports['websocket']);");
+                        "cometd.registerTransport('websocket', originalTransports['websocket']);");
 
         defineClass(Latch.class);
         evaluateScript("var failureLatch = new Latch(1);");

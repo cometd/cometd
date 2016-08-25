@@ -20,21 +20,21 @@ import org.cometd.bayeux.ChannelId;
 
 /**
  * <p>{@link Authorizer}s authorize {@link Operation operations} on {@link ServerChannel channels}.</p>
- *
+ * <p>
  * <p>Authorizers can be {@link ConfigurableServerChannel#addAuthorizer(Authorizer) added to} and
  * {@link ConfigurableServerChannel#removeAuthorizer(Authorizer)}  removed from} channels, even wildcard
  * channels.</p>
- *
+ * <p>
  * <p>{@link Authorizer}s work together with the {@link SecurityPolicy} to determine if a
  * {@link Operation#CREATE channel creation}, a {@link Operation#SUBSCRIBE channel subscribe} or a
  * {@link Operation#PUBLISH publish operation} may succeed.
  * </p>
- *
+ * <p>
  * <p>For an operation on a channel, the authorizers on the wildcard channels that match the channel and the
  * authorizers on the channel itself (together known at the <em>authorizers set</em> for that channel) will be
  * consulted to check if the the operation is granted, denied or ignored.</p>
  * <p>The list of wildcard channels that match the channel is obtained from {@link ChannelId#getWilds()}.</p>
- *
+ * <p>
  * <p>The following is the authorization algorithm:</p>
  * <ul>
  * <li>If there is a security policy, and the security policy denies the request, then the request is denied.</li>
@@ -46,7 +46,7 @@ import org.cometd.bayeux.ChannelId;
  * request is denied.</li>
  * </ul>
  * <p>The order in which the authorizers are checked is not important.</p>
- *
+ * <p>
  * <p>Typically, authorizers are setup during the configuration of a channel:</p>
  * <pre>
  * BayeuxServer bayeuxServer = ...;
@@ -73,7 +73,7 @@ import org.cometd.bayeux.ChannelId;
  *     }
  * });
  * </pre>
- *
+ * <p>
  * <p>A typical usage of authorizers is as follows:</p>
  * <ul>
  * <li>Create a wildcard authorizer that matches all channels and neither grants or
@@ -96,13 +96,11 @@ import org.cometd.bayeux.ChannelId;
  *
  * @see SecurityPolicy
  */
-public interface Authorizer
-{
+public interface Authorizer {
     /**
      * Operations that are to be authorized on a channel
      */
-    enum Operation
-    {
+    enum Operation {
         /**
          * The operation to create a channel that does not exist
          */
@@ -129,9 +127,9 @@ public interface Authorizer
      * exist: it will be created only after the authorization is granted.</p>
      *
      * @param operation the operation to authorize
-     * @param channel the channel for which the authorization has been requested
-     * @param session the session that is requesting the authorization
-     * @param message the message that triggered the authorization request
+     * @param channel   the channel for which the authorization has been requested
+     * @param session   the session that is requesting the authorization
+     * @param message   the message that triggered the authorization request
      * @return the result of the authorization
      */
     Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message);
@@ -139,99 +137,83 @@ public interface Authorizer
     /**
      * <p>The result of an authentication request.</p>
      */
-    public static abstract class Result
-    {
+    public static abstract class Result {
         /**
          * @param reason the reason for which the authorization is denied
          * @return a result that denies the authorization
          */
-        public static Result deny(String reason)
-        {
+        public static Result deny(String reason) {
             return new Denied(reason);
         }
 
         /**
          * @return a result that grants the authorization
          */
-        public static Result grant()
-        {
+        public static Result grant() {
             return Granted.GRANTED;
         }
 
         /**
          * @return a result that ignores the authorization, leaving the decision to other {@link Authorizer}s.
          */
-        public static Result ignore()
-        {
+        public static Result ignore() {
             return Ignored.IGNORED;
         }
 
-        public boolean isDenied()
-        {
+        public boolean isDenied() {
             return false;
         }
 
-        public boolean isGranted()
-        {
+        public boolean isGranted() {
             return false;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return getClass().getSimpleName().toLowerCase();
         }
 
-        public static final class Denied extends Result
-        {
+        public static final class Denied extends Result {
             private final String reason;
 
-            private Denied(String reason)
-            {
-                if (reason == null)
+            private Denied(String reason) {
+                if (reason == null) {
                     reason = "";
+                }
                 this.reason = reason;
             }
 
-            public String getReason()
-            {
+            public String getReason() {
                 return reason;
             }
 
             @Override
-            public boolean isDenied()
-            {
+            public boolean isDenied() {
                 return true;
             }
 
             @Override
-            public String toString()
-            {
+            public String toString() {
                 return super.toString() + " (reason='" + reason + "')";
             }
         }
 
-        public static final class Granted extends Result
-        {
+        public static final class Granted extends Result {
             private static final Granted GRANTED = new Granted();
 
-            private Granted()
-            {
+            private Granted() {
             }
 
             @Override
-            public boolean isGranted()
-            {
+            public boolean isGranted() {
                 return true;
             }
         }
 
-        public static final class Ignored extends Result
-        {
+        public static final class Ignored extends Result {
             private static final Ignored IGNORED = new Ignored();
 
-            private Ignored()
-            {
+            private Ignored() {
             }
         }
     }

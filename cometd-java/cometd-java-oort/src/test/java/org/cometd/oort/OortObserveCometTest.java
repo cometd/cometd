@@ -40,16 +40,13 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class OortObserveCometTest extends OortTest
-{
-    public OortObserveCometTest(String serverTransport)
-    {
+public class OortObserveCometTest extends OortTest {
+    public OortObserveCometTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testObserveStartedOortAndExpectToBeObserved() throws Exception
-    {
+    public void testObserveStartedOortAndExpectToBeObserved() throws Exception {
         Server server1 = startServer(0);
         final Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -71,8 +68,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testCometACometBConnectedWhenCometAConnectsToCometCThenAlsoCometBConnectsToCometC() throws Exception
-    {
+    public void testCometACometBConnectedWhenCometAConnectsToCometCThenAlsoCometBConnectsToCometC() throws Exception {
         Server serverA = startServer(0);
         Oort oortA = startOort(serverA);
         Server serverB = startServer(0);
@@ -111,8 +107,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testConnectTwoCloudsAndDisconnectOneComet() throws Exception
-    {
+    public void testConnectTwoCloudsAndDisconnectOneComet() throws Exception {
         // Cloud #1, A and B
         Server serverA = startServer(0);
         Oort oortA = startOort(serverA);
@@ -195,8 +190,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testObserveStartedOortAndDetectStop() throws Exception
-    {
+    public void testObserveStartedOortAndDetectStop() throws Exception {
         Server server1 = startServer(0);
         Server server2 = startServer(0);
 
@@ -227,8 +221,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testObserveNonStartedOortAndDetectStart() throws Exception
-    {
+    public void testObserveNonStartedOortAndDetectStart() throws Exception {
         Server server1 = startServer(0);
         String url = (String)server1.getAttribute(OortConfigServlet.OORT_URL_PARAM);
         final BayeuxServer bayeuxServer = (BayeuxServer)server1.getAttribute(BayeuxServer.ATTRIBUTE);
@@ -253,8 +246,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testObserveStartedOortAndDetectRestart() throws Exception
-    {
+    public void testObserveStartedOortAndDetectRestart() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
 
@@ -279,8 +271,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testNetworkBrokenShorterThanMaxInterval() throws Exception
-    {
+    public void testNetworkBrokenShorterThanMaxInterval() throws Exception {
         long maxInterval = 4000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
@@ -331,8 +322,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testNetworkBrokenLongerThanMaxInterval() throws Exception
-    {
+    public void testNetworkBrokenLongerThanMaxInterval() throws Exception {
         long maxInterval = 2000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
@@ -373,8 +363,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testCometDownLongerThanMaxInterval() throws Exception
-    {
+    public void testCometDownLongerThanMaxInterval() throws Exception {
         long maxInterval = 2000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
@@ -410,11 +399,9 @@ public class OortObserveCometTest extends OortTest
         final String oortURL1 = oort1.getURL();
         final CountDownLatch joinedLatch = new CountDownLatch(1);
         final CountDownLatch leftLatch = new CountDownLatch(1);
-        Oort.CometListener cometListener = new Oort.CometListener()
-        {
+        Oort.CometListener cometListener = new Oort.CometListener() {
             @Override
-            public void cometLeft(Event event)
-            {
+            public void cometLeft(Event event) {
                 Assert.assertEquals(oortId1, event.getCometId());
                 Assert.assertEquals(oortURL1, event.getCometURL());
                 // Left event must happen before joined event.
@@ -423,8 +410,7 @@ public class OortObserveCometTest extends OortTest
             }
 
             @Override
-            public void cometJoined(Event event)
-            {
+            public void cometJoined(Event event) {
                 Assert.assertNotEquals(oortId1, event.getCometId());
                 Assert.assertEquals(oortURL1, event.getCometURL());
                 // Left event must happen before joined event.
@@ -447,8 +433,7 @@ public class OortObserveCometTest extends OortTest
 
         // Poll until the connection is restored.
         int polls = 0;
-        do
-        {
+        do {
             oortComet12 = oort1.getComet(oort2.getURL());
             Thread.sleep(100);
             ++polls;
@@ -468,8 +453,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testCometDownShorterThanMaxInterval() throws Exception
-    {
+    public void testCometDownShorterThanMaxInterval() throws Exception {
         long maxInterval = 4000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
@@ -518,11 +502,9 @@ public class OortObserveCometTest extends OortTest
         final String oortURL1 = oort1.getURL();
         final CountDownLatch joinedLatch2 = new CountDownLatch(1);
         final CountDownLatch leftLatch2 = new CountDownLatch(1);
-        Oort.CometListener cometListener = new Oort.CometListener()
-        {
+        Oort.CometListener cometListener = new Oort.CometListener() {
             @Override
-            public void cometLeft(Event event)
-            {
+            public void cometLeft(Event event) {
                 Assert.assertEquals(oortId1, event.getCometId());
                 Assert.assertEquals(oortURL1, event.getCometURL());
                 // Left event must happen before joined event.
@@ -531,8 +513,7 @@ public class OortObserveCometTest extends OortTest
             }
 
             @Override
-            public void cometJoined(Event event)
-            {
+            public void cometJoined(Event event) {
                 Assert.assertEquals(newOortId1, event.getCometId());
                 Assert.assertEquals(oortURL1, event.getCometURL());
                 // Left event must happen before joined event.
@@ -565,8 +546,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testDeobserve() throws Exception
-    {
+    public void testDeobserve() throws Exception {
         Server serverA = startServer(0);
         Oort oortA = startOort(serverA);
         Server serverB = startServer(0);
@@ -637,8 +617,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testObserveSameCometWithDifferentURL() throws Exception
-    {
+    public void testObserveSameCometWithDifferentURL() throws Exception {
         Server serverA = startServer(0);
         Oort oortA = startOort(serverA);
         String urlA = oortA.getURL();
@@ -650,8 +629,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testObserveDifferentCometWithDifferentURL() throws Exception
-    {
+    public void testObserveDifferentCometWithDifferentURL() throws Exception {
         Server serverA = startServer(0);
         Oort oortA = startOort(serverA);
         Server serverB = startServer(0);
@@ -703,8 +681,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testSingleCometsJoinsTheCloud() throws Exception
-    {
+    public void testSingleCometsJoinsTheCloud() throws Exception {
         Server serverA = startServer(0);
         Oort oortA = startOort(serverA);
         Server serverB = startServer(0);
@@ -776,8 +753,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testAckExtensionConfiguration() throws Exception
-    {
+    public void testAckExtensionConfiguration() throws Exception {
         Server serverA = startServer(0);
         Oort oortA = startOort(serverA);
         stopOort(oortA);
@@ -786,9 +762,11 @@ public class OortObserveCometTest extends OortTest
 
         BayeuxServer bayeuxServerA = oortA.getBayeuxServer();
         int ackExtensions = 0;
-        for (BayeuxServer.Extension extension : bayeuxServerA.getExtensions())
-            if (extension instanceof AcknowledgedMessagesExtension)
+        for (BayeuxServer.Extension extension : bayeuxServerA.getExtensions()) {
+            if (extension instanceof AcknowledgedMessagesExtension) {
                 ++ackExtensions;
+            }
+        }
         Assert.assertEquals(1, ackExtensions);
 
         Server serverB = startServer(0);
@@ -800,9 +778,11 @@ public class OortObserveCometTest extends OortTest
         oortB.start();
 
         ackExtensions = 0;
-        for (BayeuxServer.Extension extension : bayeuxServerB.getExtensions())
-            if (extension instanceof AcknowledgedMessagesExtension)
+        for (BayeuxServer.Extension extension : bayeuxServerB.getExtensions()) {
+            if (extension instanceof AcknowledgedMessagesExtension) {
                 ++ackExtensions;
+            }
+        }
         Assert.assertEquals(1, ackExtensions);
 
         CountDownLatch latch1 = new CountDownLatch(2);
@@ -817,21 +797,24 @@ public class OortObserveCometTest extends OortTest
         Assert.assertTrue(oortCometBA.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         ackExtensions = 0;
-        for (ClientSession.Extension extension : oortCometAB.getExtensions())
-            if (extension instanceof AckExtension)
+        for (ClientSession.Extension extension : oortCometAB.getExtensions()) {
+            if (extension instanceof AckExtension) {
                 ++ackExtensions;
+            }
+        }
         Assert.assertEquals(1, ackExtensions);
 
         ackExtensions = 0;
-        for (ClientSession.Extension extension : oortCometBA.getExtensions())
-            if (extension instanceof AckExtension)
+        for (ClientSession.Extension extension : oortCometBA.getExtensions()) {
+            if (extension instanceof AckExtension) {
                 ++ackExtensions;
+            }
+        }
         Assert.assertEquals(1, ackExtensions);
     }
 
     @Test
-    public void testPublishDuringCometJoined() throws Exception
-    {
+    public void testPublishDuringCometJoined() throws Exception {
         Server serverA = startServer(0);
         final Oort oortA = startOort(serverA);
         final BayeuxServer bayeuxServerA = oortA.getBayeuxServer();
@@ -841,10 +824,8 @@ public class OortObserveCometTest extends OortTest
         final String channelName = "/test";
         final String data = "data";
         final CountDownLatch joinedLatch = new CountDownLatch(1);
-        oortA.addCometListener(new Oort.CometListener.Adapter()
-        {
-            public void cometJoined(Event event)
-            {
+        oortA.addCometListener(new Oort.CometListener.Adapter() {
+            public void cometJoined(Event event) {
                 bayeuxServerA.createChannelIfAbsent(channelName).getReference().publish(serviceA, data);
                 joinedLatch.countDown();
             }
@@ -857,12 +838,11 @@ public class OortObserveCometTest extends OortTest
 
         BayeuxServer bayeuxServerB = oortB.getBayeuxServer();
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeuxServerB.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
-                if (data.equals(message.getData()))
+        bayeuxServerB.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+                if (data.equals(message.getData())) {
                     latch.countDown();
+                }
                 return true;
             }
         });
@@ -875,8 +855,7 @@ public class OortObserveCometTest extends OortTest
     }
 
     @Test
-    public void testConfigureMaxMessageSize() throws Exception
-    {
+    public void testConfigureMaxMessageSize() throws Exception {
         int maxMessageSize = 1024;
         Map<String, String> options = new HashMap<>();
         options.put("ws.maxMessageSize", String.valueOf(maxMessageSize));
@@ -908,10 +887,8 @@ public class OortObserveCometTest extends OortTest
         Assert.assertTrue(clientB.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
-        clientB.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        clientB.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.get().countDown();
             }
         });

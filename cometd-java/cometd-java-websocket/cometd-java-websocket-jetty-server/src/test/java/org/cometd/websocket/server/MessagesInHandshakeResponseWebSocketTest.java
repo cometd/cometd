@@ -29,30 +29,24 @@ import org.cometd.websocket.ClientServerWebSocketTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class MessagesInHandshakeResponseWebSocketTest extends ClientServerWebSocketTest
-{
-    public MessagesInHandshakeResponseWebSocketTest(String wsTransportType)
-    {
+public class MessagesInHandshakeResponseWebSocketTest extends ClientServerWebSocketTest {
+    public MessagesInHandshakeResponseWebSocketTest(String wsTransportType) {
         super(wsTransportType);
     }
 
     @Test
-    public void testMessagesNotSentInHandshakeResponse() throws Exception
-    {
+    public void testMessagesNotSentInHandshakeResponse() throws Exception {
         prepareAndStart(null);
 
         final String channelName = "/test";
-        bayeux.addListener(new BayeuxServer.SessionListener()
-        {
+        bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
-            public void sessionAdded(ServerSession session, ServerMessage message)
-            {
+            public void sessionAdded(ServerSession session, ServerMessage message) {
                 session.deliver(null, channelName, "data");
             }
 
             @Override
-            public void sessionRemoved(ServerSession session, boolean timedout)
-            {
+            public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
 
@@ -61,18 +55,14 @@ public class MessagesInHandshakeResponseWebSocketTest extends ClientServerWebSoc
         final CountDownLatch messageLatch = new CountDownLatch(1);
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
 
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertEquals(1, messageLatch.getCount());
                 handshakeLatch.countDown();
             }
         });
-        client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertEquals(0, handshakeLatch.getCount());
                 messageLatch.countDown();
             }

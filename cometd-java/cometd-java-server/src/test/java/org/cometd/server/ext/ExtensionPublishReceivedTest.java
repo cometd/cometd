@@ -32,24 +32,20 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
-{
+public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest {
     private CountingExtension extension = new CountingExtension();
 
-    public ExtensionPublishReceivedTest(String serverTransport)
-    {
+    public ExtensionPublishReceivedTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testExtension() throws Exception
-    {
+    public void testExtension() throws Exception {
         bayeux.addExtension(extension);
         new Publisher(bayeux);
 
@@ -79,48 +75,40 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(4, extension.sendMetas.size());
     }
 
-    private class CountingExtension implements BayeuxServer.Extension
-    {
+    private class CountingExtension implements BayeuxServer.Extension {
         private final List<Message> rcvs = new ArrayList<>();
         private final List<Message> rcvMetas = new ArrayList<>();
         private final List<Message> sends = new ArrayList<>();
         private final List<Message> sendMetas = new ArrayList<>();
 
-        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-        {
+        public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
             rcvs.add(message);
             return true;
         }
 
-        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-        {
+        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             rcvMetas.add(message);
             return true;
         }
 
-        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-        {
+        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
             sends.add(message);
             return true;
         }
 
-        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-        {
+        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
             sendMetas.add(message);
             return true;
         }
     }
 
-    public class Publisher extends AbstractService
-    {
-        public Publisher(BayeuxServer bayeux)
-        {
+    public class Publisher extends AbstractService {
+        public Publisher(BayeuxServer bayeux) {
             super(bayeux, "test");
             addService(Channel.META_SUBSCRIBE, "emit");
         }
 
-        public void emit(ServerSession remote, ServerMessage message)
-        {
+        public void emit(ServerSession remote, ServerMessage message) {
             HashMap<String, Object> data = new HashMap<>();
             data.put("emitted", true);
             remote.deliver(getServerSession(), "/test", data);

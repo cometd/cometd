@@ -49,8 +49,7 @@ import org.cometd.bayeux.server.ServerSession;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface RemoteCall
-{
+public @interface RemoteCall {
     /**
      * <p>Returns the list of remote call target strings used by clients to
      * identify the target of remote calls.</p>
@@ -69,8 +68,7 @@ public @interface RemoteCall
      * <p>Server-side applications may return a result or a failure via, respectively,
      * {@link #result(Object)} and {@link #failure(Object)}.</p>
      */
-    public interface Caller
-    {
+    public interface Caller {
         /**
          * @return the {@link ServerSession} associated with this remote caller
          */

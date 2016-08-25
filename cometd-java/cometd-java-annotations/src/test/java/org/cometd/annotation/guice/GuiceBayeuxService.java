@@ -29,8 +29,7 @@ import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 
 @Service // CometD annotation that marks the class as a CometD service
-public class GuiceBayeuxService
-{
+public class GuiceBayeuxService {
     public static final String CHANNEL = "/foo";
 
     public final Dependency dependency; // Injected by Guice via constructor
@@ -42,16 +41,16 @@ public class GuiceBayeuxService
     public ServerSession serverSession; // Injected by CometD's annotation processor
 
     @Inject
-    public GuiceBayeuxService(Dependency dependency)
-    {
+    public GuiceBayeuxService(Dependency dependency) {
         this.dependency = dependency;
     }
 
     @PostConstruct
     public void start() // Invoked by CometD's annotation processor
     {
-        if (!configured)
+        if (!configured) {
             throw new IllegalStateException();
+        }
         active = true;
     }
 

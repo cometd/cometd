@@ -29,11 +29,9 @@ import org.cometd.server.ext.TimestampExtension;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class DeliverWithTimeStampExtensionTest extends ClientServerTest
-{
+public class DeliverWithTimeStampExtensionTest extends ClientServerTest {
     @Test
-    public void testDeliverWithTimeStampExtension() throws Exception
-    {
+    public void testDeliverWithTimeStampExtension() throws Exception {
         startServer(null);
         bayeux.addExtension(new TimestampExtension());
 
@@ -41,10 +39,8 @@ public class DeliverWithTimeStampExtensionTest extends ClientServerTest
         BayeuxClient client = newBayeuxClient();
         final CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
-        channel.addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        channel.addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
         });
@@ -64,19 +60,16 @@ public class DeliverWithTimeStampExtensionTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
-    public static class DeliverService extends AbstractService
-    {
+    public static class DeliverService extends AbstractService {
         private final String channelName;
 
-        public DeliverService(BayeuxServer bayeux, String channelName)
-        {
+        public DeliverService(BayeuxServer bayeux, String channelName) {
             super(bayeux, "test");
             this.channelName = channelName;
             addService(channelName, "process");
         }
 
-        public void process(ServerSession remote, ServerMessage.Mutable message)
-        {
+        public void process(ServerSession remote, ServerMessage.Mutable message) {
             ServerMessage.Mutable reply = getBayeux().newMessage();
             reply.setChannel(channelName);
             reply.setData("from_server");

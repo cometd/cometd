@@ -31,18 +31,15 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
-public class OortMulticastConfigurerTest extends OortTest
-{
+public class OortMulticastConfigurerTest extends OortTest {
     private final List<OortMulticastConfigurer> configurers = new ArrayList<>();
 
-    public OortMulticastConfigurerTest(String serverTransport)
-    {
+    public OortMulticastConfigurerTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void assumeMulticast() throws Exception
-    {
+    public void assumeMulticast() throws Exception {
         InetAddress multicastAddress = InetAddress.getByName("239.255.0.1");
 
         // Make sure receiver is setup before the sender, otherwise the packet gets lost
@@ -56,22 +53,16 @@ public class OortMulticastConfigurerTest extends OortTest
 
         byte[] buffer = new byte[1];
         receiver.setSoTimeout(1000);
-        try
-        {
+        try {
             receiver.receive(new DatagramPacket(buffer, 0, buffer.length));
-        }
-        catch (SocketTimeoutException x)
-        {
+        } catch (SocketTimeoutException x) {
             Assume.assumeNoException(x);
-        }
-        finally
-        {
+        } finally {
             receiver.close();
         }
     }
 
-    private OortMulticastConfigurer startConfigurer(Oort oort, int groupPort) throws Exception
-    {
+    private OortMulticastConfigurer startConfigurer(Oort oort, int groupPort) throws Exception {
         OortMulticastConfigurer configurer = new OortMulticastConfigurer(oort);
         configurer.setGroupPort(groupPort);
         configurers.add(configurer);
@@ -80,21 +71,19 @@ public class OortMulticastConfigurerTest extends OortTest
     }
 
     @After
-    public void stopConfigurers() throws Exception
-    {
-        for (int i = configurers.size() - 1; i >= 0; --i)
+    public void stopConfigurers() throws Exception {
+        for (int i = configurers.size() - 1; i >= 0; --i) {
             stopConfigurer(configurers.get(i));
+        }
     }
 
-    private void stopConfigurer(OortMulticastConfigurer configurer) throws Exception
-    {
+    private void stopConfigurer(OortMulticastConfigurer configurer) throws Exception {
         configurer.stop();
         configurer.join(1000);
     }
 
     @Test
-    public void testTwoComets() throws Exception
-    {
+    public void testTwoComets() throws Exception {
         Server server1 = startServer(0);
         int groupPort = ((NetworkConnector)server1.getConnectors()[0]).getLocalPort();
         Oort oort1 = startOort(server1);
@@ -112,8 +101,7 @@ public class OortMulticastConfigurerTest extends OortTest
     }
 
     @Test
-    public void testThreeComets() throws Exception
-    {
+    public void testThreeComets() throws Exception {
         Server server1 = startServer(0);
         int groupPort = ((NetworkConnector)server1.getConnectors()[0]).getLocalPort();
         Oort oort1 = startOort(server1);
@@ -155,8 +143,7 @@ public class OortMulticastConfigurerTest extends OortTest
     }
 
     @Test
-    public void testTwoCometsOneWithWrongURL() throws Exception
-    {
+    public void testTwoCometsOneWithWrongURL() throws Exception {
         long connectTimeout = 2000;
 
         Server serverA = startServer(0);

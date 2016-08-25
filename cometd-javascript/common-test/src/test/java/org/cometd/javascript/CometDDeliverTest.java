@@ -24,11 +24,9 @@ import org.cometd.server.BayeuxServerImpl;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDDeliverTest extends AbstractCometDTest
-{
+public class CometDDeliverTest extends AbstractCometDTest {
     @Test
-    public void testDeliver() throws Exception
-    {
+    public void testDeliver() throws Exception {
         new DeliverService(bayeuxServer);
 
         defineClass(Latch.class);
@@ -67,20 +65,16 @@ public class CometDDeliverTest extends AbstractCometDTest
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class DeliverService extends AbstractService
-    {
-        public DeliverService(BayeuxServerImpl bayeux)
-        {
+    public static class DeliverService extends AbstractService {
+        public DeliverService(BayeuxServerImpl bayeux) {
             super(bayeux, "deliver");
             addService("/service/deliver", "deliver");
         }
 
-        public void deliver(ServerSession remote, ServerMessage message)
-        {
+        public void deliver(ServerSession remote, ServerMessage message) {
             Map<String, Object> data = message.getDataAsMap();
             Boolean deliver = (Boolean)data.get("deliver");
-            if (deliver)
-            {
+            if (deliver) {
                 data.put("echo", true);
                 remote.deliver(getServerSession(), message.getChannel(), data);
             }

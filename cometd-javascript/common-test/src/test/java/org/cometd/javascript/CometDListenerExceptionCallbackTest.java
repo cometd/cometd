@@ -18,11 +18,9 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDListenerExceptionCallbackTest extends AbstractCometDTest
-{
+public class CometDListenerExceptionCallbackTest extends AbstractCometDTest {
     @Test
-    public void testListenerExceptionCallback() throws Exception
-    {
+    public void testListenerExceptionCallback() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var latch = new Latch(1);");
         Latch latch = get("latch");
@@ -51,8 +49,7 @@ public class CometDListenerExceptionCallbackTest extends AbstractCometDTest
     }
 
     @Test
-    public void testSubscriberExceptionCallback() throws Exception
-    {
+    public void testSubscriberExceptionCallback() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var latch = new Latch(1);");
         Latch latch = get("latch");

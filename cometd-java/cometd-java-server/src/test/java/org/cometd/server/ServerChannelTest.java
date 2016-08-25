@@ -30,15 +30,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ServerChannelTest
-{
+public class ServerChannelTest {
     private BayeuxChannelListener _bayeuxChannelListener;
     private BayeuxSubscriptionListener _bayeuxSubscriptionListener;
     private BayeuxServerImpl _bayeux;
 
     @Before
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         _bayeuxChannelListener = new BayeuxChannelListener();
         _bayeuxSubscriptionListener = new BayeuxSubscriptionListener();
         _bayeux = new BayeuxServerImpl();
@@ -48,16 +46,14 @@ public class ServerChannelTest
     }
 
     @After
-    public void destroy() throws Exception
-    {
+    public void destroy() throws Exception {
         _bayeux.removeListener(_bayeuxSubscriptionListener);
         _bayeux.removeListener(_bayeuxChannelListener);
         _bayeux.stop();
     }
 
     @Test
-    public void testChannelCreate() throws Exception
-    {
+    public void testChannelCreate() throws Exception {
         Assert.assertNull(_bayeux.getChannel("/foo"));
         Assert.assertNull(_bayeux.getChannel("/foo/bar"));
 
@@ -78,22 +74,17 @@ public class ServerChannelTest
     }
 
     @Test
-    public void testCreateChildChannelAfterParent() throws Exception
-    {
+    public void testCreateChildChannelAfterParent() throws Exception {
         final CountDownLatch latch = new CountDownLatch(2);
         String channelName = "/root";
-        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
+        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
                 latch.countDown();
             }
         }).isMarked());
-        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName + "/1", new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
+        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName + "/1", new ConfigurableServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
                 latch.countDown();
             }
@@ -102,8 +93,7 @@ public class ServerChannelTest
     }
 
     @Test
-    public void testSubscribe() throws Exception
-    {
+    public void testSubscribe() throws Exception {
         ServerChannelImpl fooBar = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/foo/bar").getReference();
         ChannelSubscriptionListener csubl = new ChannelSubscriptionListener();
         fooBar.addListener(csubl);
@@ -189,8 +179,7 @@ public class ServerChannelTest
     }
 
     @Test
-    public void testUnSubscribeAll() throws Exception
-    {
+    public void testUnSubscribeAll() throws Exception {
         ServerChannelImpl channel = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/foo/bar").getReference();
         ServerSessionImpl session0 = newServerSession();
 
@@ -205,8 +194,7 @@ public class ServerChannelTest
     }
 
     @Test
-    public void testPublish() throws Exception
-    {
+    public void testPublish() throws Exception {
         _bayeux.start();
 
         ServerChannelImpl foobar = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/foo/bar").getReference();
@@ -215,30 +203,26 @@ public class ServerChannelTest
         ServerChannelImpl foobob = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/foo/bob").getReference();
         ServerChannelImpl wibble = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/wibble").getReference();
 
-        foobar.addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
-            {
+        foobar.addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
                 return !"ignore".equals(message.getData());
             }
         });
 
-        foostar.addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
-            {
-                if ("foostar".equals(message.getData()))
+        foostar.addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
+                if ("foostar".equals(message.getData())) {
                     message.setData("FooStar");
+                }
                 return true;
             }
         });
 
-        starstar.addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
-            {
-                if ("starstar".equals(message.getData()))
+        starstar.addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
+                if ("starstar".equals(message.getData())) {
                     message.setData("StarStar");
+                }
                 return true;
             }
         });
@@ -302,8 +286,7 @@ public class ServerChannelTest
     }
 
     @Test
-    public void testPublishFromSweptChannelSucceeds() throws Exception
-    {
+    public void testPublishFromSweptChannelSucceeds() throws Exception {
         _bayeux.start();
 
         ServerChannelImpl fooStarStar = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/foo/**").getReference();
@@ -326,8 +309,7 @@ public class ServerChannelTest
     }
 
     @Test
-    public void testPersistentChannelIsNotSwept() throws Exception
-    {
+    public void testPersistentChannelIsNotSwept() throws Exception {
         String channelName = "/foo/bar";
         ServerChannel foobar = _bayeux.createChannelIfAbsent(channelName).getReference();
         foobar.setPersistent(true);
@@ -337,8 +319,7 @@ public class ServerChannelTest
     }
 
     @Test
-    public void testChannelWithSubscriberIsNotSwept() throws Exception
-    {
+    public void testChannelWithSubscriberIsNotSwept() throws Exception {
         ServerChannelImpl foobar = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/foo/bar").getReference();
         Assert.assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
 
@@ -384,14 +365,11 @@ public class ServerChannelTest
     }
 
     @Test
-    public void testChannelWithListenersIsNotSwept() throws Exception
-    {
+    public void testChannelWithListenersIsNotSwept() throws Exception {
         String channelName = "/test";
         ServerChannel channel = _bayeux.createChannelIfAbsent(channelName).getReference();
-        channel.addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
-            {
+        channel.addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
                 return true;
             }
         });
@@ -402,19 +380,14 @@ public class ServerChannelTest
     }
 
     @Test
-    public void testChannelsWithAutorizersSweeping() throws Exception
-    {
-        ServerChannel.MessageListener listener = new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
-            {
+    public void testChannelsWithAutorizersSweeping() throws Exception {
+        ServerChannel.MessageListener listener = new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
                 return true;
             }
         };
-        ConfigurableServerChannel.Initializer initializer = new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
+        ConfigurableServerChannel.Initializer initializer = new ConfigurableServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }
         };
@@ -457,25 +430,19 @@ public class ServerChannelTest
     }
 
     @Test
-    public void testSweepOfWeakListeners()
-    {
-        class L implements ServerChannel.MessageListener
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
-            {
+    public void testSweepOfWeakListeners() {
+        class L implements ServerChannel.MessageListener {
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
                 return true;
             }
         }
-        class W extends L implements ServerChannel.ServerChannelListener.Weak
-        {
+        class W extends L implements ServerChannel.ServerChannelListener.Weak {
         }
 
         final ServerChannel.ServerChannelListener listener = new L();
         final String channelName = "/weak";
-        _bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
+        _bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addListener(listener);
                 channel.addListener(new W());
             }
@@ -494,8 +461,7 @@ public class ServerChannelTest
     }
 
     @Test
-    public void testLazyTimeout() throws Exception
-    {
+    public void testLazyTimeout() throws Exception {
         String channelName = "/testLazy";
         ServerChannel channel = _bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer.Persistent()).getReference();
         Assert.assertFalse(channel.isLazy());
@@ -516,15 +482,14 @@ public class ServerChannelTest
         Assert.assertEquals(-1, channel.getLazyTimeout());
     }
 
-    private void sweep()
-    {
+    private void sweep() {
         // 12 is a big enough number that will make sure channel will be swept
-        for (int i = 0; i < 12; ++i)
+        for (int i = 0; i < 12; ++i) {
             _bayeux.sweep();
+        }
     }
 
-    private ServerSessionImpl newServerSession()
-    {
+    private ServerSessionImpl newServerSession() {
         ServerSessionImpl session = _bayeux.newServerSession();
         _bayeux.addServerSession(session, _bayeux.newMessage());
         session.handshake();
@@ -532,90 +497,77 @@ public class ServerChannelTest
         return session;
     }
 
-    static class BayeuxSubscriptionListener implements BayeuxServer.SubscriptionListener
-    {
+    static class BayeuxSubscriptionListener implements BayeuxServer.SubscriptionListener {
         public String _method;
         public ServerSession _session;
         public ServerChannel _channel;
 
-        public void reset()
-        {
+        public void reset() {
             _method = null;
             _session = null;
             _channel = null;
         }
 
-        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)
-        {
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             _method = "subscribed";
             _session = session;
             _channel = channel;
         }
 
-        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message)
-        {
+        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             _method = "unsubscribed";
             _session = session;
             _channel = channel;
         }
     }
 
-    static class ChannelSubscriptionListener implements ServerChannel.SubscriptionListener
-    {
+    static class ChannelSubscriptionListener implements ServerChannel.SubscriptionListener {
         public String _method;
         public ServerSession _session;
         public ServerChannel _channel;
 
-        public void reset()
-        {
+        public void reset() {
             _method = null;
             _session = null;
             _channel = null;
         }
 
-        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)
-        {
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             _method = "subscribed";
             _session = session;
             _channel = channel;
         }
 
-        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message)
-        {
+        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             _method = "unsubscribed";
             _session = session;
             _channel = channel;
         }
     }
 
-    static class BayeuxChannelListener implements BayeuxServer.ChannelListener
-    {
+    static class BayeuxChannelListener implements BayeuxServer.ChannelListener {
         public int _calls;
         public String _method;
         public String _channel;
 
-        public void reset()
-        {
+        public void reset() {
             _calls = 0;
             _method = null;
             _channel = null;
         }
 
-        public void configureChannel(ConfigurableServerChannel channel)
-        {
+        public void configureChannel(ConfigurableServerChannel channel) {
             _calls++;
             _method = "init";
         }
 
-        public void channelAdded(ServerChannel channel)
-        {
+        public void channelAdded(ServerChannel channel) {
             _calls++;
             _method += "added";
             _channel = channel.getId();
         }
 
-        public void channelRemoved(String channelId)
-        {
+        public void channelRemoved(String channelId) {
             _calls++;
             _method = "removed";
             _channel = channelId;

@@ -26,8 +26,7 @@ import java.util.Map;
  * to cast a passed Message, to a Message.Mutable, even if the implementation
  * allows this.</p>
  */
-public interface Message extends Map<String, Object>
-{
+public interface Message extends Map<String, Object> {
     public static final String CLIENT_ID_FIELD = "clientId";
     public static final String DATA_FIELD = "data";
     public static final String CHANNEL_FIELD = "channel";
@@ -52,6 +51,7 @@ public interface Message extends Map<String, Object>
 
     /**
      * Convenience method to retrieve the {@link #ADVICE_FIELD}
+     *
      * @return the advice of the message
      */
     Map<String, Object> getAdvice();
@@ -59,6 +59,7 @@ public interface Message extends Map<String, Object>
     /**
      * Convenience method to retrieve the {@link #CHANNEL_FIELD}.
      * Bayeux message always have a non null channel.
+     *
      * @return the channel of the message
      */
     String getChannel();
@@ -66,18 +67,21 @@ public interface Message extends Map<String, Object>
     /**
      * Convenience method to retrieve the {@link #CHANNEL_FIELD}.
      * Bayeux message always have a non null channel.
+     *
      * @return the channel of the message
      */
     ChannelId getChannelId();
 
     /**
      * Convenience method to retrieve the {@link #CLIENT_ID_FIELD}
+     *
      * @return the client id of the message
      */
     String getClientId();
 
     /**
      * Convenience method to retrieve the {@link #DATA_FIELD}
+     *
      * @return the data of the message
      * @see #getDataAsMap()
      */
@@ -85,18 +89,21 @@ public interface Message extends Map<String, Object>
 
     /**
      * A messages that has a meta channel is dubbed a "meta message".
+     *
      * @return whether the channel's message is a meta channel
      */
     boolean isMeta();
 
     /**
      * Publish message replies contain the "successful" field
+     *
      * @return whether this message is a publish reply (as opposed to a published message)
      */
     boolean isPublishReply();
 
     /**
      * Convenience method to retrieve the {@link #SUCCESSFUL_FIELD}
+     *
      * @return whether the message is successful
      */
     boolean isSuccessful();
@@ -109,12 +116,14 @@ public interface Message extends Map<String, Object>
 
     /**
      * Convenience method to retrieve the {@link #EXT_FIELD}
+     *
      * @return the ext of the message
      */
     Map<String, Object> getExt();
 
     /**
      * Convenience method to retrieve the {@link #ID_FIELD}
+     *
      * @return the id of the message
      */
     String getId();
@@ -127,10 +136,10 @@ public interface Message extends Map<String, Object>
     /**
      * The mutable version of a {@link Message}
      */
-    interface Mutable extends Message
-    {
+    interface Mutable extends Message {
         /**
          * Convenience method to retrieve the {@link #ADVICE_FIELD} and create it if it does not exist
+         *
          * @param create whether to create the advice field if it does not exist
          * @return the advice of the message
          */
@@ -138,6 +147,7 @@ public interface Message extends Map<String, Object>
 
         /**
          * Convenience method to retrieve the {@link #DATA_FIELD} and create it if it does not exist
+         *
          * @param create whether to create the data field if it does not exist
          * @return the data of the message
          */
@@ -145,6 +155,7 @@ public interface Message extends Map<String, Object>
 
         /**
          * Convenience method to retrieve the {@link #EXT_FIELD} and create it if it does not exist
+         *
          * @param create whether to create the ext field if it does not exist
          * @return the ext of the message
          */

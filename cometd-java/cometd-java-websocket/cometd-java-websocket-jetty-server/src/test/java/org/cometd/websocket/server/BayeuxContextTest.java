@@ -56,23 +56,18 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
-public class BayeuxContextTest extends ClientServerWebSocketTest
-{
-    public BayeuxContextTest(String implementation)
-    {
+public class BayeuxContextTest extends ClientServerWebSocketTest {
+    public BayeuxContextTest(String implementation) {
         super(implementation);
     }
 
     @Test
-    public void testRequestHeaderIsCaseInsensitive() throws Exception
-    {
+    public void testRequestHeaderIsCaseInsensitive() throws Exception {
         prepareAndStart(null);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+        bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 BayeuxContext context = bayeux.getContext();
                 Assert.assertEquals(context.getHeader("Host"), context.getHeader("HOST"));
                 Assert.assertEquals(context.getHeader("Host"), context.getHeaderValues("HOST").get(0));
@@ -90,17 +85,14 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
     }
 
     @Test
-    public void testCookiesSentToServer() throws Exception
-    {
+    public void testCookiesSentToServer() throws Exception {
         prepareAndStart(null);
 
         final String cookieName = "name";
         final String cookieValue = "value";
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+        bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 BayeuxContext context = bayeux.getContext();
                 Assert.assertEquals(cookieValue, context.getCookie(cookieName));
                 latch.countDown();
@@ -118,11 +110,9 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
     }
 
     @Test
-    public void testCookiesSentToClient() throws Exception
-    {
+    public void testCookiesSentToClient() throws Exception {
         String wsTransportClass;
-        switch (wsTransportType)
-        {
+        switch (wsTransportType) {
             case WEBSOCKET_JSR_356:
                 wsTransportClass = CookieWebSocketTransport.class.getName();
                 break;
@@ -149,31 +139,29 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
     }
 
     @Test
-    public void testMultipleCookiesSentToServer() throws Exception
-    {
+    public void testMultipleCookiesSentToServer() throws Exception {
         prepareAndStart(null);
 
         final List<String> cookieNames = Arrays.asList("a", "BAYEUX_BROWSER", "b");
         final List<String> cookieValues = Arrays.asList("1", "761e1pplr7yo3wmsri1x5y0gnnby", "2");
         StringBuilder cookies = new StringBuilder();
-        for (int i = 0; i < cookieNames.size(); ++i)
+        for (int i = 0; i < cookieNames.size(); ++i) {
             cookies.append(cookieNames.get(i)).append("=").append(cookieValues.get(i)).append("; ");
+        }
 
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+        bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 BayeuxContext context = bayeux.getContext();
-                for (int i = 0; i < cookieNames.size(); ++i)
+                for (int i = 0; i < cookieNames.size(); ++i) {
                     Assert.assertEquals(cookieValues.get(i), context.getCookie(cookieNames.get(i)));
+                }
                 latch.countDown();
                 return true;
             }
         });
 
-        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
-        {
+        try (Socket socket = new Socket("localhost", connector.getLocalPort())) {
             OutputStream output = socket.getOutputStream();
             String upgrade = "" +
                     "GET " + cometdServletPath + " HTTP/1.1\r\n" +
@@ -211,11 +199,9 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
     }
 
     @Test
-    public void testSessionAttribute() throws Exception
-    {
+    public void testSessionAttribute() throws Exception {
         String wsTransportClass;
-        switch (wsTransportType)
-        {
+        switch (wsTransportType) {
             case WEBSOCKET_JSR_356:
                 wsTransportClass = SessionWebSocketTransport.class.getName();
                 break;
@@ -227,11 +213,9 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
         }
         prepareServer(0, "/cometd", null, true, wsTransportClass);
 
-        context.addServlet(new ServletHolder(new HttpServlet()
-        {
+        context.addServlet(new ServletHolder(new HttpServlet() {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException
-            {
+            protected void service(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
                 HttpSession session = request.getSession(true);
                 session.setAttribute(SessionConstants.ATTRIBUTE_NAME, SessionConstants.ATTRIBUTE_VALUE);
             }
@@ -251,25 +235,22 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
         List<HttpCookie> cookies = httpClient.getCookieStore().get(uri);
         Assert.assertNotNull(cookies);
         HttpCookie sessionCookie = null;
-        for (HttpCookie cookie : cookies)
-        {
-            if ("jsessionid".equalsIgnoreCase(cookie.getName()))
+        for (HttpCookie cookie : cookies) {
+            if ("jsessionid".equalsIgnoreCase(cookie.getName())) {
                 sessionCookie = cookie;
+            }
         }
         Assert.assertNotNull(sessionCookie);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeux.addListener(new BayeuxServer.SessionListener()
-        {
-            public void sessionAdded(ServerSession session, ServerMessage message)
-            {
+        bayeux.addListener(new BayeuxServer.SessionListener() {
+            public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assert.assertNotNull(bayeux.getContext().getHttpSessionId());
                 Assert.assertEquals(SessionConstants.ATTRIBUTE_VALUE, bayeux.getContext().getHttpSessionAttribute(SessionConstants.ATTRIBUTE_NAME));
                 latch.countDown();
             }
 
-            public void sessionRemoved(ServerSession session, boolean timedout)
-            {
+            public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
 
@@ -284,21 +265,17 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
     }
 
     @Test
-    public void testContextAttribute() throws Exception
-    {
+    public void testContextAttribute() throws Exception {
         prepareAndStart(null);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeux.addListener(new BayeuxServer.SessionListener()
-        {
-            public void sessionAdded(ServerSession session, ServerMessage message)
-            {
+        bayeux.addListener(new BayeuxServer.SessionListener() {
+            public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assert.assertSame(bayeux, bayeux.getContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
                 latch.countDown();
             }
 
-            public void sessionRemoved(ServerSession session, boolean timedout)
-            {
+            public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
 
@@ -312,11 +289,9 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
     }
 
     @Test
-    public void testConcurrentClientsHaveDifferentBayeuxContexts() throws Exception
-    {
+    public void testConcurrentClientsHaveDifferentBayeuxContexts() throws Exception {
         String wsTransportClass;
-        switch (wsTransportType)
-        {
+        switch (wsTransportType) {
             case WEBSOCKET_JSR_356:
                 wsTransportClass = ConcurrentBayeuxContextWebSocketTransport.class.getName();
                 break;
@@ -334,25 +309,20 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
         // The first client will be held by the server.
         final BayeuxClient client1 = newBayeuxClient();
         // The connect operation is blocking, so we must use another thread.
-        new Thread(new Runnable()
-        {
-            public void run()
-            {
+        new Thread(new Runnable() {
+            public void run() {
                 client1.handshake();
             }
         }).start();
 
         // Wait for the first client to arrive at the concurrency point.
-        switch (wsTransportType)
-        {
-            case WEBSOCKET_JSR_356:
-            {
+        switch (wsTransportType) {
+            case WEBSOCKET_JSR_356: {
                 CountDownLatch enterLatch = ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).enterLatch;
                 assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
                 break;
             }
-            case WEBSOCKET_JETTY:
-            {
+            case WEBSOCKET_JETTY: {
                 CountDownLatch enterLatch = ((ConcurrentBayeuxContextJettyWebSocketTransport)bayeux.getTransport("websocket")).enterLatch;
                 assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
                 break;
@@ -367,8 +337,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
         assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         // Release the first client.
-        switch (wsTransportType)
-        {
+        switch (wsTransportType) {
             case WEBSOCKET_JSR_356:
                 ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).proceedLatch.countDown();
                 break;
@@ -383,11 +352,9 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
         final String channelName = "/service/test";
         final Map<String, BayeuxContext> contexts = new ConcurrentHashMap<>();
         final CountDownLatch contextLatch = new CountDownLatch(2);
-        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener()
-        {
+        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
             @Override
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 contexts.put(from.getId(), bayeux.getContext());
                 contextLatch.countDown();
                 return true;
@@ -405,129 +372,105 @@ public class BayeuxContextTest extends ClientServerWebSocketTest
         disconnectBayeuxClient(client2);
     }
 
-    public interface CookieConstants
-    {
+    public interface CookieConstants {
         public static final String COOKIE_NAME = "name";
         public static final String COOKIE_VALUE = "value";
     }
 
-    public static class CookieWebSocketTransport extends WebSocketTransport implements CookieConstants
-    {
-        public CookieWebSocketTransport(BayeuxServerImpl bayeux)
-        {
+    public static class CookieWebSocketTransport extends WebSocketTransport implements CookieConstants {
+        public CookieWebSocketTransport(BayeuxServerImpl bayeux) {
             super(bayeux);
         }
 
         @Override
-        protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response)
-        {
+        protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response) {
             response.getHeaders().put("Set-Cookie", Collections.singletonList(COOKIE_NAME + "=" + COOKIE_VALUE));
         }
     }
 
-    public static class CookieJettyWebSocketTransport extends JettyWebSocketTransport implements CookieConstants
-    {
-        public CookieJettyWebSocketTransport(BayeuxServerImpl bayeux)
-        {
+    public static class CookieJettyWebSocketTransport extends JettyWebSocketTransport implements CookieConstants {
+        public CookieJettyWebSocketTransport(BayeuxServerImpl bayeux) {
             super(bayeux);
         }
 
         @Override
-        protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response)
-        {
+        protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response) {
             response.setHeader("Set-Cookie", COOKIE_NAME + "=" + COOKIE_VALUE);
         }
     }
 
-    public interface SessionConstants
-    {
+    public interface SessionConstants {
         public static final String ATTRIBUTE_NAME = "name";
         public static final String ATTRIBUTE_VALUE = "value";
     }
 
-    public static class SessionWebSocketTransport extends WebSocketTransport implements SessionConstants
-    {
-        public SessionWebSocketTransport(BayeuxServerImpl bayeux)
-        {
+    public static class SessionWebSocketTransport extends WebSocketTransport implements SessionConstants {
+        public SessionWebSocketTransport(BayeuxServerImpl bayeux) {
             super(bayeux);
         }
 
         @Override
-        protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response)
-        {
+        protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response) {
             HttpSession session = (HttpSession)request.getHttpSession();
             Assert.assertNotNull(session);
             Assert.assertEquals(ATTRIBUTE_VALUE, session.getAttribute(ATTRIBUTE_NAME));
         }
     }
 
-    public static class SessionJettyWebSocketTransport extends JettyWebSocketTransport implements SessionConstants
-    {
-        public SessionJettyWebSocketTransport(BayeuxServerImpl bayeux)
-        {
+    public static class SessionJettyWebSocketTransport extends JettyWebSocketTransport implements SessionConstants {
+        public SessionJettyWebSocketTransport(BayeuxServerImpl bayeux) {
             super(bayeux);
         }
 
         @Override
-        protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response)
-        {
+        protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response) {
             HttpSession session = request.getSession();
             Assert.assertNotNull(session);
             Assert.assertEquals(ATTRIBUTE_VALUE, session.getAttribute(ATTRIBUTE_NAME));
         }
     }
 
-    public static class ConcurrentBayeuxContextWebSocketTransport extends WebSocketTransport
-    {
+    public static class ConcurrentBayeuxContextWebSocketTransport extends WebSocketTransport {
         private final AtomicInteger handshakes = new AtomicInteger();
         private final CountDownLatch enterLatch = new CountDownLatch(1);
         private final CountDownLatch proceedLatch = new CountDownLatch(1);
 
-        public ConcurrentBayeuxContextWebSocketTransport(BayeuxServerImpl bayeux)
-        {
+        public ConcurrentBayeuxContextWebSocketTransport(BayeuxServerImpl bayeux) {
             super(bayeux);
         }
 
         @Override
-        protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response)
-        {
+        protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response) {
             onUpgrade(handshakes, enterLatch, proceedLatch);
             super.modifyHandshake(request, response);
         }
     }
 
-    public static class ConcurrentBayeuxContextJettyWebSocketTransport extends JettyWebSocketTransport
-    {
+    public static class ConcurrentBayeuxContextJettyWebSocketTransport extends JettyWebSocketTransport {
         private final AtomicInteger handshakes = new AtomicInteger();
         private final CountDownLatch enterLatch = new CountDownLatch(1);
         private final CountDownLatch proceedLatch = new CountDownLatch(1);
 
-        public ConcurrentBayeuxContextJettyWebSocketTransport(BayeuxServerImpl bayeux)
-        {
+        public ConcurrentBayeuxContextJettyWebSocketTransport(BayeuxServerImpl bayeux) {
             super(bayeux);
         }
 
         @Override
-        protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response)
-        {
+        protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response) {
             onUpgrade(handshakes, enterLatch, proceedLatch);
             super.modifyUpgrade(request, response);
         }
     }
 
-    private static void onUpgrade(AtomicInteger handshakes, CountDownLatch enterLatch, CountDownLatch proceedLatch)
-    {
+    private static void onUpgrade(AtomicInteger handshakes, CountDownLatch enterLatch, CountDownLatch proceedLatch) {
         int count = handshakes.incrementAndGet();
-        if (count == 1)
-        {
-            try
-            {
+        if (count == 1) {
+            try {
                 enterLatch.countDown();
-                if (!proceedLatch.await(5, TimeUnit.SECONDS))
+                if (!proceedLatch.await(5, TimeUnit.SECONDS)) {
                     throw new IllegalStateException();
-            }
-            catch (InterruptedException x)
-            {
+                }
+            } catch (InterruptedException x) {
                 throw new IllegalStateException(x);
             }
         }

@@ -37,8 +37,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The thread model object, that runs all javascript in a single thread to simulate browser's environment.
  */
-public class JavaScriptThreadModel extends ScriptableObject implements Runnable, ThreadModel
-{
+public class JavaScriptThreadModel extends ScriptableObject implements Runnable, ThreadModel {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Thread thread = new Thread(this);
     private final BlockingQueue<FutureTask<Object>> queue = new LinkedBlockingQueue<>();
@@ -47,165 +46,131 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
     private volatile Context context;
     private AtomicInteger scripts = new AtomicInteger();
 
-    public JavaScriptThreadModel()
-    {
+    public JavaScriptThreadModel() {
         this(null);
     }
 
-    public JavaScriptThreadModel(ScriptableObject rootScope)
-    {
+    public JavaScriptThreadModel(ScriptableObject rootScope) {
         this.rootScope = rootScope;
     }
 
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         assert rootScope != null;
         queue.clear();
         running = true;
         thread.start();
     }
 
-    public void destroy() throws Exception
-    {
+    public void destroy() throws Exception {
         running = false;
-        for (FutureTask<Object> task : queue)
+        for (FutureTask<Object> task : queue) {
             task.cancel(false);
+        }
         thread.interrupt();
         thread.join();
     }
 
-    public String getClassName()
-    {
+    public String getClassName() {
         return "JavaScriptThreadModel";
     }
 
-    public void run()
-    {
+    public void run() {
         context = Context.enter();
         context.setGeneratingDebug(true);
         context.setGeneratingSource(true);
         context.setOptimizationLevel(-1);
-        try
-        {
-            while (running)
-            {
+        try {
+            while (running) {
                 FutureTask<Object> command = queue.take();
                 command.run();
             }
-        }
-        catch (InterruptedException x)
-        {
+        } catch (InterruptedException x) {
             // We've been destroyed, just exit
-        }
-        finally
-        {
+        } finally {
             Context.exit();
             context = null;
         }
     }
 
-    public Object evaluate(final URL url) throws IOException
-    {
-        FutureTask<Object> future = new FutureTask<>(new Callable<Object>()
-        {
-            public Object call() throws IOException
-            {
+    public Object evaluate(final URL url) throws IOException {
+        FutureTask<Object> future = new FutureTask<>(new Callable<Object>() {
+            public Object call() throws IOException {
                 return context.evaluateReader(rootScope, new InputStreamReader(url.openStream()), url.toExternalForm(), 1, null);
             }
         });
         submit(future);
-        try
-        {
+        try {
             return future.get();
-        }
-        catch (InterruptedException x)
-        {
+        } catch (InterruptedException x) {
             Thread.currentThread().interrupt();
             return null;
-        }
-        catch (ExecutionException x)
-        {
+        } catch (ExecutionException x) {
             Throwable xx = x.getCause();
-            if (xx instanceof IOException) throw (IOException)xx;
-            if (xx instanceof Error) throw (Error)xx;
+            if (xx instanceof IOException) {
+                throw (IOException)xx;
+            }
+            if (xx instanceof Error) {
+                throw (Error)xx;
+            }
             throw (RuntimeException)xx;
         }
     }
 
-    public Object evaluate(final String scriptName, final String script)
-    {
-        FutureTask<Object> future = new FutureTask<>(new Callable<Object>()
-        {
-            public Object call()
-            {
+    public Object evaluate(final String scriptName, final String script) {
+        FutureTask<Object> future = new FutureTask<>(new Callable<Object>() {
+            public Object call() {
                 return context.evaluateString(rootScope, script, scriptName == null ? nextScriptName() : scriptName, 1, null);
             }
         });
         submit(future);
-        try
-        {
+        try {
             return future.get();
-        }
-        catch (InterruptedException x)
-        {
+        } catch (InterruptedException x) {
             Thread.currentThread().interrupt();
             return null;
-        }
-        catch (ExecutionException x)
-        {
+        } catch (ExecutionException x) {
             Throwable xx = x.getCause();
-            if (xx instanceof Error) throw (Error)xx;
+            if (xx instanceof Error) {
+                throw (Error)xx;
+            }
             throw (RuntimeException)xx;
         }
     }
 
-    private String nextScriptName()
-    {
+    private String nextScriptName() {
         return "script_" + scripts.incrementAndGet();
     }
 
     // Invoked from env.js
-    public Object jsFunction_invoke(final Scriptable scope, final Scriptable thiz, final Function function)
-    {
+    public Object jsFunction_invoke(final Scriptable scope, final Scriptable thiz, final Function function) {
         return invoke(true, scope, thiz, function);
     }
 
-    public Object invoke(boolean sync, final Scriptable scope, final Scriptable thiz, final Function function, final Object... arguments)
-    {
-        Callable<Object> invocation = new Callable<Object>()
-        {
-            public Object call()
-            {
+    public Object invoke(boolean sync, final Scriptable scope, final Scriptable thiz, final Function function, final Object... arguments) {
+        Callable<Object> invocation = new Callable<Object>() {
+            public Object call() {
                 return function.call(context, scope, thiz, arguments);
             }
         };
         return invoke(true, invocation);
     }
 
-    public Object invoke(boolean sync, final Scriptable scope, final Scriptable thiz, final String functionName, final Object... arguments)
-    {
-        Callable<Object> invocation = new Callable<Object>()
-        {
-            public Object call() throws Exception
-            {
-                try
-                {
+    public Object invoke(boolean sync, final Scriptable scope, final Scriptable thiz, final String functionName, final Object... arguments) {
+        Callable<Object> invocation = new Callable<Object>() {
+            public Object call() throws Exception {
+                try {
                     Object property = ScriptableObject.getProperty(thiz, functionName);
-                    if (property instanceof Function)
-                    {
+                    if (property instanceof Function) {
                         Function function = (Function)property;
-                        if (logger.isDebugEnabled())
+                        if (logger.isDebugEnabled()) {
                             logger.debug("Invoking function {} => {}", functionName, function);
+                        }
                         return function.call(context, scope, thiz, arguments);
-                    }
-                    else
-                    {
+                    } else {
                         logger.info("Could not invoke function {} => {}", functionName, property);
                         return null;
                     }
-                }
-                catch (Throwable x)
-                {
+                } catch (Throwable x) {
                     logger.info("Exception while trying to invoke " + functionName, x);
                     throw x;
                 }
@@ -214,130 +179,116 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         return invoke(sync, invocation);
     }
 
-    private Object invoke(boolean sync, Callable<Object> invocation)
-    {
+    private Object invoke(boolean sync, Callable<Object> invocation) {
         FutureTask<Object> future = new FutureTask<>(invocation);
         submit(future);
 
-        if (!sync)
+        if (!sync) {
             return null;
-
-        try
-        {
-            return future.get();
         }
-        catch (InterruptedException x)
-        {
+
+        try {
+            return future.get();
+        } catch (InterruptedException x) {
             Thread.currentThread().interrupt();
             return null;
-        }
-        catch (ExecutionException x)
-        {
+        } catch (ExecutionException x) {
             Throwable xx = x.getCause();
-            if (xx instanceof Error) throw (Error)xx;
+            if (xx instanceof Error) {
+                throw (Error)xx;
+            }
             throw (RuntimeException)xx;
         }
     }
 
-    private void submit(FutureTask<Object> future)
-    {
-        if (Thread.currentThread() == thread)
-        {
+    private void submit(FutureTask<Object> future) {
+        if (Thread.currentThread() == thread) {
             future.run();
-        }
-        else
-        {
-            if (running)
+        } else {
+            if (running) {
                 queue.offer(future);
-            else
+            } else {
                 throw new RejectedExecutionException();
+            }
         }
     }
 
-    public void define(final Class<? extends Scriptable> clazz) throws InvocationTargetException, IllegalAccessException, InstantiationException
-    {
-        FutureTask<Object> future = new FutureTask<>(new Callable<Object>()
-        {
-            public Object call() throws InvocationTargetException, IllegalAccessException, InstantiationException
-            {
+    public void define(final Class<? extends Scriptable> clazz) throws InvocationTargetException, IllegalAccessException, InstantiationException {
+        FutureTask<Object> future = new FutureTask<>(new Callable<Object>() {
+            public Object call() throws InvocationTargetException, IllegalAccessException, InstantiationException {
                 ScriptableObject.defineClass(rootScope, clazz);
                 return null;
             }
         });
         submit(future);
-        try
-        {
+        try {
             future.get();
-        }
-        catch (InterruptedException x)
-        {
+        } catch (InterruptedException x) {
             Thread.currentThread().interrupt();
-        }
-        catch (ExecutionException x)
-        {
+        } catch (ExecutionException x) {
             Throwable xx = x.getCause();
-            if (xx instanceof InvocationTargetException) throw (InvocationTargetException)xx;
-            if (xx instanceof IllegalAccessException) throw (IllegalAccessException)xx;
-            if (xx instanceof InstantiationException) throw (InstantiationException)xx;
-            if (xx instanceof Error) throw (Error)xx;
+            if (xx instanceof InvocationTargetException) {
+                throw (InvocationTargetException)xx;
+            }
+            if (xx instanceof IllegalAccessException) {
+                throw (IllegalAccessException)xx;
+            }
+            if (xx instanceof InstantiationException) {
+                throw (InstantiationException)xx;
+            }
+            if (xx instanceof Error) {
+                throw (Error)xx;
+            }
             throw (RuntimeException)xx;
         }
     }
 
-    public Object get(final String name)
-    {
-        FutureTask<Object> future = new FutureTask<>(new Callable<Object>()
-        {
-            public Object call()
-            {
+    public Object get(final String name) {
+        FutureTask<Object> future = new FutureTask<>(new Callable<Object>() {
+            public Object call() {
                 return rootScope.get(name, rootScope);
             }
         });
         submit(future);
-        try
-        {
+        try {
             Object result = future.get();
-            if (Context.getUndefinedValue().equals(result)) return null;
-            if (Scriptable.NOT_FOUND.equals(result)) throw new IllegalArgumentException("No object named " + name + " exists in scope");
+            if (Context.getUndefinedValue().equals(result)) {
+                return null;
+            }
+            if (Scriptable.NOT_FOUND.equals(result)) {
+                throw new IllegalArgumentException("No object named " + name + " exists in scope");
+            }
             return result;
-        }
-        catch (InterruptedException x)
-        {
+        } catch (InterruptedException x) {
             Thread.currentThread().interrupt();
             return null;
-        }
-        catch (ExecutionException x)
-        {
+        } catch (ExecutionException x) {
             Throwable xx = x.getCause();
-            if (xx instanceof Error) throw (Error)xx;
+            if (xx instanceof Error) {
+                throw (Error)xx;
+            }
             throw (RuntimeException)xx;
         }
     }
 
     @Override
-    public void remove(final String name)
-    {
-        FutureTask<Object> future = new FutureTask<>(new Callable<Object>()
-        {
-            public Object call()
-            {
+    public void remove(final String name) {
+        FutureTask<Object> future = new FutureTask<>(new Callable<Object>() {
+            public Object call() {
                 rootScope.delete(name);
                 return null;
             }
         });
         submit(future);
-        try
-        {
+        try {
             future.get();
-        }
-        catch (InterruptedException x)
-        {
+        } catch (InterruptedException x) {
             Thread.currentThread().interrupt();
-        }
-        catch (ExecutionException x)
-        {
+        } catch (ExecutionException x) {
             Throwable xx = x.getCause();
-            if (xx instanceof Error) throw (Error)xx;
+            if (xx instanceof Error) {
+                throw (Error)xx;
+            }
             throw (RuntimeException)xx;
         }
     }

@@ -32,19 +32,16 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * Main class for cometd demo.
  * This is of use when running demo in a terracotta cluster
  */
-public class OortDemo
-{
+public class OortDemo {
     private Server _server;
 
-    public static void main(String[] args) throws Exception
-    {
+    public static void main(String[] args) throws Exception {
         int port = args.length == 0 ? 8080 : Integer.valueOf(args[0]);
         OortDemo demo = new OortDemo(port);
         demo._server.join();
     }
 
-    public OortDemo(int port) throws Exception
-    {
+    public OortDemo(int port) throws Exception {
         String base = ".";
 
         QueuedThreadPool qtp = new QueuedThreadPool();

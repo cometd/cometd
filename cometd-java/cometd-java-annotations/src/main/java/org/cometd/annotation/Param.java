@@ -44,8 +44,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface Param
-{
+public @interface Param {
     /**
      * @return the variable name that identifies the parameter annotated with this annotation
      */

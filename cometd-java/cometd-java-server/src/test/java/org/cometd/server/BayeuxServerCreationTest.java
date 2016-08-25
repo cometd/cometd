@@ -27,11 +27,9 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class BayeuxServerCreationTest
-{
+public class BayeuxServerCreationTest {
     @Test
-    public void testCreationWithoutOptions() throws Exception
-    {
+    public void testCreationWithoutOptions() throws Exception {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
         bayeuxServer.start();
 
@@ -43,8 +41,7 @@ public class BayeuxServerCreationTest
     }
 
     @Test
-    public void testCreationWithOptions() throws Exception
-    {
+    public void testCreationWithOptions() throws Exception {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
 
         Map<String, String> options = new HashMap<>();
@@ -64,8 +61,9 @@ public class BayeuxServerCreationTest
         String jsonpTimeoutValue = "14009";
         options.put(jsonpTimeoutKey, jsonpTimeoutValue);
 
-        for (Map.Entry<String, String> entry : options.entrySet())
+        for (Map.Entry<String, String> entry : options.entrySet()) {
             bayeuxServer.setOption(entry.getKey(), entry.getValue());
+        }
 
         bayeuxServer.start();
 
@@ -75,8 +73,7 @@ public class BayeuxServerCreationTest
     }
 
     @Test
-    public void testCreationWithTransports() throws Exception
-    {
+    public void testCreationWithTransports() throws Exception {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
 
         JSONTransport jsonTransport = new JSONTransport(bayeuxServer);

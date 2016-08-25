@@ -24,25 +24,24 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @param <V> the value type
  */
-public class OortLongMap<V> extends OortMap<Long, V>
-{
-    public OortLongMap(Oort oort, String name, Factory<ConcurrentMap<Long, V>> factory)
-    {
+public class OortLongMap<V> extends OortMap<Long, V> {
+    public OortLongMap(Oort oort, String name, Factory<ConcurrentMap<Long, V>> factory) {
         super(oort, name, factory);
     }
 
     @Override
-    protected Object deserialize(Object object)
-    {
+    protected Object deserialize(Object object) {
         // Convert keys from String (as they were created by JSON libraries)
         // to Long as required by the key type of this class.
         @SuppressWarnings("unchecked")
         Map<String, V> map = (Map<String, V>)object;
-        if (map.isEmpty())
+        if (map.isEmpty()) {
             return object;
+        }
         Map<Long, V> result = new HashMap<>(map.size());
-        for (Map.Entry<String, V> entry : map.entrySet())
+        for (Map.Entry<String, V> entry : map.entrySet()) {
             result.put(Long.parseLong(entry.getKey()), entry.getValue());
+        }
         return result;
     }
 }

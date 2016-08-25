@@ -23,8 +23,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
 
-public class BatchArrayQueue<T> implements Queue<T>
-{
+public class BatchArrayQueue<T> implements Queue<T> {
     private final Object lock;
     private T[] elements;
     private int head;
@@ -32,8 +31,7 @@ public class BatchArrayQueue<T> implements Queue<T>
     private long[] batches;
     private long batch;
 
-    public BatchArrayQueue(int initial, Object lock)
-    {
+    public BatchArrayQueue(int initial, Object lock) {
         this.lock = lock;
         this.elements = (T[])new Object[initial];
         this.batches = new long[initial];
@@ -41,38 +39,35 @@ public class BatchArrayQueue<T> implements Queue<T>
     }
 
     @Override
-    public boolean offer(T t)
-    {
-        synchronized (lock)
-        {
+    public boolean offer(T t) {
+        synchronized (lock) {
             elements[tail] = Objects.requireNonNull(t);
             batches[tail] = batch;
 
             // Move the tail pointer, wrapping if necessary.
             ++tail;
-            if (tail == elements.length)
+            if (tail == elements.length) {
                 tail = 0;
+            }
 
             // If full, double capacity.
-            if (tail == head)
-            {
+            if (tail == head) {
                 int capacity = elements.length;
                 int newCapacity = 2 * capacity;
-                if (newCapacity < 0)
+                if (newCapacity < 0) {
                     throw new IllegalStateException();
+                }
 
                 T[] newElements = (T[])new Object[newCapacity];
                 long[] newBatches = new long[newCapacity];
                 // Copy from head to end of array.
                 int length = capacity - head;
-                if (length > 0)
-                {
+                if (length > 0) {
                     System.arraycopy(elements, head, newElements, 0, length);
                     System.arraycopy(batches, head, newBatches, 0, length);
                 }
                 // Copy from 0 to tail if we have not done it yet.
-                if (head > 0)
-                {
+                if (head > 0) {
                     System.arraycopy(elements, 0, newElements, length, tail);
                     System.arraycopy(batches, 0, newBatches, length, tail);
                 }
@@ -86,37 +81,33 @@ public class BatchArrayQueue<T> implements Queue<T>
     }
 
     @Override
-    public boolean add(T t)
-    {
+    public boolean add(T t) {
         // This queue is unbounded.
         return offer(t);
     }
 
     @Override
-    public T peek()
-    {
-        synchronized (lock)
-        {
+    public T peek() {
+        synchronized (lock) {
             return elements[head];
         }
     }
 
     @Override
-    public T element()
-    {
+    public T element() {
         T element = peek();
-        if (element == null)
+        if (element == null) {
             throw new NoSuchElementException();
+        }
         return element;
     }
 
     @Override
-    public T poll()
-    {
-        synchronized (lock)
-        {
-            if (isEmpty())
+    public T poll() {
+        synchronized (lock) {
+            if (isEmpty()) {
                 return null;
+            }
 
             T result = elements[head];
             elements[head] = null;
@@ -124,159 +115,143 @@ public class BatchArrayQueue<T> implements Queue<T>
 
             // Move the head pointer, wrapping if necessary.
             ++head;
-            if (head == elements.length)
+            if (head == elements.length) {
                 head = 0;
+            }
 
             return result;
         }
     }
 
     @Override
-    public T remove()
-    {
+    public T remove() {
         T result = poll();
-        if (result == null)
+        if (result == null) {
             throw new NoSuchElementException();
+        }
         return result;
     }
 
     @Override
-    public boolean remove(Object o)
-    {
+    public boolean remove(Object o) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean addAll(Collection<? extends T> items)
-    {
-        synchronized (lock)
-        {
+    public boolean addAll(Collection<? extends T> items) {
+        synchronized (lock) {
             boolean result = false;
-            for (T item : items)
+            for (T item : items) {
                 result |= offer(item);
+            }
             return result;
         }
     }
 
     @Override
-    public boolean removeAll(Collection<?> c)
-    {
+    public boolean removeAll(Collection<?> c) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean retainAll(Collection<?> c)
-    {
+    public boolean retainAll(Collection<?> c) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean containsAll(Collection<?> items)
-    {
-        synchronized (lock)
-        {
-            for (Object item : items)
-            {
-                if (!contains(item))
+    public boolean containsAll(Collection<?> items) {
+        synchronized (lock) {
+            for (Object item : items) {
+                if (!contains(item)) {
                     return false;
+                }
             }
             return true;
         }
     }
 
     @Override
-    public boolean contains(Object o)
-    {
-        if (o == null)
+    public boolean contains(Object o) {
+        if (o == null) {
             return false;
+        }
 
-        synchronized (lock)
-        {
-            if (isEmpty())
+        synchronized (lock) {
+            if (isEmpty()) {
                 return false;
+            }
 
             int cursor = head;
-            while (true)
-            {
-                if (o.equals(elements[cursor]))
+            while (true) {
+                if (o.equals(elements[cursor])) {
                     return true;
+                }
                 ++cursor;
-                if (cursor == elements.length)
+                if (cursor == elements.length) {
                     cursor = 0;
-                if (cursor == tail)
+                }
+                if (cursor == tail) {
                     return false;
+                }
             }
         }
     }
 
     @Override
-    public Iterator<T> iterator()
-    {
+    public Iterator<T> iterator() {
         final Object[] objects = toArray();
-        return new Iterator<T>()
-        {
+        return new Iterator<T>() {
             private int index = 0;
 
             @Override
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return index < objects.length;
             }
 
             @Override
-            public T next()
-            {
+            public T next() {
                 return (T)objects[index++];
             }
 
             @Override
-            public void remove()
-            {
+            public void remove() {
                 throw new UnsupportedOperationException();
             }
         };
     }
 
     @Override
-    public boolean isEmpty()
-    {
-        synchronized (lock)
-        {
+    public boolean isEmpty() {
+        synchronized (lock) {
             return head == tail;
         }
     }
 
     @Override
-    public int size()
-    {
-        synchronized (lock)
-        {
-            if (head <= tail)
+    public int size() {
+        synchronized (lock) {
+            if (head <= tail) {
                 return tail - head;
+            }
             return elements.length - head + tail;
         }
     }
 
     @Override
-    public Object[] toArray()
-    {
+    public Object[] toArray() {
         return toArray(new Object[0]);
     }
 
     @Override
-    public <E> E[] toArray(E[] a)
-    {
-        synchronized (lock)
-        {
+    public <E> E[] toArray(E[] a) {
+        synchronized (lock) {
             int size = size();
-            if (a.length < size)
+            if (a.length < size) {
                 a = (E[])Array.newInstance(a.getClass().getComponentType(), size);
-            if (head <= tail)
-            {
-                System.arraycopy(elements, head, a, 0, size);
             }
-            else
-            {
+            if (head <= tail) {
+                System.arraycopy(elements, head, a, 0, size);
+            } else {
                 int l = elements.length - head;
                 System.arraycopy(elements, head, a, 0, l);
                 System.arraycopy(elements, 0, a, l, tail);
@@ -286,10 +261,8 @@ public class BatchArrayQueue<T> implements Queue<T>
     }
 
     @Override
-    public void clear()
-    {
-        synchronized (lock)
-        {
+    public void clear() {
+        synchronized (lock) {
             Arrays.fill(elements, null);
             Arrays.fill(batches, 0);
             head = tail = 0;
@@ -297,62 +270,55 @@ public class BatchArrayQueue<T> implements Queue<T>
         }
     }
 
-    public long getBatch()
-    {
-        synchronized (lock)
-        {
+    public long getBatch() {
+        synchronized (lock) {
             return batch;
         }
     }
 
-    public void nextBatch()
-    {
-        synchronized (lock)
-        {
+    public void nextBatch() {
+        synchronized (lock) {
             ++batch;
         }
     }
 
-    public void clearToBatch(long batch)
-    {
-        synchronized (lock)
-        {
-            while (true)
-            {
-                if (batches[head] > batch)
+    public void clearToBatch(long batch) {
+        synchronized (lock) {
+            while (true) {
+                if (batches[head] > batch) {
                     break;
-                if (poll() == null)
+                }
+                if (poll() == null) {
                     break;
+                }
             }
         }
     }
 
-    public void exportMessagesToBatch(Queue<T> target, long batch)
-    {
-        synchronized (lock)
-        {
+    public void exportMessagesToBatch(Queue<T> target, long batch) {
+        synchronized (lock) {
             int cursor = head;
-            while (cursor != tail)
-            {
-                if (batches[cursor] > batch)
+            while (cursor != tail) {
+                if (batches[cursor] > batch) {
                     break;
+                }
                 target.offer(elements[cursor]);
                 ++cursor;
-                if (cursor == batches.length)
+                if (cursor == batches.length) {
                     cursor = 0;
+                }
             }
         }
     }
 
     // Used only in tests.
-    long batchOf(int index)
-    {
-        synchronized (lock)
-        {
+    long batchOf(int index) {
+        synchronized (lock) {
             int cursor = head + index;
             int capacity = elements.length;
-            if (cursor > capacity)
+            if (cursor > capacity) {
                 cursor -= capacity;
+            }
             return batches[cursor];
         }
     }

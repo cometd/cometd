@@ -36,44 +36,35 @@ import org.cometd.bayeux.client.ClientSession.Extension;
  * Messages are not acknowledged one by one, but instead a group of messages is
  * acknowledged when long poll returns.</p>
  */
-public class AckExtension extends Extension.Adapter
-{
+public class AckExtension extends Extension.Adapter {
     public static final String ACK_FIELD = "ack";
 
     private volatile boolean _serverSupportsAcks = false;
     private volatile long _ackId = -1;
 
     @Override
-    public boolean rcvMeta(ClientSession session, Mutable message)
-    {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel()))
-        {
+    public boolean rcvMeta(ClientSession session, Mutable message) {
+        if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
             Map<String, Object> ext = message.getExt(false);
             _serverSupportsAcks = ext != null && Boolean.TRUE.equals(ext.get(ACK_FIELD));
-        }
-        else if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful() && _serverSupportsAcks)
-        {
+        } else if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful() && _serverSupportsAcks) {
             Map<String, Object> ext = message.getExt(false);
-            if (ext != null)
-            {
+            if (ext != null) {
                 Object ack = ext.get(ACK_FIELD);
-                if (ack instanceof Number)
+                if (ack instanceof Number) {
                     _ackId = ((Number)ack).longValue();
+                }
             }
         }
         return true;
     }
 
     @Override
-    public boolean sendMeta(ClientSession session, Mutable message)
-    {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel()))
-        {
+    public boolean sendMeta(ClientSession session, Mutable message) {
+        if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
             message.getExt(true).put(ACK_FIELD, Boolean.TRUE);
             _ackId = -1;
-        }
-        else if (Channel.META_CONNECT.equals(message.getChannel()) && _serverSupportsAcks)
-        {
+        } else if (Channel.META_CONNECT.equals(message.getChannel()) && _serverSupportsAcks) {
             message.getExt(true).put(ACK_FIELD, _ackId);
         }
         return true;

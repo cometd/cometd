@@ -47,8 +47,7 @@ import org.cometd.server.filter.JSONDataFilter;
 import org.cometd.server.filter.NoMarkupFilter;
 
 @Service("chat")
-public class OortChatService
-{
+public class OortChatService {
     private final ConcurrentMap<String, Set<String>> _members = new ConcurrentHashMap<>();
     @Inject
     private BayeuxServer _bayeux;
@@ -60,23 +59,20 @@ public class OortChatService
     private ServerSession _session;
 
     @PostConstruct
-    private void init()
-    {
+    private void init() {
         _oort.observeChannel("/chat/**");
         _oort.observeChannel("/members/**");
     }
 
     @PreDestroy
-    private void destroy()
-    {
+    private void destroy() {
         _oort.deobserveChannel("/members/**");
         _oort.deobserveChannel("/chat/**");
     }
 
     @SuppressWarnings("unused")
     @Configure({"/chat/**", "/members/**"})
-    private void configureChatStarStar(ConfigurableServerChannel channel)
-    {
+    private void configureChatStarStar(ConfigurableServerChannel channel) {
         final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux, new NoMarkupFilter(), new BadWordFilter());
         channel.addListener(noMarkup);
         channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
@@ -84,8 +80,7 @@ public class OortChatService
 
     @SuppressWarnings("unused")
     @Configure("/service/privatechat")
-    private void configurePrivateChat(ConfigurableServerChannel channel)
-    {
+    private void configurePrivateChat(ConfigurableServerChannel channel) {
         final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux, new NoMarkupFilter(), new BadWordFilter());
         channel.setPersistent(true);
         channel.addListener(noMarkup);
@@ -94,85 +89,79 @@ public class OortChatService
 
     @SuppressWarnings("unused")
     @Configure("/service/members")
-    private void configureMembers(ConfigurableServerChannel channel)
-    {
+    private void configureMembers(ConfigurableServerChannel channel) {
         channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
         channel.setPersistent(true);
     }
 
-    private Set<String> getMemberList(String room)
-    {
+    private Set<String> getMemberList(String room) {
         Set<String> members = _members.get(room);
-        if (members == null)
-        {
+        if (members == null) {
             Set<String> newMembers = new HashSet<>();
             members = _members.putIfAbsent(room, newMembers);
-            if (members == null)
+            if (members == null) {
                 members = newMembers;
+            }
         }
         return members;
     }
 
     @Listener("/service/members")
-    public void handleMembership(final ServerSession client, ServerMessage message)
-    {
+    public void handleMembership(final ServerSession client, ServerMessage message) {
         Map<String, Object> data = message.getDataAsMap();
         final String room = ((String)data.get("room")).substring("/chat/".length());
         final String userName = (String)data.get("user");
 
         final Set<String> members = getMemberList(room);
-        synchronized (members)
-        {
+        synchronized (members) {
             members.add(userName);
-            client.addListener(new ServerSession.RemoveListener()
-            {
+            client.addListener(new ServerSession.RemoveListener() {
                 @Override
-                public void removed(ServerSession session, boolean timeout)
-                {
-                    if (!_oort.isOort(client))
+                public void removed(ServerSession session, boolean timeout) {
+                    if (!_oort.isOort(client)) {
                         _seti.disassociate(userName, session);
+                    }
                     members.remove(userName);
                     broadcastMembers(room, members);
                 }
             });
 
-            if (!_oort.isOort(client))
+            if (!_oort.isOort(client)) {
                 _seti.associate(userName, client);
+            }
 
             broadcastMembers(room, members);
         }
     }
 
     @Listener("/members/**")
-    public void handleMembershipBroadcast(final ServerSession client, ServerMessage message)
-    {
+    public void handleMembershipBroadcast(final ServerSession client, ServerMessage message) {
         String room = message.getChannel().substring("/members/".length());
 
         Object data = message.getData();
         Object[] newMembers = data instanceof List ? ((List)data).toArray() : (Object[])data;
 
         final Collection<String> members = getMemberList(room);
-        synchronized (members)
-        {
+        synchronized (members) {
             boolean added = false;
-            for (Object o : newMembers)
+            for (Object o : newMembers) {
                 added |= members.add(o.toString());
+            }
 
-            if (added)
+            if (added) {
                 broadcastMembers(room, members);
+            }
         }
     }
 
-    private void broadcastMembers(String room, Collection<String> members)
-    {
+    private void broadcastMembers(String room, Collection<String> members) {
         // Broadcast the new members list
         ClientSessionChannel channel = _session.getLocalSession().getChannel("/members/" + room);
         channel.publish(members);
     }
 
     @Listener("/service/privatechat")
-    public void privateChat(ServerSession client, ServerMessage message)
-    {
+    public void privateChat(ServerSession client, ServerMessage message) {
         Map<String, Object> data = message.getDataAsMap();
         String toUid = (String)data.get("peer");
         String toChannel = (String)data.get("room");
@@ -182,13 +171,12 @@ public class OortChatService
         _seti.sendMessage(toUid, toChannel, data);
     }
 
-    class BadWordFilter extends JSONDataFilter
-    {
+    class BadWordFilter extends JSONDataFilter {
         @Override
-        protected Object filterString(String string)
-        {
-            if (string.contains("dang"))
+        protected Object filterString(String string) {
+            if (string.contains("dang")) {
                 throw new DataFilter.Abort();
+            }
             return string;
         }
     }

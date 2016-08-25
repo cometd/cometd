@@ -21,11 +21,9 @@ import com.google.inject.AbstractModule;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
 
-public class CometDModule extends AbstractModule
-{
+public class CometDModule extends AbstractModule {
     @Override
-    protected void configure()
-    {
+    protected void configure() {
         // Binds but does not call start() yet, since it's not good practice in modules
         // (modules do not have a lifecycle: cannot be stopped)
 

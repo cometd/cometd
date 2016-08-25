@@ -25,73 +25,56 @@ import java.util.List;
  * <p>Class {@link HttpCookie} parses "Set-Cookie" headers, which have a different format,
  * and Servlet's {@code Cookie} class does not have parsing facilities.</p>
  */
-public class CookieParser
-{
-    private CookieParser()
-    {
+public class CookieParser {
+    private CookieParser() {
     }
 
-    public static List<HttpCookie> parse(String header) throws ParseException
-    {
+    public static List<HttpCookie> parse(String header) throws ParseException {
         List<HttpCookie> cookies = new ArrayList<>();
         State state = State.NAME;
         String name = null;
         int begin = 0;
         boolean quoted = false;
 
-        for (int end = 0; end < header.length(); ++end)
-        {
+        for (int end = 0; end < header.length(); ++end) {
             char ch = header.charAt(end);
-            switch (state)
-            {
-                case NAME:
-                {
-                    if (ch == '$')
-                    {
+            switch (state) {
+                case NAME: {
+                    if (ch == '$') {
                         state = State.SEPARATOR;
-                    }
-                    else if (ch == '=')
-                    {
+                    } else if (ch == '=') {
                         name = header.substring(begin, end).trim();
-                        if (name.length() == 0)
+                        if (name.length() == 0) {
                             throw new ParseException(header, end);
+                        }
                         state = State.VALUE;
                         begin = end + 1;
                     }
                     break;
                 }
-                case VALUE:
-                {
+                case VALUE: {
                     // Skip initial whitespace.
-                    if (Character.isWhitespace(ch) && begin == end)
-                    {
+                    if (Character.isWhitespace(ch) && begin == end) {
                         begin = end + 1;
                         break;
                     }
 
-                    switch (ch)
-                    {
-                        case '"':
-                        {
-                            if (quoted)
-                            {
+                    switch (ch) {
+                        case '"': {
+                            if (quoted) {
                                 String value = header.substring(begin, end).trim();
                                 cookies.add(new HttpCookie(name, value));
                                 state = State.SEPARATOR;
                                 name = null;
                                 quoted = false;
-                            }
-                            else
-                            {
+                            } else {
                                 quoted = true;
                                 begin = end + 1;
                             }
                             break;
                         }
-                        case ';':
-                        {
-                            if (!quoted)
-                            {
+                        case ';': {
+                            if (!quoted) {
                                 String value = header.substring(begin, end).trim();
                                 cookies.add(new HttpCookie(name, value));
                                 state = State.NAME;
@@ -100,12 +83,11 @@ public class CookieParser
                             }
                             break;
                         }
-                        default:
-                        {
-                            if (end + 1 == header.length())
-                            {
-                                if (quoted)
+                        default: {
+                            if (end + 1 == header.length()) {
+                                if (quoted) {
                                     throw new ParseException(header, begin);
+                                }
                                 String value = header.substring(begin, end + 1).trim();
                                 cookies.add(new HttpCookie(name, value));
                             }
@@ -114,10 +96,8 @@ public class CookieParser
                     }
                     break;
                 }
-                case SEPARATOR:
-                {
-                    if (ch == ';')
-                    {
+                case SEPARATOR: {
+                    if (ch == ';') {
                         state = State.NAME;
                         name = null;
                         begin = end + 1;
@@ -129,8 +109,7 @@ public class CookieParser
         return cookies;
     }
 
-    private enum State
-    {
+    private enum State {
         NAME, VALUE, SEPARATOR
     }
 }

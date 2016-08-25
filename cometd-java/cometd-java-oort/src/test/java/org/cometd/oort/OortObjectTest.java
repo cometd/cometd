@@ -34,16 +34,13 @@ import org.eclipse.jetty.server.Server;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class OortObjectTest extends AbstractOortObjectTest
-{
-    public OortObjectTest(String serverTransport)
-    {
+public class OortObjectTest extends AbstractOortObjectTest {
+    public OortObjectTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testShareObject() throws Exception
-    {
+    public void testShareObject() throws Exception {
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
         OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -53,11 +50,9 @@ public class OortObjectTest extends AbstractOortObjectTest
         final String key1 = "key1";
         final String value1 = "value1";
         final CountDownLatch objectLatch1 = new CountDownLatch(1);
-        oortObject1.addListener(new OortObject.Listener.Adapter<Map<String, Object>>()
-        {
+        oortObject1.addListener(new OortObject.Listener.Adapter<Map<String, Object>>() {
             @Override
-            public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo)
-            {
+            public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo) {
                 Assert.assertTrue(newInfo.isLocal());
                 Assert.assertNotNull(oldInfo);
                 Assert.assertTrue(oldInfo.getObject().isEmpty());
@@ -69,10 +64,8 @@ public class OortObjectTest extends AbstractOortObjectTest
 
         // The other OortObject listens to receive the object
         final CountDownLatch objectLatch2 = new CountDownLatch(1);
-        oortObject2.addListener(new OortObject.Listener.Adapter<Map<String, Object>>()
-        {
-            public void onUpdated(OortObject.Info< Map <String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo)
-            {
+        oortObject2.addListener(new OortObject.Listener.Adapter<Map<String, Object>>() {
+            public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo) {
                 Assert.assertFalse(newInfo.isLocal());
                 Assert.assertNotNull(oldInfo);
                 Assert.assertTrue(oldInfo.getObject().isEmpty());
@@ -101,8 +94,7 @@ public class OortObjectTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testLocalObjectIsPushedWhenNodeJoins() throws Exception
-    {
+    public void testLocalObjectIsPushedWhenNodeJoins() throws Exception {
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
         OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -150,11 +142,9 @@ public class OortObjectTest extends AbstractOortObjectTest
         String value3 = "value3";
         object3.put(key3, value3);
         final CountDownLatch objectsLatch = new CountDownLatch(3);
-        OortObject.Listener.Adapter<Map<String, Object>> objectListener = new OortObject.Listener.Adapter<Map<String, Object>>()
-        {
+        OortObject.Listener.Adapter<Map<String, Object>> objectListener = new OortObject.Listener.Adapter<Map<String, Object>>() {
             @Override
-            public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo)
-            {
+            public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo) {
                 objectsLatch.countDown();
             }
         };
@@ -176,8 +166,7 @@ public class OortObjectTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testLocalObjectIsRemovedWhenNodeLeaves() throws Exception
-    {
+    public void testLocalObjectIsRemovedWhenNodeLeaves() throws Exception {
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
         OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -209,8 +198,7 @@ public class OortObjectTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testIterationOverInfos() throws Exception
-    {
+    public void testIterationOverInfos() throws Exception {
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
         OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -233,22 +221,22 @@ public class OortObjectTest extends AbstractOortObjectTest
         Thread.sleep(1000);
 
         List<OortObject.Info<Map<String, Object>>> infos = new ArrayList<>();
-        for (OortObject.Info<Map<String, Object>> info : oortObject1)
+        for (OortObject.Info<Map<String, Object>> info : oortObject1) {
             infos.add(info);
+        }
         Assert.assertEquals(2, infos.size());
-        for (OortObject.Info<Map<String, Object>> info : infos)
-        {
+        for (OortObject.Info<Map<String, Object>> info : infos) {
             Map<String, Object> data = info.getObject();
-            if (data.containsKey(key1))
+            if (data.containsKey(key1)) {
                 Assert.assertEquals(oort1.getURL(), info.getOortURL());
-            else if (data.containsKey(key2))
+            } else if (data.containsKey(key2)) {
                 Assert.assertEquals(oort2.getURL(), info.getOortURL());
+            }
         }
     }
 
     @Test
-    public void testNonCompositeObject() throws Exception
-    {
+    public void testNonCompositeObject() throws Exception {
         String name = "test";
         OortObject.Factory<Long> factory = OortObjectFactories.forLong(0);
         OortObject<Long> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -256,11 +244,9 @@ public class OortObjectTest extends AbstractOortObjectTest
         startOortObjects(oortObject1, oortObject2);
 
         final CountDownLatch latch1 = new CountDownLatch(2);
-        OortObject.Listener<Long> objectListener1 = new OortObject.Listener.Adapter<Long>()
-        {
+        OortObject.Listener<Long> objectListener1 = new OortObject.Listener.Adapter<Long>() {
             @Override
-            public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo)
-            {
+            public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo) {
                 latch1.countDown();
             }
         };
@@ -271,11 +257,9 @@ public class OortObjectTest extends AbstractOortObjectTest
         Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch latch2 = new CountDownLatch(2);
-        OortObject.Listener<Long> objectListener2 = new OortObject.Listener.Adapter<Long>()
-        {
+        OortObject.Listener<Long> objectListener2 = new OortObject.Listener.Adapter<Long>() {
             @Override
-            public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo)
-            {
+            public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo) {
                 latch2.countDown();
             }
         };
@@ -290,8 +274,7 @@ public class OortObjectTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testStaleUpdateIsDiscarded() throws Exception
-    {
+    public void testStaleUpdateIsDiscarded() throws Exception {
         String name = "test";
         OortObject.Factory<Long> factory = OortObjectFactories.forLong(0);
         final OortObject<Long> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -299,11 +282,9 @@ public class OortObjectTest extends AbstractOortObjectTest
         startOortObjects(oortObject1, oortObject2);
 
         final CountDownLatch latch1 = new CountDownLatch(2);
-        OortObject.Listener<Long> objectListener1 = new OortObject.Listener.Adapter<Long>()
-        {
+        OortObject.Listener<Long> objectListener1 = new OortObject.Listener.Adapter<Long>() {
             @Override
-            public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo)
-            {
+            public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo) {
                 latch1.countDown();
             }
         };
@@ -317,30 +298,20 @@ public class OortObjectTest extends AbstractOortObjectTest
         final long delay = 1000;
         final long value2 = 2;
         final long value3 = 3;
-        oort2.getBayeuxServer().addExtension(new BayeuxServer.Extension.Adapter()
-        {
+        oort2.getBayeuxServer().addExtension(new BayeuxServer.Extension.Adapter() {
             @Override
-            public boolean rcv(ServerSession from, final ServerMessage.Mutable message)
-            {
-                if (oortObject1.getChannelName().equals(message.getChannel()))
-                {
+            public boolean rcv(ServerSession from, final ServerMessage.Mutable message) {
+                if (oortObject1.getChannelName().equals(message.getChannel())) {
                     Map<String, Object> data = message.getDataAsMap();
-                    if (data != null)
-                    {
-                        if (value2 == ((Number)data.get(OortObject.Info.OBJECT_FIELD)).longValue())
-                        {
-                            new Thread()
-                            {
-                                public void run()
-                                {
-                                    try
-                                    {
+                    if (data != null) {
+                        if (value2 == ((Number)data.get(OortObject.Info.OBJECT_FIELD)).longValue()) {
+                            new Thread() {
+                                public void run() {
+                                    try {
                                         sleep(delay);
                                         ServerChannel channel = oort2.getBayeuxServer().getChannel(message.getChannel());
                                         channel.publish(oort2.getOortSession(), message);
-                                    }
-                                    catch (InterruptedException ignored)
-                                    {
+                                    } catch (InterruptedException ignored) {
                                     }
                                 }
                             }.start();
@@ -367,8 +338,7 @@ public class OortObjectTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testConcurrent() throws Exception
-    {
+    public void testConcurrent() throws Exception {
         String name = "concurrent";
         OortObject.Factory<String> factory = OortObjectFactories.forString("");
         final OortObject<String> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -376,11 +346,9 @@ public class OortObjectTest extends AbstractOortObjectTest
         startOortObjects(oortObject1, oortObject2);
 
         final BlockingQueue<String> values = new LinkedBlockingQueue<>();
-        oortObject2.addListener(new OortObject.Listener.Adapter<String>()
-        {
+        oortObject2.addListener(new OortObject.Listener.Adapter<String>() {
             @Override
-            public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo)
-            {
+            public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
                 String value = newInfo.getObject();
                 values.offer(value);
             }
@@ -391,29 +359,20 @@ public class OortObjectTest extends AbstractOortObjectTest
         final CyclicBarrier barrier = new CyclicBarrier(threads + 1);
         final CountDownLatch latch = new CountDownLatch(threads);
 
-        for (int i = 0; i < threads; ++i)
-        {
+        for (int i = 0; i < threads; ++i) {
             final int index = i;
-            new Thread(new Runnable()
-            {
+            new Thread(new Runnable() {
                 @Override
-                public void run()
-                {
-                    try
-                    {
+                public void run() {
+                    try {
                         barrier.await();
-                        for (int j = 0; j < iterations; ++j)
-                        {
+                        for (int j = 0; j < iterations; ++j) {
                             String value = String.valueOf(index * iterations + j);
                             oortObject1.setAndShare(value, null);
                         }
-                    }
-                    catch (Throwable x)
-                    {
+                    } catch (Throwable x) {
                         x.printStackTrace();
-                    }
-                    finally
-                    {
+                    } finally {
                         latch.countDown();
                     }
                 }
@@ -429,11 +388,9 @@ public class OortObjectTest extends AbstractOortObjectTest
         // the same value on the second OortObject when all updates have arrived.
         String object1 = oortObject1.getInfo(oort1.getURL()).getObject();
 
-        while (true)
-        {
+        while (true) {
             String object2 = values.take();
-            if (object2.equals(object1))
-            {
+            if (object2.equals(object1)) {
                 // Make sure there are no more values.
                 Assert.assertNull(values.poll(1, TimeUnit.SECONDS));
                 break;
@@ -446,8 +403,7 @@ public class OortObjectTest extends AbstractOortObjectTest
     }
 
     @Test(timeout = 5000)
-    public void testApplicationLocking() throws Exception
-    {
+    public void testApplicationLocking() throws Exception {
         String name = "locking";
         OortObject.Factory<String> factory = OortObjectFactories.forString("initial");
         OortObject<String> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -456,18 +412,13 @@ public class OortObjectTest extends AbstractOortObjectTest
 
         final ReentrantLock lock = new ReentrantLock();
         final CountDownLatch updatedLatch = new CountDownLatch(1);
-        oortObject1.addListener(new OortObject.Listener.Adapter<String>()
-        {
+        oortObject1.addListener(new OortObject.Listener.Adapter<String>() {
             @Override
-            public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo)
-            {
+            public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
                 lock.lock();
-                try
-                {
+                try {
                     updatedLatch.countDown();
-                }
-                finally
-                {
+                } finally {
                     lock.unlock();
                 }
             }
@@ -475,8 +426,7 @@ public class OortObjectTest extends AbstractOortObjectTest
 
         OortObject.Result.Deferred<String> result = new OortObject.Result.Deferred<>();
         lock.lock();
-        try
-        {
+        try {
             // We own the lock here.
             // Trigger the second OortObject to update the first, which
             // will cause an attempt to grab the lock in onUpdated();
@@ -484,10 +434,10 @@ public class OortObjectTest extends AbstractOortObjectTest
             oortObject2.setAndShare("2", null);
 
             // Wait until the lock is attempted.
-            while (true)
-            {
-                if (lock.hasQueuedThreads())
+            while (true) {
+                if (lock.hasQueuedThreads()) {
                     break;
+                }
                 Thread.sleep(1);
             }
 
@@ -497,9 +447,7 @@ public class OortObjectTest extends AbstractOortObjectTest
             // blocked in onUpdated() can proceed.
             // oortObject1.setAndShare("1");
             oortObject1.setAndShare("1", result);
-        }
-        finally
-        {
+        } finally {
             lock.unlock();
         }
 

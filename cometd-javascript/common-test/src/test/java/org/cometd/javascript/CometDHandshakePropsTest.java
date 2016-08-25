@@ -28,11 +28,9 @@ import org.junit.Test;
 /**
  * Tests that handshake properties are passed correctly during handshake
  */
-public class CometDHandshakePropsTest extends AbstractCometDTest
-{
+public class CometDHandshakePropsTest extends AbstractCometDTest {
     @Test
-    public void testHandshakeProps() throws Exception
-    {
+    public void testHandshakeProps() throws Exception {
         bayeuxServer.setSecurityPolicy(new TokenSecurityPolicy());
 
         defineClass(Latch.class);
@@ -67,26 +65,21 @@ public class CometDHandshakePropsTest extends AbstractCometDTest
         Assert.assertEquals("disconnected", evaluateScript("cometd.getStatus();"));
     }
 
-    private class TokenSecurityPolicy implements SecurityPolicy
-    {
-        public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-        {
+    private class TokenSecurityPolicy implements SecurityPolicy {
+        public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
             Map<String, Object> ext = message.getExt();
             return ext != null && ext.containsKey("token");
         }
 
-        public boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message)
-        {
+        public boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message) {
             return true;
         }
 
-        public boolean canSubscribe(BayeuxServer server, ServerSession client, ServerChannel channel, ServerMessage messsage)
-        {
+        public boolean canSubscribe(BayeuxServer server, ServerSession client, ServerChannel channel, ServerMessage messsage) {
             return true;
         }
 
-        public boolean canPublish(BayeuxServer server, ServerSession client, ServerChannel channel, ServerMessage messsage)
-        {
+        public boolean canPublish(BayeuxServer server, ServerSession client, ServerChannel channel, ServerMessage messsage) {
             return true;
         }
     }

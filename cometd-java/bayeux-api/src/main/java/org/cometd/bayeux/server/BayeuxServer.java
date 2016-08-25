@@ -42,9 +42,10 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  * create a {@link LocalSession} that can subscribe and publish
  * like a client-side Bayeux session.</p>
  */
-public interface BayeuxServer extends Bayeux
-{
-    /** ServletContext attribute name used to obtain the Bayeux object */
+public interface BayeuxServer extends Bayeux {
+    /**
+     * ServletContext attribute name used to obtain the Bayeux object
+     */
     public static final String ATTRIBUTE = "org.cometd.bayeux";
 
     /**
@@ -57,6 +58,7 @@ public interface BayeuxServer extends Bayeux
 
     /**
      * <p>Removes the given extension from this Bayeux object.</p>
+     *
      * @param extension the extension to remove
      * @see #addExtension(Extension)
      */
@@ -108,7 +110,7 @@ public interface BayeuxServer extends Bayeux
      * can occur on the channel, or before any other thread may concurrently
      * create the same channel.</p>
      *
-     * @param channelName the channel name
+     * @param channelName  the channel name
      * @param initializers the initializers invoked to configure the channel
      * @return a {@link MarkedReference} whose reference is the channel, and
      * the mark signals whether the channel has been created because it
@@ -170,8 +172,7 @@ public interface BayeuxServer extends Bayeux
     /**
      * <p>Common base interface for all server-side Bayeux listeners.</p>
      */
-    interface BayeuxServerListener extends BayeuxListener
-    {
+    interface BayeuxServerListener extends BayeuxListener {
     }
 
     /**
@@ -186,8 +187,7 @@ public interface BayeuxServer extends Bayeux
      * before any other {@link ServerChannel.ServerChannelListener server channel listeners}
      * that may be added during channel configuration.</p>
      */
-    public interface ChannelListener extends BayeuxServerListener, ConfigurableServerChannel.Initializer
-    {
+    public interface ChannelListener extends BayeuxServerListener, ConfigurableServerChannel.Initializer {
         /**
          * <p>Callback invoked when a {@link ServerChannel} has been added to a {@link BayeuxServer} object.</p>
          *
@@ -208,8 +208,7 @@ public interface BayeuxServer extends Bayeux
      * <p>This listener is called when a {@link ServerSession} is added
      * or removed from a {@link BayeuxServer}.</p>
      */
-    public interface SessionListener extends BayeuxServerListener
-    {
+    public interface SessionListener extends BayeuxServerListener {
         /**
          * <p>Callback invoked when a {@link ServerSession} has been added to a {@link BayeuxServer} object.</p>
          *
@@ -221,7 +220,7 @@ public interface BayeuxServer extends Bayeux
         /**
          * <p>Callback invoked when a {@link ServerSession} has been removed from a {@link BayeuxServer} object.</p>
          *
-         * @param session the session that has been removed
+         * @param session  the session that has been removed
          * @param timedout whether the session has been removed for a timeout or not
          */
         public void sessionRemoved(ServerSession session, boolean timedout);
@@ -235,8 +234,7 @@ public interface BayeuxServer extends Bayeux
      * interface, but it is invoked for any session and any channel known to the
      * {@link BayeuxServer}, <em>after</em> having invoked the {@link ServerChannel.SubscriptionListener}.</p>
      */
-    public interface SubscriptionListener extends BayeuxServerListener
-    {
+    public interface SubscriptionListener extends BayeuxServerListener {
         /**
          * <p>Callback invoked when a {@link ServerSession} subscribes to a {@link ServerChannel}.</p>
          *
@@ -269,12 +267,11 @@ public interface BayeuxServer extends Bayeux
      *
      * @see BayeuxServer#addExtension(Extension)
      */
-    public interface Extension
-    {
+    public interface Extension {
         /**
          * <p>Callback method invoked every time a normal message is incoming.</p>
          *
-         * @param from the session that sent the message
+         * @param from    the session that sent the message
          * @param message the incoming message
          * @return true if message processing should continue, false if it should stop
          */
@@ -283,7 +280,7 @@ public interface BayeuxServer extends Bayeux
         /**
          * <p>Callback method invoked every time a meta message is incoming.</p>
          *
-         * @param from the session that sent the message
+         * @param from    the session that sent the message
          * @param message the incoming meta message
          * @return true if message processing should continue, false if it should stop
          */
@@ -292,8 +289,8 @@ public interface BayeuxServer extends Bayeux
         /**
          * <p>Callback method invoked every time a normal message is outgoing.</p>
          *
-         * @param from the session that sent the message or null
-         * @param to the session the message is sent to, or null for a publish.
+         * @param from    the session that sent the message or null
+         * @param to      the session the message is sent to, or null for a publish.
          * @param message the outgoing message
          * @return true if message processing should continue, false if it should stop
          */
@@ -302,7 +299,7 @@ public interface BayeuxServer extends Bayeux
         /**
          * <p>Callback method invoked every time a meta message is outgoing.</p>
          *
-         * @param to the session the message is sent to, or null for a publish.
+         * @param to      the session the message is sent to, or null for a publish.
          * @param message the outgoing meta message
          * @return true if message processing should continue, false if it should stop
          */
@@ -311,25 +308,20 @@ public interface BayeuxServer extends Bayeux
         /**
          * Empty implementation of {@link Extension}.
          */
-        public static class Adapter implements Extension
-        {
-            public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-            {
+        public static class Adapter implements Extension {
+            public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
                 return true;
             }
 
-            public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-            {
+            public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
                 return true;
             }
 
-            public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-            {
+            public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
                 return true;
             }
 
-            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-            {
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 return true;
             }
         }

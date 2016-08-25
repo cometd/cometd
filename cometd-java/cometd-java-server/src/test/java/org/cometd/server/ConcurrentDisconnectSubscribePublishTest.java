@@ -29,31 +29,24 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClientServerTest
-{
-    public ConcurrentDisconnectSubscribePublishTest(String serverTransport)
-    {
+public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClientServerTest {
+    public ConcurrentDisconnectSubscribePublishTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testDisconnectSubscribe() throws Exception
-    {
+    public void testDisconnectSubscribe() throws Exception {
         final AtomicBoolean subscribed = new AtomicBoolean(false);
-        bayeux.addListener(new BayeuxServer.SubscriptionListener()
-        {
-            public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message)
-            {
+        bayeux.addListener(new BayeuxServer.SubscriptionListener() {
+            public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             }
 
-            public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)
-            {
+            public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
                 subscribed.set(true);
             }
         });
@@ -100,8 +93,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
     }
 
     @Test
-    public void testDisconnectPublish() throws Exception
-    {
+    public void testDisconnectPublish() throws Exception {
         final String channel = "/foo";
         final AtomicInteger publishes = new AtomicInteger();
         new BroadcastChannelService(bayeux, channel, publishes);
@@ -153,36 +145,30 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         Assert.assertTrue(response.getContentAsString().contains("402::"));
     }
 
-    public static class MetaSubscribeService extends AbstractService
-    {
+    public static class MetaSubscribeService extends AbstractService {
         private final AtomicBoolean serviced;
 
-        public MetaSubscribeService(BayeuxServerImpl bayeux, AtomicBoolean serviced)
-        {
+        public MetaSubscribeService(BayeuxServerImpl bayeux, AtomicBoolean serviced) {
             super(bayeux, "test");
             this.serviced = serviced;
             addService(Channel.META_SUBSCRIBE, "metaSubscribe");
         }
 
-        public void metaSubscribe(ServerSession remote, ServerMessage message)
-        {
-            serviced.set(remote!=null && remote.isHandshook());
+        public void metaSubscribe(ServerSession remote, ServerMessage message) {
+            serviced.set(remote != null && remote.isHandshook());
         }
     }
 
-    public static class BroadcastChannelService extends AbstractService
-    {
+    public static class BroadcastChannelService extends AbstractService {
         private final AtomicInteger publishes;
 
-        public BroadcastChannelService(BayeuxServerImpl bayeux, String channel, AtomicInteger publishes)
-        {
+        public BroadcastChannelService(BayeuxServerImpl bayeux, String channel, AtomicInteger publishes) {
             super(bayeux, "test");
             this.publishes = publishes;
             addService(channel, "handle");
         }
 
-        public void handle(ServerSession remote, ServerMessage message)
-        {
+        public void handle(ServerSession remote, ServerMessage message) {
             publishes.incrementAndGet();
         }
     }

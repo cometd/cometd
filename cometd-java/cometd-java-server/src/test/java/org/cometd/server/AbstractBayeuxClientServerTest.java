@@ -33,30 +33,25 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 
-public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServerTest
-{
+public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServerTest {
     protected HttpClient httpClient;
 
-    protected AbstractBayeuxClientServerTest(String serverTransport)
-    {
+    protected AbstractBayeuxClientServerTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void startHttpClient() throws Exception
-    {
+    public void startHttpClient() throws Exception {
         httpClient = new HttpClient();
         httpClient.start();
     }
 
     @After
-    public void stopHttpClient() throws Exception
-    {
+    public void stopHttpClient() throws Exception {
         httpClient.stop();
     }
 
-    protected String extractClientId(ContentResponse handshake) throws UnsupportedEncodingException
-    {
+    protected String extractClientId(ContentResponse handshake) throws UnsupportedEncodingException {
         String content = handshake.getContentAsString();
         Matcher matcher = Pattern.compile("\"clientId\"\\s*:\\s*\"([^\"]*)\"").matcher(content);
         Assert.assertTrue(matcher.find());
@@ -65,26 +60,23 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
         return clientId;
     }
 
-    protected String extractCookie(String name)
-    {
+    protected String extractCookie(String name) {
         List<HttpCookie> cookies = httpClient.getCookieStore().get(URI.create(cometdURL));
-        for (HttpCookie cookie : cookies)
-        {
-            if (cookie.getName().equals(name))
+        for (HttpCookie cookie : cookies) {
+            if (cookie.getName().equals(name)) {
                 return cookie.getValue();
+            }
         }
         return null;
     }
 
-    protected Request newBayeuxRequest(String requestBody) throws UnsupportedEncodingException
-    {
+    protected Request newBayeuxRequest(String requestBody) throws UnsupportedEncodingException {
         Request request = httpClient.newRequest(cometdURL);
         configureBayeuxRequest(request, requestBody, "UTF-8");
         return request;
     }
 
-    protected void configureBayeuxRequest(Request request, String requestBody, String encoding) throws UnsupportedEncodingException
-    {
+    protected void configureBayeuxRequest(Request request, String requestBody, String encoding) throws UnsupportedEncodingException {
         request.timeout(5, TimeUnit.SECONDS);
         request.method(HttpMethod.POST);
         request.content(new StringContentProvider("application/json;charset=" + encoding, requestBody, Charset.forName(encoding)));

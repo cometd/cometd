@@ -29,8 +29,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  * <p>Contrary to their client side counterpart ({@link ClientSessionChannel})
  * a {@link ServerChannel} is not scoped with a session.</p>
  */
-public interface ServerChannel extends ConfigurableServerChannel
-{
+public interface ServerChannel extends ConfigurableServerChannel {
     /**
      * @return a snapshot of the set of subscribers of this channel
      */
@@ -96,8 +95,7 @@ public interface ServerChannel extends ConfigurableServerChannel
     /**
      * <p>Listeners objects that implement this interface will be notified of message publish.</p>
      */
-    public interface MessageListener extends ServerChannelListener
-    {
+    public interface MessageListener extends ServerChannelListener {
         /**
          * <p>Callback invoked when a message is being published.</p>
          * <p>Implementers can decide to return false to signal that the message should not be
@@ -116,8 +114,7 @@ public interface ServerChannel extends ConfigurableServerChannel
      * <p>Instances of this listener class will be invoked <em>before</em>
      * {@link BayeuxServer.SubscriptionListener}</p> instances.
      */
-    public interface SubscriptionListener extends ServerChannelListener
-    {
+    public interface SubscriptionListener extends ServerChannelListener {
         /**
          * <p>Callback invoked when the given {@link ServerSession} subscribes to the given {@link ServerChannel}.</p>
          *

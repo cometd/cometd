@@ -21,11 +21,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDPublishTest extends AbstractCometDTest
-{
+public class CometDPublishTest extends AbstractCometDTest {
     @Test
-    public void testPublish() throws Exception
-    {
+    public void testPublish() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("var readyLatch = new Latch(1);");
@@ -49,8 +47,7 @@ public class CometDPublishTest extends AbstractCometDTest
     }
 
     @Test
-    public void testPublishSuccessfulInvokesCallback() throws Exception
-    {
+    public void testPublishSuccessfulInvokesCallback() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("var readyLatch = new Latch(1);");
@@ -73,19 +70,16 @@ public class CometDPublishTest extends AbstractCometDTest
         publishLatch.reset(2);
         evaluateScript("cometd.publish('/echo', 'test2');");
         Assert.assertFalse(publishLatch.await(1000));
-        Assert.assertEquals(1, publishLatch.jsGet_count()) ;
+        Assert.assertEquals(1, publishLatch.jsGet_count());
 
         disconnect();
     }
 
     @Test
-    public void testPublishFailedInvokesCallback() throws Exception
-    {
-        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter()
-        {
+    public void testPublishFailedInvokesCallback() throws Exception {
+        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter() {
             @Override
-            public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-            {
+            public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
                 return !"/echo".equals(message.getChannel());
             }
         });
@@ -113,14 +107,13 @@ public class CometDPublishTest extends AbstractCometDTest
         publishLatch.reset(2);
         evaluateScript("cometd.publish('/echo', 'test2');");
         Assert.assertFalse(publishLatch.await(1000));
-        Assert.assertEquals(1, publishLatch.jsGet_count()) ;
+        Assert.assertEquals(1, publishLatch.jsGet_count());
 
         disconnect();
     }
 
     @Test
-    public void testPublishWithServerDownInvokesCallback() throws Exception
-    {
+    public void testPublishWithServerDownInvokesCallback() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("var readyLatch = new Latch(1);");

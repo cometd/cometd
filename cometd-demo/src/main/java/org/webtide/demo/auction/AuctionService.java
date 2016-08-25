@@ -41,8 +41,7 @@ import org.webtide.demo.auction.dao.AuctionDao;
 import org.webtide.demo.auction.dao.BidderDao;
 import org.webtide.demo.auction.dao.CategoryDao;
 
-public class AuctionService extends AbstractService implements ClientSessionChannel.MessageListener, BayeuxServer.ChannelListener, BayeuxServer.SubscriptionListener
-{
+public class AuctionService extends AbstractService implements ClientSessionChannel.MessageListener, BayeuxServer.ChannelListener, BayeuxServer.SubscriptionListener {
     public static final String AUCTION_ROOT = "/auction/";
 
     private final AuctionDao _auctionDao = new AuctionDao();
@@ -52,35 +51,32 @@ public class AuctionService extends AbstractService implements ClientSessionChan
     private Oort _oort;
     private Seti _seti;
 
-    public AuctionService(ServletContext context)
-    {
+    public AuctionService(ServletContext context) {
         super((BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE), "oortion");
 
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
-        if (_oort == null)
+        if (_oort == null) {
             throw new RuntimeException("Missing " + Oort.OORT_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
                     "is an Oort servlet declared in web.xml ?");
+        }
         _seti = (Seti)context.getAttribute(Seti.SETI_ATTRIBUTE);
-        if (_seti == null)
+        if (_seti == null) {
             throw new RuntimeException("Missing " + Seti.SETI_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
                     "is " + SetiServlet.class.getSimpleName() + " declared in web.xml ?");
+        }
 
         _oort.observeChannel(AUCTION_ROOT + "**");
 
         getBayeux().addListener(this);
         setSeeOwnPublishes(false);
 
-        getBayeux().createChannelIfAbsent("/service" + AUCTION_ROOT + "*", new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
+        getBayeux().createChannelIfAbsent("/service" + AUCTION_ROOT + "*", new ConfigurableServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }
         });
-        getBayeux().createChannelIfAbsent(AUCTION_ROOT + "*", new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
+        getBayeux().createChannelIfAbsent(AUCTION_ROOT + "*", new ConfigurableServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }
         });
@@ -93,8 +89,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         addService("/service" + AUCTION_ROOT + "categories", "categories");
     }
 
-    public synchronized void bids(ServerSession source, ServerMessage message)
-    {
+    public synchronized void bids(ServerSession source, ServerMessage message) {
         // TODO Other half of the non atomic bid hack when used in Oort
         Map<String, Object> bidMap = message.getDataAsMap();
         Integer itemId = ((Number)bidMap.get("itemId")).intValue();
@@ -102,8 +97,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         Map<String, Object> bidderMap = (Map<String, Object>)bidMap.get("bidder");
         String username = (String)bidderMap.get("username");
         Bidder bidder = _bidderDao.getBidder(username);
-        if (bidder == null)
-        {
+        if (bidder == null) {
             bidder = new Bidder();
             bidder.setUsername(username);
             bidder.setName((String)bidderMap.get("name"));
@@ -117,31 +111,26 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         bid.setBidder(bidder);
 
         Bid highest = _auctionDao.getHighestBid(itemId);
-        if (highest == null || amount > highest.getAmount())
-        {
+        if (highest == null || amount > highest.getAmount()) {
             _auctionDao.saveAuctionBid(bid);
         }
     }
 
-    public synchronized void bid(ServerSession source, ServerMessage message)
-    {
-        try
-        {
+    public synchronized void bid(ServerSession source, ServerMessage message) {
+        try {
             Map<String, Object> bidMap = message.getDataAsMap();
             Integer itemId = ((Number)bidMap.get("itemId")).intValue();
             Double amount = Double.parseDouble(bidMap.get("amount").toString());
             String username = (String)bidMap.get("username");
             Bidder bidder = _bidderDao.getBidder(username);
 
-            if (bidder != null)
-            {
+            if (bidder != null) {
                 // TODO This is a horrible race because there is no clusterwide DB for
                 // atomic determination of the highest bid.
                 // live with it! it's a demo!!!!
 
                 Bid highest = _auctionDao.getHighestBid(itemId);
-                if (highest == null || amount > highest.getAmount())
-                {
+                if (highest == null || amount > highest.getAmount()) {
                     Bid bid = new Bid();
                     bid.setItemId(itemId);
                     bid.setAmount(amount);
@@ -150,21 +139,19 @@ public class AuctionService extends AbstractService implements ClientSessionChan
                     getBayeux().getChannel(AUCTION_ROOT + "item" + itemId).publish(getServerSession(), bid);
                 }
             }
-        }
-        catch (NumberFormatException e)
-        {
+        } catch (NumberFormatException e) {
         }
     }
 
-    public Bidder bidder(ServerSession source, ServerMessage message)
-    {
+    public Bidder bidder(ServerSession source, ServerMessage message) {
         String bidder = (String)message.getData();
         Integer id = _bidders.incrementAndGet();
 
         // TODO this is not atomic, but will do for the demo
         String username = bidder.toLowerCase().replace(" ", "");
-        while (_bidderDao.getBidder(username) != null)
+        while (_bidderDao.getBidder(username) != null) {
             username = bidder.toLowerCase().replace(" ", "") + "-" + _bidders.incrementAndGet();
+        }
         Bidder b = new Bidder();
         b.setName(bidder);
         b.setUsername(username);
@@ -173,58 +160,47 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         return b;
     }
 
-    public List<Item> search(ServerSession source, ServerMessage message)
-    {
+    public List<Item> search(ServerSession source, ServerMessage message) {
         return _categoryDao.findItems((String)message.getData());
     }
 
-    public List<Item> category(ServerSession source, ServerMessage message)
-    {
+    public List<Item> category(ServerSession source, ServerMessage message) {
         Number categoryId = (Number)message.getData();
         return _categoryDao.getItemsInCategory(categoryId.intValue());
     }
 
-    public List<Category> categories(ServerSession source, ServerMessage message)
-    {
+    public List<Category> categories(ServerSession source, ServerMessage message) {
         return _categoryDao.getAllCategories();
     }
 
-    public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)
-    {
-        if (!session.isLocalSession() && channel.getId().startsWith(AUCTION_ROOT + "item"))
-        {
+    public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
+        if (!session.isLocalSession() && channel.getId().startsWith(AUCTION_ROOT + "item")) {
             String itemIdS = channel.getId().substring((AUCTION_ROOT + "item").length());
-            if (itemIdS.indexOf('/') < 0)
-            {
+            if (itemIdS.indexOf('/') < 0) {
                 Integer itemId = Integer.decode(itemIdS);
                 Bid highest = _auctionDao.getHighestBid(itemId);
-                if (highest != null)
+                if (highest != null) {
                     session.deliver(getServerSession(), channel.getId(), highest);
+                }
             }
         }
     }
 
-    public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message)
-    {
+    public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
     }
 
-    public void channelAdded(ServerChannel channel)
-    {
-        if (channel.getId().startsWith(AUCTION_ROOT + "item"))
-        {
+    public void channelAdded(ServerChannel channel) {
+        if (channel.getId().startsWith(AUCTION_ROOT + "item")) {
             getLocalSession().getChannel(channel.getId()).subscribe(this);
         }
     }
 
-    public void channelRemoved(String channelId)
-    {
+    public void channelRemoved(String channelId) {
     }
 
-    public void onMessage(ClientSessionChannel channel, Message message)
-    {
+    public void onMessage(ClientSessionChannel channel, Message message) {
     }
 
-    public void configureChannel(ConfigurableServerChannel channel)
-    {
+    public void configureChannel(ConfigurableServerChannel channel) {
     }
 }

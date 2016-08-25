@@ -31,8 +31,7 @@ import org.cometd.bayeux.server.BayeuxContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractBayeuxContext implements BayeuxContext
-{
+public abstract class AbstractBayeuxContext implements BayeuxContext {
     private static final Logger logger = LoggerFactory.getLogger(BayeuxContext.class);
 
     private final ServletContext context;
@@ -45,8 +44,7 @@ public abstract class AbstractBayeuxContext implements BayeuxContext
     private final InetSocketAddress remoteAddress;
     private final List<Locale> locales;
 
-    public AbstractBayeuxContext(ServletContext context, String uri, String query, Map<String, List<String>> headers, Map<String, List<String>> parameters, Principal principal, HttpSession session, InetSocketAddress local, InetSocketAddress remote, List<Locale> locales)
-    {
+    public AbstractBayeuxContext(ServletContext context, String uri, String query, Map<String, List<String>> headers, Map<String, List<String>> parameters, Principal principal, HttpSession session, InetSocketAddress local, InetSocketAddress remote, List<Locale> locales) {
         this.context = context;
         this.url = uri + (query == null ? "" : "?" + query);
         this.headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -60,134 +58,113 @@ public abstract class AbstractBayeuxContext implements BayeuxContext
     }
 
     @Override
-    public String getURL()
-    {
+    public String getURL() {
         return url;
     }
 
     @Override
-    public String getHeader(String name)
-    {
+    public String getHeader(String name) {
         List<String> values = headers.get(name);
         return values != null && values.size() > 0 ? values.get(0) : null;
     }
 
     @Override
-    public List<String> getHeaderValues(String name)
-    {
+    public List<String> getHeaderValues(String name) {
         return headers.get(name);
     }
 
     @Override
-    public String getParameter(String name)
-    {
+    public String getParameter(String name) {
         List<String> values = parameters.get(name);
         return values != null && values.size() > 0 ? values.get(0) : null;
     }
 
     @Override
-    public List<String> getParameterValues(String name)
-    {
+    public List<String> getParameterValues(String name) {
         return parameters.get(name);
     }
 
     @Override
-    public Principal getUserPrincipal()
-    {
+    public Principal getUserPrincipal() {
         return principal;
     }
 
     @Override
-    public boolean isUserInRole(String role)
-    {
+    public boolean isUserInRole(String role) {
         return false;
     }
 
     @Override
-    public String getHttpSessionId()
-    {
+    public String getHttpSessionId() {
         return session == null ? null : session.getId();
     }
 
     @Override
-    public Object getHttpSessionAttribute(String name)
-    {
+    public Object getHttpSessionAttribute(String name) {
         return session == null ? null : session.getAttribute(name);
     }
 
     @Override
-    public void setHttpSessionAttribute(String name, Object value)
-    {
-        if (session != null)
+    public void setHttpSessionAttribute(String name, Object value) {
+        if (session != null) {
             session.setAttribute(name, value);
+        }
     }
 
     @Override
-    public void invalidateHttpSession()
-    {
-        if (session != null)
+    public void invalidateHttpSession() {
+        if (session != null) {
             session.invalidate();
+        }
     }
 
     @Override
-    public InetSocketAddress getRemoteAddress()
-    {
+    public InetSocketAddress getRemoteAddress() {
         return remoteAddress;
     }
 
     @Override
-    public InetSocketAddress getLocalAddress()
-    {
+    public InetSocketAddress getLocalAddress() {
         return localAddress;
     }
 
     @Override
-    public List<Locale> getLocales()
-    {
+    public List<Locale> getLocales() {
         return locales;
     }
 
     @Override
-    public String getCookie(String name)
-    {
-        try
-        {
+    public String getCookie(String name) {
+        try {
             List<String> values = headers.get("Cookie");
-            if (values != null)
-            {
-                for (String value : values)
-                {
-                    for (HttpCookie cookie : CookieParser.parse(value))
-                    {
-                        if (cookie.getName().equals(name))
+            if (values != null) {
+                for (String value : values) {
+                    for (HttpCookie cookie : CookieParser.parse(value)) {
+                        if (cookie.getName().equals(name)) {
                             return cookie.getValue();
+                        }
                     }
                 }
             }
             return null;
-        }
-        catch (ParseException x)
-        {
+        } catch (ParseException x) {
             logger.debug("Error parsing cookie " + x.getMessage() + " at index " + x.getErrorOffset(), x);
             return null;
         }
     }
 
     @Override
-    public Object getRequestAttribute(String name)
-    {
+    public Object getRequestAttribute(String name) {
         return null;
     }
 
     @Override
-    public Object getContextAttribute(String name)
-    {
+    public Object getContextAttribute(String name) {
         return context.getAttribute(name);
     }
 
     @Override
-    public String getContextInitParameter(String name)
-    {
+    public String getContextInitParameter(String name) {
         return context.getInitParameter(name);
     }
 }

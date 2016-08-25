@@ -25,120 +25,85 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.cometd.bayeux.Message;
 
-public abstract class Jackson2JSONContext<T extends Message.Mutable, I extends T>
-{
+public abstract class Jackson2JSONContext<T extends Message.Mutable, I extends T> {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final JavaType rootArrayType;
 
-    protected Jackson2JSONContext()
-    {
+    protected Jackson2JSONContext() {
         rootArrayType = objectMapper.constructType(rootArrayClass());
     }
 
-    public ObjectMapper getObjectMapper()
-    {
+    public ObjectMapper getObjectMapper() {
         return objectMapper;
     }
 
     protected abstract Class<I[]> rootArrayClass();
 
-    public T[] parse(InputStream stream) throws ParseException
-    {
-        try
-        {
+    public T[] parse(InputStream stream) throws ParseException {
+        try {
             return getObjectMapper().readValue(stream, rootArrayType);
-        }
-        catch (IOException x)
-        {
+        } catch (IOException x) {
             throw (ParseException)new ParseException("", -1).initCause(x);
         }
     }
 
-    public T[] parse(Reader reader) throws ParseException
-    {
-        try
-        {
+    public T[] parse(Reader reader) throws ParseException {
+        try {
             return getObjectMapper().readValue(reader, rootArrayType);
-        }
-        catch (IOException x)
-        {
+        } catch (IOException x) {
             throw (ParseException)new ParseException("", -1).initCause(x);
         }
     }
 
-    public T[] parse(String json) throws ParseException
-    {
-        try
-        {
+    public T[] parse(String json) throws ParseException {
+        try {
             return getObjectMapper().readValue(json, rootArrayType);
-        }
-        catch (IOException x)
-        {
+        } catch (IOException x) {
             throw (ParseException)new ParseException(json, -1).initCause(x);
         }
     }
 
-    public String generate(T message)
-    {
-        try
-        {
+    public String generate(T message) {
+        try {
             return getObjectMapper().writeValueAsString(message);
-        }
-        catch (IOException x)
-        {
+        } catch (IOException x) {
             throw new RuntimeException(x);
         }
     }
 
-    public String generate(List<T> messages)
-    {
-        try
-        {
+    public String generate(List<T> messages) {
+        try {
             Message.Mutable[] mutables = new Message.Mutable[messages.size()];
             messages.toArray(mutables);
             return getObjectMapper().writeValueAsString(mutables);
-        }
-        catch (IOException x)
-        {
+        } catch (IOException x) {
             throw new RuntimeException(x);
         }
     }
 
-    public JSONContext.Parser getParser()
-    {
+    public JSONContext.Parser getParser() {
         return new ObjectMapperParser();
     }
 
-    public JSONContext.Generator getGenerator()
-    {
+    public JSONContext.Generator getGenerator() {
         return new ObjectMapperGenerator();
     }
 
-    private class ObjectMapperParser implements JSONContext.Parser
-    {
-        public <T> T parse(Reader reader, Class<T> type) throws ParseException
-        {
-            try
-            {
+    private class ObjectMapperParser implements JSONContext.Parser {
+        public <T> T parse(Reader reader, Class<T> type) throws ParseException {
+            try {
                 return getObjectMapper().readValue(reader, type);
-            }
-            catch (IOException x)
-            {
+            } catch (IOException x) {
                 throw (ParseException)new ParseException("", -1).initCause(x);
             }
         }
     }
 
-    private class ObjectMapperGenerator implements JSONContext.Generator
-    {
-        public String generate(Object object)
-        {
-            try
-            {
+    private class ObjectMapperGenerator implements JSONContext.Generator {
+        public String generate(Object object) {
+            try {
                 return getObjectMapper().writeValueAsString(object);
-            }
-            catch (IOException x)
-            {
+            } catch (IOException x) {
                 throw new RuntimeException(x);
             }
         }

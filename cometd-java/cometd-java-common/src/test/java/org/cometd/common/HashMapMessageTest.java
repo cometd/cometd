@@ -24,11 +24,9 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class HashMapMessageTest
-{
+public class HashMapMessageTest {
     @Test
-    public void testSerialization() throws Exception
-    {
+    public void testSerialization() throws Exception {
         HashMapMessage message = new HashMapMessage();
         message.setChannel("/channel");
         message.setClientId("clientId");

@@ -21,27 +21,22 @@ import org.mozilla.javascript.ScriptableObject;
 /**
  * Implementation of the XMLHttpRequest functionality using Jetty's HttpClient.
  */
-public class XMLHttpRequestClient extends ScriptableObject
-{
+public class XMLHttpRequestClient extends ScriptableObject {
     private HttpClient httpClient;
     private JavaScriptCookieStore cookieStore;
 
-    public XMLHttpRequestClient()
-    {
+    public XMLHttpRequestClient() {
     }
 
-    public void jsConstructor(JavaScriptCookieStore cookieStore) throws Exception
-    {
+    public void jsConstructor(JavaScriptCookieStore cookieStore) throws Exception {
         this.cookieStore = cookieStore;
     }
 
-    public String getClassName()
-    {
+    public String getClassName() {
         return "XMLHttpRequestClient";
     }
 
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         httpClient = new HttpClient();
         httpClient.setMaxConnectionsPerDestination(2);
         httpClient.setIdleTimeout(300000);
@@ -49,13 +44,11 @@ public class XMLHttpRequestClient extends ScriptableObject
         httpClient.start();
     }
 
-    public HttpClient getHttpClient()
-    {
+    public HttpClient getHttpClient() {
         return httpClient;
     }
 
-    public void stop() throws Exception
-    {
+    public void stop() throws Exception {
         httpClient.stop();
     }
 }

@@ -35,22 +35,18 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class ServerMessageImplTest
-{
+public class ServerMessageImplTest {
     @Rule
-    public final TestWatcher testName = new TestWatcher()
-    {
+    public final TestWatcher testName = new TestWatcher() {
         @Override
-        protected void starting(Description description)
-        {
+        protected void starting(Description description) {
             super.starting(description);
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
     };
 
     @Test
-    public void testSimpleContent() throws Exception
-    {
+    public void testSimpleContent() throws Exception {
         ServerMessageImpl message = new ServerMessageImpl();
         message.put("channel", "/foo/bar");
 
@@ -61,8 +57,7 @@ public class ServerMessageImplTest
     }
 
     @Test
-    public void testFrozenBehavior() throws Exception
-    {
+    public void testFrozenBehavior() throws Exception {
         String originalJSON = "{" +
                 "\"id\":\"12345\"," +
                 "\"clientId\":\"jva73siaj92jdafa\"," +
@@ -98,43 +93,31 @@ public class ServerMessageImplTest
         // Freeze the message
         message.freeze(json);
 
-        try
-        {
+        try {
             message.put("id", "666");
             fail();
-        }
-        catch (UnsupportedOperationException expected)
-        {
+        } catch (UnsupportedOperationException expected) {
         }
 
         Assert.assertEquals("54321", message.getId());
         Assert.assertEquals("54321", message.get(Message.ID_FIELD));
 
-        try
-        {
+        try {
             message.getDataAsMap().put("x", "9");
             fail();
-        }
-        catch (UnsupportedOperationException expected)
-        {
+        } catch (UnsupportedOperationException expected) {
         }
 
-        try
-        {
+        try {
             message.getDataAsMap().put("x", "9");
             fail();
-        }
-        catch (UnsupportedOperationException expected)
-        {
+        } catch (UnsupportedOperationException expected) {
         }
 
-        try
-        {
+        try {
             message.getExt().put("x", "9");
             fail();
-        }
-        catch (UnsupportedOperationException expected)
-        {
+        } catch (UnsupportedOperationException expected) {
         }
 
         // Deep modifications after the message is frozen are discarded
@@ -147,8 +130,7 @@ public class ServerMessageImplTest
     }
 
     @Test
-    public void testSerialization() throws Exception
-    {
+    public void testSerialization() throws Exception {
         ServerMessageImpl message = new ServerMessageImpl();
         message.setChannel("/channel");
         message.setClientId("clientId");
@@ -177,26 +159,20 @@ public class ServerMessageImplTest
         assertNull(deserialized.getAssociated());
 
         // Make sure the message is still frozen
-        try
-        {
+        try {
             deserialized.put("a", "b");
             fail();
-        }
-        catch (UnsupportedOperationException expected)
-        {
+        } catch (UnsupportedOperationException expected) {
         }
     }
 
     @Test
-    public void testModificationViaEntrySet() throws Exception
-    {
+    public void testModificationViaEntrySet() throws Exception {
         ServerMessageImpl message = new ServerMessageImpl();
         message.setChannel("/channel");
 
-        for (Map.Entry<String, Object> field : message.entrySet())
-        {
-            if (Message.CHANNEL_FIELD.equals(field.getKey()))
-            {
+        for (Map.Entry<String, Object> field : message.entrySet()) {
+            if (Message.CHANNEL_FIELD.equals(field.getKey())) {
                 field.setValue("/foo");
                 break;
             }
@@ -205,17 +181,12 @@ public class ServerMessageImplTest
         String json = new JettyJSONContextServer().generate(message);
         message.freeze(json);
 
-        for (Map.Entry<String, Object> field : message.entrySet())
-        {
-            if (Message.CHANNEL_FIELD.equals(field.getKey()))
-            {
-                try
-                {
+        for (Map.Entry<String, Object> field : message.entrySet()) {
+            if (Message.CHANNEL_FIELD.equals(field.getKey())) {
+                try {
                     field.setValue("/foo");
                     fail();
-                }
-                catch (UnsupportedOperationException expected)
-                {
+                } catch (UnsupportedOperationException expected) {
                     break;
                 }
             }
@@ -223,8 +194,7 @@ public class ServerMessageImplTest
     }
 
     @Test
-    public void testNullValue() throws Exception
-    {
+    public void testNullValue() throws Exception {
         String originalJSON = "{" +
                 "\"id\":\"12345\"," +
                 "\"clientId\":\"jva73siaj92jdafa\"," +

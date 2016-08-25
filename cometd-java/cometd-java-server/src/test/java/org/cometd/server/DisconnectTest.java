@@ -30,22 +30,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class DisconnectTest extends AbstractBayeuxClientServerTest
-{
-    public DisconnectTest(String serverTransport)
-    {
+public class DisconnectTest extends AbstractBayeuxClientServerTest {
+    public DisconnectTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testDisconnect() throws Exception
-    {
+    public void testDisconnect() throws Exception {
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -81,11 +77,9 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
         Thread.sleep(1000);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        serverSession.addListener(new ServerSession.RemoveListener()
-        {
+        serverSession.addListener(new ServerSession.RemoveListener() {
             @Override
-            public void removed(ServerSession session, boolean timeout)
-            {
+            public void removed(ServerSession session, boolean timeout) {
                 latch.countDown();
             }
         });

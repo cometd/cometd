@@ -29,46 +29,37 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class PublishDoesNotLeakClientIdTest extends ClientServerTest
-{
+public class PublishDoesNotLeakClientIdTest extends ClientServerTest {
     @Before
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testPublishDoesNotLeakClientId() throws Exception
-    {
+    public void testPublishDoesNotLeakClientId() throws Exception {
         BayeuxClient client1 = newBayeuxClient();
         client1.handshake();
-        try
-        {
+        try {
             assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
 
             BayeuxClient client2 = newBayeuxClient();
             client2.handshake();
-            try
-            {
+            try {
                 assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
                 assertFalse(client1.getId().equals(client2.getId()));
 
                 String channel = "/test";
                 final CountDownLatch subscribe = new CountDownLatch(1);
-                client1.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
-                {
-                    public void onMessage(ClientSessionChannel channel, Message message)
-                    {
+                client1.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+                    public void onMessage(ClientSessionChannel channel, Message message) {
                         subscribe.countDown();
                     }
                 });
                 final CountDownLatch latch = new CountDownLatch(1);
                 final AtomicReference<Message> messageRef = new AtomicReference<>();
-                client1.getChannel(channel).subscribe(new ClientSessionChannel.MessageListener()
-                {
-                    public void onMessage(ClientSessionChannel channel, Message message)
-                    {
+                client1.getChannel(channel).subscribe(new ClientSessionChannel.MessageListener() {
+                    public void onMessage(ClientSessionChannel channel, Message message) {
                         messageRef.set(message);
                         latch.countDown();
                     }
@@ -79,14 +70,10 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest
 
                 assertTrue(latch.await(5, TimeUnit.SECONDS));
                 assertNull(messageRef.get().getClientId());
-            }
-            finally
-            {
+            } finally {
                 disconnectBayeuxClient(client2);
             }
-        }
-        finally
-        {
+        } finally {
             disconnectBayeuxClient(client1);
         }
     }

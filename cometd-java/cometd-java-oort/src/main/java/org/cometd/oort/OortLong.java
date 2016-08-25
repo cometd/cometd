@@ -42,51 +42,44 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  *
  * @see OortMasterLong
  */
-public class OortLong extends AbstractLifeCycle
-{
+public class OortLong extends AbstractLifeCycle {
     private final AtomicLong atomic = new AtomicLong();
     private final OortObject<Long> value;
 
-    public OortLong(Oort oort, String name)
-    {
+    public OortLong(Oort oort, String name) {
         this(oort, name, 0);
     }
 
     /**
-     * @param oort the oort this instance is associated to
-     * @param name the name of this service
+     * @param oort    the oort this instance is associated to
+     * @param name    the name of this service
      * @param initial the initial local value
      */
-    public OortLong(Oort oort, String name, long initial)
-    {
+    public OortLong(Oort oort, String name, long initial) {
         value = new OortObject<>(oort, name, OortObjectFactories.forLong(initial));
     }
 
     @Override
-    protected void doStart() throws Exception
-    {
+    protected void doStart() throws Exception {
         value.start();
     }
 
     @Override
-    protected void doStop() throws Exception
-    {
+    protected void doStop() throws Exception {
         value.stop();
     }
 
     /**
      * @return the {@link Oort} instance associated with this oort long
      */
-    public Oort getOort()
-    {
+    public Oort getOort() {
         return value.getOort();
     }
 
     /**
      * @return the local session that sends messages to other nodes
      */
-    public LocalSession getLocalSession()
-    {
+    public LocalSession getLocalSession() {
         return value.getLocalSession();
     }
 
@@ -94,8 +87,7 @@ public class OortLong extends AbstractLifeCycle
      * @param listener the listener to add that is notified of updates of the value in a node
      * @see #removeListener(OortObject.Listener)
      */
-    public void addListener(OortObject.Listener<Long> listener)
-    {
+    public void addListener(OortObject.Listener<Long> listener) {
         value.addListener(listener);
     }
 
@@ -103,16 +95,14 @@ public class OortLong extends AbstractLifeCycle
      * @param listener the listener to remove
      * @see #addListener(OortObject.Listener)
      */
-    public void removeListener(OortObject.Listener<Long> listener)
-    {
+    public void removeListener(OortObject.Listener<Long> listener) {
         value.removeListener(listener);
     }
 
     /**
      * @return the local value
      */
-    public long get()
-    {
+    public long get() {
         return atomic.get();
     }
 
@@ -120,8 +110,7 @@ public class OortLong extends AbstractLifeCycle
      * @param delta the delta to add to the local value (may be negative)
      * @return the new local value
      */
-    public long addAndGet(long delta)
-    {
+    public long addAndGet(long delta) {
         long result = atomic.addAndGet(delta);
         value.setAndShare(result, null);
         return result;
@@ -131,8 +120,7 @@ public class OortLong extends AbstractLifeCycle
      * @param delta the delta to add to the local value (may be negative)
      * @return the old local value
      */
-    public long getAndAdd(long delta)
-    {
+    public long getAndAdd(long delta) {
         long result = atomic.getAndAdd(delta);
         value.setAndShare(result, null);
         return result;
@@ -142,8 +130,7 @@ public class OortLong extends AbstractLifeCycle
      * @param newValue the new local value to set
      * @return the old local value
      */
-    public long getAndSet(long newValue)
-    {
+    public long getAndSet(long newValue) {
         long result = atomic.getAndSet(newValue);
         value.setAndShare(newValue, null);
         return result;
@@ -154,19 +141,18 @@ public class OortLong extends AbstractLifeCycle
      * @param newValue the new local value
      * @return whether the operation was successful
      */
-    public boolean compareAndSet(long expected, long newValue)
-    {
+    public boolean compareAndSet(long expected, long newValue) {
         boolean result = atomic.compareAndSet(expected, newValue);
-        if (result)
+        if (result) {
             value.setAndShare(newValue, null);
+        }
         return result;
     }
 
     /**
      * @return the sum of local values of each node
      */
-    public long sum()
-    {
+    public long sum() {
         return value.merge(OortObjectMergers.longSum());
     }
 }

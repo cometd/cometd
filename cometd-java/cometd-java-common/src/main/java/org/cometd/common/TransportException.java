@@ -17,23 +17,19 @@ package org.cometd.common;
 
 import java.util.Map;
 
-public class TransportException extends RuntimeException
-{
+public class TransportException extends RuntimeException {
     private final Map<String, Object> fields;
 
-    public TransportException(Map<String, Object> fields)
-    {
+    public TransportException(Map<String, Object> fields) {
         this(null, fields);
     }
 
-    public TransportException(Throwable cause, Map<String, Object> fields)
-    {
+    public TransportException(Throwable cause, Map<String, Object> fields) {
         super(String.valueOf(fields), cause);
         this.fields = fields;
     }
 
-    public Map<String, Object> getFields()
-    {
+    public Map<String, Object> getFields() {
         return fields;
     }
 }

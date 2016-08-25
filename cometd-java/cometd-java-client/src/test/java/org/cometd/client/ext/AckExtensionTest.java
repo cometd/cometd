@@ -31,17 +31,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class AckExtensionTest extends ClientServerTest
-{
+public class AckExtensionTest extends ClientServerTest {
     @Before
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testAck() throws Exception
-    {
+    public void testAck() throws Exception {
         final BayeuxClient client = newBayeuxClient();
 
         bayeux.addExtension(new AcknowledgedMessagesExtension());
@@ -49,16 +46,11 @@ public class AckExtensionTest extends ClientServerTest
 
         final String channelName = "/chat/demo";
         final BlockingQueue<Message> messages = new BlockingArrayQueue<>();
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful())
-                {
-                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-                    {
-                        public void onMessage(ClientSessionChannel channel, Message message)
-                        {
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isSuccessful()) {
+                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+                        public void onMessage(ClientSessionChannel channel, Message message) {
                             messages.add(message);
                         }
                     });
@@ -66,12 +58,11 @@ public class AckExtensionTest extends ClientServerTest
             }
         });
         final CountDownLatch subscribed = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful() && channelName.equals(message.get(Message.SUBSCRIPTION_FIELD)))
+        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isSuccessful() && channelName.equals(message.get(Message.SUBSCRIPTION_FIELD))) {
                     subscribed.countDown();
+                }
             }
         });
         client.handshake();
@@ -83,17 +74,17 @@ public class AckExtensionTest extends ClientServerTest
         Assert.assertNotNull(chatChannel);
 
         final int count = 5;
-        client.batch(new Runnable()
-        {
-            public void run()
-            {
-                for (int i = 0; i < count; ++i)
+        client.batch(new Runnable() {
+            public void run() {
+                for (int i = 0; i < count; ++i) {
                     client.getChannel(channelName).publish("hello_" + i);
+                }
             }
         });
 
-        for (int i = 0; i < count; ++i)
+        for (int i = 0; i < count; ++i) {
             Assert.assertEquals("hello_" + i, messages.poll(5, TimeUnit.SECONDS).getData());
+        }
 
         // Wait for the long poll to happen
         Thread.sleep(1000);
@@ -108,8 +99,9 @@ public class AckExtensionTest extends ClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
 
         // Send messages while client is offline
-        for (int i = count; i < 2 * count; ++i)
+        for (int i = count; i < 2 * count; ++i) {
             chatChannel.publish(null, "hello_" + i);
+        }
 
         Thread.sleep(1000);
         Assert.assertEquals(0, messages.size());
@@ -119,22 +111,23 @@ public class AckExtensionTest extends ClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Check that the offline messages are received
-        for (int i = count; i < 2 * count; ++i)
+        for (int i = count; i < 2 * count; ++i) {
             Assert.assertEquals("hello_" + i, messages.poll(5, TimeUnit.SECONDS).getData());
+        }
 
         // Send messages while client is online
-        client.batch(new Runnable()
-        {
-            public void run()
-            {
-                for (int i = 2 * count; i < 3 * count; ++i)
+        client.batch(new Runnable() {
+            public void run() {
+                for (int i = 2 * count; i < 3 * count; ++i) {
                     client.getChannel(channelName).publish("hello_" + i);
+                }
             }
         });
 
         // Check if messages after reconnect are received
-        for (int i = 2 * count; i < 3 * count; ++i)
+        for (int i = 2 * count; i < 3 * count; ++i) {
             Assert.assertEquals("hello_" + i, messages.poll(5, TimeUnit.SECONDS).getData());
+        }
 
         disconnectBayeuxClient(client);
     }

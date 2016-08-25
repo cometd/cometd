@@ -32,8 +32,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Tracks the batch id of messages sent to a client.
  */
-public class AcknowledgedMessagesSessionExtension implements Extension, ServerSession.DeQueueListener, ServerSession.QueueListener
-{
+public class AcknowledgedMessagesSessionExtension implements Extension, ServerSession.DeQueueListener, ServerSession.QueueListener {
     private static final Logger _logger = LoggerFactory.getLogger(AcknowledgedMessagesSessionExtension.class);
 
     private final Map<Long, Long> _batches = new HashMap<>();
@@ -41,29 +40,23 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     private final BatchArrayQueue<ServerMessage> _queue;
     private long _lastBatch;
 
-    public AcknowledgedMessagesSessionExtension(ServerSession session)
-    {
+    public AcknowledgedMessagesSessionExtension(ServerSession session) {
         _session = (ServerSessionImpl)session;
         _queue = new BatchArrayQueue<>(16, _session.getLock());
         _session.setMetaConnectDeliveryOnly(true);
         _session.addListener(this);
     }
 
-    public boolean rcv(ServerSession from, Mutable message)
-    {
+    public boolean rcv(ServerSession from, Mutable message) {
         return true;
     }
 
-    public boolean rcvMeta(ServerSession session, Mutable message)
-    {
-        if (Channel.META_CONNECT.equals(message.getChannel()))
-        {
+    public boolean rcvMeta(ServerSession session, Mutable message) {
+        if (Channel.META_CONNECT.equals(message.getChannel())) {
             Map<String, Object> ext = message.getExt(false);
-            if (ext != null)
-            {
+            if (ext != null) {
                 Number batchValue = (Number)ext.get("ack");
-                if (batchValue != null)
-                {
+                if (batchValue != null) {
                     processBatch(batchValue.longValue());
                     updateAdvice(message);
                 }
@@ -72,64 +65,56 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         return true;
     }
 
-    private void updateAdvice(Mutable message)
-    {
-        synchronized (_session.getLock())
-        {
-            if (!_session.hasNonLazyMessages() && _session.getQueue().size() != _queue.size())
-            {
+    private void updateAdvice(Mutable message) {
+        synchronized (_session.getLock()) {
+            if (!_session.hasNonLazyMessages() && _session.getQueue().size() != _queue.size()) {
                 Map<String, Object> advice = message.getAdvice(true);
-                if (advice.get(Message.TIMEOUT_FIELD) == null)
-                {
+                if (advice.get(Message.TIMEOUT_FIELD) == null) {
                     advice.put(Message.TIMEOUT_FIELD, 0L);
-                    if (_logger.isDebugEnabled())
+                    if (_logger.isDebugEnabled()) {
                         _logger.debug("Forcing advice: { timeout: 0 } for {}", _session);
+                    }
                 }
             }
         }
     }
 
-    protected void processBatch(long batch)
-    {
-        synchronized (_session.getLock())
-        {
-            if (_logger.isDebugEnabled())
+    protected void processBatch(long batch) {
+        synchronized (_session.getLock()) {
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Processing batch: last={}, client={}, server={} for {}", _lastBatch, batch, _queue.getBatch(), _session);
+            }
             _lastBatch = batch;
             _queue.clearToBatch(batch);
         }
     }
 
-    public ServerMessage send(ServerSession session, ServerMessage message)
-    {
+    public ServerMessage send(ServerSession session, ServerMessage message) {
         // Too early to do anything with the message.
         // Other extensions and/or listener may modify/veto it.
         return message;
     }
 
-    public void queued(ServerSession sender, ServerMessage message)
-    {
+    public void queued(ServerSession sender, ServerMessage message) {
         // This method is called after all the extensions and the other
         // listeners, so only here are sure that the message is not vetoed.
-        synchronized (_session.getLock())
-        {
+        synchronized (_session.getLock()) {
             _queue.offer(message);
-            if (_logger.isDebugEnabled())
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Stored at batch {} {} for {}", _queue.getBatch(), message, _session);
+            }
         }
     }
 
-    public boolean sendMeta(ServerSession to, Mutable message)
-    {
-        if (message.getChannel().equals(Channel.META_CONNECT))
-        {
-            synchronized (_session.getLock())
-            {
+    public boolean sendMeta(ServerSession to, Mutable message) {
+        if (message.getChannel().equals(Channel.META_CONNECT)) {
+            synchronized (_session.getLock()) {
                 Map<String, Object> ext = message.getExt(true);
                 long batch = _queue.getBatch();
                 _batches.put(Thread.currentThread().getId(), batch);
-                if (_logger.isDebugEnabled())
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Sending batch {} for {}", batch, _session);
+                }
                 ext.put("ack", batch);
                 _queue.nextBatch();
             }
@@ -137,29 +122,25 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         return true;
     }
 
-    public void deQueue(ServerSession session, Queue<ServerMessage> queue)
-    {
-        synchronized (_session.getLock())
-        {
+    public void deQueue(ServerSession session, Queue<ServerMessage> queue) {
+        synchronized (_session.getLock()) {
             Long batch = _batches.remove(Thread.currentThread().getId());
-            if (_logger.isDebugEnabled())
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Dequeuing {}/{} messages until batch {} for {}", queue.size(), _queue.size(), batch, _session);
+            }
             queue.clear();
             _queue.exportMessagesToBatch(queue, batch);
         }
     }
 
-    protected void importMessages(ServerSessionImpl session)
-    {
-        synchronized (_session.getLock())
-        {
+    protected void importMessages(ServerSessionImpl session) {
+        synchronized (_session.getLock()) {
             _queue.addAll(session.getQueue());
         }
     }
 
     // Used only in tests.
-    BatchArrayQueue<ServerMessage> getBatchArrayQueue()
-    {
+    BatchArrayQueue<ServerMessage> getBatchArrayQueue() {
         return _queue;
     }
 }

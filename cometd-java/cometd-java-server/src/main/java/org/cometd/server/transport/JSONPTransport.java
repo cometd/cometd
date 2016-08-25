@@ -26,8 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 
-public class JSONPTransport extends AbstractStreamHttpTransport
-{
+public class JSONPTransport extends AbstractStreamHttpTransport {
     public final static String PREFIX = "long-polling.jsonp";
     public final static String NAME = "callback-polling";
     public final static String MIME_TYPE_OPTION = "mimeType";
@@ -42,15 +41,13 @@ public class JSONPTransport extends AbstractStreamHttpTransport
     private String _callbackParam = "jsonp";
     private int _callbackMaxLength = 64;
 
-    public JSONPTransport(BayeuxServerImpl bayeux)
-    {
+    public JSONPTransport(BayeuxServerImpl bayeux) {
         super(bayeux, NAME);
         setOptionPrefix(PREFIX);
     }
 
     @Override
-    public void init()
-    {
+    public void init() {
         super.init();
         _callbackParam = getOption(CALLBACK_PARAMETER_OPTION, _callbackParam);
         _callbackMaxLength = getOption(CALLBACK_PARAMETER_MAX_LENGTH_OPTION, _callbackMaxLength);
@@ -60,26 +57,22 @@ public class JSONPTransport extends AbstractStreamHttpTransport
     }
 
     @Override
-    public boolean accept(HttpServletRequest request)
-    {
+    public boolean accept(HttpServletRequest request) {
         String callbackValue = request.getParameter(getCallbackParameter());
         return "GET".equals(request.getMethod()) && isCallbackValueValid(callbackValue);
     }
 
     @Override
-    protected ServerMessage.Mutable[] parseMessages(HttpServletRequest request) throws IOException, ParseException
-    {
+    protected ServerMessage.Mutable[] parseMessages(HttpServletRequest request) throws IOException, ParseException {
         return parseMessages(request.getParameterValues(MESSAGE_PARAM));
     }
 
-    public String getCallbackParameter()
-    {
+    public String getCallbackParameter() {
         return _callbackParam;
     }
 
     @Override
-    protected ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException
-    {
+    protected ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType(_mimeType);
         String callback = request.getParameter(_callbackParam);
         ServletOutputStream output = response.getOutputStream();
@@ -89,14 +82,12 @@ public class JSONPTransport extends AbstractStreamHttpTransport
     }
 
     @Override
-    protected void endWrite(HttpServletResponse response, ServletOutputStream output) throws IOException
-    {
+    protected void endWrite(HttpServletResponse response, ServletOutputStream output) throws IOException {
         output.write(MESSAGE_END);
         output.close();
     }
 
-    private boolean isCallbackValueValid(String callbackValue)
-    {
+    private boolean isCallbackValueValid(String callbackValue) {
         return callbackValue != null &&
                 callbackValue.length() <= _callbackMaxLength &&
                 CALLBACK_PATTERN.matcher(callbackValue).matches();

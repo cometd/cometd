@@ -34,8 +34,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface Subscription
-{
+public @interface Subscription {
     /**
      * @return the list of channels to which the callback method subscribes to
      */

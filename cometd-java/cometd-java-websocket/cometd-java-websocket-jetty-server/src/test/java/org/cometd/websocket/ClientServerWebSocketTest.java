@@ -46,28 +46,24 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public abstract class ClientServerWebSocketTest
-{
+public abstract class ClientServerWebSocketTest {
     protected static final String WEBSOCKET_JSR_356 = "JSR 356";
     protected static final String WEBSOCKET_JETTY = "JETTY";
 
     @Parameterized.Parameters(name = "{index}: WebSocket implementation: {0}")
-     public static Iterable<Object[]> data()
-     {
-         return Arrays.asList(new Object[][]
-                 {
-                         {WEBSOCKET_JSR_356},
-                         {WEBSOCKET_JETTY}
-                 }
-         );
-     }
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[][]
+                {
+                        {WEBSOCKET_JSR_356},
+                        {WEBSOCKET_JETTY}
+                }
+        );
+    }
 
     @Rule
-    public final TestWatcher testName = new TestWatcher()
-    {
+    public final TestWatcher testName = new TestWatcher() {
         @Override
-        protected void starting(Description description)
-        {
+        protected void starting(Description description) {
             super.starting(description);
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
@@ -83,34 +79,28 @@ public abstract class ClientServerWebSocketTest
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
 
-    protected ClientServerWebSocketTest(String wsTransportType)
-    {
+    protected ClientServerWebSocketTest(String wsTransportType) {
         this.wsTransportType = wsTransportType;
     }
 
-    protected void prepareAndStart(Map<String, String> initParams) throws Exception
-    {
+    protected void prepareAndStart(Map<String, String> initParams) throws Exception {
         prepareAndStart("/cometd", initParams);
     }
 
-    protected void prepareAndStart(String servletPath, Map<String, String> initParams) throws Exception
-    {
+    protected void prepareAndStart(String servletPath, Map<String, String> initParams) throws Exception {
         prepareServer(0, servletPath, initParams, true);
         prepareClient();
         startServer();
         startClient();
     }
 
-    protected void prepareServer(int port, Map<String, String> initParams, boolean eager) throws Exception
-    {
+    protected void prepareServer(int port, Map<String, String> initParams, boolean eager) throws Exception {
         prepareServer(port, "/cometd", initParams, eager);
     }
 
-    protected void prepareServer(int port, String servletPath, Map<String, String> initParams, boolean eager) throws Exception
-    {
+    protected void prepareServer(int port, String servletPath, Map<String, String> initParams, boolean eager) throws Exception {
         String wsTransportClass;
-        switch (wsTransportType)
-        {
+        switch (wsTransportType) {
             case WEBSOCKET_JSR_356:
                 wsTransportClass = WebSocketTransport.class.getName();
                 break;
@@ -123,8 +113,7 @@ public abstract class ClientServerWebSocketTest
         prepareServer(port, servletPath, initParams, eager, wsTransportClass);
     }
 
-    protected void prepareServer(int port, String servletPath, Map<String, String> initParams, boolean eager, String wsTransportClass) throws Exception
-    {
+    protected void prepareServer(int port, String servletPath, Map<String, String> initParams, boolean eager, String wsTransportClass) throws Exception {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
@@ -139,31 +128,32 @@ public abstract class ClientServerWebSocketTest
 
         // CometD servlet
         cometdServletPath = servletPath;
-        if (cometdServletPath.endsWith("/*"))
+        if (cometdServletPath.endsWith("/*")) {
             cometdServletPath = cometdServletPath.substring(0, cometdServletPath.length() - 2);
+        }
         String cometdURLMapping = cometdServletPath;
-        if (!cometdURLMapping.endsWith("/*"))
+        if (!cometdURLMapping.endsWith("/*")) {
             cometdURLMapping = cometdURLMapping + "/*";
+        }
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         String transports = wsTransportClass + "," + JSONTransport.class.getName();
         cometdServletHolder.setInitParameter("transports", transports);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
-        if (eager)
+        if (eager) {
             cometdServletHolder.setInitOrder(1);
-        if (initParams != null)
-        {
-            for (Map.Entry<String, String> entry : initParams.entrySet())
+        }
+        if (initParams != null) {
+            for (Map.Entry<String, String> entry : initParams.entrySet()) {
                 cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
+            }
         }
         context.addServlet(cometdServletHolder, cometdURLMapping);
     }
 
-    protected void prepareClient()
-    {
+    protected void prepareClient() {
         httpClient = new HttpClient();
-        switch (wsTransportType)
-        {
+        switch (wsTransportType) {
             case WEBSOCKET_JSR_356:
                 wsClientContainer = ContainerProvider.getWebSocketContainer();
                 httpClient.addBean(wsClientContainer, true);
@@ -180,39 +170,32 @@ public abstract class ClientServerWebSocketTest
         }
     }
 
-    protected void startServer() throws Exception
-    {
+    protected void startServer() throws Exception {
         server.start();
         int port = connector.getLocalPort();
         cometdURL = "http://localhost:" + port + cometdServletPath;
         bayeux = (BayeuxServerImpl)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
     }
 
-    protected void startClient() throws Exception
-    {
+    protected void startClient() throws Exception {
         httpClient.start();
     }
 
-    protected BayeuxClient newBayeuxClient()
-    {
+    protected BayeuxClient newBayeuxClient() {
         return new BayeuxClient(cometdURL, newWebSocketTransport(null));
     }
 
-    protected ClientTransport newLongPollingTransport(Map<String, Object> options)
-    {
+    protected ClientTransport newLongPollingTransport(Map<String, Object> options) {
         return new LongPollingTransport(options, httpClient);
     }
 
-    protected ClientTransport newWebSocketTransport(Map<String, Object> options)
-    {
+    protected ClientTransport newWebSocketTransport(Map<String, Object> options) {
         return newWebSocketTransport(null, options);
     }
 
-    protected ClientTransport newWebSocketTransport(String url, Map<String, Object> options)
-    {
+    protected ClientTransport newWebSocketTransport(String url, Map<String, Object> options) {
         ClientTransport result;
-        switch (wsTransportType)
-        {
+        switch (wsTransportType) {
             case WEBSOCKET_JSR_356:
                 result = new org.cometd.websocket.client.WebSocketTransport(url, options, null, wsClientContainer);
                 break;
@@ -225,26 +208,22 @@ public abstract class ClientServerWebSocketTest
         return result;
     }
 
-    protected void disconnectBayeuxClient(BayeuxClient client)
-    {
+    protected void disconnectBayeuxClient(BayeuxClient client) {
         client.disconnect(1000);
     }
 
     @After
-    public void stopAndDispose() throws Exception
-    {
+    public void stopAndDispose() throws Exception {
         stopClient();
         stopServer();
     }
 
-    protected void stopServer() throws Exception
-    {
+    protected void stopServer() throws Exception {
         server.stop();
         server.join();
     }
 
-    protected void stopClient() throws Exception
-    {
+    protected void stopClient() throws Exception {
         httpClient.stop();
     }
 }

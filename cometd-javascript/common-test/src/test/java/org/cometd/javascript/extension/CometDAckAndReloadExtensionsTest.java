@@ -24,19 +24,16 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest
-{
+public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest {
     @Before
-    public void initExtensions() throws Exception
-    {
+    public void initExtensions() throws Exception {
         bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         provideMessageAcknowledgeExtension();
         provideReloadExtension();
     }
 
     @Test
-    public void testAckAndReloadExtensions() throws Exception
-    {
+    public void testAckAndReloadExtensions() throws Exception {
         AckService ackService = new AckService(bayeuxServer);
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -98,15 +95,12 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class AckService extends AbstractService
-    {
-        private AckService(BayeuxServerImpl bayeux)
-        {
+    public static class AckService extends AbstractService {
+        private AckService(BayeuxServerImpl bayeux) {
             super(bayeux, "ack-test");
         }
 
-        public void emit(String content)
-        {
+        public void emit(String content) {
             getBayeux().getChannel("/test").publish(getServerSession(), content);
         }
     }

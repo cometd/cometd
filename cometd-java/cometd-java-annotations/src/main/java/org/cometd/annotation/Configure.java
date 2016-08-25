@@ -34,8 +34,7 @@ import org.cometd.bayeux.server.ConfigurableServerChannel;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface Configure
-{
+public @interface Configure {
     /**
      * @return the list of channels which are initialised
      */

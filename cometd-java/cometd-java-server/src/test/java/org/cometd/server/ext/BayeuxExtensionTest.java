@@ -34,8 +34,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
-{
+public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest {
     private static final String CLIENT_MESSAGE_FIELD = "clientMessageField";
     private static final String CLIENT_EXT_FIELD = "clientExtField";
     private static final String CLIENT_DATA_FIELD = "clientDataField";
@@ -49,20 +48,17 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
     private static final String CLIENT_INFO = "fromClient";
     private static final String SERVICE_INFO = "fromService";
 
-    public BayeuxExtensionTest(String serverTransport)
-    {
+    public BayeuxExtensionTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testBayeuxExtensionOnHandshake() throws Exception
-    {
+    public void testBayeuxExtensionOnHandshake() throws Exception {
         bayeux.addExtension(new MetaExtension());
         final AtomicReference<ServerMessage> handshakeRef = new AtomicReference<>();
         new MetaHandshakeService(bayeux, handshakeRef);
@@ -97,8 +93,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testBayeuxExtensionOnServiceChannel() throws Exception
-    {
+    public void testBayeuxExtensionOnServiceChannel() throws Exception {
         final String channel = "/service/test";
         bayeux.addExtension(new NonMetaExtension(channel));
         final AtomicReference<ServerMessage> publishRef = new AtomicReference<>();
@@ -147,8 +142,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testBayeuxExtensionOnBroadcastChannel() throws Exception
-    {
+    public void testBayeuxExtensionOnBroadcastChannel() throws Exception {
         final String channel = "/test";
         bayeux.addExtension(new NonMetaExtension(channel));
         final AtomicReference<ServerMessage> publishRef = new AtomicReference<>();
@@ -205,13 +199,10 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(SERVICE_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_FIELD));
     }
 
-    private class MetaExtension extends BayeuxServer.Extension.Adapter
-    {
+    private class MetaExtension extends BayeuxServer.Extension.Adapter {
         @Override
-        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-        {
-            if (Channel.META_HANDSHAKE.equals(message.getChannel()) && (from == null || !from.isLocalSession()))
-            {
+        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
+            if (Channel.META_HANDSHAKE.equals(message.getChannel()) && (from == null || !from.isLocalSession())) {
                 message.put(SERVER_EXT_MESSAGE_FIELD, SERVER_EXT_INFO);
                 message.getDataAsMap(true).put(SERVER_EXT_DATA_FIELD, SERVER_EXT_INFO);
                 message.getExt(true).put(SERVER_EXT_EXT_FIELD, SERVER_EXT_INFO);
@@ -220,10 +211,8 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         }
 
         @Override
-        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-        {
-            if (Channel.META_HANDSHAKE.equals(message.getChannel()) && to != null && !to.isLocalSession())
-            {
+        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
+            if (Channel.META_HANDSHAKE.equals(message.getChannel()) && to != null && !to.isLocalSession()) {
                 message.put(SERVER_EXT_MESSAGE_FIELD, SERVER_EXT_INFO);
                 message.getDataAsMap(true).put(SERVER_EXT_DATA_FIELD, SERVER_EXT_INFO);
                 message.getExt(true).put(SERVER_EXT_EXT_FIELD, SERVER_EXT_INFO);
@@ -232,20 +221,16 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         }
     }
 
-    private class NonMetaExtension extends BayeuxServer.Extension.Adapter
-    {
+    private class NonMetaExtension extends BayeuxServer.Extension.Adapter {
         private final String channel;
 
-        private NonMetaExtension(String channel)
-        {
+        private NonMetaExtension(String channel) {
             this.channel = channel;
         }
 
         @Override
-        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-        {
-            if (from != null && !from.isLocalSession() && channel.equals(message.getChannel()))
-            {
+        public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
+            if (from != null && !from.isLocalSession() && channel.equals(message.getChannel())) {
                 message.put(SERVER_EXT_MESSAGE_FIELD, SERVER_EXT_INFO);
                 message.getDataAsMap(true).put(SERVER_EXT_DATA_FIELD, SERVER_EXT_INFO);
                 message.getExt(true).put(SERVER_EXT_EXT_FIELD, SERVER_EXT_INFO);
@@ -254,10 +239,8 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         }
 
         @Override
-        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-        {
-            if (from != null && from.isLocalSession() && to != null && !to.isLocalSession())
-            {
+        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
+            if (from != null && from.isLocalSession() && to != null && !to.isLocalSession()) {
                 message.put(SERVER_EXT_MESSAGE_FIELD, SERVER_EXT_INFO);
                 message.getDataAsMap(true).put(SERVER_EXT_DATA_FIELD, SERVER_EXT_INFO);
                 message.getExt(true).put(SERVER_EXT_EXT_FIELD, SERVER_EXT_INFO);
@@ -266,36 +249,30 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         }
     }
 
-    public static class MetaHandshakeService extends AbstractService
-    {
+    public static class MetaHandshakeService extends AbstractService {
         private final AtomicReference<ServerMessage> handshakeRef;
 
-        public MetaHandshakeService(BayeuxServer bayeux, AtomicReference<ServerMessage> handshakeRef)
-        {
+        public MetaHandshakeService(BayeuxServer bayeux, AtomicReference<ServerMessage> handshakeRef) {
             super(bayeux, "test");
             this.handshakeRef = handshakeRef;
             addService(Channel.META_HANDSHAKE, "metaHandshake");
         }
 
-        public void metaHandshake(ServerSession remote, ServerMessage message)
-        {
+        public void metaHandshake(ServerSession remote, ServerMessage message) {
             handshakeRef.set(message);
         }
     }
 
-    public static class ServiceChannelService extends AbstractService
-    {
+    public static class ServiceChannelService extends AbstractService {
         private final AtomicReference<ServerMessage> publishRef;
 
-        public ServiceChannelService(BayeuxServer bayeux, String channel, AtomicReference<ServerMessage> publishRef)
-        {
+        public ServiceChannelService(BayeuxServer bayeux, String channel, AtomicReference<ServerMessage> publishRef) {
             super(bayeux, "test");
             this.publishRef = publishRef;
             addService(channel, "test");
         }
 
-        public void test(ServerSession remote, ServerMessage message)
-        {
+        public void test(ServerSession remote, ServerMessage message) {
             publishRef.set(message);
 
             ServerMessage.Mutable response = getBayeux().newMessage();
@@ -306,19 +283,16 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         }
     }
 
-    public static class BroadcastChannelService extends AbstractService
-    {
+    public static class BroadcastChannelService extends AbstractService {
         private final AtomicReference<ServerMessage> publishRef;
 
-        public BroadcastChannelService(BayeuxServerImpl bayeux, String channel, AtomicReference<ServerMessage> publishRef)
-        {
+        public BroadcastChannelService(BayeuxServerImpl bayeux, String channel, AtomicReference<ServerMessage> publishRef) {
             super(bayeux, "test");
             this.publishRef = publishRef;
             addService(channel, "test");
         }
 
-        public void test(ServerSession remote, ServerMessage.Mutable message)
-        {
+        public void test(ServerSession remote, ServerMessage.Mutable message) {
             message.put(SERVER_MESSAGE_FIELD, SERVICE_INFO);
             message.getDataAsMap(true).put(SERVER_DATA_FIELD, SERVICE_INFO);
             message.getExt(true).put(SERVER_EXT_FIELD, SERVICE_INFO);

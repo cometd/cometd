@@ -18,35 +18,30 @@ package org.cometd.client.transport;
 import java.net.CookieStore;
 import java.util.Map;
 
-public abstract class HttpClientTransport extends ClientTransport
-{
+public abstract class HttpClientTransport extends ClientTransport {
     private volatile String url;
     private volatile CookieStore cookieStore;
 
-    protected HttpClientTransport(String name, String url, Map<String, Object> options)
-    {
+    protected HttpClientTransport(String name, String url, Map<String, Object> options) {
         super(name, options);
         this.url = url;
     }
 
-    protected String getURL()
-    {
+    protected String getURL() {
         return url;
     }
 
-    public void setURL(String url)
-    {
-        if (this.url == null)
+    public void setURL(String url) {
+        if (this.url == null) {
             this.url = url;
+        }
     }
 
-    protected CookieStore getCookieStore()
-    {
+    protected CookieStore getCookieStore() {
         return cookieStore;
     }
 
-    public void setCookieStore(CookieStore cookieStore)
-    {
+    public void setCookieStore(CookieStore cookieStore) {
         this.cookieStore = cookieStore;
     }
 }

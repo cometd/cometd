@@ -15,15 +15,13 @@
  */
 package org.cometd.benchmark;
 
-public class Config
-{
+public class Config {
     public static final String CONTEXT_PATH = "/cometd";
     public static final String SERVLET_PATH = "/cometd";
 
     public static final long META_CONNECT_TIMEOUT = 20000;
     public static final long MAX_NETWORK_DELAY = 5000;
 
-    private Config()
-    {
+    private Config() {
     }
 }

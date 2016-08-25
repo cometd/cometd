@@ -30,14 +30,11 @@ import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
-public class ClientServerTest
-{
+public class ClientServerTest {
     @Rule
-    public final TestWatcher testName = new TestWatcher()
-    {
+    public final TestWatcher testName = new TestWatcher() {
         @Override
-        protected void starting(Description description)
-        {
+        protected void starting(Description description) {
             super.starting(description);
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
@@ -50,8 +47,7 @@ public class ClientServerTest
     protected String cometdURL;
     protected BayeuxServer bayeux;
 
-    public void startServer(Map<String, String> initParams) throws Exception
-    {
+    public void startServer(Map<String, String> initParams) throws Exception {
         server = new Server();
 
         connector = new ServerConnector(server);
@@ -64,10 +60,10 @@ public class ClientServerTest
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitOrder(1);
-        if (initParams != null)
-        {
-            for (Map.Entry<String, String> entry : initParams.entrySet())
+        if (initParams != null) {
+            for (Map.Entry<String, String> entry : initParams.entrySet()) {
                 cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
+            }
         }
 
         cometdServletPath = "/cometd";
@@ -83,24 +79,21 @@ public class ClientServerTest
         httpClient.start();
     }
 
-    protected BayeuxClient newBayeuxClient()
-    {
+    protected BayeuxClient newBayeuxClient() {
         return new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
     }
 
-    protected void disconnectBayeuxClient(BayeuxClient client)
-    {
+    protected void disconnectBayeuxClient(BayeuxClient client) {
         client.disconnect(1000);
     }
 
     @After
-    public void stopServer() throws Exception
-    {
-        if (httpClient != null)
+    public void stopServer() throws Exception {
+        if (httpClient != null) {
             httpClient.stop();
+        }
 
-        if (server != null)
-        {
+        if (server != null) {
             server.stop();
             server.join();
         }

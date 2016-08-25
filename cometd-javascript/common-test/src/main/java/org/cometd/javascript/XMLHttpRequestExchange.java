@@ -33,111 +33,89 @@ import org.mozilla.javascript.ScriptableObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class XMLHttpRequestExchange extends ScriptableObject
-{
+public class XMLHttpRequestExchange extends ScriptableObject {
     private CometDExchange exchange;
 
-    public XMLHttpRequestExchange()
-    {
+    public XMLHttpRequestExchange() {
     }
 
-    public void jsConstructor(Object client, Object threadModel, Scriptable thiz, String method, String url, boolean async)
-    {
+    public void jsConstructor(Object client, Object threadModel, Scriptable thiz, String method, String url, boolean async) {
         exchange = new CometDExchange((XMLHttpRequestClient)client, (ThreadModel)threadModel, thiz, method, url, async);
     }
 
-    public String getClassName()
-    {
+    public String getClassName() {
         return "XMLHttpRequestExchange";
     }
 
-    public boolean isAsynchronous()
-    {
+    public boolean isAsynchronous() {
         return exchange.isAsynchronous();
     }
 
-    public void await() throws InterruptedException, ExecutionException, TimeoutException
-    {
+    public void await() throws InterruptedException, ExecutionException, TimeoutException {
         exchange.get(60, TimeUnit.SECONDS);
         exchange.notifyReadyStateChange(false);
     }
 
-    public void jsFunction_addRequestHeader(String name, String value)
-    {
+    public void jsFunction_addRequestHeader(String name, String value) {
         exchange.getRequest().header(name, value);
     }
 
-    public String jsGet_method()
-    {
+    public String jsGet_method() {
         return exchange.getRequest().getMethod();
     }
 
-    public void jsFunction_setRequestContent(String data) throws UnsupportedEncodingException
-    {
+    public void jsFunction_setRequestContent(String data) throws UnsupportedEncodingException {
         exchange.setRequestContent(data);
     }
 
-    public int jsGet_readyState()
-    {
+    public int jsGet_readyState() {
         return exchange.getReadyState();
     }
 
-    public String jsGet_responseText()
-    {
+    public String jsGet_responseText() {
         return exchange.getResponseText();
     }
 
-    public int jsGet_responseStatus()
-    {
+    public int jsGet_responseStatus() {
         return exchange.getResponseStatus();
     }
 
-    public String jsGet_responseStatusText()
-    {
+    public String jsGet_responseStatusText() {
         return exchange.getResponseStatusText();
     }
 
-    public void jsFunction_abort()
-    {
+    public void jsFunction_abort() {
         exchange.abort();
     }
 
-    public String jsFunction_getAllResponseHeaders()
-    {
+    public String jsFunction_getAllResponseHeaders() {
         return exchange.getAllResponseHeaders();
     }
 
-    public String jsFunction_getResponseHeader(String name)
-    {
+    public String jsFunction_getResponseHeader(String name) {
         return exchange.getResponseHeader(name);
     }
 
-    public void jsFunction_send() throws Exception
-    {
+    public void jsFunction_send() throws Exception {
         exchange.send();
-        try
-        {
-            if (!isAsynchronous())
+        try {
+            if (!isAsynchronous()) {
                 await();
-        }
-        catch (InterruptedException x)
-        {
+            }
+        } catch (InterruptedException x) {
             throw new InterruptedIOException();
-        }
-        catch (ExecutionException x)
-        {
+        } catch (ExecutionException x) {
             Throwable cause = x.getCause();
-            if (cause instanceof Exception)
+            if (cause instanceof Exception) {
                 throw (Exception)cause;
-            else
+            } else {
                 throw (Error)cause;
+            }
         }
     }
 
-    public static class CometDExchange extends FutureResponseListener
-    {
-        public enum ReadyState
-        {
+    public static class CometDExchange extends FutureResponseListener {
+        public enum ReadyState {
             UNSENT, OPENED, HEADERS_RECEIVED, LOADING, DONE
         }
 
@@ -152,8 +130,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         private volatile int responseStatus;
         private volatile String responseStatusText;
 
-        public CometDExchange(XMLHttpRequestClient client, ThreadModel threads, Scriptable thiz, String method, String url, boolean async)
-        {
+        public CometDExchange(XMLHttpRequestClient client, ThreadModel threads, Scriptable thiz, String method, String url, boolean async) {
             super(client.getHttpClient().newRequest(url));
             getRequest().method(HttpMethod.fromString(method));
             this.threads = threads;
@@ -162,12 +139,12 @@ public class XMLHttpRequestExchange extends ScriptableObject
             aborted = false;
             readyState = ReadyState.OPENED;
             responseStatusText = null;
-            if (async)
+            if (async) {
                 notifyReadyStateChange(false);
+            }
         }
 
-        public boolean isAsynchronous()
-        {
+        public boolean isAsynchronous() {
             return async;
         }
 
@@ -179,38 +156,34 @@ public class XMLHttpRequestExchange extends ScriptableObject
          *
          * @param sync whether the call should be synchronous
          */
-        private void notifyReadyStateChange(boolean sync)
-        {
+        private void notifyReadyStateChange(boolean sync) {
             threads.invoke(sync, thiz, thiz, "onreadystatechange");
         }
 
-        private void notifyLoad()
-        {
+        private void notifyLoad() {
             threads.invoke(false, thiz, thiz, "onload");
         }
 
-        private void notifyError()
-        {
+        private void notifyError() {
             threads.invoke(false, thiz, thiz, "onerror");
         }
 
-        public void send() throws Exception
-        {
-            if (logger.isDebugEnabled())
+        public void send() throws Exception {
+            if (logger.isDebugEnabled()) {
                 logger.debug("Submitted {}", this);
+            }
             getRequest().send(this);
         }
 
-        public void abort()
-        {
+        public void abort() {
             cancel(false);
-            if (logger.isDebugEnabled())
+            if (logger.isDebugEnabled()) {
                 logger.debug("Aborted {}", this);
+            }
             aborted = true;
             responseText = null;
             getRequest().getHeaders().clear();
-            if (!async || readyState == ReadyState.HEADERS_RECEIVED || readyState == ReadyState.LOADING)
-            {
+            if (!async || readyState == ReadyState.HEADERS_RECEIVED || readyState == ReadyState.LOADING) {
                 readyState = ReadyState.DONE;
                 notifyReadyStateChange(false);
                 notifyError();
@@ -218,69 +191,56 @@ public class XMLHttpRequestExchange extends ScriptableObject
             readyState = ReadyState.UNSENT;
         }
 
-        public int getReadyState()
-        {
+        public int getReadyState() {
             return readyState.ordinal();
         }
 
-        public String getResponseText()
-        {
+        public String getResponseText() {
             return responseText;
         }
 
-        public int getResponseStatus()
-        {
+        public int getResponseStatus() {
             return responseStatus;
         }
 
-        public String getResponseStatusText()
-        {
+        public String getResponseStatusText() {
             return responseStatusText;
         }
 
-        public void setRequestContent(String content)
-        {
+        public void setRequestContent(String content) {
             requestText = content;
             getRequest().content(new StringContentProvider(content));
         }
 
-        public String getAllResponseHeaders()
-        {
+        public String getAllResponseHeaders() {
             return getRequest().getHeaders().toString();
         }
 
-        public String getResponseHeader(String name)
-        {
+        public String getResponseHeader(String name) {
             return getRequest().getHeaders().getStringField(name);
         }
 
         @Override
-        public void onBegin(Response response)
-        {
+        public void onBegin(Response response) {
             super.onBegin(response);
             this.responseStatus = response.getStatus();
             this.responseStatusText = response.getReason();
         }
 
         @Override
-        public void onHeaders(Response response)
-        {
+        public void onHeaders(Response response) {
             super.onHeaders(response);
-            if (!aborted && async)
-            {
+            if (!aborted && async) {
                 readyState = ReadyState.HEADERS_RECEIVED;
                 notifyReadyStateChange(true);
             }
         }
 
         @Override
-        public void onContent(Response response, ByteBuffer content)
-        {
+        public void onContent(Response response, ByteBuffer content) {
             super.onContent(response, content);
-            if (!aborted && async)
-            {
-                if (readyState != ReadyState.LOADING)
-                {
+            if (!aborted && async) {
+                if (readyState != ReadyState.LOADING) {
                     readyState = ReadyState.LOADING;
                     notifyReadyStateChange(true);
                 }
@@ -288,32 +248,28 @@ public class XMLHttpRequestExchange extends ScriptableObject
         }
 
         @Override
-        public void onComplete(Result result)
-        {
-            if (result.isSucceeded())
-            {
+        public void onComplete(Result result) {
+            if (result.isSucceeded()) {
                 Response response = result.getResponse();
-                if (logger.isDebugEnabled())
+                if (logger.isDebugEnabled()) {
                     logger.debug("Succeeded ({}) {}", response.getStatus(), this);
-                if (!aborted)
-                {
+                }
+                if (!aborted) {
                     responseText = getContentAsString();
                     readyState = ReadyState.DONE;
-                    if (async)
-                    {
+                    if (async) {
                         notifyReadyStateChange(true);
                         notifyLoad();
                     }
                 }
-            }
-            else
-            {
+            } else {
                 Throwable failure = result.getFailure();
-                if (!(failure instanceof EOFException))
-                    if (logger.isDebugEnabled())
+                if (!(failure instanceof EOFException)) {
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Failed " + this, failure);
-                if (async)
-                {
+                    }
+                }
+                if (async) {
                     readyState = ReadyState.DONE;
                     notifyReadyStateChange(true);
                     notifyError();
@@ -323,8 +279,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return requestText == null ? getRequest().toString() : String.format("%s%n%s", getRequest(), requestText);
         }
     }

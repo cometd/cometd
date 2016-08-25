@@ -25,22 +25,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ServerShutdownTest extends AbstractBayeuxClientServerTest
-{
-    public ServerShutdownTest(String serverTransport)
-    {
+public class ServerShutdownTest extends AbstractBayeuxClientServerTest {
+    public ServerShutdownTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testServerShutdown() throws Exception
-    {
+    public void testServerShutdown() throws Exception {
         Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -81,13 +77,10 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
         server.join();
 
         // Expect the connect to be back with an exception
-        try
-        {
+        try {
             futureResponse.get(timeout * 2, TimeUnit.SECONDS);
             Assert.fail();
-        }
-        catch (ExecutionException expected)
-        {
+        } catch (ExecutionException expected) {
         }
     }
 }

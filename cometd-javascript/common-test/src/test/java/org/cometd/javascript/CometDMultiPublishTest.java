@@ -40,11 +40,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mozilla.javascript.ScriptableObject;
 
-public class CometDMultiPublishTest extends AbstractCometDLongPollingTest
-{
+public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
     @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
+    protected void customizeContext(ServletContextHandler context) throws Exception {
         super.customizeContext(context);
         PublishThrowingFilter filter = new PublishThrowingFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
@@ -52,8 +50,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest
     }
 
     @Test
-    public void testMultiPublish() throws Throwable
-    {
+    public void testMultiPublish() throws Throwable {
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
@@ -96,85 +93,73 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest
         Assert.assertTrue(disconnect.await(5000));
     }
 
-    public static class Handler extends ScriptableObject
-    {
+    public static class Handler extends ScriptableObject {
         private int id;
         private AtomicReference<List<Throwable>> failures;
         private CountDownLatch latch;
 
-        public String getClassName()
-        {
+        public String getClassName() {
             return "Handler";
         }
 
-        public void jsFunction_handle(Object jsMessage)
-        {
+        public void jsFunction_handle(Object jsMessage) {
             Map message = (Map)Utils.jsToJava(jsMessage);
             Boolean successful = (Boolean)message.get("successful");
             ++id;
-            if (id == 1)
-            {
+            if (id == 1) {
                 // First publish should succeed
-                if (successful == null || !successful)
+                if (successful == null || !successful) {
                     failures.get().add(new AssertionError("Publish " + id + " expected successful"));
-            }
-            else if (id == 2 || id == 3 || id == 4)
-            {
+                }
+            } else if (id == 2 || id == 3 || id == 4) {
                 // Second publish should fail because of the server
                 // Third and fourth are soft failed by the CometD implementation
-                if (successful == null || successful)
-                {
+                if (successful == null || successful) {
                     failures.get().add(new AssertionError("Publish " + id + " expected unsuccessful"));
-                }
-                else
-                {
+                } else {
                     Map data = (Map)((Map)((Map)message.get("failure")).get("message")).get("data");
                     int dataId = ((Number)data.get("id")).intValue();
-                    if (dataId != id)
+                    if (dataId != id) {
                         failures.get().add(new AssertionError("data id " + dataId + ", expecting " + id));
+                    }
                 }
             }
             latch.countDown();
         }
 
-        public void expect(AtomicReference<List<Throwable>> failures, int count)
-        {
+        public void expect(AtomicReference<List<Throwable>> failures, int count) {
             this.failures = failures;
             latch = new CountDownLatch(count);
         }
 
-        public boolean await(long timeout) throws InterruptedException
-        {
+        public boolean await(long timeout) throws InterruptedException {
             return latch.await(timeout, TimeUnit.MILLISECONDS);
         }
     }
 
-    public static class PublishThrowingFilter implements Filter
-    {
+    public static class PublishThrowingFilter implements Filter {
         private int messages;
 
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
+        public void init(FilterConfig filterConfig) throws ServletException {
         }
 
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
 
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
             String uri = request.getRequestURI();
-            if (!uri.endsWith("/handshake") && !uri.endsWith("/connect"))
+            if (!uri.endsWith("/handshake") && !uri.endsWith("/connect")) {
                 ++messages;
+            }
             // The third non-handshake and non-connect message will be the second publish, throw
-            if (messages == 3)
+            if (messages == 3) {
                 throw new IOException();
+            }
             chain.doFilter(request, response);
         }
 
-        public void destroy()
-        {
+        public void destroy() {
         }
     }
 }

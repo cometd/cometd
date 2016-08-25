@@ -22,24 +22,20 @@ import java.util.concurrent.atomic.AtomicMarkableReference;
  *
  * @param <T> the reference type
  */
-public class MarkedReference<T>
-{
+public class MarkedReference<T> {
     private final T reference;
     private final boolean mark;
 
-    public MarkedReference(T reference, boolean mark)
-    {
+    public MarkedReference(T reference, boolean mark) {
         this.reference = reference;
         this.mark = mark;
     }
 
-    public T getReference()
-    {
+    public T getReference() {
         return reference;
     }
 
-    public boolean isMarked()
-    {
+    public boolean isMarked() {
         return mark;
     }
 }

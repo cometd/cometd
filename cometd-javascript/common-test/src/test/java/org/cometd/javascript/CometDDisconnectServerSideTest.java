@@ -28,11 +28,9 @@ import org.cometd.server.AbstractService;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDDisconnectServerSideTest extends AbstractCometDTest
-{
+public class CometDDisconnectServerSideTest extends AbstractCometDTest {
     @Test
-    public void testServerSideDisconnect() throws Exception
-    {
+    public void testServerSideDisconnect() throws Exception {
         final CountDownLatch connectRequestLatch = new CountDownLatch(1);
         ServerSideDisconnectService service = new ServerSideDisconnectService(bayeuxServer, connectRequestLatch);
 
@@ -56,8 +54,7 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest
     }
 
     @Test
-    public void testDeliverAndServerSideDisconnect() throws Exception
-    {
+    public void testDeliverAndServerSideDisconnect() throws Exception {
         final String channelName = "/service/kick";
         final CountDownLatch connectLatch = new CountDownLatch(1);
         DeliverAndServerSideDisconnectService service = new DeliverAndServerSideDisconnectService(bayeuxServer, channelName, connectLatch);
@@ -85,53 +82,47 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest
         Assert.assertTrue(disconnectLatch.await(5000));
     }
 
-    public static class ServerSideDisconnectService extends AbstractService
-    {
+    public static class ServerSideDisconnectService extends AbstractService {
         private final AtomicInteger connects = new AtomicInteger();
         private final CountDownLatch connectRequestLatch;
 
-        ServerSideDisconnectService(BayeuxServer bayeuxServer, CountDownLatch connectRequestLatch)
-        {
+        ServerSideDisconnectService(BayeuxServer bayeuxServer, CountDownLatch connectRequestLatch) {
             super(bayeuxServer, "test_server_side_disconnect");
             this.connectRequestLatch = connectRequestLatch;
             addService(Channel.META_CONNECT, "processMetaConnect");
         }
 
-        public void processMetaConnect(ServerSession session, ServerMessage message)
-        {
-            if (connects.incrementAndGet() == 2)
+        public void processMetaConnect(ServerSession session, ServerMessage message) {
+            if (connects.incrementAndGet() == 2) {
                 connectRequestLatch.countDown();
+            }
         }
 
-        public void disconnect(String sessionId)
-        {
+        public void disconnect(String sessionId) {
             ServerSession session = getBayeux().getSession(sessionId);
             session.disconnect();
         }
     }
 
-    public static class DeliverAndServerSideDisconnectService extends AbstractService
-    {
+    public static class DeliverAndServerSideDisconnectService extends AbstractService {
         private final AtomicInteger connects = new AtomicInteger();
         private final String channelName;
         private final CountDownLatch connectLatch;
 
-        DeliverAndServerSideDisconnectService(BayeuxServer bayeuxServer, String channelName, CountDownLatch connectLatch)
-        {
+        DeliverAndServerSideDisconnectService(BayeuxServer bayeuxServer, String channelName, CountDownLatch connectLatch) {
             super(bayeuxServer, "test_disconnect_with_messages");
             this.channelName = channelName;
             this.connectLatch = connectLatch;
             addService(Channel.META_CONNECT, "processMetaConnect");
         }
 
-        public void processMetaConnect(ServerSession session, ServerMessage message)
-        {
-            if (connects.incrementAndGet() == 2)
+        public void processMetaConnect(ServerSession session, ServerMessage message) {
+            if (connects.incrementAndGet() == 2) {
                 connectLatch.countDown();
+            }
         }
 
-        public void kick(String sessionId)
-        {
+        public void kick(String sessionId) {
             final ServerMessage.Mutable kickMessage = getBayeux().newMessage();
             kickMessage.setChannel(channelName);
             kickMessage.setData(new HashMap());
@@ -141,10 +132,8 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest
             // We need to batch otherwise the deliver() will wake up the long poll
             // and the disconnect may not be delivered, since the client won't issue
             // a new long poll, and the disconnect will remain in the queue
-            session.batch(new Runnable()
-            {
-                public void run()
-                {
+            session.batch(new Runnable() {
+                public void run() {
                     session.deliver(getServerSession(), kickMessage);
                     session.disconnect();
                 }

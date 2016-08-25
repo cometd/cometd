@@ -19,14 +19,12 @@ package org.cometd.javascript;
  * A base test class to be extended for tests that
  * can only pass using the websocket transport
  */
-public class AbstractCometDWebSocketTest extends AbstractCometDTest
-{
+public class AbstractCometDWebSocketTest extends AbstractCometDTest {
     @Override
-    protected void initPage() throws Exception
-    {
+    protected void initPage() throws Exception {
         super.initPage();
         evaluateScript("keep_only_websocket_transport",
                 "cometd.unregisterTransports();" +
-                "cometd.registerTransport('websocket', originalTransports['websocket']);");
+                        "cometd.registerTransport('websocket', originalTransports['websocket']);");
     }
 }

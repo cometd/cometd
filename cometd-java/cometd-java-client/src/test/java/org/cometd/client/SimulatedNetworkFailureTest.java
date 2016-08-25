@@ -34,15 +34,13 @@ import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class SimulatedNetworkFailureTest extends ClientServerTest
-{
+public class SimulatedNetworkFailureTest extends ClientServerTest {
     private long timeout = 10000;
     private long maxInterval = 8000;
     private long sweepInterval = 1000;
 
     @Before
-    public void setUp() throws Exception
-    {
+    public void setUp() throws Exception {
         Map<String, String> params = new HashMap<>();
         params.put("timeout", String.valueOf(timeout));
         params.put("maxInterval", String.valueOf(maxInterval));
@@ -51,43 +49,38 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
     }
 
     @Test
-    public void testClientShortNetworkFailure() throws Exception
-    {
+    public void testClientShortNetworkFailure() throws Exception {
         final CountDownLatch connectLatch = new CountDownLatch(2);
         final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<>();
         final AtomicBoolean connected = new AtomicBoolean(false);
 
-        TestBayeuxClient client = new TestBayeuxClient()
-        {
+        TestBayeuxClient client = new TestBayeuxClient() {
             @Override
-            protected boolean sendConnect()
-            {
+            protected boolean sendConnect() {
                 boolean result = super.sendConnect();
                 connectLatch.countDown();
                 return result;
             }
         };
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 boolean wasConnected = connected.get();
                 connected.set(message.isSuccessful());
 
-                if (!wasConnected && connected.get())
+                if (!wasConnected && connected.get()) {
                     System.err.printf("BayeuxClient connected %s%n", message);
-                else if (wasConnected && !connected.get())
+                } else if (wasConnected && !connected.get()) {
                     System.err.printf("BayeuxClient unconnected %s%n", message);
+                }
             }
         });
         String channelName = "/test";
         ClientSessionChannel channel = client.getChannel(channelName);
-        channel.addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
+        channel.addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
                     publishLatch.get().countDown();
+                }
             }
         });
 
@@ -134,52 +127,46 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
     }
 
     @Test
-    public void testClientLongNetworkFailure() throws Exception
-    {
+    public void testClientLongNetworkFailure() throws Exception {
         final CountDownLatch connectLatch = new CountDownLatch(2);
         final CountDownLatch handshakeLatch = new CountDownLatch(2);
         final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<>();
         final AtomicBoolean connected = new AtomicBoolean(false);
 
-        TestBayeuxClient client = new TestBayeuxClient()
-        {
+        TestBayeuxClient client = new TestBayeuxClient() {
             @Override
-            protected boolean sendConnect()
-            {
+            protected boolean sendConnect() {
                 boolean result = super.sendConnect();
                 connectLatch.countDown();
                 return result;
             }
         };
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful())
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isSuccessful()) {
                     handshakeLatch.countDown();
+                }
             }
         });
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 boolean wasConnected = connected.get();
                 connected.set(message.isSuccessful());
 
-                if (!wasConnected && connected.get())
+                if (!wasConnected && connected.get()) {
                     System.err.println("BayeuxClient connected");
-                else if (wasConnected && !connected.get())
+                } else if (wasConnected && !connected.get()) {
                     System.err.println("BayeuxClient unconnected");
+                }
             }
         });
         String channelName = "/test";
         ClientSessionChannel channel = client.getChannel(channelName);
-        channel.addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
+        channel.addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
                     publishLatch.get().countDown();
+                }
             }
         });
         client.handshake();
@@ -225,42 +212,37 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
-    private class TestBayeuxClient extends BayeuxClient
-    {
+    private class TestBayeuxClient extends BayeuxClient {
         private long networkDown;
 
-        private TestBayeuxClient()
-        {
+        private TestBayeuxClient() {
             super(cometdURL, new LongPollingTransport(null, httpClient));
         }
 
-        public void setNetworkDown(long time)
-        {
+        public void setNetworkDown(long time) {
             this.networkDown = time;
             System.err.println("Set network down");
         }
 
         @Override
-        protected void processConnect(Message.Mutable connect)
-        {
-            if (networkDown > 0)
+        protected void processConnect(Message.Mutable connect) {
+            if (networkDown > 0) {
                 connect.setSuccessful(false);
+            }
             super.processConnect(connect);
         }
 
         @Override
-        protected boolean scheduleConnect(long interval, long backoff)
-        {
-            if (networkDown > 0)
+        protected boolean scheduleConnect(long interval, long backoff) {
+            if (networkDown > 0) {
                 backoff = networkDown;
+            }
             return super.scheduleConnect(interval, backoff);
         }
 
         @Override
-        protected boolean sendConnect()
-        {
-            if (networkDown > 0)
-            {
+        protected boolean sendConnect() {
+            if (networkDown > 0) {
                 networkDown = 0;
                 System.err.println("Reset network down");
             }
@@ -268,16 +250,12 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
         }
 
         @Override
-        protected void enqueueSend(Message.Mutable message)
-        {
-            if (networkDown > 0)
-            {
+        protected void enqueueSend(Message.Mutable message) {
+            if (networkDown > 0) {
                 List<Message.Mutable> messages = new ArrayList<>(1);
                 messages.add(message);
                 failMessages(null, messages);
-            }
-            else
-            {
+            } else {
                 super.enqueueSend(message);
             }
         }

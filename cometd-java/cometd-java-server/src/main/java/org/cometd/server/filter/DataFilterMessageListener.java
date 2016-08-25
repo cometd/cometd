@@ -28,41 +28,36 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>A MessageListener that applies DataFilters to the received messages.</p>
  */
-public class DataFilterMessageListener implements ServerChannel.MessageListener
-{
+public class DataFilterMessageListener implements ServerChannel.MessageListener {
     private final Logger _logger = LoggerFactory.getLogger(getClass());
     private final List<DataFilter> _filters;
 
-    public DataFilterMessageListener(DataFilter... filters)
-    {
+    public DataFilterMessageListener(DataFilter... filters) {
         this(null, filters);
     }
 
-    public DataFilterMessageListener(BayeuxServer bayeux, DataFilter... filters)
-    {
+    public DataFilterMessageListener(BayeuxServer bayeux, DataFilter... filters) {
         _filters = Arrays.asList(filters);
     }
 
-    public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
-    {
-        try
-        {
+    public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
+        try {
             Object data = message.getData();
             final Object orig = data;
-            for (DataFilter filter : _filters)
-            {
+            for (DataFilter filter : _filters) {
                 data = filter.filter(from, channel, data);
-                if (data == null)
+                if (data == null) {
                     return false;
+                }
             }
-            if (data != orig)
+            if (data != orig) {
                 message.setData(data);
+            }
             return true;
-        }
-        catch (DataFilter.Abort a)
-        {
-            if (_logger.isDebugEnabled())
+        } catch (DataFilter.Abort a) {
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("", a);
+            }
             return false;
         }
     }

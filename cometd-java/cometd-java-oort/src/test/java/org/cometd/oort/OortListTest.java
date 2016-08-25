@@ -26,16 +26,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class OortListTest extends AbstractOortObjectTest
-{
-    public OortListTest(String serverTransport)
-    {
+public class OortListTest extends AbstractOortObjectTest {
+    public OortListTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testElementAdded() throws Exception
-    {
+    public void testElementAdded() throws Exception {
         String name = "test";
         OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
         OortList<Long> oortList1 = new OortList<>(oort1, name, factory);
@@ -44,11 +41,9 @@ public class OortListTest extends AbstractOortObjectTest
 
         final long element = 1;
         final CountDownLatch addLatch = new CountDownLatch(1);
-        oortList2.addElementListener(new OortList.ElementListener.Adapter<Long>()
-        {
+        oortList2.addElementListener(new OortList.ElementListener.Adapter<Long>() {
             @Override
-            public void onAdded(OortObject.Info<List<Long>> info, List<Long> elements)
-            {
+            public void onAdded(OortObject.Info<List<Long>> info, List<Long> elements) {
                 Assert.assertEquals(1, elements.size());
                 Assert.assertEquals(element, (long)elements.get(0));
                 addLatch.countDown();
@@ -62,8 +57,7 @@ public class OortListTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testElementRemoved() throws Exception
-    {
+    public void testElementRemoved() throws Exception {
         String name = "test";
         OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
         OortList<Long> oortList1 = new OortList<>(oort1, name, factory);
@@ -71,11 +65,9 @@ public class OortListTest extends AbstractOortObjectTest
         startOortObjects(oortList1, oortList2);
 
         final CountDownLatch setLatch = new CountDownLatch(2);
-        OortObject.Listener<List<Long>> listener = new OortObject.Listener.Adapter<List<Long>>()
-        {
+        OortObject.Listener<List<Long>> listener = new OortObject.Listener.Adapter<List<Long>>() {
             @Override
-            public void onUpdated(OortObject.Info<List<Long>> oldInfo, OortObject.Info<List<Long>> newInfo)
-            {
+            public void onUpdated(OortObject.Info<List<Long>> oldInfo, OortObject.Info<List<Long>> newInfo) {
                 setLatch.countDown();
             }
         };
@@ -88,11 +80,9 @@ public class OortListTest extends AbstractOortObjectTest
         Assert.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
-        oortList2.addElementListener(new OortList.ElementListener.Adapter<Long>()
-        {
+        oortList2.addElementListener(new OortList.ElementListener.Adapter<Long>() {
             @Override
-            public void onRemoved(OortObject.Info<List<Long>> info, List<Long> elements)
-            {
+            public void onRemoved(OortObject.Info<List<Long>> info, List<Long> elements) {
                 Assert.assertEquals(1, elements.size());
                 Assert.assertEquals(element, (long)elements.get(0));
                 removeLatch.countDown();
@@ -106,8 +96,7 @@ public class OortListTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testDeltaListener() throws Exception
-    {
+    public void testDeltaListener() throws Exception {
         String name = "test";
         OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
         OortList<String> oortList1 = new OortList<>(oort1, name, factory);
@@ -115,11 +104,9 @@ public class OortListTest extends AbstractOortObjectTest
         startOortObjects(oortList1, oortList2);
 
         final CountDownLatch setLatch1 = new CountDownLatch(2);
-        OortObject.Listener<List<String>> listener = new OortObject.Listener.Adapter<List<String>>()
-        {
+        OortObject.Listener<List<String>> listener = new OortObject.Listener.Adapter<List<String>>() {
             @Override
-            public void onUpdated(OortObject.Info<List<String>> oldInfo, OortObject.Info<List<String>> newInfo)
-            {
+            public void onUpdated(OortObject.Info<List<String>> oldInfo, OortObject.Info<List<String>> newInfo) {
                 setLatch1.countDown();
             }
         };
@@ -145,16 +132,13 @@ public class OortListTest extends AbstractOortObjectTest
         final AtomicReference<CountDownLatch> setLatch2 = new AtomicReference<>(new CountDownLatch(4));
         oortList1.addListener(new OortList.DeltaListener<>(oortList1));
         oortList2.addListener(new OortList.DeltaListener<>(oortList2));
-        OortList.ElementListener<String> elementListener = new OortList.ElementListener<String>()
-        {
-            public void onAdded(OortObject.Info<List<String>> info, List<String> elements)
-            {
+        OortList.ElementListener<String> elementListener = new OortList.ElementListener<String>() {
+            public void onAdded(OortObject.Info<List<String>> info, List<String> elements) {
                 adds.addAll(elements);
                 setLatch2.get().countDown();
             }
 
-            public void onRemoved(OortObject.Info<List<String>> info, List<String> elements)
-            {
+            public void onRemoved(OortObject.Info<List<String>> info, List<String> elements) {
                 removes.addAll(elements);
                 setLatch2.get().countDown();
             }
@@ -178,8 +162,7 @@ public class OortListTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testContains() throws Exception
-    {
+    public void testContains() throws Exception {
         String name = "test";
         OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
         OortList<String> oortList1 = new OortList<>(oort1, name, factory);
@@ -187,11 +170,9 @@ public class OortListTest extends AbstractOortObjectTest
         startOortObjects(oortList1, oortList2);
 
         final CountDownLatch setLatch = new CountDownLatch(2);
-        OortObject.Listener<List<String>> listener = new OortObject.Listener.Adapter<List<String>>()
-        {
+        OortObject.Listener<List<String>> listener = new OortObject.Listener.Adapter<List<String>>() {
             @Override
-            public void onUpdated(OortObject.Info<List<String>> oldInfo, OortObject.Info<List<String>> newInfo)
-            {
+            public void onUpdated(OortObject.Info<List<String>> oldInfo, OortObject.Info<List<String>> newInfo) {
                 setLatch.countDown();
             }
         };
@@ -201,11 +182,9 @@ public class OortListTest extends AbstractOortObjectTest
         Assert.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch addLatch = new CountDownLatch(4);
-        OortList.ElementListener<String> addedListener = new OortList.ElementListener.Adapter<String>()
-        {
+        OortList.ElementListener<String> addedListener = new OortList.ElementListener.Adapter<String>() {
             @Override
-            public void onAdded(OortObject.Info<List<String>> info, List<String> elements)
-            {
+            public void onAdded(OortObject.Info<List<String>> info, List<String> elements) {
                 addLatch.countDown();
             }
         };
@@ -234,8 +213,7 @@ public class OortListTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testConcurrent() throws Exception
-    {
+    public void testConcurrent() throws Exception {
         String name = "concurrent";
         OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
         final OortList<String> oortList1 = new OortList<>(oort1, name, factory);
@@ -249,39 +227,29 @@ public class OortListTest extends AbstractOortObjectTest
         final CountDownLatch latch2 = new CountDownLatch(threads * iterations);
 
         oortList2.addListener(new OortList.DeltaListener<>(oortList2));
-        oortList2.addElementListener(new OortList.ElementListener.Adapter<String>()
-        {
+        oortList2.addElementListener(new OortList.ElementListener.Adapter<String>() {
             @Override
-            public void onAdded(OortObject.Info<List<String>> info, List<String> elements)
-            {
-                for (int i = 0; i < elements.size(); ++i)
+            public void onAdded(OortObject.Info<List<String>> info, List<String> elements) {
+                for (int i = 0; i < elements.size(); ++i) {
                     latch2.countDown();
+                }
             }
         });
 
-        for (int i = 0; i < threads; ++i)
-        {
+        for (int i = 0; i < threads; ++i) {
             final int index = i;
-            new Thread(new Runnable()
-            {
+            new Thread(new Runnable() {
                 @Override
-                public void run()
-                {
-                    try
-                    {
+                public void run() {
+                    try {
                         barrier.await();
-                        for (int j = 0; j < iterations; ++j)
-                        {
+                        for (int j = 0; j < iterations; ++j) {
                             String element = String.valueOf(index * iterations + j);
                             oortList1.addAndShare((OortObject.Result<Boolean>)null, element);
                         }
-                    }
-                    catch (Throwable x)
-                    {
+                    } catch (Throwable x) {
                         x.printStackTrace();
-                    }
-                    finally
-                    {
+                    } finally {
                         latch1.countDown();
                     }
                 }

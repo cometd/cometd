@@ -29,23 +29,18 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
-public class ServerRestartTest extends ClientServerTest
-{
+public class ServerRestartTest extends ClientServerTest {
     @Before
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testServerRestart() throws Exception
-    {
+    public void testServerRestart() throws Exception {
         final AtomicReference<CountDownLatch> sendLatch = new AtomicReference<>(new CountDownLatch(3));
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
-        {
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
             @Override
-            public void onSending(List<? extends Message> messages)
-            {
+            public void onSending(List<? extends Message> messages) {
                 super.onSending(messages);
                 sendLatch.get().countDown();
             }
@@ -69,18 +64,14 @@ public class ServerRestartTest extends ClientServerTest
 
         // Add listeners to check the behavior of the client
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 handshakeLatch.countDown();
             }
         });
         final CountDownLatch connectLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 connectLatch.countDown();
             }
         });

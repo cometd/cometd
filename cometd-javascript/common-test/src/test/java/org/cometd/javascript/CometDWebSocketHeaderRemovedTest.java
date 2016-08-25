@@ -34,40 +34,30 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @Ignore("The test filter is not called because the WSUpgradeFilter is added first")
-public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTest
-{
+public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTest {
     @Test
-    public void testWebSocketHeaderRemoved() throws Exception
-    {
-        context.addFilter(new FilterHolder(new Filter()
-        {
-            public void init(FilterConfig filterConfig) throws ServletException
-            {
+    public void testWebSocketHeaderRemoved() throws Exception {
+        context.addFilter(new FilterHolder(new Filter() {
+            public void init(FilterConfig filterConfig) throws ServletException {
             }
 
-            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-            {
-                try
-                {
+            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+                try {
                     // Wrap the response to remove the header
-                    chain.doFilter(request, new HttpServletResponseWrapper((HttpServletResponse)response)
-                    {
+                    chain.doFilter(request, new HttpServletResponseWrapper((HttpServletResponse)response) {
                         @Override
-                        public void addHeader(String name, String value)
-                        {
-                            if (!"Sec-WebSocket-Accept".equals(name))
+                        public void addHeader(String name, String value) {
+                            if (!"Sec-WebSocket-Accept".equals(name)) {
                                 super.addHeader(name, value);
+                            }
                         }
                     });
-                }
-                finally
-                {
+                } finally {
                     ((HttpServletResponse)response).setHeader("Sec-WebSocket-Accept", null);
                 }
             }
 
-            public void destroy()
-            {
+            public void destroy() {
             }
         }), cometdServletPath, EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
@@ -77,9 +67,9 @@ public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTes
         evaluateScript("cometd.registerTransport('long-polling', originalTransports['long-polling']);");
 
         evaluateScript("cometd.configure({" +
-                       "url: '" + cometdURL + "', " +
-                       "logLevel: '" + getLogLevel() + "'" +
-                       "});");
+                "url: '" + cometdURL + "', " +
+                "logLevel: '" + getLogLevel() + "'" +
+                "});");
 
         evaluateScript("var latch = new Latch(1);");
         Latch latch = get("latch");

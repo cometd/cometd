@@ -33,11 +33,9 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPollingTest
-{
+public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPollingTest {
     @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
+    protected void customizeContext(ServletContextHandler context) throws Exception {
         super.customizeContext(context);
         PublishThrowingFilter filter = new PublishThrowingFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
@@ -45,8 +43,7 @@ public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPolli
     }
 
     @Test
-    public void testPublishFailures() throws Exception
-    {
+    public void testPublishFailures() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("var readyLatch = new Latch(1);");
@@ -85,32 +82,29 @@ public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPolli
         Assert.assertEquals("disconnected", status);
     }
 
-    public static class PublishThrowingFilter implements Filter
-    {
+    public static class PublishThrowingFilter implements Filter {
         private int messages;
 
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
+        public void init(FilterConfig filterConfig) throws ServletException {
         }
 
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
 
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
             String uri = request.getRequestURI();
-            if (!uri.endsWith("/handshake") && !uri.endsWith("/connect"))
+            if (!uri.endsWith("/handshake") && !uri.endsWith("/connect")) {
                 ++messages;
+            }
             // The second non-handshake and non-connect message will be the publish, throw
-            if (messages == 2)
+            if (messages == 2) {
                 throw new IOException();
+            }
             chain.doFilter(request, response);
         }
 
-        public void destroy()
-        {
+        public void destroy() {
         }
     }
 }

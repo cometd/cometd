@@ -57,8 +57,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see BayeuxServer#newLocalSession(String)
  */
-public abstract class AbstractService
-{
+public abstract class AbstractService {
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private final Map<String, Invoker> invokers = new ConcurrentHashMap<>();
     private final String _name;
@@ -73,8 +72,7 @@ public abstract class AbstractService
      * @param bayeux The BayeuxServer instance.
      * @param name   The name of the service (used as client ID prefix).
      */
-    public AbstractService(BayeuxServer bayeux, String name)
-    {
+    public AbstractService(BayeuxServer bayeux, String name) {
         this(bayeux, name, 0);
     }
 
@@ -85,42 +83,39 @@ public abstract class AbstractService
      * @param name       The name of the service (used as client ID prefix).
      * @param maxThreads The max size of a ThreadPool to create to handle messages.
      */
-    public AbstractService(BayeuxServer bayeux, String name, int maxThreads)
-    {
+    public AbstractService(BayeuxServer bayeux, String name, int maxThreads) {
         _name = name;
         _bayeux = (BayeuxServerImpl)bayeux;
         _session = _bayeux.newLocalSession(name);
         _session.handshake();
-        if (maxThreads > 0)
+        if (maxThreads > 0) {
             setThreadPool(new QueuedThreadPool(maxThreads));
-        if (!Modifier.isPublic(getClass().getModifiers()))
+        }
+        if (!Modifier.isPublic(getClass().getModifiers())) {
             throw new IllegalArgumentException("Service class '" + getClass().getName() + "' must be public");
+        }
     }
 
-    public BayeuxServer getBayeux()
-    {
+    public BayeuxServer getBayeux() {
         return _bayeux;
     }
 
-    public String getName()
-    {
+    public String getName() {
         return _name;
     }
 
     /**
      * @return The {@link LocalSession} associated with this CometD service
      */
-    public LocalSession getLocalSession()
-    {
+    public LocalSession getLocalSession() {
         return _session;
     }
 
     /**
      * @return The {@link ServerSession} of the {@link LocalSession} associated
-     *         with this CometD service
+     * with this CometD service
      */
-    public ServerSession getServerSession()
-    {
+    public ServerSession getServerSession() {
         return _session.getServerSession();
     }
 
@@ -128,8 +123,7 @@ public abstract class AbstractService
      * @return The thread pool associated with this CometD service, or null
      * @see #AbstractService(BayeuxServer, String, int)
      */
-    public ThreadPool getThreadPool()
-    {
+    public ThreadPool getThreadPool() {
         return _threadPool;
     }
 
@@ -140,16 +134,14 @@ public abstract class AbstractService
      *
      * @param pool The ThreadPool
      */
-    public void setThreadPool(ThreadPool pool)
-    {
-        try
-        {
-            if (pool instanceof LifeCycle)
-                if (!((LifeCycle)pool).isStarted())
+    public void setThreadPool(ThreadPool pool) {
+        try {
+            if (pool instanceof LifeCycle) {
+                if (!((LifeCycle)pool).isStarted()) {
                     ((LifeCycle)pool).start();
-        }
-        catch (Exception e)
-        {
+                }
+            }
+        } catch (Exception e) {
             throw new IllegalStateException(e);
         }
         _threadPool = pool;
@@ -157,11 +149,10 @@ public abstract class AbstractService
 
     /**
      * @return whether this CometD service receives messages published by itself
-     *         on channels it is subscribed to (defaults to false).
+     * on channels it is subscribed to (defaults to false).
      * @see #setSeeOwnPublishes(boolean)
      */
-    public boolean isSeeOwnPublishes()
-    {
+    public boolean isSeeOwnPublishes() {
         return _seeOwn;
     }
 
@@ -170,8 +161,7 @@ public abstract class AbstractService
      *                        on channels it is subscribed to (defaults to false).
      * @see #isSeeOwnPublishes()
      */
-    public void setSeeOwnPublishes(boolean seeOwnPublishes)
-    {
+    public void setSeeOwnPublishes(boolean seeOwnPublishes) {
         _seeOwn = seeOwnPublishes;
     }
 
@@ -199,38 +189,40 @@ public abstract class AbstractService
      *                    are received on the channel
      * @see #removeService(String, String)
      */
-    protected void addService(String channelName, String methodName)
-    {
-        if (_logger.isDebugEnabled())
+    protected void addService(String channelName, String methodName) {
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Mapping {}#{} to {}", _name, methodName, channelName);
+        }
 
         Method candidate = null;
         Class<?> c = this.getClass();
-        while (c != null && c != AbstractService.class)
-        {
+        while (c != null && c != AbstractService.class) {
             Method[] methods = c.getDeclaredMethods();
-            for (int i = methods.length; i-- > 0; )
-            {
+            for (int i = methods.length; i-- > 0; ) {
                 Method method = methods[i];
-                if (methodName.equals(method.getName()) && Modifier.isPublic(method.getModifiers()))
-                {
-                    if (candidate != null)
+                if (methodName.equals(method.getName()) && Modifier.isPublic(method.getModifiers())) {
+                    if (candidate != null) {
                         throw new IllegalArgumentException("Multiple service methods called '" + methodName + "'");
+                    }
                     candidate = method;
                 }
             }
             c = c.getSuperclass();
         }
 
-        if (candidate == null)
+        if (candidate == null) {
             throw new NoSuchMethodError("Cannot find public service method '" + methodName + "'");
+        }
         int params = candidate.getParameterTypes().length;
-        if (params != 2)
+        if (params != 2) {
             throw new IllegalArgumentException("Service method '" + methodName + "' must have 2 parameters");
-        if (!ServerSession.class.isAssignableFrom(candidate.getParameterTypes()[0]))
+        }
+        if (!ServerSession.class.isAssignableFrom(candidate.getParameterTypes()[0])) {
             throw new IllegalArgumentException("Service method '" + methodName + "' does not have " + ServerSession.class.getName() + " as first parameter");
-        if (!ServerMessage.class.isAssignableFrom(candidate.getParameterTypes()[1]))
+        }
+        if (!ServerMessage.class.isAssignableFrom(candidate.getParameterTypes()[1])) {
             throw new IllegalArgumentException("Service method '" + methodName + "' does not have " + ServerMessage.class.getName() + " as second parameter");
+        }
 
         ServerChannel channel = _bayeux.createChannelIfAbsent(channelName).getReference();
         Invoker invoker = new Invoker(channelName, candidate);
@@ -246,11 +238,9 @@ public abstract class AbstractService
      * @see #addService(String, String)
      * @see #removeService(String)
      */
-    protected void removeService(String channelName, String methodName)
-    {
+    protected void removeService(String channelName, String methodName) {
         ServerChannel channel = _bayeux.getChannel(channelName);
-        if (channel != null)
-        {
+        if (channel != null) {
             Invoker invoker = invokers.remove(methodName);
             channel.removeListener(invoker);
         }
@@ -263,15 +253,13 @@ public abstract class AbstractService
      * @see #addService(String, String)
      * @see #removeService(String, String)
      */
-    protected void removeService(String channelName)
-    {
+    protected void removeService(String channelName) {
         ServerChannel channel = _bayeux.getChannel(channelName);
-        if (channel != null)
-        {
-            for (Invoker invoker : invokers.values())
-            {
-                if (invoker.channelName.equals(channelName))
+        if (channel != null) {
+            for (Invoker invoker : invokers.values()) {
+                if (invoker.channelName.equals(channelName)) {
                     channel.removeListener(invoker);
+                }
             }
         }
     }
@@ -291,8 +279,7 @@ public abstract class AbstractService
      * @param onChannel The channel of the message
      * @param data      The data of the message
      */
-    protected void send(ServerSession toClient, String onChannel, Object data)
-    {
+    protected void send(ServerSession toClient, String onChannel, Object data) {
         toClient.deliver(_session.getServerSession(), onChannel, data);
     }
 
@@ -300,68 +287,57 @@ public abstract class AbstractService
      * <p>Handles exceptions during the invocation of a mapped method.</p>
      * <p>This method is called when a mapped method throws and exception while handling a message.</p>
      *
-     * @param method     the name of the method invoked that threw an exception
+     * @param method  the name of the method invoked that threw an exception
      * @param session the remote session that sent the message
      * @param local   the local session associated to this service
-     * @param message        the message sent by the remote session
-     * @param x          the exception thrown
+     * @param message the message sent by the remote session
+     * @param x       the exception thrown
      */
-    protected void exception(String method, ServerSession session, LocalSession local, ServerMessage message, Throwable x)
-    {
+    protected void exception(String method, ServerSession session, LocalSession local, ServerMessage message, Throwable x) {
         _logger.info("Exception while invoking " + _name + "#" + method + " from " + session + " with " + message, x);
     }
 
-    private void invoke(final Method method, final ServerSession fromClient, final ServerMessage msg)
-    {
-        if (_logger.isDebugEnabled())
+    private void invoke(final Method method, final ServerSession fromClient, final ServerMessage msg) {
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Invoking {}#{} from {} with {}", _name, method.getName(), fromClient, msg);
+        }
 
         ThreadPool threadPool = getThreadPool();
-        if (threadPool == null)
-        {
+        if (threadPool == null) {
             doInvoke(method, fromClient, msg);
-        }
-        else
-        {
-            threadPool.execute(new Runnable()
-            {
-                public void run()
-                {
+        } else {
+            threadPool.execute(new Runnable() {
+                public void run() {
                     doInvoke(method, fromClient, msg);
                 }
             });
         }
     }
 
-    protected void doInvoke(Method method, ServerSession session, ServerMessage message)
-    {
-        try
-        {
+    protected void doInvoke(Method method, ServerSession session, ServerMessage message) {
+        try {
             Object reply = method.invoke(this, session, message);
-            if (reply != null)
+            if (reply != null) {
                 send(session, message.getChannel(), reply);
-        }
-        catch (Throwable x)
-        {
+            }
+        } catch (Throwable x) {
             exception(method.toString(), session, _session, message, x);
         }
     }
 
-    private class Invoker implements ServerChannel.MessageListener
-    {
+    private class Invoker implements ServerChannel.MessageListener {
         private final String channelName;
         private final Method method;
 
-        public Invoker(String channelName, Method method)
-        {
+        public Invoker(String channelName, Method method) {
             this.channelName = channelName;
             this.method = method;
         }
 
-        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-        {
-            if (isSeeOwnPublishes() || from != getServerSession())
+        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+            if (isSeeOwnPublishes() || from != getServerSession()) {
                 invoke(method, from, message);
+            }
             return true;
         }
     }

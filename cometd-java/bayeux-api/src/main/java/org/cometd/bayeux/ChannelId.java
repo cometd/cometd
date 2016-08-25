@@ -35,8 +35,7 @@ import java.util.regex.Pattern;
  * braces, for example {@code /foo/{var_name}}. Variable names can only be made of characters
  * defined by the {@link Pattern \w} regular expression character class.</p>
  */
-public class ChannelId
-{
+public class ChannelId {
     public static final String WILD = "*";
     public static final String DEEPWILD = "**";
     private static final Pattern VAR = Pattern.compile("\\{(\\w+)\\}");
@@ -53,87 +52,88 @@ public class ChannelId
      *
      * @param id the channel id in string form
      */
-    public ChannelId(String id)
-    {
-        if (id == null || id.length() == 0 || id.charAt(0) != '/' || "/".equals(id))
+    public ChannelId(String id) {
+        if (id == null || id.length() == 0 || id.charAt(0) != '/' || "/".equals(id)) {
             throw new IllegalArgumentException("Invalid channel id: " + id);
+        }
 
         id = id.trim();
-        if (id.charAt(id.length() - 1) == '/')
+        if (id.charAt(id.length() - 1) == '/') {
             id = id.substring(0, id.length() - 1);
+        }
 
         _id = id;
     }
 
-    private void resolve()
-    {
-        synchronized (this)
-        {
-            if (_segments != null)
+    private void resolve() {
+        synchronized (this) {
+            if (_segments != null) {
                 return;
+            }
             resolve(_id);
         }
     }
 
-    private void resolve(String name)
-    {
+    private void resolve(String name) {
         String[] segments = name.substring(1).split("/");
-        if (segments.length < 1)
+        if (segments.length < 1) {
             throw new IllegalArgumentException("Invalid channel id: " + this);
+        }
 
-        for (int i = 1, size = segments.length; i <= size; ++i)
-        {
+        for (int i = 1, size = segments.length; i <= size; ++i) {
             String segment = segments[i - 1];
-            if (i < size && (WILD.equals(segment) || DEEPWILD.equals(segment)))
+            if (i < size && (WILD.equals(segment) || DEEPWILD.equals(segment))) {
                 throw new IllegalArgumentException("Invalid channel id: " + this);
+            }
 
             Matcher matcher = VAR.matcher(segment);
-            if (matcher.matches())
-            {
-                if (_vars == null)
+            if (matcher.matches()) {
+                if (_vars == null) {
                     _vars = new ArrayList<>();
+                }
                 _vars.add(matcher.group(1));
             }
 
-            if (i == size)
+            if (i == size) {
                 _wild = DEEPWILD.equals(segment) ? 2 : WILD.equals(segment) ? 1 : 0;
+            }
         }
 
-        if (_vars == null)
+        if (_vars == null) {
             _vars = Collections.emptyList();
-        else
+        } else {
             _vars = Collections.unmodifiableList(_vars);
-
-        if (_wild > 0)
-        {
-            if (!_vars.isEmpty())
-                throw new IllegalArgumentException("Invalid channel id: " + this);
-            _wilds = Collections.emptyList();
         }
-        else
-        {
+
+        if (_wild > 0) {
+            if (!_vars.isEmpty()) {
+                throw new IllegalArgumentException("Invalid channel id: " + this);
+            }
+            _wilds = Collections.emptyList();
+        } else {
             boolean addShallow = true;
             List<String> wilds = new ArrayList<>(segments.length + 1);
             StringBuilder b = new StringBuilder(name.length()).append("/");
-            for (int i = 1, size = segments.length; i <= size; ++i)
-            {
+            for (int i = 1, size = segments.length; i <= size; ++i) {
                 String segment = segments[i - 1];
-                if (segment.trim().length() == 0)
+                if (segment.trim().length() == 0) {
                     throw new IllegalArgumentException("Invalid channel id: " + this);
+                }
 
                 wilds.add(0, b + "**");
 
-                if (segment.matches(VAR.pattern()))
-                {
+                if (segment.matches(VAR.pattern())) {
                     addShallow = i == size;
                     break;
                 }
 
-                if (i < size)
+                if (i < size) {
                     b.append(segment).append('/');
+                }
             }
-            if (addShallow)
+            if (addShallow) {
                 wilds.add(0, b + "*");
+            }
             _wilds = Collections.unmodifiableList(wilds);
         }
 
@@ -144,10 +144,9 @@ public class ChannelId
 
     /**
      * @return whether this {@code ChannelId} is either {@link #isShallowWild() shallow wild}
-     *         or {@link #isDeepWild() deep wild}
+     * or {@link #isDeepWild() deep wild}
      */
-    public boolean isWild()
-    {
+    public boolean isWild() {
         resolve();
         return _wild > 0;
     }
@@ -160,8 +159,7 @@ public class ChannelId
      *
      * @return whether this {@code ChannelId} is a shallow wild channel id
      */
-    public boolean isShallowWild()
-    {
+    public boolean isShallowWild() {
         return isWild() && !isDeepWild();
     }
 
@@ -173,8 +171,7 @@ public class ChannelId
      *
      * @return whether this {@code ChannelId} is a deep wild channel id
      */
-    public boolean isDeepWild()
-    {
+    public boolean isDeepWild() {
         resolve();
         return _wild > 1;
     }
@@ -184,8 +181,7 @@ public class ChannelId
      *
      * @return whether the first segment is "meta"
      */
-    public boolean isMeta()
-    {
+    public boolean isMeta() {
         return isMeta(_id);
     }
 
@@ -194,59 +190,54 @@ public class ChannelId
      *
      * @return whether the first segment is "service"
      */
-    public boolean isService()
-    {
+    public boolean isService() {
         return isService(_id);
     }
 
     /**
      * @return whether this {@code ChannelId} is neither {@link #isMeta() meta} nor {@link #isService() service}
      */
-    public boolean isBroadcast()
-    {
+    public boolean isBroadcast() {
         return isBroadcast(_id);
     }
 
     /**
      * @return whether this {@code ChannelId} is a template, that is it contains segments
      * that identify a variable name between braces, such as {@code /foo/{var_name}}.
-     *
      * @see #bind(ChannelId)
      * @see #getParameters()
      */
-    public boolean isTemplate()
-    {
+    public boolean isTemplate() {
         resolve();
         return !_vars.isEmpty();
     }
 
     /**
      * @return the list of variable names if this {@link ChannelId} is a template,
-     *         otherwise an empty list.
+     * otherwise an empty list.
      * @see #isTemplate()
      */
-    public List<String> getParameters()
-    {
+    public List<String> getParameters() {
         resolve();
         return _vars;
     }
 
     @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
+        }
 
-        if (!(obj instanceof ChannelId))
+        if (!(obj instanceof ChannelId)) {
             return false;
+        }
 
         ChannelId that = (ChannelId)obj;
         return _id.equals(that._id);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return _id.hashCode();
     }
 
@@ -264,39 +255,40 @@ public class ChannelId
      * @param channelId the channelId to match
      * @return true if this {@code ChannelId} matches the given {@code ChannelId}
      */
-    public boolean matches(ChannelId channelId)
-    {
+    public boolean matches(ChannelId channelId) {
         resolve();
 
-        if (channelId.isWild())
+        if (channelId.isWild()) {
             return equals(channelId);
+        }
 
-        switch (_wild)
-        {
-            case 0:
-            {
+        switch (_wild) {
+            case 0: {
                 return equals(channelId);
             }
-            case 1:
-            {
-                if (channelId._segments.length != _segments.length)
+            case 1: {
+                if (channelId._segments.length != _segments.length) {
                     return false;
-                for (int i = _segments.length - 1; i-- > 0; )
-                    if (!_segments[i].equals(channelId._segments[i]))
+                }
+                for (int i = _segments.length - 1; i-- > 0; ) {
+                    if (!_segments[i].equals(channelId._segments[i])) {
                         return false;
+                    }
+                }
                 return true;
             }
-            case 2:
-            {
-                if (channelId._segments.length < _segments.length)
+            case 2: {
+                if (channelId._segments.length < _segments.length) {
                     return false;
-                for (int i = _segments.length - 1; i-- > 0; )
-                    if (!_segments[i].equals(channelId._segments[i]))
+                }
+                for (int i = _segments.length - 1; i-- > 0; ) {
+                    if (!_segments[i].equals(channelId._segments[i])) {
                         return false;
+                    }
+                }
                 return true;
             }
-            default:
-            {
+            default: {
                 throw new IllegalStateException();
             }
         }
@@ -331,34 +323,30 @@ public class ChannelId
      * @return a map withe the bindings, or an empty map if no binding was possible
      * @see #isTemplate()
      */
-    public Map<String, String> bind(ChannelId target)
-    {
-        if (!isTemplate() || target.isTemplate() || target.isWild() || depth() != target.depth())
+    public Map<String, String> bind(ChannelId target) {
+        if (!isTemplate() || target.isTemplate() || target.isWild() || depth() != target.depth()) {
             return Collections.emptyMap();
+        }
 
         Map<String, String> result = new LinkedHashMap<>();
-        for (int i = 0; i < _segments.length; ++i)
-        {
+        for (int i = 0; i < _segments.length; ++i) {
             String thisSegment = getSegment(i);
             String thatSegment = target.getSegment(i);
 
             Matcher matcher = VAR.matcher(thisSegment);
-            if (matcher.matches())
-            {
+            if (matcher.matches()) {
                 result.put(matcher.group(1), thatSegment);
-            }
-            else
-            {
-                if (!thisSegment.equals(thatSegment))
+            } else {
+                if (!thisSegment.equals(thatSegment)) {
                     return Collections.emptyMap();
+                }
             }
         }
         return result;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return _id;
     }
 
@@ -366,8 +354,7 @@ public class ChannelId
      * @return how many segments this {@code ChannelId} is made of
      * @see #getSegment(int)
      */
-    public int depth()
-    {
+    public int depth() {
         resolve();
         return _segments.length;
     }
@@ -377,17 +364,17 @@ public class ChannelId
      * @return whether this {@code ChannelId} is an ancestor of the given {@code ChannelId}
      * @see #isParentOf(ChannelId)
      */
-    public boolean isAncestorOf(ChannelId id)
-    {
+    public boolean isAncestorOf(ChannelId id) {
         resolve();
 
-        if (isWild() || depth() >= id.depth())
+        if (isWild() || depth() >= id.depth()) {
             return false;
+        }
 
-        for (int i = _segments.length; i-- > 0; )
-        {
-            if (!_segments[i].equals(id._segments[i]))
+        for (int i = _segments.length; i-- > 0; ) {
+            if (!_segments[i].equals(id._segments[i])) {
                 return false;
+            }
         }
         return true;
     }
@@ -397,28 +384,27 @@ public class ChannelId
      * @return whether this {@code ChannelId} is the parent of the given {@code ChannelId}
      * @see #isAncestorOf(ChannelId)
      */
-    public boolean isParentOf(ChannelId id)
-    {
+    public boolean isParentOf(ChannelId id) {
         resolve();
 
-        if (isWild() || depth() != id.depth() - 1)
+        if (isWild() || depth() != id.depth() - 1) {
             return false;
+        }
 
-        for (int i = _segments.length; i-- > 0; )
-        {
-            if (!_segments[i].equals(id._segments[i]))
+        for (int i = _segments.length; i-- > 0; ) {
+            if (!_segments[i].equals(id._segments[i])) {
                 return false;
+            }
         }
         return true;
     }
 
     /**
      * @return the channel string parent of this {@code ChannelId},
-     *         or null if this {@code ChannelId} has only one segment
+     * or null if this {@code ChannelId} has only one segment
      * @see #isParentOf(ChannelId)
      */
-    public String getParent()
-    {
+    public String getParent() {
         resolve();
         return _parent;
     }
@@ -428,20 +414,19 @@ public class ChannelId
      * @return the i-nth segment of this channel, or null if no such segment exist
      * @see #depth()
      */
-    public String getSegment(int i)
-    {
+    public String getSegment(int i) {
         resolve();
-        if (i >= _segments.length)
+        if (i >= _segments.length) {
             return null;
+        }
         return _segments[i];
     }
 
     /**
      * @return The list of wilds channels that match this channel, or
-     *         the empty list if this channel is already wild.
+     * the empty list if this channel is already wild.
      */
-    public List<String> getWilds()
-    {
+    public List<String> getWilds() {
         resolve();
         return _wilds;
     }
@@ -452,64 +437,67 @@ public class ChannelId
      * of a parameter or a wild character.</p>
      * <p>Examples:</p>
      * <table>
-     *     <caption>ChannelId.regularPart Examples</caption>
-     *     <thead>
-     *         <tr>
-     *             <th>Channel</th>
-     *             <th>Regular Part</th>
-     *         </tr>
-     *     </thead>
-     *     <tbody>
-     *         <tr>
-     *             <td>/foo</td>
-     *             <td>/foo</td>
-     *         </tr>
-     *         <tr>
-     *             <td>/foo/*</td>
-     *             <td>/foo</td>
-     *         </tr>
-     *         <tr>
-     *             <td>/foo/bar/**</td>
-     *             <td>/foo/bar</td>
-     *         </tr>
-     *         <tr>
-     *             <td>/foo/{p}</td>
-     *             <td>/foo</td>
-     *         </tr>
-     *         <tr>
-     *             <td>/foo/bar/{p}</td>
-     *             <td>/foo/bar</td>
-     *         </tr>
-     *         <tr>
-     *             <td>/*</td>
-     *             <td><code>null</code></td>
-     *         </tr>
-     *         <tr>
-     *             <td>/**</td>
-     *             <td><code>null</code></td>
-     *         </tr>
-     *         <tr>
-     *             <td>/{p}</td>
-     *             <td><code>null</code></td>
-     *         </tr>
-     *     </tbody>
+     * <caption>ChannelId.regularPart Examples</caption>
+     * <thead>
+     * <tr>
+     * <th>Channel</th>
+     * <th>Regular Part</th>
+     * </tr>
+     * </thead>
+     * <tbody>
+     * <tr>
+     * <td>/foo</td>
+     * <td>/foo</td>
+     * </tr>
+     * <tr>
+     * <td>/foo/*</td>
+     * <td>/foo</td>
+     * </tr>
+     * <tr>
+     * <td>/foo/bar/**</td>
+     * <td>/foo/bar</td>
+     * </tr>
+     * <tr>
+     * <td>/foo/{p}</td>
+     * <td>/foo</td>
+     * </tr>
+     * <tr>
+     * <td>/foo/bar/{p}</td>
+     * <td>/foo/bar</td>
+     * </tr>
+     * <tr>
+     * <td>/*</td>
+     * <td><code>null</code></td>
+     * </tr>
+     * <tr>
+     * <td>/**</td>
+     * <td><code>null</code></td>
+     * </tr>
+     * <tr>
+     * <td>/{p}</td>
+     * <td><code>null</code></td>
+     * </tr>
+     * </tbody>
      * </table>
      *
      * @return the regular part of this channel
      */
-    public String getRegularPart()
-    {
+    public String getRegularPart() {
         resolve();
-        if (isWild())
+        if (isWild()) {
             return getParent();
-        if (!isTemplate())
+        }
+        if (!isTemplate()) {
             return _id;
+        }
         int regular = depth() - getParameters().size();
-        if (regular <= 0)
+        if (regular <= 0) {
             return null;
+        }
         String result = "";
-        for (int i = 0; i < regular; ++i)
+        for (int i = 0; i < regular; ++i) {
             result += "/" + getSegment(i);
+        }
         return result;
     }
 
@@ -520,8 +508,7 @@ public class ChannelId
      * @param channelId the channel id to test
      * @return whether the given channel id is a meta channel id
      */
-    public static boolean isMeta(String channelId)
-    {
+    public static boolean isMeta(String channelId) {
         return channelId != null && channelId.startsWith("/meta/");
     }
 
@@ -532,8 +519,7 @@ public class ChannelId
      * @param channelId the channel id to test
      * @return whether the given channel id is a service channel id
      */
-    public static boolean isService(String channelId)
-    {
+    public static boolean isService(String channelId) {
         return channelId != null && channelId.startsWith("/service/");
     }
 
@@ -544,8 +530,7 @@ public class ChannelId
      * @param channelId the channel id to test
      * @return whether the given channel id is a broadcast channel id
      */
-    public static boolean isBroadcast(String channelId)
-    {
+    public static boolean isBroadcast(String channelId) {
         return !isMeta(channelId) && !isService(channelId);
     }
 }

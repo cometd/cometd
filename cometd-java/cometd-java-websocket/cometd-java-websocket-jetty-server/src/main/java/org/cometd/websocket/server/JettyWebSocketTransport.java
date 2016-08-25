@@ -39,29 +39,29 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
-public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
-{
-    public JettyWebSocketTransport(BayeuxServerImpl bayeux)
-    {
+public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session> {
+    public JettyWebSocketTransport(BayeuxServerImpl bayeux) {
         super(bayeux);
     }
 
     @Override
-    public void init()
-    {
+    public void init() {
         super.init();
 
         final ServletContext context = (ServletContext)getOption(ServletContext.class.getName());
-        if (context == null)
+        if (context == null) {
             throw new IllegalArgumentException("Missing ServletContext");
+        }
 
         String cometdURLMapping = (String)getOption(COMETD_URL_MAPPING);
-        if (cometdURLMapping == null)
+        if (cometdURLMapping == null) {
             throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING + "' parameter");
+        }
 
         WebSocketUpgradeFilter wsFilter = (WebSocketUpgradeFilter)context.getAttribute(WebSocketUpgradeFilter.class.getName());
-        if (wsFilter == null)
+        if (wsFilter == null) {
             throw new IllegalArgumentException("Missing WebSocketUpgradeFilter");
+        }
 
         WebSocketPolicy policy = wsFilter.getFactory().getPolicy();
         int bufferSize = getOption(BUFFER_SIZE_OPTION, policy.getInputBufferSize());
@@ -71,36 +71,30 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, policy.getIdleTimeout());
         policy.setIdleTimeout((int)idleTimeout);
 
-        for (String mapping : normalizeURLMapping(cometdURLMapping))
-        {
-            wsFilter.addMapping(new ServletPathSpec(mapping), new WebSocketCreator()
-            {
+        for (String mapping : normalizeURLMapping(cometdURLMapping)) {
+            wsFilter.addMapping(new ServletPathSpec(mapping), new WebSocketCreator() {
                 @Override
-                public Object createWebSocket(ServletUpgradeRequest request, ServletUpgradeResponse response)
-                {
+                public Object createWebSocket(ServletUpgradeRequest request, ServletUpgradeResponse response) {
                     String origin = request.getHeader("Origin");
-                    if (origin == null)
+                    if (origin == null) {
                         origin = request.getHeader("Sec-WebSocket-Origin");
-                    if (checkOrigin(request, origin))
-                    {
+                    }
+                    if (checkOrigin(request, origin)) {
                         modifyUpgrade(request, response);
 
                         List<String> allowedTransports = getBayeux().getAllowedTransports();
-                        if (allowedTransports.contains(getName()))
-                        {
+                        if (allowedTransports.contains(getName())) {
                             WebSocketContext handshake = new WebSocketContext(context, request);
                             return new WebSocketScheduler(handshake);
-                        }
-                        else
-                        {
-                            if (_logger.isDebugEnabled())
+                        } else {
+                            if (_logger.isDebugEnabled()) {
                                 _logger.debug("Transport not those allowed: {}", allowedTransports);
+                            }
                         }
-                    }
-                    else
-                    {
-                        if (_logger.isDebugEnabled())
+                    } else {
+                        if (_logger.isDebugEnabled()) {
                             _logger.debug("Origin check failed for origin {}", origin);
+                        }
                     }
                     return null;
                 }
@@ -108,37 +102,30 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         }
     }
 
-    protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response)
-    {
+    protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response) {
     }
 
     @Override
-    public void destroy()
-    {
+    public void destroy() {
         Executor threadPool = getExecutor();
-        if (threadPool instanceof LifeCycle)
-        {
-            try
-            {
+        if (threadPool instanceof LifeCycle) {
+            try {
                 ((LifeCycle)threadPool).stop();
-            }
-            catch (Exception x)
-            {
+            } catch (Exception x) {
                 _logger.trace("", x);
             }
         }
         super.destroy();
     }
 
-    protected boolean checkOrigin(ServletUpgradeRequest request, String origin)
-    {
+    protected boolean checkOrigin(ServletUpgradeRequest request, String origin) {
         return true;
     }
 
-    protected void send(final Session wsSession, final ServerSession session, String data, final Callback callback)
-    {
-        if (_logger.isDebugEnabled())
+    protected void send(final Session wsSession, final ServerSession session, String data, final Callback callback) {
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Sending {}", data);
+        }
 
         // First blocking version - but cannot be used for concurrent writes.
 //        wsSession.getRemote().sendString(data);
@@ -166,79 +153,66 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
 //        }
 
         // Async version.
-        wsSession.getRemote().sendString(data, new WriteCallback()
-        {
+        wsSession.getRemote().sendString(data, new WriteCallback() {
             @Override
-            public void writeSuccess()
-            {
+            public void writeSuccess() {
                 callback.succeeded();
             }
 
             @Override
-            public void writeFailed(Throwable x)
-            {
+            public void writeFailed(Throwable x) {
                 handleException(wsSession, session, x);
                 callback.failed(x);
             }
         });
     }
 
-    private class WebSocketScheduler extends AbstractWebSocketScheduler implements WebSocketListener
-    {
+    private class WebSocketScheduler extends AbstractWebSocketScheduler implements WebSocketListener {
         private volatile Session _wsSession;
 
-        private WebSocketScheduler(WebSocketContext context)
-        {
+        private WebSocketScheduler(WebSocketContext context) {
             super(context);
         }
 
-        public void onWebSocketConnect(Session session)
-        {
+        public void onWebSocketConnect(Session session) {
             _wsSession = session;
         }
 
         @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len)
-        {
+        public void onWebSocketBinary(byte[] payload, int offset, int len) {
         }
 
-        public void onWebSocketText(String data)
-        {
+        public void onWebSocketText(String data) {
             onMessage(_wsSession, data);
         }
 
-        public void onWebSocketClose(int code, String reason)
-        {
+        public void onWebSocketClose(int code, String reason) {
             onClose(code, reason);
         }
 
         @Override
-        public void onWebSocketError(Throwable failure)
-        {
+        public void onWebSocketError(Throwable failure) {
             onError(failure);
         }
 
         @Override
-        protected void close(int code, String reason)
-        {
-            if (_logger.isDebugEnabled())
+        protected void close(int code, String reason) {
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Closing {}/{}", code, reason);
+            }
             _wsSession.close(code, reason);
         }
 
         @Override
-        protected void schedule(boolean timeout, ServerMessage.Mutable expiredConnectReply)
-        {
+        protected void schedule(boolean timeout, ServerMessage.Mutable expiredConnectReply) {
             schedule(_wsSession, timeout, expiredConnectReply);
         }
     }
 
-    private class WebSocketContext extends AbstractBayeuxContext
-    {
+    private class WebSocketContext extends AbstractBayeuxContext {
         private final Map<String, Object> attributes;
 
-        private WebSocketContext(ServletContext context, ServletUpgradeRequest request)
-        {
+        private WebSocketContext(ServletContext context, ServletUpgradeRequest request) {
             super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
                     request.getParameterMap(), request.getUserPrincipal(), request.getSession(),
                     request.getLocalSocketAddress(), request.getRemoteSocketAddress(), Collections.list(request.getLocales()));
@@ -246,8 +220,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         }
 
         @Override
-        public Object getRequestAttribute(String name)
-        {
+        public Object getRequestAttribute(String name) {
             return attributes.get(name);
         }
     }

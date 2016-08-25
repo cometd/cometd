@@ -30,22 +30,19 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class JSONPTransportCallbackParamValidationTest extends AbstractBayeuxClientServerTest
-{
+public class JSONPTransportCallbackParamValidationTest extends AbstractBayeuxClientServerTest {
     private final Map<String, String> initParams = new HashMap<>();
     private final String jsonpPath = "/?jsonp=";
     private final String messagePath = "&message=";
 
-    public JSONPTransportCallbackParamValidationTest(String serverTransport)
-    {
+    public JSONPTransportCallbackParamValidationTest(String serverTransport) {
         // We want to test only the JSONPTransport.
         super(JSONPTransport.class.getName());
         initParams.put("long-polling.jsonp.callbackParameterMaxLength", "10");
     }
 
     @Test
-    public void testValidCallbackParamLength() throws Exception
-    {
+    public void testValidCallbackParamLength() throws Exception {
         startServer(initParams);
         cometdURL = cometdURL + jsonpPath + "short";
 
@@ -53,8 +50,7 @@ public class JSONPTransportCallbackParamValidationTest extends AbstractBayeuxCli
     }
 
     @Test
-    public void testInvalidCallbackParamLength() throws Exception
-    {
+    public void testInvalidCallbackParamLength() throws Exception {
         startServer(initParams);
         cometdURL = cometdURL + jsonpPath + "waytoolongforthistest";
 
@@ -62,8 +58,7 @@ public class JSONPTransportCallbackParamValidationTest extends AbstractBayeuxCli
     }
 
     @Test
-    public void testValidCallbackParamCharacters() throws Exception
-    {
+    public void testValidCallbackParamCharacters() throws Exception {
         startServer(initParams);
         cometdURL = cometdURL + jsonpPath + "s-h_o.R1";
 
@@ -71,8 +66,7 @@ public class JSONPTransportCallbackParamValidationTest extends AbstractBayeuxCli
     }
 
     @Test
-    public void testInvalidCallbackParamCharacters() throws Exception
-    {
+    public void testInvalidCallbackParamCharacters() throws Exception {
         startServer(initParams);
         cometdURL = cometdURL + jsonpPath + "sh%20rt";
         testSubscribe(400);
@@ -83,16 +77,14 @@ public class JSONPTransportCallbackParamValidationTest extends AbstractBayeuxCli
     }
 
     @Override
-    protected Request newBayeuxRequest(String requestBody) throws UnsupportedEncodingException
-    {
+    protected Request newBayeuxRequest(String requestBody) throws UnsupportedEncodingException {
         Request request = httpClient.newRequest(cometdURL + messagePath + URLEncoder.encode(requestBody, "UTF-8"));
         request.timeout(5, TimeUnit.SECONDS);
         request.method(HttpMethod.GET);
         return request;
     }
 
-    private void testSubscribe(int errorCode) throws UnsupportedEncodingException, InterruptedException, TimeoutException, ExecutionException
-    {
+    private void testSubscribe(int errorCode) throws UnsupportedEncodingException, InterruptedException, TimeoutException, ExecutionException {
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +

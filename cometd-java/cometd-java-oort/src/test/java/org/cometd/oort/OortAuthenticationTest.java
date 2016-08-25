@@ -31,16 +31,13 @@ import org.eclipse.jetty.server.Server;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class OortAuthenticationTest extends OortTest
-{
-    public OortAuthenticationTest(String serverTransport)
-    {
+public class OortAuthenticationTest extends OortTest {
+    public OortAuthenticationTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testAuthenticationWithSecurityPolicy() throws Exception
-    {
+    public void testAuthenticationWithSecurityPolicy() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         oort1.setSecret("test_secret");
@@ -84,23 +81,22 @@ public class OortAuthenticationTest extends OortTest
         Assert.assertTrue(client3.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 
-    private class TestSecurityPolicy extends DefaultSecurityPolicy
-    {
+    private class TestSecurityPolicy extends DefaultSecurityPolicy {
         private static final String TOKEN_FIELD = "token";
         private final Oort oort;
 
-        private TestSecurityPolicy(Oort oort)
-        {
+        private TestSecurityPolicy(Oort oort) {
             this.oort = oort;
         }
 
         @Override
-        public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-        {
-            if (session.isLocalSession())
+        public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+            if (session.isLocalSession()) {
                 return true;
-            if (oort.isOortHandshake(message))
+            }
+            if (oort.isOortHandshake(message)) {
                 return true;
+            }
             Map<String, Object> ext = message.getExt();
             return ext != null && ext.get(TOKEN_FIELD) != null;
         }

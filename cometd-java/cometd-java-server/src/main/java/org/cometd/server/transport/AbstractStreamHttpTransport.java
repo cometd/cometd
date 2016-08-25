@@ -34,59 +34,47 @@ import org.cometd.server.ServerSessionImpl;
 /**
  * <p>The base class for HTTP transports that use blocking stream I/O.</p>
  */
-public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
-{
+public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport {
     private static final String SCHEDULER_ATTRIBUTE = "org.cometd.scheduler";
 
-    protected AbstractStreamHttpTransport(BayeuxServerImpl bayeux, String name)
-    {
+    protected AbstractStreamHttpTransport(BayeuxServerImpl bayeux, String name) {
         super(bayeux, name);
     }
 
     @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {
+    public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         getBayeux().setCurrentTransport(this);
         setCurrentRequest(request);
-        try
-        {
+        try {
             process(request, response);
-        }
-        finally
-        {
+        } finally {
             setCurrentRequest(null);
             getBayeux().setCurrentTransport(null);
         }
     }
 
-    protected void process(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {
+    protected void process(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         LongPollScheduler scheduler = (LongPollScheduler)request.getAttribute(SCHEDULER_ATTRIBUTE);
-        if (scheduler == null)
-        {
+        if (scheduler == null) {
             // Not a resumed /meta/connect, process messages.
-            try
-            {
+            try {
                 ServerMessage.Mutable[] messages = parseMessages(request);
-                if (_logger.isDebugEnabled())
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Parsed {} messages", messages == null ? -1 : messages.length);
-                if (messages != null)
+                }
+                if (messages != null) {
                     processMessages(request, response, messages);
-            }
-            catch (ParseException x)
-            {
+                }
+            } catch (ParseException x) {
                 handleJSONParseException(request, response, x.getMessage(), x.getCause());
             }
-        }
-        else
-        {
+        } else {
             resume(request, response, null, scheduler.getServerSession(), scheduler.getMetaConnectReply());
         }
     }
 
     @Override
-    protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
-    {
+    protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
         AsyncContext asyncContext = request.startAsync(request, response);
         asyncContext.setTimeout(0);
         HttpScheduler scheduler = newHttpScheduler(request, response, asyncContext, session, reply, browserId, timeout);
@@ -94,88 +82,84 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         return scheduler;
     }
 
-    protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
-    {
+    protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
         return new DispatchingLongPollScheduler(request, response, asyncContext, session, reply, browserId, timeout);
     }
 
     protected abstract ServerMessage.Mutable[] parseMessages(HttpServletRequest request) throws IOException, ParseException;
 
-    protected ServerMessage.Mutable[] parseMessages(String[] requestParameters) throws IOException, ParseException
-    {
-        if (requestParameters == null || requestParameters.length == 0)
+    protected ServerMessage.Mutable[] parseMessages(String[] requestParameters) throws IOException, ParseException {
+        if (requestParameters == null || requestParameters.length == 0) {
             throw new IOException("Missing '" + MESSAGE_PARAM + "' request parameter");
+        }
 
-        if (requestParameters.length == 1)
+        if (requestParameters.length == 1) {
             return parseMessages(requestParameters[0]);
+        }
 
         List<ServerMessage.Mutable> messages = new ArrayList<>();
-        for (String batch : requestParameters)
-        {
-            if (batch == null)
+        for (String batch : requestParameters) {
+            if (batch == null) {
                 continue;
+            }
             ServerMessage.Mutable[] parsed = parseMessages(batch);
-            if (parsed != null)
+            if (parsed != null) {
                 messages.addAll(Arrays.asList(parsed));
+            }
         }
         return messages.toArray(new ServerMessage.Mutable[messages.size()]);
     }
 
     @Override
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean startInterval, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
-    {
-        try
-        {
+    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean startInterval, List<ServerMessage> messages, ServerMessage.Mutable[] replies) {
+        try {
             ServletOutputStream output;
-            try
-            {
+            try {
                 output = beginWrite(request, response);
 
                 // Write the messages first.
-                for (int i = 0; i < messages.size(); ++i)
-                {
+                for (int i = 0; i < messages.size(); ++i) {
                     ServerMessage message = messages.get(i);
-                    if (i > 0)
+                    if (i > 0) {
                         output.write(',');
+                    }
                     writeMessage(response, output, session, message);
                 }
-            }
-            finally
-            {
+            } finally {
                 // Start the interval timeout after writing the messages
                 // since they may take time to be written, even in case
                 // of exceptions to make sure the session can be swept.
-                if (startInterval && session != null && session.isConnected())
+                if (startInterval && session != null && session.isConnected()) {
                     session.startIntervalTimeout(getInterval());
+                }
             }
 
             // Write the replies, if any.
             boolean needsComma = !messages.isEmpty();
-            for (int i = 0; i < replies.length; ++i)
-            {
+            for (int i = 0; i < replies.length; ++i) {
                 ServerMessage reply = replies[i];
-                if (reply == null)
+                if (reply == null) {
                     continue;
-                if (needsComma)
+                }
+                if (needsComma) {
                     output.write(',');
+                }
                 needsComma = true;
                 writeMessage(response, output, session, reply);
             }
 
             endWrite(response, output);
-        }
-        catch (Exception x)
-        {
+        } catch (Exception x) {
             AsyncContext asyncContext = null;
-            if (request.isAsyncStarted())
+            if (request.isAsyncStarted()) {
                 asyncContext = request.getAsyncContext();
+            }
             error(request, response, asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
-    protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException
-    {
+    protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException {
         output.write(toJSONBytes(message, response.getCharacterEncoding()));
     }
 
@@ -183,15 +167,12 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
 
     protected abstract void endWrite(HttpServletResponse response, ServletOutputStream output) throws IOException;
 
-    protected class DispatchingLongPollScheduler extends LongPollScheduler
-    {
-        public DispatchingLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
-        {
+    protected class DispatchingLongPollScheduler extends LongPollScheduler {
+        public DispatchingLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
             super(request, response, asyncContext, session, reply, browserId, timeout);
         }
 
-        protected void dispatch()
-        {
+        protected void dispatch() {
             // We dispatch() when either we are suspended or timed out, instead of doing a write() + complete().
             // If we have to write a message to 10 clients, and the first client write() blocks, then we would
             // be delaying the other 9 clients.

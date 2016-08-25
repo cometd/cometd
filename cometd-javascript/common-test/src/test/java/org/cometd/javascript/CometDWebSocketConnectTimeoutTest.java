@@ -32,13 +32,11 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTest
-{
+public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTest {
     private final long timeout = 1000;
 
     @Test
-    public void testConnectTimeout() throws Exception
-    {
+    public void testConnectTimeout() throws Exception {
         context.stop();
         TimeoutFilter filter = new TimeoutFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
@@ -91,8 +89,7 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
     }
 
     @Test
-    public void testConnectTimeoutIsCanceledOnSuccessfulConnect() throws Exception
-    {
+    public void testConnectTimeoutIsCanceledOnSuccessfulConnect() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("var handshakeLatch = new Latch(1);");
@@ -101,10 +98,10 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
         Latch connectLatch = get("connectLatch");
 
         evaluateScript("cometd.configure({" +
-                       "url: '" + cometdURL + "', " +
-                       "connectTimeout: " + timeout + ", " +
-                       "logLevel: '" + getLogLevel() + "'" +
-                       "});");
+                "url: '" + cometdURL + "', " +
+                "connectTimeout: " + timeout + ", " +
+                "logLevel: '" + getLogLevel() + "'" +
+                "});");
         evaluateScript("cometd.addListener('/meta/handshake', function(message)" +
                 "{" +
                 "   if (cometd.getTransport().getType() === 'websocket' && message.successful)" +
@@ -133,27 +130,23 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
         Assert.assertTrue(disconnectLatch.await(5000));
     }
 
-    private class TimeoutFilter implements Filter
-    {
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
+    private class TimeoutFilter implements Filter {
+        public void init(FilterConfig filterConfig) throws ServletException {
         }
 
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
 
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
             String upgrade = request.getHeader("Upgrade");
-            if (upgrade != null)
+            if (upgrade != null) {
                 sleep(3 * timeout);
+            }
             chain.doFilter(request, response);
         }
 
-        public void destroy()
-        {
+        public void destroy() {
         }
     }
 

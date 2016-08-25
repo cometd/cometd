@@ -20,8 +20,7 @@ import java.util.Map;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.ajax.JSON.Output;
 
-public class Item implements Cloneable, JSON.Convertible
-{
+public class Item implements Cloneable, JSON.Convertible {
     private static final long serialVersionUID = -3390759314943527594L;
     private Integer id;
     // private String id;
@@ -30,12 +29,12 @@ public class Item implements Cloneable, JSON.Convertible
     private String description;
     private Double initialPrice;
 
-    public Item()
-    {
-    };
+    public Item() {
+    }
 
-    public Item(Integer id, String itemName, Category category, String description, Double initialPrice)
-    {
+    ;
+
+    public Item(Integer id, String itemName, Category category, String description, Double initialPrice) {
         setId(id);
         setItemName(itemName);
         setCategory(category);
@@ -43,105 +42,88 @@ public class Item implements Cloneable, JSON.Convertible
         setInitialPrice(initialPrice);
     }
 
-    public String getFormattedAmount()
-    {
+    public String getFormattedAmount() {
         return Utils.formatCurrency(initialPrice.doubleValue());
     }
 
-    public Integer getId()
-    {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Integer aId)
-    {
+    public void setId(Integer aId) {
         id = aId;
     }
 
-    public String getDescription()
-    {
+    public String getDescription() {
         return description;
     }
 
-    public void setDescription(String aDescription)
-    {
+    public void setDescription(String aDescription) {
         description = aDescription;
     }
 
-    public Double getInitialPrice()
-    {
+    public Double getInitialPrice() {
         return initialPrice;
     }
 
-    public void setInitialPrice(Double aInitialPrice)
-    {
+    public void setInitialPrice(Double aInitialPrice) {
         initialPrice = aInitialPrice;
     }
 
-    public String getItemName()
-    {
+    public String getItemName() {
         return itemName;
     }
 
-    public void setItemName(String aItemName)
-    {
+    public void setItemName(String aItemName) {
         itemName = aItemName;
     }
 
-    public Category getCategory()
-    {
+    public Category getCategory() {
         return category;
     }
 
-    public void setCategory(Category aCategory)
-    {
+    public void setCategory(Category aCategory) {
         category = aCategory;
     }
 
-    public boolean equals(Object obj)
-    {
-        if (obj == this)
+    public boolean equals(Object obj) {
+        if (obj == this) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (!(obj instanceof Item))
+        }
+        if (!(obj instanceof Item)) {
             return false;
+        }
         return ((Item)obj).getId().equals(id);
     }
 
-    public int hashCode()
-    {
+    public int hashCode() {
 
         return id.hashCode();
     }
 
 
-    public Item clone()
-    {
-        try
-        {
+    public Item clone() {
+        try {
             return (Item)super.clone();
-        }
-        catch (CloneNotSupportedException e)
-        {
+        } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void fromJSON(Map object)
-    {
+    public void fromJSON(Map object) {
     }
 
-    public void toJSON(Output out)
-    {
-        out.add("itemId",id);
-        out.add("name",itemName);
-        out.add("description",description);
-        out.add("categoryId",category.getId());
+    public void toJSON(Output out) {
+        out.add("itemId", id);
+        out.add("name", itemName);
+        out.add("description", description);
+        out.add("categoryId", category.getId());
     }
 
-    public String toString()
-    {
+    public String toString() {
         return JSON.toString(this);
     }
 }

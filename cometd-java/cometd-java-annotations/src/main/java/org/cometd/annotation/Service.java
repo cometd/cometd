@@ -34,8 +34,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
-public @interface Service
-{
+public @interface Service {
     /**
      * @return The name of this service
      */

@@ -27,16 +27,13 @@ import org.cometd.websocket.ClientServerWebSocketTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SessionHijackingTest extends ClientServerWebSocketTest
-{
-    public SessionHijackingTest(String serverTransport)
-    {
+public class SessionHijackingTest extends ClientServerWebSocketTest {
+    public SessionHijackingTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testSessionHijacking() throws Exception
-    {
+    public void testSessionHijacking() throws Exception {
         prepareAndStart(null);
 
         BayeuxClient client1 = newBayeuxClient();
@@ -48,11 +45,9 @@ public class SessionHijackingTest extends ClientServerWebSocketTest
         Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Client1 tries to impersonate Client2.
-        client1.addExtension(new ClientSession.Extension.Adapter()
-        {
+        client1.addExtension(new ClientSession.Extension.Adapter() {
             @Override
-            public boolean send(ClientSession session, Message.Mutable message)
-            {
+            public boolean send(ClientSession session, Message.Mutable message) {
                 message.setClientId(client2.getId());
                 return true;
             }
@@ -61,11 +56,9 @@ public class SessionHijackingTest extends ClientServerWebSocketTest
         final AtomicReference<Message> publishReply = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         String channel = "/session_mismatch";
-        client1.getChannel(channel).publish("data", new ClientSessionChannel.MessageListener()
-        {
+        client1.getChannel(channel).publish("data", new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 publishReply.set(message);
                 latch.countDown();
             }

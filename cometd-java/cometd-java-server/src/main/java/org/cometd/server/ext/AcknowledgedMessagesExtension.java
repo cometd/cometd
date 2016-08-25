@@ -34,31 +34,27 @@ import org.slf4j.LoggerFactory;
  * {@link AcknowledgedMessagesSessionExtension} on the {@link ServerSession}
  * instances created during successful handshakes.</p>
  */
-public class AcknowledgedMessagesExtension extends Extension.Adapter
-{
+public class AcknowledgedMessagesExtension extends Extension.Adapter {
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName());
 
     @Override
-    public boolean sendMeta(ServerSession remote, Mutable message)
-    {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful())
-        {
+    public boolean sendMeta(ServerSession remote, Mutable message) {
+        if (Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful()) {
             Message rcv = message.getAssociated();
 
             Map<String, Object> rcvExt = rcv.getExt();
             boolean clientRequestedAcks = rcvExt != null && rcvExt.get("ack") == Boolean.TRUE;
 
-            if (clientRequestedAcks && remote != null)
-            {
+            if (clientRequestedAcks && remote != null) {
                 ServerSessionImpl session = (ServerSessionImpl)remote;
-                if (_logger.isDebugEnabled())
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Enabled message acknowledgement for session {}", session);
+                }
 
                 AcknowledgedMessagesSessionExtension extension = new AcknowledgedMessagesSessionExtension(session);
 
                 // Make sure that adding the extension and importing the queue is atomic.
-                synchronized (session.getLock())
-                {
+                synchronized (session.getLock()) {
                     session.addExtension(extension);
                     extension.importMessages(session);
                 }

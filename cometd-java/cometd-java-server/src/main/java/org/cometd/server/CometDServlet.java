@@ -37,28 +37,25 @@ import org.slf4j.LoggerFactory;
  * attribute; if it is found then it is used without further configuration, otherwise a new {@link BayeuxServer}
  * instance is created and configured using the init parameters of this servlet.</p>
  */
-public class CometDServlet extends HttpServlet
-{
+public class CometDServlet extends HttpServlet {
     private static final long serialVersionUID = 3637310585741732936L;
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private BayeuxServerImpl _bayeux;
 
     @Override
-    public void init() throws ServletException
-    {
-        try
-        {
+    public void init() throws ServletException {
+        try {
             boolean export = false;
             _bayeux = (BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-            if (_bayeux == null)
-            {
+            if (_bayeux == null) {
                 export = true;
                 _bayeux = newBayeuxServer();
 
                 // Transfer all servlet init parameters to the BayeuxServer implementation
-                for (String initParamName : Collections.list(getInitParameterNames()))
+                for (String initParamName : Collections.list(getInitParameterNames())) {
                     _bayeux.setOption(initParamName, getInitParameter(initParamName));
+                }
 
                 // Add the ServletContext to the options
                 _bayeux.setOption(ServletContext.class.getName(), getServletContext());
@@ -66,46 +63,37 @@ public class CometDServlet extends HttpServlet
 
             _bayeux.start();
 
-            if (export)
+            if (export) {
                 getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, _bayeux);
-        }
-        catch (Exception x)
-        {
+            }
+        } catch (Exception x) {
             throw new ServletException(x);
         }
     }
 
-    public BayeuxServerImpl getBayeux()
-    {
+    public BayeuxServerImpl getBayeux() {
         return _bayeux;
     }
 
-    protected BayeuxServerImpl newBayeuxServer()
-    {
+    protected BayeuxServerImpl newBayeuxServer() {
         return new BayeuxServerImpl();
     }
 
-    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-    {
-        if ("OPTIONS".equals(request.getMethod()))
-        {
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if ("OPTIONS".equals(request.getMethod())) {
             serviceOptions(request, response);
             return;
         }
 
         AbstractHttpTransport transport = _bayeux.findHttpTransport(request);
-        if (transport == null)
-        {
+        if (transport == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown Bayeux Transport");
-        }
-        else
-        {
+        } else {
             transport.handle(request, response);
         }
     }
 
-    protected void serviceOptions(HttpServletRequest request, HttpServletResponse response)
-    {
+    protected void serviceOptions(HttpServletRequest request, HttpServletResponse response) {
         // OPTIONS requests are made by browsers that are CORS compliant
         // (see http://www.w3.org/TR/cors/) during a "preflight request".
         // Preflight requests happen for each different new URL, then results are cached
@@ -120,22 +108,18 @@ public class CometDServlet extends HttpServlet
      * @see javax.servlet.GenericServlet#destroy()
      */
     @Override
-    public void destroy()
-    {
-        for (ServerSession session : _bayeux.getSessions())
+    public void destroy() {
+        for (ServerSession session : _bayeux.getSessions()) {
             ((ServerSessionImpl)session).cancelSchedule();
+        }
 
-        try
-        {
+        try {
             _bayeux.stop();
-        }
-        catch (Exception x)
-        {
-            if (_logger.isDebugEnabled())
+        } catch (Exception x) {
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("", x);
-        }
-        finally
-        {
+            }
+        } finally {
             _bayeux = null;
             getServletContext().removeAttribute(BayeuxServer.ATTRIBUTE);
         }

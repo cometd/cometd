@@ -21,26 +21,26 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Seti;
 import org.cometd.server.DefaultSecurityPolicy;
 
-public class OortSecurityPolicy extends DefaultSecurityPolicy
-{
+public class OortSecurityPolicy extends DefaultSecurityPolicy {
     private final Seti seti;
 
-    public OortSecurityPolicy(Seti seti)
-    {
+    public OortSecurityPolicy(Seti seti) {
         this.seti = seti;
     }
 
     @Override
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-    {
-        if (session.isLocalSession())
+    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+        if (session.isLocalSession()) {
             return true;
+        }
 
-        if (seti.getOort().isOortHandshake(message))
+        if (seti.getOort().isOortHandshake(message)) {
             return true;
+        }
 
-        if (!super.canHandshake(server, session, message))
+        if (!super.canHandshake(server, session, message)) {
             return false;
+        }
 
         String userId = (String)message.getDataAsMap().get("userId");
         seti.associate(userId, session);

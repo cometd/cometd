@@ -33,8 +33,7 @@ import org.cometd.bayeux.server.ServerSession;
 @Singleton // Specifies to Spring that this is a singleton
 @Named // Spring looks for this annotation when scanning the classes to determine if it's a spring bean
 @Service // CometD annotation that marks the class as a CometD service
-public class SpringBayeuxService
-{
+public class SpringBayeuxService {
     public static final String CHANNEL = "/foo";
 
     public final Dependency dependency; // Injected by Spring via constructor
@@ -54,8 +53,9 @@ public class SpringBayeuxService
     @PostConstruct
     public void start() // Initialization method invoked by Spring
     {
-        if (!configured)
+        if (!configured) {
             throw new IllegalStateException();
+        }
         active = true;
     }
 
@@ -66,8 +66,7 @@ public class SpringBayeuxService
     }
 
     @Configure(CHANNEL)
-    private void configureFoo(ConfigurableServerChannel channel)
-    {
+    private void configureFoo(ConfigurableServerChannel channel) {
         configured = true;
     }
 

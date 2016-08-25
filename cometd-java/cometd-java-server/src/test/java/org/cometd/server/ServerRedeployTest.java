@@ -25,22 +25,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ServerRedeployTest extends AbstractBayeuxClientServerTest
-{
-    public ServerRedeployTest(String serverTransport)
-    {
+public class ServerRedeployTest extends AbstractBayeuxClientServerTest {
+    public ServerRedeployTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testServerRedeploy() throws Exception
-    {
+    public void testServerRedeploy() throws Exception {
         Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +

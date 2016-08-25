@@ -17,11 +17,9 @@ package org.cometd.javascript;
 
 import org.junit.Test;
 
-public class CometDMixinTest extends AbstractCometDTest
-{
+public class CometDMixinTest extends AbstractCometDTest {
     @Test
-    public void testShallowMixin() throws Exception
-    {
+    public void testShallowMixin() throws Exception {
         evaluateScript("" +
                 "var obj1 = {foo: {}};" +
                 "var obj2 = cometd._mixin(false, {}, obj1);" +
@@ -35,8 +33,7 @@ public class CometDMixinTest extends AbstractCometDTest
     }
 
     @Test
-    public void testDeepMixin() throws Exception
-    {
+    public void testDeepMixin() throws Exception {
         evaluateScript("" +
                 "var obj1 = {foo: {}};" +
                 "var obj2 = cometd._mixin(true, {}, obj1);" +
@@ -50,8 +47,7 @@ public class CometDMixinTest extends AbstractCometDTest
     }
 
     @Test
-    public void testTargetParameterIsModified() throws Exception
-    {
+    public void testTargetParameterIsModified() throws Exception {
         evaluateScript("" +
                 "var obj1 = {foo: true};" +
                 "var obj2 = {bar: true};" +
@@ -66,8 +62,7 @@ public class CometDMixinTest extends AbstractCometDTest
     }
 
     @Test
-    public void testDeepMixinOfArrays1() throws Exception
-    {
+    public void testDeepMixinOfArrays1() throws Exception {
         evaluateScript("" +
                 "var obj1 = {foo: [{bar:true}]};" +
                 "var obj2 = {foo: [{baz:true}]};" +
@@ -80,8 +75,7 @@ public class CometDMixinTest extends AbstractCometDTest
     }
 
     @Test
-    public void testDeepMixinOfArrays2() throws Exception
-    {
+    public void testDeepMixinOfArrays2() throws Exception {
         evaluateScript("" +
                 "var obj1 = {foo: [{bar:true}]};" +
                 "var obj2 = {foo: [undefined, {baz:true}]};" +
@@ -95,8 +89,7 @@ public class CometDMixinTest extends AbstractCometDTest
     }
 
     @Test
-    public void testShallowMixinOverwritesNestedObjects() throws Exception
-    {
+    public void testShallowMixinOverwritesNestedObjects() throws Exception {
         evaluateScript("" +
                 "var obj1 = {ext: {foo: true}};" +
                 "var obj2 = {ext: {bar: true}};" +
@@ -112,8 +105,7 @@ public class CometDMixinTest extends AbstractCometDTest
     }
 
     @Test
-    public void testDeepMixinMergesNestedObjects() throws Exception
-    {
+    public void testDeepMixinMergesNestedObjects() throws Exception {
         evaluateScript("" +
                 "var obj1 = {ext: {foo: true}};" +
                 "var obj2 = {ext: {bar: true}};" +

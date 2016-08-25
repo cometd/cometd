@@ -26,11 +26,9 @@ import org.cometd.server.DefaultSecurityPolicy;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDSubscribeTest extends AbstractCometDTest
-{
+public class CometDSubscribeTest extends AbstractCometDTest {
     @Test
-    public void testSubscriptionsUnsubscriptionsForSameChannelOnlySentOnce() throws Exception
-    {
+    public void testSubscriptionsUnsubscriptionsForSameChannelOnlySentOnce() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = get("subscribeLatch");
@@ -68,8 +66,7 @@ public class CometDSubscribeTest extends AbstractCometDTest
     }
 
     @Test
-    public void testSubscriptionsRemovedOnReHandshake() throws Exception
-    {
+    public void testSubscriptionsRemovedOnReHandshake() throws Exception {
         // Listeners are not removed in case of re-handshake
         // since they are not dependent on the clientId
         defineClass(Latch.class);
@@ -121,8 +118,7 @@ public class CometDSubscribeTest extends AbstractCometDTest
     }
 
     @Test
-    public void testDynamicResubscription() throws Exception
-    {
+    public void testDynamicResubscription() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var latch = new Latch(1);");
         Latch latch = get("latch");
@@ -196,15 +192,12 @@ public class CometDSubscribeTest extends AbstractCometDTest
     }
 
     @Test
-    public void testSubscriptionDeniedRemovesListener() throws Exception
-    {
+    public void testSubscriptionDeniedRemovesListener() throws Exception {
         final AtomicBoolean subscriptionAllowed = new AtomicBoolean(false);
         evaluateScript("var subscriptionAllowed = false;");
-        bayeuxServer.setSecurityPolicy(new DefaultSecurityPolicy()
-        {
+        bayeuxServer.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
-            public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
-            {
+            public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
                 return subscriptionAllowed.get();
             }
         });
@@ -254,8 +247,7 @@ public class CometDSubscribeTest extends AbstractCometDTest
     }
 
     @Test
-    public void testSubscriptionSuccessfulInvokesCallback() throws Exception
-    {
+    public void testSubscriptionSuccessfulInvokesCallback() throws Exception {
         defineClass(Latch.class);
 
         final String channelName = "/foo";
@@ -283,18 +275,16 @@ public class CometDSubscribeTest extends AbstractCometDTest
     }
 
     @Test
-    public void testSubscriptionDeniedInvokesCallback() throws Exception
-    {
+    public void testSubscriptionDeniedInvokesCallback() throws Exception {
         defineClass(Latch.class);
 
         final String channelName = "/foo";
-        bayeuxServer.setSecurityPolicy(new DefaultSecurityPolicy()
-        {
+        bayeuxServer.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
-            public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
-            {
-                if (channelName.equals(channel.getId()))
+            public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
+                if (channelName.equals(channel.getId())) {
                     return false;
+                }
                 return super.canSubscribe(server, session, channel, message);
             }
         });

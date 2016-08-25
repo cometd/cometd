@@ -21,11 +21,9 @@ import java.util.Queue;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class BatchArrayQueueTest
-{
+public class BatchArrayQueueTest {
     @Test
-    public void test_Offer_Next_Offer_Export_Clear() throws Exception
-    {
+    public void test_Offer_Next_Offer_Export_Clear() throws Exception {
         BatchArrayQueue<String> queue = new BatchArrayQueue<>(16, this);
 
         queue.offer("A");
@@ -47,8 +45,7 @@ public class BatchArrayQueueTest
     }
 
     @Test
-    public void test_Offer_Grow_Poll_Offer() throws Exception
-    {
+    public void test_Offer_Grow_Poll_Offer() throws Exception {
         BatchArrayQueue<String> queue = new BatchArrayQueue<>(2, this);
 
         queue.offer("A1");
@@ -76,8 +73,7 @@ public class BatchArrayQueueTest
     }
 
     @Test
-    public void test_Offer_Grow_Next_Offer_Grow_Export_Clear() throws Exception
-    {
+    public void test_Offer_Grow_Next_Offer_Grow_Export_Clear() throws Exception {
         BatchArrayQueue<String> queue = new BatchArrayQueue<>(2, this);
 
         queue.offer("A1");
@@ -94,12 +90,14 @@ public class BatchArrayQueueTest
         queue.exportMessagesToBatch(target, batch);
 
         Assert.assertEquals(3, target.size());
-        for (String element : target)
+        for (String element : target) {
             Assert.assertTrue(element.startsWith("A"));
+        }
 
         queue.clearToBatch(batch);
 
-        for (String element: queue)
+        for (String element : queue) {
             Assert.assertTrue(element.startsWith("B"));
+        }
     }
 }

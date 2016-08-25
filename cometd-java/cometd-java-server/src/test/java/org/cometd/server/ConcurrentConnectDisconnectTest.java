@@ -37,31 +37,26 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerTest
-{
-    public ConcurrentConnectDisconnectTest(String serverTransport)
-    {
+public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerTest {
+    public ConcurrentConnectDisconnectTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testConnectListenerThenDisconnectThenConnectHandler() throws Exception
-    {
+    public void testConnectListenerThenDisconnectThenConnectHandler() throws Exception {
         final CountDownLatch connectLatch = new CountDownLatch(2);
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
-        bayeux.getChannel("/meta/connect").addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+        bayeux.getChannel("/meta/connect").addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 connectLatch.countDown();
-                if (connectLatch.getCount() == 0)
+                if (connectLatch.getCount() == 0) {
                     await(disconnectLatch);
+                }
                 return true;
             }
         });
@@ -124,7 +119,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         String error = (String)connectReply2.get(Message.ERROR_FIELD);
         Assert.assertNotNull(error);
         Assert.assertTrue(error.toLowerCase().contains("unknown"));
-        Map<String,Object> advice = connectReply2.getAdvice();
+        Map<String, Object> advice = connectReply2.getAdvice();
         Assert.assertNotNull(advice);
         Assert.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get(Message.RECONNECT_FIELD));
 
@@ -146,29 +141,25 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
     }
 
     @Test
-    public void testConnectHandlerThenDisconnect() throws Exception
-    {
+    public void testConnectHandlerThenDisconnect() throws Exception {
         final CountDownLatch connectLatch = new CountDownLatch(2);
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
         final CountDownLatch suspendLatch = new CountDownLatch(1);
-        JSONTransport transport = new JSONTransport(bayeux)
-        {
+        JSONTransport transport = new JSONTransport(bayeux) {
             @Override
-            protected ServerMessage.Mutable bayeuxServerHandle(ServerSessionImpl session, ServerMessage.Mutable message)
-            {
+            protected ServerMessage.Mutable bayeuxServerHandle(ServerSessionImpl session, ServerMessage.Mutable message) {
                 ServerMessage.Mutable reply = super.bayeuxServerHandle(session, message);
-                if (Channel.META_CONNECT.equals(message.getChannel()))
-                {
+                if (Channel.META_CONNECT.equals(message.getChannel())) {
                     connectLatch.countDown();
-                    if (connectLatch.getCount() == 0)
+                    if (connectLatch.getCount() == 0) {
                         await(disconnectLatch);
+                    }
                 }
                 return reply;
             }
 
             @Override
-            protected void metaConnectSuspended(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session)
-            {
+            protected void metaConnectSuspended(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session) {
                 suspendLatch.countDown();
             }
         };
@@ -234,14 +225,10 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         Assert.assertNull(bayeux.getSession(clientId));
     }
 
-    private void await(CountDownLatch latch)
-    {
-        try
-        {
+    private void await(CountDownLatch latch) {
+        try {
             latch.await();
-        }
-        catch (InterruptedException x)
-        {
+        } catch (InterruptedException x) {
             Thread.currentThread().interrupt();
         }
     }

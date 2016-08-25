@@ -21,11 +21,9 @@ import org.cometd.server.ext.TimesyncExtension;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDTimeSyncExtensionTest extends AbstractCometDTest
-{
+public class CometDTimeSyncExtensionTest extends AbstractCometDTest {
     @Test
-    public void testTimeSync() throws Exception
-    {
+    public void testTimeSync() throws Exception {
         bayeuxServer.addExtension(new TimesyncExtension());
 
         provideTimesyncExtension();

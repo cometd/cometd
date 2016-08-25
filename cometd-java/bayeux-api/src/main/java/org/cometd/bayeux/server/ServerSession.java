@@ -32,8 +32,7 @@ import org.cometd.bayeux.Session;
  * methods may be used to directly queue messages to a session without publishing them to all subscribers
  * of a channel.</p>
  */
-public interface ServerSession extends Session
-{
+public interface ServerSession extends Session {
     /**
      * <p>Adds the given extension to this session.</p>
      *
@@ -100,7 +99,6 @@ public interface ServerSession extends Session
     /**
      * <p>Delivers the given information to this session.</p>
      *
-     *
      * @param sender  the session delivering the message
      * @param channel the channel of the message
      * @param data    the data of the message
@@ -149,15 +147,13 @@ public interface ServerSession extends Session
      * <p>Common interface for {@link ServerSession} listeners.</p>
      * <p>Specific sub-interfaces define what kind of event listeners will be notified.</p>
      */
-    public interface ServerSessionListener extends Bayeux.BayeuxListener
-    {
+    public interface ServerSessionListener extends Bayeux.BayeuxListener {
     }
 
     /**
      * <p>Listeners objects that implement this interface will be notified of session removal.</p>
      */
-    public interface RemoveListener extends ServerSessionListener
-    {
+    public interface RemoveListener extends ServerSessionListener {
         /**
          * <p>Callback invoked when the session is removed.</p>
          *
@@ -170,8 +166,7 @@ public interface ServerSession extends Session
     /**
      * <p>Listeners objects that implement this interface will be notified of message arrival.</p>
      */
-    public interface MessageListener extends ServerSessionListener
-    {
+    public interface MessageListener extends ServerSessionListener {
         /**
          * <p>Callback invoked when a message is received.</p>
          * <p>Implementers can decide to return false to signal that the message should not be
@@ -191,8 +186,7 @@ public interface ServerSession extends Session
      * is queued in the session queue.</p>
      * <p>This is a <em>restricted</em> listener interface, see {@link MaxQueueListener}.</p>
      */
-    public interface QueueListener extends ServerSessionListener
-    {
+    public interface QueueListener extends ServerSessionListener {
         /**
          * <p>Callback invoked when a message is queued in the session queue.</p>
          *
@@ -207,8 +201,7 @@ public interface ServerSession extends Session
      * is being drained to actually deliver the messages.</p>
      * <p>This is a <em>restricted</em> listener interface, see {@link MaxQueueListener}.</p>
      */
-    public interface DeQueueListener extends ServerSessionListener
-    {
+    public interface DeQueueListener extends ServerSessionListener {
         /**
          * <p>Callback invoked to notify that the queue of messages is about to be sent to the
          * remote client.</p>
@@ -226,16 +219,15 @@ public interface ServerSession extends Session
      * the session lock and therefore are restricted in the type of operations they may perform; in particular,
      * publishing a message to another session may end up in a deadlock.</p>
      */
-    public interface MaxQueueListener extends ServerSessionListener
-    {
+    public interface MaxQueueListener extends ServerSessionListener {
         /**
          * <p>Callback invoked to notify when the message queue is exceeding the value
          * configured for the transport with the option "maxQueue".</p>
          * <p>Implementers may modify the queue, for example by removing or merging messages.</p>
          *
          * @param session the session that will receive the message
-         * @param queue the session's message queue
-         * @param sender the session that is sending the messages
+         * @param queue   the session's message queue
+         * @param sender  the session that is sending the messages
          * @param message the message that exceeded the max queue capacity
          * @return true if the message should be added to the session queue
          */
@@ -254,8 +246,7 @@ public interface ServerSession extends Session
      * @see ServerSession#addExtension(Extension)
      * @see BayeuxServer.Extension
      */
-    public interface Extension
-    {
+    public interface Extension {
         /**
          * <p>Callback method invoked every time a normal message is incoming.</p>
          *
@@ -295,25 +286,20 @@ public interface ServerSession extends Session
         /**
          * Empty implementation of {@link Extension}.
          */
-        public static class Adapter implements Extension
-        {
-            public boolean rcv(ServerSession session, ServerMessage.Mutable message)
-            {
+        public static class Adapter implements Extension {
+            public boolean rcv(ServerSession session, ServerMessage.Mutable message) {
                 return true;
             }
 
-            public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message)
-            {
+            public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
                 return true;
             }
 
-            public ServerMessage send(ServerSession session, ServerMessage message)
-            {
+            public ServerMessage send(ServerSession session, ServerMessage message) {
                 return message;
             }
 
-            public boolean sendMeta(ServerSession session, ServerMessage.Mutable message)
-            {
+            public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
                 return true;
             }
         }

@@ -29,22 +29,18 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
-public class SpringFrameworkConfigurationTest extends AbstractBayeuxClientServerTest
-{
-    public SpringFrameworkConfigurationTest(String serverTransport)
-    {
+public class SpringFrameworkConfigurationTest extends AbstractBayeuxClientServerTest {
+    public SpringFrameworkConfigurationTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testXMLSpringConfiguration() throws Exception
-    {
+    public void testXMLSpringConfiguration() throws Exception {
         int port = this.port;
         server.stop();
         // Add Spring listener

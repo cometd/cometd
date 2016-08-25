@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.Loader;
  * <p>A specialized version of {@link CometDServlet} that can be configured with the init-parameter
  * <b>services</b> to be a comma separated list of class names of annotated services, that will
  * be processed by {@link ServerAnnotationProcessor} upon initialization.</p>
- *
+ * <p>
  * A configuration example:
  * <pre>
  * &lt;web-app xmlns="http://java.sun.com/xml/ns/javaee" ...&gt;
@@ -43,24 +43,20 @@ import org.eclipse.jetty.util.Loader;
  *  &lt;/servlet&gt;
  * </pre>
  */
-public class AnnotationCometDServlet extends CometDServlet
-{
+public class AnnotationCometDServlet extends CometDServlet {
     private final List<Object> services = new ArrayList<>();
     private volatile ServerAnnotationProcessor processor;
 
     @Override
-    public void init() throws ServletException
-    {
+    public void init() throws ServletException {
         super.init();
 
         processor = newServerAnnotationProcessor(getBayeux());
 
         String servicesParam = getInitParameter("services");
-        if (servicesParam != null && servicesParam.length() > 0)
-        {
+        if (servicesParam != null && servicesParam.length() > 0) {
 
-            for (String serviceClass : servicesParam.split(","))
-            {
+            for (String serviceClass : servicesParam.split(",")) {
                 Object service = processService(processor, serviceClass.trim());
                 services.add(service);
                 registerService(service);
@@ -68,67 +64,59 @@ public class AnnotationCometDServlet extends CometDServlet
         }
     }
 
-    protected ServerAnnotationProcessor newServerAnnotationProcessor(BayeuxServer bayeuxServer)
-    {
+    protected ServerAnnotationProcessor newServerAnnotationProcessor(BayeuxServer bayeuxServer) {
         return new ServerAnnotationProcessor(bayeuxServer);
     }
 
-    protected Object processService(ServerAnnotationProcessor processor, String serviceClassName) throws ServletException
-    {
-        try
-        {
+    protected Object processService(ServerAnnotationProcessor processor, String serviceClassName) throws ServletException {
+        try {
             Object service = newService(serviceClassName);
             processor.process(service);
-            if (_logger.isDebugEnabled())
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Processed annotated service {}", service);
+            }
             return service;
-        }
-        catch (Exception x)
-        {
+        } catch (Exception x) {
             _logger.warn("Failed to create annotated service " + serviceClassName, x);
             throw new ServletException(x);
         }
     }
 
-    protected Object newService(String serviceClassName) throws Exception
-    {
+    protected Object newService(String serviceClassName) throws Exception {
         return Loader.loadClass(getClass(), serviceClassName).newInstance();
     }
 
-    protected void registerService(Object service)
-    {
+    protected void registerService(Object service) {
         getServletContext().setAttribute(service.getClass().getName(), service);
-        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Registered annotated service {} in servlet context", service);
+        }
     }
 
     @Override
-    public void destroy()
-    {
-        for (Object service : services)
-        {
+    public void destroy() {
+        for (Object service : services) {
             deregisterService(service);
             deprocessService(processor, service);
         }
         super.destroy();
     }
 
-    protected void deregisterService(Object service)
-    {
+    protected void deregisterService(Object service) {
         getServletContext().removeAttribute(service.getClass().getName());
-        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Deregistered annotated service {}", service);
+        }
     }
 
-    protected void deprocessService(ServerAnnotationProcessor processor, Object service)
-    {
+    protected void deprocessService(ServerAnnotationProcessor processor, Object service) {
         processor.deprocess(service);
-        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Deprocessed annotated service {}", service);
+        }
     }
 
-    protected List<Object> getServices()
-    {
+    protected List<Object> getServices() {
         return services;
     }
 }

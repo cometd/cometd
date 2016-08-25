@@ -24,20 +24,17 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject
-public class OortMBean extends ObjectMBean
-{
+public class OortMBean extends ObjectMBean {
     private final Oort oort;
 
-    public OortMBean(Object managedObject)
-    {
+    public OortMBean(Object managedObject) {
         super(managedObject);
         this.oort = (Oort)managedObject;
     }
 
     // Replicated here because ConcurrentMap.KeySet is not serializable
     @ManagedAttribute(value = "Channels that are observed among Oort instances", readonly = true)
-    public Set<String> getObservedChannels()
-    {
+    public Set<String> getObservedChannels() {
         return new TreeSet<>(oort.getObservedChannels());
     }
 }

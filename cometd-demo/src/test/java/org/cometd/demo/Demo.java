@@ -32,21 +32,18 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 
-public class Demo
-{
+public class Demo {
     public static final int HTTP_PORT = 8080;
     public static final int HTTPS_PORT = 8443;
     public static final String CONTEXT_PATH = "/app";
 
-    public static void main(String[] args) throws Exception
-    {
+    public static void main(String[] args) throws Exception {
         start();
     }
 
-    static Server start() throws Exception
-    {
+    static Server start() throws Exception {
         // NOTE: this code is referenced by the documentation
-        
+
         // tag::embedded-cometd[]
         // Setup and configure the thread pool.
         QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -95,12 +92,12 @@ public class Demo
         cometdServletHolder.setInitParameter("timeout", String.valueOf(15000));
         // Start the CometD servlet eagerly to show up in JMX.
         cometdServletHolder.setInitOrder(1);
-        
+
         // Add your own listeners/filters/servlets here.
 
         server.start();
         // end::embedded-cometd[]
-        
+
         return server;
     }
 }

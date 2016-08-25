@@ -34,13 +34,11 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTest
-{
+public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTest {
     private BayeuxFilter filter;
 
     @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
+    protected void customizeContext(ServletContextHandler context) throws Exception {
         super.customizeContext(context);
         filter = new BayeuxFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
@@ -48,8 +46,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
     }
 
     @Test
-    public void testHandshakeDynamicProps() throws Exception
-    {
+    public void testHandshakeDynamicProps() throws Exception {
         defineClass(Latch.class);
         StringBuilder script = new StringBuilder();
         script.append("cometd.configure({url: '").append(cometdURL);
@@ -110,62 +107,48 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public class BayeuxFilter implements Filter
-    {
+    public class BayeuxFilter implements Filter {
         private boolean handshook;
         private String clientId;
 
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
+        public void init(FilterConfig filterConfig) throws ServletException {
         }
 
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
 
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
-            if (handshook)
-            {
-                synchronized (this)
-                {
-                    while (clientId == null)
-                    {
-                        try
-                        {
+        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+            if (handshook) {
+                synchronized (this) {
+                    while (clientId == null) {
+                        try {
                             wait();
-                        }
-                        catch (InterruptedException x)
-                        {
+                        } catch (InterruptedException x) {
                             throw new ServletException(x);
                         }
                     }
                     // Remove the client, so that the CometD implementation will send
                     // "unknown client" and the JavaScript will re-handshake
                     ServerSession session = bayeuxServer.getSession(clientId);
-                    if (session != null)
+                    if (session != null) {
                         bayeuxServer.removeServerSession(session, false);
+                    }
                 }
-            }
-            else
-            {
+            } else {
                 handshook = true;
             }
             chain.doFilter(request, response);
         }
 
-        public void setClientId(String clientId)
-        {
-            synchronized (this)
-            {
+        public void setClientId(String clientId) {
+            synchronized (this) {
                 this.clientId = clientId;
                 notifyAll();
             }
         }
 
-        public void destroy()
-        {
+        public void destroy() {
         }
     }
 }

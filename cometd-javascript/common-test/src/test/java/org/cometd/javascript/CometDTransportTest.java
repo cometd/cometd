@@ -18,11 +18,9 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDTransportTest extends AbstractCometDTest
-{
+public class CometDTransportTest extends AbstractCometDTest {
     @Test
-    public void testTransport() throws Exception
-    {
+    public void testTransport() throws Exception {
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
@@ -30,80 +28,80 @@ public class CometDTransportTest extends AbstractCometDTest
 
         String localTransport =
                 "var readyLatch = new Latch(1);" +
-                "function LocalTransport()" +
-                "{" +
-                "    var _super = new org.cometd.RequestTransport();" +
-                "    var that = org.cometd.Transport.derive(_super);" +
-                "    var _sends = 0;" +
-                "" +
-                "    that.getSends = function() { return _sends; };" +
-                "" +
-                "    that.accept = function(version, crossDomain)" +
-                "    {" +
-                "        return true;" +
-                "    };" +
-                "" +
-                "    that.transportSend = function(envelope, request)" +
-                "    {" +
-                "        ++_sends;" +
-                "        var response;" +
-                "        var timeout;" +
-                "        switch (_sends)" +
-                "        {" +
-                "            case 1:" +
-                "                response = '[{" +
-                "                    \"successful\":true," +
-                "                    \"channel\":\"/meta/handshake\"," +
-                "                    \"clientId\":\"dmigjcjnakuysa9j29\"," +
-                "                    \"id\":\"1\"," +
-                "                    \"minimumVersion\":\"0.9\"," +
-                "                    \"version\":\"1.0\"," +
-                "                    \"supportedConnectionTypes\":[\"long-polling\",\"callback-polling\"]," +
-                "                    \"advice\":{\"reconnect\":\"retry\",\"interval\":0,\"timeout\":5000}" +
-                "                }]';" +
-                "                timeout = 0;" +
-                "                break;" +
-                "            case 2:" +
-                "                response = '[{" +
-                "                    \"successful\":true," +
-                "                    \"channel\":\"/meta/connect\"," +
-                "                    \"id\":\"2\"," +
-                "                    \"advice\":{\"reconnect\":\"retry\",\"interval\":0,\"timeout\":5000}" +
-                "                }]';" +
-                "                timeout = 0;" +
-                "                break;" +
-                "            case 3:" +
-                "                response = '[{" +
-                "                    \"successful\":true," +
-                "                    \"channel\":\"/meta/connect\"," +
-                "                    \"id\":\"2\"," +
-                "                    \"advice\":{\"reconnect\":\"retry\",\"interval\":0,\"timeout\":5000}" +
-                "                }]';" +
-                "                timeout = 5000;" +
-                "                readyLatch.countDown();" +
-                "                break;" +
-                "            case 4:" +
-                "                response = '[{" +
-                "                    \"successful\":true," +
-                "                    \"channel\":\"/meta/disconnect\"," +
-                "                    \"id\":\"3\"" +
-                "                }]';" +
-                "                timeout = 0;" +
-                "                break;" +
-                "            default:" +
-                "                throw 'Test Error';" +
-                "        }" +
-                "" +
-                "        /* Respond asynchronously */" +
-                "        var self = this;" +
-                "        setTimeout(function()" +
-                "        {" +
-                "            self.transportSuccess(envelope, request, self.convertToMessages(response));" +
-                "        }, timeout);" +
-                "    };" +
-                "" +
-                "    return that;" +
-                "};";
+                        "function LocalTransport()" +
+                        "{" +
+                        "    var _super = new org.cometd.RequestTransport();" +
+                        "    var that = org.cometd.Transport.derive(_super);" +
+                        "    var _sends = 0;" +
+                        "" +
+                        "    that.getSends = function() { return _sends; };" +
+                        "" +
+                        "    that.accept = function(version, crossDomain)" +
+                        "    {" +
+                        "        return true;" +
+                        "    };" +
+                        "" +
+                        "    that.transportSend = function(envelope, request)" +
+                        "    {" +
+                        "        ++_sends;" +
+                        "        var response;" +
+                        "        var timeout;" +
+                        "        switch (_sends)" +
+                        "        {" +
+                        "            case 1:" +
+                        "                response = '[{" +
+                        "                    \"successful\":true," +
+                        "                    \"channel\":\"/meta/handshake\"," +
+                        "                    \"clientId\":\"dmigjcjnakuysa9j29\"," +
+                        "                    \"id\":\"1\"," +
+                        "                    \"minimumVersion\":\"0.9\"," +
+                        "                    \"version\":\"1.0\"," +
+                        "                    \"supportedConnectionTypes\":[\"long-polling\",\"callback-polling\"]," +
+                        "                    \"advice\":{\"reconnect\":\"retry\",\"interval\":0,\"timeout\":5000}" +
+                        "                }]';" +
+                        "                timeout = 0;" +
+                        "                break;" +
+                        "            case 2:" +
+                        "                response = '[{" +
+                        "                    \"successful\":true," +
+                        "                    \"channel\":\"/meta/connect\"," +
+                        "                    \"id\":\"2\"," +
+                        "                    \"advice\":{\"reconnect\":\"retry\",\"interval\":0,\"timeout\":5000}" +
+                        "                }]';" +
+                        "                timeout = 0;" +
+                        "                break;" +
+                        "            case 3:" +
+                        "                response = '[{" +
+                        "                    \"successful\":true," +
+                        "                    \"channel\":\"/meta/connect\"," +
+                        "                    \"id\":\"2\"," +
+                        "                    \"advice\":{\"reconnect\":\"retry\",\"interval\":0,\"timeout\":5000}" +
+                        "                }]';" +
+                        "                timeout = 5000;" +
+                        "                readyLatch.countDown();" +
+                        "                break;" +
+                        "            case 4:" +
+                        "                response = '[{" +
+                        "                    \"successful\":true," +
+                        "                    \"channel\":\"/meta/disconnect\"," +
+                        "                    \"id\":\"3\"" +
+                        "                }]';" +
+                        "                timeout = 0;" +
+                        "                break;" +
+                        "            default:" +
+                        "                throw 'Test Error';" +
+                        "        }" +
+                        "" +
+                        "        /* Respond asynchronously */" +
+                        "        var self = this;" +
+                        "        setTimeout(function()" +
+                        "        {" +
+                        "            self.transportSuccess(envelope, request, self.convertToMessages(response));" +
+                        "        }, timeout);" +
+                        "    };" +
+                        "" +
+                        "    return that;" +
+                        "};";
 
         evaluateScript(localTransport);
 

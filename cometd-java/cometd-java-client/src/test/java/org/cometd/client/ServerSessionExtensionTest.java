@@ -25,11 +25,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ServerSessionExtensionTest extends ClientServerTest
-{
+public class ServerSessionExtensionTest extends ClientServerTest {
     @Test
-    public void testServerSessionExtensionDeletingMessage() throws Exception
-    {
+    public void testServerSessionExtensionDeletingMessage() throws Exception {
         startServer(null);
 
         BayeuxClient client = newBayeuxClient();
@@ -42,31 +40,26 @@ public class ServerSessionExtensionTest extends ClientServerTest
         final String channelName = "/delete";
         final CountDownLatch messageLatch = new CountDownLatch(1);
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-        {
+        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
-        }, new ClientSessionChannel.MessageListener()
-        {
+        }, new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribeLatch.countDown();
             }
         });
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         ServerSession session = bayeux.getSession(client.getId());
-        session.addExtension(new ServerSession.Extension.Adapter()
-        {
+        session.addExtension(new ServerSession.Extension.Adapter() {
             @Override
-            public ServerMessage send(ServerSession session, ServerMessage message)
-            {
-                if (message.getChannel().equals(channelName))
+            public ServerMessage send(ServerSession session, ServerMessage message) {
+                if (message.getChannel().equals(channelName)) {
                     return null;
+                }
                 return message;
             }
         });

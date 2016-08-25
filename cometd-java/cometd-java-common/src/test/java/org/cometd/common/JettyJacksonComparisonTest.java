@@ -28,22 +28,19 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JettyJacksonComparisonTest
-{
-    @Parameters(name= "{index}: JSON Provider: {0} Iterations: {1} Count: {2}")
-     public static Iterable<Object[]> data()
-     {
-         return Arrays.asList(new Object[][]
-                 {
-                         {Jackson1JSONProvider.class},
-                         {Jackson2JSONProvider.class},
-                         {JettyJSONProvider.class}
-                 }
-         );
-     }
+public class JettyJacksonComparisonTest {
+    @Parameters(name = "{index}: JSON Provider: {0} Iterations: {1} Count: {2}")
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[][]
+                {
+                        {Jackson1JSONProvider.class},
+                        {Jackson2JSONProvider.class},
+                        {JettyJSONProvider.class}
+                }
+        );
+    }
 
-    public interface JSONProvider
-    {
+    public interface JSONProvider {
         String getName();
 
         Message.Mutable[] parse(String json) throws Exception;
@@ -51,85 +48,71 @@ public class JettyJacksonComparisonTest
         String generate(Message.Mutable message) throws Exception;
     }
 
-    public static class Jackson1JSONProvider implements JSONProvider
-    {
+    public static class Jackson1JSONProvider implements JSONProvider {
         private final Jackson1JSONContextClient jackson1ContextClient = new Jackson1JSONContextClient();
 
         @Override
-        public String getName()
-        {
+        public String getName() {
             return "jackson1";
         }
 
         @Override
-        public Message.Mutable[] parse(String json) throws Exception
-        {
+        public Message.Mutable[] parse(String json) throws Exception {
             return jackson1ContextClient.parse(json);
         }
 
         @Override
-        public String generate(Message.Mutable message) throws Exception
-        {
+        public String generate(Message.Mutable message) throws Exception {
             return jackson1ContextClient.generate(message);
         }
     }
 
-    public static class Jackson2JSONProvider implements JSONProvider
-    {
+    public static class Jackson2JSONProvider implements JSONProvider {
         private final Jackson2JSONContextClient jackson2ContextClient = new Jackson2JSONContextClient();
 
         @Override
-        public String getName()
-        {
+        public String getName() {
             return "jackson2";
         }
 
         @Override
-        public org.cometd.bayeux.Message.Mutable[] parse(String json) throws Exception
-        {
+        public org.cometd.bayeux.Message.Mutable[] parse(String json) throws Exception {
             return jackson2ContextClient.parse(json);
         }
 
         @Override
-        public String generate(Message.Mutable message) throws Exception
-        {
+        public String generate(Message.Mutable message) throws Exception {
             return jackson2ContextClient.generate(message);
         }
     }
 
-    public static final class JettyJSONProvider implements JSONProvider
-    {
+    public static final class JettyJSONProvider implements JSONProvider {
         private JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
 
         @Override
-        public String getName()
-        {
+        public String getName() {
             return "jetty";
         }
 
         @Override
-        public Mutable[] parse(String json) throws Exception
-        {
+        public Mutable[] parse(String json) throws Exception {
             return jettyJSONContextClient.parse(json);
         }
 
         @Override
-        public String generate(Message.Mutable message) throws Exception
-        {
+        public String generate(Message.Mutable message) throws Exception {
             return jettyJSONContextClient.generate(message);
         }
     }
 
     private final JSONProvider jsonProvider;
 
-    public JettyJacksonComparisonTest(final Class<?> jsonProvider) throws Exception
-    {
+    public JettyJacksonComparisonTest(final Class<?> jsonProvider) throws Exception {
         this.jsonProvider = (JSONProvider)jsonProvider.newInstance();
     }
 
     @Test
-    public void testParse() throws Exception
-    {
+    public void testParse() throws Exception {
         String json = "" +
                 "[{" +
                 "   \"successful\":true," +
@@ -155,11 +138,11 @@ public class JettyJacksonComparisonTest
         int iterations = 5;
         int count = 100000;
 
-        for (int j = 0; j < iterations; ++j)
-        {
+        for (int j = 0; j < iterations; ++j) {
             long start = System.nanoTime();
-            for (int i = 0; i < count; ++i)
+            for (int i = 0; i < count; ++i) {
                 jsonProvider.parse(json);
+            }
             long end = System.nanoTime();
             System.err.printf("%s context_parse iteration: %d time: %d ms%n",
                     jsonProvider.getName(),
@@ -169,8 +152,7 @@ public class JettyJacksonComparisonTest
     }
 
     @Test
-    public void testGenerate() throws Exception
-    {
+    public void testGenerate() throws Exception {
         HashMapMessage message = new HashMapMessage();
         message.setChannel("/meta/connect");
         message.setClientId("abcdefghijklmnopqrstuvwxyz");
@@ -192,11 +174,11 @@ public class JettyJacksonComparisonTest
         int iterations = 5;
         int count = 200000;
 
-        for (int j = 0; j < iterations; ++j)
-        {
+        for (int j = 0; j < iterations; ++j) {
             long start = System.nanoTime();
-            for (int i = 0; i < count; ++i)
+            for (int i = 0; i < count; ++i) {
                 jsonProvider.generate(message);
+            }
             long end = System.nanoTime();
             System.err.printf("%s context_generate iteration: %d time: %d ms%n",
                     jsonProvider.getName(),

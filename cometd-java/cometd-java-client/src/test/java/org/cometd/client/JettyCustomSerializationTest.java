@@ -35,11 +35,9 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class JettyCustomSerializationTest extends ClientServerTest
-{
+public class JettyCustomSerializationTest extends ClientServerTest {
     @Test
-    public void testJettyCustomSerialization() throws Exception
-    {
+    public void testJettyCustomSerialization() throws Exception {
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, TestJettyJSONContextServer.class.getName());
         Map<String, Object> clientOptions = new HashMap<>();
@@ -53,10 +51,8 @@ public class JettyCustomSerializationTest extends ClientServerTest
 
         LocalSession service = bayeux.newLocalSession("custom_serialization");
         service.handshake();
-        service.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        service.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 Data data = (Data)message.getData();
                 Assert.assertEquals(content, data.content);
                 Map<String, Object> ext = message.getExt();
@@ -82,8 +78,7 @@ public class JettyCustomSerializationTest extends ClientServerTest
     }
 
     @Test
-    public void testParserGenerator() throws Exception
-    {
+    public void testParserGenerator() throws Exception {
         JSONContext.Client jsonContext = new TestJettyJSONContextClient();
         Data data1 = new Data("data");
         Extra extra1 = new Extra("extra");
@@ -98,89 +93,72 @@ public class JettyCustomSerializationTest extends ClientServerTest
         Assert.assertEquals(extra1.content, extra2.content);
     }
 
-    private static class ExtraExtension extends ClientSession.Extension.Adapter
-    {
+    private static class ExtraExtension extends ClientSession.Extension.Adapter {
         private final String content;
 
-        public ExtraExtension(String content)
-        {
+        public ExtraExtension(String content) {
             this.content = content;
         }
 
         @Override
-        public boolean send(ClientSession session, Message.Mutable message)
-        {
+        public boolean send(ClientSession session, Message.Mutable message) {
             Map<String, Object> ext = message.getExt(true);
             ext.put("extra", new Extra(content));
             return true;
         }
     }
 
-    private static class TestJettyJSONContextClient extends JettyJSONContextClient
-    {
-        private TestJettyJSONContextClient()
-        {
+    private static class TestJettyJSONContextClient extends JettyJSONContextClient {
+        private TestJettyJSONContextClient() {
             getJSON().addConvertor(Data.class, new DataConvertor());
             getJSON().addConvertor(Extra.class, new ExtraConvertor());
         }
     }
 
-    public static class TestJettyJSONContextServer extends JettyJSONContextServer
-    {
-        public TestJettyJSONContextServer()
-        {
+    public static class TestJettyJSONContextServer extends JettyJSONContextServer {
+        public TestJettyJSONContextServer() {
             getJSON().addConvertor(Data.class, new DataConvertor());
             getJSON().addConvertor(Extra.class, new ExtraConvertor());
         }
     }
 
-    private static class Data
-    {
+    private static class Data {
         private String content;
 
-        private Data(String content)
-        {
+        private Data(String content) {
             this.content = content;
         }
     }
 
-    private static class Extra
-    {
+    private static class Extra {
         private String content;
 
-        private Extra(String content)
-        {
+        private Extra(String content) {
             this.content = content;
         }
     }
 
-    private static class DataConvertor implements JSON.Convertor
-    {
-        public void toJSON(Object object, JSON.Output output)
-        {
+    private static class DataConvertor implements JSON.Convertor {
+        public void toJSON(Object object, JSON.Output output) {
             Data data = (Data)object;
             output.addClass(Data.class);
             output.add("content", data.content);
         }
 
-        public Object fromJSON(Map map)
-        {
+        public Object fromJSON(Map map) {
             String content = (String)map.get("content");
             return new Data(content);
         }
     }
 
-    private static class ExtraConvertor implements JSON.Convertor
-    {
-        public void toJSON(Object object, JSON.Output output)
-        {
+    private static class ExtraConvertor implements JSON.Convertor {
+        public void toJSON(Object object, JSON.Output output) {
             Extra extra = (Extra)object;
             output.addClass(Extra.class);
             output.add("content", extra.content);
         }
 
-        public Object fromJSON(Map map)
-        {
+        public Object fromJSON(Map map) {
             String content = (String)map.get("content");
             return new Extra(content);
         }

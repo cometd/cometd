@@ -18,13 +18,11 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDWebSocketClientProtocolTest extends AbstractCometDWebSocketTest
-{
+public class CometDWebSocketClientProtocolTest extends AbstractCometDWebSocketTest {
     private static final String PROTOCOL = "bayeux/1.0";
 
     @Test
-    public void testClientWithoutWebSocketProtocolServerWithoutWebSocketProtocol() throws Exception
-    {
+    public void testClientWithoutWebSocketProtocolServerWithoutWebSocketProtocol() throws Exception {
         evaluateScript("cometd.configure({" +
                 "url: '" + cometdURL + "', " +
                 "logLevel: '" + getLogLevel() + "'" +
@@ -58,8 +56,7 @@ public class CometDWebSocketClientProtocolTest extends AbstractCometDWebSocketTe
     }
 
     @Test
-    public void testClientWithWebSocketProtocolServerWithoutWebSocketProtocol() throws Exception
-    {
+    public void testClientWithWebSocketProtocolServerWithoutWebSocketProtocol() throws Exception {
         evaluateScript("cometd.configure({" +
                 "url: '" + cometdURL + "', " +
                 "protocol: '" + PROTOCOL + "', " +

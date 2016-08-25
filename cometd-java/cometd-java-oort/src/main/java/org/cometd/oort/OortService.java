@@ -83,8 +83,7 @@ import org.slf4j.LoggerFactory;
  * @param <R> the result type
  * @param <C> the opaque context type
  */
-public abstract class OortService<R, C> extends AbstractLifeCycle implements ServerChannel.MessageListener
-{
+public abstract class OortService<R, C> extends AbstractLifeCycle implements ServerChannel.MessageListener {
     private static final String CONTEXT_FIELD = "oort.service.context";
     private static final String DATA_FIELD = "oort.service.data";
     private static final String ID_FIELD = "oort.service.id";
@@ -110,8 +109,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
      * @param oort the Oort where this service lives
      * @param name the unique name across the cluster of this service
      */
-    protected OortService(Oort oort, String name)
-    {
+    protected OortService(Oort oort, String name) {
         this.oort = oort;
         this.name = name;
         this.forwardChannelName = "/service/oort/service/" + name;
@@ -124,73 +122,71 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     /**
      * @return the Oort of this service
      */
-    public Oort getOort()
-    {
+    public Oort getOort() {
         return oort;
     }
 
     /**
      * @return the name of this service
      */
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
     /**
      * @return the local session associated with this service
      */
-    public LocalSession getLocalSession()
-    {
+    public LocalSession getLocalSession() {
         return session;
     }
 
     /**
      * @return the timeout, in milliseconds, for an action to return a result (by default 5000 ms)
      */
-    public long getTimeout()
-    {
+    public long getTimeout() {
         return timeout;
     }
 
     /**
      * @param timeout the timeout, in milliseconds, for an action to return a result
      */
-    public void setTimeout(long timeout)
-    {
+    public void setTimeout(long timeout) {
         this.timeout = timeout;
     }
 
     @Override
-    protected void doStart() throws Exception
-    {
+    protected void doStart() throws Exception {
         session.handshake();
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         bayeuxServer.createChannelIfAbsent(forwardChannelName).getReference().addListener(this);
         bayeuxServer.createChannelIfAbsent(broadcastChannelName).getReference().addListener(this);
         bayeuxServer.createChannelIfAbsent(resultChannelName).getReference().addListener(this);
         oort.observeChannel(broadcastChannelName);
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Started {}", this);
+        }
     }
 
     @Override
-    protected void doStop() throws Exception
-    {
+    protected void doStop() throws Exception {
         oort.deobserveChannel(broadcastChannelName);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         ServerChannel channel = bayeuxServer.getChannel(resultChannelName);
-        if (channel != null)
+        if (channel != null) {
             channel.removeListener(this);
+        }
         channel = bayeuxServer.getChannel(broadcastChannelName);
-        if (channel != null)
+        if (channel != null) {
             channel.removeListener(this);
+        }
         channel = bayeuxServer.getChannel(forwardChannelName);
-        if (channel != null)
+        if (channel != null) {
             channel.removeListener(this);
+        }
         session.disconnect();
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Stopped {}", this);
+        }
     }
 
     /**
@@ -200,12 +196,11 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
      * entity the action should be applied to must return {@link Result#ignore(Object)}.</p>
      *
      * @param targetOortURL the owner node Oort URL, or null to broadcast the action to all nodes
-     * @param parameter the action parameter that will be passed to {@link #onForward(Request)}
-     * @param context the opaque context passed to {@link #onForwardSucceeded(Object, Object)}
+     * @param parameter     the action parameter that will be passed to {@link #onForward(Request)}
+     * @param context       the opaque context passed to {@link #onForwardSucceeded(Object, Object)}
      * @return whether the forward succeeded
      */
-    protected boolean forward(String targetOortURL, Object parameter, C context)
-    {
+    protected boolean forward(String targetOortURL, Object parameter, C context) {
         Map<String, Object> ctx = new HashMap<>(4);
         long contextId = contextIds.incrementAndGet();
         ctx.put(ID_FIELD, contextId);
@@ -218,185 +213,159 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         String localOortURL = getOort().getURL();
         data.put(OORT_URL_FIELD, localOortURL);
 
-        if (targetOortURL == null)
-        {
+        if (targetOortURL == null) {
             // Application does not know where the entity is, broadcast
-            if (logger.isDebugEnabled())
+            if (logger.isDebugEnabled()) {
                 logger.debug("Broadcasting action: {}", data);
+            }
             startTimeout(ctx);
             oort.getBayeuxServer().getChannel(broadcastChannelName).publish(getLocalSession(), data);
             return true;
-        }
-        else
-        {
-            if (localOortURL.equals(targetOortURL))
-            {
+        } else {
+            if (localOortURL.equals(targetOortURL)) {
                 // Local case
-                if (logger.isDebugEnabled())
+                if (logger.isDebugEnabled()) {
                     logger.debug("Forwarding action locally ({}): {}", localOortURL, data);
+                }
                 startTimeout(ctx);
                 onForwardMessage(data, false);
                 return true;
-            }
-            else
-            {
+            } else {
                 // Remote case
                 OortComet comet = getOort().getComet(targetOortURL);
-                if (comet != null)
-                {
-                    if (logger.isDebugEnabled())
+                if (comet != null) {
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Forwarding action from {} to {}: {}", localOortURL, targetOortURL, data);
+                    }
                     startTimeout(ctx);
                     comet.getChannel(forwardChannelName).publish(data);
                     return true;
-                }
-                else
-                {
-                    if (logger.isDebugEnabled())
+                } else {
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Could not forward action from {} to {}: {}", localOortURL, targetOortURL, data);
+                    }
                     return false;
                 }
             }
         }
     }
 
-    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-    {
-        if (forwardChannelName.equals(message.getChannel()))
-        {
+    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+        if (forwardChannelName.equals(message.getChannel())) {
             onForwardMessage(message.getDataAsMap(), false);
-        }
-        else if (broadcastChannelName.equals(message.getChannel()))
-        {
+        } else if (broadcastChannelName.equals(message.getChannel())) {
             onForwardMessage(message.getDataAsMap(), true);
-        }
-        else if (resultChannelName.equals(message.getChannel()))
-        {
+        } else if (resultChannelName.equals(message.getChannel())) {
             onResultMessage(message.getDataAsMap());
         }
         return true;
     }
 
-    protected void onForwardMessage(Map<String, Object> data, boolean broadcast)
-    {
-        if (logger.isDebugEnabled())
+    protected void onForwardMessage(Map<String, Object> data, boolean broadcast) {
+        if (logger.isDebugEnabled()) {
             logger.debug("Received {} action {}", broadcast ? "broadcast" : "forwarded", data);
+        }
         Map<String, Object> resultData = new HashMap<>(3);
         resultData.put(ID_FIELD, data.get(ID_FIELD));
         resultData.put(OORT_URL_FIELD, getOort().getURL());
         String oortURL = (String)data.get(OORT_URL_FIELD);
-        try
-        {
+        try {
             Result<R> result = onForward(new Request(oort.getURL(), data.get(PARAMETER_FIELD), oortURL));
-            if (logger.isDebugEnabled())
+            if (logger.isDebugEnabled()) {
                 logger.debug("Forwarded action result {}", result);
-            if (result.succeeded())
-            {
+            }
+            if (result.succeeded()) {
                 resultData.put(RESULT_FIELD, true);
                 resultData.put(DATA_FIELD, result.data);
-            }
-            else if (result.failed())
-            {
+            } else if (result.failed()) {
                 resultData.put(RESULT_FIELD, false);
                 resultData.put(DATA_FIELD, result.data);
-            }
-            else
-            {
-                if (broadcast)
-                {
+            } else {
+                if (broadcast) {
                     // Ignore and therefore return
-                    if (logger.isDebugEnabled())
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Ignoring broadcast action result {}", result);
+                    }
                     return;
-                }
-                else
-                {
+                } else {
                     // Convert ignore into failure
                     resultData.put(RESULT_FIELD, false);
                     resultData.put(DATA_FIELD, result.data);
                 }
             }
-        }
-        catch (Throwable x)
-        {
-            if (broadcast)
+        } catch (Throwable x) {
+            if (broadcast) {
                 return;
+            }
 
             String failure = x.getMessage();
-            if (failure == null || failure.length() == 0)
+            if (failure == null || failure.length() == 0) {
                 failure = x.getClass().getName();
+            }
             resultData.put(RESULT_FIELD, false);
             resultData.put(DATA_FIELD, failure);
         }
 
-        if (getOort().getURL().equals(oortURL))
-        {
+        if (getOort().getURL().equals(oortURL)) {
             // Local case
-            if (logger.isDebugEnabled())
+            if (logger.isDebugEnabled()) {
                 logger.debug("Returning forwarded action result {} to local {}", resultData, oortURL);
+            }
             onResultMessage(resultData);
-        }
-        else
-        {
+        } else {
             // Remote case
             OortComet comet = getOort().getComet(oortURL);
-            if (comet != null)
-            {
-                if (logger.isDebugEnabled())
+            if (comet != null) {
+                if (logger.isDebugEnabled()) {
                     logger.debug("Returning forwarded action result {} to remote {}", resultData, oortURL);
+                }
                 comet.getChannel(resultChannelName).publish(resultData);
-            }
-            else
-            {
+            } else {
                 // Probably the node disconnected concurrently
-                if (logger.isDebugEnabled())
+                if (logger.isDebugEnabled()) {
                     logger.debug("Could not return forwarded action result {} to remote {}", resultData, oortURL);
+                }
             }
         }
     }
 
-    protected void onResultMessage(Map<String, Object> data)
-    {
+    protected void onResultMessage(Map<String, Object> data) {
         long actionId = ((Number)data.get(ID_FIELD)).longValue();
         Map<String, Object> ctx = callbacks.remove(actionId);
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Action result {} with context {}", data, ctx);
+        }
         // Atomically remove the callback, so we guarantee one notification only.
         // Multiple notifications may happen when broadcasting the forward request
         // and nodes mistakenly return multiple results.
-        if (ctx != null)
-        {
+        if (ctx != null) {
             cancelTimeout(ctx);
 
             @SuppressWarnings("unchecked")
             C context = (C)ctx.get(CONTEXT_FIELD);
             boolean success = (Boolean)data.get(RESULT_FIELD);
-            if (success)
-            {
+            if (success) {
                 @SuppressWarnings("unchecked")
                 R result = (R)data.get(DATA_FIELD);
                 onForwardSucceeded(result, context);
-            }
-            else
-            {
+            } else {
                 Object failure = data.get(DATA_FIELD);
                 onForwardFailed(failure, context);
             }
         }
     }
 
-    private void startTimeout(Map<String, Object> ctx)
-    {
+    private void startTimeout(Map<String, Object> ctx) {
         long contextId = ((Number)ctx.get(ID_FIELD)).longValue();
         TimeoutTask timeoutTask = new TimeoutTask(contextId);
         ctx.put(TIMEOUT_FIELD, ((BayeuxServerImpl)oort.getBayeuxServer()).schedule(timeoutTask, getTimeout()));
     }
 
-    private void cancelTimeout(Map<String, Object> ctx)
-    {
+    private void cancelTimeout(Map<String, Object> ctx) {
         Scheduler.Task timeoutTask = (Scheduler.Task)ctx.get(TIMEOUT_FIELD);
-        if (timeoutTask != null)
+        if (timeoutTask != null) {
             timeoutTask.cancel();
+        }
     }
 
     /**
@@ -416,7 +385,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
      * Subclasses must implement this method, that runs on the <em>requesting node</em>,
      * to complete the functionality after the action has been successfully run on the <em>owner node</em>.
      *
-     * @param result the result of the action
+     * @param result  the result of the action
      * @param context the opaque context from {@link #forward(String, Object, Object)}
      */
     protected abstract void onForwardSucceeded(R result, C context);
@@ -431,8 +400,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     protected abstract void onForwardFailed(Object failure, C context);
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return String.format("%s[%s]@%s", getClass().getSimpleName(), getName(), getOort().getURL());
     }
 
@@ -442,14 +410,12 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
      * @see #onForward(Request)
      * @see Result
      */
-    public static class Request
-    {
+    public static class Request {
         private final String localOortURL;
         private final Object data;
         private final String oortURL;
 
-        private Request(String localOortURL, Object data, String oortURL)
-        {
+        private Request(String localOortURL, Object data, String oortURL) {
             this.localOortURL = localOortURL;
             this.data = data;
             this.oortURL = oortURL;
@@ -458,8 +424,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         /**
          * @return the request data
          */
-        public Object getData()
-        {
+        public Object getData() {
             return data;
         }
 
@@ -467,24 +432,21 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
          * @return the request data as a {@code Map&lt;String, Object&gt;}
          */
         @SuppressWarnings("unchecked")
-        public Map<String, Object> getDataAsMap()
-        {
+        public Map<String, Object> getDataAsMap() {
             return (Map<String, Object>)getData();
         }
 
         /**
          * @return the Oort URL of the <em>requesting node</em>
          */
-        public String getOortURL()
-        {
+        public String getOortURL() {
             return oortURL;
         }
 
         /**
          * @return whether the request is local to the current Oort node
          */
-        public boolean isLocal()
-        {
+        public boolean isLocal() {
             return localOortURL.equals(getOortURL());
         }
     }
@@ -508,13 +470,11 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
      * @param <U> the result type
      * @see Request
      */
-    public static class Result<U>
-    {
+    public static class Result<U> {
         private final Boolean result;
         private final Object data;
 
-        private Result(Boolean result, Object data)
-        {
+        private Result(Boolean result, Object data) {
             this.result = result;
             this.data = data;
         }
@@ -523,11 +483,10 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
          * Returns a successful {@link Result} containing the given result object.
          *
          * @param result the result object
-         * @param <S> the type of the result object
+         * @param <S>    the type of the result object
          * @return a new {@link Result} instance wrapping the result object
          */
-        public static <S> Result<S> success(S result)
-        {
+        public static <S> Result<S> success(S result) {
             return new Result<>(true, result);
         }
 
@@ -535,11 +494,10 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
          * Returns a failed {@link Result} containing the given failure object.
          *
          * @param failure the failure object
-         * @param <S> the type of the result
+         * @param <S>     the type of the result
          * @return a new {@link Result} instance wrapping the failure object
          */
-        public static <S> Result<S> failure(Object failure)
-        {
+        public static <S> Result<S> failure(Object failure) {
             return new Result<>(false, failure);
         }
 
@@ -547,27 +505,23 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
          * Returns an ignored {@link Result} containing the given data object
          *
          * @param data the data object
-         * @param <S> the type of the result
+         * @param <S>  the type of the result
          * @return a new {@link Result} instance wrapping the data object
          */
-        public static <S> Result<S> ignore(Object data)
-        {
+        public static <S> Result<S> ignore(Object data) {
             return new Result<>(null, data);
         }
 
-        private boolean succeeded()
-        {
+        private boolean succeeded() {
             return result != null && result;
         }
 
-        private boolean failed()
-        {
+        private boolean failed() {
             return result != null && !result;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return String.format("%s[%s] %s",
                     getClass().getSimpleName(),
                     result == null ? "ignored" : result ? "success" : "failure",
@@ -604,40 +558,33 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
      * }
      * </pre>
      */
-    public static class ServerContext
-    {
+    public static class ServerContext {
         private final ServerSession session;
         private final ServerMessage message;
 
-        public ServerContext(ServerSession session, ServerMessage message)
-        {
+        public ServerContext(ServerSession session, ServerMessage message) {
             this.session = session;
             this.message = message;
         }
 
-        public ServerSession getServerSession()
-        {
+        public ServerSession getServerSession() {
             return session;
         }
 
-        public ServerMessage getServerMessage()
-        {
+        public ServerMessage getServerMessage() {
             return message;
         }
     }
 
-    private class TimeoutTask implements Runnable
-    {
+    private class TimeoutTask implements Runnable {
         private final long contextId;
 
-        private TimeoutTask(long contextId)
-        {
+        private TimeoutTask(long contextId) {
             this.contextId = contextId;
         }
 
         @Override
-        public void run()
-        {
+        public void run() {
             Map<String, Object> data = new HashMap<>(3);
             data.put(ID_FIELD, contextId);
             data.put(RESULT_FIELD, false);

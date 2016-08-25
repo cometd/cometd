@@ -59,8 +59,7 @@ import org.cometd.bayeux.server.BayeuxServer;
  * @see OortConfigServlet
  * @see OortMulticastConfigServlet
  */
-public class OortMulticastConfigServlet extends OortConfigServlet
-{
+public class OortMulticastConfigServlet extends OortConfigServlet {
     public static final String OORT_MULTICAST_BIND_ADDRESS_PARAM = "oort.multicast.bindAddress";
     public static final String OORT_MULTICAST_GROUP_ADDRESS_PARAM = "oort.multicast.groupAddress";
     public static final String OORT_MULTICAST_GROUP_PORT_PARAM = "oort.multicast.groupPort";
@@ -73,74 +72,73 @@ public class OortMulticastConfigServlet extends OortConfigServlet
     private OortMulticastConfigurer configurer;
 
     @Override
-    protected void configureCloud(ServletConfig config, Oort oort) throws Exception
-    {
+    protected void configureCloud(ServletConfig config, Oort oort) throws Exception {
         configurer = new OortMulticastConfigurer(oort);
 
         String bindAddress = config.getInitParameter(OORT_MULTICAST_BIND_ADDRESS_PARAM);
-        if (bindAddress != null)
+        if (bindAddress != null) {
             configurer.setBindAddress(InetAddress.getByName(bindAddress));
+        }
 
         String groupAddress = config.getInitParameter(OORT_MULTICAST_GROUP_ADDRESS_PARAM);
-        if (groupAddress != null)
+        if (groupAddress != null) {
             configurer.setGroupAddress(InetAddress.getByName(groupAddress));
+        }
 
         String groupPort = config.getInitParameter(OORT_MULTICAST_GROUP_PORT_PARAM);
-        if (groupPort != null)
+        if (groupPort != null) {
             configurer.setGroupPort(Integer.parseInt(groupPort));
+        }
 
         String groupInterfaceList = config.getInitParameter(OORT_MULTICAST_GROUP_INTERFACES_PARAM);
-        if (groupInterfaceList != null)
-        {
+        if (groupInterfaceList != null) {
             List<NetworkInterface> networkInterfaces = new ArrayList<>();
             String[] groupInterfaces = groupInterfaceList.split(",");
-            for (String groupInterface : groupInterfaces)
-            {
+            for (String groupInterface : groupInterfaces) {
                 groupInterface = groupInterface.trim();
-                if (!groupInterface.isEmpty())
+                if (!groupInterface.isEmpty()) {
                     networkInterfaces.add(NetworkInterface.getByInetAddress(InetAddress.getByName(groupInterface)));
+                }
             }
             configurer.setGroupInterfaces(networkInterfaces);
         }
 
         String timeToLive = config.getInitParameter(OORT_MULTICAST_TIME_TO_LIVE_PARAM);
-        if (timeToLive != null)
+        if (timeToLive != null) {
             configurer.setTimeToLive(Integer.parseInt(timeToLive));
+        }
 
         String advertiseInterval = config.getInitParameter(OORT_MULTICAST_ADVERTISE_INTERVAL_PARAM);
-        if (advertiseInterval != null)
+        if (advertiseInterval != null) {
             configurer.setAdvertiseInterval(Long.parseLong(advertiseInterval));
+        }
 
         String connectTimeout = config.getInitParameter(OORT_MULTICAST_CONNECT_TIMEOUT_PARAM);
-        if (connectTimeout != null)
+        if (connectTimeout != null) {
             configurer.setConnectTimeout(Long.parseLong(connectTimeout));
+        }
 
         String maxTransmissionLength = config.getInitParameter(OORT_MULTICAST_MAX_TRANSMISSION_LENGTH_PARAM);
-        if (maxTransmissionLength != null)
+        if (maxTransmissionLength != null) {
             configurer.setMaxTransmissionLength(Integer.parseInt(maxTransmissionLength));
+        }
 
         configurer.start();
     }
 
     @Override
-    public void destroy()
-    {
-        if (configurer != null)
-        {
+    public void destroy() {
+        if (configurer != null) {
             stopConfigurer();
             configurer.join(1000);
         }
         super.destroy();
     }
 
-    private void stopConfigurer()
-    {
-        try
-        {
+    private void stopConfigurer() {
+        try {
             configurer.stop();
-        }
-        catch (Exception x)
-        {
+        } catch (Exception x) {
             throw new RuntimeException(x);
         }
     }

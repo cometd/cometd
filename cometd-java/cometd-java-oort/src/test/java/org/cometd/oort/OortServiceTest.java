@@ -22,16 +22,13 @@ import java.util.concurrent.TimeoutException;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class OortServiceTest extends AbstractOortObjectTest
-{
-    public OortServiceTest(String serverTransport)
-    {
+public class OortServiceTest extends AbstractOortObjectTest {
+    public OortServiceTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testActionIsForwarded() throws Exception
-    {
+    public void testActionIsForwarded() throws Exception {
         CountDownLatch latch1 = new CountDownLatch(1);
         Service service1 = new Service(oort1, latch1);
         service1.start();
@@ -54,8 +51,7 @@ public class OortServiceTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testActionIsNotForwardedForUnknownURL() throws Exception
-    {
+    public void testActionIsNotForwardedForUnknownURL() throws Exception {
         Service service1 = new Service(oort1, null);
         service1.start();
 
@@ -65,8 +61,7 @@ public class OortServiceTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testActionIsBroadcast() throws Exception
-    {
+    public void testActionIsBroadcast() throws Exception {
         CountDownLatch latch1 = new CountDownLatch(1);
         BroadcastService service1 = new BroadcastService(oort1, latch1);
         CountDownLatch latch2 = new CountDownLatch(1);
@@ -103,24 +98,19 @@ public class OortServiceTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testActionFailsOnRuntimeException() throws Exception
-    {
+    public void testActionFailsOnRuntimeException() throws Exception {
         CountDownLatch latch1 = new CountDownLatch(1);
-        Service service1 = new Service(oort1, latch1)
-        {
+        Service service1 = new Service(oort1, latch1) {
             @Override
-            protected Result<Boolean> onForward(Request request)
-            {
+            protected Result<Boolean> onForward(Request request) {
                 throw new NullPointerException();
             }
         };
         service1.start();
         CountDownLatch latch2 = new CountDownLatch(1);
-        Service service2 = new Service(oort2, latch2)
-        {
+        Service service2 = new Service(oort2, latch2) {
             @Override
-            protected Result<Boolean> onForward(Request request)
-            {
+            protected Result<Boolean> onForward(Request request) {
                 throw new NullPointerException();
             }
         };
@@ -141,25 +131,20 @@ public class OortServiceTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testActionFailsOnFailure() throws Exception
-    {
+    public void testActionFailsOnFailure() throws Exception {
         final String failure = "failure";
         CountDownLatch latch1 = new CountDownLatch(1);
-        Service service1 = new Service(oort1, latch1)
-        {
+        Service service1 = new Service(oort1, latch1) {
             @Override
-            protected Result<Boolean> onForward(Request request)
-            {
+            protected Result<Boolean> onForward(Request request) {
                 return Result.failure(failure);
             }
         };
         service1.start();
         CountDownLatch latch2 = new CountDownLatch(1);
-        Service service2 = new Service(oort2, latch2)
-        {
+        Service service2 = new Service(oort2, latch2) {
             @Override
-            protected Result<Boolean> onForward(Request request)
-            {
+            protected Result<Boolean> onForward(Request request) {
                 return Result.failure(failure);
             }
         };
@@ -180,25 +165,20 @@ public class OortServiceTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testActionBroadcastTimeout() throws Exception
-    {
+    public void testActionBroadcastTimeout() throws Exception {
         long timeout = 1000;
         CountDownLatch latch1 = new CountDownLatch(1);
-        ExpireService service1 = new ExpireService(oort1, latch1)
-        {
+        ExpireService service1 = new ExpireService(oort1, latch1) {
             @Override
-            protected Result<Void> onForward(Request request)
-            {
+            protected Result<Void> onForward(Request request) {
                 return Result.ignore(null);
             }
         };
         service1.setTimeout(timeout);
         CountDownLatch latch2 = new CountDownLatch(1);
-        ExpireService service2 = new ExpireService(oort2, latch2)
-        {
+        ExpireService service2 = new ExpireService(oort2, latch2) {
             @Override
-            protected Result<Void> onForward(Request request)
-            {
+            protected Result<Void> onForward(Request request) {
                 return Result.ignore(null);
             }
         };
@@ -223,22 +203,16 @@ public class OortServiceTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testActionForwardTimeout() throws Exception
-    {
+    public void testActionForwardTimeout() throws Exception {
         final long timeout = 1000;
         CountDownLatch latch1 = new CountDownLatch(1);
-        ExpireService service1 = new ExpireService(oort1, latch1)
-        {
+        ExpireService service1 = new ExpireService(oort1, latch1) {
             @Override
-            protected Result<Void> onForward(Request request)
-            {
-                try
-                {
+            protected Result<Void> onForward(Request request) {
+                try {
                     TimeUnit.MILLISECONDS.sleep(2 * timeout);
                     return Result.success(null);
-                }
-                catch (InterruptedException x)
-                {
+                } catch (InterruptedException x) {
                     return Result.failure(null);
                 }
             }
@@ -246,18 +220,13 @@ public class OortServiceTest extends AbstractOortObjectTest
         service1.setTimeout(timeout);
         service1.start();
         CountDownLatch latch2 = new CountDownLatch(1);
-        ExpireService service2 = new ExpireService(oort2, latch2)
-        {
+        ExpireService service2 = new ExpireService(oort2, latch2) {
             @Override
-            protected Result<Void> onForward(Request request)
-            {
-                try
-                {
+            protected Result<Void> onForward(Request request) {
+                try {
                     TimeUnit.MILLISECONDS.sleep(2 * timeout);
                     return Result.success(null);
-                }
-                catch (InterruptedException x)
-                {
+                } catch (InterruptedException x) {
                     return Result.failure(null);
                 }
             }
@@ -277,130 +246,114 @@ public class OortServiceTest extends AbstractOortObjectTest
         TimeUnit.MILLISECONDS.sleep(2 * timeout);
     }
 
-    private static class Service extends OortService<Boolean, String>
-    {
+    private static class Service extends OortService<Boolean, String> {
         private final CountDownLatch latch;
         private volatile String context;
         private volatile Boolean result;
         private volatile Object failure;
 
-        private Service(Oort oort, CountDownLatch latch)
-        {
+        private Service(Oort oort, CountDownLatch latch) {
             super(oort, "test");
             this.latch = latch;
         }
 
-        public boolean perform(String oortURL, String context)
-        {
+        public boolean perform(String oortURL, String context) {
             this.context = context;
             return forward(oortURL, oortURL, context);
         }
 
         @Override
-        protected Result<Boolean> onForward(Request request)
-        {
-            if (request.isLocal())
+        protected Result<Boolean> onForward(Request request) {
+            if (request.isLocal()) {
                 Assert.assertEquals(context, request.getOortURL());
+            }
             return Result.success(getOort().getURL().equals(request.getData()));
         }
 
         @Override
-        protected void onForwardSucceeded(Boolean result, String context)
-        {
+        protected void onForwardSucceeded(Boolean result, String context) {
             Assert.assertSame(this.context, context);
             this.result = result;
             latch.countDown();
         }
 
         @Override
-        protected void onForwardFailed(Object failure, String context)
-        {
+        protected void onForwardFailed(Object failure, String context) {
             Assert.assertSame(this.context, context);
             this.failure = failure;
             latch.countDown();
         }
     }
 
-    private static class BroadcastService extends OortService<Boolean, String>
-    {
+    private static class BroadcastService extends OortService<Boolean, String> {
         private final CountDownLatch latch;
         private volatile String context;
         private volatile Boolean result;
         private volatile Object failure;
 
-        private BroadcastService(Oort oort, CountDownLatch latch)
-        {
+        private BroadcastService(Oort oort, CountDownLatch latch) {
             super(oort, "test");
             this.latch = latch;
         }
 
-        public String getBroadcastChannelName()
-        {
+        public String getBroadcastChannelName() {
             return "/oort/service/" + getName();
         }
 
-        public boolean perform(String oortURL, String parameter, String context)
-        {
+        public boolean perform(String oortURL, String parameter, String context) {
             this.context = context;
             return forward(oortURL, parameter, context);
         }
 
         @Override
-        protected Result<Boolean> onForward(Request request)
-        {
-            if (!request.isLocal() && getOort().getURL().equals(request.getData()))
+        protected Result<Boolean> onForward(Request request) {
+            if (!request.isLocal() && getOort().getURL().equals(request.getData())) {
                 return Result.success(true);
-            else
+            } else {
                 return Result.ignore(false);
+            }
         }
 
         @Override
-        protected void onForwardSucceeded(Boolean result, String context)
-        {
+        protected void onForwardSucceeded(Boolean result, String context) {
             Assert.assertSame(this.context, context);
             this.result = result;
             latch.countDown();
         }
 
         @Override
-        protected void onForwardFailed(Object failure, String context)
-        {
+        protected void onForwardFailed(Object failure, String context) {
             Assert.assertSame(this.context, context);
             this.failure = failure;
             latch.countDown();
         }
     }
 
-    private abstract static class ExpireService extends OortService<Void, Void>
-    {
+    private abstract static class ExpireService extends OortService<Void, Void> {
         private final CountDownLatch latch;
 
-        private ExpireService(Oort oort, CountDownLatch latch)
-        {
+        private ExpireService(Oort oort, CountDownLatch latch) {
             super(oort, "test");
             this.latch = latch;
         }
 
-        public String getBroadcastChannelName()
-        {
+        public String getBroadcastChannelName() {
             return "/oort/service/" + getName();
         }
 
-        public boolean perform(String oortURL)
-        {
+        public boolean perform(String oortURL) {
             return forward(oortURL, null, null);
         }
 
         @Override
-        protected void onForwardSucceeded(Void result, Void context)
-        {
+        protected void onForwardSucceeded(Void result, Void context) {
         }
 
         @Override
-        protected void onForwardFailed(Object failure, Void context)
-        {
-            if (failure instanceof TimeoutException)
+        protected void onForwardFailed(Object failure, Void context) {
+            if (failure instanceof TimeoutException) {
                 latch.countDown();
+            }
         }
     }
 }

@@ -21,12 +21,12 @@ import java.util.Set;
  * <p>A Bayeux channel is the primary message routing mechanism within Bayeux:
  * both Bayeux clients and Bayeux server use channels to group listeners that
  * are interested in receiving messages with that channel.</p>
- *
+ * <p>
  * <p>This interface is the common root for both the
  * {@link org.cometd.bayeux.client.ClientSessionChannel client side} representation
  * of a channel and the {@link org.cometd.bayeux.server.ServerChannel server side}
  * representation of a channel.</p>
- *
+ * <p>
  * <p>Channels are identified with strings that look like paths (e.g. "/foo/bar")
  * called "channel id".
  * Meta channels have channel ids starting with "/meta/" and are reserved for the
@@ -34,7 +34,7 @@ import java.util.Set;
  * Service channels have channel ids starting with "/service/" and are channels
  * for which publish is disabled, so that only server side listeners will receive
  * the messages.</p>
- *
+ * <p>
  * <p>A channel id may also be specified with wildcards.
  * For example "/meta/*" refers to all top level meta channels
  * like "/meta/subscribe" or "/meta/handshake".
@@ -43,21 +43,34 @@ import java.util.Set;
  * Wildcards can only be specified as last segment of a channel; therefore channel
  * "/foo/&#42;/bar/** is an invalid channel.</p>
  */
-public interface Channel
-{
-    /** Constant representing the meta prefix */
+public interface Channel {
+    /**
+     * Constant representing the meta prefix
+     */
     public static final String META = "/meta";
-    /** Constant representing the service prefix */
+    /**
+     * Constant representing the service prefix
+     */
     public static final String SERVICE = "/service";
-    /** Constant representing the handshake meta channel. */
+    /**
+     * Constant representing the handshake meta channel.
+     */
     public final static String META_HANDSHAKE = META + "/handshake";
-    /** Constant representing the connect meta channel */
+    /**
+     * Constant representing the connect meta channel
+     */
     public final static String META_CONNECT = META + "/connect";
-    /** Constant representing the subscribe meta channel */
+    /**
+     * Constant representing the subscribe meta channel
+     */
     public final static String META_SUBSCRIBE = META + "/subscribe";
-    /** Constant representing the unsubscribe meta channel */
+    /**
+     * Constant representing the unsubscribe meta channel
+     */
     public final static String META_UNSUBSCRIBE = META + "/unsubscribe";
-    /** Constant representing the disconnect meta channel */
+    /**
+     * Constant representing the disconnect meta channel
+     */
     public final static String META_DISCONNECT = META + "/disconnect";
 
     /**
@@ -115,13 +128,14 @@ public interface Channel
      * <p>Channel attributes are convenience data that allows arbitrary
      * application data to be associated with a channel.</p>
      *
-     * @param name the attribute name
+     * @param name  the attribute name
      * @param value the attribute value
      */
     void setAttribute(String name, Object value);
 
     /**
      * <p>Retrieves the value of named channel attribute.</p>
+     *
      * @param name the name of the attribute
      * @return the attribute value or null if the attribute is not present
      */
@@ -134,6 +148,7 @@ public interface Channel
 
     /**
      * <p>Removes a named channel attribute.</p>
+     *
      * @param name the name of the attribute
      * @return the value of the attribute
      */

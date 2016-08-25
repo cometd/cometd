@@ -52,39 +52,34 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class BayeuxClientUsageTest extends ClientServerTest
-{
-    @Parameters(name= "{index}: JSON Context Server: {0} JSON Context Client: {1}")
-     public static Iterable<Object[]> data()
-     {
-         return Arrays.asList(new Object[][]
-                 {
-                         {Jackson2JSONContextServer.class, Jackson2JSONContextClient.class},
-                         {Jackson1JSONContextServer.class, Jackson1JSONContextClient.class},
-                         {JettyJSONContextServer.class, JettyJSONContextClient.class}
-                 }
-         );
-     }
+public class BayeuxClientUsageTest extends ClientServerTest {
+    @Parameters(name = "{index}: JSON Context Server: {0} JSON Context Client: {1}")
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[][]
+                {
+                        {Jackson2JSONContextServer.class, Jackson2JSONContextClient.class},
+                        {Jackson1JSONContextServer.class, Jackson1JSONContextClient.class},
+                        {JettyJSONContextServer.class, JettyJSONContextClient.class}
+                }
+        );
+    }
 
     private final String jacksonContextServerClassName;
     private final String jacksonContextClientClassName;
 
-    public BayeuxClientUsageTest(final Class<?> jacksonContextServerClass, final Class<?> jacksonContextClientClass)
-    {
+    public BayeuxClientUsageTest(final Class<?> jacksonContextServerClass, final Class<?> jacksonContextClientClass) {
         this.jacksonContextServerClassName = jacksonContextServerClass.getName();
         this.jacksonContextClientClassName = jacksonContextClientClass.getName();
     }
 
     @Test
-    public void testClientWithSelectConnector() throws Exception
-    {
+    public void testClientWithSelectConnector() throws Exception {
         startServer(null);
         testClient(newBayeuxClient());
     }
 
     @Test
-    public void testClientWithJackson() throws Exception
-    {
+    public void testClientWithJackson() throws Exception {
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, jacksonContextServerClassName);
         startServer(serverOptions);
@@ -97,8 +92,7 @@ public class BayeuxClientUsageTest extends ClientServerTest
     }
 
     @Test
-    public void testClientWithProxy() throws Exception
-    {
+    public void testClientWithProxy() throws Exception {
         startServer(null);
 
         Server proxy = new Server();
@@ -116,8 +110,7 @@ public class BayeuxClientUsageTest extends ClientServerTest
     }
 
     @Test
-    public void testClientWithProxyTunnel() throws Exception
-    {
+    public void testClientWithProxyTunnel() throws Exception {
         startServer(null);
 
         SslContextFactory sslContextFactory = new SslContextFactory();
@@ -147,27 +140,24 @@ public class BayeuxClientUsageTest extends ClientServerTest
         testClient(client);
     }
 
-    private void testClient(BayeuxClient client) throws Exception
-    {
+    private void testClient(BayeuxClient client) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful())
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isSuccessful()) {
                     latch.countDown();
+                }
             }
         });
 
         final BlockingQueue<Message> metaMessages = new ArrayBlockingQueue<>(16);
-        client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 // Skip /meta/connect messages because they arrive without notice
                 // and most likely fail the test that it is waiting for other messages
-                if (!Channel.META_CONNECT.equals(message.getChannel()))
+                if (!Channel.META_CONNECT.equals(message.getChannel())) {
                     metaMessages.offer(message);
+                }
             }
         });
 
@@ -183,10 +173,8 @@ public class BayeuxClientUsageTest extends ClientServerTest
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         final BlockingQueue<Message> messages = new ArrayBlockingQueue<>(16);
-        ClientSessionChannel.MessageListener subscriber = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        ClientSessionChannel.MessageListener subscriber = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messages.offer(message);
             }
         };

@@ -18,11 +18,9 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDAutoBatchTest extends AbstractCometDLongPollingTest
-{
+public class CometDAutoBatchTest extends AbstractCometDLongPollingTest {
     @Test
-    public void testAutoBatch() throws Exception
-    {
+    public void testAutoBatch() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");

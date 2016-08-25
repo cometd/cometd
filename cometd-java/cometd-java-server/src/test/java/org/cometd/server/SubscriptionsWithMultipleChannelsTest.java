@@ -24,22 +24,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientServerTest
-{
-    public SubscriptionsWithMultipleChannelsTest(String serverTransport)
-    {
+public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientServerTest {
+    public SubscriptionsWithMultipleChannelsTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testSubscribeWithMultipleChannels() throws Exception
-    {
+    public void testSubscribeWithMultipleChannels() throws Exception {
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -69,8 +65,7 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
     }
 
     @Test
-    public void testUnsubscribeWithMultipleChannels() throws Exception
-    {
+    public void testUnsubscribeWithMultipleChannels() throws Exception {
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +

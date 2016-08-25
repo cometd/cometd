@@ -42,11 +42,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JacksonCustomSerializationTest extends ClientServerTest
-{
-    @Parameters(name= "{index}: Jackson Context Server: {0} Jackson Context Client: {1}")
-    public static Iterable<Object[]> data()
-    {
+public class JacksonCustomSerializationTest extends ClientServerTest {
+    @Parameters(name = "{index}: Jackson Context Server: {0} Jackson Context Client: {1}")
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]
                 {
                         {TestJackson2JSONContextServer.class, TestJackson2JSONContextClient.class},
@@ -57,15 +55,13 @@ public class JacksonCustomSerializationTest extends ClientServerTest
     private final String jacksonContextServerClassName;
     private final String jacksonContextClientClassName;
 
-    public JacksonCustomSerializationTest(final Class<?> jacksonContextServerClass, final Class<?> jacksonContextClientClass)
-    {
+    public JacksonCustomSerializationTest(final Class<?> jacksonContextServerClass, final Class<?> jacksonContextClientClass) {
         this.jacksonContextServerClassName = jacksonContextServerClass.getName();
         this.jacksonContextClientClassName = jacksonContextClientClass.getName();
     }
 
     @Test
-    public void testJacksonCustomSerialization() throws Exception
-    {
+    public void testJacksonCustomSerialization() throws Exception {
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, jacksonContextServerClassName);
         serverOptions.put(AbstractHttpTransport.JSON_DEBUG_OPTION, "true");
@@ -81,10 +77,8 @@ public class JacksonCustomSerializationTest extends ClientServerTest
 
         LocalSession service = bayeux.newLocalSession("custom_serialization");
         service.handshake();
-        service.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        service.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 Data data = (Data)message.getData();
                 Assert.assertEquals(dataContent, data.content);
                 Map<String, Object> ext = message.getExt();
@@ -110,8 +104,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest
     }
 
     @Test
-    public void testParserGenerator() throws Exception
-    {
+    public void testParserGenerator() throws Exception {
         // Note: Jackson does not seem to be able to serialize/deserialize correctly a single Data/Extra object.
         // However, if they are put into a container like a Map, then Jackson produces a different JSON than
         // what it produces for the standalone object that allows correct deserialization, of this form:
@@ -135,86 +128,69 @@ public class JacksonCustomSerializationTest extends ClientServerTest
         Assert.assertEquals(extra1.content, extra2.content);
     }
 
-    private static class ExtraExtension extends ClientSession.Extension.Adapter
-    {
+    private static class ExtraExtension extends ClientSession.Extension.Adapter {
         private final long content;
 
-        public ExtraExtension(long content)
-        {
+        public ExtraExtension(long content) {
             this.content = content;
         }
 
         @Override
-        public boolean send(ClientSession session, Message.Mutable message)
-        {
+        public boolean send(ClientSession session, Message.Mutable message) {
             Map<String, Object> ext = message.getExt(true);
             ext.put("extra", new Extra(content));
             return true;
         }
     }
 
-    public static class TestJackson1JSONContextServer extends Jackson1JSONContextServer
-    {
-        public TestJackson1JSONContextServer()
-        {
+    public static class TestJackson1JSONContextServer extends Jackson1JSONContextServer {
+        public TestJackson1JSONContextServer() {
             getObjectMapper().enableDefaultTyping(org.codehaus.jackson.map.ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
 
-    public static class TestJackson1JSONContextClient extends Jackson1JSONContextClient
-    {
-        public TestJackson1JSONContextClient()
-        {
+    public static class TestJackson1JSONContextClient extends Jackson1JSONContextClient {
+        public TestJackson1JSONContextClient() {
             getObjectMapper().enableDefaultTyping(org.codehaus.jackson.map.ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
 
-    public static class TestJackson2JSONContextServer extends Jackson2JSONContextServer
-    {
-        public TestJackson2JSONContextServer()
-        {
+    public static class TestJackson2JSONContextServer extends Jackson2JSONContextServer {
+        public TestJackson2JSONContextServer() {
             getObjectMapper().enableDefaultTyping(com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
 
-    public static class TestJackson2JSONContextClient extends Jackson2JSONContextClient
-    {
-        public TestJackson2JSONContextClient()
-        {
+    public static class TestJackson2JSONContextClient extends Jackson2JSONContextClient {
+        public TestJackson2JSONContextClient() {
             getObjectMapper().enableDefaultTyping(com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
 
-    private static class Data
-    {
+    private static class Data {
         @com.fasterxml.jackson.annotation.JsonProperty
         @org.codehaus.jackson.annotate.JsonProperty
         private String content;
 
-        private Data()
-        {
+        private Data() {
             // Needed by Jackson
         }
 
-        private Data(String content)
-        {
+        private Data(String content) {
             this.content = content;
         }
     }
 
-    private static class Extra
-    {
+    private static class Extra {
         @com.fasterxml.jackson.annotation.JsonProperty
         @org.codehaus.jackson.annotate.JsonProperty
         private long content;
 
-        private Extra()
-        {
+        private Extra() {
             // Needed by Jackson
         }
 
-        private Extra(long content)
-        {
+        private Extra(long content) {
             this.content = content;
         }
     }

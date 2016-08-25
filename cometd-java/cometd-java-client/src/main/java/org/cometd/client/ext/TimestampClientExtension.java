@@ -23,24 +23,20 @@ import java.util.TimeZone;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 
-public class TimestampClientExtension extends ClientSession.Extension.Adapter
-{
+public class TimestampClientExtension extends ClientSession.Extension.Adapter {
     @Override
-    public boolean send(ClientSession session, Message.Mutable message)
-    {
+    public boolean send(ClientSession session, Message.Mutable message) {
         addTimestamp(message);
         return true;
     }
 
     @Override
-    public boolean sendMeta(ClientSession session, Message.Mutable message)
-    {
+    public boolean sendMeta(ClientSession session, Message.Mutable message) {
         addTimestamp(message);
         return true;
     }
 
-    private void addTimestamp(Message.Mutable message)
-    {
+    private void addTimestamp(Message.Mutable message) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
         message.put(Message.TIMESTAMP_FIELD, dateFormat.format(new Date()));

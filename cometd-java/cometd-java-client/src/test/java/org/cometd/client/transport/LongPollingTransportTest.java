@@ -44,14 +44,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class LongPollingTransportTest
-{
+public class LongPollingTransportTest {
     @Rule
-    public final TestWatcher testName = new TestWatcher()
-    {
+    public final TestWatcher testName = new TestWatcher() {
         @Override
-        protected void starting(Description description)
-        {
+        protected void starting(Description description) {
             super.starting(description);
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
@@ -59,45 +56,37 @@ public class LongPollingTransportTest
     private HttpClient httpClient;
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         httpClient = new HttpClient();
         httpClient.start();
     }
 
     @After
-    public void dispose() throws Exception
-    {
+    public void dispose() throws Exception {
         httpClient.stop();
     }
 
     @Test
-    public void testType()
-    {
+    public void testType() {
         ClientTransport transport = new LongPollingTransport(null, httpClient);
         assertEquals("long-polling", transport.getName());
     }
 
     @Test
-    public void testAccept() throws Exception
-    {
+    public void testAccept() throws Exception {
         ClientTransport transport = new LongPollingTransport(null, httpClient);
         assertTrue(transport.accept("1.0"));
     }
 
     @Test
-    public void testSendWithResponse200() throws Exception
-    {
+    public void testSendWithResponse200() throws Exception {
         final long processingTime = 500;
         final ServerSocket serverSocket = new ServerSocket(0);
         final AtomicReference<Exception> serverException = new AtomicReference<>();
-        Thread serverThread = new Thread()
-        {
+        Thread serverThread = new Thread() {
             @Override
-            public void run()
-            {
-                try
-                {
+            public void run() {
+                try {
                     Socket socket = serverSocket.accept();
 
                     Thread.sleep(processingTime);
@@ -112,9 +101,7 @@ public class LongPollingTransportTest
                                     "[]").getBytes("UTF-8"));
                     output.flush();
                     socket.close();
-                }
-                catch (Exception x)
-                {
+                } catch (Exception x) {
                     serverException.set(x);
                 }
             }
@@ -122,13 +109,11 @@ public class LongPollingTransportTest
         serverThread.start();
         final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
-        try
-        {
+        try {
             HttpClient httpClient = new HttpClient();
             httpClient.start();
 
-            try
-            {
+            try {
                 final CountDownLatch latch = new CountDownLatch(1);
                 HttpClientTransport transport = new LongPollingTransport(null, httpClient);
                 transport.setURL(serverURL);
@@ -138,11 +123,9 @@ public class LongPollingTransportTest
                 List<Message.Mutable> messages = new ArrayList<>(1);
                 messages.add(new HashMapMessage());
                 long start = System.nanoTime();
-                transport.send(new TransportListener.Empty()
-                {
+                transport.send(new TransportListener.Empty() {
                     @Override
-                    public void onMessages(List<Message.Mutable> messages)
-                    {
+                    public void onMessages(List<Message.Mutable> messages) {
                         latch.countDown();
                     }
                 }, messages);
@@ -151,18 +134,12 @@ public class LongPollingTransportTest
                 long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
                 assertTrue("elapsed=" + elapsed + ", processing=" + processingTime, elapsed <= processingTime);
                 assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 e.printStackTrace();
-            }
-            finally
-            {
+            } finally {
                 httpClient.stop();
             }
-        }
-        finally
-        {
+        } finally {
             serverThread.join();
             assertNull(serverException.get());
             serverSocket.close();
@@ -170,18 +147,14 @@ public class LongPollingTransportTest
     }
 
     @Test
-    public void testSendWithResponse500() throws Exception
-    {
+    public void testSendWithResponse500() throws Exception {
         final long processingTime = 500;
         final ServerSocket serverSocket = new ServerSocket(0);
         final AtomicReference<Exception> serverException = new AtomicReference<>();
-        Thread serverThread = new Thread()
-        {
+        Thread serverThread = new Thread() {
             @Override
-            public void run()
-            {
-                try
-                {
+            public void run() {
+                try {
                     Socket socket = serverSocket.accept();
 
                     Thread.sleep(processingTime);
@@ -194,9 +167,7 @@ public class LongPollingTransportTest
                     output.flush();
 
                     socket.close();
-                }
-                catch (Exception x)
-                {
+                } catch (Exception x) {
                     serverException.set(x);
                 }
             }
@@ -204,13 +175,11 @@ public class LongPollingTransportTest
         serverThread.start();
         String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
-        try
-        {
+        try {
             HttpClient httpClient = new HttpClient();
             httpClient.start();
 
-            try
-            {
+            try {
                 HttpClientTransport transport = new LongPollingTransport(null, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
@@ -218,13 +187,12 @@ public class LongPollingTransportTest
                 transport.init();
 
                 long start = System.nanoTime();
-                transport.send(new TransportListener.Empty()
-                {
+                transport.send(new TransportListener.Empty() {
                     @Override
-                    public void onFailure(Throwable failure, List<? extends Message> messages)
-                    {
-                        if (failure instanceof TransportException)
+                    public void onFailure(Throwable failure, List<? extends Message> messages) {
+                        if (failure instanceof TransportException) {
                             latch.countDown();
+                        }
                     }
                 }, new ArrayList<Message.Mutable>());
                 long end = System.nanoTime();
@@ -232,14 +200,10 @@ public class LongPollingTransportTest
                 long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
                 assertTrue("elapsed=" + elapsed + ", processing=" + processingTime, elapsed <= processingTime);
                 assertTrue(latch.await(2000 + 2 * processingTime, TimeUnit.MILLISECONDS));
-            }
-            finally
-            {
+            } finally {
                 httpClient.stop();
             }
-        }
-        finally
-        {
+        } finally {
             serverThread.join();
             assertNull(serverException.get());
             serverSocket.close();
@@ -247,8 +211,7 @@ public class LongPollingTransportTest
     }
 
     @Test
-    public void testSendWithServerDown() throws Exception
-    {
+    public void testSendWithServerDown() throws Exception {
         ServerSocket serverSocket = new ServerSocket(0);
         serverSocket.close();
         final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
@@ -256,53 +219,43 @@ public class LongPollingTransportTest
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
-        try
-        {
+        try {
             HttpClientTransport transport = new LongPollingTransport(null, httpClient);
             final CountDownLatch latch = new CountDownLatch(1);
             transport.setURL(serverURL);
             transport.setCookieStore(new HttpCookieStore());
             transport.init();
 
-            transport.send(new TransportListener.Empty()
-            {
+            transport.send(new TransportListener.Empty() {
                 @Override
-                public void onFailure(Throwable failure, List<? extends Message> messages)
-                {
-                    if (failure instanceof ConnectException)
+                public void onFailure(Throwable failure, List<? extends Message> messages) {
+                    if (failure instanceof ConnectException) {
                         latch.countDown();
+                    }
                 }
             }, new ArrayList<Message.Mutable>());
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
-        }
-        finally
-        {
+        } finally {
             httpClient.stop();
         }
     }
 
     @Test
-    public void testSendWithServerCrash() throws Exception
-    {
+    public void testSendWithServerCrash() throws Exception {
         final long processingTime = 500;
         final ServerSocket serverSocket = new ServerSocket(0);
         final AtomicReference<Exception> serverException = new AtomicReference<>();
-        Thread serverThread = new Thread()
-        {
+        Thread serverThread = new Thread() {
             @Override
-            public void run()
-            {
-                try
-                {
+            public void run() {
+                try {
                     Socket socket = serverSocket.accept();
 
                     Thread.sleep(processingTime);
 
                     socket.close();
-                }
-                catch (Exception x)
-                {
+                } catch (Exception x) {
                     serverException.set(x);
                 }
             }
@@ -310,13 +263,11 @@ public class LongPollingTransportTest
         serverThread.start();
         final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
-        try
-        {
+        try {
             HttpClient httpClient = new HttpClient();
             httpClient.start();
 
-            try
-            {
+            try {
                 HttpClientTransport transport = new LongPollingTransport(null, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
@@ -324,11 +275,9 @@ public class LongPollingTransportTest
                 transport.init();
 
                 long start = System.nanoTime();
-                transport.send(new TransportListener.Empty()
-                {
+                transport.send(new TransportListener.Empty() {
                     @Override
-                    public void onFailure(Throwable failure, List<? extends Message> messages)
-                    {
+                    public void onFailure(Throwable failure, List<? extends Message> messages) {
                         latch.countDown();
                     }
                 }, new ArrayList<Message.Mutable>());
@@ -337,14 +286,10 @@ public class LongPollingTransportTest
                 long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
                 assertTrue("elapsed=" + elapsed + ", processing=" + processingTime, elapsed <= processingTime);
                 assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
-            }
-            finally
-            {
+            } finally {
                 httpClient.stop();
             }
-        }
-        finally
-        {
+        } finally {
             serverThread.join();
             assertNull(serverException.get());
             serverSocket.close();
@@ -352,18 +297,14 @@ public class LongPollingTransportTest
     }
 
     @Test
-    public void testSendWithServerExpire() throws Exception
-    {
+    public void testSendWithServerExpire() throws Exception {
         final long timeout = 1000;
         final ServerSocket serverSocket = new ServerSocket(0);
         final AtomicReference<Exception> serverException = new AtomicReference<>();
-        Thread serverThread = new Thread()
-        {
+        Thread serverThread = new Thread() {
             @Override
-            public void run()
-            {
-                try
-                {
+            public void run() {
+                try {
                     Socket socket = serverSocket.accept();
 
                     Thread.sleep(2 * timeout);
@@ -379,9 +320,7 @@ public class LongPollingTransportTest
                     output.flush();
 
                     socket.close();
-                }
-                catch (Exception x)
-                {
+                } catch (Exception x) {
                     serverException.set(x);
                 }
             }
@@ -389,13 +328,11 @@ public class LongPollingTransportTest
         serverThread.start();
         final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
-        try
-        {
+        try {
             HttpClient httpClient = new HttpClient();
             httpClient.start();
 
-            try
-            {
+            try {
 
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, timeout);
@@ -405,25 +342,20 @@ public class LongPollingTransportTest
                 transport.setCookieStore(new HttpCookieStore());
                 transport.init();
 
-                transport.send(new TransportListener.Empty()
-                {
+                transport.send(new TransportListener.Empty() {
                     @Override
-                    public void onFailure(Throwable failure, List<? extends Message> messages)
-                    {
-                        if (failure instanceof TimeoutException)
+                    public void onFailure(Throwable failure, List<? extends Message> messages) {
+                        if (failure instanceof TimeoutException) {
                             latch.countDown();
+                        }
                     }
                 }, new ArrayList<Message.Mutable>());
 
                 assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
-            }
-            finally
-            {
+            } finally {
                 httpClient.stop();
             }
-        }
-        finally
-        {
+        } finally {
             serverThread.join();
             assertNull(serverException.get());
             serverSocket.close();

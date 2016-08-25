@@ -29,16 +29,13 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTest
-{
-    public ServiceWithCustomDataClassTest(String serverTransport)
-    {
+public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTest {
+    public ServiceWithCustomDataClassTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testServiceWithCustomDataClass() throws Exception
-    {
+    public void testServiceWithCustomDataClass() throws Exception {
         Map<String, String> options = new HashMap<String, String>();
         options.put(AbstractServerTransport.JSON_CONTEXT_OPTION, TestJettyJSONContextServer.class.getName());
         startServer(options);
@@ -79,22 +76,18 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
         Assert.assertEquals(value, service.holder.field);
     }
 
-    public static class Holder
-    {
+    public static class Holder {
         private String field;
     }
 
-    public static class HolderConvertor implements JSON.Convertor
-    {
-        public void toJSON(Object obj, JSON.Output out)
-        {
+    public static class HolderConvertor implements JSON.Convertor {
+        public void toJSON(Object obj, JSON.Output out) {
             Holder holder = (Holder)obj;
             out.addClass(Holder.class);
             out.add("field", holder.field);
         }
 
-        public Object fromJSON(Map map)
-        {
+        public Object fromJSON(Map map) {
             String value = (String)map.get("field");
             Holder holder = new Holder();
             holder.field = value;
@@ -102,29 +95,24 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
         }
     }
 
-    public static class TestService extends AbstractService
-    {
+    public static class TestService extends AbstractService {
         private final CountDownLatch latch;
         private Holder holder;
 
-        public TestService(BayeuxServer bayeux, CountDownLatch latch)
-        {
+        public TestService(BayeuxServer bayeux, CountDownLatch latch) {
             super(bayeux, "test");
             this.latch = latch;
         }
 
-        public void handle(ServerSession remote, ServerMessage message)
-        {
+        public void handle(ServerSession remote, ServerMessage message) {
             holder = (Holder)message.getData();
             latch.countDown();
         }
     }
 
-    public static class TestJettyJSONContextServer extends JettyJSONContextServer
-    {
+    public static class TestJettyJSONContextServer extends JettyJSONContextServer {
         @Override
-        public JSON getJSON()
-        {
+        public JSON getJSON() {
             return super.getJSON();
         }
     }

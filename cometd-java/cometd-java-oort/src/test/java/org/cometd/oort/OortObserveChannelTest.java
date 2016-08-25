@@ -25,16 +25,13 @@ import org.eclipse.jetty.server.Server;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class OortObserveChannelTest extends OortTest
-{
-    public OortObserveChannelTest(String serverTransport)
-    {
+public class OortObserveChannelTest extends OortTest {
+    public OortObserveChannelTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testObserveChannel() throws Exception
-    {
+    public void testObserveChannel() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -102,8 +99,7 @@ public class OortObserveChannelTest extends OortTest
     }
 
     @Test
-    public void testObserveWildChannel() throws Exception
-    {
+    public void testObserveWildChannel() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -150,8 +146,7 @@ public class OortObserveChannelTest extends OortTest
     }
 
     @Test
-    public void testDeobserve() throws Exception
-    {
+    public void testDeobserve() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);

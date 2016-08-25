@@ -19,11 +19,9 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.JSONContext;
 import org.cometd.common.Jackson1JSONContext;
 
-public class Jackson1JSONContextServer extends Jackson1JSONContext<ServerMessage.Mutable, ServerMessageImpl> implements JSONContext.Server
-{
+public class Jackson1JSONContextServer extends Jackson1JSONContext<ServerMessage.Mutable, ServerMessageImpl> implements JSONContext.Server {
     @Override
-    protected Class<ServerMessageImpl[]> rootArrayClass()
-    {
+    protected Class<ServerMessageImpl[]> rootArrayClass() {
         return ServerMessageImpl[].class;
     }
 }

@@ -20,11 +20,9 @@ import org.cometd.javascript.Latch;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDDojoHitchTest extends AbstractCometDTest
-{
+public class CometDDojoHitchTest extends AbstractCometDTest {
     @Test
-    public void testDojoHitch() throws Exception
-    {
+    public void testDojoHitch() throws Exception {
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");

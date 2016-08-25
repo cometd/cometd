@@ -20,28 +20,23 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 import org.mozilla.javascript.ScriptableObject;
 
-public class WebSocketConnector extends ScriptableObject
-{
+public class WebSocketConnector extends ScriptableObject {
     private org.eclipse.jetty.websocket.client.WebSocketClient wsClient;
     private QueuedThreadPool threadPool;
     private JavaScriptCookieStore cookieStore;
 
-    public WebSocketConnector()
-    {
+    public WebSocketConnector() {
     }
 
-    public void jsConstructor(JavaScriptCookieStore cookieStore)
-    {
+    public void jsConstructor(JavaScriptCookieStore cookieStore) {
         this.cookieStore = cookieStore;
     }
 
-    public String getClassName()
-    {
+    public String getClassName() {
         return "WebSocketConnector";
     }
 
-    public void start() throws Exception
-    {
+    public void start() throws Exception {
         threadPool = new QueuedThreadPool();
         wsClient = new WebSocketClient();
         wsClient.setExecutor(threadPool);
@@ -50,14 +45,12 @@ public class WebSocketConnector extends ScriptableObject
         wsClient.start();
     }
 
-    public void stop() throws Exception
-    {
+    public void stop() throws Exception {
         wsClient.stop();
         threadPool.stop();
     }
 
-    public WebSocketClient getWebSocketClient()
-    {
+    public WebSocketClient getWebSocketClient() {
         return wsClient;
     }
 }

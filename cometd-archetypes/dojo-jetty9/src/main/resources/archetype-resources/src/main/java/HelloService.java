@@ -1,6 +1,6 @@
-#set( $symbol_pound = '#' )
-#set( $symbol_dollar = '$' )
-#set( $symbol_escape = '\' )
+#set($symbol_pound='#')
+#set($symbol_dollar='$')
+#set($symbol_escape='\')
 
 package ${package};
 
@@ -12,16 +12,13 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 
-public class HelloService extends AbstractService
-{
-    public HelloService(BayeuxServer bayeux)
-    {
+public class HelloService extends AbstractService {
+    public HelloService(BayeuxServer bayeux) {
         super(bayeux, "hello");
         addService("/service/hello", "processHello");
     }
 
-    public void processHello(ServerSession remote, ServerMessage message)
-    {
+    public void processHello(ServerSession remote, ServerMessage message) {
         Map<String, Object> input = message.getDataAsMap();
         String name = (String)input.get("name");
 

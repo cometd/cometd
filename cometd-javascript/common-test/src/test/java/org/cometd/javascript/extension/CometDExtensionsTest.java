@@ -21,11 +21,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mozilla.javascript.ScriptableObject;
 
-public class CometDExtensionsTest extends AbstractCometDTest
-{
+public class CometDExtensionsTest extends AbstractCometDTest {
     @Test
-    public void testRegisterUnregister() throws Exception
-    {
+    public void testRegisterUnregister() throws Exception {
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var inCount = 0;");
@@ -72,8 +70,7 @@ public class CometDExtensionsTest extends AbstractCometDTest
     }
 
     @Test
-    public void testExtensions() throws Exception
-    {
+    public void testExtensions() throws Exception {
         defineClass(Latch.class);
         defineClass(Listener.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -142,33 +139,32 @@ public class CometDExtensionsTest extends AbstractCometDTest
     }
 
     @Test
-    public void testExtensionOrder() throws Exception
-    {
+    public void testExtensionOrder() throws Exception {
         defineClass(Latch.class);
 
         // Default incoming extension order is reverse
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("cometd.registerExtension('ext1', {" +
-                       "incoming: function(message) " +
-                       "{" +
-                       "    if (message.ext2 === 1) message.ext1 = 1;" +
-                       "    return message;" +
-                       "} " +
-                       "});");
+                "incoming: function(message) " +
+                "{" +
+                "    if (message.ext2 === 1) message.ext1 = 1;" +
+                "    return message;" +
+                "} " +
+                "});");
         evaluateScript("cometd.registerExtension('ext2', {" +
-                       "incoming: function(message) " +
-                       "{" +
-                       "    if (message.ext1 !== 1) message.ext2 = 1;" +
-                       "    return message;" +
-                       "} " +
-                       "});");
+                "incoming: function(message) " +
+                "{" +
+                "    if (message.ext1 !== 1) message.ext2 = 1;" +
+                "    return message;" +
+                "} " +
+                "});");
 
         evaluateScript("var ok = false;");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) " +
-                       "{" +
-                       "    if (message.ext1 === 1 && message.ext2 === 1) ok = true;" +
-                       "});");
+                "{" +
+                "    if (message.ext1 === 1 && message.ext2 === 1) ok = true;" +
+                "});");
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
@@ -188,19 +184,19 @@ public class CometDExtensionsTest extends AbstractCometDTest
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "', reverseIncomingExtensions: false});");
 
         evaluateScript("cometd.registerExtension('ext1', {" +
-                       "incoming: function(message) " +
-                       "{" +
-                       "    if (message.ext2 !== 1) message.ext1 = 1;" +
-                       "    return message;" +
-                       "} " +
-                       "});");
+                "incoming: function(message) " +
+                "{" +
+                "    if (message.ext2 !== 1) message.ext1 = 1;" +
+                "    return message;" +
+                "} " +
+                "});");
         evaluateScript("cometd.registerExtension('ext2', {" +
-                       "incoming: function(message) " +
-                       "{" +
-                       "    if (message.ext1 === 1) message.ext2 = 1;" +
-                       "    return message;" +
-                       "} " +
-                       "});");
+                "incoming: function(message) " +
+                "{" +
+                "    if (message.ext1 === 1) message.ext2 = 1;" +
+                "    return message;" +
+                "} " +
+                "});");
         readyLatch.reset(1);
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
@@ -211,23 +207,22 @@ public class CometDExtensionsTest extends AbstractCometDTest
     }
 
     @Test
-    public void testExtensionRegistrationCallbacks() throws Exception
-    {
+    public void testExtensionRegistrationCallbacks() throws Exception {
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var n;");
         evaluateScript("var c;");
         evaluateScript("cometd.registerExtension('ext1', {" +
-                       "registered: function(name, cometd) " +
-                       "{" +
-                       "    n = name;" +
-                       "    c = cometd;" +
-                       "}," +
-                       "unregistered: function()" +
-                       "{" +
-                       "    n = null;" +
-                       "    c = null;" +
-                       "}" +
-                       "});");
+                "registered: function(name, cometd) " +
+                "{" +
+                "    n = name;" +
+                "    c = cometd;" +
+                "}," +
+                "unregistered: function()" +
+                "{" +
+                "    n = null;" +
+                "    c = null;" +
+                "}" +
+                "});");
         Object extName = get("n");
         Assert.assertNotNull(extName);
         Object extCometD = get("c");
@@ -240,38 +235,31 @@ public class CometDExtensionsTest extends AbstractCometDTest
         Assert.assertNull(extCometD);
     }
 
-    public static class Listener extends ScriptableObject
-    {
+    public static class Listener extends ScriptableObject {
         private int outgoing;
         private int incoming;
 
-        public void jsFunction_outgoing(Object message)
-        {
+        public void jsFunction_outgoing(Object message) {
             ++outgoing;
         }
 
-        public void jsFunction_incoming(Object message)
-        {
+        public void jsFunction_incoming(Object message) {
             ++incoming;
         }
 
-        public String getClassName()
-        {
+        public String getClassName() {
             return "Listener";
         }
 
-        public int getOutgoingMessageCount()
-        {
+        public int getOutgoingMessageCount() {
             return outgoing;
         }
 
-        public int getIncomingMessageCount()
-        {
+        public int getIncomingMessageCount() {
             return incoming;
         }
 
-        public void reset()
-        {
+        public void reset() {
             incoming = 0;
             outgoing = 0;
         }

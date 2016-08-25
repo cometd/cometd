@@ -31,16 +31,13 @@ import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SessionHijackingTest extends AbstractBayeuxClientServerTest
-{
-    public SessionHijackingTest(String serverTransport)
-    {
+public class SessionHijackingTest extends AbstractBayeuxClientServerTest {
+    public SessionHijackingTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testSessionHijackingForbidden() throws Exception
-    {
+    public void testSessionHijackingForbidden() throws Exception {
         // Default settings forbid session hijacking.
         startServer(null);
 
@@ -53,8 +50,7 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testSessionHijackingAllowed() throws Exception
-    {
+    public void testSessionHijackingAllowed() throws Exception {
         Map<String, String> settings = new HashMap<>();
         settings.put(AbstractHttpTransport.TRUST_CLIENT_SESSION, String.valueOf(true));
         startServer(settings);
@@ -66,8 +62,7 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest
         Assert.assertTrue(message.isSuccessful());
     }
 
-    private Message.Mutable[] testSessionHijacking() throws UnsupportedEncodingException, InterruptedException, TimeoutException, ExecutionException, java.text.ParseException
-    {
+    private Message.Mutable[] testSessionHijacking() throws UnsupportedEncodingException, InterruptedException, TimeoutException, ExecutionException, java.text.ParseException {
         String cookieName = "BAYEUX_BROWSER";
 
         Request handshake1 = newBayeuxRequest("[{" +

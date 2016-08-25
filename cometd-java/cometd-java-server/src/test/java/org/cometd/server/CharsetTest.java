@@ -26,22 +26,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CharsetTest extends AbstractBayeuxClientServerTest
-{
-    public CharsetTest(String serverTransport)
-    {
+public class CharsetTest extends AbstractBayeuxClientServerTest {
+    public CharsetTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testMissingContentTypeWithLongPolling() throws Exception
-    {
+    public void testMissingContentTypeWithLongPolling() throws Exception {
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -55,10 +51,8 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
 
         final String data = new String(new byte[]{(byte)0xC3, (byte)0xA9}, "UTF-8");
         String channelName = "/test_charset";
-        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 String messageData = (String)message.getData();
                 Assert.assertEquals(data, messageData);
                 return true;
@@ -72,11 +66,9 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
                 "}]");
         // In some cross domain configuration (for example IE9 using XDomainRequest),
         // the Content-Type header is not sent, and we must behave well even if it's missing
-        publish.onResponseBegin(new Response.BeginListener()
-        {
+        publish.onResponseBegin(new Response.BeginListener() {
             @Override
-            public void onBegin(Response response)
-            {
+            public void onBegin(Response response) {
                 publish.header(HttpHeader.CONTENT_TYPE, null);
             }
         });
@@ -92,8 +84,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testContentTypeWithISO_8859_7() throws Exception
-    {
+    public void testContentTypeWithISO_8859_7() throws Exception {
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -110,10 +101,8 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
         // Lowercase greek letter alpha
         final String data = new String(new byte[]{(byte)0xE1}, encoding);
         String channelName = "/test_charset";
-        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 String messageData = (String)message.getData();
                 Assert.assertEquals(data, messageData);
                 return true;

@@ -24,11 +24,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractCometDWebSocketTest
-{
+public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractCometDWebSocketTest {
     @Test
-    public void testMaxNetworkDelay() throws Exception
-    {
+    public void testMaxNetworkDelay() throws Exception {
         long maxNetworkDelay = 2000;
 
         bayeuxServer.addExtension(new DelayingExtension(metaConnectPeriod + maxNetworkDelay + maxNetworkDelay / 2));
@@ -37,10 +35,10 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         evaluateScript("var latch = new Latch(6);");
         Latch latch = get("latch");
         evaluateScript("cometd.configure({" +
-                       "url: '" + cometdURL + "', " +
-                       "maxNetworkDelay: " + maxNetworkDelay + ", " +
-                       "logLevel: '" + getLogLevel() + "'" +
-                       "});");
+                "url: '" + cometdURL + "', " +
+                "maxNetworkDelay: " + maxNetworkDelay + ", " +
+                "logLevel: '" + getLogLevel() + "'" +
+                "});");
         evaluateScript("var connects = 0;");
         evaluateScript("var failure;");
         evaluateScript("cometd.addListener('/meta/connect', function(message)" +
@@ -82,30 +80,22 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         evaluateScript("cometd.disconnect(true);");
     }
 
-    private class DelayingExtension extends BayeuxServer.Extension.Adapter
-    {
+    private class DelayingExtension extends BayeuxServer.Extension.Adapter {
         private final AtomicInteger connects = new AtomicInteger();
         private final long delay;
 
-        public DelayingExtension(long delay)
-        {
+        public DelayingExtension(long delay) {
             this.delay = delay;
         }
 
         @Override
-        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-        {
-            if (Channel.META_CONNECT.equals(message.getChannel()))
-            {
+        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
+            if (Channel.META_CONNECT.equals(message.getChannel())) {
                 int connects = this.connects.incrementAndGet();
-                if (connects == 2)
-                {
-                    try
-                    {
+                if (connects == 2) {
+                    try {
                         Thread.sleep(delay);
-                    }
-                    catch (InterruptedException x)
-                    {
+                    } catch (InterruptedException x) {
                         return false;
                     }
                 }

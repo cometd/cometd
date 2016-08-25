@@ -23,43 +23,36 @@ import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 
-public class TimestampExtension extends Extension.Adapter
-{
+public class TimestampExtension extends Extension.Adapter {
     private final String format;
     private final TimeZone timezone;
 
-    public TimestampExtension()
-    {
+    public TimestampExtension() {
         this("EEE MMM dd HH:mm:ss zzz yyyy");
     }
 
-    public TimestampExtension(String format)
-    {
+    public TimestampExtension(String format) {
         this(format, TimeZone.getDefault());
     }
 
-    public TimestampExtension(String format, TimeZone tz)
-    {
+    public TimestampExtension(String format, TimeZone tz) {
         this.format = format;
         this.timezone = tz;
     }
 
     @Override
-    public boolean send(ServerSession from, ServerSession to, Mutable message)
-    {
+    public boolean send(ServerSession from, ServerSession to, Mutable message) {
         timestamp(message);
         return true;
     }
 
     @Override
-    public boolean sendMeta(ServerSession to, Mutable message)
-    {
+    public boolean sendMeta(ServerSession to, Mutable message) {
         timestamp(message);
         return true;
     }
 
-    private void timestamp(Mutable message)
-    {
+    private void timestamp(Mutable message) {
         SimpleDateFormat formatter = new SimpleDateFormat(format);
         formatter.setTimeZone(timezone);
         message.put(Message.TIMESTAMP_FIELD, formatter.format(System.currentTimeMillis()));

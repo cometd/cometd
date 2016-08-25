@@ -25,7 +25,7 @@ import org.cometd.bayeux.server.ServerSession;
 
 /**
  * Timesync extension (server side).
- *
+ * <p>
  * With each handshake or connect, the extension sends timestamps within the ext
  * field like:
  * <code>{ext:{timesync:{tc:12345567890,l:23,o:4567},...},...}</code> where:
@@ -34,7 +34,7 @@ import org.cometd.bayeux.server.ServerSession;
  * <li>l is the network lag that the client has calculated.
  * <li>o is the clock offset that the client has calculated.
  * </ul>
- *
+ * <p>
  * <p>
  * A cometd server that supports timesync, can respond with an ext field like:
  * <code>{ext:{timesync:{tc:12345567890,ts:1234567900,p:123,a:3},...},...}</code>
@@ -65,14 +65,12 @@ import org.cometd.bayeux.server.ServerSession;
  * lag. But the current client does not do this.
  * </p>
  */
-public class TimesyncExtension extends Extension.Adapter
-{
+public class TimesyncExtension extends Extension.Adapter {
     public static final String LAG_ATTRIBUTE = "lag";
 
-    private int _accuracyTarget=25;
+    private int _accuracyTarget = 25;
 
-    public TimesyncExtension()
-    {
+    public TimesyncExtension() {
     }
 
     /**
@@ -81,8 +79,7 @@ public class TimesyncExtension extends Extension.Adapter
      *
      * @return accuracy target in ms (default 25ms)
      */
-    public int getAccuracyTarget()
-    {
+    public int getAccuracyTarget() {
         return _accuracyTarget;
     }
 
@@ -90,75 +87,63 @@ public class TimesyncExtension extends Extension.Adapter
      * timesync responses are not set if the measured accuracy is less than the
      * accuracyTarget.
      *
-     * @param target
-     *            accuracy target in ms
+     * @param target accuracy target in ms
      */
-    public void setAccuracyTarget(int target)
-    {
-        _accuracyTarget=target;
+    public void setAccuracyTarget(int target) {
+        _accuracyTarget = target;
     }
 
     @Override
-    public boolean rcvMeta(ServerSession from, Mutable message)
-    {
-        Map<String,Object> ext=message.getExt(false);
-        if (ext != null)
-        {
-            Map<String,Object> sync=(Map<String,Object>)ext.get("timesync");
-            if (sync != null)
-            {
+    public boolean rcvMeta(ServerSession from, Mutable message) {
+        Map<String, Object> ext = message.getExt(false);
+        if (ext != null) {
+            Map<String, Object> sync = (Map<String, Object>)ext.get("timesync");
+            if (sync != null) {
                 sync.put("ts", System.currentTimeMillis());
-                Number lag=(Number)sync.get("l");
-                if (lag != null && from != null)
-                    from.setAttribute(LAG_ATTRIBUTE,lag);
+                Number lag = (Number)sync.get("l");
+                if (lag != null && from != null) {
+                    from.setAttribute(LAG_ATTRIBUTE, lag);
+                }
             }
         }
         return true;
     }
 
     @Override
-    public boolean sendMeta(ServerSession session, Mutable message)
-    {
-        ServerMessage associated=message.getAssociated();
-        if (associated != null)
-        {
-            Map<String,Object> extIn=associated.getExt();
+    public boolean sendMeta(ServerSession session, Mutable message) {
+        ServerMessage associated = message.getAssociated();
+        if (associated != null) {
+            Map<String, Object> extIn = associated.getExt();
 
-            if (extIn != null)
-            {
-                Map<String,Object> sync=(Map<String,Object>)extIn.get("timesync");
-                if (sync != null)
-                {
-                    final long tc=((Number)sync.get("tc")).longValue();
-                    final long ts=((Number)sync.get("ts")).longValue();
+            if (extIn != null) {
+                Map<String, Object> sync = (Map<String, Object>)extIn.get("timesync");
+                if (sync != null) {
+                    final long tc = ((Number)sync.get("tc")).longValue();
+                    final long ts = ((Number)sync.get("ts")).longValue();
 
-                    final Number lag=(Number)sync.get("l");
-                    if (lag == null)
-                    {
+                    final Number lag = (Number)sync.get("l");
+                    if (lag == null) {
                         // old style timesync
-                        Map<String,Object> extOut=message.getExt(true);
+                        Map<String, Object> extOut = message.getExt(true);
                         Map<String, Object> timesync = new HashMap<>(3);
                         timesync.put("tc", tc);
                         timesync.put("ts", ts);
                         timesync.put("p", System.currentTimeMillis() - ts);
-                        extOut.put("timesync",timesync);
-                    }
-                    else
-                    {
-                        final int l=lag.intValue();
-                        final int o=((Number)sync.get("o")).intValue();
-                        final int a=(int)((tc + o + l) - ts);
+                        extOut.put("timesync", timesync);
+                    } else {
+                        final int l = lag.intValue();
+                        final int o = ((Number)sync.get("o")).intValue();
+                        final int a = (int)((tc + o + l) - ts);
 
                         // is a OK ?
-                        if (l == 0 || a >= _accuracyTarget || a <= -_accuracyTarget)
-                        {
-                            Map<String,Object> extOut = message.getExt(true);
+                        if (l == 0 || a >= _accuracyTarget || a <= -_accuracyTarget) {
+                            Map<String, Object> extOut = message.getExt(true);
                             Map<String, Object> timesync = new HashMap<>(4);
                             timesync.put("tc", tc);
                             timesync.put("ts", ts);
                             timesync.put("p", System.currentTimeMillis() - ts);
                             timesync.put("a", a);
-                            extOut.put("timesync",timesync);
+                            extOut.put("timesync", timesync);
                         }
                     }
                 }

@@ -22,8 +22,7 @@ package org.cometd.client.transport;
  * processed by a {@link TransportListener} that has not been passed during a request, but has
  * instead been provided at startup by {@link #setMessageTransportListener(TransportListener)}.</p>
  */
-public interface MessageClientTransport
-{
+public interface MessageClientTransport {
     /**
      * @param listener the listener that handles unsolicited messages from the server
      */

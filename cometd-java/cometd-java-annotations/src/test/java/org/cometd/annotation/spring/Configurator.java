@@ -28,37 +28,33 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * The Spring component that configures CometD services.
- *
+ * <p>
  * Spring scans the classes and finds this class annotated with Spring's @Configuration
  * annotation, and makes an instance. Then it notices that it has a bean factory
  * method (annotated with @Bean) that produces the BayeuxServer instance.
  * Note that, as per Spring documentation, this class is subclassed by Spring
  * via CGLIB to invoke bean factory methods only once.
- *
+ * <p>
  * Implementing {@link DestructionAwareBeanPostProcessor} allows to plug-in
  * CometD's annotation processor to process the CometD services.
  */
 @Configuration
-public class Configurator implements DestructionAwareBeanPostProcessor
-{
+public class Configurator implements DestructionAwareBeanPostProcessor {
     private BayeuxServer bayeuxServer;
     private ServerAnnotationProcessor processor;
 
     @Inject
-    private void setBayeuxServer(BayeuxServer bayeuxServer)
-    {
+    private void setBayeuxServer(BayeuxServer bayeuxServer) {
         this.bayeuxServer = bayeuxServer;
     }
 
     @PostConstruct
-    private void init()
-    {
+    private void init() {
         this.processor = new ServerAnnotationProcessor(bayeuxServer);
     }
 
     @Override
-    public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException
-    {
+    public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException {
         processor.processDependencies(bean);
         processor.processConfigurations(bean);
         processor.processCallbacks(bean);
@@ -66,26 +62,22 @@ public class Configurator implements DestructionAwareBeanPostProcessor
     }
 
     @Override
-    public Object postProcessAfterInitialization(Object bean, String name) throws BeansException
-    {
+    public Object postProcessAfterInitialization(Object bean, String name) throws BeansException {
         return bean;
     }
 
     @Override
-    public void postProcessBeforeDestruction(Object bean, String name) throws BeansException
-    {
+    public void postProcessBeforeDestruction(Object bean, String name) throws BeansException {
         processor.deprocessCallbacks(bean);
     }
 
     @Override
-    public boolean requiresDestruction(Object bean)
-    {
+    public boolean requiresDestruction(Object bean) {
         return true;
     }
 
     @Bean(initMethod = "start", destroyMethod = "stop")
-    public BayeuxServer bayeuxServer()
-    {
+    public BayeuxServer bayeuxServer() {
         return new BayeuxServerImpl();
     }
 }

@@ -39,28 +39,25 @@ import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingTest
-{
+public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingTest {
     @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
+    protected void customizeContext(ServletContextHandler context) throws Exception {
         super.customizeContext(context);
         context.addFilter(new FilterHolder(new CrossOriginFilter()), cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(new FilterHolder(new ConnectThrowingFilter()), cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test
-    public void testCrossOriginReHandshakeDoesNotChangeTransportType() throws Exception
-    {
+    public void testCrossOriginReHandshakeDoesNotChangeTransportType() throws Exception {
         bayeuxServer.addExtension(new ReHandshakeExtension());
 
         defineClass(Latch.class);
         String crossOriginCometDURL = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({" +
-                       "url: '" + crossOriginCometDURL + "', " +
-                       "requestHeaders: { Origin: 'http://localhost:8080' }, " +
-                       "logLevel: '" + getLogLevel() + "'" +
-                       "});");
+                "url: '" + crossOriginCometDURL + "', " +
+                "requestHeaders: { Origin: 'http://localhost:8080' }, " +
+                "logLevel: '" + getLogLevel() + "'" +
+                "});");
         evaluateScript("var handshakeLatch = new Latch(2);");
         evaluateScript("var connectLatch = new Latch(2);");
         Latch handshakeLatch = get("handshakeLatch");
@@ -76,24 +73,19 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
         evaluateScript("cometd.disconnect(true);");
     }
 
-    private class ReHandshakeExtension extends BayeuxServer.Extension.Adapter
-    {
+    private class ReHandshakeExtension extends BayeuxServer.Extension.Adapter {
         private final AtomicInteger connects = new AtomicInteger();
 
         @Override
-        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-        {
+        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
             return false;
         }
 
         @Override
-        public boolean sendMeta(ServerSession session, ServerMessage.Mutable message)
-        {
-            if (Channel.META_CONNECT.equals(message.getChannel()))
-            {
+        public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
+            if (Channel.META_CONNECT.equals(message.getChannel())) {
                 int connects = this.connects.incrementAndGet();
-                if (connects == 1)
-                {
+                if (connects == 1) {
                     // Fake the removal of the session due to timeout
                     bayeuxServer.removeServerSession(session, true);
                 }
@@ -102,33 +94,28 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
         }
     }
 
-    private class ConnectThrowingFilter implements Filter
-    {
+    private class ConnectThrowingFilter implements Filter {
         private final AtomicInteger connects = new AtomicInteger();
 
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
+        public void init(FilterConfig filterConfig) throws ServletException {
         }
 
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
 
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
             String uri = request.getRequestURI();
-            if (uri.endsWith("/connect"))
-            {
+            if (uri.endsWith("/connect")) {
                 int connects = this.connects.incrementAndGet();
-                if (connects == 2)
+                if (connects == 2) {
                     throw new IOException();
+                }
             }
             chain.doFilter(request, response);
         }
 
-        public void destroy()
-        {
+        public void destroy() {
         }
     }
 }

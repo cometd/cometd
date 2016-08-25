@@ -24,13 +24,11 @@ import org.cometd.annotation.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.ext.TimesyncExtension;
 
-public class OortDemoServlet extends HttpServlet
-{
+public class OortDemoServlet extends HttpServlet {
     private ServerAnnotationProcessor _processor;
     private OortChatService _service;
 
-    public void init(ServletConfig config) throws ServletException
-    {
+    public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
         ServletContext context = config.getServletContext();
@@ -46,8 +44,7 @@ public class OortDemoServlet extends HttpServlet
         bayeux.addExtension(new TimesyncExtension());
     }
 
-    public void destroy()
-    {
+    public void destroy() {
         _processor.deprocess(_service);
     }
 }

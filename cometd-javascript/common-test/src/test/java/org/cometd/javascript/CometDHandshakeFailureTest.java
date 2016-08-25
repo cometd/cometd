@@ -25,11 +25,9 @@ import org.junit.Test;
 /**
  * Tests that handshake failures will backoff correctly
  */
-public class CometDHandshakeFailureTest extends AbstractCometDTest
-{
+public class CometDHandshakeFailureTest extends AbstractCometDTest {
     @Test
-    public void testHandshakeFailure() throws Exception
-    {
+    public void testHandshakeFailure() throws Exception {
         bayeuxServer.addExtension(new DeleteMetaHandshakeExtension());
 
         defineClass(Latch.class);
@@ -90,11 +88,9 @@ public class CometDHandshakeFailureTest extends AbstractCometDTest
         Assert.assertFalse(handshakeLatch.await(4 * backoffIncrement));
     }
 
-    private static class DeleteMetaHandshakeExtension extends BayeuxServer.Extension.Adapter
-    {
+    private static class DeleteMetaHandshakeExtension extends BayeuxServer.Extension.Adapter {
         @Override
-        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-        {
+        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             return !Channel.META_HANDSHAKE.equals(message.getChannel());
         }
     }

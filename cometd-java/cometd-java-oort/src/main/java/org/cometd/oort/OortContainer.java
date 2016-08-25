@@ -22,64 +22,49 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class OortContainer<T> extends OortObject<T>
-{
+public abstract class OortContainer<T> extends OortObject<T> {
     private static final Map<String, Object> STALE_UPDATE = new HashMap<>();
 
     private final Map<String, Updater> updaters = new ConcurrentHashMap<>();
 
-    public OortContainer(Oort oort, String name, Factory<T> factory)
-    {
+    public OortContainer(Oort oort, String name, Factory<T> factory) {
         super(oort, name, factory);
     }
 
     @Override
-    protected void doStop() throws Exception
-    {
+    protected void doStop() throws Exception {
         super.doStop();
         updaters.clear();
     }
 
     @Override
-    public void cometLeft(Event event)
-    {
+    public void cometLeft(Event event) {
         super.cometLeft(event);
         updaters.remove(event.getCometURL());
     }
 
     @Override
-    protected void onObject(Map<String, Object> data)
-    {
+    protected void onObject(Map<String, Object> data) {
         String oortURL = (String)data.get(Info.OORT_URL_FIELD);
         Updater updater = updater(oortURL);
-        if (isItemUpdate(data))
-        {
+        if (isItemUpdate(data)) {
             Info<T> info = getInfo(oortURL);
-            if (info == null)
-            {
+            if (info == null) {
                 updater.enqueue(data);
                 pullInfo(oortURL);
-            }
-            else
-            {
-                if (info.isLocal())
-                {
+            } else {
+                if (info.isLocal()) {
                     onItem(info, data);
-                }
-                else
-                {
+                } else {
                     updater.enqueue(data);
                     process(info, updater);
                 }
             }
-        }
-        else
-        {
+        } else {
             super.onObject(data);
             Info<T> info = getInfo(oortURL);
             // Info may be null if the OortObject is stopped concurrently.
-            if (info != null)
-            {
+            if (info != null) {
                 updater.pulling = false;
                 updater.version = info.getVersion();
                 process(info, updater);
@@ -87,28 +72,23 @@ public abstract class OortContainer<T> extends OortObject<T>
         }
     }
 
-    private Updater updater(String oortURL)
-    {
+    private Updater updater(String oortURL) {
         Updater updater = updaters.get(oortURL);
-        if (updater == null)
-        {
+        if (updater == null) {
             updater = new Updater();
             updaters.put(oortURL, updater);
         }
         return updater;
     }
 
-    private void process(Info<T> info, Updater updater)
-    {
-        while (true)
-        {
+    private void process(Info<T> info, Updater updater) {
+        while (true) {
             Map<String, Object> data = updater.dequeue();
-            if (data == null)
+            if (data == null) {
                 return;
-            if (data == STALE_UPDATE)
-            {
-                if (!updater.pulling)
-                {
+            }
+            if (data == STALE_UPDATE) {
+                if (!updater.pulling) {
                     updater.pulling = true;
                     pullInfo(info.getOortURL());
                 }
@@ -128,36 +108,32 @@ public abstract class OortContainer<T> extends OortObject<T>
      * be applied in the order they were generated, not
      * in the order they arrived.
      */
-    private class Updater
-    {
+    private class Updater {
         private final Queue<Map<String, Object>> updates = new PriorityQueue<>(2, new VersionComparator());
         private boolean pulling;
         private long version;
 
-        private void enqueue(Map<String, Object> data)
-        {
+        private void enqueue(Map<String, Object> data) {
             updates.offer(data);
         }
 
-        private Map<String, Object> dequeue()
-        {
-            while (true)
-            {
+        private Map<String, Object> dequeue() {
+            while (true) {
                 Map<String, Object> result = updates.peek();
-                if (logger.isDebugEnabled())
+                if (logger.isDebugEnabled()) {
                     logger.debug("Dequeued update version={}, data={}", version, result);
-                if (result == null)
-                    return null;
-                long actual = ((Number)result.get(Info.VERSION_FIELD)).longValue();
-                if (actual <= version)
-                {
-                    updates.poll();
                 }
-                else
-                {
+                if (result == null) {
+                    return null;
+                }
+                long actual = ((Number)result.get(Info.VERSION_FIELD)).longValue();
+                if (actual <= version) {
+                    updates.poll();
+                } else {
                     long expected = version + 1;
-                    if (actual > expected)
+                    if (actual > expected) {
                         return STALE_UPDATE;
+                    }
                     version = expected;
                     return updates.poll();
                 }
@@ -165,11 +141,9 @@ public abstract class OortContainer<T> extends OortObject<T>
         }
     }
 
-    private static class VersionComparator implements Comparator<Map<String, Object>>
-    {
+    private static class VersionComparator implements Comparator<Map<String, Object>> {
         @Override
-        public int compare(Map<String, Object> o1, Map<String, Object> o2)
-        {
+        public int compare(Map<String, Object> o1, Map<String, Object> o2) {
             long v1 = ((Number)o1.get(Info.VERSION_FIELD)).longValue();
             long v2 = ((Number)o2.get(Info.VERSION_FIELD)).longValue();
             return v1 > v2 ? 1 : v1 < v2 ? -1 : 0;
