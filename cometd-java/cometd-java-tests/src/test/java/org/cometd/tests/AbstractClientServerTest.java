@@ -50,20 +50,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public abstract class AbstractClientServerTest
-{
+public abstract class AbstractClientServerTest {
     @Parameterized.Parameters(name = "{0}")
-    public static Object[] data()
-    {
+    public static Object[] data() {
         return Transport.values();
     }
 
     @Rule
-    public final TestWatcher testName = new TestWatcher()
-    {
+    public final TestWatcher testName = new TestWatcher() {
         @Override
-        protected void starting(Description description)
-        {
+        protected void starting(Description description) {
             super.starting(description);
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
@@ -80,14 +76,12 @@ public abstract class AbstractClientServerTest
     private WebSocketContainer wsContainer;
     private WebSocketClient wsClient;
 
-    protected AbstractClientServerTest(Transport transport)
-    {
+    protected AbstractClientServerTest(Transport transport) {
         this.transport = transport;
         this.cometdServletPath = "/cometd";
     }
 
-    public void startServer(Map<String, String> initParams) throws Exception
-    {
+    public void startServer(Map<String, String> initParams) throws Exception {
         server = new Server();
 
         connector = new ServerConnector(server);
@@ -102,10 +96,10 @@ public abstract class AbstractClientServerTest
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitOrder(1);
-        if (initParams != null)
-        {
-            for (Map.Entry<String, String> entry : initParams.entrySet())
+        if (initParams != null) {
+            for (Map.Entry<String, String> entry : initParams.entrySet()) {
                 cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
+            }
         }
 
         context.addServlet(cometdServletHolder, cometdServletPath + "/*");
@@ -119,11 +113,9 @@ public abstract class AbstractClientServerTest
         startClient();
     }
 
-    protected void startClient() throws Exception
-    {
+    protected void startClient() throws Exception {
         scheduler = Executors.newSingleThreadScheduledExecutor();
-        switch (transport)
-        {
+        switch (transport) {
             case LONG_POLLING:
             case ASYNC_LONG_POLLING:
                 httpClient = new HttpClient();
@@ -142,18 +134,15 @@ public abstract class AbstractClientServerTest
         }
     }
 
-    protected Map<String, String> serverOptions()
-    {
+    protected Map<String, String> serverOptions() {
         Map<String, String> options = new HashMap<>();
         options.put(BayeuxServerImpl.TRANSPORTS_OPTION, serverTransport());
         options.put("ws.cometdURLMapping", cometdServletPath + "/*");
         return options;
     }
 
-    protected String serverTransport()
-    {
-        switch (transport)
-        {
+    protected String serverTransport() {
+        switch (transport) {
             case LONG_POLLING:
                 return JSONTransport.class.getName();
             case ASYNC_LONG_POLLING:
@@ -167,15 +156,12 @@ public abstract class AbstractClientServerTest
         }
     }
 
-    protected BayeuxClient newBayeuxClient()
-    {
+    protected BayeuxClient newBayeuxClient() {
         return new BayeuxClient(cometdURL, newClientTransport(null));
     }
 
-    protected ClientTransport newClientTransport(Map<String, Object> options)
-    {
-        switch (transport)
-        {
+    protected ClientTransport newClientTransport(Map<String, Object> options) {
+        switch (transport) {
             case LONG_POLLING:
             case ASYNC_LONG_POLLING:
                 return new LongPollingTransport(options, httpClient);
@@ -188,31 +174,31 @@ public abstract class AbstractClientServerTest
         }
     }
 
-    protected void disconnectBayeuxClient(BayeuxClient client)
-    {
+    protected void disconnectBayeuxClient(BayeuxClient client) {
         client.disconnect(1000);
     }
 
     @After
-    public void dispose() throws Exception
-    {
+    public void dispose() throws Exception {
         stopClient();
-        if (server != null)
+        if (server != null) {
             server.stop();
+        }
     }
 
-    private void stopClient() throws Exception
-    {
-        if (wsClient != null)
+    private void stopClient() throws Exception {
+        if (wsClient != null) {
             wsClient.stop();
-        if (wsContainer instanceof LifeCycle)
+        }
+        if (wsContainer instanceof LifeCycle) {
             ((LifeCycle)wsContainer).stop();
-        if (httpClient != null)
+        }
+        if (httpClient != null) {
             httpClient.stop();
+        }
     }
 
-    public enum Transport
-    {
+    public enum Transport {
         LONG_POLLING, ASYNC_LONG_POLLING, JAVAX_WEBSOCKET, JETTY_WEBSOCKET
     }
 }

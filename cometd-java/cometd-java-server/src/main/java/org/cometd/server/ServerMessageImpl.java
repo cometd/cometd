@@ -26,8 +26,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.HashMapMessage;
 import org.cometd.common.JSONContext;
 
-public class ServerMessageImpl extends HashMapMessage implements ServerMessage.Mutable
-{
+public class ServerMessageImpl extends HashMapMessage implements ServerMessage.Mutable {
     private static final long serialVersionUID = 6412048662640296067L;
 
     private transient ServerMessage.Mutable _associated;
@@ -36,179 +35,156 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     private transient byte[] _jsonBytes;
     private transient boolean _local;
 
-    public ServerMessage.Mutable getAssociated()
-    {
+    public ServerMessage.Mutable getAssociated() {
         return _associated;
     }
 
-    public void setAssociated(ServerMessage.Mutable associated)
-    {
+    public void setAssociated(ServerMessage.Mutable associated) {
         _associated = associated;
     }
 
-    public boolean isLazy()
-    {
+    public boolean isLazy() {
         return _lazy;
     }
 
-    public void setLazy(boolean lazy)
-    {
+    public void setLazy(boolean lazy) {
         _lazy = lazy;
     }
 
-    public boolean isLocal()
-    {
+    public boolean isLocal() {
         return _local;
     }
 
-    public void setLocal(boolean local)
-    {
+    public void setLocal(boolean local) {
         _local = local;
     }
 
-    protected void freeze(String json)
-    {
+    protected void freeze(String json) {
         assert _json == null;
         _json = json;
         _jsonBytes = json.getBytes(StandardCharsets.UTF_8);
     }
 
-    protected boolean isFrozen()
-    {
+    protected boolean isFrozen() {
         return _json != null;
     }
 
     @Override
-    public String getJSON()
-    {
-        if (_json == null)
+    public String getJSON() {
+        if (_json == null) {
             return _jsonContext.generate(this);
+        }
         return _json;
     }
 
-    public byte[] getJSONBytes()
-    {
+    public byte[] getJSONBytes() {
         return _jsonBytes;
     }
 
     @Override
-    public Object getData()
-    {
+    public Object getData() {
         Object data = super.getData();
-        if (isFrozen() && data instanceof Map)
+        if (isFrozen() && data instanceof Map) {
             return Collections.unmodifiableMap((Map<String, Object>)data);
+        }
         return data;
     }
 
     @Override
-    public Object put(String key, Object value)
-    {
-        if (isFrozen())
+    public Object put(String key, Object value) {
+        if (isFrozen()) {
             throw new UnsupportedOperationException();
+        }
         return super.put(key, value);
     }
 
     @Override
-    public Set<Map.Entry<String, Object>> entrySet()
-    {
-        if (isFrozen())
+    public Set<Map.Entry<String, Object>> entrySet() {
+        if (isFrozen()) {
             return new ImmutableEntrySet(super.entrySet());
+        }
         return super.entrySet();
     }
 
     @Override
-    public Map<String, Object> getDataAsMap()
-    {
+    public Map<String, Object> getDataAsMap() {
         Map<String, Object> data = super.getDataAsMap();
-        if (isFrozen() && data != null)
+        if (isFrozen() && data != null) {
             return Collections.unmodifiableMap(data);
+        }
         return data;
     }
 
     @Override
-    public Map<String, Object> getExt()
-    {
+    public Map<String, Object> getExt() {
         Map<String, Object> ext = super.getExt();
-        if (isFrozen() && ext != null)
+        if (isFrozen() && ext != null) {
             return Collections.unmodifiableMap(ext);
+        }
         return ext;
     }
 
     @Override
-    public Map<String, Object> getAdvice()
-    {
+    public Map<String, Object> getAdvice() {
         Map<String, Object> advice = super.getAdvice();
-        if (isFrozen() && advice != null)
+        if (isFrozen() && advice != null) {
             return Collections.unmodifiableMap(advice);
+        }
         return advice;
     }
 
-    private static class ImmutableEntrySet extends AbstractSet<Map.Entry<String, Object>>
-    {
+    private static class ImmutableEntrySet extends AbstractSet<Map.Entry<String, Object>> {
         private final Set<Map.Entry<String, Object>> delegate;
 
-        private ImmutableEntrySet(Set<Map.Entry<String, Object>> delegate)
-        {
+        private ImmutableEntrySet(Set<Map.Entry<String, Object>> delegate) {
             this.delegate = delegate;
         }
 
         @Override
-        public Iterator<Map.Entry<String, Object>> iterator()
-        {
+        public Iterator<Map.Entry<String, Object>> iterator() {
             return new ImmutableEntryIterator(delegate.iterator());
         }
 
         @Override
-        public int size()
-        {
+        public int size() {
             return delegate.size();
         }
 
-        private static class ImmutableEntryIterator implements Iterator<Map.Entry<String, Object>>
-        {
+        private static class ImmutableEntryIterator implements Iterator<Map.Entry<String, Object>> {
             private final Iterator<Map.Entry<String, Object>> delegate;
 
-            private ImmutableEntryIterator(Iterator<Map.Entry<String, Object>> delegate)
-            {
+            private ImmutableEntryIterator(Iterator<Map.Entry<String, Object>> delegate) {
                 this.delegate = delegate;
             }
 
-            public boolean hasNext()
-            {
+            public boolean hasNext() {
                 return delegate.hasNext();
             }
 
-            public Map.Entry<String, Object> next()
-            {
+            public Map.Entry<String, Object> next() {
                 return new ImmutableEntry(delegate.next());
             }
 
-            public void remove()
-            {
+            public void remove() {
                 throw new UnsupportedOperationException();
             }
 
-            private static class ImmutableEntry implements Map.Entry<String, Object>
-            {
+            private static class ImmutableEntry implements Map.Entry<String, Object> {
                 private final Map.Entry<String, Object> delegate;
 
-                private ImmutableEntry(Map.Entry<String, Object> delegate)
-                {
+                private ImmutableEntry(Map.Entry<String, Object> delegate) {
                     this.delegate = delegate;
                 }
 
-                public String getKey()
-                {
+                public String getKey() {
                     return delegate.getKey();
                 }
 
-                public Object getValue()
-                {
+                public Object getValue() {
                     return delegate.getValue();
                 }
 
-                public Object setValue(Object value)
-                {
+                public Object setValue(Object value) {
                     throw new UnsupportedOperationException();
                 }
             }

@@ -36,38 +36,29 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
-public class MaxNetworkDelayTest extends ClientServerTest
-{
+public class MaxNetworkDelayTest extends ClientServerTest {
     private final long timeout = 5000;
 
     @Before
-    public void setUp() throws Exception
-    {
+    public void setUp() throws Exception {
         Map<String, String> params = new HashMap<>();
         params.put("timeout", String.valueOf(timeout));
         startServer(params);
     }
 
     @Test
-    public void testMaxNetworkDelayOnHandshake() throws Exception
-    {
+    public void testMaxNetworkDelayOnHandshake() throws Exception {
         final long maxNetworkDelay = 2000;
         final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
 
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter()
-        {
+        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
             @Override
-            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-            {
-                if (Channel.META_HANDSHAKE.equals(message.getChannel()))
-                {
-                    try
-                    {
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
+                if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
+                    try {
                         Thread.sleep(sleep);
                         // If we are able to sleep the whole time, the test will fail
-                    }
-                    catch (InterruptedException x)
-                    {
+                    } catch (InterruptedException x) {
                         Thread.currentThread().interrupt();
                         // This exception is expected, do nothing
                     }
@@ -79,21 +70,19 @@ public class MaxNetworkDelayTest extends ClientServerTest
         final CountDownLatch latch = new CountDownLatch(2);
         ClientTransport transport = new LongPollingTransport(null, httpClient);
         transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
-        BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
+        BayeuxClient client = new BayeuxClient(cometdURL, transport) {
             @Override
-            public void onFailure(Throwable failure, List<? extends Message> messages)
-            {
-                if (failure instanceof TimeoutException)
+            public void onFailure(Throwable failure, List<? extends Message> messages) {
+                if (failure instanceof TimeoutException) {
                     latch.countDown();
+                }
             }
         };
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
                     latch.countDown();
+                }
             }
         });
 
@@ -104,30 +93,22 @@ public class MaxNetworkDelayTest extends ClientServerTest
     }
 
     @Test
-    public void testMaxNetworkDelayOnConnect() throws Exception
-    {
+    public void testMaxNetworkDelayOnConnect() throws Exception {
         final long maxNetworkDelay = 2000;
         final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
 
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter()
-        {
+        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
             private AtomicInteger connects = new AtomicInteger();
 
             @Override
-            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-            {
-                if (Channel.META_CONNECT.equals(message.getChannel()))
-                {
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
+                if (Channel.META_CONNECT.equals(message.getChannel())) {
                     int c = connects.incrementAndGet();
-                    if (c == 2)
-                    {
-                        try
-                        {
+                    if (c == 2) {
+                        try {
                             Thread.sleep(sleep);
                             // If we are able to sleep the whole time, the test will fail
-                        }
-                        catch (InterruptedException x)
-                        {
+                        } catch (InterruptedException x) {
                             Thread.currentThread().interrupt();
                             // This exception is expected, do nothing
                         }
@@ -140,26 +121,24 @@ public class MaxNetworkDelayTest extends ClientServerTest
         final CountDownLatch latch = new CountDownLatch(3);
         ClientTransport transport = new LongPollingTransport(null, httpClient);
         transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
-        BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
+        BayeuxClient client = new BayeuxClient(cometdURL, transport) {
             @Override
-            public void onFailure(Throwable failure, List<? extends Message> messages)
-            {
-                if (failure instanceof TimeoutException)
+            public void onFailure(Throwable failure, List<? extends Message> messages) {
+                if (failure instanceof TimeoutException) {
                     latch.countDown();
+                }
             }
         };
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             private AtomicInteger connects = new AtomicInteger();
 
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 int c = connects.incrementAndGet();
-                if (c == 1 && message.isSuccessful())
+                if (c == 1 && message.isSuccessful()) {
                     latch.countDown();
-                else if (c == 2 && !message.isSuccessful())
+                } else if (c == 2 && !message.isSuccessful()) {
                     latch.countDown();
+                }
             }
         });
 
@@ -173,25 +152,18 @@ public class MaxNetworkDelayTest extends ClientServerTest
     }
 
     @Test
-    public void testDynamicMaxNetworkDelay() throws Exception
-    {
+    public void testDynamicMaxNetworkDelay() throws Exception {
         final long maxNetworkDelay1 = 2000;
         final long maxNetworkDelay2 = 4000;
         final long sleep = (maxNetworkDelay1 + maxNetworkDelay2) / 2;
 
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter()
-        {
+        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
             @Override
-            public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-            {
-                if (Channel.META_CONNECT.equals(message.getChannel()))
-                {
-                    try
-                    {
+            public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
+                if (Channel.META_CONNECT.equals(message.getChannel())) {
+                    try {
                         Thread.sleep(sleep);
-                    }
-                    catch (InterruptedException x)
-                    {
+                    } catch (InterruptedException x) {
                         // Ignore
                     }
                 }
@@ -202,30 +174,24 @@ public class MaxNetworkDelayTest extends ClientServerTest
         final CountDownLatch latch = new CountDownLatch(3);
         LongPollingTransport transport = new LongPollingTransport(null, httpClient);
         transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay1);
-        final BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
+        final BayeuxClient client = new BayeuxClient(cometdURL, transport) {
             @Override
-            public void onFailure(Throwable failure, List<? extends Message> messages)
-            {
-                if (failure instanceof TimeoutException)
+            public void onFailure(Throwable failure, List<? extends Message> messages) {
+                if (failure instanceof TimeoutException) {
                     latch.countDown();
+                }
             }
         };
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             private AtomicInteger connects = new AtomicInteger();
 
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 int c = connects.incrementAndGet();
-                if (c == 1 && !message.isSuccessful())
-                {
+                if (c == 1 && !message.isSuccessful()) {
                     latch.countDown();
                     // Change dynamically the max network delay.
                     client.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay2);
-                }
-                else if (c == 2 && message.isSuccessful())
-                {
+                } else if (c == 2 && message.isSuccessful()) {
                     latch.countDown();
                 }
             }

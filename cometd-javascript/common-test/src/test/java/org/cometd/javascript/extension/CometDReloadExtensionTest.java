@@ -25,17 +25,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CometDReloadExtensionTest extends AbstractCometDTest
-{
+public class CometDReloadExtensionTest extends AbstractCometDTest {
     @Before
-    public void initExtension() throws Exception
-    {
+    public void initExtension() throws Exception {
         provideReloadExtension();
     }
 
     @Test
-    public void testReloadWithConfiguration() throws Exception
-    {
+    public void testReloadWithConfiguration() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
@@ -66,15 +63,13 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     }
 
     @Test
-    public void testReloadedHandshakeContainsExtension() throws Exception
-    {
-        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter()
-        {
+    public void testReloadedHandshakeContainsExtension() throws Exception {
+        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter() {
             @Override
-            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-            {
-                if (Channel.META_HANDSHAKE.equals(message.getChannel()))
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
+                if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
                     message.getExt(true).put("foo", true);
+                }
                 return true;
             }
         });
@@ -128,8 +123,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     }
 
     @Test
-    public void testReloadDoesNotExpire() throws Exception
-    {
+    public void testReloadDoesNotExpire() throws Exception {
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
@@ -183,27 +177,23 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     }
 
     @Test
-    public void testReloadWithWebSocketTransport() throws Exception
-    {
+    public void testReloadWithWebSocketTransport() throws Exception {
         testReloadWithTransport(cometdURL, "websocket");
     }
 
     @Test
-    public void testReloadWithLongPollingTransport() throws Exception
-    {
+    public void testReloadWithLongPollingTransport() throws Exception {
         testReloadWithTransport(cometdURL, "long-polling");
     }
 
     @Test
-    public void testReloadWithCallbackPollingTransport() throws Exception
-    {
+    public void testReloadWithCallbackPollingTransport() throws Exception {
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
         testReloadWithTransport(url, "callback-polling");
     }
 
-    private void testReloadWithTransport(String url, String transportName) throws Exception
-    {
+    private void testReloadWithTransport(String url, String transportName) throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
@@ -261,8 +251,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     }
 
     @Test
-    public void testReloadAcrossServerRestart() throws Exception
-    {
+    public void testReloadAcrossServerRestart() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -327,8 +316,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     }
 
     @Test
-    public void testReloadWithSubscriptionAndPublish() throws Exception
-    {
+    public void testReloadWithSubscriptionAndPublish() throws Exception {
         defineClass(Latch.class);
         evaluateApplication();
         Latch latch = get("latch");
@@ -359,8 +347,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         evaluateScript("cometd.disconnect(true);");
     }
 
-    private void evaluateApplication() throws Exception
-    {
+    private void evaluateApplication() throws Exception {
         evaluateScript("" +
                 "var latch = new Latch(1);" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
@@ -414,8 +401,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     }
 
     @Test
-    public void testReloadWithHandshakeCallback() throws Exception
-    {
+    public void testReloadWithHandshakeCallback() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("var readyLatch = new Latch(1);");

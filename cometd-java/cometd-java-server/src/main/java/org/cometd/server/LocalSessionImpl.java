@@ -34,82 +34,75 @@ import org.cometd.common.AbstractClientSession;
  * <p>This {@link LocalSession} implementation communicates with its
  * {@link ServerSession} counterpart without any serialization.</p>
  */
-public class LocalSessionImpl extends AbstractClientSession implements LocalSession
-{
+public class LocalSessionImpl extends AbstractClientSession implements LocalSession {
     private final Queue<ServerMessage.Mutable> _queue = new ConcurrentLinkedQueue<>();
     private final BayeuxServerImpl _bayeux;
     private final String _idHint;
     private ServerSessionImpl _session;
     private String _sessionId;
 
-    protected LocalSessionImpl(BayeuxServerImpl bayeux, String idHint)
-    {
+    protected LocalSessionImpl(BayeuxServerImpl bayeux, String idHint) {
         _bayeux = bayeux;
         _idHint = idHint;
     }
 
     @Override
-    public void receive(Message.Mutable message)
-    {
+    public void receive(Message.Mutable message) {
         super.receive(message);
-        if (Channel.META_DISCONNECT.equals(message.getChannel()) && message.isSuccessful())
+        if (Channel.META_DISCONNECT.equals(message.getChannel()) && message.isSuccessful()) {
             _session = null;
+        }
     }
 
     @Override
-    protected AbstractSessionChannel newChannel(ChannelId channelId)
-    {
+    protected AbstractSessionChannel newChannel(ChannelId channelId) {
         return new LocalChannel(channelId);
     }
 
     @Override
-    protected ChannelId newChannelId(String channelId)
-    {
+    protected ChannelId newChannelId(String channelId) {
         return _bayeux.newChannelId(channelId);
     }
 
     @Override
-    protected void sendBatch()
-    {
+    protected void sendBatch() {
         int size = _queue.size();
-        while (size-- > 0)
-        {
+        while (size-- > 0) {
             ServerMessage.Mutable message = _queue.poll();
             doSend(_session, message);
         }
     }
 
     @Override
-    public ServerSession getServerSession()
-    {
-        if (_session == null)
+    public ServerSession getServerSession() {
+        if (_session == null) {
             throw new IllegalStateException("Method handshake() not invoked for local session " + this);
+        }
         return _session;
     }
 
     @Override
-    public void handshake()
-    {
+    public void handshake() {
         handshake(null);
     }
 
     @Override
-    public void handshake(Map<String, Object> template)
-    {
+    public void handshake(Map<String, Object> template) {
         handshake(template, null);
     }
 
     @Override
-    public void handshake(Map<String, Object> template, ClientSessionChannel.MessageListener callback)
-    {
-        if (_session != null)
+    public void handshake(Map<String, Object> template, ClientSessionChannel.MessageListener callback) {
+        if (_session != null) {
             throw new IllegalStateException();
+        }
 
         ServerSessionImpl session = new ServerSessionImpl(_bayeux, this, _idHint);
 
         ServerMessage.Mutable message = newMessage();
-        if (template != null)
+        if (template != null) {
             message.putAll(template);
+        }
         String messageId = newMessageId();
         message.setId(messageId);
         message.setChannel(Channel.META_HANDSHAKE);
@@ -118,8 +111,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         doSend(session, message);
 
         ServerMessage reply = message.getAssociated();
-        if (reply != null && reply.isSuccessful())
-        {
+        if (reply != null && reply.isSuccessful()) {
             message = newMessage();
             message.setId(newMessageId());
             message.setChannel(Channel.META_CONNECT);
@@ -129,8 +121,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             doSend(session, message);
 
             reply = message.getAssociated();
-            if (reply != null && reply.isSuccessful())
-            {
+            if (reply != null && reply.isSuccessful()) {
                 _session = session;
                 _sessionId = session.getId();
             }
@@ -138,16 +129,13 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     }
 
     @Override
-    public void disconnect()
-    {
+    public void disconnect() {
         disconnect(null);
     }
 
     @Override
-    public void disconnect(ClientSessionChannel.MessageListener callback)
-    {
-        if (_session != null)
-        {
+    public void disconnect(ClientSessionChannel.MessageListener callback) {
+        if (_session != null) {
             ServerMessage.Mutable message = newMessage();
             String messageId = newMessageId();
             message.setId(messageId);
@@ -155,40 +143,37 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             message.setClientId(_session.getId());
             registerCallback(messageId, callback);
             send(message);
-            while (isBatching())
+            while (isBatching()) {
                 endBatch();
+            }
         }
     }
 
     @Override
-    public String getId()
-    {
-        if (_sessionId == null)
+    public String getId() {
+        if (_sessionId == null) {
             throw new IllegalStateException("Method handshake() not invoked for local session " + this);
+        }
         return _sessionId;
     }
 
     @Override
-    public boolean isConnected()
-    {
+    public boolean isConnected() {
         return _session != null && _session.isConnected();
     }
 
     @Override
-    public boolean isHandshook()
-    {
+    public boolean isHandshook() {
         return _session != null && _session.isHandshook();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "L:" + (_sessionId == null ? _idHint + "_<disconnected>" : _sessionId);
     }
 
     @Override
-    protected void send(Message.Mutable message)
-    {
+    protected void send(Message.Mutable message) {
         send(_session, (ServerMessage.Mutable)message);
     }
 
@@ -200,12 +185,12 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
      * @param session The ServerSession to send as. This normally the current server session, but during handshake it is a proposed server session.
      * @param message The message to send.
      */
-    protected void send(ServerSessionImpl session, ServerMessage.Mutable message)
-    {
-        if (isBatching())
+    protected void send(ServerSessionImpl session, ServerMessage.Mutable message) {
+        if (isBatching()) {
             _queue.add(message);
-        else
+        } else {
             doSend(session, message);
+        }
     }
 
     /**
@@ -214,45 +199,41 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
      * @param from    The ServerSession to send as. This normally the current server session, but during handshake it is a proposed server session.
      * @param message The message to send.
      */
-    protected void doSend(ServerSessionImpl from, ServerMessage.Mutable message)
-    {
+    protected void doSend(ServerSessionImpl from, ServerMessage.Mutable message) {
         String messageId = message.getId();
         message.setClientId(_sessionId);
 
-        if (!extendSend(message))
+        if (!extendSend(message)) {
             return;
+        }
 
         // Extensions may have changed the messageId.
         message.setId(messageId);
 
         ServerMessage.Mutable reply = _bayeux.handle(from, message);
-        if (reply != null)
-        {
+        if (reply != null) {
             reply = _bayeux.extendReply(from, _session, reply);
-            if (reply != null)
+            if (reply != null) {
                 receive(reply);
+            }
         }
     }
 
     @Override
-    protected ServerMessage.Mutable newMessage()
-    {
+    protected ServerMessage.Mutable newMessage() {
         return _bayeux.newMessage();
     }
 
     /**
      * <p>A channel scoped to this LocalSession.</p>
      */
-    protected class LocalChannel extends AbstractSessionChannel
-    {
-        protected LocalChannel(ChannelId channelId)
-        {
+    protected class LocalChannel extends AbstractSessionChannel {
+        protected LocalChannel(ChannelId channelId) {
             super(channelId);
         }
 
         @Override
-        public ClientSession getSession()
-        {
+        public ClientSession getSession() {
             throwIfReleased();
             return LocalSessionImpl.this;
         }

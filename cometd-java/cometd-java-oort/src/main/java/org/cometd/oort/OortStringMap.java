@@ -22,10 +22,8 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @param <V> the value type
  */
-public class OortStringMap<V> extends OortMap<String, V>
-{
-    public OortStringMap(Oort oort, String name, Factory<ConcurrentMap<String, V>> factory)
-    {
+public class OortStringMap<V> extends OortMap<String, V> {
+    public OortStringMap(Oort oort, String name, Factory<ConcurrentMap<String, V>> factory) {
         super(oort, name, factory);
     }
 }

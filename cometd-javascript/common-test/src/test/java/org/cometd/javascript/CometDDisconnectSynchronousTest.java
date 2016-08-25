@@ -20,11 +20,9 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
-public class CometDDisconnectSynchronousTest extends AbstractCometDTest
-{
+public class CometDDisconnectSynchronousTest extends AbstractCometDTest {
     @Test
-    public void testDisconnectSynchronous() throws Exception
-    {
+    public void testDisconnectSynchronous() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("var readyLatch = new Latch(1);");

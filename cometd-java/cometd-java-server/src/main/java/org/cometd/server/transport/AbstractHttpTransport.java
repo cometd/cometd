@@ -56,8 +56,7 @@ import org.slf4j.LoggerFactory;
  * <p>HTTP ServerTransport base class, used by ServerTransports that use
  * HTTP as transport or to initiate a transport connection.</p>
  */
-public abstract class AbstractHttpTransport extends AbstractServerTransport
-{
+public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String PREFIX = "long-polling";
     public static final String JSON_DEBUG_OPTION = "jsonDebug";
     public static final String MESSAGE_PARAM = "message";
@@ -89,15 +88,13 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
     private boolean _trustClientSession;
     private long _lastSweep;
 
-    protected AbstractHttpTransport(BayeuxServerImpl bayeux, String name)
-    {
+    protected AbstractHttpTransport(BayeuxServerImpl bayeux, String name) {
         super(bayeux, name);
         setOptionPrefix(PREFIX);
     }
 
     @Override
-    public void init()
-    {
+    public void init() {
         super.init();
         _browserCookieName = getOption(BROWSER_COOKIE_NAME_OPTION, "BAYEUX_BROWSER");
         _browserCookieDomain = getOption(BROWSER_COOKIE_DOMAIN_OPTION, null);
@@ -111,28 +108,23 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         _trustClientSession = getOption(TRUST_CLIENT_SESSION, false);
     }
 
-    protected long getMultiSessionInterval()
-    {
+    protected long getMultiSessionInterval() {
         return _multiSessionInterval;
     }
 
-    protected boolean isAutoBatch()
-    {
+    protected boolean isAutoBatch() {
         return _autoBatch;
     }
 
-    protected boolean isAllowMultiSessionsNoBrowser()
-    {
+    protected boolean isAllowMultiSessionsNoBrowser() {
         return _allowMultiSessionsNoBrowser;
     }
 
-    public void setCurrentRequest(HttpServletRequest request)
-    {
+    public void setCurrentRequest(HttpServletRequest request) {
         _currentRequest.set(request);
     }
 
-    public HttpServletRequest getCurrentRequest()
-    {
+    public HttpServletRequest getCurrentRequest() {
         return _currentRequest.get();
     }
 
@@ -144,8 +136,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
 
     protected abstract void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies);
 
-    protected void processMessages(HttpServletRequest request, HttpServletResponse response, ServerMessage.Mutable[] messages) throws IOException
-    {
+    protected void processMessages(HttpServletRequest request, HttpServletResponse response, ServerMessage.Mutable[] messages) throws IOException {
         Collection<ServerSessionImpl> sessions = findCurrentSessions(request);
         ServerSessionImpl session = null;
         boolean autoBatch = isAutoBatch();
@@ -153,24 +144,19 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         boolean sendQueue = true;
         boolean sendReplies = true;
         boolean scheduleExpiration = true;
-        try
-        {
-            for (int i = 0; i < messages.length; ++i)
-            {
+        try {
+            for (int i = 0; i < messages.length; ++i) {
                 ServerMessage.Mutable message = messages[i];
-                if (_logger.isDebugEnabled())
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Processing {}", message);
+                }
 
                 // Try to find the session.
                 String clientId = message.getClientId();
-                if (sessions != null)
-                {
-                    if (clientId != null)
-                    {
-                        for (ServerSessionImpl s : sessions)
-                        {
-                            if (s.getId().equals(clientId))
-                            {
+                if (sessions != null) {
+                    if (clientId != null) {
+                        for (ServerSessionImpl s : sessions) {
+                            if (s.getId().equals(clientId)) {
                                 session = s;
                                 break;
                             }
@@ -178,24 +164,19 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                     }
                 }
 
-                if (session == null && _trustClientSession)
+                if (session == null && _trustClientSession) {
                     session = (ServerSessionImpl)getBayeux().getSession(clientId);
+                }
 
-                if (session != null)
-                {
-                    if (session.isHandshook())
-                    {
-                        if (autoBatch && !batch)
-                        {
+                if (session != null) {
+                    if (session.isHandshook()) {
+                        if (autoBatch && !batch) {
                             batch = true;
                             session.startBatch();
                         }
-                    }
-                    else
-                    {
+                    } else {
                         // Disconnected concurrently.
-                        if (batch)
-                        {
+                        if (batch) {
                             batch = false;
                             session.endBatch();
                         }
@@ -203,60 +184,54 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                     }
                 }
 
-                switch (message.getChannel())
-                {
-                    case Channel.META_HANDSHAKE:
-                    {
-                        if (messages.length > 1)
+                switch (message.getChannel()) {
+                    case Channel.META_HANDSHAKE: {
+                        if (messages.length > 1) {
                             throw new IOException();
+                        }
                         ServerMessage.Mutable reply = processMetaHandshake(request, response, session, message);
-                        if (reply != null)
+                        if (reply != null) {
                             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+                        }
                         messages[i] = processReply(session, reply);
                         sendQueue = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
                         sendReplies = reply != null;
                         break;
                     }
-                    case Channel.META_CONNECT:
-                    {
+                    case Channel.META_CONNECT: {
                         ServerMessage.Mutable reply = processMetaConnect(request, response, session, message);
                         messages[i] = processReply(session, reply);
                         sendQueue = sendReplies = reply != null;
                         break;
                     }
-                    default:
-                    {
+                    default: {
                         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
                         messages[i] = processReply(session, reply);
-                        if (isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly())
+                        if (isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly()) {
                             sendQueue = false;
+                        }
                         scheduleExpiration = false;
                         break;
                     }
                 }
             }
 
-            if (sendQueue || sendReplies)
+            if (sendQueue || sendReplies) {
                 flush(request, response, session, sendQueue, scheduleExpiration, messages);
-        }
-        finally
-        {
-            if (batch)
+            }
+        } finally {
+            if (batch) {
                 session.endBatch();
+            }
         }
     }
 
-    protected Collection<ServerSessionImpl> findCurrentSessions(HttpServletRequest request)
-    {
+    protected Collection<ServerSessionImpl> findCurrentSessions(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
-        if (cookies != null)
-        {
-            for (Cookie cookie : cookies)
-            {
-                if (_browserCookieName.equals(cookie.getName()))
-                {
-                    synchronized (_sessions)
-                    {
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (_browserCookieName.equals(cookie.getName())) {
+                    synchronized (_sessions) {
                         return _sessions.get(cookie.getValue());
                     }
                 }
@@ -265,24 +240,20 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         return null;
     }
 
-    protected ServerMessage.Mutable processMetaHandshake(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message)
-    {
+    protected ServerMessage.Mutable processMetaHandshake(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message) {
         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-        if (reply != null)
-        {
+        if (reply != null) {
             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-            if (session != null)
-            {
+            if (session != null) {
                 String id = findBrowserId(request);
-                if (id == null)
+                if (id == null) {
                     id = setBrowserId(request, response);
+                }
                 final String browserId = id;
 
-                synchronized (_sessions)
-                {
+                synchronized (_sessions) {
                     Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
-                    if (sessions == null)
-                    {
+                    if (sessions == null) {
                         // The list is modified inside sync blocks, but
                         // iterated outside, so it must be concurrent.
                         sessions = new CopyOnWriteArrayList<>();
@@ -291,17 +262,15 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                     sessions.add(session);
                 }
 
-                session.addListener(new ServerSession.RemoveListener()
-                {
+                session.addListener(new ServerSession.RemoveListener() {
                     @Override
-                    public void removed(ServerSession session, boolean timeout)
-                    {
-                        synchronized (_sessions)
-                        {
+                    public void removed(ServerSession session, boolean timeout) {
+                        synchronized (_sessions) {
                             Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
                             sessions.remove(session);
-                            if (sessions.isEmpty())
+                            if (sessions.isEmpty()) {
                                 _sessions.remove(browserId);
+                            }
                         }
                     }
                 });
@@ -310,10 +279,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         return reply;
     }
 
-    protected ServerMessage.Mutable processMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message)
-    {
-        if (session != null)
-        {
+    protected ServerMessage.Mutable processMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message) {
+        if (session != null) {
             // Cancel the previous scheduler to cancel any prior waiting long poll.
             // This should also decrement the browser ID.
             session.setScheduler(null);
@@ -321,27 +288,24 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
 
         boolean wasConnected = session != null && session.isConnected();
         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-        if (reply != null && session != null)
-        {
-            if (!session.hasNonLazyMessages() && reply.isSuccessful())
-            {
+        if (reply != null && session != null) {
+            if (!session.hasNonLazyMessages() && reply.isSuccessful()) {
                 // Detect if we have multiple sessions from the same browser.
                 // Note that CORS requests may not send cookies, so we need to
                 // handle them specially: they always have the Origin header.
                 String browserId = findBrowserId(request);
                 boolean allowSuspendConnect;
-                if (browserId != null)
+                if (browserId != null) {
                     allowSuspendConnect = incBrowserId(browserId, session);
-                else
+                } else {
                     allowSuspendConnect = isAllowMultiSessionsNoBrowser() || request.getHeader("Origin") != null;
+                }
 
-                if (allowSuspendConnect)
-                {
+                if (allowSuspendConnect) {
                     long timeout = session.calculateTimeout(getTimeout());
 
                     // Support old clients that do not send advice:{timeout:0} on the first connect
-                    if (timeout > 0 && wasConnected && session.isConnected())
-                    {
+                    if (timeout > 0 && wasConnected && session.isConnected()) {
                         // Between the last time we checked for messages in the queue
                         // (which was false, otherwise we would not be in this branch)
                         // and now, messages may have been added to the queue.
@@ -353,28 +317,22 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                         // Setting the scheduler may resume the /meta/connect
                         session.setScheduler(scheduler);
                         reply = null;
-                    }
-                    else
-                    {
+                    } else {
                         decBrowserId(browserId, session);
                     }
-                }
-                else
-                {
+                } else {
                     // There are multiple sessions from the same browser
                     Map<String, Object> advice = reply.getAdvice(true);
 
-                    if (browserId != null)
+                    if (browserId != null) {
                         advice.put("multiple-clients", true);
+                    }
 
                     long multiSessionInterval = getMultiSessionInterval();
-                    if (multiSessionInterval > 0)
-                    {
+                    if (multiSessionInterval > 0) {
                         advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
                         advice.put(Message.INTERVAL_FIELD, multiSessionInterval);
-                    }
-                    else
-                    {
+                    } else {
                         advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                         reply.setSuccessful(false);
                     }
@@ -382,65 +340,66 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
                 }
             }
 
-            if (reply != null && session.isDisconnected())
+            if (reply != null && session.isDisconnected()) {
                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+            }
         }
 
         return reply;
     }
 
-    protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean sendQueue, boolean scheduleExpiration, ServerMessage.Mutable... replies)
-    {
+    protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean sendQueue, boolean scheduleExpiration, ServerMessage.Mutable... replies) {
         List<ServerMessage> messages = Collections.emptyList();
-        if (sendQueue && session != null)
+        if (sendQueue && session != null) {
             messages = session.takeQueue();
+        }
         write(request, response, session, scheduleExpiration, messages, replies);
     }
 
-    protected void resume(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply)
-    {
+    protected void resume(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply) {
         metaConnectResumed(request, response, asyncContext, session);
         Map<String, Object> advice = session.takeAdvice(this);
-        if (advice != null)
+        if (advice != null) {
             reply.put(Message.ADVICE_FIELD, advice);
-        if (session.isDisconnected())
+        }
+        if (session.isDisconnected()) {
             reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+        }
 
         flush(request, response, session, true, true, processReply(session, reply));
     }
 
-    public BayeuxContext getContext()
-    {
+    public BayeuxContext getContext() {
         HttpServletRequest request = getCurrentRequest();
-        if (request != null)
+        if (request != null) {
             return new HttpContext(request);
+        }
         return null;
     }
 
-    protected String findBrowserId(HttpServletRequest request)
-    {
+    protected String findBrowserId(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
-        if (cookies != null)
-        {
-            for (Cookie cookie : cookies)
-            {
-                if (_browserCookieName.equals(cookie.getName()))
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (_browserCookieName.equals(cookie.getName())) {
                     return cookie.getValue();
+                }
             }
         }
         return null;
     }
 
-    protected String setBrowserId(HttpServletRequest request, HttpServletResponse response)
-    {
+    protected String setBrowserId(HttpServletRequest request, HttpServletResponse response) {
         StringBuilder builder = new StringBuilder();
-        while (builder.length() < 16)
+        while (builder.length() < 16) {
             builder.append(Long.toString(getBayeux().randomLong(), 36));
+        }
         builder.setLength(16);
         String browserId = builder.toString();
         Cookie cookie = new Cookie(_browserCookieName, browserId);
-        if (_browserCookieDomain != null)
+        if (_browserCookieDomain != null) {
             cookie.setDomain(_browserCookieDomain);
+        }
         cookie.setPath(_browserCookiePath);
         cookie.setSecure(_browserCookieSecure);
         cookie.setHttpOnly(_browserCookieHttpOnly);
@@ -452,138 +411,128 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
     /**
      * Increment the browser ID count.
      *
-     *
      * @param browserId the browser ID to increment the count for
-     * @param session the session that cause the browser ID increment
+     * @param session   the session that cause the browser ID increment
      * @return true if the browser ID count is below the max sessions per browser value.
      * If false is returned, the count is not incremented.
      */
-    protected boolean incBrowserId(String browserId, ServerSession session)
-    {
-        if (_maxSessionsPerBrowser < 0)
+    protected boolean incBrowserId(String browserId, ServerSession session) {
+        if (_maxSessionsPerBrowser < 0) {
             return true;
-        if (_maxSessionsPerBrowser == 0)
+        }
+        if (_maxSessionsPerBrowser == 0) {
             return false;
+        }
 
         AtomicInteger count = _browserMap.get(browserId);
-        if (count == null)
-        {
+        if (count == null) {
             AtomicInteger newCount = new AtomicInteger();
             count = _browserMap.putIfAbsent(browserId, newCount);
-            if (count == null)
+            if (count == null) {
                 count = newCount;
+            }
         }
 
         // Increment
         int sessions = count.incrementAndGet();
 
         // If was zero, remove from the sweep
-        if (sessions == 1)
+        if (sessions == 1) {
             _browserSweep.remove(browserId);
+        }
 
         boolean result = true;
-        if (sessions > _maxSessionsPerBrowser)
-        {
+        if (sessions > _maxSessionsPerBrowser) {
             sessions = count.decrementAndGet();
             result = false;
         }
 
-        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled()) {
             _logger.debug("> client {} {} sessions from {}", browserId, sessions, session);
+        }
 
         return result;
     }
 
-    protected void decBrowserId(String browserId, ServerSession session)
-    {
-        if (_maxSessionsPerBrowser <= 0 || browserId == null)
+    protected void decBrowserId(String browserId, ServerSession session) {
+        if (_maxSessionsPerBrowser <= 0 || browserId == null) {
             return;
+        }
 
         int sessions = -1;
         AtomicInteger count = _browserMap.get(browserId);
-        if (count != null)
+        if (count != null) {
             sessions = count.decrementAndGet();
+        }
 
-        if (sessions == 0)
+        if (sessions == 0) {
             _browserSweep.put(browserId, new AtomicInteger(0));
+        }
 
-        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled()) {
             _logger.debug("< client {} {} sessions for {}", browserId, sessions, session);
+        }
     }
 
-    protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws IOException
-    {
+    protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws IOException {
         _logger.warn("Could not parse JSON: " + json, exception);
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
     }
 
-    protected void error(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, int responseCode)
-    {
-        try
-        {
+    protected void error(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, int responseCode) {
+        try {
             response.setStatus(responseCode);
-        }
-        catch (Exception x)
-        {
+        } catch (Exception x) {
             _logger.trace("Could not send " + responseCode + " response", x);
-        }
-        finally
-        {
-            try
-            {
-                if (asyncContext != null)
+        } finally {
+            try {
+                if (asyncContext != null) {
                     asyncContext.complete();
-            }
-            catch (Exception x)
-            {
+                }
+            } catch (Exception x) {
                 _logger.trace("Could not complete " + responseCode + " response", x);
             }
         }
     }
 
-    protected ServerMessage.Mutable bayeuxServerHandle(ServerSessionImpl session, ServerMessage.Mutable message)
-    {
+    protected ServerMessage.Mutable bayeuxServerHandle(ServerSessionImpl session, ServerMessage.Mutable message) {
         return getBayeux().handle(session, message);
     }
 
-    protected void metaConnectSuspended(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session)
-    {
-        if (_logger.isDebugEnabled())
+    protected void metaConnectSuspended(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session) {
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Suspended request {}", request);
+        }
     }
 
-    protected void metaConnectResumed(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session)
-    {
-        if (_logger.isDebugEnabled())
+    protected void metaConnectResumed(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session) {
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Resumed request {}", request);
+        }
     }
 
     /**
      * Sweeps the transport for old Browser IDs
      */
-    protected void sweep()
-    {
+    protected void sweep() {
         long now = System.currentTimeMillis();
         long elapsed = now - _lastSweep;
-        if (_lastSweep > 0 && elapsed > 0)
-        {
+        if (_lastSweep > 0 && elapsed > 0) {
             // Calculate the maximum sweeps that a browser ID can be 0 as the
             // maximum interval time divided by the sweep period, doubled for safety
             int maxSweeps = (int)(2 * getMaxInterval() / elapsed);
 
-            for (Map.Entry<String, AtomicInteger> entry : _browserSweep.entrySet())
-            {
+            for (Map.Entry<String, AtomicInteger> entry : _browserSweep.entrySet()) {
                 AtomicInteger count = entry.getValue();
                 // if the ID has been in the sweep map for 3 sweeps
-                if (count!=null && count.incrementAndGet() > maxSweeps)
-                {
+                if (count != null && count.incrementAndGet() > maxSweeps) {
                     String key = entry.getKey();
                     // remove it from both browser Maps
-                    if (_browserSweep.remove(key) == count && _browserMap.get(key).get() == 0)
-                    {
+                    if (_browserSweep.remove(key) == count && _browserMap.get(key).get() == 0) {
                         _browserMap.remove(key);
-                        if (_logger.isDebugEnabled())
+                        if (_logger.isDebugEnabled()) {
                             _logger.debug("Swept browserId {}", key);
+                        }
                     }
                 }
             }
@@ -591,115 +540,98 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         _lastSweep = now;
     }
 
-    private static class HttpContext implements BayeuxContext
-    {
+    private static class HttpContext implements BayeuxContext {
         final HttpServletRequest _request;
 
-        HttpContext(HttpServletRequest request)
-        {
+        HttpContext(HttpServletRequest request) {
             _request = request;
         }
 
-        public Principal getUserPrincipal()
-        {
+        public Principal getUserPrincipal() {
             return _request.getUserPrincipal();
         }
 
-        public boolean isUserInRole(String role)
-        {
+        public boolean isUserInRole(String role) {
             return _request.isUserInRole(role);
         }
 
-        public InetSocketAddress getRemoteAddress()
-        {
+        public InetSocketAddress getRemoteAddress() {
             return new InetSocketAddress(_request.getRemoteHost(), _request.getRemotePort());
         }
 
-        public InetSocketAddress getLocalAddress()
-        {
+        public InetSocketAddress getLocalAddress() {
             return new InetSocketAddress(_request.getLocalName(), _request.getLocalPort());
         }
 
-        public String getHeader(String name)
-        {
+        public String getHeader(String name) {
             return _request.getHeader(name);
         }
 
-        public List<String> getHeaderValues(String name)
-        {
+        public List<String> getHeaderValues(String name) {
             return Collections.list(_request.getHeaders(name));
         }
 
-        public String getParameter(String name)
-        {
+        public String getParameter(String name) {
             return _request.getParameter(name);
         }
 
-        public List<String> getParameterValues(String name)
-        {
+        public List<String> getParameterValues(String name) {
             return Arrays.asList(_request.getParameterValues(name));
         }
 
-        public String getCookie(String name)
-        {
+        public String getCookie(String name) {
             Cookie[] cookies = _request.getCookies();
-            if (cookies != null)
-            {
-                for (Cookie c : cookies)
-                {
-                    if (name.equals(c.getName()))
+            if (cookies != null) {
+                for (Cookie c : cookies) {
+                    if (name.equals(c.getName())) {
                         return c.getValue();
+                    }
                 }
             }
             return null;
         }
 
-        public String getHttpSessionId()
-        {
+        public String getHttpSessionId() {
             HttpSession session = _request.getSession(false);
-            if (session != null)
+            if (session != null) {
                 return session.getId();
+            }
             return null;
         }
 
-        public Object getHttpSessionAttribute(String name)
-        {
+        public Object getHttpSessionAttribute(String name) {
             HttpSession session = _request.getSession(false);
-            if (session != null)
+            if (session != null) {
                 return session.getAttribute(name);
+            }
             return null;
         }
 
-        public void setHttpSessionAttribute(String name, Object value)
-        {
+        public void setHttpSessionAttribute(String name, Object value) {
             HttpSession session = _request.getSession(false);
-            if (session != null)
+            if (session != null) {
                 session.setAttribute(name, value);
-            else
+            } else {
                 throw new IllegalStateException("!session");
+            }
         }
 
-        public void invalidateHttpSession()
-        {
+        public void invalidateHttpSession() {
             HttpSession session = _request.getSession(false);
-            if (session != null)
+            if (session != null) {
                 session.invalidate();
+            }
         }
 
-        public Object getRequestAttribute(String name)
-        {
+        public Object getRequestAttribute(String name) {
             return _request.getAttribute(name);
         }
 
-        private ServletContext getServletContext()
-        {
+        private ServletContext getServletContext() {
             HttpSession s = _request.getSession(false);
-            if (s != null)
-            {
+            if (s != null) {
                 return s.getServletContext();
-            }
-            else
-            {
+            } else {
                 s = _request.getSession(true);
                 ServletContext servletContext = s.getServletContext();
                 s.invalidate();
@@ -707,34 +639,30 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
             }
         }
 
-        public Object getContextAttribute(String name)
-        {
+        public Object getContextAttribute(String name) {
             return getServletContext().getAttribute(name);
         }
 
-        public String getContextInitParameter(String name)
-        {
+        public String getContextInitParameter(String name) {
             return getServletContext().getInitParameter(name);
         }
 
-        public String getURL()
-        {
+        public String getURL() {
             StringBuffer url = _request.getRequestURL();
             String query = _request.getQueryString();
-            if (query != null)
+            if (query != null) {
                 url.append("?").append(query);
+            }
             return url.toString();
         }
 
         @Override
-        public List<Locale> getLocales()
-        {
+        public List<Locale> getLocales() {
             return Collections.list(_request.getLocales());
         }
     }
 
-    public interface HttpScheduler extends Scheduler
-    {
+    public interface HttpScheduler extends Scheduler {
         public HttpServletRequest getRequest();
 
         public HttpServletResponse getResponse();
@@ -742,8 +670,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         public AsyncContext getAsyncContext();
     }
 
-    protected abstract class LongPollScheduler implements Runnable, HttpScheduler, AsyncListener
-    {
+    protected abstract class LongPollScheduler implements Runnable, HttpScheduler, AsyncListener {
         private final HttpServletRequest request;
         private final HttpServletResponse response;
         private final AsyncContext asyncContext;
@@ -753,8 +680,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         private final org.eclipse.jetty.util.thread.Scheduler.Task task;
         private final AtomicBoolean cancel;
 
-        protected LongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
-        {
+        protected LongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
             this.request = request;
             this.response = response;
             this.asyncContext = asyncContext;
@@ -767,57 +693,49 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         }
 
         @Override
-        public HttpServletRequest getRequest()
-        {
+        public HttpServletRequest getRequest() {
             return request;
         }
 
         @Override
-        public HttpServletResponse getResponse()
-        {
+        public HttpServletResponse getResponse() {
             return response;
         }
 
         @Override
-        public AsyncContext getAsyncContext()
-        {
+        public AsyncContext getAsyncContext() {
             return asyncContext;
         }
 
-        public ServerSessionImpl getServerSession()
-        {
+        public ServerSessionImpl getServerSession() {
             return session;
         }
 
-        public ServerMessage.Mutable getMetaConnectReply()
-        {
+        public ServerMessage.Mutable getMetaConnectReply() {
             return reply;
         }
 
         @Override
-        public void schedule()
-        {
-            if (cancelTimeout())
-            {
-                if (_logger.isDebugEnabled())
+        public void schedule() {
+            if (cancelTimeout()) {
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Resuming /meta/connect after schedule");
+                }
                 resume();
             }
         }
 
         @Override
-        public void cancel()
-        {
-            if (cancelTimeout())
-            {
-                if (_logger.isDebugEnabled())
+        public void cancel() {
+            if (cancelTimeout()) {
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Duplicate /meta/connect, cancelling {}", reply);
+                }
                 error(HttpServletResponse.SC_REQUEST_TIMEOUT);
             }
         }
 
-        private boolean cancelTimeout()
-        {
+        private boolean cancelTimeout() {
             // Cannot rely on the return value of task.cancel()
             // since it may be invoked when the task is in run()
             // where cancellation is not possible (it's too late).
@@ -827,48 +745,41 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport
         }
 
         @Override
-        public void run()
-        {
-            if (cancelTimeout())
-            {
+        public void run() {
+            if (cancelTimeout()) {
                 session.setScheduler(null);
-                if (_logger.isDebugEnabled())
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Resuming /meta/connect after timeout");
+                }
                 resume();
             }
         }
 
-        private void resume()
-        {
+        private void resume() {
             decBrowserId(browserId, session);
             dispatch();
         }
 
         @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
-        {
+        public void onStartAsync(AsyncEvent event) throws IOException {
         }
 
         @Override
-        public void onTimeout(AsyncEvent event) throws IOException
-        {
+        public void onTimeout(AsyncEvent event) throws IOException {
         }
 
         @Override
-        public void onComplete(AsyncEvent asyncEvent) throws IOException
-        {
+        public void onComplete(AsyncEvent asyncEvent) throws IOException {
         }
 
         @Override
-        public void onError(AsyncEvent event) throws IOException
-        {
+        public void onError(AsyncEvent event) throws IOException {
             error(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
 
         protected abstract void dispatch();
 
-        protected void error(int code)
-        {
+        protected void error(int code) {
             decBrowserId(browserId, session);
             AbstractHttpTransport.this.error(getRequest(), getResponse(), getAsyncContext(), code);
         }

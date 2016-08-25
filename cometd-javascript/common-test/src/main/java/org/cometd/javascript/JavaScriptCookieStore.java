@@ -26,61 +26,50 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.mozilla.javascript.ScriptableObject;
 
-public class JavaScriptCookieStore extends ScriptableObject
-{
+public class JavaScriptCookieStore extends ScriptableObject {
     private Store store;
 
-    public String getClassName()
-    {
+    public String getClassName() {
         return "JavaScriptCookieStore";
     }
 
-    public Store getStore()
-    {
+    public Store getStore() {
         return store;
     }
 
-    public void setStore(Store store)
-    {
+    public void setStore(Store store) {
         this.store = store;
     }
 
-    public void clear()
-    {
+    public void clear() {
         store.clear();
     }
 
-    public String jsFunction_get(String scheme, String host, String path)
-    {
-        try
-        {
+    public String jsFunction_get(String scheme, String host, String path) {
+        try {
             URI uri = URI.create(scheme + "://" + host + path);
             List<HttpCookie> uriCookies = store.get(uri);
             StringBuilder buffer = new StringBuilder();
-            if (uriCookies != null)
-            {
-                for (HttpCookie cookie : uriCookies)
-                {
-                    if (cookie.isHttpOnly() || cookie.hasExpired())
+            if (uriCookies != null) {
+                for (HttpCookie cookie : uriCookies) {
+                    if (cookie.isHttpOnly() || cookie.hasExpired()) {
                         continue;
-                    if (buffer.length() > 0)
+                    }
+                    if (buffer.length() > 0) {
                         buffer.append(";");
+                    }
                     buffer.append(cookie.getName()).append("=").append(cookie.getValue());
                 }
             }
             return buffer.toString();
-        }
-        catch (Exception x)
-        {
+        } catch (Exception x) {
             x.printStackTrace();
             throw x;
         }
     }
 
-    public void jsFunction_set(String scheme, String host, String uriPath, String cookies) throws Exception
-    {
-        try
-        {
+    public void jsFunction_set(String scheme, String host, String uriPath, String cookies) throws Exception {
+        try {
             String name = null;
             String value = null;
             boolean secure = false;
@@ -89,53 +78,35 @@ public class JavaScriptCookieStore extends ScriptableObject
             String path = null;
             long maxAge = 0;
             String[] parts = cookies.split(";");
-            for (String part : parts)
-            {
+            for (String part : parts) {
                 part = part.trim();
-                if ("Secure".equalsIgnoreCase(part))
-                {
+                if ("Secure".equalsIgnoreCase(part)) {
                     secure = true;
-                }
-                else if ("HttpOnly".equalsIgnoreCase(part))
-                {
+                } else if ("HttpOnly".equalsIgnoreCase(part)) {
                     httpOnly = true;
-                }
-                else
-                {
+                } else {
                     String[] pair = part.split("=", 2);
                     String key = pair[0].trim();
                     String val = pair[1].trim();
-                    if ("Domain".equalsIgnoreCase(key))
-                    {
+                    if ("Domain".equalsIgnoreCase(key)) {
                         domain = val;
-                    }
-                    else if ("Path".equalsIgnoreCase(key))
-                    {
+                    } else if ("Path".equalsIgnoreCase(key)) {
                         path = val;
-                    }
-                    else if ("Expires".equalsIgnoreCase(key))
-                    {
-                        if (maxAge <= 0)
-                        {
+                    } else if ("Expires".equalsIgnoreCase(key)) {
+                        if (maxAge <= 0) {
                             SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
                             dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
                             maxAge = TimeUnit.MILLISECONDS.toSeconds(dateFormat.parse(val).getTime() - System.currentTimeMillis());
                         }
-                    }
-                    else if ("Max-Age".equalsIgnoreCase(key))
-                    {
+                    } else if ("Max-Age".equalsIgnoreCase(key)) {
                         maxAge = Integer.parseInt(val);
-                    }
-                    else if ("Comment".equalsIgnoreCase(key) ||
-                             "CommentURL".equalsIgnoreCase(key) ||
-                             "Discard".equalsIgnoreCase(key) ||
-                             "Port".equalsIgnoreCase(key) ||
-                             "Version".equalsIgnoreCase(key))
-                    {
+                    } else if ("Comment".equalsIgnoreCase(key) ||
+                            "CommentURL".equalsIgnoreCase(key) ||
+                            "Discard".equalsIgnoreCase(key) ||
+                            "Port".equalsIgnoreCase(key) ||
+                            "Version".equalsIgnoreCase(key)) {
                         // Less used cookie attributes, ignore for now
-                    }
-                    else
-                    {
+                    } else {
                         name = key;
                         value = val;
                     }
@@ -145,22 +116,16 @@ public class JavaScriptCookieStore extends ScriptableObject
             URI uri = URI.create(scheme + "://" + host + uriPath);
             List<HttpCookie> uriCookies = store.get(uri);
 
-            if (value == null || value.isEmpty())
-            {
-                if (uriCookies != null)
-                {
-                    for (HttpCookie cookie : uriCookies)
-                    {
-                        if (cookie.getName().equals(name))
-                        {
+            if (value == null || value.isEmpty()) {
+                if (uriCookies != null) {
+                    for (HttpCookie cookie : uriCookies) {
+                        if (cookie.getName().equals(name)) {
                             store.remove(uri, cookie);
                             break;
                         }
                     }
                 }
-            }
-            else
-            {
+            } else {
                 HttpCookie cookie = new HttpCookie(name, value);
                 cookie.setSecure(secure);
                 cookie.setHttpOnly(httpOnly);
@@ -169,24 +134,19 @@ public class JavaScriptCookieStore extends ScriptableObject
                 cookie.setMaxAge(maxAge);
                 store.add(uri, cookie);
             }
-        }
-        catch (Exception x)
-        {
+        } catch (Exception x) {
             x.printStackTrace();
             throw x;
         }
     }
 
-    public static class Store extends HttpCookieStore
-    {
+    public static class Store extends HttpCookieStore {
         @Override
-        public boolean removeAll()
-        {
+        public boolean removeAll() {
             return false;
         }
 
-        public void clear()
-        {
+        public void clear() {
             super.removeAll();
         }
     }

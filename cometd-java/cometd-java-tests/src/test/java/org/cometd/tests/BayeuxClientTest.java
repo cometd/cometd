@@ -29,22 +29,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BayeuxClientTest extends AbstractClientServerTest
-{
-    public BayeuxClientTest(Transport transport)
-    {
+public class BayeuxClientTest extends AbstractClientServerTest {
+    public BayeuxClientTest(Transport transport) {
         super(transport);
     }
 
     @Before
-    public void setUp() throws Exception
-    {
+    public void setUp() throws Exception {
         startServer(serverOptions());
     }
 
     @Test
-    public void testIPv6Address() throws Exception
-    {
+    public void testIPv6Address() throws Exception {
         cometdURL = cometdURL.replace("localhost", "[::1]");
 
         BayeuxClient client = newBayeuxClient();
@@ -59,21 +55,16 @@ public class BayeuxClientTest extends AbstractClientServerTest
     }
 
     @Test
-    public void testBatchingAfterHandshake() throws Exception
-    {
+    public void testBatchingAfterHandshake() throws Exception {
         final BayeuxClient client = newBayeuxClient();
         final AtomicBoolean connected = new AtomicBoolean();
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 connected.set(message.isSuccessful());
             }
         });
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 connected.set(false);
             }
         });
@@ -81,16 +72,12 @@ public class BayeuxClientTest extends AbstractClientServerTest
 
         final String channelName = "/foo/bar";
         final BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
-        client.batch(new Runnable()
-        {
-            public void run()
-            {
+        client.batch(new Runnable() {
+            public void run() {
                 // Subscribe and publish must be batched so that they are sent in order,
                 // otherwise it's possible that the subscribe arrives to the server after the publish
-                client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-                {
-                    public void onMessage(ClientSessionChannel channel, Message message)
-                    {
+                client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+                    public void onMessage(ClientSessionChannel channel, Message message) {
                         messages.add(channel.getId());
                         messages.add(message.getData().toString());
                     }
@@ -108,8 +95,7 @@ public class BayeuxClientTest extends AbstractClientServerTest
     }
 
     @Test
-    public void loadTest() throws Exception
-    {
+    public void loadTest() throws Exception {
         boolean stress = Boolean.getBoolean("STRESS");
         Random random = new Random();
 
@@ -122,26 +108,21 @@ public class BayeuxClientTest extends AbstractClientServerTest
         final AtomicInteger connections = new AtomicInteger();
         final AtomicInteger received = new AtomicInteger();
 
-        for (int i = 0; i < clients.length; i++)
-        {
+        for (int i = 0; i < clients.length; i++) {
             final AtomicBoolean connected = new AtomicBoolean();
             final BayeuxClient client = newBayeuxClient();
             final String room = "/channel/" + (i % rooms);
             clients[i] = client;
 
-            client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-            {
-                public void onMessage(ClientSessionChannel channel, Message message)
-                {
-                    if (connected.getAndSet(false))
+            client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+                public void onMessage(ClientSessionChannel channel, Message message) {
+                    if (connected.getAndSet(false)) {
                         connections.decrementAndGet();
+                    }
 
-                    if (message.isSuccessful())
-                    {
-                        client.getChannel(room).subscribe(new ClientSessionChannel.MessageListener()
-                        {
-                            public void onMessage(ClientSessionChannel channel, Message message)
-                            {
+                    if (message.isSuccessful()) {
+                        client.getChannel(room).subscribe(new ClientSessionChannel.MessageListener() {
+                            public void onMessage(ClientSessionChannel channel, Message message) {
                                 received.incrementAndGet();
                             }
                         });
@@ -149,12 +130,9 @@ public class BayeuxClientTest extends AbstractClientServerTest
                 }
             });
 
-            client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-            {
-                public void onMessage(ClientSessionChannel channel, Message message)
-                {
-                    if (!connected.getAndSet(message.isSuccessful()))
-                    {
+            client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+                public void onMessage(ClientSessionChannel channel, Message message) {
+                    if (!connected.getAndSet(message.isSuccessful())) {
                         connections.incrementAndGet();
                     }
                 }
@@ -167,8 +145,7 @@ public class BayeuxClientTest extends AbstractClientServerTest
         Assert.assertEquals(clients.length, connections.get());
 
         long start0 = System.nanoTime();
-        for (int i = 0; i < publish; i++)
-        {
+        for (int i = 0; i < publish; i++) {
             final int sender = random.nextInt(clients.length);
             final String channel = "/channel/" + random.nextInt(rooms);
 
@@ -176,21 +153,20 @@ public class BayeuxClientTest extends AbstractClientServerTest
             // System.err.println(data);
             clients[sender].getChannel(channel).publish(data);
 
-            if (i % batch == (batch - 1))
-            {
+            if (i % batch == (batch - 1)) {
                 System.err.print('.');
                 Thread.sleep(pause);
             }
-            if (i % 1000 == 999)
+            if (i % 1000 == 999) {
                 System.err.println();
+            }
         }
         System.err.println();
 
         int expected = clients.length * publish / rooms;
 
         long start = System.nanoTime();
-        while (received.get() < expected && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 10)
-        {
+        while (received.get() < expected && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 10) {
             Thread.sleep(100);
             System.err.println("received " + received.get() + "/" + expected);
         }
@@ -198,7 +174,8 @@ public class BayeuxClientTest extends AbstractClientServerTest
 
         Assert.assertEquals(expected, received.get());
 
-        for (BayeuxClient client : clients)
+        for (BayeuxClient client : clients) {
             Assert.assertTrue(client.disconnect(1000));
+        }
     }
 }

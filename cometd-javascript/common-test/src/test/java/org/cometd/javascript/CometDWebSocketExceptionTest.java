@@ -18,11 +18,9 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDWebSocketExceptionTest extends AbstractCometDWebSocketTest
-{
+public class CometDWebSocketExceptionTest extends AbstractCometDWebSocketTest {
     @Test
-    public void testWebSocketConstructorThrowsException() throws Exception
-    {
+    public void testWebSocketConstructorThrowsException() throws Exception {
         // Need long-polling as a fallback after websocket fails
         evaluateScript("cometd.registerTransport('long-polling', originalTransports['long-polling']);");
 

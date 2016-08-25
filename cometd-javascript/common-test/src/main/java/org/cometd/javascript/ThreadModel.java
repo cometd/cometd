@@ -22,8 +22,7 @@ import java.net.URL;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 
-public interface ThreadModel
-{
+public interface ThreadModel {
     void init() throws Exception;
 
     void destroy() throws Exception;

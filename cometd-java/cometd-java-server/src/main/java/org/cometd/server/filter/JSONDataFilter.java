@@ -32,75 +32,78 @@ import org.cometd.bayeux.server.ServerSession;
  * <p>Derived filters may override one or more of these methods to provide
  * filtering of specific types.</p>
  */
-public class JSONDataFilter implements DataFilter
-{
-    public void init(Object init)
-    {
+public class JSONDataFilter implements DataFilter {
+    public void init(Object init) {
     }
 
-    public Object filter(ServerSession from, ServerChannel to, Object data)
-    {
-        if (data == null)
+    public Object filter(ServerSession from, ServerChannel to, Object data) {
+        if (data == null) {
             return null;
+        }
 
-        if (data instanceof Map)
-            return filterMap(from,to,(Map)data);
-        if (data instanceof List)
-            return filterArray(from,to,((List)data).toArray());
-        if (data instanceof Collection)
-            return filterArray(from,to,((Collection)data).toArray());
-        if (data.getClass().isArray())
-            return filterArray(from,to,data);
-        if (data instanceof Number)
+        if (data instanceof Map) {
+            return filterMap(from, to, (Map)data);
+        }
+        if (data instanceof List) {
+            return filterArray(from, to, ((List)data).toArray());
+        }
+        if (data instanceof Collection) {
+            return filterArray(from, to, ((Collection)data).toArray());
+        }
+        if (data.getClass().isArray()) {
+            return filterArray(from, to, data);
+        }
+        if (data instanceof Number) {
             return filterNumber((Number)data);
-        if (data instanceof Boolean)
+        }
+        if (data instanceof Boolean) {
             return filterBoolean((Boolean)data);
-        if (data instanceof String)
+        }
+        if (data instanceof String) {
             return filterString((String)data);
-        return filterObject(from,to,data);
+        }
+        return filterObject(from, to, data);
     }
 
-    protected Object filterString(String string)
-    {
+    protected Object filterString(String string) {
         return string;
     }
 
-    protected Object filterBoolean(Boolean bool)
-    {
+    protected Object filterBoolean(Boolean bool) {
         return bool;
     }
 
-    protected Object filterNumber(Number number)
-    {
+    protected Object filterNumber(Number number) {
         return number;
     }
 
-    protected Object filterArray(ServerSession from, ServerChannel to, Object array)
-    {
-        if (array == null)
+    protected Object filterArray(ServerSession from, ServerChannel to, Object array) {
+        if (array == null) {
             return null;
+        }
 
-        int length=Array.getLength(array);
+        int length = Array.getLength(array);
 
-        for (int i=0; i < length; i++)
-            Array.set(array,i,filter(from,to,Array.get(array,i)));
+        for (int i = 0; i < length; i++) {
+            Array.set(array, i, filter(from, to, Array.get(array, i)));
+        }
 
         return array;
     }
 
-    protected Object filterMap(ServerSession from, ServerChannel to, Map<String, Object> map)
-    {
-        if (map == null)
+    protected Object filterMap(ServerSession from, ServerChannel to, Map<String, Object> map) {
+        if (map == null) {
             return null;
+        }
 
-        for (Map.Entry<String, Object> entry : map.entrySet())
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
             entry.setValue(filter(from, to, entry.getValue()));
+        }
 
         return map;
     }
 
-    protected Object filterObject(ServerSession from, ServerChannel to, Object obj)
-    {
+    protected Object filterObject(ServerSession from, ServerChannel to, Object obj) {
         return obj;
     }
 }

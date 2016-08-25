@@ -33,8 +33,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  *
  * @see ServerChannel#addAuthorizer(Authorizer)
  */
-public interface SecurityPolicy
-{
+public interface SecurityPolicy {
     /**
      * <p>Checks if a handshake message should be accepted.</p>
      * <p>Both remote sessions and local sessions are subject to this check.
@@ -42,7 +41,7 @@ public interface SecurityPolicy
      * to always pass this check, so a typical implementation filters local session using
      * {@link ServerSession#isLocalSession()}.</p>
      *
-     * @param server the {@link BayeuxServer} object
+     * @param server  the {@link BayeuxServer} object
      * @param session the session (not yet added to the BayeuxServer)
      * @param message the handshake message
      * @return true if the handshake message should be accepted and the {@link ServerSession} instance
@@ -59,10 +58,10 @@ public interface SecurityPolicy
      * <p>Direct calls to {@link BayeuxServer#createChannelIfAbsent(String, ConfigurableServerChannel.Initializer...)}
      * are not subject to this check.</p>
      *
-     * @param server the {@link BayeuxServer} object
-     * @param session the client sending the message
+     * @param server    the {@link BayeuxServer} object
+     * @param session   the client sending the message
      * @param channelId the channel to be created
-     * @param message the message trying to create the channel
+     * @param message   the message trying to create the channel
      * @return true if the channel should be created
      */
     boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message);
@@ -73,7 +72,7 @@ public interface SecurityPolicy
      * {@link ClientSessionChannel#subscribe(ClientSessionChannel.MessageListener)}.</p>
      * <p>{@link ServerChannel#subscribe(ServerSession)} is not subject to this check.</p>
      *
-     * @param server the {@link BayeuxServer} object
+     * @param server  the {@link BayeuxServer} object
      * @param session the client sending the message
      * @param channel the channel to subscribe to
      * @param message the subscribe message
@@ -87,7 +86,7 @@ public interface SecurityPolicy
      * {@link ClientSessionChannel#publish(Object)}.</p>
      * <p>{@link ServerChannel#publish(Session, Object)} is not subject to this check.</p>
      *
-     * @param server the {@link BayeuxServer} object
+     * @param server  the {@link BayeuxServer} object
      * @param session the client sending the message
      * @param channel the channel to publish to
      * @param message the message to being published

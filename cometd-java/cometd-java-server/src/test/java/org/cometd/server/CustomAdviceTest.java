@@ -34,27 +34,21 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CustomAdviceTest extends AbstractBayeuxClientServerTest
-{
-    public CustomAdviceTest(String serverTransport)
-    {
+public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
+    public CustomAdviceTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testCustomTimeoutViaMessage() throws Exception
-    {
+    public void testCustomTimeoutViaMessage() throws Exception {
         final CountDownLatch connectLatch = new CountDownLatch(2);
-        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 connectLatch.countDown();
                 return true;
             }
@@ -62,14 +56,10 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
 
         String channelName = "/connect";
         final long newTimeout = timeout / 2;
-        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.addListener(new ServerChannel.MessageListener()
-                {
-                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-                    {
+        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
+                channel.addListener(new ServerChannel.MessageListener() {
+                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                         from.setTimeout(newTimeout);
                         return true;
                     }
@@ -120,7 +110,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Message.Mutable connect = messages[0];
-        Map<String,Object> advice = connect.getAdvice();
+        Map<String, Object> advice = connect.getAdvice();
         Assert.assertNotNull(advice);
         Number timeout = (Number)advice.get("timeout");
         Assert.assertNotNull(timeout);
@@ -128,13 +118,10 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testCustomIntervalViaMessage() throws Exception
-    {
+    public void testCustomIntervalViaMessage() throws Exception {
         final CountDownLatch connectLatch = new CountDownLatch(2);
-        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 connectLatch.countDown();
                 return true;
             }
@@ -142,14 +129,10 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
 
         String channelName = "/interval";
         final long newInterval = 1000;
-        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.addListener(new ServerChannel.MessageListener()
-                {
-                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-                    {
+        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
+                channel.addListener(new ServerChannel.MessageListener() {
+                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                         from.setInterval(newInterval);
                         return true;
                     }
@@ -200,7 +183,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Message.Mutable connect = messages[0];
-        Map<String,Object> advice = connect.getAdvice();
+        Map<String, Object> advice = connect.getAdvice();
         Assert.assertNotNull(advice);
         Number interval = (Number)advice.get("interval");
         Assert.assertNotNull(interval);
@@ -208,8 +191,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testCustomIntervalViaAdvice() throws Exception
-    {
+    public void testCustomIntervalViaAdvice() throws Exception {
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -247,7 +229,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Message.Mutable connect = messages[0];
-        Map<String,Object> advice = connect.getAdvice();
+        Map<String, Object> advice = connect.getAdvice();
         Assert.assertNotNull(advice);
         Number interval = (Number)advice.get("interval");
         Assert.assertNotNull(interval);

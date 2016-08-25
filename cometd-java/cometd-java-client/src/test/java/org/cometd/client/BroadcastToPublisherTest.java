@@ -31,22 +31,18 @@ import org.cometd.server.ServerSessionImpl;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class BroadcastToPublisherTest extends ClientServerTest
-{
+public class BroadcastToPublisherTest extends ClientServerTest {
     @Test
-    public void testBroadcastToPublisher() throws Exception
-    {
+    public void testBroadcastToPublisher() throws Exception {
         testBroadcastToPublisher(true);
     }
 
     @Test
-    public void testDontBroadcastToPublisher() throws Exception
-    {
+    public void testDontBroadcastToPublisher() throws Exception {
         testBroadcastToPublisher(false);
     }
 
-    private void testBroadcastToPublisher(boolean broadcast) throws Exception
-    {
+    private void testBroadcastToPublisher(boolean broadcast) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put(BayeuxServerImpl.BROADCAST_TO_PUBLISHER_OPTION, String.valueOf(broadcast));
         startServer(options);
@@ -55,26 +51,19 @@ public class BroadcastToPublisherTest extends ClientServerTest
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         final CountDownLatch messageLatch = new CountDownLatch(1);
         final BayeuxClient client = newBayeuxClient();
-        client.handshake(new ClientSessionChannel.MessageListener()
-        {
+        client.handshake(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful())
-                {
-                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-                    {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isSuccessful()) {
+                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
                         @Override
-                        public void onMessage(ClientSessionChannel channel, Message message)
-                        {
+                        public void onMessage(ClientSessionChannel channel, Message message) {
                             System.err.println("message = " + message);
                             messageLatch.countDown();
                         }
-                    }, new ClientSessionChannel.MessageListener()
-                    {
+                    }, new ClientSessionChannel.MessageListener() {
                         @Override
-                        public void onMessage(ClientSessionChannel channel, Message message)
-                        {
+                        public void onMessage(ClientSessionChannel channel, Message message) {
                             subscribeLatch.countDown();
                         }
                     });
@@ -90,21 +79,17 @@ public class BroadcastToPublisherTest extends ClientServerTest
     }
 
     @Test
-    public void testDontBroadcastToPublisherWithLocalSessionConfigured() throws Exception
-    {
+    public void testDontBroadcastToPublisherWithLocalSessionConfigured() throws Exception {
         startServer(null);
 
-        bayeux.addListener(new BayeuxServer.SessionListener()
-        {
+        bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
-            public void sessionAdded(ServerSession session, ServerMessage message)
-            {
+            public void sessionAdded(ServerSession session, ServerMessage message) {
                 ((ServerSessionImpl)session).setBroadcastToPublisher(false);
             }
 
             @Override
-            public void sessionRemoved(ServerSession session, boolean timedout)
-            {
+            public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
 
@@ -113,11 +98,9 @@ public class BroadcastToPublisherTest extends ClientServerTest
 
         String channelName = "/test";
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        session.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-        {
+        session.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
         });

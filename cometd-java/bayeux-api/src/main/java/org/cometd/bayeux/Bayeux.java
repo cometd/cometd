@@ -24,10 +24,10 @@ import java.util.Set;
  * server-side configuration and usage of the Bayeux object.</p>
  * <p>The {@link Bayeux} object handles configuration options and a set of
  * transports that is negotiated with the server.</p>
+ *
  * @see Transport
  */
-public interface Bayeux
-{
+public interface Bayeux {
     /**
      * @return the set of known transport names of this {@link Bayeux} object.
      * @see #getAllowedTransports()
@@ -58,7 +58,7 @@ public interface Bayeux
 
     /**
      * @param qualifiedName the configuration option name
-     * @param value the configuration option value
+     * @param value         the configuration option value
      * @see #getOption(String)
      */
     void setOption(String qualifiedName, Object value);
@@ -73,7 +73,6 @@ public interface Bayeux
      * <p>The common base interface for Bayeux listeners.</p>
      * <p>Specific sub-interfaces define what kind of events listeners will be notified.</p>
      */
-    interface BayeuxListener extends EventListener
-    {
+    interface BayeuxListener extends EventListener {
     }
 }

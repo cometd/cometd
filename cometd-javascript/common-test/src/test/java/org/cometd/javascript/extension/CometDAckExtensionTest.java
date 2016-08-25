@@ -24,21 +24,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CometDAckExtensionTest extends AbstractCometDTest
-{
+public class CometDAckExtensionTest extends AbstractCometDTest {
     private AckService ackService;
 
     @Before
-    public void initExtension() throws Exception
-    {
+    public void initExtension() throws Exception {
         bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         ackService = new AckService(bayeuxServer);
         provideMessageAcknowledgeExtension();
     }
 
     @Test
-    public void testClientSupportsAckExtension() throws Exception
-    {
+    public void testClientSupportsAckExtension() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var cometd = cometd;");
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -70,8 +67,7 @@ public class CometDAckExtensionTest extends AbstractCometDTest
     }
 
     @Test
-    public void testAcknowledgement() throws Exception
-    {
+    public void testAcknowledgement() throws Exception {
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
@@ -131,15 +127,12 @@ public class CometDAckExtensionTest extends AbstractCometDTest
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class AckService extends AbstractService
-    {
-        private AckService(BayeuxServerImpl bayeux)
-        {
+    public static class AckService extends AbstractService {
+        private AckService(BayeuxServerImpl bayeux) {
             super(bayeux, "ack-test");
         }
 
-        public void emit(String content)
-        {
+        public void emit(String content) {
             getBayeux().getChannel("/echo").publish(getServerSession(), content);
         }
     }

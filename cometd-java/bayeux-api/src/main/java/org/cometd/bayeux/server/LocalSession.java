@@ -25,8 +25,7 @@ import org.cometd.bayeux.client.ClientSession;
  * <p>A {@link LocalSession} has an associated {@link ServerSession} and both share
  * the same clientId, but have distinct sets of listeners, batching state, etc.</p>
  */
-public interface LocalSession extends ClientSession
-{
+public interface LocalSession extends ClientSession {
     /**
      * @return the associated {@link ServerSession}
      */

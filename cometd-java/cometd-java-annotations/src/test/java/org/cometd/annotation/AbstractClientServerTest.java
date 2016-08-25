@@ -28,16 +28,14 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 
-public abstract class AbstractClientServerTest
-{
+public abstract class AbstractClientServerTest {
     protected Server server;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
     protected HttpClient httpClient;
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         server = new Server();
 
         ServerConnector connector = new ServerConnector(server);
@@ -65,21 +63,20 @@ public abstract class AbstractClientServerTest
     }
 
     @After
-    public void dispose() throws Exception
-    {
-        if (httpClient != null)
+    public void dispose() throws Exception {
+        if (httpClient != null) {
             httpClient.stop();
-        if (server != null)
+        }
+        if (server != null) {
             server.stop();
+        }
     }
 
-    protected BayeuxClient newBayeuxClient()
-    {
+    protected BayeuxClient newBayeuxClient() {
         return new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
     }
 
-    protected void disconnectBayeuxClient(BayeuxClient client)
-    {
+    protected void disconnectBayeuxClient(BayeuxClient client) {
         client.disconnect(1000);
     }
 }

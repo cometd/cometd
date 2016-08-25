@@ -30,24 +30,20 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ExtensionDisconnectTest extends AbstractBayeuxClientServerTest
-{
+public class ExtensionDisconnectTest extends AbstractBayeuxClientServerTest {
     private CountingExtension extension = new CountingExtension();
 
-    public ExtensionDisconnectTest(String serverTransport)
-    {
+    public ExtensionDisconnectTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testExtension() throws Exception
-    {
+    public void testExtension() throws Exception {
         bayeux.addExtension(extension);
 
         Request handshake = newBayeuxRequest("[{" +
@@ -74,36 +70,33 @@ public class ExtensionDisconnectTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(1, extension.sendMetas.size());
     }
 
-    private class CountingExtension implements BayeuxServer.Extension
-    {
+    private class CountingExtension implements BayeuxServer.Extension {
         private final List<Message> rcvs = new ArrayList<>();
         private final List<Message> rcvMetas = new ArrayList<>();
         private final List<Message> sends = new ArrayList<>();
         private final List<Message> sendMetas = new ArrayList<>();
 
-        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-        {
+        public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
             rcvs.add(message);
             return true;
         }
 
-        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-        {
-            if (Channel.META_DISCONNECT.equals(message.getChannel()))
+        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
+            if (Channel.META_DISCONNECT.equals(message.getChannel())) {
                 rcvMetas.add(message);
+            }
             return true;
         }
 
-        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-        {
+        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
             sends.add(message);
             return true;
         }
 
-        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-        {
-            if (Channel.META_DISCONNECT.equals(message.getChannel()))
+        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
+            if (Channel.META_DISCONNECT.equals(message.getChannel())) {
                 sendMetas.add(message);
+            }
             return true;
         }
     }

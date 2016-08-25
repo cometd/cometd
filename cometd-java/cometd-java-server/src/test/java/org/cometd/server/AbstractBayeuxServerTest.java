@@ -34,21 +34,17 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public abstract class AbstractBayeuxServerTest
-{
-    @Parameterized.Parameters(name= "{0}")
-    public static Iterable<Object[]> data()
-    {
+public abstract class AbstractBayeuxServerTest {
+    @Parameterized.Parameters(name = "{0}")
+    public static Iterable<Object[]> data() {
         Object[][] data = {{JSONTransport.class.getName()}, {AsyncJSONTransport.class.getName()}};
         return Arrays.asList(data);
     }
 
     @Rule
-    public final TestWatcher testName = new TestWatcher()
-    {
+    public final TestWatcher testName = new TestWatcher() {
         @Override
-        protected void starting(Description description)
-        {
+        protected void starting(Description description) {
             super.starting(description);
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
@@ -64,13 +60,11 @@ public abstract class AbstractBayeuxServerTest
     protected BayeuxServerImpl bayeux;
     protected long timeout = 2000;
 
-    protected AbstractBayeuxServerTest(String serverTransport)
-    {
+    protected AbstractBayeuxServerTest(String serverTransport) {
         this.serverTransport = serverTransport;
     }
 
-    public void startServer(Map<String, String> options) throws Exception
-    {
+    public void startServer(Map<String, String> options) throws Exception {
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
@@ -84,12 +78,14 @@ public abstract class AbstractBayeuxServerTest
         // Setup comet servlet
         cometdServlet = new CometDServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        if (options == null)
+        if (options == null) {
             options = new HashMap<>();
+        }
         options.put("timeout", String.valueOf(timeout));
         options.put("transports", serverTransport);
-        for (Map.Entry<String, String> entry : options.entrySet())
+        for (Map.Entry<String, String> entry : options.entrySet()) {
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
+        }
         String cometdServletPath = "/cometd";
         context.addServlet(cometdServletHolder, cometdServletPath + "/*");
 
@@ -103,8 +99,7 @@ public abstract class AbstractBayeuxServerTest
     }
 
     @After
-    public void stopServer() throws Exception
-    {
+    public void stopServer() throws Exception {
         server.stop();
         server.join();
     }

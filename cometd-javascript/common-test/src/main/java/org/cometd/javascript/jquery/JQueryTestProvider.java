@@ -20,10 +20,8 @@ import java.net.URL;
 import org.cometd.javascript.TestProvider;
 import org.cometd.javascript.ThreadModel;
 
-public class JQueryTestProvider implements TestProvider
-{
-    public void provideCometD(ThreadModel threadModel, String contextURL) throws Exception
-    {
+public class JQueryTestProvider implements TestProvider {
+    public void provideCometD(ThreadModel threadModel, String contextURL) throws Exception {
         // Order of the script evaluation is important, as they depend one from the other
         threadModel.evaluate(new URL(contextURL + "/json2.js"));
         threadModel.evaluate(new URL(contextURL + "/env.js"));
@@ -50,26 +48,22 @@ public class JQueryTestProvider implements TestProvider
                 "cometd.registerTransport('websocket', originalTransports['websocket']);");
     }
 
-    public void provideMessageAcknowledgeExtension(ThreadModel threadModel, String contextURL) throws Exception
-    {
+    public void provideMessageAcknowledgeExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate(new URL(contextURL + "/org/cometd/AckExtension.js"));
         threadModel.evaluate(new URL(contextURL + "/jquery/jquery.cometd-ack.js"));
     }
 
-    public void provideReloadExtension(ThreadModel threadModel, String contextURL) throws Exception
-    {
+    public void provideReloadExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate(new URL(contextURL + "/org/cometd/ReloadExtension.js"));
         threadModel.evaluate(new URL(contextURL + "/jquery/jquery.cometd-reload.js"));
     }
 
-    public void provideTimestampExtension(ThreadModel threadModel, String contextURL) throws Exception
-    {
+    public void provideTimestampExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate(new URL(contextURL + "/org/cometd/TimeStampExtension.js"));
         threadModel.evaluate(new URL(contextURL + "/jquery/jquery.cometd-timestamp.js"));
     }
 
-    public void provideTimesyncExtension(ThreadModel threadModel, String contextURL) throws Exception
-    {
+    public void provideTimesyncExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate(new URL(contextURL + "/org/cometd/TimeSyncExtension.js"));
         threadModel.evaluate(new URL(contextURL + "/jquery/jquery.cometd-timesync.js"));
     }

@@ -25,11 +25,9 @@ import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDCrossOriginTest extends AbstractCometDTest
-{
+public class CometDCrossOriginTest extends AbstractCometDTest {
     @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
+    protected void customizeContext(ServletContextHandler context) throws Exception {
         super.customizeContext(context);
         CrossOriginFilter filter = new CrossOriginFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
@@ -37,15 +35,14 @@ public class CometDCrossOriginTest extends AbstractCometDTest
     }
 
     @Test
-    public void testCrossOriginSupported() throws Exception
-    {
+    public void testCrossOriginSupported() throws Exception {
         defineClass(Latch.class);
         String crossOriginCometDURL = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({" +
-                       "url: '" + crossOriginCometDURL + "', " +
-                       "requestHeaders: { Origin: 'http://localhost:8080' }, " +
-                       "logLevel: '" + getLogLevel() + "'" +
-                       "});");
+                "url: '" + crossOriginCometDURL + "', " +
+                "requestHeaders: { Origin: 'http://localhost:8080' }, " +
+                "logLevel: '" + getLogLevel() + "'" +
+                "});");
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { if (message.successful) connectLatch.countDown(); });");

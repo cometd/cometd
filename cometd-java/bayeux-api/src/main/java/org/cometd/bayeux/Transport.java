@@ -55,8 +55,7 @@ import java.util.Set;
  * JSONP long polling transport.</li>
  * </ul>
  */
-public interface Transport
-{
+public interface Transport {
     /**
      * @return The well known name of this transport, used in transport negotiations
      * @see Bayeux#getAllowedTransports()
@@ -79,6 +78,7 @@ public interface Transport
     /**
      * Specifies an option prefix made of string segments separated by the "."
      * character, used to override more generic configuration entries.
+     *
      * @return the option prefix for this transport.
      */
     String getOptionPrefix();

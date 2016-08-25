@@ -29,8 +29,7 @@ import org.cometd.bayeux.Channel;
  * configuration is executed only once, and so that it is guaranteed that
  * it happens before any message can be published or received by the channel.</p>
  */
-public interface ConfigurableServerChannel extends Channel
-{
+public interface ConfigurableServerChannel extends Channel {
     /**
      * @param listener the listener to add
      * @see #removeListener(ServerChannelListener)
@@ -57,6 +56,7 @@ public interface ConfigurableServerChannel extends Channel
 
     /**
      * A lazy channel marks all messages published to it as lazy.
+     *
      * @param lazy whether the channel is lazy
      * @see #isLazy()
      */
@@ -71,6 +71,7 @@ public interface ConfigurableServerChannel extends Channel
     /**
      * Sets the lazy timeout for this channel.
      * A positive value makes the channel lazy, a negative value makes the channel non-lazy.
+     *
      * @param lazyTimeout the lazy timeout for this channel
      * @see #setLazy(boolean)
      */
@@ -84,6 +85,7 @@ public interface ConfigurableServerChannel extends Channel
 
     /**
      * A persistent channel is not removed when the last subscription is removed
+     *
      * @param persistent whether the channel is persistent
      * @see #isPersistent()
      */
@@ -101,6 +103,7 @@ public interface ConfigurableServerChannel extends Channel
 
     /**
      * <p>Removes the given {@link Authorizer}.</p>
+     *
      * @param authorizer the Authorizer to remove
      * @see #addAuthorizer(Authorizer)
      */
@@ -115,10 +118,10 @@ public interface ConfigurableServerChannel extends Channel
      * A listener interface by means of which listeners can atomically
      * set the initial configuration of a channel.
      */
-    public interface Initializer
-    {
+    public interface Initializer {
         /**
          * Callback invoked when a channel is created and needs to be configured
+         *
          * @param channel the channel to configure
          */
         void configureChannel(ConfigurableServerChannel channel);
@@ -126,10 +129,8 @@ public interface ConfigurableServerChannel extends Channel
         /**
          * Utility class that initializes channels to be persistent
          */
-        public static class Persistent implements Initializer
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
+        public static class Persistent implements Initializer {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
             }
         }
@@ -139,16 +140,14 @@ public interface ConfigurableServerChannel extends Channel
      * <p>Common interface for {@link ServerChannel} listeners.</p>
      * <p>Specific sub-interfaces define what kind of event listeners will be notified.</p>
      */
-    public interface ServerChannelListener extends Bayeux.BayeuxListener
-    {
+    public interface ServerChannelListener extends Bayeux.BayeuxListener {
         /**
          * <p>Tag interface that marks {@link ServerChannelListener}s as "weak".</p>
          * <p>{@link ServerChannel}s that are not {@link ServerChannel#isPersistent() persistent},
          * that have no subscribers and that only have weak listeners are eligible to be
          * {@link ServerChannel#remove() removed}.</p>
          */
-        public interface Weak extends ServerChannelListener
-        {
+        public interface Weak extends ServerChannelListener {
         }
     }
 }

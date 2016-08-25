@@ -20,11 +20,9 @@ import org.cometd.javascript.Latch;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDTwoInstancesTest extends AbstractCometDTest
-{
+public class CometDTwoInstancesTest extends AbstractCometDTest {
     @Test
-    public void testTwoInstances() throws Exception
-    {
+    public void testTwoInstances() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("var handshakeLatch = new Latch(1);");

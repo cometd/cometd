@@ -27,11 +27,9 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDRemoteCallTest extends AbstractCometDTest
-{
+public class CometDRemoteCallTest extends AbstractCometDTest {
     @Test
-    public void testRemoteCallWithResult() throws Exception
-    {
+    public void testRemoteCallWithResult() throws Exception {
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeux());
         String response = "response";
         processor.process(new RemoteCallWithResultService(response));
@@ -59,26 +57,22 @@ public class CometDRemoteCallTest extends AbstractCometDTest
     }
 
     @Service
-    public static class RemoteCallWithResultService
-    {
+    public static class RemoteCallWithResultService {
         private static final String CHANNEL = "/remote_result";
         private final String response;
 
-        public RemoteCallWithResultService(String response)
-        {
+        public RemoteCallWithResultService(String response) {
             this.response = response;
         }
 
         @RemoteCall(CHANNEL)
-        public void service(RemoteCall.Caller caller, Object data)
-        {
+        public void service(RemoteCall.Caller caller, Object data) {
             caller.result(response);
         }
     }
 
     @Test
-    public void testRemoteCallWithFailure() throws Exception
-    {
+    public void testRemoteCallWithFailure() throws Exception {
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeux());
         String failure = "response";
         processor.process(new RemoteCallWithFailureService(failure));
@@ -106,26 +100,22 @@ public class CometDRemoteCallTest extends AbstractCometDTest
     }
 
     @Service
-    public static class RemoteCallWithFailureService
-    {
+    public static class RemoteCallWithFailureService {
         private static final String CHANNEL = "/remote_failure";
         private final String failure;
 
-        public RemoteCallWithFailureService(String failure)
-        {
+        public RemoteCallWithFailureService(String failure) {
             this.failure = failure;
         }
 
         @RemoteCall(CHANNEL)
-        public void service(RemoteCall.Caller caller, Object data)
-        {
+        public void service(RemoteCall.Caller caller, Object data) {
             caller.failure(failure);
         }
     }
 
     @Test
-    public void testRemoteCallTimeout() throws Exception
-    {
+    public void testRemoteCallTimeout() throws Exception {
         long timeout = 1000;
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeux());
         boolean processed = processor.process(new RemoteCallTimeoutService(timeout));
@@ -161,32 +151,24 @@ public class CometDRemoteCallTest extends AbstractCometDTest
     }
 
     @Service
-    public static class RemoteCallTimeoutService
-    {
+    public static class RemoteCallTimeoutService {
         public static final String CHANNEL = "remote_timeout";
 
         private final long timeout;
 
-        public RemoteCallTimeoutService(long timeout)
-        {
+        public RemoteCallTimeoutService(long timeout) {
             this.timeout = timeout;
         }
 
         @RemoteCall(CHANNEL)
-        public void service(final RemoteCall.Caller caller, Object data)
-        {
-            new Thread(new Runnable()
-            {
+        public void service(final RemoteCall.Caller caller, Object data) {
+            new Thread(new Runnable() {
                 @Override
-                public void run()
-                {
-                    try
-                    {
+                public void run() {
+                    try {
                         Thread.sleep(2 * timeout);
                         caller.result(new HashMap());
-                    }
-                    catch (InterruptedException x)
-                    {
+                    } catch (InterruptedException x) {
                         caller.failure(x);
                     }
                 }
@@ -195,8 +177,7 @@ public class CometDRemoteCallTest extends AbstractCometDTest
     }
 
     @Test
-    public void testRemoteCallWithCustomDataClass() throws Exception
-    {
+    public void testRemoteCallWithCustomDataClass() throws Exception {
         JettyJSONContextServer jsonContext = (JettyJSONContextServer)bayeuxServer.getOption(AbstractServerTransport.JSON_CONTEXT_OPTION);
         jsonContext.getJSON().addConvertor(Custom.class, new CustomConvertor());
 
@@ -234,51 +215,44 @@ public class CometDRemoteCallTest extends AbstractCometDTest
     }
 
     @Service
-    public static class RemoteCallWithCustomDataClassService
-    {
+    public static class RemoteCallWithCustomDataClassService {
         public static final String CHANNEL = "/custom_data_class";
 
         private String request;
         private String response;
 
-        public RemoteCallWithCustomDataClassService(String request, String response)
-        {
+        public RemoteCallWithCustomDataClassService(String request, String response) {
             this.request = request;
             this.response = response;
         }
 
         @RemoteCall(CHANNEL)
-        public void service(RemoteCall.Caller caller, Custom custom)
-        {
-            if (request.equals(custom.payload))
+        public void service(RemoteCall.Caller caller, Custom custom) {
+            if (request.equals(custom.payload)) {
                 caller.result(new Custom(response));
-            else
+            } else {
                 caller.failure("failed");
+            }
         }
     }
 
-    public static class Custom
-    {
+    public static class Custom {
         public final String payload;
 
-        public Custom(String payload)
-        {
+        public Custom(String payload) {
             this.payload = payload;
         }
     }
 
-    private class CustomConvertor implements JSON.Convertor
-    {
+    private class CustomConvertor implements JSON.Convertor {
         @Override
-        public void toJSON(Object obj, JSON.Output out)
-        {
+        public void toJSON(Object obj, JSON.Output out) {
             Custom custom = (Custom)obj;
             out.add("payload", custom.payload);
         }
 
         @Override
-        public Object fromJSON(Map object)
-        {
+        public Object fromJSON(Map object) {
             return new Custom((String)object.get("payload"));
         }
     }

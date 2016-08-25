@@ -28,129 +28,113 @@ import org.mozilla.javascript.Undefined;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebSocketConnection extends ScriptableObject implements WebSocketListener
-{
+public class WebSocketConnection extends ScriptableObject implements WebSocketListener {
     private final Logger logger = LoggerFactory.getLogger(getClass().getName());
     private ThreadModel threads;
     private Scriptable thiz;
     private WebSocketClient wsClient;
     private Session session;
 
-    public WebSocketConnection()
-    {
+    public WebSocketConnection() {
     }
 
-    public void jsConstructor(Object threadModel, Scriptable thiz, Object connector, String url, Object protocol)
-    {
+    public void jsConstructor(Object threadModel, Scriptable thiz, Object connector, String url, Object protocol) {
         this.threads = (ThreadModel)threadModel;
         this.thiz = thiz;
         this.wsClient = ((WebSocketConnector)connector).getWebSocketClient();
-        try
-        {
+        try {
             URI uri = new URI(url);
 
             ClientUpgradeRequest request = new ClientUpgradeRequest();
-            if (protocol != null && protocol != Undefined.instance)
+            if (protocol != null && protocol != Undefined.instance) {
                 request.setSubProtocols(protocol.toString());
+            }
 
-            if (logger.isDebugEnabled())
+            if (logger.isDebugEnabled()) {
                 logger.debug("Opening WebSocket session to {}", uri);
+            }
             wsClient.connect(this, uri, request);
-        }
-        catch (final Throwable x)
-        {
+        } catch (final Throwable x) {
             // This method is invoked from JavaScript, so we must fail asynchronously
-            wsClient.getExecutor().execute(new Runnable()
-            {
+            wsClient.getExecutor().execute(new Runnable() {
                 @Override
-                public void run()
-                {
+                public void run() {
                     onWebSocketError(x);
                 }
             });
         }
     }
 
-    public String getClassName()
-    {
+    public String getClassName() {
         return "WebSocketConnection";
     }
 
-    public void jsFunction_send(String data) throws IOException
-    {
-        try
-        {
+    public void jsFunction_send(String data) throws IOException {
+        try {
             Session session = this.session;
-            if (session != null)
-            {
-                if (logger.isDebugEnabled())
+            if (session != null) {
+                if (logger.isDebugEnabled()) {
                     logger.debug("WebSocket sending data {}", data);
+                }
                 session.getRemote().sendString(data);
             }
-        }
-        catch (final Throwable x)
-        {
+        } catch (final Throwable x) {
             // This method is invoked from JavaScript, so we must fail asynchronously
-            wsClient.getExecutor().execute(new Runnable()
-            {
+            wsClient.getExecutor().execute(new Runnable() {
                 @Override
-                public void run()
-                {
+                public void run() {
                     onWebSocketError(x);
                 }
             });
         }
     }
 
-    public void jsFunction_close(int code, String reason) throws IOException
-    {
+    public void jsFunction_close(int code, String reason) throws IOException {
         Session session = this.session;
-        if (session != null)
-        {
+        if (session != null) {
             session.close(code, reason);
             this.session = null;
         }
     }
 
     @Override
-    public void onWebSocketConnect(Session session)
-    {
+    public void onWebSocketConnect(Session session) {
         this.session = session;
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("WebSocket opened session {}", session);
+        }
         threads.invoke(false, thiz, thiz, "onopen");
     }
 
     @Override
-    public void onWebSocketBinary(byte[] payload, int offset, int len)
-    {
+    public void onWebSocketBinary(byte[] payload, int offset, int len) {
     }
 
     @Override
-    public void onWebSocketText(String data)
-    {
-        if (logger.isDebugEnabled())
+    public void onWebSocketText(String data) {
+        if (logger.isDebugEnabled()) {
             logger.debug("WebSocket message data {}", data);
+        }
         // Use single quotes so they do not mess up with quotes in the data string
         Object event = threads.evaluate("event", "({data:'" + data + "'})");
         threads.invoke(false, thiz, thiz, "onmessage", event);
     }
 
     @Override
-    public void onWebSocketClose(int closeCode, String reason)
-    {
-        if (logger.isDebugEnabled())
+    public void onWebSocketClose(int closeCode, String reason) {
+        if (logger.isDebugEnabled()) {
             logger.debug("WebSocket closed with code {}/{}", closeCode, reason);
+        }
         // Use single quotes so they do not mess up with quotes in the reason string
-        Object event = threads.evaluate("event", "({code:" + closeCode +",reason:'" + reason + "'})");
+        Object event = threads.evaluate("event", "({code:" + closeCode + ",reason:'" + reason + "'})");
         threads.invoke(false, thiz, thiz, "onclose", event);
     }
 
     @Override
-    public void onWebSocketError(Throwable x)
-    {
-        if (logger.isDebugEnabled())
+    public void onWebSocketError(Throwable x) {
+        if (logger.isDebugEnabled()) {
             logger.debug("WebSocket exception", x);
+        }
         threads.invoke(false, thiz, thiz, "onerror");
     }
 }

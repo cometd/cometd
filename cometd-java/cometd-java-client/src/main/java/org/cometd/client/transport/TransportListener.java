@@ -27,8 +27,7 @@ import org.cometd.client.BayeuxClient;
  *
  * @see MessageClientTransport
  */
-public interface TransportListener
-{
+public interface TransportListener {
     /**
      * Callback method invoked when the batch of messages is being sent.
      *
@@ -46,26 +45,22 @@ public interface TransportListener
     /**
      * Callback method invoked when a failure to send or receive messages occurs.
      *
-     * @param failure the failure occurred
+     * @param failure  the failure occurred
      * @param messages the batch of messages being sent
      */
     void onFailure(Throwable failure, List<? extends Message> messages);
 
-    public static class Empty implements TransportListener
-    {
+    public static class Empty implements TransportListener {
         @Override
-        public void onSending(List<? extends Message> messages)
-        {
+        public void onSending(List<? extends Message> messages) {
         }
 
         @Override
-        public void onMessages(List<Message.Mutable> messages)
-        {
+        public void onMessages(List<Message.Mutable> messages) {
         }
 
         @Override
-        public void onFailure(Throwable failure, List<? extends Message> messages)
-        {
+        public void onFailure(Throwable failure, List<? extends Message> messages) {
         }
     }
 }

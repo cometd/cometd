@@ -30,27 +30,22 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TimeExtensionsTest extends ClientServerTest
-{
+public class TimeExtensionsTest extends ClientServerTest {
     @Before
-    public void setUp() throws Exception
-    {
+    public void setUp() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testTimeStamp() throws Exception
-    {
+    public void testTimeStamp() throws Exception {
         bayeux.addExtension(new TimestampExtension());
 
         final BayeuxClient client = newBayeuxClient();
         client.addExtension(new TimestampClientExtension());
 
         final Queue<Message> messages = new ConcurrentLinkedQueue<>();
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messages.add(message);
             }
         });
@@ -65,15 +60,15 @@ public class TimeExtensionsTest extends ClientServerTest
 
         Assert.assertTrue(messages.size() > 0);
 
-        for (Message message : messages)
+        for (Message message : messages) {
             Assert.assertTrue(message.get(Message.TIMESTAMP_FIELD) != null);
+        }
 
         disconnectBayeuxClient(client);
     }
 
     @Test
-    public void testTimeSync() throws Exception
-    {
+    public void testTimeSync() throws Exception {
         final TimesyncExtension extension = new TimesyncExtension();
         extension.setAccuracyTarget(0);
         bayeux.addExtension(extension);
@@ -82,10 +77,8 @@ public class TimeExtensionsTest extends ClientServerTest
         client.addExtension(new TimesyncClientExtension());
 
         final Queue<Message> messages = new ConcurrentLinkedQueue<>();
-        client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messages.add(message);
             }
         });
@@ -100,9 +93,8 @@ public class TimeExtensionsTest extends ClientServerTest
 
         Assert.assertTrue(messages.size() > 0);
 
-        for (Message message : messages)
-        {
-            Map<String,Object> ext = message.getExt();
+        for (Message message : messages) {
+            Map<String, Object> ext = message.getExt();
             Assert.assertNotNull(String.valueOf(message), ext);
             Assert.assertNotNull(ext.get("timesync"));
         }

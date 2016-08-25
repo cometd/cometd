@@ -22,21 +22,17 @@ import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSession.Extension;
 
-public class TimesyncClientExtension extends Extension.Adapter
-{
+public class TimesyncClientExtension extends Extension.Adapter {
     private volatile int _lag;
     private volatile int _offset;
 
     @Override
-    public boolean rcvMeta(ClientSession session, Mutable message)
-    {
+    public boolean rcvMeta(ClientSession session, Mutable message) {
         Map<String, Object> ext = message.getExt(false);
-        if (ext != null)
-        {
+        if (ext != null) {
             @SuppressWarnings("unchecked")
             Map<String, Object> sync = (Map<String, Object>)ext.get("timesync");
-            if (sync != null)
-            {
+            if (sync != null) {
                 long now = System.currentTimeMillis();
 
                 final long tc = ((Number)sync.get("tc")).longValue();
@@ -56,8 +52,7 @@ public class TimesyncClientExtension extends Extension.Adapter
     }
 
     @Override
-    public boolean sendMeta(ClientSession session, Mutable message)
-    {
+    public boolean sendMeta(ClientSession session, Mutable message) {
         Map<String, Object> ext = message.getExt(true);
         long now = System.currentTimeMillis();
         Map<String, Object> timesync = new HashMap<>(3);
@@ -68,18 +63,15 @@ public class TimesyncClientExtension extends Extension.Adapter
         return true;
     }
 
-    public int getOffset()
-    {
+    public int getOffset() {
         return _offset;
     }
 
-    public int getLag()
-    {
+    public int getLag() {
         return _lag;
     }
 
-    public long getServerTime()
-    {
+    public long getServerTime() {
         return System.currentTimeMillis() + _offset;
     }
 }

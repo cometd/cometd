@@ -26,16 +26,13 @@ import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
-public class SpringFrameworkConfigurationTest extends ClientServerWebSocketTest
-{
-    public SpringFrameworkConfigurationTest(String implementation)
-    {
+public class SpringFrameworkConfigurationTest extends ClientServerWebSocketTest {
+    public SpringFrameworkConfigurationTest(String implementation) {
         super(implementation);
     }
 
     @Test
-    public void testXMLSpringConfigurationWithWebSocket() throws Exception
-    {
+    public void testXMLSpringConfigurationWithWebSocket() throws Exception {
         prepareServer(0, null, false);
         // Add Spring listener
         context.addEventListener(new ContextLoaderListener());

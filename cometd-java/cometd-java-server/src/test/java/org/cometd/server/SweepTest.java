@@ -22,21 +22,17 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SweepTest
-{
+public class SweepTest {
     @Test
-    public void testChannelsSweepPerformance()
-    {
+    public void testChannelsSweepPerformance() {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
 
         StringBuilder builder = new StringBuilder();
         int count = 5000;
         int children = 5;
-        for (int i = 0; i < count; ++i)
-        {
+        for (int i = 0; i < count; ++i) {
             builder.setLength(0);
-            for (int j = 0; j < children; ++j)
-            {
+            for (int j = 0; j < children; ++j) {
                 char letter = (char)('a' + j);
                 String name = builder.append("/").append(letter).append(i).toString();
                 bayeuxServer.createChannelIfAbsent(name);
@@ -54,18 +50,15 @@ public class SweepTest
     }
 
     @Test
-    public void testChannelsAreSwept()
-    {
+    public void testChannelsAreSwept() {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
 
         StringBuilder builder = new StringBuilder();
         int count = 100;
         int children = 5;
-        for (int i = 0; i < count; ++i)
-        {
+        for (int i = 0; i < count; ++i) {
             builder.setLength(0);
-            for (int j = 0; j < children; ++j)
-            {
+            for (int j = 0; j < children; ++j) {
                 char letter = (char)('a' + j);
                 String name = builder.append("/").append(letter).append(i).toString();
                 bayeuxServer.createChannelIfAbsent(name);
@@ -75,25 +68,23 @@ public class SweepTest
         int sweepPasses = 3;
         int maxIterations = sweepPasses * children * 2;
         int iterations = 0;
-        while (bayeuxServer.getChannels().size() > 0)
-        {
+        while (bayeuxServer.getChannels().size() > 0) {
             bayeuxServer.sweep();
             ++iterations;
-            if (iterations > maxIterations)
+            if (iterations > maxIterations) {
                 break;
+            }
         }
 
         Assert.assertEquals(0, bayeuxServer.getChannels().size());
     }
 
     @Test
-    public void testSessionsSweepPerformance()
-    {
+    public void testSessionsSweepPerformance() {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
 
         int count = 25000;
-        for (int i = 0; i < count; ++i)
-        {
+        for (int i = 0; i < count; ++i) {
             bayeuxServer.addServerSession(bayeuxServer.newServerSession(), bayeuxServer.newMessage());
         }
 
@@ -108,8 +99,7 @@ public class SweepTest
     }
 
     @Test
-    public void testLocalSessionIsNotSwept() throws Exception
-    {
+    public void testLocalSessionIsNotSwept() throws Exception {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
         bayeuxServer.setOption("sweepIntervalMs", -1);
         long maxInterval = 1000;

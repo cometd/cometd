@@ -39,8 +39,7 @@ import org.slf4j.LoggerFactory;
  * <p>When the inactivity exceeds a configurable {@link #getMaxInactivityPeriod() inactive period},
  * the {@code ServerSession} is {@link ServerSession#disconnect() disconnected}.</p>
  */
-public class ActivityExtension extends BayeuxServer.Extension.Adapter
-{
+public class ActivityExtension extends BayeuxServer.Extension.Adapter {
     private final Activity activity;
     private final long maxInactivityPeriod;
 
@@ -50,8 +49,7 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter
      * @param activity            the activity to monitor
      * @param maxInactivityPeriod the max inactivity period, in milliseconds
      */
-    public ActivityExtension(Activity activity, long maxInactivityPeriod)
-    {
+    public ActivityExtension(Activity activity, long maxInactivityPeriod) {
         this.activity = activity;
         this.maxInactivityPeriod = maxInactivityPeriod;
     }
@@ -59,24 +57,22 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter
     /**
      * @return the activity that is being monitored by this extension
      */
-    public Activity getActivity()
-    {
+    public Activity getActivity() {
         return activity;
     }
 
     /**
      * @return the max inactivity period, in milliseconds
      */
-    public long getMaxInactivityPeriod()
-    {
+    public long getMaxInactivityPeriod() {
         return maxInactivityPeriod;
     }
 
     @Override
-    public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-    {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful())
+    public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
+        if (Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful()) {
             to.addExtension(newSessionExtension(to, message));
+        }
         return true;
     }
 
@@ -87,16 +83,14 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter
      * @param handshakeReply the handshake reply message
      * @return a new {@code ServerSession.Extension} that monitors the {@code ServerSession} activity
      */
-    protected ServerSession.Extension newSessionExtension(ServerSession session, ServerMessage handshakeReply)
-    {
+    protected ServerSession.Extension newSessionExtension(ServerSession session, ServerMessage handshakeReply) {
         return new SessionExtension(getActivity(), getMaxInactivityPeriod());
     }
 
     /**
      * The possible activity to monitor
      */
-    public enum Activity
-    {
+    public enum Activity {
         /**
          * Constant that indicates to monitor only client activity for a session
          */
@@ -111,15 +105,13 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter
      * Monitors the activity of a single {@link ServerSession}, disconnecting it
      * when the max inactivity period is exceeded.
      */
-    public static class SessionExtension implements ServerSession.Extension
-    {
+    public static class SessionExtension implements ServerSession.Extension {
         private static final Logger logger = LoggerFactory.getLogger(ActivityExtension.class);
         private final AtomicLong lastActivity = new AtomicLong(System.nanoTime());
         private final Activity activity;
         private final long maxInactivityPeriod;
 
-        public SessionExtension(Activity activity, long maxInactivityPeriod)
-        {
+        public SessionExtension(Activity activity, long maxInactivityPeriod) {
             this.activity = activity;
             this.maxInactivityPeriod = maxInactivityPeriod;
         }
@@ -127,83 +119,74 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter
         /**
          * @return the max inactivity period, in milliseconds
          */
-        public long getMaxInactivityPeriod()
-        {
+        public long getMaxInactivityPeriod() {
             return maxInactivityPeriod;
         }
 
         /**
          * @return the last activity timestamp, in nanoseconds
          */
-        protected long getLastActivity()
-        {
+        protected long getLastActivity() {
             return lastActivity.get();
         }
 
-        public boolean rcv(ServerSession session, ServerMessage.Mutable message)
-        {
-            if (logger.isDebugEnabled())
+        public boolean rcv(ServerSession session, ServerMessage.Mutable message) {
+            if (logger.isDebugEnabled()) {
                 logger.debug("Marking active session {}, received message {}", session, message);
+            }
             markActive();
             return true;
         }
 
-        public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message)
-        {
-            if (Channel.META_CONNECT.equals(message.getChannel()))
-            {
-                if (isInactive())
-                {
-                    if (logger.isDebugEnabled())
+        public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
+            if (Channel.META_CONNECT.equals(message.getChannel())) {
+                if (isInactive()) {
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Inactive session {}, disconnecting", session);
+                    }
                     disconnect(session);
                 }
-            }
-            else
-            {
-                if (logger.isDebugEnabled())
+            } else {
+                if (logger.isDebugEnabled()) {
                     logger.debug("Marking active session {}, received meta message {}", session, message);
+                }
                 markActive();
             }
             return true;
         }
 
-        public ServerMessage send(ServerSession session, ServerMessage message)
-        {
-            if (activity == Activity.CLIENT_SERVER)
-            {
-                if (logger.isDebugEnabled())
+        public ServerMessage send(ServerSession session, ServerMessage message) {
+            if (activity == Activity.CLIENT_SERVER) {
+                if (logger.isDebugEnabled()) {
                     logger.debug("Marking active session {}, sending message {}", session, message);
+                }
                 markActive();
             }
             return message;
         }
 
-        public boolean sendMeta(ServerSession session, ServerMessage.Mutable message)
-        {
-            if (!Channel.META_CONNECT.equals(message.getChannel()) && activity == Activity.CLIENT_SERVER)
-            {
-                if (logger.isDebugEnabled())
+        public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
+            if (!Channel.META_CONNECT.equals(message.getChannel()) && activity == Activity.CLIENT_SERVER) {
+                if (logger.isDebugEnabled()) {
                     logger.debug("Marking active session {}, sending meta message {}", session, message);
+                }
                 markActive();
             }
             return true;
         }
 
-        protected void markActive()
-        {
+        protected void markActive() {
             lastActivity.set(System.nanoTime());
         }
 
-        protected boolean isInactive()
-        {
+        protected boolean isInactive() {
             return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - getLastActivity()) > getMaxInactivityPeriod();
         }
 
-        protected void disconnect(ServerSession session)
-        {
-            if (session != null)
+        protected void disconnect(ServerSession session) {
+            if (session != null) {
                 session.disconnect();
+            }
         }
     }
 }

@@ -19,33 +19,27 @@ import java.util.Map;
 
 import org.mozilla.javascript.ScriptableObject;
 
-public class SessionStorage extends ScriptableObject
-{
+public class SessionStorage extends ScriptableObject {
     private Map<String, String> store;
 
     @Override
-    public String getClassName()
-    {
+    public String getClassName() {
         return "SessionStorage";
     }
 
-    public void setStore(Map<String, String> store)
-    {
+    public void setStore(Map<String, String> store) {
         this.store = store;
     }
 
-    public String jsFunction_getItem(String key)
-    {
+    public String jsFunction_getItem(String key) {
         return store.get(key);
     }
 
-    public void jsFunction_setItem(String key, String value)
-    {
+    public void jsFunction_setItem(String key, String value) {
         store.put(key, value);
     }
 
-    public void jsFunction_removeItem(String key)
-    {
+    public void jsFunction_removeItem(String key) {
         store.remove(key);
     }
 }

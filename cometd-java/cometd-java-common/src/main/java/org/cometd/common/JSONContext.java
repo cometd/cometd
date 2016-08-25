@@ -23,29 +23,23 @@ import java.util.List;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 
-public interface JSONContext
-{
-    public interface Client extends JSONParserGenerator<Message.Mutable>
-    {
+public interface JSONContext {
+    public interface Client extends JSONParserGenerator<Message.Mutable> {
     }
 
-    public interface Server extends JSONParserGenerator<ServerMessage.Mutable>
-    {
+    public interface Server extends JSONParserGenerator<ServerMessage.Mutable> {
     }
 
-    public interface Parser
-    {
+    public interface Parser {
         public <T> T parse(Reader reader, Class<T> type) throws ParseException;
     }
 
-    public interface Generator
-    {
+    public interface Generator {
         public String generate(Object object);
     }
 }
 
-interface JSONParserGenerator<T extends Message.Mutable>
-{
+interface JSONParserGenerator<T extends Message.Mutable> {
     public T[] parse(InputStream stream) throws ParseException;
 
     public T[] parse(Reader reader) throws ParseException;

@@ -34,13 +34,11 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCometDLongPollingTest
-{
+public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCometDLongPollingTest {
     private final long maxNetworkDelay = 2000;
 
     @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
+    protected void customizeContext(ServletContextHandler context) throws Exception {
         super.customizeContext(context);
         DelayingFilter filter = new DelayingFilter(metaConnectPeriod + 2 * maxNetworkDelay);
         FilterHolder filterHolder = new FilterHolder(filter);
@@ -48,16 +46,15 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
     }
 
     @Test
-    public void testMaxNetworkDelay() throws Exception
-    {
+    public void testMaxNetworkDelay() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var latch = new Latch(6);");
         Latch latch = get("latch");
         evaluateScript("cometd.configure({" +
-                       "url: '" + cometdURL + "', " +
-                       "maxNetworkDelay: " + maxNetworkDelay + ", " +
-                       "logLevel: '" + getLogLevel() + "'" +
-                       "});");
+                "url: '" + cometdURL + "', " +
+                "maxNetworkDelay: " + maxNetworkDelay + ", " +
+                "logLevel: '" + getLogLevel() + "'" +
+                "});");
         evaluateScript("var connects = 0;");
         evaluateScript("var failure;");
         evaluateScript("cometd.addListener('/meta/connect', function(message)" +
@@ -98,40 +95,30 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
         evaluateScript("cometd.disconnect(true);");
     }
 
-    private class DelayingFilter implements Filter
-    {
+    private class DelayingFilter implements Filter {
         private final AtomicInteger connects = new AtomicInteger();
         private final long delay;
 
-        public DelayingFilter(long delay)
-        {
+        public DelayingFilter(long delay) {
             this.delay = delay;
         }
 
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
+        public void init(FilterConfig filterConfig) throws ServletException {
         }
 
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
 
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
             String uri = request.getRequestURI();
-            if (uri.endsWith("/connect"))
-            {
+            if (uri.endsWith("/connect")) {
                 int connects = this.connects.incrementAndGet();
                 // We hold the second connect longer than the long poll timeout + maxNetworkDelay
-                if (connects == 2)
-                {
-                    try
-                    {
+                if (connects == 2) {
+                    try {
                         Thread.sleep(delay);
-                    }
-                    catch (InterruptedException x)
-                    {
+                    } catch (InterruptedException x) {
                         throw new IOException();
                     }
                 }
@@ -139,8 +126,7 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
             chain.doFilter(request, response);
         }
 
-        public void destroy()
-        {
+        public void destroy() {
         }
     }
 }

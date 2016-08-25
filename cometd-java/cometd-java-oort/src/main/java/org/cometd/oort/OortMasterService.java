@@ -39,18 +39,16 @@ package org.cometd.oort;
  * @param <R> the result type
  * @param <C> the opaque context type
  */
-public abstract class OortMasterService<R, C> extends OortService<R, C>
-{
+public abstract class OortMasterService<R, C> extends OortService<R, C> {
     private final boolean master;
     private final OortObject<Boolean> nodes;
 
     /**
-     * @param oort the oort this instance is associated to
-     * @param name the name of this service
+     * @param oort   the oort this instance is associated to
+     * @param name   the name of this service
      * @param master whether this service lives on the "master" node
      */
-    public OortMasterService(Oort oort, String name, boolean master)
-    {
+    public OortMasterService(Oort oort, String name, boolean master) {
         super(oort, name);
         this.master = master;
         this.nodes = new OortObject<>(oort, name, OortObjectFactories.forBoolean(master));
@@ -59,30 +57,26 @@ public abstract class OortMasterService<R, C> extends OortService<R, C>
     /**
      * @return whether this node is the "master" node
      */
-    public boolean isMaster()
-    {
+    public boolean isMaster() {
         return master;
     }
 
     /**
      * @return the "master" Oort URL, or null if the "master" node is down.
      */
-    public String getMasterOortURL()
-    {
+    public String getMasterOortURL() {
         OortObject.Info<Boolean> info = nodes.getInfoByObject(true);
         return info == null ? null : info.getOortURL();
     }
 
     @Override
-    protected void doStart() throws Exception
-    {
+    protected void doStart() throws Exception {
         super.doStart();
         nodes.start();
     }
 
     @Override
-    protected void doStop() throws Exception
-    {
+    protected void doStop() throws Exception {
         nodes.stop();
         super.doStop();
     }

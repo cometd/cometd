@@ -35,61 +35,45 @@ import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class IdleLongPollTest extends AbstractBayeuxClientServerTest
-{
-    public IdleLongPollTest(String serverTransport)
-    {
+public class IdleLongPollTest extends AbstractBayeuxClientServerTest {
+    public IdleLongPollTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testIdleLongPollDoesNotCauseMultipleClientsAdvice() throws Exception
-    {
+    public void testIdleLongPollDoesNotCauseMultipleClientsAdvice() throws Exception {
         startServer(null);
 
         final long timeout = 2000;
         final long sleep = 500;
-        JSONTransport transport = new JSONTransport(bayeux)
-        {
+        JSONTransport transport = new JSONTransport(bayeux) {
             @Override
-            protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
-            {
-                return new DispatchingLongPollScheduler(request, response, asyncContext, session, reply, browserId, timeout)
-                {
+            protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
+                return new DispatchingLongPollScheduler(request, response, asyncContext, session, reply, browserId, timeout) {
                     private final AtomicInteger decrements = new AtomicInteger();
 
                     @Override
-                    public void onComplete(final AsyncEvent asyncEvent) throws IOException
-                    {
-                        if (decrements.incrementAndGet() == 1)
-                        {
+                    public void onComplete(final AsyncEvent asyncEvent) throws IOException {
+                        if (decrements.incrementAndGet() == 1) {
                             // Simulate that onComplete() is delayed without blocking
                             // this thread, to cause a race condition
-                            new Thread()
-                            {
+                            new Thread() {
                                 @Override
-                                public void run()
-                                {
-                                    try
-                                    {
+                                public void run() {
+                                    try {
                                         Thread.sleep(sleep);
                                         superOnComplete(asyncEvent);
-                                    }
-                                    catch (Exception x)
-                                    {
+                                    } catch (Exception x) {
                                         x.printStackTrace();
                                     }
                                 }
                             }.start();
-                        }
-                        else
-                        {
+                        } else {
                             superOnComplete(asyncEvent);
                         }
                     }
 
-                    private void superOnComplete(AsyncEvent asyncEvent) throws IOException
-                    {
+                    private void superOnComplete(AsyncEvent asyncEvent) throws IOException {
                         super.onComplete(asyncEvent);
                     }
                 };
@@ -141,7 +125,7 @@ public class IdleLongPollTest extends AbstractBayeuxClientServerTest
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(1, messages.length);
         Message.Mutable message = messages[0];
-        Map<String,Object> advice = message.getAdvice();
+        Map<String, Object> advice = message.getAdvice();
         Assert.assertNull(advice);
     }
 }

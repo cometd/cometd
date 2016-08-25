@@ -33,29 +33,23 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClientServerTest
-{
-    public CustomResponseOnSecurityPolicyDenyTest(String serverTransport)
-    {
+public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClientServerTest {
+    public CustomResponseOnSecurityPolicyDenyTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testCanHandshakeDenies() throws Exception
-    {
-        bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
-        {
+    public void testCanHandshakeDenies() throws Exception {
+        bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
-            public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-            {
+            public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
                 ServerMessage.Mutable reply = message.getAssociated();
-                Map<String,Object> advice = reply.getAdvice(true);
+                Map<String, Object> advice = reply.getAdvice(true);
                 advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);
                 Map<String, Object> ext = reply.getExt(true);
                 Map<String, Object> extra = new HashMap<>();
@@ -78,15 +72,12 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
     }
 
     @Test
-    public void testCanCreateDenies() throws Exception
-    {
-        bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
-        {
+    public void testCanCreateDenies() throws Exception {
+        bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
-            public boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message)
-            {
+            public boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message) {
                 ServerMessage.Mutable reply = message.getAssociated();
-                Map<String,Object> advice = reply.getAdvice(true);
+                Map<String, Object> advice = reply.getAdvice(true);
                 advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                 Map<String, Object> ext = reply.getExt(true);
                 Map<String, Object> extra = new HashMap<>();
@@ -101,13 +92,10 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
     }
 
     @Test
-    public void testCanPublishDenies() throws Exception
-    {
-        bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
-        {
+    public void testCanPublishDenies() throws Exception {
+        bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
-            public boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
-            {
+            public boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
                 ServerMessage.Mutable reply = message.getAssociated();
                 Map<String, Object> advice = reply.getAdvice(true);
                 advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
@@ -123,15 +111,12 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
     }
 
     @Test
-    public void testCanSubscribeDenies() throws Exception
-    {
-        bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
-        {
+    public void testCanSubscribeDenies() throws Exception {
+        bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
-            public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
-            {
+            public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
                 ServerMessage.Mutable reply = message.getAssociated();
-                Map<String,Object> advice = reply.getAdvice(true);
+                Map<String, Object> advice = reply.getAdvice(true);
                 advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                 Map<String, Object> ext = reply.getExt(true);
                 Map<String, Object> extra = new HashMap<>();
@@ -163,8 +148,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
         checkResponse(response, Message.RECONNECT_NONE_VALUE);
     }
 
-    private ContentResponse publish() throws Exception
-    {
+    private ContentResponse publish() throws Exception {
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -187,8 +171,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
         return response;
     }
 
-    private void checkResponse(ContentResponse reply, String reconnectAdvice) throws ParseException, UnsupportedEncodingException
-    {
+    private void checkResponse(ContentResponse reply, String reconnectAdvice) throws ParseException, UnsupportedEncodingException {
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] responses = jsonContext.parse(reply.getContentAsString());
         Assert.assertEquals(1, responses.length);

@@ -19,22 +19,18 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDFalsyMessageTest extends AbstractCometDTest
-{
+public class CometDFalsyMessageTest extends AbstractCometDTest {
     @Test
-    public void testEmptyStringMessage() throws Exception
-    {
+    public void testEmptyStringMessage() throws Exception {
         testFalsyMessage("");
     }
 
     @Test
-    public void testZeroMessage() throws Exception
-    {
+    public void testZeroMessage() throws Exception {
         testFalsyMessage(0);
     }
 
-    private void testFalsyMessage(Object content) throws Exception
-    {
+    private void testFalsyMessage(Object content) throws Exception {
         defineClass(Latch.class);
         String channelName = "/foo";
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");

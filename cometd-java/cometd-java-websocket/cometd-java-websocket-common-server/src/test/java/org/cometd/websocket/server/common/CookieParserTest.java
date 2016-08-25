@@ -22,18 +22,15 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CookieParserTest
-{
+public class CookieParserTest {
     @Test(expected = ParseException.class)
-    public void testNoName() throws Exception
-    {
+    public void testNoName() throws Exception {
         String header = "=value";
         CookieParser.parse(header);
     }
 
     @Test(expected = ParseException.class)
-    public void parseUnclosedQuote() throws Exception
-    {
+    public void parseUnclosedQuote() throws Exception {
         String name = "name";
         String value = "value";
         String header = name + "=\"" + value;
@@ -41,8 +38,7 @@ public class CookieParserTest
     }
 
     @Test
-    public void parseCookie() throws Exception
-    {
+    public void parseCookie() throws Exception {
         String name = "name";
         String value = "value";
         String header = name + "=" + value;
@@ -54,8 +50,7 @@ public class CookieParserTest
     }
 
     @Test
-    public void parseNameStartingWithWhiteSpace() throws Exception
-    {
+    public void parseNameStartingWithWhiteSpace() throws Exception {
         String name = "name";
         String value = "value";
         String header = " " + name + "=" + value;
@@ -67,8 +62,7 @@ public class CookieParserTest
     }
 
     @Test
-    public void parseNameEndingWithWhiteSpace() throws Exception
-    {
+    public void parseNameEndingWithWhiteSpace() throws Exception {
         String name = "name";
         String value = "value";
         String header = name + " =" + value;
@@ -80,8 +74,7 @@ public class CookieParserTest
     }
 
     @Test
-    public void parseValueStartingWithWhiteSpace() throws Exception
-    {
+    public void parseValueStartingWithWhiteSpace() throws Exception {
         String name = "name";
         String value = "value";
         String header = name + "= " + value;
@@ -93,8 +86,7 @@ public class CookieParserTest
     }
 
     @Test
-    public void parseValueEndingWithWhiteSpace() throws Exception
-    {
+    public void parseValueEndingWithWhiteSpace() throws Exception {
         String name = "name";
         String value = "value";
         String header = name + "=" + value + " ";
@@ -106,8 +98,7 @@ public class CookieParserTest
     }
 
     @Test
-    public void parseTwoCookies() throws Exception
-    {
+    public void parseTwoCookies() throws Exception {
         String name1 = "name1";
         String value1 = "value1";
         String name2 = "name2";
@@ -124,8 +115,7 @@ public class CookieParserTest
     }
 
     @Test
-    public void parseTwoCookiesFirstQuoted() throws Exception
-    {
+    public void parseTwoCookiesFirstQuoted() throws Exception {
         String name1 = "name1";
         String value1 = "value1";
         String name2 = "name2";
@@ -142,8 +132,7 @@ public class CookieParserTest
     }
 
     @Test
-    public void parseTwoCookiesSecondQuoted() throws Exception
-    {
+    public void parseTwoCookiesSecondQuoted() throws Exception {
         String name1 = "name1";
         String value1 = "value1";
         String name2 = "name2";
@@ -160,8 +149,7 @@ public class CookieParserTest
     }
 
     @Test
-    public void parseCookieQuotedWithSemicolonInValue() throws Exception
-    {
+    public void parseCookieQuotedWithSemicolonInValue() throws Exception {
         String name = "name";
         String value = "va;lue";
         String header = name + "=\"" + value + "\"";
@@ -173,8 +161,7 @@ public class CookieParserTest
     }
 
     @Test
-    public void parseCookieWithNameValueAttribute() throws Exception
-    {
+    public void parseCookieWithNameValueAttribute() throws Exception {
         String name = "name";
         String value = "value";
         String header = name + "=" + value + "; $Path=/";
@@ -186,8 +173,7 @@ public class CookieParserTest
     }
 
     @Test
-    public void parseCookieWithVersionAttributeAtBeginning() throws Exception
-    {
+    public void parseCookieWithVersionAttributeAtBeginning() throws Exception {
         String name = "name";
         String value = "value";
         String header = "$Version=1; " + name + "=" + value;
@@ -199,8 +185,7 @@ public class CookieParserTest
     }
 
     @Test
-    public void parseCookieWithNameOnlyAttribute() throws Exception
-    {
+    public void parseCookieWithNameOnlyAttribute() throws Exception {
         String name = "name";
         String value = "value";
         String header = name + "=" + value + "; $Port";

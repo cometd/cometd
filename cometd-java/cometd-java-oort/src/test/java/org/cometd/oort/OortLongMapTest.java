@@ -24,16 +24,13 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class OortLongMapTest extends AbstractOortObjectTest
-{
-    public OortLongMapTest(String serverTransport)
-    {
+public class OortLongMapTest extends AbstractOortObjectTest {
+    public OortLongMapTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testShare() throws Exception
-    {
+    public void testShare() throws Exception {
         String name = "test";
         OortObject.Factory<ConcurrentMap<Long, Object>> factory = OortObjectFactories.forConcurrentMap();
         OortLongMap<Object> oortMap1 = new OortLongMap<>(oort1, name, factory);
@@ -43,11 +40,9 @@ public class OortLongMapTest extends AbstractOortObjectTest
         final long key1 = 13L;
         final String value1 = "value1";
         final CountDownLatch objectLatch1 = new CountDownLatch(1);
-        oortMap1.addListener(new OortObject.Listener.Adapter<ConcurrentMap<Long, Object>>()
-        {
+        oortMap1.addListener(new OortObject.Listener.Adapter<ConcurrentMap<Long, Object>>() {
             @Override
-            public void onUpdated(OortObject.Info<ConcurrentMap<Long, Object>> oldInfo, OortObject.Info<ConcurrentMap<Long, Object>> newInfo)
-            {
+            public void onUpdated(OortObject.Info<ConcurrentMap<Long, Object>> oldInfo, OortObject.Info<ConcurrentMap<Long, Object>> newInfo) {
                 Assert.assertTrue(newInfo.isLocal());
                 Assert.assertNotNull(oldInfo);
                 Assert.assertTrue(oldInfo.getObject().isEmpty());
@@ -59,10 +54,8 @@ public class OortLongMapTest extends AbstractOortObjectTest
 
         // The other OortObject listens to receive the object
         final CountDownLatch objectLatch2 = new CountDownLatch(1);
-        oortMap2.addListener(new OortObject.Listener.Adapter<ConcurrentMap<Long, Object>>()
-        {
-            public void onUpdated(OortObject.Info<ConcurrentMap<Long, Object>> oldInfo, OortObject.Info<ConcurrentMap<Long, Object>> newInfo)
-            {
+        oortMap2.addListener(new OortObject.Listener.Adapter<ConcurrentMap<Long, Object>>() {
+            public void onUpdated(OortObject.Info<ConcurrentMap<Long, Object>> oldInfo, OortObject.Info<ConcurrentMap<Long, Object>> newInfo) {
                 Assert.assertFalse(newInfo.isLocal());
                 Assert.assertNotNull(oldInfo);
                 Assert.assertTrue(oldInfo.getObject().isEmpty());
@@ -91,8 +84,7 @@ public class OortLongMapTest extends AbstractOortObjectTest
     }
 
     @Test
-    public void testHowToDealWitMutableValues() throws Exception
-    {
+    public void testHowToDealWitMutableValues() throws Exception {
         // We are using a Map as mutable value because it serializes easily in JSON.
         // Any other mutable data structure would require a serializer/deserializer.
 
@@ -106,11 +98,9 @@ public class OortLongMapTest extends AbstractOortObjectTest
         Map<String, Boolean> node1Value = new HashMap<>();
 
         final CountDownLatch putLatch1 = new CountDownLatch(2);
-        OortMap.EntryListener.Adapter<Long, Map<String, Boolean>> listener1 = new OortMap.EntryListener.Adapter<Long, Map<String, Boolean>>()
-        {
+        OortMap.EntryListener.Adapter<Long, Map<String, Boolean>> listener1 = new OortMap.EntryListener.Adapter<Long, Map<String, Boolean>>() {
             @Override
-            public void onPut(OortObject.Info<ConcurrentMap<Long, Map<String, Boolean>>> info, OortMap.Entry<Long, Map<String, Boolean>> entry)
-            {
+            public void onPut(OortObject.Info<ConcurrentMap<Long, Map<String, Boolean>>> info, OortMap.Entry<Long, Map<String, Boolean>> entry) {
                 putLatch1.countDown();
             }
         };
@@ -121,8 +111,9 @@ public class OortLongMapTest extends AbstractOortObjectTest
         OortObject.Result.Deferred<Map<String, Boolean>> result = new OortObject.Result.Deferred<>();
         oortMap1.putIfAbsentAndShare(key, node1Value, result);
         Map<String, Boolean> existing = result.get(5, TimeUnit.SECONDS);
-        if (existing != null)
+        if (existing != null) {
             node1Value = existing;
+        }
 
         Assert.assertTrue(putLatch1.await(5, TimeUnit.SECONDS));
         oortMap1.removeEntryListener(listener1);
@@ -130,24 +121,20 @@ public class OortLongMapTest extends AbstractOortObjectTest
 
         // Now we have a reference to the value object for that key.
         // We mutate the value object.
-        synchronized (node1Value)
-        {
+        synchronized (node1Value) {
             node1Value.put("1", true);
         }
 
         // Another thread may just get the value and modify it
         node1Value = oortMap1.get(key);
-        synchronized (node1Value)
-        {
+        synchronized (node1Value) {
             node1Value.put("2", true);
         }
 
         final CountDownLatch putLatch2 = new CountDownLatch(2);
-        OortMap.EntryListener.Adapter<Long, Map<String, Boolean>> listener2 = new OortMap.EntryListener.Adapter<Long, Map<String, Boolean>>()
-        {
+        OortMap.EntryListener.Adapter<Long, Map<String, Boolean>> listener2 = new OortMap.EntryListener.Adapter<Long, Map<String, Boolean>>() {
             @Override
-            public void onPut(OortObject.Info<ConcurrentMap<Long, Map<String, Boolean>>> info, OortMap.Entry<Long, Map<String, Boolean>> entry)
-            {
+            public void onPut(OortObject.Info<ConcurrentMap<Long, Map<String, Boolean>>> info, OortMap.Entry<Long, Map<String, Boolean>> entry) {
                 putLatch2.countDown();
             }
         };

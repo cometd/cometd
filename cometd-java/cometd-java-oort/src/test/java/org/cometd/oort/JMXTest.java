@@ -37,11 +37,9 @@ import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainer
 import org.junit.Assert;
 import org.junit.Test;
 
-public class JMXTest
-{
+public class JMXTest {
     @Test
-    public void testJMX() throws Exception
-    {
+    public void testJMX() throws Exception {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
@@ -107,8 +105,7 @@ public class JMXTest
     }
 
     @Test
-    public void testPortableJMX() throws Exception
-    {
+    public void testPortableJMX() throws Exception {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
@@ -141,20 +138,18 @@ public class JMXTest
         Assert.assertEquals(1, mbeanNames.size());
         ObjectName objectName = mbeanNames.iterator().next();
         @SuppressWarnings("unchecked")
-        Set <String> channels = (Set<String>)mbeanServer.getAttribute(objectName, "channels");
+        Set<String> channels = (Set<String>)mbeanServer.getAttribute(objectName, "channels");
         Assert.assertTrue(channels.size() > 0);
 
         server.stop();
     }
 
-    public static class CometDJMXExporter extends HttpServlet
-    {
+    public static class CometDJMXExporter extends HttpServlet {
         private final List<Object> mbeans = new ArrayList<>();
         private volatile MBeanContainer mbeanContainer;
 
         @Override
-        public void init() throws ServletException
-        {
+        public void init() throws ServletException {
             mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
             BayeuxServer bayeuxServer = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
             mbeanContainer.beanAdded(null, bayeuxServer);
@@ -163,10 +158,10 @@ public class JMXTest
         }
 
         @Override
-        public void destroy()
-        {
-            for (int i = mbeans.size() - 1; i >= 0; --i)
+        public void destroy() {
+            for (int i = mbeans.size() - 1; i >= 0; --i) {
                 mbeanContainer.beanRemoved(null, mbeans.get(i));
+            }
         }
     }
 }

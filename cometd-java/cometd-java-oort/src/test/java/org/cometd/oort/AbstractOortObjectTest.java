@@ -32,25 +32,21 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 
-public abstract class AbstractOortObjectTest extends OortTest
-{
+public abstract class AbstractOortObjectTest extends OortTest {
     private final List<OortObject<?>> oortObjects = new ArrayList<>();
     protected Oort oort1;
     protected Oort oort2;
 
-    public AbstractOortObjectTest(String serverTransport)
-    {
+    public AbstractOortObjectTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         prepare(new HashMap<String, String>());
     }
 
-    protected void prepare(Map<String, String> options) throws Exception
-    {
+    protected void prepare(Map<String, String> options) throws Exception {
         Server server1 = startServer(0, options);
         oort1 = startOort(server1);
         Server server2 = startServer(0, options);
@@ -69,14 +65,13 @@ public abstract class AbstractOortObjectTest extends OortTest
     }
 
     @After
-    public void dispose() throws Exception
-    {
-        for (int i = oortObjects.size() - 1; i >= 0; --i)
+    public void dispose() throws Exception {
+        for (int i = oortObjects.size() - 1; i >= 0; --i) {
             oortObjects.get(i).stop();
+        }
     }
 
-    protected <T> void startOortObjects(OortObject<T> oortObject1, OortObject<T> oortObject2) throws Exception
-    {
+    protected <T> void startOortObjects(OortObject<T> oortObject1, OortObject<T> oortObject2) throws Exception {
         String channelName = oortObject1.getChannelName();
         CometSubscriptionListener listener1 = new CometSubscriptionListener(channelName, 1);
         oort1.getBayeuxServer().addListener(listener1);
@@ -103,29 +98,25 @@ public abstract class AbstractOortObjectTest extends OortTest
      * A {@link BayeuxServer.SubscriptionListener} that is used to detect
      * whether nodeA is subscribed on nodeB on the given channel.
      */
-    public static class CometSubscriptionListener implements BayeuxServer.SubscriptionListener
-    {
+    public static class CometSubscriptionListener implements BayeuxServer.SubscriptionListener {
         private final String channelName;
         private final CountDownLatch latch;
 
-        public CometSubscriptionListener(String channelName, int parties)
-        {
+        public CometSubscriptionListener(String channelName, int parties) {
             this.channelName = channelName;
             this.latch = new CountDownLatch(parties);
         }
 
-        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)
-        {
-            if (channelName.equals(channel.getId()))
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
+            if (channelName.equals(channel.getId())) {
                 latch.countDown();
+            }
         }
 
-        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message)
-        {
+        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
         }
 
-        public boolean await(long timeout, TimeUnit unit) throws InterruptedException
-        {
+        public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
             return latch.await(timeout, unit);
         }
     }
@@ -133,26 +124,24 @@ public abstract class AbstractOortObjectTest extends OortTest
     /**
      * An {@link OortObject.Listener} that counts down a latch every time it receives an update
      * from a node that was not known before.
+     *
      * @param <T>
      */
-    public static class OortObjectInitialListener<T> extends OortObject.Listener.Adapter<T>
-    {
+    public static class OortObjectInitialListener<T> extends OortObject.Listener.Adapter<T> {
         private final CountDownLatch latch;
 
-        public OortObjectInitialListener(int parties)
-        {
+        public OortObjectInitialListener(int parties) {
             this.latch = new CountDownLatch(parties);
         }
 
         @Override
-        public void onUpdated(OortObject.Info<T> oldInfo, OortObject.Info<T> newInfo)
-        {
-            if (oldInfo == null)
+        public void onUpdated(OortObject.Info<T> oldInfo, OortObject.Info<T> newInfo) {
+            if (oldInfo == null) {
                 latch.countDown();
+            }
         }
 
-        public boolean await(long timeout, TimeUnit unit) throws InterruptedException
-        {
+        public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
             return latch.await(timeout, unit);
         }
     }

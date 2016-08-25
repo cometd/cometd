@@ -44,8 +44,7 @@ import org.slf4j.LoggerFactory;
  * <p>Partial implementation of {@link ClientSession}.</p>
  * <p>It handles extensions and batching, and provides utility methods to be used by subclasses.</p>
  */
-public abstract class AbstractClientSession implements ClientSession, Dumpable
-{
+public abstract class AbstractClientSession implements ClientSession, Dumpable {
     private static final Logger logger = LoggerFactory.getLogger(ClientSession.class);
     private static final AtomicLong _idGen = new AtomicLong(0);
 
@@ -57,63 +56,58 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
     private final Map<String, MessageListener> _remoteCalls = new ConcurrentHashMap<>();
     private final AtomicInteger _batch = new AtomicInteger();
 
-    protected AbstractClientSession()
-    {
+    protected AbstractClientSession() {
     }
 
-    protected String newMessageId()
-    {
+    protected String newMessageId() {
         return String.valueOf(_idGen.incrementAndGet());
     }
 
     @Override
-    public void addExtension(Extension extension)
-    {
+    public void addExtension(Extension extension) {
         _extensions.add(extension);
     }
 
     @Override
-    public void removeExtension(Extension extension)
-    {
+    public void removeExtension(Extension extension) {
         _extensions.remove(extension);
     }
 
     @Override
-    public List<Extension> getExtensions()
-    {
+    public List<Extension> getExtensions() {
         return Collections.unmodifiableList(_extensions);
     }
 
-    protected boolean extendSend(Message.Mutable message)
-    {
-        if (message.isMeta())
-        {
-            for (Extension extension : _extensions)
-                if (!extension.sendMeta(this, message))
+    protected boolean extendSend(Message.Mutable message) {
+        if (message.isMeta()) {
+            for (Extension extension : _extensions) {
+                if (!extension.sendMeta(this, message)) {
                     return false;
-        }
-        else
-        {
-            for (Extension extension : _extensions)
-                if (!extension.send(this, message))
+                }
+            }
+        } else {
+            for (Extension extension : _extensions) {
+                if (!extension.send(this, message)) {
                     return false;
+                }
+            }
         }
         return true;
     }
 
-    protected boolean extendRcv(Message.Mutable message)
-    {
-        if (message.isMeta())
-        {
-            for (Extension extension : _extensions)
-                if (!extension.rcvMeta(this, message))
+    protected boolean extendRcv(Message.Mutable message) {
+        if (message.isMeta()) {
+            for (Extension extension : _extensions) {
+                if (!extension.rcvMeta(this, message)) {
                     return false;
-        }
-        else
-        {
-            for (Extension extension : _extensions)
-                if (!extension.rcv(this, message))
+                }
+            }
+        } else {
+            for (Extension extension : _extensions) {
+                if (!extension.rcv(this, message)) {
                     return false;
+                }
+            }
         }
         return true;
     }
@@ -123,49 +117,43 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
     protected abstract AbstractSessionChannel newChannel(ChannelId channelId);
 
     @Override
-    public ClientSessionChannel getChannel(String channelName)
-    {
+    public ClientSessionChannel getChannel(String channelName) {
         return getChannel(channelName, null);
     }
 
-    public ClientSessionChannel getChannel(ChannelId channelId)
-    {
+    public ClientSessionChannel getChannel(ChannelId channelId) {
         return getChannel(channelId.toString(), channelId);
     }
 
-    private ClientSessionChannel getChannel(String channelName, ChannelId channelId)
-    {
+    private ClientSessionChannel getChannel(String channelName, ChannelId channelId) {
         AbstractSessionChannel channel = _channels.get(channelName);
-        if (channel == null)
-        {
-            if (channelId == null)
+        if (channel == null) {
+            if (channelId == null) {
                 channelId = newChannelId(channelName);
+            }
             AbstractSessionChannel newChannel = newChannel(channelId);
             channel = _channels.putIfAbsent(channelName, newChannel);
-            if (channel == null)
+            if (channel == null) {
                 channel = newChannel;
+            }
         }
         return channel;
     }
 
-    protected ConcurrentMap<String, AbstractSessionChannel> getChannels()
-    {
+    protected ConcurrentMap<String, AbstractSessionChannel> getChannels() {
         return _channels;
     }
 
     @Override
-    public void startBatch()
-    {
+    public void startBatch() {
         _batch.incrementAndGet();
     }
 
     protected abstract void sendBatch();
 
     @Override
-    public boolean endBatch()
-    {
-        if (_batch.decrementAndGet() == 0)
-        {
+    public boolean endBatch() {
+        if (_batch.decrementAndGet() == 0) {
             sendBatch();
             return true;
         }
@@ -173,55 +161,46 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
     }
 
     @Override
-    public void batch(Runnable batch)
-    {
+    public void batch(Runnable batch) {
         startBatch();
-        try
-        {
+        try {
             batch.run();
-        }
-        finally
-        {
+        } finally {
             endBatch();
         }
     }
 
-    protected boolean isBatching()
-    {
+    protected boolean isBatching() {
         return _batch.get() > 0;
     }
 
     @Override
-    public Object getAttribute(String name)
-    {
+    public Object getAttribute(String name) {
         return _attributes.getAttribute(name);
     }
 
     @Override
-    public Set<String> getAttributeNames()
-    {
+    public Set<String> getAttributeNames() {
         return _attributes.getAttributeNameSet();
     }
 
     @Override
-    public Object removeAttribute(String name)
-    {
+    public Object removeAttribute(String name) {
         Object old = _attributes.getAttribute(name);
         _attributes.removeAttribute(name);
         return old;
     }
 
     @Override
-    public void setAttribute(String name, Object value)
-    {
+    public void setAttribute(String name, Object value) {
         _attributes.setAttribute(name, value);
     }
 
     @Override
-    public void remoteCall(String target, Object data, MessageListener callback)
-    {
-        if (!target.startsWith("/"))
+    public void remoteCall(String target, Object data, MessageListener callback) {
+        if (!target.startsWith("/")) {
             target = "/" + target;
+        }
         String channelName = "/service" + target;
         Message.Mutable message = newMessage();
         String messageId = newMessageId();
@@ -234,15 +213,14 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
 
     protected abstract void send(Message.Mutable message);
 
-    protected Message.Mutable newMessage()
-    {
+    protected Message.Mutable newMessage() {
         return new HashMapMessage();
     }
 
-    protected void resetSubscriptions()
-    {
-        for (AbstractSessionChannel ch : _channels.values())
+    protected void resetSubscriptions() {
+        for (AbstractSessionChannel ch : _channels.values()) {
             ch.resetSubscriptions();
+        }
     }
 
     /**
@@ -252,44 +230,42 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
      *
      * @param message the message received.
      */
-    public void receive(final Message.Mutable message)
-    {
+    public void receive(final Message.Mutable message) {
         String channelName = message.getChannel();
-        if (channelName == null)
+        if (channelName == null) {
             throw new IllegalArgumentException("Bayeux messages must have a channel, " + message);
+        }
 
-        if (Channel.META_SUBSCRIBE.equals(channelName))
-        {
+        if (Channel.META_SUBSCRIBE.equals(channelName)) {
             // Remove the subscriber if the subscription fails.
             ClientSessionChannel.MessageListener subscriber = unregisterSubscriber(message.getId());
-            if (!message.isSuccessful())
-            {
+            if (!message.isSuccessful()) {
                 String subscription = (String)message.get(Message.SUBSCRIPTION_FIELD);
                 MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(subscription);
                 AbstractSessionChannel channel = channelRef.getReference();
                 channel.removeSubscription(subscriber);
-                if (channelRef.isMarked())
+                if (channelRef.isMarked()) {
                     channel.release();
+                }
             }
         }
 
-        if (!extendRcv(message))
+        if (!extendRcv(message)) {
             return;
+        }
 
-        if (handleRemoteCall(message))
+        if (handleRemoteCall(message)) {
             return;
+        }
 
         notifyListeners(message);
     }
 
-    private boolean handleRemoteCall(Message.Mutable message)
-    {
+    private boolean handleRemoteCall(Message.Mutable message) {
         String messageId = message.getId();
-        if (messageId != null)
-        {
+        if (messageId != null) {
             MessageListener listener = _remoteCalls.remove(messageId);
-            if (listener != null)
-            {
+            if (listener != null) {
                 notifyMessageListener(listener, message);
                 return true;
             }
@@ -297,115 +273,106 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
         return false;
     }
 
-    private void notifyMessageListener(MessageListener listener, Message.Mutable message)
-    {
-        try
-        {
+    private void notifyMessageListener(MessageListener listener, Message.Mutable message) {
+        try {
             listener.onMessage(message);
-        }
-        catch (Throwable x)
-        {
+        } catch (Throwable x) {
             logger.info("Exception while invoking listener " + listener, x);
         }
     }
 
-    protected void notifyListeners(Message.Mutable message)
-    {
-        if (message.isMeta() || message.isPublishReply())
-        {
+    protected void notifyListeners(Message.Mutable message) {
+        if (message.isMeta() || message.isPublishReply()) {
             String messageId = message.getId();
             ClientSessionChannel.MessageListener callback = unregisterCallback(messageId);
-            if (callback != null)
+            if (callback != null) {
                 notifyListener(callback, message);
+            }
         }
 
         MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(message.getChannel());
         AbstractSessionChannel channel = channelRef.getReference();
         channel.notifyMessageListeners(message);
-        if (channelRef.isMarked())
+        if (channelRef.isMarked()) {
             channel.release();
+        }
 
         ChannelId channelId = channel.getChannelId();
-        for (String wildChannelName : channelId.getWilds())
-        {
+        for (String wildChannelName : channelId.getWilds()) {
             MarkedReference<AbstractSessionChannel> wildChannelRef = getReleasableChannel(wildChannelName);
             AbstractSessionChannel wildChannel = wildChannelRef.getReference();
             wildChannel.notifyMessageListeners(message);
-            if (wildChannelRef.isMarked())
+            if (wildChannelRef.isMarked()) {
                 wildChannel.release();
+            }
         }
     }
 
-    protected void notifyListener(ClientSessionChannel.MessageListener listener, Message.Mutable message)
-    {
+    protected void notifyListener(ClientSessionChannel.MessageListener listener, Message.Mutable message) {
         MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(message.getChannel());
         AbstractSessionChannel channel = channelRef.getReference();
         channel.notifyOnMessage(listener, message);
-        if (channelRef.isMarked())
+        if (channelRef.isMarked()) {
             channel.release();
+        }
     }
 
-    private MarkedReference<AbstractSessionChannel> getReleasableChannel(String id)
-    {
+    private MarkedReference<AbstractSessionChannel> getReleasableChannel(String id) {
         // Use getChannels().get(channelName) instead of getChannel(channelName)
         // to avoid to cache channels that can be released immediately.
 
         AbstractSessionChannel channel = ChannelId.isMeta(id) ? (AbstractSessionChannel)getChannel(id) : getChannels().get(id);
-        if (channel != null)
+        if (channel != null) {
             return new MarkedReference<>(channel, false);
+        }
         return new MarkedReference<>(newChannel(newChannelId(id)), true);
     }
 
-    protected void registerCallback(String messageId, ClientSessionChannel.MessageListener callback)
-    {
-        if (callback != null)
+    protected void registerCallback(String messageId, ClientSessionChannel.MessageListener callback) {
+        if (callback != null) {
             _callbacks.put(messageId, callback);
+        }
     }
 
-    protected ClientSessionChannel.MessageListener unregisterCallback(String messageId)
-    {
-        if (messageId == null)
+    protected ClientSessionChannel.MessageListener unregisterCallback(String messageId) {
+        if (messageId == null) {
             return null;
+        }
         return _callbacks.remove(messageId);
     }
 
-    protected void registerSubscriber(String messageId, ClientSessionChannel.MessageListener subscriber)
-    {
-        if (subscriber != null)
+    protected void registerSubscriber(String messageId, ClientSessionChannel.MessageListener subscriber) {
+        if (subscriber != null) {
             _subscribers.put(messageId, subscriber);
+        }
     }
 
-    protected ClientSessionChannel.MessageListener unregisterSubscriber(String messageId)
-    {
-        if (messageId == null)
+    protected ClientSessionChannel.MessageListener unregisterSubscriber(String messageId) {
+        if (messageId == null) {
             return null;
+        }
         return _subscribers.remove(messageId);
     }
 
     @Override
-    public String dump()
-    {
+    public String dump() {
         return ContainerLifeCycle.dump(this);
     }
 
     @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
+    public void dump(Appendable out, String indent) throws IOException {
         ContainerLifeCycle.dumpObject(out, this);
 
         List<Dumpable> children = new ArrayList<>();
 
-        children.add(new Dumpable()
-        {
+        children.add(new Dumpable() {
             @Override
-            public String dump()
-            {
+            public String dump() {
                 return null;
             }
 
             @Override
-            public void dump(Appendable out, String indent) throws IOException
-            {
+            public void dump(Appendable out, String indent) throws IOException {
                 Collection<AbstractSessionChannel> channels = getChannels().values();
                 ContainerLifeCycle.dumpObject(out, "channels: " + channels.size());
                 ContainerLifeCycle.dump(out, indent, channels);
@@ -418,8 +385,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
     /**
      * <p>A channel scoped to a {@link ClientSession}.</p>
      */
-    protected abstract class AbstractSessionChannel implements ClientSessionChannel, Dumpable
-    {
+    protected abstract class AbstractSessionChannel implements ClientSessionChannel, Dumpable {
         private final ChannelId _id;
         private final AttributesMap _attributes = new AttributesMap();
         private final CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<>();
@@ -427,46 +393,39 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
         private final CopyOnWriteArrayList<ClientSessionChannelListener> _listeners = new CopyOnWriteArrayList<>();
         private volatile boolean _released;
 
-        protected AbstractSessionChannel(ChannelId id)
-        {
+        protected AbstractSessionChannel(ChannelId id) {
             _id = id;
         }
 
         @Override
-        public ChannelId getChannelId()
-        {
+        public ChannelId getChannelId() {
             return _id;
         }
 
         @Override
-        public void addListener(ClientSessionChannelListener listener)
-        {
+        public void addListener(ClientSessionChannelListener listener) {
             throwIfReleased();
             _listeners.add(listener);
         }
 
         @Override
-        public void removeListener(ClientSessionChannelListener listener)
-        {
+        public void removeListener(ClientSessionChannelListener listener) {
             throwIfReleased();
             _listeners.remove(listener);
         }
 
         @Override
-        public List<ClientSessionChannelListener> getListeners()
-        {
+        public List<ClientSessionChannelListener> getListeners() {
             return Collections.unmodifiableList(_listeners);
         }
 
         @Override
-        public void publish(Object data)
-        {
+        public void publish(Object data) {
             publish(data, null);
         }
 
         @Override
-        public void publish(Object data, MessageListener callback)
-        {
+        public void publish(Object data, MessageListener callback) {
             throwIfReleased();
             Message.Mutable message = newMessage();
             String messageId = newMessageId();
@@ -478,26 +437,23 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
         }
 
         @Override
-        public void subscribe(MessageListener listener)
-        {
+        public void subscribe(MessageListener listener) {
             subscribe(listener, null);
         }
 
         @Override
-        public void subscribe(MessageListener listener, MessageListener callback)
-        {
+        public void subscribe(MessageListener listener, MessageListener callback) {
             throwIfReleased();
             boolean added = _subscriptions.add(listener);
-            if (added)
-            {
+            if (added) {
                 int count = _subscriptionCount.incrementAndGet();
-                if (count == 1)
+                if (count == 1) {
                     sendSubscribe(listener, callback);
+                }
             }
         }
 
-        protected void sendSubscribe(MessageListener listener, MessageListener callback)
-        {
+        protected void sendSubscribe(MessageListener listener, MessageListener callback) {
             Message.Mutable message = newMessage();
             String messageId = newMessageId();
             message.setId(messageId);
@@ -509,30 +465,28 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
         }
 
         @Override
-        public void unsubscribe(MessageListener listener)
-        {
+        public void unsubscribe(MessageListener listener) {
             unsubscribe(listener, null);
         }
 
         @Override
-        public void unsubscribe(MessageListener listener, MessageListener callback)
-        {
+        public void unsubscribe(MessageListener listener, MessageListener callback) {
             boolean removedLast = removeSubscription(listener);
-            if (removedLast)
+            if (removedLast) {
                 sendUnSubscribe(callback);
+            }
         }
 
-        private boolean removeSubscription(MessageListener listener)
-        {
+        private boolean removeSubscription(MessageListener listener) {
             throwIfReleased();
             boolean removed = _subscriptions.remove(listener);
-            if (removed)
+            if (removed) {
                 return _subscriptionCount.decrementAndGet() == 0;
+            }
             return false;
         }
 
-        protected void sendUnSubscribe(MessageListener callback)
-        {
+        protected void sendUnSubscribe(MessageListener callback) {
             Message.Mutable message = newMessage();
             String messageId = newMessageId();
             message.setId(messageId);
@@ -543,27 +497,25 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
         }
 
         @Override
-        public void unsubscribe()
-        {
+        public void unsubscribe() {
             throwIfReleased();
-            for (MessageListener listener : _subscriptions)
+            for (MessageListener listener : _subscriptions) {
                 unsubscribe(listener);
+            }
         }
 
         @Override
-        public List<MessageListener> getSubscribers()
-        {
+        public List<MessageListener> getSubscribers() {
             return Collections.unmodifiableList(_subscriptions);
         }
 
         @Override
-        public boolean release()
-        {
-            if (_released)
+        public boolean release() {
+            if (_released) {
                 return false;
+            }
 
-            if (_subscriptions.isEmpty() && _listeners.isEmpty())
-            {
+            if (_subscriptions.isEmpty() && _listeners.isEmpty()) {
                 boolean removed = _channels.remove(getId(), this);
                 _released = removed;
                 return removed;
@@ -572,165 +524,139 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
         }
 
         @Override
-        public boolean isReleased()
-        {
+        public boolean isReleased() {
             return _released;
         }
 
-        protected void resetSubscriptions()
-        {
+        protected void resetSubscriptions() {
             throwIfReleased();
-            for (MessageListener l : _subscriptions)
-            {
-                if (_subscriptions.remove(l))
+            for (MessageListener l : _subscriptions) {
+                if (_subscriptions.remove(l)) {
                     _subscriptionCount.decrementAndGet();
-            }
-        }
-
-        @Override
-        public String getId()
-        {
-            return _id.toString();
-        }
-
-        @Override
-        public boolean isDeepWild()
-        {
-            return _id.isDeepWild();
-        }
-
-        @Override
-        public boolean isMeta()
-        {
-            return _id.isMeta();
-        }
-
-        @Override
-        public boolean isService()
-        {
-            return _id.isService();
-        }
-
-        @Override
-        public boolean isBroadcast()
-        {
-            return !isMeta() && !isService();
-        }
-
-        @Override
-        public boolean isWild()
-        {
-            return _id.isWild();
-        }
-
-        protected void notifyMessageListeners(Message message)
-        {
-            throwIfReleased();
-            for (ClientSessionChannelListener listener : _listeners)
-            {
-                if (listener instanceof ClientSessionChannel.MessageListener)
-                    notifyOnMessage((MessageListener)listener, message);
-            }
-            for (ClientSessionChannelListener listener : _subscriptions)
-            {
-                if (listener instanceof ClientSessionChannel.MessageListener)
-                {
-                    if (!message.isPublishReply())
-                        notifyOnMessage((MessageListener)listener, message);
                 }
             }
         }
 
-        protected void notifyOnMessage(MessageListener listener, Message message)
-        {
+        @Override
+        public String getId() {
+            return _id.toString();
+        }
+
+        @Override
+        public boolean isDeepWild() {
+            return _id.isDeepWild();
+        }
+
+        @Override
+        public boolean isMeta() {
+            return _id.isMeta();
+        }
+
+        @Override
+        public boolean isService() {
+            return _id.isService();
+        }
+
+        @Override
+        public boolean isBroadcast() {
+            return !isMeta() && !isService();
+        }
+
+        @Override
+        public boolean isWild() {
+            return _id.isWild();
+        }
+
+        protected void notifyMessageListeners(Message message) {
             throwIfReleased();
-            try
-            {
-                listener.onMessage(this, message);
+            for (ClientSessionChannelListener listener : _listeners) {
+                if (listener instanceof ClientSessionChannel.MessageListener) {
+                    notifyOnMessage((MessageListener)listener, message);
+                }
             }
-            catch (Throwable x)
-            {
+            for (ClientSessionChannelListener listener : _subscriptions) {
+                if (listener instanceof ClientSessionChannel.MessageListener) {
+                    if (!message.isPublishReply()) {
+                        notifyOnMessage((MessageListener)listener, message);
+                    }
+                }
+            }
+        }
+
+        protected void notifyOnMessage(MessageListener listener, Message message) {
+            throwIfReleased();
+            try {
+                listener.onMessage(this, message);
+            } catch (Throwable x) {
                 logger.info("Exception while invoking listener " + listener, x);
             }
         }
 
         @Override
-        public void setAttribute(String name, Object value)
-        {
+        public void setAttribute(String name, Object value) {
             throwIfReleased();
             _attributes.setAttribute(name, value);
         }
 
         @Override
-        public Object getAttribute(String name)
-        {
+        public Object getAttribute(String name) {
             throwIfReleased();
             return _attributes.getAttribute(name);
         }
 
         @Override
-        public Set<String> getAttributeNames()
-        {
+        public Set<String> getAttributeNames() {
             throwIfReleased();
             return _attributes.getAttributeNameSet();
         }
 
         @Override
-        public Object removeAttribute(String name)
-        {
+        public Object removeAttribute(String name) {
             throwIfReleased();
             Object old = getAttribute(name);
             _attributes.removeAttribute(name);
             return old;
         }
 
-        protected void throwIfReleased()
-        {
-            if (isReleased())
+        protected void throwIfReleased() {
+            if (isReleased()) {
                 throw new IllegalStateException("Channel " + this + " has been released");
+            }
         }
 
         @Override
-        public String dump()
-        {
+        public String dump() {
             return ContainerLifeCycle.dump(this);
         }
 
         @Override
-        public void dump(Appendable out, String indent) throws IOException
-        {
+        public void dump(Appendable out, String indent) throws IOException {
             ContainerLifeCycle.dumpObject(out, this);
 
             List<Dumpable> children = new ArrayList<>();
 
-            children.add(new Dumpable()
-            {
+            children.add(new Dumpable() {
                 @Override
-                public String dump()
-                {
+                public String dump() {
                     return null;
                 }
 
                 @Override
-                public void dump(Appendable out, String indent) throws IOException
-                {
+                public void dump(Appendable out, String indent) throws IOException {
                     List<ClientSessionChannelListener> listeners = getListeners();
                     ContainerLifeCycle.dumpObject(out, "listeners: " + listeners.size());
                     ContainerLifeCycle.dump(out, indent, listeners);
                 }
             });
 
-            children.add(new Dumpable()
-            {
+            children.add(new Dumpable() {
                 @Override
-                public String dump()
-                {
+                public String dump() {
                     return null;
                 }
 
                 @Override
-                public void dump(Appendable out, String indent) throws IOException
-                {
+                public void dump(Appendable out, String indent) throws IOException {
                     List<MessageListener> subscribers = getSubscribers();
                     ContainerLifeCycle.dumpObject(out, "subscribers: " + subscribers.size());
                     ContainerLifeCycle.dump(out, indent, subscribers);
@@ -741,8 +667,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return String.format("%s@%s", _id, AbstractClientSession.this);
         }
     }

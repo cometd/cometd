@@ -35,10 +35,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 /**
  * Main class for cometd demo.
  */
-public class CometDDemo
-{
-    public static void main(String[] args) throws Exception
-    {
+public class CometDDemo {
+    public static void main(String[] args) throws Exception {
         int port = args.length == 0 ? 8080 : Integer.parseInt(args[0]);
 
         QueuedThreadPool qtp = new QueuedThreadPool();
@@ -100,23 +98,20 @@ public class CometDDemo
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy());
 
         // Demo lazy messages
-        if (Boolean.getBoolean("LAZY"))
-        {
-            bayeux.addExtension(new BayeuxServer.Extension.Adapter()
-            {
+        if (Boolean.getBoolean("LAZY")) {
+            bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
                 @Override
-                public boolean rcv(ServerSession from, Mutable message)
-                {
-                    if (message.getChannel().startsWith("/chat/") && !message.isPublishReply() && message.getData().toString().contains("lazy"))
+                public boolean rcv(ServerSession from, Mutable message) {
+                    if (message.getChannel().startsWith("/chat/") && !message.isPublishReply() && message.getData().toString().contains("lazy")) {
                         message.setLazy(true);
+                    }
                     return true;
                 }
             });
         }
 
         // Demo lazy messages
-        if (Boolean.getBoolean("LAZYCHAT"))
-        {
+        if (Boolean.getBoolean("LAZYCHAT")) {
             String channelName = "/chat/demo";
             final ServerChannel chat_demo = bayeux.createChannelIfAbsent(channelName).getReference();
             chat_demo.setLazy(true);

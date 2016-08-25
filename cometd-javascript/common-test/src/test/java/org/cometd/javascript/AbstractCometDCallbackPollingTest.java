@@ -19,14 +19,12 @@ package org.cometd.javascript;
  * A base test class to be extended for tests that
  * can only pass using the callback-polling transport
  */
-public class AbstractCometDCallbackPollingTest extends AbstractCometDTest
-{
+public class AbstractCometDCallbackPollingTest extends AbstractCometDTest {
     @Override
-    protected void initPage() throws Exception
-    {
+    protected void initPage() throws Exception {
         super.initPage();
         evaluateScript("keep_only_callback_polling_transport",
                 "cometd.unregisterTransports();" +
-                "cometd.registerTransport('callback-polling', originalTransports['callback-polling']);");
+                        "cometd.registerTransport('callback-polling', originalTransports['callback-polling']);");
     }
 }

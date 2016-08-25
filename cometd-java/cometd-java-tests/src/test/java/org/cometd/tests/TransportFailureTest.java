@@ -45,8 +45,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class TransportFailureTest
-{
+public class TransportFailureTest {
     private Server server;
     private ServerConnector connector;
     private String cometdURL;
@@ -55,8 +54,7 @@ public class TransportFailureTest
     private WebSocketContainer wsClient;
     private String cometdServletPath;
 
-    private void startServer(Map<String, String> initParams) throws Exception
-    {
+    private void startServer(Map<String, String> initParams) throws Exception {
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
@@ -72,10 +70,10 @@ public class TransportFailureTest
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdServletPath);
         cometdServletHolder.setInitOrder(1);
-        if (initParams != null)
-        {
-            for (Map.Entry<String, String> entry : initParams.entrySet())
+        if (initParams != null) {
+            for (Map.Entry<String, String> entry : initParams.entrySet()) {
                 cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
+            }
         }
         context.addServlet(cometdServletHolder, cometdServletPath + "/*");
 
@@ -91,26 +89,23 @@ public class TransportFailureTest
     }
 
     @After
-    public void dispose() throws Exception
-    {
-        if (server != null)
+    public void dispose() throws Exception {
+        if (server != null) {
             server.stop();
+        }
     }
 
     @Test
-    public void testTransportNegotiationClientWebSocketAndLongPollingServerLongPolling() throws Exception
-    {
+    public void testTransportNegotiationClientWebSocketAndLongPollingServerLongPolling() throws Exception {
         startServer(null);
         bayeux.setAllowedTransports("long-polling");
 
         final ClientTransport webSocketTransport = new WebSocketTransport(null, null, wsClient);
         final ClientTransport longPollingTransport = new LongPollingTransport(null, httpClient);
         final CountDownLatch failureLatch = new CountDownLatch(1);
-        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
-        {
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport) {
             @Override
-            protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure)
-            {
+            protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure) {
                 Assert.assertEquals(webSocketTransport.getName(), oldTransportName);
                 Assert.assertEquals(longPollingTransport.getName(), newTransportName);
                 failureLatch.countDown();
@@ -119,14 +114,13 @@ public class TransportFailureTest
 
         final CountDownLatch successLatch = new CountDownLatch(1);
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        client.handshake(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful())
+        client.handshake(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isSuccessful()) {
                     successLatch.countDown();
-                else
+                } else {
                     failedLatch.countDown();
+                }
             }
         });
 
@@ -138,18 +132,15 @@ public class TransportFailureTest
     }
 
     @Test
-    public void testTransportNegotiationFailureForClientWebSocketServerLongPolling() throws Exception
-    {
+    public void testTransportNegotiationFailureForClientWebSocketServerLongPolling() throws Exception {
         startServer(null);
         bayeux.setAllowedTransports("long-polling");
 
         final ClientTransport webSocketTransport = new WebSocketTransport(null, null, wsClient);
         final CountDownLatch failureLatch = new CountDownLatch(1);
-        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport)
-        {
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport) {
             @Override
-            protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure)
-            {
+            protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure) {
                 Assert.assertEquals(webSocketTransport.getName(), oldTransportName);
                 Assert.assertNull(newTransportName);
                 failureLatch.countDown();
@@ -157,12 +148,11 @@ public class TransportFailureTest
         };
 
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        client.handshake(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
+        client.handshake(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
                     failedLatch.countDown();
+                }
             }
         });
 
@@ -172,39 +162,34 @@ public class TransportFailureTest
     }
 
     @Test
-    public void testTransportNegotiationFailureForClientLongPollingServerCallbackPolling() throws Exception
-    {
+    public void testTransportNegotiationFailureForClientLongPollingServerCallbackPolling() throws Exception {
         startServer(null);
         // Only callback-polling on server (via extension), only long-polling on client.
         bayeux.setAllowedTransports("long-polling", "callback-polling");
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter()
-        {
+        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
             @Override
-            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-            {
-                if (Channel.META_HANDSHAKE.equals(message.getChannel()))
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
+                if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
                     message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, new String[]{"callback-polling"});
+                }
                 return true;
             }
         });
 
         final CountDownLatch failureLatch = new CountDownLatch(1);
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
-        {
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
             @Override
-            protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure)
-            {
+            protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure) {
                 failureLatch.countDown();
             }
         };
         final CountDownLatch latch = new CountDownLatch(1);
-        client.handshake(new ClientSessionChannel.MessageListener()
-        {
+        client.handshake(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
                     latch.countDown();
+                }
             }
         });
 
@@ -214,18 +199,15 @@ public class TransportFailureTest
     }
 
     @Test
-    public void testTransportNegotiationFailureForClientLongPollingServerWebSocket() throws Exception
-    {
+    public void testTransportNegotiationFailureForClientLongPollingServerWebSocket() throws Exception {
         startServer(null);
         bayeux.setAllowedTransports("websocket");
 
         final ClientTransport longPollingTransport = new LongPollingTransport(null, httpClient);
         final CountDownLatch failureLatch = new CountDownLatch(1);
-        final BayeuxClient client = new BayeuxClient(cometdURL, longPollingTransport)
-        {
+        final BayeuxClient client = new BayeuxClient(cometdURL, longPollingTransport) {
             @Override
-            protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure)
-            {
+            protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure) {
                 Assert.assertEquals(longPollingTransport.getName(), oldTransportName);
                 Assert.assertEquals(longPollingTransport.getName(), newTransportName);
                 failureLatch.countDown();
@@ -233,12 +215,11 @@ public class TransportFailureTest
         };
 
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        client.handshake(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
+        client.handshake(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
                     failedLatch.countDown();
+                }
             }
         });
 
@@ -249,20 +230,18 @@ public class TransportFailureTest
     }
 
     @Test
-    public void testChangeTransportURLOnMetaConnectFailure() throws Exception
-    {
+    public void testChangeTransportURLOnMetaConnectFailure() throws Exception {
         startServer(null);
         ServerConnector connector2 = new ServerConnector(server);
         server.addConnector(connector2);
         connector2.start();
 
-        bayeux.addExtension(new MetaConnectFailureExtension()
-        {
+        bayeux.addExtension(new MetaConnectFailureExtension() {
             @Override
-            protected boolean onMetaConnect(int count) throws Exception
-            {
-                if (count != 2)
+            protected boolean onMetaConnect(int count) throws Exception {
+                if (count != 2) {
                     return true;
+                }
                 connector.stop();
                 return false;
             }
@@ -270,23 +249,18 @@ public class TransportFailureTest
 
         final String newURL = "http://localhost:" + connector2.getLocalPort() + cometdServletPath;
 
-        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
-        {
+        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
             private int metaConnects;
 
             @Override
-            protected void onTransportFailure(Message message, ClientTransport.FailureInfo failureInfo, ClientTransport.FailureHandler handler)
-            {
+            protected void onTransportFailure(Message message, ClientTransport.FailureInfo failureInfo, ClientTransport.FailureHandler handler) {
                 ++metaConnects;
-                if (metaConnects == 1 && Channel.META_CONNECT.equals(message.getChannel()))
-                {
+                if (metaConnects == 1 && Channel.META_CONNECT.equals(message.getChannel())) {
                     ClientTransport transport = getTransport();
                     transport.setURL(newURL);
                     failureInfo.transport = transport;
                     handler.handle(failureInfo);
-                }
-                else
-                {
+                } else {
                     super.onTransportFailure(message, failureInfo, handler);
                 }
             }
@@ -294,18 +268,16 @@ public class TransportFailureTest
 
         // The second connect fails, the third connect should succeed on the new URL.
         final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             private int metaConnects;
 
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 ++metaConnects;
-                if (metaConnects == 3 && message.isSuccessful())
-                {
-                    if (client.getTransport().getURL().equals(newURL))
+                if (metaConnects == 3 && message.isSuccessful()) {
+                    if (client.getTransport().getURL().equals(newURL)) {
                         latch.countDown();
+                    }
                 }
             }
         });
@@ -319,36 +291,28 @@ public class TransportFailureTest
     }
 
     @Test
-    public void testChangeTransportOnMetaConnectFailure() throws Exception
-    {
+    public void testChangeTransportOnMetaConnectFailure() throws Exception {
         startServer(null);
 
-        bayeux.addExtension(new MetaConnectFailureExtension()
-        {
+        bayeux.addExtension(new MetaConnectFailureExtension() {
             @Override
-            protected boolean onMetaConnect(int count) throws Exception
-            {
+            protected boolean onMetaConnect(int count) throws Exception {
                 return count != 2;
             }
         });
 
         final ClientTransport webSocketTransport = new WebSocketTransport(null, null, wsClient);
         LongPollingTransport longPollingTransport = new LongPollingTransport(null, httpClient);
-        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
-        {
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport) {
             private int metaConnects;
 
             @Override
-            protected void onTransportFailure(Message message, ClientTransport.FailureInfo failureInfo, ClientTransport.FailureHandler handler)
-            {
+            protected void onTransportFailure(Message message, ClientTransport.FailureInfo failureInfo, ClientTransport.FailureHandler handler) {
                 ++metaConnects;
-                if (metaConnects == 1 && Channel.META_CONNECT.equals(message.getChannel()))
-                {
+                if (metaConnects == 1 && Channel.META_CONNECT.equals(message.getChannel())) {
                     failureInfo.transport = webSocketTransport;
                     handler.handle(failureInfo);
-                }
-                else
-                {
+                } else {
                     super.onTransportFailure(message, failureInfo, handler);
                 }
             }
@@ -356,18 +320,16 @@ public class TransportFailureTest
 
         // The second connect fails, the third connect should succeed on the new transport.
         final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             private int metaConnects;
 
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 ++metaConnects;
-                if (metaConnects == 3 && message.isSuccessful())
-                {
-                    if (client.getTransport().getName().equals(webSocketTransport.getName()))
+                if (metaConnects == 3 && message.isSuccessful()) {
+                    if (client.getTransport().getName().equals(webSocketTransport.getName())) {
                         latch.countDown();
+                    }
                 }
             }
         });
@@ -379,21 +341,15 @@ public class TransportFailureTest
         client.disconnect(1000);
     }
 
-    private abstract class MetaConnectFailureExtension extends BayeuxServer.Extension.Adapter
-    {
+    private abstract class MetaConnectFailureExtension extends BayeuxServer.Extension.Adapter {
         private final AtomicInteger metaConnects = new AtomicInteger();
 
         @Override
-        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-        {
-            if (Channel.META_CONNECT.equals(message.getChannel()))
-            {
-                try
-                {
+        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
+            if (Channel.META_CONNECT.equals(message.getChannel())) {
+                try {
                     return onMetaConnect(metaConnects.incrementAndGet());
-                }
-                catch (Exception x)
-                {
+                } catch (Exception x) {
                     throw new RuntimeException(x);
                 }
             }

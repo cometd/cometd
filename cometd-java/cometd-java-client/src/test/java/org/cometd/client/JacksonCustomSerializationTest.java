@@ -36,11 +36,9 @@ import org.cometd.server.transport.AbstractHttpTransport;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class JacksonCustomSerializationTest extends ClientServerTest
-{
+public class JacksonCustomSerializationTest extends ClientServerTest {
     @Test
-    public void testJacksonCustomSerialization() throws Exception
-    {
+    public void testJacksonCustomSerialization() throws Exception {
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, TestJacksonJSONContextServer.class.getName());
         serverOptions.put(AbstractHttpTransport.JSON_DEBUG_OPTION, "true");
@@ -56,10 +54,8 @@ public class JacksonCustomSerializationTest extends ClientServerTest
 
         LocalSession service = bayeux.newLocalSession("custom_serialization");
         service.handshake();
-        service.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        service.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 Data data = (Data)message.getData();
                 Assert.assertEquals(dataContent, data.content);
                 Map<String, Object> ext = message.getExt();
@@ -85,8 +81,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest
     }
 
     @Test
-    public void testParserGenerator() throws Exception
-    {
+    public void testParserGenerator() throws Exception {
         // Note: Jackson does not seem to be able to serialize/deserialize correctly a single Data/Extra object.
         // However, if they are put into a container like a Map, then Jackson produces a different JSON than
         // what it produces for the standalone object that allows correct deserialization, of this form:
@@ -110,68 +105,55 @@ public class JacksonCustomSerializationTest extends ClientServerTest
         Assert.assertEquals(extra1.content, extra2.content);
     }
 
-    private static class ExtraExtension extends ClientSession.Extension.Adapter
-    {
+    private static class ExtraExtension extends ClientSession.Extension.Adapter {
         private final long content;
 
-        public ExtraExtension(long content)
-        {
+        public ExtraExtension(long content) {
             this.content = content;
         }
 
         @Override
-        public boolean send(ClientSession session, Message.Mutable message)
-        {
+        public boolean send(ClientSession session, Message.Mutable message) {
             Map<String, Object> ext = message.getExt(true);
             ext.put("extra", new Extra(content));
             return true;
         }
     }
 
-    public static class TestJacksonJSONContextServer extends JacksonJSONContextServer
-    {
-        public TestJacksonJSONContextServer()
-        {
+    public static class TestJacksonJSONContextServer extends JacksonJSONContextServer {
+        public TestJacksonJSONContextServer() {
             getObjectMapper().enableDefaultTyping(ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
 
-    public static class TestJacksonJSONContextClient extends JacksonJSONContextClient
-    {
-        public TestJacksonJSONContextClient()
-        {
+    public static class TestJacksonJSONContextClient extends JacksonJSONContextClient {
+        public TestJacksonJSONContextClient() {
             getObjectMapper().enableDefaultTyping(ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
 
-    private static class Data
-    {
+    private static class Data {
         @com.fasterxml.jackson.annotation.JsonProperty
         private String content;
 
-        private Data()
-        {
+        private Data() {
             // Needed by Jackson
         }
 
-        private Data(String content)
-        {
+        private Data(String content) {
             this.content = content;
         }
     }
 
-    private static class Extra
-    {
+    private static class Extra {
         @com.fasterxml.jackson.annotation.JsonProperty
         private long content;
 
-        private Extra()
-        {
+        private Extra() {
             // Needed by Jackson
         }
 
-        private Extra(long content)
-        {
+        private Extra(long content) {
             this.content = content;
         }
     }

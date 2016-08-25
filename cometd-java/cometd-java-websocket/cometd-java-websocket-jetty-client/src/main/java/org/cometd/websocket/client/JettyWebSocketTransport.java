@@ -42,33 +42,28 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 
-public class JettyWebSocketTransport extends AbstractWebSocketTransport implements UpgradeListener
-{
+public class JettyWebSocketTransport extends AbstractWebSocketTransport implements UpgradeListener {
     private final WebSocketClient _webSocketClient;
     private boolean _webSocketSupported;
     private boolean _webSocketConnected;
 
-    public JettyWebSocketTransport(Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketClient webSocketClient)
-    {
+    public JettyWebSocketTransport(Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketClient webSocketClient) {
         this(null, options, scheduler, webSocketClient);
     }
 
-    public JettyWebSocketTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketClient webSocketClient)
-    {
+    public JettyWebSocketTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketClient webSocketClient) {
         super(url, options, scheduler);
         _webSocketClient = webSocketClient;
         _webSocketSupported = true;
     }
 
     @Override
-    public boolean accept(String version)
-    {
+    public boolean accept(String version) {
         return _webSocketSupported;
     }
 
     @Override
-    public void init()
-    {
+    public void init() {
         super.init();
 
         _webSocketClient.setConnectTimeout(getConnectTimeout());
@@ -81,191 +76,159 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         _webSocketConnected = false;
     }
 
-    protected Delegate connect(String uri, TransportListener listener, List<Mutable> messages)
-    {
-        try
-        {
-            if (logger.isDebugEnabled())
+    protected Delegate connect(String uri, TransportListener listener, List<Mutable> messages) {
+        try {
+            if (logger.isDebugEnabled()) {
                 logger.debug("Opening websocket session to {}", uri);
+            }
             _webSocketClient.setConnectTimeout(getConnectTimeout());
             _webSocketClient.getPolicy().setIdleTimeout(getIdleTimeout());
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             String protocol = getProtocol();
-            if (protocol != null)
+            if (protocol != null) {
                 request.setSubProtocols(protocol);
+            }
             Delegate delegate = connect(_webSocketClient, request, uri);
             _webSocketConnected = true;
             return delegate;
-        }
-        catch (ConnectException | SocketTimeoutException | UnresolvedAddressException x)
-        {
+        } catch (ConnectException | SocketTimeoutException | UnresolvedAddressException x) {
             // Cannot connect, assume the server supports WebSocket until proved otherwise
             listener.onFailure(x, messages);
-        }
-        catch (UpgradeException x)
-        {
+        } catch (UpgradeException x) {
             _webSocketSupported = false;
             Map<String, Object> failure = new HashMap<>(2);
             failure.put("websocketCode", 1002);
             failure.put("httpCode", x.getResponseStatusCode());
             listener.onFailure(new TransportException(x, failure), messages);
-        }
-        catch (Throwable x)
-        {
+        } catch (Throwable x) {
             _webSocketSupported = isStickyReconnect() && _webSocketConnected;
             listener.onFailure(x, messages);
         }
         return null;
     }
 
-    protected Delegate connect(WebSocketClient client, ClientUpgradeRequest request, String uri) throws IOException, InterruptedException
-    {
-        try
-        {
+    protected Delegate connect(WebSocketClient client, ClientUpgradeRequest request, String uri) throws IOException, InterruptedException {
+        try {
             Delegate delegate = newDelegate();
             client.connect(delegate, new URI(uri), request, this).get();
             return delegate;
-        }
-        catch (ExecutionException x)
-        {
+        } catch (ExecutionException x) {
             Throwable cause = x.getCause();
-            if (cause instanceof RuntimeException)
+            if (cause instanceof RuntimeException) {
                 throw (RuntimeException)cause;
-            if (cause instanceof IOException)
+            }
+            if (cause instanceof IOException) {
                 throw (IOException)cause;
+            }
             throw new IOException(cause);
-        }
-        catch (URISyntaxException x)
-        {
+        } catch (URISyntaxException x) {
             throw new IOException(x);
         }
     }
 
-    protected Delegate newDelegate()
-    {
+    protected Delegate newDelegate() {
         return new JettyWebSocketDelegate();
     }
 
     @Override
-    public void onHandshakeRequest(UpgradeRequest request)
-    {
+    public void onHandshakeRequest(UpgradeRequest request) {
     }
 
     @Override
-    public void onHandshakeResponse(UpgradeResponse response)
-    {
+    public void onHandshakeResponse(UpgradeResponse response) {
         storeCookies(response.getHeaders());
     }
 
-    protected class JettyWebSocketDelegate extends Delegate implements WebSocketListener
-    {
+    protected class JettyWebSocketDelegate extends Delegate implements WebSocketListener {
         private Session _session;
 
         @Override
-        public void onWebSocketConnect(Session session)
-        {
-            synchronized (this)
-            {
+        public void onWebSocketConnect(Session session) {
+            synchronized (this) {
                 _session = session;
             }
-            if (logger.isDebugEnabled())
+            if (logger.isDebugEnabled()) {
                 logger.debug("Opened websocket session {}", session);
+            }
         }
 
         @Override
-        public void onWebSocketClose(int closeCode, String reason)
-        {
+        public void onWebSocketClose(int closeCode, String reason) {
             onClose(closeCode, reason);
         }
 
         @Override
-        public void onWebSocketText(String data)
-        {
+        public void onWebSocketText(String data) {
             onData(data);
         }
 
         @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len)
-        {
+        public void onWebSocketBinary(byte[] payload, int offset, int len) {
         }
 
         @Override
-        public void onWebSocketError(Throwable failure)
-        {
+        public void onWebSocketError(Throwable failure) {
             failMessages(failure);
         }
 
         @Override
-        public void send(String content)
-        {
+        public void send(String content) {
             Session session;
-            synchronized (this)
-            {
+            synchronized (this) {
                 session = _session;
             }
-            try
-            {
-                if (session == null)
+            try {
+                if (session == null) {
                     throw new IOException("Unconnected");
+                }
 
                 // Blocking async sends for the client to allow concurrent sends.
-               session.getRemote().sendStringByFuture(content).get();
-            }
-            catch (Throwable x)
-            {
+                session.getRemote().sendStringByFuture(content).get();
+            } catch (Throwable x) {
                 fail(x, "Exception");
             }
         }
 
         @Override
-        protected void shutdown(String reason)
-        {
+        protected void shutdown(String reason) {
             Session session;
-            synchronized (this)
-            {
+            synchronized (this) {
                 session = _session;
                 close();
             }
-            if (session != null)
-            {
-                if (logger.isDebugEnabled())
+            if (session != null) {
+                if (logger.isDebugEnabled()) {
                     logger.debug("Closing websocket session {}", session);
+                }
                 session.close(1000, reason);
             }
         }
 
         @Override
-        protected boolean isOpen()
-        {
-            synchronized (this)
-            {
+        protected boolean isOpen() {
+            synchronized (this) {
                 return _session != null;
             }
         }
 
         @Override
-        protected void close()
-        {
-            synchronized (this)
-            {
+        protected void close() {
+            synchronized (this) {
                 _session = null;
             }
         }
     }
 
-    public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory
-    {
+    public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
         private final WebSocketClient wsClient;
 
-        public Factory(WebSocketClient wsClient)
-        {
+        public Factory(WebSocketClient wsClient) {
             this.wsClient = wsClient;
             addBean(wsClient);
         }
 
         @Override
-        public ClientTransport newClientTransport(String url, Map<String, Object> options)
-        {
+        public ClientTransport newClientTransport(String url, Map<String, Object> options) {
             ScheduledExecutorService scheduler = (ScheduledExecutorService)options.get(ClientTransport.SCHEDULER_OPTION);
             return new JettyWebSocketTransport(url, options, scheduler, wsClient);
         }

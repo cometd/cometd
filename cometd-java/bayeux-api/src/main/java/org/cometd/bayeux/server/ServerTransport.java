@@ -31,8 +31,7 @@ import org.cometd.bayeux.Transport;
  * that may happen during both responses to requests and via the "/meta/connect" channel,
  * or via the "/meta/connect" channel {@link #isMetaConnectDeliveryOnly() exclusively}.
  */
-public interface ServerTransport extends Transport
-{
+public interface ServerTransport extends Transport {
     /**
      * <p>The advice that this transport sends to inform the client
      * about transport (re)connection.</p>

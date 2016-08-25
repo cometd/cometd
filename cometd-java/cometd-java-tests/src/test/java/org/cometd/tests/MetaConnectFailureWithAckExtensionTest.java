@@ -33,70 +33,57 @@ import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServerTest
-{
-    public MetaConnectFailureWithAckExtensionTest(Transport transport)
-    {
+public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServerTest {
+    public MetaConnectFailureWithAckExtensionTest(Transport transport) {
         super(transport);
     }
 
     @Test
-    public void testMetaConnectFailureWithAckExtension() throws Exception
-    {
+    public void testMetaConnectFailureWithAckExtension() throws Exception {
         startServer(serverOptions());
         bayeux.addExtension(new AcknowledgedMessagesExtension());
 
         final String channelName = "/test";
 
         final CountDownLatch serverSubscribeLatch = new CountDownLatch(1);
-        bayeux.addListener(new BayeuxServer.SubscriptionListener()
-        {
+        bayeux.addListener(new BayeuxServer.SubscriptionListener() {
             @Override
-            public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message)
-            {
-                if (channelName.equals(channel.getId()))
+            public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
+                if (channelName.equals(channel.getId())) {
                     serverSubscribeLatch.countDown();
+                }
             }
 
             @Override
-            public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message)
-            {
+            public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             }
         });
 
         final long delay = 1000;
         final long maxNetworkDelay = 3 * delay;
-        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener()
-        {
+        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
             private final AtomicInteger connects = new AtomicInteger();
 
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 // The test must slow down the first connect enough
                 // for the maxNetworkDelay to expire on client, and
                 // the second connect enough to allow the first connect
                 // to return but not to expire the second connect.
 
                 // Be sure we are subscribed.
-                try
-                {
+                try {
                     serverSubscribeLatch.await(5, TimeUnit.SECONDS);
-                }
-                catch (InterruptedException x)
-                {
+                } catch (InterruptedException x) {
                     // Ignored
                 }
 
                 int connect = connects.incrementAndGet();
-                if (connect == 1)
-                {
+                if (connect == 1) {
                     // Publish a message on the first connect, which will fail.
                     // The ack extension will deliver it via /meta/connect.
                     bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data");
                     sleep(maxNetworkDelay + delay);
-                }
-                else if (connect == 2)
-                {
+                } else if (connect == 2) {
                     // When the second connect arrives, maxNetworkDelay has elapsed.
                     // We need to wait at least one delay to allow the first connect
                     // to return and then some more to ensure no races.
@@ -113,32 +100,27 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
 
         final CountDownLatch messageLatch1 = new CountDownLatch(1);
         final CountDownLatch messageLatch2 = new CountDownLatch(1);
-        final ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (messageLatch1.getCount() == 0)
+        final ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (messageLatch1.getCount() == 0) {
                     messageLatch2.countDown();
+                }
                 messageLatch1.countDown();
             }
         };
 
         final CountDownLatch clientSubscribeLatch = new CountDownLatch(1);
-        final ClientSessionChannel.MessageListener subscribeCallback = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful())
+        final ClientSessionChannel.MessageListener subscribeCallback = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isSuccessful()) {
                     clientSubscribeLatch.countDown();
+                }
             }
         };
 
-        client.handshake(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful())
-                {
+        client.handshake(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isSuccessful()) {
                     client.getChannel(channelName).subscribe(messageCallback, subscribeCallback);
                 }
             }
@@ -151,14 +133,10 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
         disconnectBayeuxClient(client);
     }
 
-    protected void sleep(long time)
-    {
-        try
-        {
+    protected void sleep(long time) {
+        try {
             Thread.sleep(time);
-        }
-        catch (InterruptedException x)
-        {
+        } catch (InterruptedException x) {
             // Ignore
         }
     }

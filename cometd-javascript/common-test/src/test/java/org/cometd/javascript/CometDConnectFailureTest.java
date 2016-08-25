@@ -22,11 +22,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDConnectFailureTest extends AbstractCometDTest
-{
+public class CometDConnectFailureTest extends AbstractCometDTest {
     @Test
-    public void testConnectFailure() throws Exception
-    {
+    public void testConnectFailure() throws Exception {
         bayeuxServer.addExtension(new DeleteMetaConnectExtension());
 
         defineClass(Latch.class);
@@ -95,11 +93,9 @@ public class CometDConnectFailureTest extends AbstractCometDTest
         Assert.assertFalse(connectLatch.await(4 * backoffIncrement));
     }
 
-    private static class DeleteMetaConnectExtension extends BayeuxServer.Extension.Adapter
-    {
+    private static class DeleteMetaConnectExtension extends BayeuxServer.Extension.Adapter {
         @Override
-        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-        {
+        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             return !Channel.META_CONNECT.equals(message.getChannel());
         }
     }

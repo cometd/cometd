@@ -22,21 +22,18 @@ import java.util.Set;
 
 import org.cometd.bayeux.Transport;
 
-public class AbstractTransport implements Transport
-{
+public class AbstractTransport implements Transport {
     private final String _name;
     private final Map<String, Object> _options;
     private String[] _prefix = new String[0];
     private String _optionPrefix = "";
 
-    protected AbstractTransport(String name, Map<String, Object> options)
-    {
+    protected AbstractTransport(String name, Map<String, Object> options) {
         _name = name;
         _options = options == null ? new HashMap<String, Object>(1) : options;
     }
 
-    public String getName()
-    {
+    public String getName() {
         return _name;
     }
 
@@ -57,16 +54,15 @@ public class AbstractTransport implements Transport
      *
      * @param name the option name to return the value for.
      */
-    public Object getOption(String name)
-    {
+    public Object getOption(String name) {
         Object value = _options.get(name);
         String prefix = null;
-        for (String segment : _prefix)
-        {
+        for (String segment : _prefix) {
             prefix = prefix == null ? segment : (prefix + "." + segment);
             String key = prefix + "." + name;
-            if (_options.containsKey(key))
+            if (_options.containsKey(key)) {
                 value = _options.get(key);
+            }
         }
         return value;
     }
@@ -75,19 +71,19 @@ public class AbstractTransport implements Transport
      * Sets the option value with the given name.
      * The option name is inspected to see whether it starts with the {@link #getOptionPrefix() option prefix};
      * if it does not, the option prefix is prepended to the given name.
-     * @param name the option name to set the value for.
+     *
+     * @param name  the option name to set the value for.
      * @param value the value of the option.
      */
-    public void setOption(String name, Object value)
-    {
+    public void setOption(String name, Object value) {
         String prefix = getOptionPrefix();
-        if (prefix != null && prefix.length() > 0 && !name.startsWith(prefix))
+        if (prefix != null && prefix.length() > 0 && !name.startsWith(prefix)) {
             name = prefix + "." + name;
+        }
         _options.put(name, value);
     }
 
-    public String getOptionPrefix()
-    {
+    public String getOptionPrefix() {
         return _optionPrefix;
     }
 
@@ -120,22 +116,21 @@ public class AbstractTransport implements Transport
      * @param prefix the prefix name
      * @throws IllegalArgumentException if the new prefix is not prefixed by the old prefix.
      */
-    public void setOptionPrefix(String prefix)
-    {
-        if (!prefix.startsWith(_optionPrefix))
+    public void setOptionPrefix(String prefix) {
+        if (!prefix.startsWith(_optionPrefix)) {
             throw new IllegalArgumentException(_optionPrefix + " not prefix of " + prefix);
+        }
         _optionPrefix = prefix;
         _prefix = prefix.split("\\.");
     }
 
-    public Set<String> getOptionNames()
-    {
+    public Set<String> getOptionNames() {
         Set<String> names = new HashSet<String>();
-        for (String name : _options.keySet())
-        {
+        for (String name : _options.keySet()) {
             int lastDot = name.lastIndexOf('.');
-            if (lastDot >= 0)
+            if (lastDot >= 0) {
                 name = name.substring(lastDot + 1);
+            }
             names.add(name);
         }
         return names;
@@ -149,8 +144,7 @@ public class AbstractTransport implements Transport
      * @return option or default value
      * @see #getOption(String)
      */
-    public String getOption(String option, String dftValue)
-    {
+    public String getOption(String option, String dftValue) {
         Object value = getOption(option);
         return (value == null) ? dftValue : value.toString();
     }
@@ -163,13 +157,14 @@ public class AbstractTransport implements Transport
      * @return option or default value
      * @see #getOption(String)
      */
-    public long getOption(String option, long dftValue)
-    {
+    public long getOption(String option, long dftValue) {
         Object value = getOption(option);
-        if (value == null)
+        if (value == null) {
             return dftValue;
-        if (value instanceof Number)
+        }
+        if (value instanceof Number) {
             return ((Number)value).longValue();
+        }
         return Long.parseLong(value.toString());
     }
 
@@ -181,13 +176,14 @@ public class AbstractTransport implements Transport
      * @return option or default value
      * @see #getOption(String)
      */
-    public int getOption(String option, int dftValue)
-    {
+    public int getOption(String option, int dftValue) {
         Object value = getOption(option);
-        if (value == null)
+        if (value == null) {
             return dftValue;
-        if (value instanceof Number)
+        }
+        if (value instanceof Number) {
             return ((Number)value).intValue();
+        }
         return Integer.parseInt(value.toString());
     }
 
@@ -199,13 +195,14 @@ public class AbstractTransport implements Transport
      * @return option or default value
      * @see #getOption(String)
      */
-    public boolean getOption(String option, boolean dftValue)
-    {
+    public boolean getOption(String option, boolean dftValue) {
         Object value = getOption(option);
-        if (value == null)
+        if (value == null) {
             return dftValue;
-        if (value instanceof Boolean)
+        }
+        if (value instanceof Boolean) {
             return (Boolean)value;
+        }
         return Boolean.parseBoolean(value.toString());
     }
 }

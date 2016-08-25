@@ -18,12 +18,11 @@ package org.cometd.server.filter;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 
-public interface DataFilter
-{
+public interface DataFilter {
     /**
-     * @param from the {@link ServerSession} that sends the data
+     * @param from    the {@link ServerSession} that sends the data
      * @param channel the channel the data is being sent to
-     * @param data the data being sent
+     * @param data    the data being sent
      * @return the transformed data or null if the message should be aborted
      */
     public abstract Object filter(ServerSession from, ServerChannel channel, Object data);
@@ -31,21 +30,18 @@ public interface DataFilter
 
     /**
      * Abort the message by throwing this exception
-     *
      */
-    public class Abort extends RuntimeException
-    {
-        public Abort()
-        {
+    public class Abort extends RuntimeException {
+        public Abort() {
             super();
         }
-        public Abort(String msg)
-        {
+
+        public Abort(String msg) {
             super(msg);
         }
-        public Abort(String msg,Throwable cause)
-        {
-            super(msg,cause);
+
+        public Abort(String msg, Throwable cause) {
+            super(msg, cause);
         }
 
     }

@@ -49,8 +49,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see SetiServlet
  */
-public abstract class OortConfigServlet extends HttpServlet
-{
+public abstract class OortConfigServlet extends HttpServlet {
     public static final String OORT_URL_PARAM = "oort.url";
     public static final String OORT_SECRET_PARAM = "oort.secret";
     public static final String OORT_CHANNELS_PARAM = "oort.channels";
@@ -58,43 +57,44 @@ public abstract class OortConfigServlet extends HttpServlet
     public static final String OORT_JSON_CONTEXT_PARAM = "jsonContext";
     protected static final Logger LOG = LoggerFactory.getLogger(OortConfigServlet.class);
 
-    public void init(ServletConfig config) throws ServletException
-    {
+    public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
         ServletContext servletContext = config.getServletContext();
         BayeuxServer bayeux = (BayeuxServer)servletContext.getAttribute(BayeuxServer.ATTRIBUTE);
-        if (bayeux == null)
+        if (bayeux == null) {
             throw new UnavailableException("Missing " + BayeuxServer.ATTRIBUTE + " attribute");
+        }
 
         String url = provideOortURL();
-        if (url == null)
+        if (url == null) {
             throw new UnavailableException("Missing " + OORT_URL_PARAM + " init parameter");
+        }
 
-        try
-        {
+        try {
             Oort oort = newOort(bayeux, url);
 
             String secret = config.getInitParameter(OORT_SECRET_PARAM);
-            if (secret != null)
+            if (secret != null) {
                 oort.setSecret(secret);
+            }
 
             String enableAckExtension = config.getInitParameter(OORT_ENABLE_ACK_EXTENSION_PARAM);
-            if (enableAckExtension == null)
+            if (enableAckExtension == null) {
                 enableAckExtension = "true";
+            }
             oort.setAckExtensionEnabled(Boolean.parseBoolean(enableAckExtension));
 
             String jsonContext = config.getInitParameter(OORT_JSON_CONTEXT_PARAM);
-            if (jsonContext != null)
+            if (jsonContext != null) {
                 oort.setJSONContextClient((JSONContext.Client)getClass().getClassLoader().loadClass(jsonContext).newInstance());
+            }
 
             oort.start();
             servletContext.setAttribute(Oort.OORT_ATTRIBUTE, oort);
 
             new Thread(new Starter(config, oort)).start();
-        }
-        catch (Exception x)
-        {
+        } catch (Exception x) {
             throw new ServletException(x);
         }
     }
@@ -106,8 +106,7 @@ public abstract class OortConfigServlet extends HttpServlet
      *
      * @return the {@code oort.url} parameter
      */
-    protected String provideOortURL()
-    {
+    protected String provideOortURL() {
         return getServletConfig().getInitParameter(OORT_URL_PARAM);
     }
 
@@ -115,11 +114,10 @@ public abstract class OortConfigServlet extends HttpServlet
      * <p>Creates and returns a new Oort instance.</p>
      *
      * @param bayeux the BayeuxServer instance to which the Oort instance should be associated to
-     * @param url the {@code oort.url} of the Oort instance
+     * @param url    the {@code oort.url} of the Oort instance
      * @return a new Oort instance
      */
-    protected Oort newOort(BayeuxServer bayeux, String url)
-    {
+    protected Oort newOort(BayeuxServer bayeux, String url) {
         return new Oort(bayeux, url);
     }
 
@@ -128,35 +126,30 @@ public abstract class OortConfigServlet extends HttpServlet
      * <p>Subclasses implement their own strategy to discover and link with other comets.</p>
      *
      * @param config the servlet configuration to read parameters from
-     * @param oort the Oort instance associated with this configuration servlet
+     * @param oort   the Oort instance associated with this configuration servlet
      * @throws Exception if the cloud configuration fails
      */
     protected abstract void configureCloud(ServletConfig config, Oort oort) throws Exception;
 
-    public void destroy()
-    {
-        try
-        {
+    public void destroy() {
+        try {
             ServletContext servletContext = getServletConfig().getServletContext();
             Oort oort = (Oort)servletContext.getAttribute(Oort.OORT_ATTRIBUTE);
             servletContext.removeAttribute(Oort.OORT_ATTRIBUTE);
-            if (oort != null)
+            if (oort != null) {
                 oort.stop();
-        }
-        catch (Exception x)
-        {
+            }
+        } catch (Exception x) {
             throw new RuntimeException(x);
         }
     }
 
-    private class Starter implements Runnable
-    {
+    private class Starter implements Runnable {
         private final ServletConfig config;
         private final Oort oort;
         private final OortComet oortComet;
 
-        private Starter(ServletConfig config, Oort oort)
-        {
+        private Starter(ServletConfig config, Oort oort) {
             this.config = config;
             this.oort = oort;
             this.oortComet = oort.newOortComet(oort.getURL());
@@ -164,25 +157,23 @@ public abstract class OortConfigServlet extends HttpServlet
         }
 
         @Override
-        public void run()
-        {
+        public void run() {
             // Connect to myself until success. If the handshake fails,
             // the normal BayeuxClient retry mechanism will kick-in.
-            if (LOG.isDebugEnabled())
+            if (LOG.isDebugEnabled()) {
                 LOG.debug("Connecting to self: {}", oort);
+            }
             Map<String, Object> fields = oort.newOortHandshakeFields(oort.getURL(), null);
-            oortComet.handshake(fields, new ClientSessionChannel.MessageListener()
-            {
+            oortComet.handshake(fields, new ClientSessionChannel.MessageListener() {
                 @Override
-                public void onMessage(ClientSessionChannel channel, Message message)
-                {
+                public void onMessage(ClientSessionChannel channel, Message message) {
                     // If the handshake fails but has an advice field, it means it
                     // reached the server but was denied e.g. by a SecurityPolicy.
                     Map<String, Object> advice = message.getAdvice();
-                    if (message.isSuccessful() || advice != null)
-                    {
-                        if (LOG.isDebugEnabled())
+                    if (message.isSuccessful() || advice != null) {
+                        if (LOG.isDebugEnabled()) {
                             LOG.debug("Connected to self: {}", oort);
+                        }
                         oortComet.disconnect();
                         joinCloud();
                     }
@@ -190,29 +181,25 @@ public abstract class OortConfigServlet extends HttpServlet
             });
         }
 
-        private void joinCloud()
-        {
-            try
-            {
-                if (LOG.isDebugEnabled())
+        private void joinCloud() {
+            try {
+                if (LOG.isDebugEnabled()) {
                     LOG.debug("Joining cloud: {}", oort);
+                }
 
                 configureCloud(config, oort);
 
                 String channels = config.getInitParameter(OORT_CHANNELS_PARAM);
-                if (channels != null)
-                {
+                if (channels != null) {
                     String[] patterns = channels.split(",");
-                    for (String channel : patterns)
-                    {
+                    for (String channel : patterns) {
                         channel = channel.trim();
-                        if (channel.length() > 0)
+                        if (channel.length() > 0) {
                             oort.observeChannel(channel);
+                        }
                     }
                 }
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 LOG.warn("Could not start Oort", x);
                 destroy();
             }

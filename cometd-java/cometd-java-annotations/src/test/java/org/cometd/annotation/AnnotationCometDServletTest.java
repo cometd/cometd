@@ -27,11 +27,9 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class AnnotationCometDServletTest
-{
+public class AnnotationCometDServletTest {
     @Test
-    public void testLifecycle() throws Exception
-    {
+    public void testLifecycle() throws Exception {
         Server server = new Server();
 
         HandlerCollection handlers = new HandlerCollection();
@@ -66,20 +64,17 @@ public class AnnotationCometDServletTest
     }
 
     @Service("test")
-    public static class TestService
-    {
+    public static class TestService {
         public boolean init;
         public boolean destroy;
 
         @PostConstruct
-        public void init()
-        {
+        public void init() {
             init = true;
         }
 
         @PreDestroy
-        public void destroy()
-        {
+        public void destroy() {
             destroy = true;
         }
     }

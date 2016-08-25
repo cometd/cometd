@@ -31,24 +31,20 @@ import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTest
-{
+public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTest {
     @Override
-    public void initCometDServer() throws Exception
-    {
+    public void initCometDServer() throws Exception {
     }
 
     @Test
-    public void testMessagesNotSentInHandshakeResponse() throws Exception
-    {
+    public void testMessagesNotSentInHandshakeResponse() throws Exception {
         Map<String, String> options = new HashMap<>();
         initCometDServer(options);
         testMessagesInHandshakeResponse(false);
     }
 
     @Test
-    public void testMessagesSentInHandshakeResponse() throws Exception
-    {
+    public void testMessagesSentInHandshakeResponse() throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
         initCometDServer(options);
@@ -56,8 +52,7 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTest
     }
 
     @Test
-    public void testMessagesSentInHandshakeResponseWithAckExtension() throws Exception
-    {
+    public void testMessagesSentInHandshakeResponseWithAckExtension() throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
         initCometDServer(options);
@@ -66,35 +61,30 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTest
         testMessagesInHandshakeResponse(true);
     }
 
-    private void testMessagesInHandshakeResponse(final boolean allowHandshakeMessages) throws Exception
-    {
+    private void testMessagesInHandshakeResponse(final boolean allowHandshakeMessages) throws Exception {
         final String channelName = "/test";
-        bayeuxServer.addListener(new BayeuxServer.SessionListener()
-        {
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
-            public void sessionAdded(ServerSession session, ServerMessage message)
-            {
+            public void sessionAdded(ServerSession session, ServerMessage message) {
                 // Send messages during the handshake processing.
                 session.deliver(null, channelName, "data1");
                 session.deliver(null, channelName, "data2");
             }
 
             @Override
-            public void sessionRemoved(ServerSession session, boolean timedout)
-            {
+            public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
 
         final CountDownLatch serverMessagesLatch = new CountDownLatch(1);
         final ServerChannel metaConnectChannel = bayeuxServer.getChannel(Channel.META_CONNECT);
-        metaConnectChannel.addListener(new ServerChannel.MessageListener()
-        {
+        metaConnectChannel.addListener(new ServerChannel.MessageListener() {
             @Override
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 // Check the queue when receiving the first /meta/connect.
-                if (((ServerSessionImpl)from).getQueue().isEmpty() == allowHandshakeMessages)
+                if (((ServerSessionImpl)from).getQueue().isEmpty() == allowHandshakeMessages) {
                     serverMessagesLatch.countDown();
+                }
                 metaConnectChannel.removeListener(this);
                 return true;
             }

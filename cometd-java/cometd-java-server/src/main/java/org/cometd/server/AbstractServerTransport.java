@@ -39,8 +39,7 @@ import org.slf4j.LoggerFactory;
  * call the variants of {@link #getOption(String)} to obtained the configured
  * value for the option.</p>
  */
-public abstract class AbstractServerTransport extends AbstractTransport implements ServerTransport, Dumpable
-{
+public abstract class AbstractServerTransport extends AbstractTransport implements ServerTransport, Dumpable {
     public static final String TIMEOUT_OPTION = "timeout";
     public static final String INTERVAL_OPTION = "interval";
     public static final String MAX_INTERVAL_OPTION = "maxInterval";
@@ -74,86 +73,73 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
      * to search for the most specific option set.</p>
      *
      * @param bayeux the BayeuxServer implementation
-     * @param name the name of the transport
+     * @param name   the name of the transport
      */
-    protected AbstractServerTransport(BayeuxServerImpl bayeux, String name)
-    {
+    protected AbstractServerTransport(BayeuxServerImpl bayeux, String name) {
         super(name, bayeux.getOptions());
         _bayeux = bayeux;
     }
 
-    public Object getAdvice()
-    {
+    public Object getAdvice() {
         return null;
     }
 
     /**
      * @return the interval in milliseconds
      */
-    public long getInterval()
-    {
+    public long getInterval() {
         return _interval;
     }
 
     /**
      * @return the maxInterval in milliseconds
      */
-    public long getMaxInterval()
-    {
+    public long getMaxInterval() {
         return _maxInterval;
     }
 
     /**
      * @return the max lazy timeout in milliseconds before flushing lazy messages
      */
-    public long getMaxLazyTimeout()
-    {
+    public long getMaxLazyTimeout() {
         return _maxLazyTimeout;
     }
 
     /**
      * @return the timeout in milliseconds
      */
-    public long getTimeout()
-    {
+    public long getTimeout() {
         return _timeout;
     }
 
-    public boolean isMetaConnectDeliveryOnly()
-    {
+    public boolean isMetaConnectDeliveryOnly() {
         return _metaConnectDeliveryOnly;
     }
 
-    public void setMetaConnectDeliveryOnly(boolean meta)
-    {
+    public void setMetaConnectDeliveryOnly(boolean meta) {
         _metaConnectDeliveryOnly = meta;
     }
 
-    public boolean isHandshakeReconnect()
-    {
+    public boolean isHandshakeReconnect() {
         return _handshakeReconnect;
     }
 
-    public void setHandshakeReconnect(boolean handshakeReconnect)
-    {
+    public void setHandshakeReconnect(boolean handshakeReconnect) {
         _handshakeReconnect = handshakeReconnect;
     }
 
-    public boolean isAllowMessageDeliveryDuringHandshake()
-    {
+    public boolean isAllowMessageDeliveryDuringHandshake() {
         return _allowHandshakeDelivery;
     }
 
-    public void setAllowMessageDeliveryDuringHandshake(boolean allow)
-    {
+    public void setAllowMessageDeliveryDuringHandshake(boolean allow) {
         _allowHandshakeDelivery = allow;
     }
 
     /**
      * Initializes the transport, resolving default and direct options.
      */
-    public void init()
-    {
+    public void init() {
         _interval = getOption(INTERVAL_OPTION, _interval);
         _maxInterval = getOption(MAX_INTERVAL_OPTION, _maxInterval);
         _timeout = getOption(TIMEOUT_OPTION, _timeout);
@@ -164,120 +150,105 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _allowHandshakeDelivery = getOption(ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, false);
     }
 
-    public void destroy()
-    {
+    public void destroy() {
     }
 
-    protected ServerMessage.Mutable[] parseMessages(BufferedReader reader, boolean jsonDebug) throws ParseException, IOException
-    {
-        if (jsonDebug)
+    protected ServerMessage.Mutable[] parseMessages(BufferedReader reader, boolean jsonDebug) throws ParseException, IOException {
+        if (jsonDebug) {
             return parseMessages(IO.toString(reader));
-        else
+        } else {
             return jsonContext.parse(reader);
+        }
     }
 
-    protected ServerMessage.Mutable[] parseMessages(String json) throws ParseException
-    {
+    protected ServerMessage.Mutable[] parseMessages(String json) throws ParseException {
         return jsonContext.parse(json);
     }
 
     /**
      * @return the BayeuxServer object
      */
-    public BayeuxServerImpl getBayeux()
-    {
+    public BayeuxServerImpl getBayeux() {
         return _bayeux;
     }
 
     /**
      * @param interval the interval in milliseconds
      */
-    public void setInterval(long interval)
-    {
+    public void setInterval(long interval) {
         _interval = interval;
     }
 
     /**
      * @param maxInterval the maxInterval in milliseconds
      */
-    public void setMaxInterval(long maxInterval)
-    {
+    public void setMaxInterval(long maxInterval) {
         _maxInterval = maxInterval;
     }
 
     /**
      * @param timeout the timeout in milliseconds
      */
-    public void setTimeout(long timeout)
-    {
+    public void setTimeout(long timeout) {
         _timeout = timeout;
     }
 
     /**
      * @param maxLazyTimeout the maxLazyTimeout in milliseconds
      */
-    public void setMaxLazyTimeout(long maxLazyTimeout)
-    {
+    public void setMaxLazyTimeout(long maxLazyTimeout) {
         _maxLazyTimeout = maxLazyTimeout;
     }
 
     /**
      * Housekeeping sweep, called a regular intervals
      */
-    protected void sweep()
-    {
+    protected void sweep() {
     }
 
-    protected ServerMessage.Mutable processReply(ServerSessionImpl session, ServerMessage.Mutable reply)
-    {
-        if (reply != null)
+    protected ServerMessage.Mutable processReply(ServerSessionImpl session, ServerMessage.Mutable reply) {
+        if (reply != null) {
             reply = getBayeux().extendReply(session, session, reply);
+        }
         return reply;
     }
 
-    protected byte[] toJSONBytes(ServerMessage message, String encoding)
-    {
-        try
-        {
+    protected byte[] toJSONBytes(ServerMessage message, String encoding) {
+        try {
             byte[] bytes = null;
-            if (message instanceof ServerMessageImpl)
+            if (message instanceof ServerMessageImpl) {
                 bytes = ((ServerMessageImpl)message).getJSONBytes();
-            if (bytes == null)
+            }
+            if (bytes == null) {
                 bytes = message.getJSON().getBytes(encoding);
+            }
             return bytes;
-        }
-        catch (UnsupportedEncodingException x)
-        {
+        } catch (UnsupportedEncodingException x) {
             throw new UnsupportedCharsetException(encoding);
         }
     }
 
-    protected boolean allowMessageDeliveryDuringHandshake(ServerSessionImpl session)
-    {
+    protected boolean allowMessageDeliveryDuringHandshake(ServerSessionImpl session) {
         return (session != null && session.isAllowMessageDeliveryDuringHandshake()) ||
                 isAllowMessageDeliveryDuringHandshake();
     }
 
     @Override
-    public String dump()
-    {
+    public String dump() {
         return ContainerLifeCycle.dump(this);
     }
 
     @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
+    public void dump(Appendable out, String indent) throws IOException {
         ContainerLifeCycle.dumpObject(out, this);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return getName();
     }
 
-    public interface Scheduler
-    {
+    public interface Scheduler {
         void cancel();
 
         void schedule();

@@ -21,11 +21,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTest
-{
+public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTest {
     @Test
-    public void testPublishFailure() throws Exception
-    {
+    public void testPublishFailure() throws Exception {
         bayeuxServer.addExtension(new DeletePublishExtension());
 
         defineClass(Latch.class);
@@ -64,11 +62,9 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
         Assert.assertEquals("disconnected", status);
     }
 
-    private static class DeletePublishExtension extends BayeuxServer.Extension.Adapter
-    {
+    private static class DeletePublishExtension extends BayeuxServer.Extension.Adapter {
         @Override
-        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-        {
+        public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
             // The publish will arrive here, just delete it
             return false;
         }

@@ -36,23 +36,18 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class CookiesTest extends ClientServerTest
-{
+public class CookiesTest extends ClientServerTest {
     @Before
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testCookieSentOnHandshakeResponse() throws Exception
-    {
+    public void testCookieSentOnHandshakeResponse() throws Exception {
         final AtomicReference<HttpCookie> browserCookie = new AtomicReference<>();
         final BayeuxClient client = newBayeuxClient();
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 browserCookie.set(client.getCookie("BAYEUX_BROWSER"));
             }
         });
@@ -64,8 +59,7 @@ public class CookiesTest extends ClientServerTest
     }
 
     @Test
-    public void testCookiesExpiration() throws Exception
-    {
+    public void testCookiesExpiration() throws Exception {
         BayeuxClient client = newBayeuxClient();
         client.handshake();
         assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -93,8 +87,7 @@ public class CookiesTest extends ClientServerTest
     }
 
     @Test
-    public void testMultipleCookies() throws Exception
-    {
+    public void testMultipleCookies() throws Exception {
         final String cookie1 = "cookie1";
         final String cookie2 = "cookie2";
         final String channelName = "/channel";
@@ -117,10 +110,8 @@ public class CookiesTest extends ClientServerTest
         assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         ClientSessionChannel channel = client.getChannel(channelName);
-        channel.subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        channel.subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
             }
         });
         assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
@@ -134,8 +125,7 @@ public class CookiesTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
-    public static class CookieService extends AbstractService
-    {
+    public static class CookieService extends AbstractService {
         private final String cookie1;
         private final String cookie2;
         private final CountDownLatch handshakeLatch;
@@ -144,8 +134,7 @@ public class CookiesTest extends ClientServerTest
         private final CountDownLatch unsubscribeLatch;
         private final CountDownLatch publishLatch;
 
-        public CookieService(BayeuxServer bayeux, String channelName, String cookie1, String cookie2, CountDownLatch handshakeLatch, CountDownLatch connectLatch, CountDownLatch subscribeLatch, CountDownLatch unsubscribeLatch, CountDownLatch publishLatch)
-        {
+        public CookieService(BayeuxServer bayeux, String channelName, String cookie1, String cookie2, CountDownLatch handshakeLatch, CountDownLatch connectLatch, CountDownLatch subscribeLatch, CountDownLatch unsubscribeLatch, CountDownLatch publishLatch) {
             super(bayeux, "test");
             this.cookie1 = cookie1;
             this.cookie2 = cookie2;
@@ -161,53 +150,53 @@ public class CookiesTest extends ClientServerTest
             addService(channelName, "process");
         }
 
-        public void metaHandshake(ServerSession session, ServerMessage message)
-        {
+        public void metaHandshake(ServerSession session, ServerMessage message) {
             BayeuxContext context = getBayeux().getContext();
             String value1 = context.getCookie(cookie1);
             String value2 = context.getCookie(cookie2);
-            if (value1 != null && value2 != null)
+            if (value1 != null && value2 != null) {
                 handshakeLatch.countDown();
+            }
         }
 
-        public void metaConnect(ServerSession session, ServerMessage message)
-        {
+        public void metaConnect(ServerSession session, ServerMessage message) {
             BayeuxContext context = getBayeux().getContext();
             String value1 = context.getCookie(cookie1);
             String value2 = context.getCookie(cookie2);
             String value3 = context.getCookie("BAYEUX_BROWSER");
-            if (value1 != null && value2 != null && value3 != null)
+            if (value1 != null && value2 != null && value3 != null) {
                 connectLatch.countDown();
+            }
         }
 
-        public void metaSubscribe(ServerSession session, ServerMessage message)
-        {
+        public void metaSubscribe(ServerSession session, ServerMessage message) {
             BayeuxContext context = getBayeux().getContext();
             String value1 = context.getCookie(cookie1);
             String value2 = context.getCookie(cookie2);
             String value3 = context.getCookie("BAYEUX_BROWSER");
-            if (value1 != null && value2 != null && value3 != null)
+            if (value1 != null && value2 != null && value3 != null) {
                 subscribeLatch.countDown();
+            }
         }
 
-        public void metaUnsubscribe(ServerSession session, ServerMessage message)
-        {
+        public void metaUnsubscribe(ServerSession session, ServerMessage message) {
             BayeuxContext context = getBayeux().getContext();
             String value1 = context.getCookie(cookie1);
             String value2 = context.getCookie(cookie2);
             String value3 = context.getCookie("BAYEUX_BROWSER");
-            if (value1 != null && value2 != null && value3 != null)
+            if (value1 != null && value2 != null && value3 != null) {
                 unsubscribeLatch.countDown();
+            }
         }
 
-        public void process(ServerSession session, ServerMessage message)
-        {
+        public void process(ServerSession session, ServerMessage message) {
             BayeuxContext context = getBayeux().getContext();
             String value1 = context.getCookie(cookie1);
             String value2 = context.getCookie(cookie2);
             String value3 = context.getCookie("BAYEUX_BROWSER");
-            if (value1 != null && value2 != null && value3 != null)
+            if (value1 != null && value2 != null && value3 != null) {
                 publishLatch.countDown();
+            }
         }
     }
 }

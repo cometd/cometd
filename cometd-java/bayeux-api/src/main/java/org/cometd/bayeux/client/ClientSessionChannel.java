@@ -32,8 +32,7 @@ import org.cometd.bayeux.Message;
  * clientSession.getChannel("/meta/*").addListener(myMetaChannelListener);
  * </pre>
  */
-public interface ClientSessionChannel extends Channel
-{
+public interface ClientSessionChannel extends Channel {
     /**
      * <p>Adds a listener to this channel.</p>
      * <p>If the listener is a {@link MessageListener}, it will be invoked
@@ -85,7 +84,7 @@ public interface ClientSessionChannel extends Channel
      * <p>Publishes the given {@code data} onto this channel, notifying the given
      * {@code listener} of the publish result, whether successful or unsuccessful.</p>
      *
-     * @param data the data to publish
+     * @param data     the data to publish
      * @param listener the message listener to notify of the publish result
      * @see #publish(Object)
      */
@@ -171,15 +170,13 @@ public interface ClientSessionChannel extends Channel
      * <p>Represents a listener on a {@link ClientSessionChannel}.</p>
      * <p>Sub-interfaces specify the exact semantic of the listener.</p>
      */
-    public interface ClientSessionChannelListener extends Bayeux.BayeuxListener
-    {
+    public interface ClientSessionChannelListener extends Bayeux.BayeuxListener {
     }
 
     /**
      * A listener for messages on a {@link ClientSessionChannel}.
      */
-    public interface MessageListener extends ClientSessionChannelListener
-    {
+    public interface MessageListener extends ClientSessionChannelListener {
         /**
          * Callback invoked when a message is received on the given {@code channel}.
          *

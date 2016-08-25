@@ -35,25 +35,18 @@ import org.cometd.server.authorizer.GrantAuthorizer;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SubscriptionFailureTest extends ClientServerTest
-{
+public class SubscriptionFailureTest extends ClientServerTest {
     @Test
-    public void testSubscriptionFailedOnClientRemovesListener() throws Exception
-    {
+    public void testSubscriptionFailedOnClientRemovesListener() throws Exception {
         startServer(null);
 
         long maxNetworkDelay = 2000;
         final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
-        bayeux.getChannel(Channel.META_SUBSCRIBE).addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
-                try
-                {
+        bayeux.getChannel(Channel.META_SUBSCRIBE).addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+                try {
                     Thread.sleep(sleep);
-                }
-                catch (InterruptedException x)
-                {
+                } catch (InterruptedException x) {
                     // Ignored
                 }
                 return true;
@@ -66,20 +59,17 @@ public class SubscriptionFailureTest extends ClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
         };
         final CountDownLatch subscriptionLatch = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
+        ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
                     subscriptionLatch.countDown();
+                }
             }
         };
         String channelName = "/echo";
@@ -98,15 +88,12 @@ public class SubscriptionFailureTest extends ClientServerTest
     }
 
     @Test
-    public void testSubscriptionFailedOnServerRemovesListener() throws Exception
-    {
+    public void testSubscriptionFailedOnServerRemovesListener() throws Exception {
         startServer(null);
 
         String channelName = "/echo";
-        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
+        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
             }
         });
@@ -116,20 +103,17 @@ public class SubscriptionFailureTest extends ClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
         };
         final CountDownLatch subscriptionLatch = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
+        ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
                     subscriptionLatch.countDown();
+                }
             }
         };
         client.getChannel(channelName).subscribe(messageCallback, subscriptionCallback);
@@ -147,16 +131,13 @@ public class SubscriptionFailureTest extends ClientServerTest
     }
 
     @Test
-    public void testFailedSubscriptionDecrementsSubscriptionCount() throws Exception
-    {
+    public void testFailedSubscriptionDecrementsSubscriptionCount() throws Exception {
         startServer(null);
 
         final String channelName = "/count";
-        bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
-        {
+        bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
-            public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
-            {
+            public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
                 boolean allowed = super.canSubscribe(server, session, channel, message);
                 Map<String, Object> ext = message.getExt();
                 return allowed && ext != null && (Boolean)ext.get("token");
@@ -168,33 +149,29 @@ public class SubscriptionFailureTest extends ClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final AtomicBoolean allowed = new AtomicBoolean();
-        client.addExtension(new ClientSession.Extension.Adapter()
-        {
+        client.addExtension(new ClientSession.Extension.Adapter() {
             @Override
-            public boolean sendMeta(ClientSession session, Message.Mutable message)
-            {
+            public boolean sendMeta(ClientSession session, Message.Mutable message) {
                 if (Channel.META_SUBSCRIBE.equals(message.getChannel()) &&
-                        channelName.equals(message.get(Message.SUBSCRIPTION_FIELD)))
+                        channelName.equals(message.get(Message.SUBSCRIPTION_FIELD))) {
                     message.getExt(true).put("token", allowed.get());
+                }
                 return true;
             }
         });
 
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
         };
         final CountDownLatch failedSubscription = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (!message.isSuccessful())
+        ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isSuccessful()) {
                     failedSubscription.countDown();
+                }
             }
         };
         // First subscription fails, the subscription count should be
@@ -208,12 +185,11 @@ public class SubscriptionFailureTest extends ClientServerTest
         // Now allow the subscription, we should be able to subscribe to the same channel.
         allowed.set(true);
         final CountDownLatch succeededSubscription = new CountDownLatch(1);
-        subscriptionCallback = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful())
+        subscriptionCallback = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isSuccessful()) {
                     succeededSubscription.countDown();
+                }
             }
         };
         client.getChannel(channelName).subscribe(messageCallback, subscriptionCallback);

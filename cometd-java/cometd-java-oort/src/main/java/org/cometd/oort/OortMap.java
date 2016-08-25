@@ -53,8 +53,7 @@ import org.cometd.bayeux.server.BayeuxServer;
  * @param <K> the key type
  * @param <V> the value type
  */
-public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
-{
+public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
     private static final String TYPE_FIELD_ENTRY_VALUE = "oort.map.entry";
     private static final String ACTION_FIELD_PUT_VALUE = "oort.map.put";
     private static final String ACTION_FIELD_PUT_ABSENT_VALUE = "oort.map.put.absent";
@@ -64,18 +63,15 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
 
     private final List<EntryListener<K, V>> listeners = new CopyOnWriteArrayList<>();
 
-    protected OortMap(Oort oort, String name, Factory<ConcurrentMap<K, V>> factory)
-    {
+    protected OortMap(Oort oort, String name, Factory<ConcurrentMap<K, V>> factory) {
         super(oort, name, factory);
     }
 
-    public void addEntryListener(EntryListener<K, V> listener)
-    {
+    public void addEntryListener(EntryListener<K, V> listener) {
         listeners.add(listener);
     }
 
-    public void removeEntryListener(EntryListener<K, V> listener)
-    {
+    public void removeEntryListener(EntryListener<K, V> listener) {
         listeners.remove(listener);
     }
 
@@ -89,8 +85,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      * @deprecated use {@link #putAndShare(Object, Object, Result)} instead
      */
     @Deprecated
-    public V putAndShare(K key, V value)
-    {
+    public V putAndShare(K key, V value) {
         Result.Deferred<V> result = new Result.Deferred<>();
         putAndShare(key, value, result);
         return result.get();
@@ -103,15 +98,14 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      * <p>The entry is guaranteed to be put not when this method returns,
      * but when the {@link Result} parameter is notified.</p>
      *
-     * @param key   the key to associate the value to
-     * @param value the value associated with the key
+     * @param key      the key to associate the value to
+     * @param value    the value associated with the key
      * @param callback the callback invoked with the old value,
      *                 or {@code null} if there is no interest in the old value
      * @see #putIfAbsentAndShare(Object, Object, Result)
      * @see #removeAndShare(Object, Result)
      */
-    public void putAndShare(K key, V value, Result<V> callback)
-    {
+    public void putAndShare(K key, V value, Result<V> callback) {
         Map<String, Object> entry = new HashMap<>(2);
         entry.put(KEY_FIELD, key);
         entry.put(VALUE_FIELD, value);
@@ -123,8 +117,9 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
         data.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
         data.put(Info.ACTION_FIELD, ACTION_FIELD_PUT_VALUE);
 
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Sharing map put {}", data);
+        }
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
     }
@@ -139,8 +134,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      * @deprecated use {@link #putAndShare(Object, Object, Result)} instead
      */
     @Deprecated
-    public V putIfAbsentAndShare(K key, V value)
-    {
+    public V putIfAbsentAndShare(K key, V value) {
         Result.Deferred<V> result = new Result.Deferred<>();
         putIfAbsentAndShare(key, value, result);
         return result.get();
@@ -154,14 +148,13 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      * <p>The entry is guaranteed to be put not when this method returns,
      * but when the {@link Result} parameter is notified.</p>
      *
-     * @param key   the key to associate the value to
-     * @param value the value associated with the key
+     * @param key      the key to associate the value to
+     * @param value    the value associated with the key
      * @param callback the callback invoked with the old value,
      *                 or {@code null} if there is no interest in the old value
      * @see #putAndShare(Object, Object, Result)
      */
-    public void putIfAbsentAndShare(K key, V value, Result<V> callback)
-    {
+    public void putIfAbsentAndShare(K key, V value, Result<V> callback) {
         Map<String, Object> entry = new HashMap<>(2);
         entry.put(KEY_FIELD, key);
         entry.put(VALUE_FIELD, value);
@@ -173,8 +166,9 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
         data.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
         data.put(Info.ACTION_FIELD, ACTION_FIELD_PUT_ABSENT_VALUE);
 
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Sharing map putIfAbsent {}", data);
+        }
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
     }
@@ -188,8 +182,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      * @deprecated use {@link #removeAndShare(Object, Result)} instead
      */
     @Deprecated
-    public V removeAndShare(K key)
-    {
+    public V removeAndShare(K key) {
         Result.Deferred<V> result = new Result.Deferred<>();
         removeAndShare(key, result);
         return result.get();
@@ -202,13 +195,12 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      * <p>The entry is guaranteed to be removed not when this method returns,
      * but when the {@link Result} parameter is notified.</p>
      *
-     * @param key the key to remove
+     * @param key      the key to remove
      * @param callback the callback invoked with the value,
      *                 or {@code null} if there is no interest in the value
      * @see #putAndShare(Object, Object, Result)
      */
-    public void removeAndShare(K key, Result<V> callback)
-    {
+    public void removeAndShare(K key, Result<V> callback) {
         Map<String, Object> entry = new HashMap<>(1);
         entry.put(KEY_FIELD, key);
 
@@ -219,8 +211,9 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
         data.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
         data.put(Info.ACTION_FIELD, ACTION_FIELD_REMOVE_VALUE);
 
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Sharing map remove {}", data);
+        }
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
     }
@@ -231,11 +224,10 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      *
      * @param key the key mapped to the value to return
      * @return the value mapped to the given key, or
-     *         {@code null} if the local map does not contain the given key
+     * {@code null} if the local map does not contain the given key
      * @see #find(Object)
      */
-    public V get(K key)
-    {
+    public V get(K key) {
         return getInfo(getOort().getURL()).getObject().get(key);
     }
 
@@ -245,15 +237,14 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      *
      * @param key the key mapped to the value to return
      * @return the value mapped to the given key, or
-     *         {@code null} if the maps do not contain the given key
+     * {@code null} if the maps do not contain the given key
      */
-    public V find(K key)
-    {
-        for (Info<ConcurrentMap<K, V>> info : this)
-        {
+    public V find(K key) {
+        for (Info<ConcurrentMap<K, V>> info : this) {
             V result = info.getObject().get(key);
-            if (result != null)
+            if (result != null) {
                 return result;
+            }
         }
         return null;
     }
@@ -262,25 +253,22 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      * @param key the key to search
      * @return the first {@link Info} whose entity map contains the given key.
      */
-    public Info<ConcurrentMap<K, V>> findInfo(K key)
-    {
-        for (Info<ConcurrentMap<K, V>> info : this)
-        {
-            if (info.getObject().get(key) != null)
+    public Info<ConcurrentMap<K, V>> findInfo(K key) {
+        for (Info<ConcurrentMap<K, V>> info : this) {
+            if (info.getObject().get(key) != null) {
                 return info;
+            }
         }
         return null;
     }
 
     @Override
-    protected boolean isItemUpdate(Map<String, Object> data)
-    {
+    protected boolean isItemUpdate(Map<String, Object> data) {
         return TYPE_FIELD_ENTRY_VALUE.equals(data.get(Info.TYPE_FIELD));
     }
 
     @Override
-    protected void onItem(Info<ConcurrentMap<K, V>> info, Map<String, Object> data)
-    {
+    protected void onItem(Info<ConcurrentMap<K, V>> info, Map<String, Object> data) {
         // Retrieve entry.
         @SuppressWarnings("unchecked")
         Map<String, Object> object = (Map<String, Object>)data.get(Info.OBJECT_FIELD);
@@ -293,8 +281,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
         ConcurrentMap<K, V> map = info.getObject();
         V result;
         String action = (String)data.get(Info.ACTION_FIELD);
-        switch (action)
-        {
+        switch (action) {
             case ACTION_FIELD_PUT_VALUE:
                 result = map.put(key, value);
                 break;
@@ -313,50 +300,42 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
 
         // Notify.
         Entry<K, V> entry = new Entry<>(key, result, value);
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("{} map {} of {}", info.isLocal() ? "Local" : "Remote", action, entry);
-        switch (action)
-        {
+        }
+        switch (action) {
             case ACTION_FIELD_PUT_VALUE:
                 notifyEntryPut(info, entry);
                 break;
             case ACTION_FIELD_PUT_ABSENT_VALUE:
-                if (result == null)
+                if (result == null) {
                     notifyEntryPut(info, entry);
+                }
                 break;
             case ACTION_FIELD_REMOVE_VALUE:
                 notifyEntryRemoved(info, entry);
         }
 
-        if (data instanceof Data)
+        if (data instanceof Data) {
             ((Data<V>)data).setResult(result);
+        }
     }
 
-    private void notifyEntryPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry)
-    {
-        for (EntryListener<K, V> listener : listeners)
-        {
-            try
-            {
+    private void notifyEntryPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry) {
+        for (EntryListener<K, V> listener : listeners) {
+            try {
                 listener.onPut(info, entry);
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 logger.info("Exception while invoking listener " + listener, x);
             }
         }
     }
 
-    private void notifyEntryRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> elements)
-    {
-        for (EntryListener<K, V> listener : listeners)
-        {
-            try
-            {
+    private void notifyEntryRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> elements) {
+        for (EntryListener<K, V> listener : listeners) {
+            try {
                 listener.onRemoved(info, elements);
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 logger.info("Exception while invoking listener " + listener, x);
             }
         }
@@ -368,12 +347,11 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      * @param <K> the key type
      * @param <V> the value type
      */
-    public interface EntryListener<K, V> extends EventListener
-    {
+    public interface EntryListener<K, V> extends EventListener {
         /**
          * Callback method invoked after an entry is put into the entity map.
          *
-         * @param info the {@link Info} that was changed by the put
+         * @param info  the {@link Info} that was changed by the put
          * @param entry the entry values
          */
         public void onPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry);
@@ -381,7 +359,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
         /**
          * Callback method invoked after an entry is removed from the entity map.
          *
-         * @param info the {@link Info} that was changed by the remove
+         * @param info  the {@link Info} that was changed by the remove
          * @param entry the entry values
          */
         public void onRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry);
@@ -392,14 +370,11 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
          * @param <K> the key type
          * @param <V> the value type
          */
-        public static class Adapter<K, V> implements EntryListener<K, V>
-        {
-            public void onPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry)
-            {
+        public static class Adapter<K, V> implements EntryListener<K, V> {
+            public void onPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry) {
             }
 
-            public void onRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry)
-            {
+            public void onRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry) {
             }
         }
     }
@@ -413,14 +388,12 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      * @param <K> the key type
      * @param <V> the value type
      */
-    public static class Entry<K, V>
-    {
+    public static class Entry<K, V> {
         private final K key;
         private final V oldValue;
         private final V newValue;
 
-        protected Entry(K key, V oldValue, V newValue)
-        {
+        protected Entry(K key, V oldValue, V newValue) {
             this.key = key;
             this.oldValue = oldValue;
             this.newValue = newValue;
@@ -429,30 +402,26 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
         /**
          * @return the key
          */
-        public K getKey()
-        {
+        public K getKey() {
             return key;
         }
 
         /**
          * @return the value before the change, may be null
          */
-        public V getOldValue()
-        {
+        public V getOldValue() {
             return oldValue;
         }
 
         /**
          * @return the value after the change, may be null
          */
-        public V getNewValue()
-        {
+        public V getNewValue() {
             return newValue;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return String.format("(%s=%s->%s)", getKey(), getOldValue(), getNewValue());
         }
     }
@@ -490,41 +459,35 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>>
      * @param <K> the key type
      * @param <V> the value type
      */
-    public static class DeltaListener<K, V> implements Listener<ConcurrentMap<K, V>>
-    {
+    public static class DeltaListener<K, V> implements Listener<ConcurrentMap<K, V>> {
         private final OortMap<K, V> oortMap;
 
-        public DeltaListener(OortMap<K, V> oortMap)
-        {
+        public DeltaListener(OortMap<K, V> oortMap) {
             this.oortMap = oortMap;
         }
 
-        public void onUpdated(Info<ConcurrentMap<K, V>> oldInfo, Info<ConcurrentMap<K, V>> newInfo)
-        {
+        public void onUpdated(Info<ConcurrentMap<K, V>> oldInfo, Info<ConcurrentMap<K, V>> newInfo) {
             Map<K, V> oldMap = oldInfo == null ? Collections.<K, V>emptyMap() : oldInfo.getObject();
             Map<K, V> newMap = new HashMap<>(newInfo.getObject());
-            for (Map.Entry<K, V> oldEntry : oldMap.entrySet())
-            {
+            for (Map.Entry<K, V> oldEntry : oldMap.entrySet()) {
                 K key = oldEntry.getKey();
                 V oldValue = oldEntry.getValue();
                 V newValue = newMap.remove(key);
                 Entry<K, V> entry = new Entry<>(key, oldValue, newValue);
-                if (newValue == null)
+                if (newValue == null) {
                     oortMap.notifyEntryRemoved(newInfo, entry);
-                else if (!newValue.equals(oldValue))
+                } else if (!newValue.equals(oldValue)) {
                     oortMap.notifyEntryPut(newInfo, entry);
+                }
             }
-            for (Map.Entry<K, V> newEntry : newMap.entrySet())
-            {
+            for (Map.Entry<K, V> newEntry : newMap.entrySet()) {
                 Entry<K, V> entry = new Entry<>(newEntry.getKey(), null, newEntry.getValue());
                 oortMap.notifyEntryPut(newInfo, entry);
             }
         }
 
-        public void onRemoved(Info<ConcurrentMap<K, V>> info)
-        {
-            for (Map.Entry<K, V> oldEntry : info.getObject().entrySet())
-            {
+        public void onRemoved(Info<ConcurrentMap<K, V>> info) {
+            for (Map.Entry<K, V> oldEntry : info.getObject().entrySet()) {
                 Entry<K, V> entry = new Entry<>(oldEntry.getKey(), oldEntry.getValue(), null);
                 oortMap.notifyEntryRemoved(info, entry);
             }

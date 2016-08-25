@@ -27,22 +27,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServerTest
-{
-    public CometDServiceMetaNotificationsTest(String serverTransport)
-    {
+public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServerTest {
+    public CometDServiceMetaNotificationsTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testMetaNotifications() throws Exception
-    {
+    public void testMetaNotifications() throws Exception {
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
         final CountDownLatch connectLatch = new CountDownLatch(1);
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
@@ -100,16 +96,14 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
         Assert.assertEquals(200, response.getStatus());
     }
 
-    public static class MetaChannelsService extends AbstractService
-    {
+    public static class MetaChannelsService extends AbstractService {
         private final CountDownLatch handshakeLatch;
         private final CountDownLatch connectLatch;
         private final CountDownLatch subscribeLatch;
         private final CountDownLatch unsubscribeLatch;
         private final CountDownLatch disconnectLatch;
 
-        public MetaChannelsService(BayeuxServerImpl bayeux, CountDownLatch handshakeLatch, CountDownLatch connectLatch, CountDownLatch subscribeLatch, CountDownLatch unsubscribeLatch, CountDownLatch disconnectLatch)
-        {
+        public MetaChannelsService(BayeuxServerImpl bayeux, CountDownLatch handshakeLatch, CountDownLatch connectLatch, CountDownLatch subscribeLatch, CountDownLatch unsubscribeLatch, CountDownLatch disconnectLatch) {
             super(bayeux, "test");
             this.handshakeLatch = handshakeLatch;
             this.connectLatch = connectLatch;
@@ -123,28 +117,23 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
             addService(Channel.META_DISCONNECT, "metaDisconnect");
         }
 
-        public void metaHandshake(ServerSession remote, ServerMessage message)
-        {
+        public void metaHandshake(ServerSession remote, ServerMessage message) {
             handshakeLatch.countDown();
         }
 
-        public void metaConnect(ServerSession remote, ServerMessage message)
-        {
+        public void metaConnect(ServerSession remote, ServerMessage message) {
             connectLatch.countDown();
         }
 
-        public void metaSubscribe(ServerSession remote, ServerMessage message)
-        {
+        public void metaSubscribe(ServerSession remote, ServerMessage message) {
             subscribeLatch.countDown();
         }
 
-        public void metaUnsubscribe(ServerSession remote, ServerMessage message)
-        {
+        public void metaUnsubscribe(ServerSession remote, ServerMessage message) {
             unsubscribeLatch.countDown();
         }
 
-        public void metaDisconnect(ServerSession remote, ServerMessage message)
-        {
+        public void metaDisconnect(ServerSession remote, ServerMessage message) {
             disconnectLatch.countDown();
         }
     }

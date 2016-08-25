@@ -29,37 +29,28 @@ import org.cometd.websocket.ClientServerWebSocketTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest
-{
-    public BatchedRepliesWebSocketTest(String wsTransportType)
-    {
+public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
+    public BatchedRepliesWebSocketTest(String wsTransportType) {
         super(wsTransportType);
     }
 
     @Test
-    public void testBatchedReplies() throws Exception
-    {
+    public void testBatchedReplies() throws Exception {
         prepareAndStart(null);
 
         final AtomicReference<List<Message.Mutable>> batch = new AtomicReference<>();
         final CountDownLatch repliesLatch = new CountDownLatch(1);
         ClientTransport transport;
-        switch (wsTransportType)
-        {
+        switch (wsTransportType) {
             case WEBSOCKET_JSR_356:
-                transport = new org.cometd.websocket.client.WebSocketTransport(null, null, null, wsClientContainer)
-                {
+                transport = new org.cometd.websocket.client.WebSocketTransport(null, null, null, wsClientContainer) {
                     @Override
-                    protected WebSocketDelegate newDelegate()
-                    {
-                        return new WebSocketDelegate()
-                        {
+                    protected WebSocketDelegate newDelegate() {
+                        return new WebSocketDelegate() {
                             @Override
-                            protected void onMessages(List<Message.Mutable> messages)
-                            {
+                            protected void onMessages(List<Message.Mutable> messages) {
                                 super.onMessages(messages);
-                                if (messages.size() > 1)
-                                {
+                                if (messages.size() > 1) {
                                     batch.set(messages);
                                     repliesLatch.countDown();
                                 }
@@ -69,19 +60,14 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest
                 };
                 break;
             case WEBSOCKET_JETTY:
-                transport = new org.cometd.websocket.client.JettyWebSocketTransport(null, null, null, wsClient)
-                {
+                transport = new org.cometd.websocket.client.JettyWebSocketTransport(null, null, null, wsClient) {
                     @Override
-                    protected Delegate newDelegate()
-                    {
-                        return new JettyWebSocketDelegate()
-                        {
+                    protected Delegate newDelegate() {
+                        return new JettyWebSocketDelegate() {
                             @Override
-                            protected void onMessages(List<Message.Mutable> messages)
-                            {
+                            protected void onMessages(List<Message.Mutable> messages) {
                                 super.onMessages(messages);
-                                if (messages.size() > 1)
-                                {
+                                if (messages.size() > 1) {
                                     batch.set(messages);
                                     repliesLatch.countDown();
                                 }
@@ -100,15 +86,11 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest
 
         final String channelName = "/autobatch";
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        client.batch(new Runnable()
-        {
-            public void run()
-            {
+        client.batch(new Runnable() {
+            public void run() {
                 ClientSessionChannel channel = client.getChannel(channelName);
-                channel.subscribe(new ClientSessionChannel.MessageListener()
-                {
-                    public void onMessage(ClientSessionChannel channel, Message message)
-                    {
+                channel.subscribe(new ClientSessionChannel.MessageListener() {
+                    public void onMessage(ClientSessionChannel channel, Message message) {
                         messageLatch.countDown();
                     }
                 });

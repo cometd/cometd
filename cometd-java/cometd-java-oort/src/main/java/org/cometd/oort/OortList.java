@@ -40,26 +40,22 @@ import org.cometd.bayeux.server.BayeuxServer;
  *
  * @param <E> the element type
  */
-public class OortList<E> extends OortContainer<List<E>>
-{
+public class OortList<E> extends OortContainer<List<E>> {
     private static final String TYPE_FIELD_ELEMENT_VALUE = "oort.list.element";
     private static final String ACTION_FIELD_ADD_VALUE = "oort.list.add";
     private static final String ACTION_FIELD_REMOVE_VALUE = "oort.list.remove";
 
     private final List<ElementListener<E>> listeners = new CopyOnWriteArrayList<>();
 
-    public OortList(Oort oort, String name, Factory<List<E>> factory)
-    {
+    public OortList(Oort oort, String name, Factory<List<E>> factory) {
         super(oort, name, factory);
     }
 
-    public void addElementListener(ElementListener<E> listener)
-    {
+    public void addElementListener(ElementListener<E> listener) {
         listeners.add(listener);
     }
 
-    public void removeElementListener(ElementListener<E> listener)
-    {
+    public void removeElementListener(ElementListener<E> listener) {
         listeners.remove(listener);
     }
 
@@ -70,8 +66,7 @@ public class OortList<E> extends OortContainer<List<E>>
      * @param element the element to test for presence
      * @return true if the {@code element} is contained in the local entity list, false otherwise
      */
-    public boolean contains(E element)
-    {
+    public boolean contains(E element) {
         return getInfo(getOort().getURL()).getObject().contains(element);
     }
 
@@ -82,12 +77,11 @@ public class OortList<E> extends OortContainer<List<E>>
      * @param element the element to test for presence
      * @return true if the {@code element} is contained in one of the entity lists of all nodes, false otherwise
      */
-    public boolean isPresent(E element)
-    {
-        for (Info<List<E>> info : this)
-        {
-            if (info.getObject().contains(element))
+    public boolean isPresent(E element) {
+        for (Info<List<E>> info : this) {
+            if (info.getObject().contains(element)) {
                 return true;
+            }
         }
         return false;
     }
@@ -101,8 +95,7 @@ public class OortList<E> extends OortContainer<List<E>>
      * @deprecated use {@link #addAndShare(Result, Object[])} instead
      */
     @Deprecated
-    public boolean addAndShare(E... elements)
-    {
+    public boolean addAndShare(E... elements) {
         Result.Deferred<Boolean> result = new Result.Deferred<>();
         addAndShare(result, elements);
         return result.get();
@@ -120,8 +113,7 @@ public class OortList<E> extends OortContainer<List<E>>
      *                 or {@code null} if there is no interest in knowing whether elements were added
      * @param elements the elements to add
      */
-    public void addAndShare(Result<Boolean> callback, E... elements)
-    {
+    public void addAndShare(Result<Boolean> callback, E... elements) {
         Data<Boolean> data = new Data<>(6, callback);
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
@@ -129,8 +121,9 @@ public class OortList<E> extends OortContainer<List<E>>
         data.put(Info.TYPE_FIELD, TYPE_FIELD_ELEMENT_VALUE);
         data.put(Info.ACTION_FIELD, ACTION_FIELD_ADD_VALUE);
 
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Sharing list add {}", data);
+        }
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
     }
@@ -144,8 +137,7 @@ public class OortList<E> extends OortContainer<List<E>>
      * @deprecated use {@link #removeAndShare(Result, Object[])} instead
      */
     @Deprecated
-    public boolean removeAndShare(E... elements)
-    {
+    public boolean removeAndShare(E... elements) {
         Result.Deferred<Boolean> result = new Result.Deferred<>();
         removeAndShare(result, elements);
         return result.get();
@@ -163,8 +155,7 @@ public class OortList<E> extends OortContainer<List<E>>
      *                 or {@code null} if there is no interest in knowing whether elements were removed
      * @param elements the elements to remove
      */
-    public void removeAndShare(Result<Boolean> callback, E... elements)
-    {
+    public void removeAndShare(Result<Boolean> callback, E... elements) {
         Data<Boolean> data = new Data<>(6, callback);
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
@@ -172,25 +163,25 @@ public class OortList<E> extends OortContainer<List<E>>
         data.put(Info.TYPE_FIELD, TYPE_FIELD_ELEMENT_VALUE);
         data.put(Info.ACTION_FIELD, ACTION_FIELD_REMOVE_VALUE);
 
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Sharing list remove {}", data);
+        }
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
     }
 
     @Override
-    protected boolean isItemUpdate(Map<String, Object> data)
-    {
+    protected boolean isItemUpdate(Map<String, Object> data) {
         return TYPE_FIELD_ELEMENT_VALUE.equals(data.get(Info.TYPE_FIELD));
     }
 
     @Override
-    protected void onItem(Info<List<E>> info, Map<String, Object> data)
-    {
+    protected void onItem(Info<List<E>> info, Map<String, Object> data) {
         // Retrieve elements.
         Object object = data.get(Info.OBJECT_FIELD);
-        if (object instanceof Object[])
+        if (object instanceof Object[]) {
             object = Arrays.asList((Object[])object);
+        }
         @SuppressWarnings("unchecked")
         List<E> elements = (List<E>)object;
 
@@ -198,8 +189,7 @@ public class OortList<E> extends OortContainer<List<E>>
         List<E> list = info.getObject();
         boolean result;
         String action = (String)data.get(Info.ACTION_FIELD);
-        switch (action)
-        {
+        switch (action) {
             case ACTION_FIELD_ADD_VALUE:
                 result = list.addAll(elements);
                 break;
@@ -214,10 +204,10 @@ public class OortList<E> extends OortContainer<List<E>>
         info.put(Info.VERSION_FIELD, data.get(Info.VERSION_FIELD));
 
         // Notify.
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("{} list {} of {}", info.isLocal() ? "Local" : "Remote", action, elements);
-        switch (action)
-        {
+        }
+        switch (action) {
             case ACTION_FIELD_ADD_VALUE:
                 notifyElementsAdded(info, elements);
                 break;
@@ -226,35 +216,26 @@ public class OortList<E> extends OortContainer<List<E>>
                 break;
         }
 
-        if (data instanceof Data)
+        if (data instanceof Data) {
             ((Data<Boolean>)data).setResult(result);
+        }
     }
 
-    private void notifyElementsAdded(Info<List<E>> info, List<E> elements)
-    {
-        for (ElementListener<E> listener : listeners)
-        {
-            try
-            {
+    private void notifyElementsAdded(Info<List<E>> info, List<E> elements) {
+        for (ElementListener<E> listener : listeners) {
+            try {
                 listener.onAdded(info, elements);
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 logger.info("Exception while invoking listener " + listener, x);
             }
         }
     }
 
-    private void notifyElementsRemoved(Info<List<E>> info, List<E> elements)
-    {
-        for (ElementListener<E> listener : listeners)
-        {
-            try
-            {
+    private void notifyElementsRemoved(Info<List<E>> info, List<E> elements) {
+        for (ElementListener<E> listener : listeners) {
+            try {
                 listener.onRemoved(info, elements);
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 logger.info("Exception while invoking listener " + listener, x);
             }
         }
@@ -265,12 +246,11 @@ public class OortList<E> extends OortContainer<List<E>>
      *
      * @param <E> the element type
      */
-    public interface ElementListener<E> extends EventListener
-    {
+    public interface ElementListener<E> extends EventListener {
         /**
          * Callback method invoked when elements are added to the entity list.
          *
-         * @param info the {@link Info} that was changed by the addition
+         * @param info     the {@link Info} that was changed by the addition
          * @param elements the elements added
          */
         public void onAdded(Info<List<E>> info, List<E> elements);
@@ -278,7 +258,7 @@ public class OortList<E> extends OortContainer<List<E>>
         /**
          * Callback method invoked when elements are removed from the entity list.
          *
-         * @param info the {@link Info} that was changed by the removal
+         * @param info     the {@link Info} that was changed by the removal
          * @param elements the elements removed
          */
         public void onRemoved(Info<List<E>> info, List<E> elements);
@@ -288,14 +268,11 @@ public class OortList<E> extends OortContainer<List<E>>
          *
          * @param <E> the element type
          */
-        public static class Adapter<E> implements ElementListener<E>
-        {
-            public void onAdded(Info<List<E>> info, List<E> elements)
-            {
+        public static class Adapter<E> implements ElementListener<E> {
+            public void onAdded(Info<List<E>> info, List<E> elements) {
             }
 
-            public void onRemoved(Info<List<E>> info, List<E> elements)
-            {
+            public void onRemoved(Info<List<E>> info, List<E> elements) {
             }
         }
     }
@@ -315,17 +292,14 @@ public class OortList<E> extends OortContainer<List<E>>
      *
      * @param <E> the element type
      */
-    public static class DeltaListener<E> implements Listener<List<E>>
-    {
+    public static class DeltaListener<E> implements Listener<List<E>> {
         private final OortList<E> oortList;
 
-        public DeltaListener(OortList<E> oortList)
-        {
+        public DeltaListener(OortList<E> oortList) {
             this.oortList = oortList;
         }
 
-        public void onUpdated(Info<List<E>> oldInfo, Info<List<E>> newInfo)
-        {
+        public void onUpdated(Info<List<E>> oldInfo, Info<List<E>> newInfo) {
             List<E> oldList = oldInfo == null ? Collections.<E>emptyList() : oldInfo.getObject();
             List<E> newList = newInfo.getObject();
 
@@ -335,14 +309,15 @@ public class OortList<E> extends OortContainer<List<E>>
             List<E> removed = new ArrayList<>(oldList);
             removed.removeAll(newList);
 
-            if (!added.isEmpty())
+            if (!added.isEmpty()) {
                 oortList.notifyElementsAdded(newInfo, added);
-            if (!removed.isEmpty())
+            }
+            if (!removed.isEmpty()) {
                 oortList.notifyElementsRemoved(newInfo, removed);
+            }
         }
 
-        public void onRemoved(Info<List<E>> info)
-        {
+        public void onRemoved(Info<List<E>> info) {
             oortList.notifyElementsRemoved(info, info.getObject());
         }
     }

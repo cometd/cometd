@@ -56,23 +56,21 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  * MyService s = new MyService();
  * processor.process(s);
  * </pre>
+ *
  * @see ServerAnnotationProcessor
  */
-public class ClientAnnotationProcessor extends AnnotationProcessor
-{
+public class ClientAnnotationProcessor extends AnnotationProcessor {
     private final ConcurrentMap<Object, ClientSessionChannel.MessageListener> handshakeListeners = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<>();
     private final ClientSession clientSession;
     private final Object[] injectables;
 
-    public ClientAnnotationProcessor(ClientSession clientSession)
-    {
+    public ClientAnnotationProcessor(ClientSession clientSession) {
         this(clientSession, new Object[0]);
     }
 
-    public ClientAnnotationProcessor(ClientSession clientSession, Object... injectables)
-    {
+    public ClientAnnotationProcessor(ClientSession clientSession, Object... injectables) {
         this.clientSession = clientSession;
         this.injectables = injectables;
     }
@@ -85,8 +83,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
      * @param bean the annotated service instance
      * @return true if at least one dependency or callback has been processed, false otherwise
      */
-    public boolean process(Object bean)
-    {
+    public boolean process(Object bean) {
         processMetaHandshakeListener(bean);
         boolean result = processDependencies(bean);
         result |= processCallbacks(bean);
@@ -94,14 +91,13 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-    private void processMetaHandshakeListener(Object bean)
-    {
-        if (bean != null)
-        {
+    private void processMetaHandshakeListener(Object bean) {
+        if (bean != null) {
             MetaHandshakeListener listener = new MetaHandshakeListener(bean);
             ClientSessionChannel.MessageListener existing = handshakeListeners.putIfAbsent(bean, listener);
-            if (existing == null)
+            if (existing == null) {
                 clientSession.getChannel(Channel.META_HANDSHAKE).addListener(listener);
+            }
         }
     }
 
@@ -112,23 +108,24 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
      * @return true if at least one lifecycle method has been invoked, false otherwise
      */
     @Override
-    public boolean processPostConstruct(Object bean)
-    {
+    public boolean processPostConstruct(Object bean) {
         return super.processPostConstruct(bean);
     }
 
-    private boolean processCallbacks(Object bean)
-    {
-        if (bean == null)
+    private boolean processCallbacks(Object bean) {
+        if (bean == null) {
             return false;
+        }
 
         Class<?> klass = bean.getClass();
         Service serviceAnnotation = klass.getAnnotation(Service.class);
-        if (serviceAnnotation == null)
+        if (serviceAnnotation == null) {
             return false;
+        }
 
-        if (!Modifier.isPublic(klass.getModifiers()))
+        if (!Modifier.isPublic(klass.getModifiers())) {
             throw new IllegalArgumentException("Service class " + klass.getName() + " must be public");
+        }
 
         boolean result = processListener(bean);
         result |= processSubscription(bean);
@@ -144,19 +141,18 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
      * @return true if at least one deprocessing has been performed, false otherwise
      * @see #process(Object)
      */
-    public boolean deprocess(Object bean)
-    {
+    public boolean deprocess(Object bean) {
         deprocessMetaHandshakeListener(bean);
         boolean result = deprocessCallbacks(bean);
         result |= processPreDestroy(bean);
         return result;
     }
 
-    private void deprocessMetaHandshakeListener(Object bean)
-    {
+    private void deprocessMetaHandshakeListener(Object bean) {
         ClientSessionChannel.MessageListener listener = handshakeListeners.remove(bean);
-        if (listener != null)
+        if (listener != null) {
             clientSession.getChannel(Channel.META_HANDSHAKE).removeListener(listener);
+        }
     }
 
     /**
@@ -166,8 +162,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
      * @param bean the annotated service instance
      * @return true if the at least one callback has been deprocessed
      */
-    public boolean deprocessCallbacks(Object bean)
-    {
+    public boolean deprocessCallbacks(Object bean) {
         boolean result = deprocessListener(bean);
         result |= deprocessSubscription(bean);
         return result;
@@ -180,126 +175,116 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
      * @return true if at least one lifecycle method has been invoked, false otherwise
      */
     @Override
-    public boolean processPreDestroy(Object bean)
-    {
+    public boolean processPreDestroy(Object bean) {
         return super.processPreDestroy(bean);
     }
 
-    private boolean processDependencies(Object bean)
-    {
-        if (bean == null)
+    private boolean processDependencies(Object bean) {
+        if (bean == null) {
             return false;
+        }
 
         Class<?> klass = bean.getClass();
         Service serviceAnnotation = klass.getAnnotation(Service.class);
-        if (serviceAnnotation == null)
+        if (serviceAnnotation == null) {
             return false;
+        }
 
         boolean result = processInjectables(bean, Arrays.asList(injectables));
         result |= processSession(bean, clientSession);
         return result;
     }
 
-    private boolean processSession(Object bean, ClientSession clientSession)
-    {
+    private boolean processSession(Object bean, ClientSession clientSession) {
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
-        {
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass()) {
             Field[] fields = c.getDeclaredFields();
-            for (Field field : fields)
-            {
-                if (field.getAnnotation(Session.class) != null)
-                {
-                    if (field.getType().isAssignableFrom(clientSession.getClass()))
-                    {
+            for (Field field : fields) {
+                if (field.getAnnotation(Session.class) != null) {
+                    if (field.getType().isAssignableFrom(clientSession.getClass())) {
                         setField(bean, field, clientSession);
                         result = true;
-                        if (logger.isDebugEnabled())
+                        if (logger.isDebugEnabled()) {
                             logger.debug("Injected {} to field {} on bean {}", clientSession, field, bean);
+                        }
                     }
                 }
             }
         }
 
         List<Method> methods = findAnnotatedMethods(bean, Session.class);
-        for (Method method : methods)
-        {
+        for (Method method : methods) {
             Class<?>[] parameterTypes = method.getParameterTypes();
-            if (parameterTypes.length == 1)
-            {
-                if (parameterTypes[0].isAssignableFrom(clientSession.getClass()))
-                {
+            if (parameterTypes.length == 1) {
+                if (parameterTypes[0].isAssignableFrom(clientSession.getClass())) {
                     invokePrivate(bean, method, clientSession);
                     result = true;
-                    if (logger.isDebugEnabled())
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Injected {} to method {} on bean {}", clientSession, method, bean);
+                    }
                 }
             }
         }
         return result;
     }
 
-    private boolean processListener(Object bean)
-    {
+    private boolean processListener(Object bean) {
         checkMethodsPublic(bean, Listener.class);
 
         boolean result = false;
         Method[] methods = bean.getClass().getMethods();
-        for (Method method : methods)
-        {
-            if (method.getDeclaringClass() == Object.class)
+        for (Method method : methods) {
+            if (method.getDeclaringClass() == Object.class) {
                 continue;
+            }
 
             Listener listener = method.getAnnotation(Listener.class);
-            if (listener != null)
-            {
+            if (listener != null) {
                 List<String> paramNames = processParameters(method);
                 checkSignaturesMatch(method, ListenerCallback.signature, paramNames);
 
                 String[] channels = listener.value();
-                for (String channel : channels)
-                {
-                    if (!ChannelId.isMeta(channel))
+                for (String channel : channels) {
+                    if (!ChannelId.isMeta(channel)) {
                         throw new IllegalArgumentException("Annotation @" + Listener.class.getSimpleName() +
                                 " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
                                 "(...) must specify a meta channel");
+                    }
 
                     ChannelId channelId = new ChannelId(channel);
-                    if (channelId.isTemplate())
+                    if (channelId.isTemplate()) {
                         channel = channelId.getWilds().get(0);
+                    }
 
                     ListenerCallback listenerCallback = new ListenerCallback(bean, method, paramNames, channelId, channel);
                     clientSession.getChannel(channel).addListener(listenerCallback);
 
                     List<ListenerCallback> callbacks = listeners.get(bean);
-                    if (callbacks == null)
-                    {
+                    if (callbacks == null) {
                         callbacks = new CopyOnWriteArrayList<>();
                         List<ListenerCallback> existing = listeners.putIfAbsent(bean, callbacks);
-                        if (existing != null)
+                        if (existing != null) {
                             callbacks = existing;
+                        }
                     }
                     callbacks.add(listenerCallback);
                     result = true;
-                    if (logger.isDebugEnabled())
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
+                    }
                 }
             }
         }
         return result;
     }
 
-    private boolean deprocessListener(Object bean)
-    {
+    private boolean deprocessListener(Object bean) {
         boolean result = false;
         List<ListenerCallback> callbacks = listeners.remove(bean);
-        if (callbacks != null)
-        {
-            for (ListenerCallback callback : callbacks)
-            {
+        if (callbacks != null) {
+            for (ListenerCallback callback : callbacks) {
                 ClientSessionChannel channel = clientSession.getChannel(callback.subscription);
-                if (channel != null)
-                {
+                if (channel != null) {
                     channel.removeListener(callback);
                     result = true;
                 }
@@ -308,66 +293,64 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-    private boolean processSubscription(Object bean)
-    {
+    private boolean processSubscription(Object bean) {
         checkMethodsPublic(bean, Subscription.class);
 
         boolean result = false;
         Method[] methods = bean.getClass().getMethods();
-        for (Method method : methods)
-        {
-            if (method.getDeclaringClass() == Object.class)
+        for (Method method : methods) {
+            if (method.getDeclaringClass() == Object.class) {
                 continue;
+            }
 
             Subscription subscription = method.getAnnotation(Subscription.class);
-            if (subscription != null)
-            {
+            if (subscription != null) {
                 List<String> paramNames = processParameters(method);
                 checkSignaturesMatch(method, SubscriptionCallback.signature, paramNames);
 
                 String[] channels = subscription.value();
-                for (String channel : channels)
-                {
-                    if (ChannelId.isMeta(channel))
+                for (String channel : channels) {
+                    if (ChannelId.isMeta(channel)) {
                         throw new IllegalArgumentException("Annotation @" + Subscription.class.getSimpleName() +
                                 " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
                                 "(...) must specify a non meta channel");
+                    }
 
                     ChannelId channelId = new ChannelId(channel);
-                    if (channelId.isTemplate())
+                    if (channelId.isTemplate()) {
                         channel = channelId.getWilds().get(0);
+                    }
 
                     SubscriptionCallback subscriptionCallback = new SubscriptionCallback(clientSession, bean, method, paramNames, channelId, channel);
                     // We should delay the subscription if the client session did not complete the handshake
-                    if (clientSession.isHandshook())
+                    if (clientSession.isHandshook()) {
                         clientSession.getChannel(channel).subscribe(subscriptionCallback);
+                    }
 
                     List<SubscriptionCallback> callbacks = subscribers.get(bean);
-                    if (callbacks == null)
-                    {
+                    if (callbacks == null) {
                         callbacks = new CopyOnWriteArrayList<>();
                         List<SubscriptionCallback> existing = subscribers.putIfAbsent(bean, callbacks);
-                        if (existing != null)
+                        if (existing != null) {
                             callbacks = existing;
+                        }
                     }
                     callbacks.add(subscriptionCallback);
                     result = true;
-                    if (logger.isDebugEnabled())
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
+                    }
                 }
             }
         }
         return result;
     }
 
-    private boolean deprocessSubscription(Object bean)
-    {
+    private boolean deprocessSubscription(Object bean) {
         boolean result = false;
         List<SubscriptionCallback> callbacks = subscribers.remove(bean);
-        if (callbacks != null)
-        {
-            for (SubscriptionCallback callback : callbacks)
-            {
+        if (callbacks != null) {
+            for (SubscriptionCallback callback : callbacks) {
                 clientSession.getChannel(callback.subscription).unsubscribe(callback);
                 result = true;
             }
@@ -375,8 +358,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-    private static class ListenerCallback implements ClientSessionChannel.MessageListener
-    {
+    private static class ListenerCallback implements ClientSessionChannel.MessageListener {
         private static final Class<?>[] signature = new Class<?>[]{Message.class};
         private final Object target;
         private final Method method;
@@ -384,8 +366,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         private final ChannelId channelId;
         private final String subscription;
 
-        private ListenerCallback(Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription)
-        {
+        private ListenerCallback(Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription) {
             this.target = target;
             this.method = method;
             this.paramNames = paramNames;
@@ -393,22 +374,22 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
             this.subscription = subscription;
         }
 
-        public void onMessage(ClientSessionChannel channel, Message message)
-        {
+        public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, String> matches = channelId.bind(message.getChannelId());
-            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames))
+            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames)) {
                 return;
+            }
 
             Object[] args = new Object[1 + paramNames.size()];
             args[0] = message;
-            for (int i = 0; i < paramNames.size(); ++i)
+            for (int i = 0; i < paramNames.size(); ++i) {
                 args[1 + i] = matches.get(paramNames.get(i));
+            }
             invokePublic(target, method, args);
         }
     }
 
-    private static class SubscriptionCallback implements ClientSessionChannel.MessageListener
-    {
+    private static class SubscriptionCallback implements ClientSessionChannel.MessageListener {
         private static final Class<?>[] signature = new Class<?>[]{Message.class};
         private final ClientSession clientSession;
         private final Object target;
@@ -417,8 +398,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         private final ChannelId channelId;
         private final String subscription;
 
-        public SubscriptionCallback(ClientSession clientSession, Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription)
-        {
+        public SubscriptionCallback(ClientSession clientSession, Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription) {
             this.clientSession = clientSession;
             this.target = target;
             this.method = method;
@@ -427,47 +407,41 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
             this.subscription = subscription;
         }
 
-        public void onMessage(ClientSessionChannel channel, Message message)
-        {
+        public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, String> matches = channelId.bind(message.getChannelId());
-            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames))
+            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames)) {
                 return;
+            }
 
             Object[] args = new Object[1 + paramNames.size()];
             args[0] = message;
-            for (int i = 0; i < paramNames.size(); ++i)
+            for (int i = 0; i < paramNames.size(); ++i) {
                 args[1 + i] = matches.get(paramNames.get(i));
+            }
             invokePublic(target, method, args);
         }
 
-        private void subscribe()
-        {
+        private void subscribe() {
             clientSession.getChannel(subscription).subscribe(this);
         }
     }
 
-    private class MetaHandshakeListener implements ClientSessionChannel.MessageListener
-    {
+    private class MetaHandshakeListener implements ClientSessionChannel.MessageListener {
         private final Object bean;
 
-        public MetaHandshakeListener(Object bean)
-        {
+        public MetaHandshakeListener(Object bean) {
             this.bean = bean;
         }
 
-        public void onMessage(ClientSessionChannel channel, Message message)
-        {
-            if (message.isSuccessful())
-            {
+        public void onMessage(ClientSessionChannel channel, Message message) {
+            if (message.isSuccessful()) {
                 final List<SubscriptionCallback> subscriptions = subscribers.get(bean);
-                if (subscriptions != null)
-                {
-                    clientSession.batch(new Runnable()
-                    {
-                        public void run()
-                        {
-                            for (SubscriptionCallback subscription : subscriptions)
+                if (subscriptions != null) {
+                    clientSession.batch(new Runnable() {
+                        public void run() {
+                            for (SubscriptionCallback subscription : subscriptions) {
                                 subscription.subscribe();
+                            }
                         }
                     });
                 }

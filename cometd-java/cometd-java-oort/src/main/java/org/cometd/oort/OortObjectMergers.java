@@ -23,72 +23,62 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class OortObjectMergers
-{
-    private OortObjectMergers()
-    {
+public class OortObjectMergers {
+    private OortObjectMergers() {
     }
 
-    public static OortObject.Merger<Long, Long> longSum()
-    {
+    public static OortObject.Merger<Long, Long> longSum() {
         return new LongSumMerger();
     }
 
-    public static <K, V> OortObject.Merger<Map<K, V>, Map<K, V>> mapUnion()
-    {
+    public static <K, V> OortObject.Merger<Map<K, V>, Map<K, V>> mapUnion() {
         return new MapUnionMerger<>();
     }
 
-    public static <K, V> OortObject.Merger<ConcurrentMap<K, V>, ConcurrentMap<K, V>> concurrentMapUnion()
-    {
+    public static <K, V> OortObject.Merger<ConcurrentMap<K, V>, ConcurrentMap<K, V>> concurrentMapUnion() {
         return new ConcurrentMapUnionMerger<>();
     }
 
-    public static <E> OortObject.Merger<List<E>, List<E>> listUnion()
-    {
+    public static <E> OortObject.Merger<List<E>, List<E>> listUnion() {
         return new ListUnionMerger<>();
     }
 
-    private static class LongSumMerger implements OortObject.Merger<Long, Long>
-    {
-        public Long merge(Collection<OortObject.Info<Long>> infos)
-        {
+    private static class LongSumMerger implements OortObject.Merger<Long, Long> {
+        public Long merge(Collection<OortObject.Info<Long>> infos) {
             long sum = 0;
-            for (OortObject.Info<Long> info : infos)
+            for (OortObject.Info<Long> info : infos) {
                 sum += info.getObject();
+            }
             return sum;
         }
     }
 
-    private static class MapUnionMerger<K, V> implements OortObject.Merger<Map<K, V>, Map<K, V>>
-    {
-        public Map<K, V> merge(Collection<OortObject.Info<Map<K, V>>> infos)
-        {
+    private static class MapUnionMerger<K, V> implements OortObject.Merger<Map<K, V>, Map<K, V>> {
+        public Map<K, V> merge(Collection<OortObject.Info<Map<K, V>>> infos) {
             Map<K, V> result = new HashMap<>();
-            for (OortObject.Info<Map<K, V>> value : infos)
+            for (OortObject.Info<Map<K, V>> value : infos) {
                 result.putAll(value.getObject());
+            }
             return result;
         }
     }
 
-    private static class ConcurrentMapUnionMerger<K, V> implements OortObject.Merger<ConcurrentMap<K, V>, ConcurrentMap<K, V>>
-    {
-        public ConcurrentMap<K, V> merge(Collection<OortObject.Info<ConcurrentMap<K, V>>> infos)
-        {
+    private static class ConcurrentMapUnionMerger<K, V> implements OortObject.Merger<ConcurrentMap<K, V>, ConcurrentMap<K, V>> {
+        public ConcurrentMap<K, V> merge(Collection<OortObject.Info<ConcurrentMap<K, V>>> infos) {
             ConcurrentMap<K, V> result = new ConcurrentHashMap<>();
-            for (OortObject.Info<ConcurrentMap<K, V>> value : infos)
+            for (OortObject.Info<ConcurrentMap<K, V>> value : infos) {
                 result.putAll(value.getObject());
+            }
             return result;
         }
     }
 
-    public static class ListUnionMerger<E> implements OortObject.Merger<List<E>, List<E>>
-    {
-        public List<E> merge(Collection <OortObject.Info<List<E>>> infos)
-        {
+    public static class ListUnionMerger<E> implements OortObject.Merger<List<E>, List<E>> {
+        public List<E> merge(Collection<OortObject.Info<List<E>>> infos) {
             List<E> result = new ArrayList<>();
-            for (OortObject.Info<List<E>> value : infos)
+            for (OortObject.Info<List<E>> value : infos) {
                 result.addAll(value.getObject());
+            }
             return result;
         }
     }

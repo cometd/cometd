@@ -18,11 +18,9 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
-{
+public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest {
     @Test
-    public void testCallbackPolling() throws Exception
-    {
+    public void testCallbackPolling() throws Exception {
         defineClass(Latch.class);
 
         // Make the CometD URL different to simulate the cross domain request
@@ -69,8 +67,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
     }
 
     @Test
-    public void testURLMaxLengthOneTooBigMessage() throws Exception
-    {
+    public void testURLMaxLengthOneTooBigMessage() throws Exception {
         defineClass(Latch.class);
 
         // Make the CometD URL different to simulate the cross domain request
@@ -105,8 +102,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
     }
 
     @Test
-    public void testURLMaxLengthThreeMessagesBatchedOneTooBigFailsWholeBatch() throws Exception
-    {
+    public void testURLMaxLengthThreeMessagesBatchedOneTooBigFailsWholeBatch() throws Exception {
         defineClass(Latch.class);
 
         // Make the CometD URL different to simulate the cross domain request
@@ -146,8 +142,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
     }
 
     @Test
-    public void testURLMaxLengthThreeMessagesBatchedAreSplit() throws Exception
-    {
+    public void testURLMaxLengthThreeMessagesBatchedAreSplit() throws Exception {
         defineClass(Latch.class);
 
         // Make the CometD URL different to simulate the cross domain request
@@ -187,8 +182,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
     }
 
     @Test
-    public void testURLMaxLengthThreeMessagesBatchedAreSplitOrderIsKept() throws Exception
-    {
+    public void testURLMaxLengthThreeMessagesBatchedAreSplitOrderIsKept() throws Exception {
         defineClass(Latch.class);
 
         // Make the CometD URL different to simulate the cross domain request

@@ -28,22 +28,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerTest
-{
-    public CometDServiceWithThreadPoolTest(String serverTransport)
-    {
+public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerTest {
+    public CometDServiceWithThreadPoolTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testBayeuxServiceWithThreadPool() throws Exception
-    {
+    public void testBayeuxServiceWithThreadPool() throws Exception {
         final String channel = "/foo";
 
         TestService service = new TestService(bayeux, channel);
@@ -83,20 +79,17 @@ public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
         Assert.assertNotNull(message.getData());
     }
 
-    public static class TestService extends AbstractService
-    {
+    public static class TestService extends AbstractService {
         private final CountDownLatch latch = new CountDownLatch(1);
         private volatile Message message;
 
-        public TestService(BayeuxServerImpl bayeux, String channel)
-        {
+        public TestService(BayeuxServerImpl bayeux, String channel) {
             super(bayeux, "test", 5);
             addService(channel, "handle");
         }
 
         @Override
-        protected void doInvoke(Method method, ServerSession session, ServerMessage message)
-        {
+        protected void doInvoke(Method method, ServerSession session, ServerMessage message) {
             // Sleep for a while to simulate a slow dispatch
             sleep(500);
             // Save a copy of the message to test it later
@@ -105,29 +98,22 @@ public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
             latch.countDown();
         }
 
-        private void sleep(long time)
-        {
-            try
-            {
+        private void sleep(long time) {
+            try {
                 Thread.sleep(time);
-            }
-            catch (InterruptedException x)
-            {
+            } catch (InterruptedException x) {
                 Thread.currentThread().interrupt();
             }
         }
 
-        public void handle(ServerSession remote, ServerMessage message)
-        {
+        public void handle(ServerSession remote, ServerMessage message) {
         }
 
-        public boolean await(long time) throws InterruptedException
-        {
+        public boolean await(long time) throws InterruptedException {
             return latch.await(time, TimeUnit.MILLISECONDS);
         }
 
-        public Message getMessage()
-        {
+        public Message getMessage() {
             return message;
         }
     }

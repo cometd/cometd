@@ -33,11 +33,9 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest
-{
+public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest {
     @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
+    protected void customizeContext(ServletContextHandler context) throws Exception {
         super.customizeContext(context);
         EmptyResponseFilter filter = new EmptyResponseFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
@@ -45,8 +43,7 @@ public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest
     }
 
     @Test
-    public void testEmptyResponse() throws Exception
-    {
+    public void testEmptyResponse() throws Exception {
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
@@ -63,24 +60,19 @@ public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class EmptyResponseFilter implements Filter
-    {
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
+    public static class EmptyResponseFilter implements Filter {
+        public void init(FilterConfig filterConfig) throws ServletException {
         }
 
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
 
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
             response.setContentType("application/json;charset=UTF-8");
         }
 
-        public void destroy()
-        {
+        public void destroy() {
         }
     }
 }

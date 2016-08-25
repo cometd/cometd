@@ -30,16 +30,13 @@ import org.cometd.server.AbstractServerTransport;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class HandshakeReconnectTest extends AbstractClientServerTest
-{
-    public HandshakeReconnectTest(Transport transport)
-    {
+public class HandshakeReconnectTest extends AbstractClientServerTest {
+    public HandshakeReconnectTest(Transport transport) {
         super(transport);
     }
 
     @Test
-    public void testReconnectUsingHandshake() throws Exception
-    {
+    public void testReconnectUsingHandshake() throws Exception {
         long timeout = 1500;
         long maxInterval = 2000;
         Map<String, String> options = serverOptions();
@@ -61,29 +58,25 @@ public class HandshakeReconnectTest extends AbstractClientServerTest
 
         // Add a /meta/handshake listener to be sure we reconnect using handshake.
         final CountDownLatch handshakeReconnect = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 // Reconnecting using handshake, first failure.
-                if (!message.isSuccessful())
+                if (!message.isSuccessful()) {
                     handshakeReconnect.countDown();
+                }
             }
         });
 
         // Wait for the session to be swept (timeout + maxInterval).
         final CountDownLatch sessionRemoved = new CountDownLatch(1);
-        bayeux.addListener(new BayeuxServer.SessionListener()
-        {
+        bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
-            public void sessionAdded(ServerSession session, ServerMessage message)
-            {
+            public void sessionAdded(ServerSession session, ServerMessage message) {
             }
 
             @Override
-            public void sessionRemoved(ServerSession session, boolean timedout)
-            {
+            public void sessionRemoved(ServerSession session, boolean timedout) {
                 sessionRemoved.countDown();
             }
         });

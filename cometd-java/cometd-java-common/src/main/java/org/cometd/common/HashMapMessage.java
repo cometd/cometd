@@ -22,153 +22,131 @@ import java.util.Map;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 
-public class HashMapMessage extends HashMap<String, Object> implements Message.Mutable, Serializable
-{
+public class HashMapMessage extends HashMap<String, Object> implements Message.Mutable, Serializable {
     private static final long serialVersionUID = 4318697940670212190L;
 
-    public HashMapMessage()
-    {
+    public HashMapMessage() {
     }
 
-    public HashMapMessage(Message message)
-    {
+    public HashMapMessage(Message message) {
         putAll(message);
     }
 
     @SuppressWarnings("unchecked")
-    public Map<String, Object> getAdvice()
-    {
+    public Map<String, Object> getAdvice() {
         return (Map<String, Object>)get(ADVICE_FIELD);
     }
 
-    public String getChannel()
-    {
+    public String getChannel() {
         return (String)get(CHANNEL_FIELD);
     }
 
-    public ChannelId getChannelId()
-    {
+    public ChannelId getChannelId() {
         return new ChannelId(getChannel());
     }
 
-    public String getClientId()
-    {
+    public String getClientId() {
         return (String)get(CLIENT_ID_FIELD);
     }
 
-    public Object getData()
-    {
+    public Object getData() {
         return get(DATA_FIELD);
     }
 
     @SuppressWarnings("unchecked")
-    public Map<String, Object> getDataAsMap()
-    {
+    public Map<String, Object> getDataAsMap() {
         return (Map<String, Object>)get(DATA_FIELD);
     }
 
     @SuppressWarnings("unchecked")
-    public Map<String, Object> getExt()
-    {
+    public Map<String, Object> getExt() {
         return (Map<String, Object>)get(EXT_FIELD);
     }
 
-    public String getId()
-    {
+    public String getId() {
         // Support also old-style ids of type long
         Object id = get(ID_FIELD);
         return id == null ? null : String.valueOf(id);
     }
 
-    public String getJSON()
-    {
+    public String getJSON() {
         return _jsonContext.generate(this);
     }
 
-    public Map<String, Object> getAdvice(boolean create)
-    {
+    public Map<String, Object> getAdvice(boolean create) {
         Map<String, Object> advice = getAdvice();
-        if (create && advice == null)
-        {
+        if (create && advice == null) {
             advice = new HashMap<>(4);
             put(ADVICE_FIELD, advice);
         }
         return advice;
     }
 
-    public Map<String, Object> getDataAsMap(boolean create)
-    {
+    public Map<String, Object> getDataAsMap(boolean create) {
         @SuppressWarnings("unchecked")
         Map<String, Object> data = getDataAsMap();
-        if (create && data == null)
-        {
+        if (create && data == null) {
             data = new HashMap<>();
             put(DATA_FIELD, data);
         }
         return data;
     }
 
-    public Map<String, Object> getExt(boolean create)
-    {
+    public Map<String, Object> getExt(boolean create) {
         Map<String, Object> ext = getExt();
-        if (create && ext == null)
-        {
+        if (create && ext == null) {
             ext = new HashMap<>();
             put(EXT_FIELD, ext);
         }
         return ext;
     }
 
-    public boolean isMeta()
-    {
+    public boolean isMeta() {
         return ChannelId.isMeta(getChannel());
     }
 
-    public boolean isPublishReply()
-    {
+    public boolean isPublishReply() {
         return !isMeta() && !containsKey(DATA_FIELD);
     }
 
-    public boolean isSuccessful()
-    {
+    public boolean isSuccessful() {
         Boolean value = (Boolean)get(Message.SUCCESSFUL_FIELD);
         return value != null && value;
     }
 
-    public void setChannel(String channel)
-    {
-        if (channel==null)
+    public void setChannel(String channel) {
+        if (channel == null) {
             remove(CHANNEL_FIELD);
-        else
+        } else {
             put(CHANNEL_FIELD, channel);
+        }
     }
 
-    public void setClientId(String clientId)
-    {
-        if (clientId==null)
+    public void setClientId(String clientId) {
+        if (clientId == null) {
             remove(CLIENT_ID_FIELD);
-        else
+        } else {
             put(CLIENT_ID_FIELD, clientId);
+        }
     }
 
-    public void setData(Object data)
-    {
-        if (data==null)
+    public void setData(Object data) {
+        if (data == null) {
             remove(DATA_FIELD);
-        else
+        } else {
             put(DATA_FIELD, data);
+        }
     }
 
-    public void setId(String id)
-    {
-        if (id==null)
+    public void setId(String id) {
+        if (id == null) {
             remove(ID_FIELD);
-        else
+        } else {
             put(ID_FIELD, id);
+        }
     }
 
-    public void setSuccessful(boolean successful)
-    {
+    public void setSuccessful(boolean successful) {
         put(SUCCESSFUL_FIELD, successful);
     }
 

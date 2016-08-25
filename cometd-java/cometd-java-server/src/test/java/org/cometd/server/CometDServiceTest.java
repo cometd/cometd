@@ -27,22 +27,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CometDServiceTest extends AbstractBayeuxClientServerTest
-{
-    public CometDServiceTest(String serverTransport)
-    {
+public class CometDServiceTest extends AbstractBayeuxClientServerTest {
+    public CometDServiceTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testRemoveService() throws Exception
-    {
+    public void testRemoveService() throws Exception {
         final String channel1 = "/foo";
         final String channel2 = "/bar";
         final AtomicReference<CountDownLatch> publishLatch1 = new AtomicReference<>(new CountDownLatch(1));
@@ -120,13 +116,11 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(200, response.getStatus());
     }
 
-    public static class OneTwoService extends AbstractService
-    {
+    public static class OneTwoService extends AbstractService {
         private final AtomicReference<CountDownLatch> publishLatch1;
         private final AtomicReference<CountDownLatch> publishLatch2;
 
-        public OneTwoService(BayeuxServerImpl bayeux, String channel1, String channel2, AtomicReference<CountDownLatch> publishLatch1, AtomicReference<CountDownLatch> publishLatch2)
-        {
+        public OneTwoService(BayeuxServerImpl bayeux, String channel1, String channel2, AtomicReference<CountDownLatch> publishLatch1, AtomicReference<CountDownLatch> publishLatch2) {
             super(bayeux, "test_remove");
             this.publishLatch1 = publishLatch1;
             this.publishLatch2 = publishLatch2;
@@ -134,13 +128,11 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
             addService(channel2, "two");
         }
 
-        public void one(ServerSession remote, ServerMessage message)
-        {
+        public void one(ServerSession remote, ServerMessage message) {
             publishLatch1.get().countDown();
         }
 
-        public void two(ServerSession remote, ServerMessage message)
-        {
+        public void two(ServerSession remote, ServerMessage message) {
             publishLatch2.get().countDown();
         }
     }

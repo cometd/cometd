@@ -45,8 +45,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public class LongPollingTransport extends HttpClientTransport
-{
+public class LongPollingTransport extends HttpClientTransport {
     public static final String NAME = "long-polling";
     public static final String PREFIX = "long-polling.json";
     public static final String MAX_BUFFER_SIZE_OPTION = "maxBufferSize";
@@ -59,42 +58,38 @@ public class LongPollingTransport extends HttpClientTransport
     private volatile CookieManager _cookieManager;
     private volatile Map<String, Object> _advice;
 
-    public LongPollingTransport(Map<String, Object> options, HttpClient httpClient)
-    {
+    public LongPollingTransport(Map<String, Object> options, HttpClient httpClient) {
         this(null, options, httpClient);
     }
 
-    public LongPollingTransport(String url, Map<String, Object> options, HttpClient httpClient)
-    {
+    public LongPollingTransport(String url, Map<String, Object> options, HttpClient httpClient) {
         super(NAME, url, options);
         _httpClient = httpClient;
         setOptionPrefix(PREFIX);
     }
 
     @Override
-    public boolean accept(String bayeuxVersion)
-    {
+    public boolean accept(String bayeuxVersion) {
         return true;
     }
 
     @Override
-    public void init()
-    {
+    public void init() {
         super.init();
 
         _aborted = false;
 
         long defaultMaxNetworkDelay = _httpClient.getIdleTimeout();
-        if (defaultMaxNetworkDelay <= 0)
+        if (defaultMaxNetworkDelay <= 0) {
             defaultMaxNetworkDelay = 10000;
+        }
         setMaxNetworkDelay(defaultMaxNetworkDelay);
 
         _maxBufferSize = getOption(MAX_BUFFER_SIZE_OPTION, 1024 * 1024);
 
         Pattern uriRegexp = Pattern.compile("(^https?://(((\\[[^\\]]+\\])|([^:/\\?#]+))(:(\\d+))?))?([^\\?#]*)(.*)?");
         Matcher uriMatcher = uriRegexp.matcher(getURL());
-        if (uriMatcher.matches())
-        {
+        if (uriMatcher.matches()) {
             String afterPath = uriMatcher.group(9);
             _appendMessageType = afterPath == null || afterPath.trim().length() == 0;
         }
@@ -102,34 +97,29 @@ public class LongPollingTransport extends HttpClientTransport
     }
 
     @Override
-    public void abort()
-    {
+    public void abort() {
         List<Request> requests = new ArrayList<>();
-        synchronized (this)
-        {
+        synchronized (this) {
             _aborted = true;
             requests.addAll(_requests);
             _requests.clear();
         }
-        for (Request request : requests)
-        {
+        for (Request request : requests) {
             request.abort(new Exception("Transport " + this + " aborted"));
         }
     }
 
     @Override
-    public void send(final TransportListener listener, final List<Message.Mutable> messages)
-    {
+    public void send(final TransportListener listener, final List<Message.Mutable> messages) {
         String url = getURL();
         final URI uri = URI.create(url);
-        if (_appendMessageType && messages.size() == 1)
-        {
+        if (_appendMessageType && messages.size() == 1) {
             Message.Mutable message = messages.get(0);
-            if (message.isMeta())
-            {
+            if (message.isMeta()) {
                 String type = message.getChannel().substring(Channel.META.length());
-                if (url.endsWith("/"))
+                if (url.endsWith("/")) {
                     url = url.substring(0, url.length() - 1);
+                }
                 url += type;
             }
         }
@@ -138,8 +128,7 @@ public class LongPollingTransport extends HttpClientTransport
         request.header(HttpHeader.CONTENT_TYPE.asString(), "application/json;charset=UTF-8");
 
         StringBuilder builder = new StringBuilder();
-        for (HttpCookie cookie : getCookieStore().get(uri))
-        {
+        for (HttpCookie cookie : getCookieStore().get(uri)) {
             builder.setLength(0);
             builder.append(cookie.getName()).append("=").append(cookie.getValue());
             request.header(HttpHeader.COOKIE.asString(), builder.toString());
@@ -149,38 +138,35 @@ public class LongPollingTransport extends HttpClientTransport
 
         customize(request);
 
-        synchronized (this)
-        {
-            if (_aborted)
+        synchronized (this) {
+            if (_aborted) {
                 throw new IllegalStateException("Aborted");
+            }
             _requests.add(request);
         }
 
-        request.listener(new Request.Listener.Adapter()
-        {
+        request.listener(new Request.Listener.Adapter() {
             @Override
-            public void onHeaders(Request request)
-            {
+            public void onHeaders(Request request) {
                 listener.onSending(messages);
             }
         });
 
         long maxNetworkDelay = getMaxNetworkDelay();
-        if (messages.size() == 1)
-        {
+        if (messages.size() == 1) {
             Message.Mutable message = messages.get(0);
-            if (Channel.META_CONNECT.equals(message.getChannel()))
-            {
+            if (Channel.META_CONNECT.equals(message.getChannel())) {
                 Map<String, Object> advice = message.getAdvice();
-                if (advice == null)
+                if (advice == null) {
                     advice = _advice;
-                if (advice != null)
-                {
+                }
+                if (advice != null) {
                     Object timeout = advice.get("timeout");
-                    if (timeout instanceof Number)
+                    if (timeout instanceof Number) {
                         maxNetworkDelay += ((Number)timeout).longValue();
-                    else if (timeout != null)
+                    } else if (timeout != null) {
                         maxNetworkDelay += Long.parseLong(timeout.toString());
+                    }
                 }
             }
         }
@@ -188,14 +174,11 @@ public class LongPollingTransport extends HttpClientTransport
         // so there are no races between the two timeouts
         request.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
         request.timeout(maxNetworkDelay, TimeUnit.MILLISECONDS);
-        request.send(new BufferingResponseListener(_maxBufferSize)
-        {
+        request.send(new BufferingResponseListener(_maxBufferSize) {
             @Override
-            public boolean onHeader(Response response, HttpField field)
-            {
+            public boolean onHeader(Response response, HttpField field) {
                 HttpHeader header = field.getHeader();
-                if (header != null && (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2))
-                {
+                if (header != null && (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2)) {
                     // We do not allow cookies to be handled by HttpClient, since one
                     // HttpClient instance is shared by multiple BayeuxClient instances.
                     // Instead, we store the cookies in the BayeuxClient instance.
@@ -207,72 +190,57 @@ public class LongPollingTransport extends HttpClientTransport
                 return true;
             }
 
-            private void storeCookies(URI uri, Map<String, List<String>> cookies)
-            {
-                try
-                {
+            private void storeCookies(URI uri, Map<String, List<String>> cookies) {
+                try {
                     _cookieManager.put(uri, cookies);
-                }
-                catch (IOException x)
-                {
-                    if (logger.isDebugEnabled())
+                } catch (IOException x) {
+                    if (logger.isDebugEnabled()) {
                         logger.debug("", x);
+                    }
                 }
             }
 
             @Override
-            public void onComplete(Result result)
-            {
-                synchronized (LongPollingTransport.this)
-                {
+            public void onComplete(Result result) {
+                synchronized (LongPollingTransport.this) {
                     _requests.remove(result.getRequest());
                 }
 
-                if (result.isFailed())
-                {
+                if (result.isFailed()) {
                     listener.onFailure(result.getFailure(), messages);
                     return;
                 }
 
                 Response response = result.getResponse();
                 int status = response.getStatus();
-                if (status == HttpStatus.OK_200)
-                {
+                if (status == HttpStatus.OK_200) {
                     String content = getContentAsString();
-                    if (content != null && content.length() > 0)
-                    {
-                        try
-                        {
+                    if (content != null && content.length() > 0) {
+                        try {
                             List<Message.Mutable> messages = parseMessages(content);
-                            if (logger.isDebugEnabled())
+                            if (logger.isDebugEnabled()) {
                                 logger.debug("Received messages {}", messages);
-                            for (Message.Mutable message : messages)
-                            {
-                                if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel()))
-                                {
+                            }
+                            for (Message.Mutable message : messages) {
+                                if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel())) {
                                     Map<String, Object> advice = message.getAdvice();
-                                    if (advice != null && advice.get("timeout") != null)
+                                    if (advice != null && advice.get("timeout") != null) {
                                         _advice = advice;
+                                    }
                                 }
                             }
                             listener.onMessages(messages);
-                        }
-                        catch (ParseException x)
-                        {
+                        } catch (ParseException x) {
                             listener.onFailure(x, messages);
                         }
-                    }
-                    else
-                    {
+                    } else {
                         Map<String, Object> failure = new HashMap<>(2);
                         // Convert the 200 into 204 (no content)
                         failure.put("httpCode", 204);
                         TransportException x = new TransportException(failure);
                         listener.onFailure(x, messages);
                     }
-                }
-                else
-                {
+                } else {
                     Map<String, Object> failure = new HashMap<>(2);
                     failure.put("httpCode", status);
                     TransportException x = new TransportException(failure);
@@ -282,23 +250,19 @@ public class LongPollingTransport extends HttpClientTransport
         });
     }
 
-    protected void customize(Request request)
-    {
+    protected void customize(Request request) {
     }
 
-    public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory
-    {
+    public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
         private final HttpClient httpClient;
 
-        public Factory(HttpClient httpClient)
-        {
+        public Factory(HttpClient httpClient) {
             this.httpClient = httpClient;
             addBean(httpClient);
         }
 
         @Override
-        public ClientTransport newClientTransport(String url, Map<String, Object> options)
-        {
+        public ClientTransport newClientTransport(String url, Map<String, Object> options) {
             return new LongPollingTransport(url, options, httpClient);
         }
     }

@@ -81,8 +81,7 @@ import org.cometd.bayeux.server.ServerSession;
  *
  * @see ClientAnnotationProcessor
  */
-public class ServerAnnotationProcessor extends AnnotationProcessor
-{
+public class ServerAnnotationProcessor extends AnnotationProcessor {
     private final ConcurrentMap<Object, LocalSession> sessions = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<>();
@@ -90,13 +89,11 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
     private final BayeuxServer bayeuxServer;
     private final Object[] injectables;
 
-    public ServerAnnotationProcessor(BayeuxServer bayeuxServer)
-    {
+    public ServerAnnotationProcessor(BayeuxServer bayeuxServer) {
         this(bayeuxServer, new Object[0]);
     }
 
-    public ServerAnnotationProcessor(BayeuxServer bayeuxServer, Object... injectables)
-    {
+    public ServerAnnotationProcessor(BayeuxServer bayeuxServer, Object... injectables) {
         this.bayeuxServer = bayeuxServer;
         this.injectables = injectables;
     }
@@ -110,8 +107,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
      * @param bean the annotated service instance
      * @return true if the bean contains at least one annotation that has been processed, false otherwise
      */
-    public boolean process(Object bean)
-    {
+    public boolean process(Object bean) {
         boolean result = processDependencies(bean);
         result |= processConfigurations(bean);
         result |= processCallbacks(bean);
@@ -125,54 +121,49 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
      * @param bean the annotated service instance
      * @return true if at least one annotated configure has been processed, false otherwise
      */
-    public boolean processConfigurations(final Object bean)
-    {
-        if (bean == null)
+    public boolean processConfigurations(final Object bean) {
+        if (bean == null) {
             return false;
+        }
 
         Class<?> klass = bean.getClass();
         Service serviceAnnotation = klass.getAnnotation(Service.class);
-        if (serviceAnnotation == null)
+        if (serviceAnnotation == null) {
             return false;
+        }
 
         List<Method> methods = findAnnotatedMethods(bean, Configure.class);
-        if (methods.isEmpty())
+        if (methods.isEmpty()) {
             return false;
+        }
 
-        for (final Method method : methods)
-        {
+        for (final Method method : methods) {
             Configure configure = method.getAnnotation(Configure.class);
             String[] channels = configure.value();
-            for (String channel : channels)
-            {
-                final Initializer init = new Initializer()
-                {
-                    public void configureChannel(ConfigurableServerChannel channel)
-                    {
-                        if (logger.isDebugEnabled())
+            for (String channel : channels) {
+                final Initializer init = new Initializer() {
+                    public void configureChannel(ConfigurableServerChannel channel) {
+                        if (logger.isDebugEnabled()) {
                             logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
+                        }
                         invokePrivate(bean, method, channel);
                     }
                 };
 
                 MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel, init);
 
-                if (!initializedChannel.isMarked())
-                {
-                    if (configure.configureIfExists())
-                    {
-                        if (logger.isDebugEnabled())
+                if (!initializedChannel.isMarked()) {
+                    if (configure.configureIfExists()) {
+                        if (logger.isDebugEnabled()) {
                             logger.debug("Configure again channel {} with method {} on bean {}", channel, method, bean);
+                        }
                         init.configureChannel(initializedChannel.getReference());
-                    }
-                    else if (configure.errorIfExists())
-                    {
+                    } else if (configure.errorIfExists()) {
                         throw new IllegalStateException("Channel already configured: " + channel);
-                    }
-                    else
-                    {
-                        if (logger.isDebugEnabled())
+                    } else {
+                        if (logger.isDebugEnabled()) {
                             logger.debug("Channel {} already initialized. Not called method {} on bean {}", channel, method, bean);
+                        }
                     }
                 }
             }
@@ -186,15 +177,16 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
      * @param bean the annotated service instance
      * @return true if at least one annotated dependency has been processed, false otherwise
      */
-    public boolean processDependencies(Object bean)
-    {
-        if (bean == null)
+    public boolean processDependencies(Object bean) {
+        if (bean == null) {
             return false;
+        }
 
         Class<?> klass = bean.getClass();
         Service serviceAnnotation = klass.getAnnotation(Service.class);
-        if (serviceAnnotation == null)
+        if (serviceAnnotation == null) {
             return false;
+        }
 
         List<Object> injectables = new ArrayList<>(Arrays.asList(this.injectables));
         injectables.add(0, bayeuxServer);
@@ -211,8 +203,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
      * @return true if at least one lifecycle method has been invoked, false otherwise
      */
     @Override
-    public boolean processPostConstruct(Object bean)
-    {
+    public boolean processPostConstruct(Object bean) {
         return super.processPostConstruct(bean);
     }
 
@@ -223,18 +214,20 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
      * @param bean the annotated service instance
      * @return true if at least one annotated callback has been processed, false otherwise
      */
-    public boolean processCallbacks(Object bean)
-    {
-        if (bean == null)
+    public boolean processCallbacks(Object bean) {
+        if (bean == null) {
             return false;
+        }
 
         Class<?> klass = bean.getClass();
         Service serviceAnnotation = klass.getAnnotation(Service.class);
-        if (serviceAnnotation == null)
+        if (serviceAnnotation == null) {
             return false;
+        }
 
-        if (!Modifier.isPublic(klass.getModifiers()))
+        if (!Modifier.isPublic(klass.getModifiers())) {
             throw new IllegalArgumentException("Service class " + klass.getName() + " must be public");
+        }
 
         LocalSession session = findOrCreateLocalSession(bean, serviceAnnotation.value());
         boolean result = processListener(bean, session);
@@ -252,8 +245,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
      * @return true if at least one deprocessing has been performed, false otherwise
      * @see #process(Object)
      */
-    public boolean deprocess(Object bean)
-    {
+    public boolean deprocess(Object bean) {
         boolean result = deprocessCallbacks(bean);
         result |= processPreDestroy(bean);
         return result;
@@ -266,15 +258,16 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
      * @param bean the annotated service instance
      * @return true if the at least one callback has been deprocessed
      */
-    public boolean deprocessCallbacks(Object bean)
-    {
-        if (bean == null)
+    public boolean deprocessCallbacks(Object bean) {
+        if (bean == null) {
             return false;
+        }
 
         Class<?> klass = bean.getClass();
         Service serviceAnnotation = klass.getAnnotation(Service.class);
-        if (serviceAnnotation == null)
+        if (serviceAnnotation == null) {
             return false;
+        }
 
         boolean result = deprocessListener(bean);
         result |= deprocessSubscription(bean);
@@ -283,11 +276,11 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-    private void destroyLocalSession(Object bean)
-    {
+    private void destroyLocalSession(Object bean) {
         LocalSession session = sessions.remove(bean);
-        if (session != null)
+        if (session != null) {
             session.disconnect();
+        }
     }
 
     /**
@@ -297,111 +290,103 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
      * @return true if at least one lifecycle method has been invoked, false otherwise
      */
     @Override
-    public boolean processPreDestroy(Object bean)
-    {
+    public boolean processPreDestroy(Object bean) {
         return super.processPreDestroy(bean);
     }
 
-    private LocalSession findOrCreateLocalSession(Object bean, String name)
-    {
+    private LocalSession findOrCreateLocalSession(Object bean, String name) {
         LocalSession session = sessions.get(bean);
-        if (session == null)
-        {
+        if (session == null) {
             session = bayeuxServer.newLocalSession(name);
             LocalSession existing = sessions.putIfAbsent(bean, session);
-            if (existing != null)
+            if (existing != null) {
                 session = existing;
-            else
+            } else {
                 session.handshake();
+            }
         }
         return session;
     }
 
-    private boolean processSession(Object bean, LocalSession localSession)
-    {
+    private boolean processSession(Object bean, LocalSession localSession) {
         ServerSession serverSession = localSession.getServerSession();
 
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
-        {
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass()) {
             Field[] fields = c.getDeclaredFields();
-            for (Field field : fields)
-            {
-                if (field.getAnnotation(Session.class) != null)
-                {
+            for (Field field : fields) {
+                if (field.getAnnotation(Session.class) != null) {
                     Object value = null;
-                    if (field.getType().isAssignableFrom(localSession.getClass()))
+                    if (field.getType().isAssignableFrom(localSession.getClass())) {
                         value = localSession;
-                    else if (field.getType().isAssignableFrom(serverSession.getClass()))
+                    } else if (field.getType().isAssignableFrom(serverSession.getClass())) {
                         value = serverSession;
+                    }
 
-                    if (value != null)
-                    {
+                    if (value != null) {
                         setField(bean, field, value);
                         result = true;
-                        if (logger.isDebugEnabled())
+                        if (logger.isDebugEnabled()) {
                             logger.debug("Injected {} to field {} on bean {}", value, field, bean);
+                        }
                     }
                 }
             }
         }
 
         List<Method> methods = findAnnotatedMethods(bean, Session.class);
-        for (Method method : methods)
-        {
+        for (Method method : methods) {
             Class<?>[] parameterTypes = method.getParameterTypes();
-            if (parameterTypes.length == 1)
-            {
+            if (parameterTypes.length == 1) {
                 Object value = null;
-                if (parameterTypes[0].isAssignableFrom(localSession.getClass()))
+                if (parameterTypes[0].isAssignableFrom(localSession.getClass())) {
                     value = localSession;
-                else if (parameterTypes[0].isAssignableFrom(serverSession.getClass()))
+                } else if (parameterTypes[0].isAssignableFrom(serverSession.getClass())) {
                     value = serverSession;
+                }
 
-                if (value != null)
-                {
+                if (value != null) {
                     invokePrivate(bean, method, value);
                     result = true;
-                    if (logger.isDebugEnabled())
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Injected {} to method {} on bean {}", value, method, bean);
+                    }
                 }
             }
         }
         return result;
     }
 
-    private boolean processListener(Object bean, LocalSession localSession)
-    {
+    private boolean processListener(Object bean, LocalSession localSession) {
         checkMethodsPublic(bean, Listener.class);
 
         boolean result = false;
         Method[] methods = bean.getClass().getMethods();
-        for (Method method : methods)
-        {
-            if (method.getDeclaringClass() == Object.class)
+        for (Method method : methods) {
+            if (method.getDeclaringClass() == Object.class) {
                 continue;
+            }
 
             Listener listener = method.getAnnotation(Listener.class);
-            if (listener != null)
-            {
+            if (listener != null) {
                 List<String> paramNames = processParameters(method);
                 checkSignaturesMatch(method, ListenerCallback.signature, paramNames);
 
                 String[] channels = listener.value();
-                for (String channel : channels)
-                {
+                for (String channel : channels) {
                     ChannelId channelId = new ChannelId(channel);
-                    if (channelId.isTemplate())
-                    {
+                    if (channelId.isTemplate()) {
                         List<String> parameters = channelId.getParameters();
-                        if (parameters.size() != paramNames.size())
+                        if (parameters.size() != paramNames.size()) {
                             throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
                                     Listener.class.getSimpleName() + " on method " +
                                     method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
-                        if (!parameters.equals(paramNames))
+                        }
+                        if (!parameters.equals(paramNames)) {
                             throw new IllegalArgumentException("Wrong parameter names in annotation @" +
                                     Listener.class.getSimpleName() + " on method " +
                                     method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
+                        }
                         channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
                     }
 
@@ -410,34 +395,31 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     initializedChannel.getReference().addListener(listenerCallback);
 
                     List<ListenerCallback> callbacks = listeners.get(bean);
-                    if (callbacks == null)
-                    {
+                    if (callbacks == null) {
                         callbacks = new CopyOnWriteArrayList<>();
                         List<ListenerCallback> existing = listeners.putIfAbsent(bean, callbacks);
-                        if (existing != null)
+                        if (existing != null) {
                             callbacks = existing;
+                        }
                     }
                     callbacks.add(listenerCallback);
                     result = true;
-                    if (logger.isDebugEnabled())
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
+                    }
                 }
             }
         }
         return result;
     }
 
-    private boolean deprocessListener(Object bean)
-    {
+    private boolean deprocessListener(Object bean) {
         boolean result = false;
         List<ListenerCallback> callbacks = listeners.remove(bean);
-        if (callbacks != null)
-        {
-            for (ListenerCallback callback : callbacks)
-            {
+        if (callbacks != null) {
+            for (ListenerCallback callback : callbacks) {
                 ServerChannel channel = bayeuxServer.getChannel(callback.subscription);
-                if (channel != null)
-                {
+                if (channel != null) {
                     channel.removeListener(callback);
                     result = true;
                 }
@@ -446,43 +428,42 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-    private boolean processSubscription(Object bean, LocalSession localSession)
-    {
+    private boolean processSubscription(Object bean, LocalSession localSession) {
         checkMethodsPublic(bean, Subscription.class);
 
         boolean result = false;
         Method[] methods = bean.getClass().getMethods();
-        for (Method method : methods)
-        {
-            if (method.getDeclaringClass() == Object.class)
+        for (Method method : methods) {
+            if (method.getDeclaringClass() == Object.class) {
                 continue;
+            }
 
             Subscription subscription = method.getAnnotation(Subscription.class);
-            if (subscription != null)
-            {
+            if (subscription != null) {
                 List<String> paramNames = processParameters(method);
                 checkSignaturesMatch(method, SubscriptionCallback.signature, paramNames);
 
                 String[] channels = subscription.value();
-                for (String channel : channels)
-                {
-                    if (ChannelId.isMeta(channel))
+                for (String channel : channels) {
+                    if (ChannelId.isMeta(channel)) {
                         throw new IllegalArgumentException("Annotation @" + Subscription.class.getSimpleName() +
                                 " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
                                 "(...) must specify a non meta channel");
+                    }
 
                     ChannelId channelId = new ChannelId(channel);
-                    if (channelId.isTemplate())
-                    {
+                    if (channelId.isTemplate()) {
                         List<String> parameters = channelId.getParameters();
-                        if (parameters.size() != paramNames.size())
+                        if (parameters.size() != paramNames.size()) {
                             throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
                                     Subscription.class.getSimpleName() + " on method " +
                                     method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
-                        if (!parameters.equals(paramNames))
+                        }
+                        if (!parameters.equals(paramNames)) {
                             throw new IllegalArgumentException("Wrong parameter names in annotation @" +
                                     Subscription.class.getSimpleName() + " on method " +
                                     method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
+                        }
                         channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
                     }
 
@@ -490,31 +471,29 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     localSession.getChannel(channel).subscribe(subscriptionCallback);
 
                     List<SubscriptionCallback> callbacks = subscribers.get(bean);
-                    if (callbacks == null)
-                    {
+                    if (callbacks == null) {
                         callbacks = new CopyOnWriteArrayList<>();
                         List<SubscriptionCallback> existing = subscribers.putIfAbsent(bean, callbacks);
-                        if (existing != null)
+                        if (existing != null) {
                             callbacks = existing;
+                        }
                     }
                     callbacks.add(subscriptionCallback);
                     result = true;
-                    if (logger.isDebugEnabled())
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
+                    }
                 }
             }
         }
         return result;
     }
 
-    private boolean deprocessSubscription(Object bean)
-    {
+    private boolean deprocessSubscription(Object bean) {
         boolean result = false;
         List<SubscriptionCallback> callbacks = subscribers.remove(bean);
-        if (callbacks != null)
-        {
-            for (SubscriptionCallback callback : callbacks)
-            {
+        if (callbacks != null) {
+            for (SubscriptionCallback callback : callbacks) {
                 callback.localSession.getChannel(callback.subscription).unsubscribe(callback);
                 result = true;
             }
@@ -522,44 +501,43 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-    private boolean processRemoteCall(Object bean, LocalSession localSession)
-    {
+    private boolean processRemoteCall(Object bean, LocalSession localSession) {
         checkMethodsPublic(bean, RemoteCall.class);
 
         boolean result = false;
         Method[] methods = bean.getClass().getMethods();
-        for (Method method : methods)
-        {
+        for (Method method : methods) {
             RemoteCall remoteCall = method.getAnnotation(RemoteCall.class);
-            if (remoteCall != null)
-            {
+            if (remoteCall != null) {
                 List<String> paramNames = processParameters(method);
                 checkSignaturesMatch(method, RemoteCallCallback.signature, paramNames);
 
                 String[] targets = remoteCall.value();
-                for (String target : targets)
-                {
-                    if (!target.startsWith("/"))
+                for (String target : targets) {
+                    if (!target.startsWith("/")) {
                         target = "/" + target;
+                    }
                     String channel = Channel.SERVICE + target;
 
                     ChannelId channelId = new ChannelId(channel);
-                    if (channelId.isWild())
+                    if (channelId.isWild()) {
                         throw new IllegalArgumentException("Annotation @" + RemoteCall.class.getSimpleName() +
                                 " on method " + method.getDeclaringClass().getName() + "." + method.getName() +
                                 "(...) cannot specify wild channels.");
+                    }
 
-                    if (channelId.isTemplate())
-                    {
+                    if (channelId.isTemplate()) {
                         List<String> parameters = channelId.getParameters();
-                        if (parameters.size() != paramNames.size())
+                        if (parameters.size() != paramNames.size()) {
                             throw new IllegalArgumentException("Wrong number of template parameters in annotation @" +
                                     RemoteCall.class.getSimpleName() + " on method " +
                                     method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
-                        if (!parameters.equals(paramNames))
+                        }
+                        if (!parameters.equals(paramNames)) {
                             throw new IllegalArgumentException("Wrong parameter names in annotation @" +
                                     RemoteCall.class.getSimpleName() + " on method " +
                                     method.getDeclaringClass().getName() + "." + method.getName() + "(...)");
+                        }
                         channel = channelId.getRegularPart() + "/" + (parameters.size() < 2 ? ChannelId.WILD : ChannelId.DEEPWILD);
                     }
 
@@ -568,34 +546,31 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     initializedChannel.getReference().addListener(remoteCallCallback);
 
                     List<RemoteCallCallback> callbacks = remoteCalls.get(bean);
-                    if (callbacks == null)
-                    {
+                    if (callbacks == null) {
                         callbacks = new CopyOnWriteArrayList<>();
                         List<RemoteCallCallback> existing = remoteCalls.putIfAbsent(bean, callbacks);
-                        if (existing != null)
+                        if (existing != null) {
                             callbacks = existing;
+                        }
                     }
                     callbacks.add(remoteCallCallback);
                     result = true;
-                    if (logger.isDebugEnabled())
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Registered remote call for channel {} to method {} on bean {}", target, method, bean);
+                    }
                 }
             }
         }
         return result;
     }
 
-    private boolean deprocessRemoteCall(Object bean)
-    {
+    private boolean deprocessRemoteCall(Object bean) {
         boolean result = false;
         List<RemoteCallCallback> callbacks = remoteCalls.remove(bean);
-        if (callbacks != null)
-        {
-            for (RemoteCallCallback callback : callbacks)
-            {
+        if (callbacks != null) {
+            for (RemoteCallCallback callback : callbacks) {
                 ServerChannel channel = bayeuxServer.getChannel(callback.subscription);
-                if (channel != null)
-                {
+                if (channel != null) {
                     channel.removeListener(callback);
                     result = true;
                 }
@@ -604,8 +579,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-    private static class ListenerCallback implements ServerChannel.MessageListener
-    {
+    private static class ListenerCallback implements ServerChannel.MessageListener {
         private static final Class<?>[] signature = new Class<?>[]{ServerSession.class, ServerMessage.Mutable.class};
         private final LocalSession localSession;
         private final Object target;
@@ -615,8 +589,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         private final boolean receiveOwnPublishes;
         private final List<String> paramNames;
 
-        private ListenerCallback(LocalSession localSession, Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription, boolean receiveOwnPublishes)
-        {
+        private ListenerCallback(LocalSession localSession, Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription, boolean receiveOwnPublishes) {
             this.localSession = localSession;
             this.target = target;
             this.method = method;
@@ -626,26 +599,27 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
             this.receiveOwnPublishes = receiveOwnPublishes;
         }
 
-        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-        {
-            if (from == localSession.getServerSession() && !receiveOwnPublishes)
+        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+            if (from == localSession.getServerSession() && !receiveOwnPublishes) {
                 return true;
+            }
 
             Map<String, String> matches = channelId.bind(channel.getChannelId());
-            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames))
+            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames)) {
                 return true;
+            }
 
             Object[] args = new Object[2 + paramNames.size()];
             args[0] = from;
             args[1] = message;
-            for (int i = 0; i < paramNames.size(); ++i)
+            for (int i = 0; i < paramNames.size(); ++i) {
                 args[2 + i] = matches.get(paramNames.get(i));
+            }
             return !Boolean.FALSE.equals(invokePublic(target, method, args));
         }
     }
 
-    private static class SubscriptionCallback implements ClientSessionChannel.MessageListener
-    {
+    private static class SubscriptionCallback implements ClientSessionChannel.MessageListener {
         private static final Class<?>[] signature = new Class<?>[]{Message.class};
         private final LocalSession localSession;
         private final Object target;
@@ -654,8 +628,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         private final ChannelId channelId;
         private final String subscription;
 
-        public SubscriptionCallback(LocalSession localSession, Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription)
-        {
+        public SubscriptionCallback(LocalSession localSession, Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription) {
             this.localSession = localSession;
             this.target = target;
             this.method = method;
@@ -664,22 +637,22 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
             this.subscription = subscription;
         }
 
-        public void onMessage(ClientSessionChannel channel, Message message)
-        {
+        public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, String> matches = channelId.bind(message.getChannelId());
-            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames))
+            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames)) {
                 return;
+            }
 
             Object[] args = new Object[1 + paramNames.size()];
             args[0] = message;
-            for (int i = 0; i < paramNames.size(); ++i)
+            for (int i = 0; i < paramNames.size(); ++i) {
                 args[1 + i] = matches.get(paramNames.get(i));
+            }
             invokePublic(target, method, args);
         }
     }
 
-    private static class RemoteCallCallback implements ServerChannel.MessageListener
-    {
+    private static class RemoteCallCallback implements ServerChannel.MessageListener {
         private static final Class<?>[] signature = new Class<?>[]{RemoteCall.Caller.class, null};
         private final BayeuxServer bayeuxServer;
         private final LocalSession localSession;
@@ -689,8 +662,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         private final ChannelId channelId;
         private final String subscription;
 
-        private RemoteCallCallback(BayeuxServer bayeuxServer, LocalSession localSession, Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription)
-        {
+        private RemoteCallCallback(BayeuxServer bayeuxServer, LocalSession localSession, Object target, Method method, List<String> paramNames, ChannelId channelId, String subscription) {
             this.bayeuxServer = bayeuxServer;
             this.localSession = localSession;
             this.target = target;
@@ -701,28 +673,27 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         }
 
         @Override
-        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-        {
+        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
             // Protect against (wrong) publishes on the remote call channel.
-            if (from == localSession.getServerSession())
+            if (from == localSession.getServerSession()) {
                 return true;
+            }
 
             Map<String, String> matches = channelId.bind(channel.getChannelId());
-            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames))
+            if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames)) {
                 return true;
+            }
 
             Object[] args = new Object[2 + paramNames.size()];
             RemoteCall.Caller caller = new CallerImpl(bayeuxServer, localSession, from, message.getId(), message.getChannel());
             args[0] = caller;
             args[1] = message.getData();
-            for (int i = 0; i < paramNames.size(); ++i)
+            for (int i = 0; i < paramNames.size(); ++i) {
                 args[2 + i] = matches.get(paramNames.get(i));
-            try
-            {
-                return !Boolean.FALSE.equals(invokePublic(target, method, args));
             }
-            catch (Throwable x)
-            {
+            try {
+                return !Boolean.FALSE.equals(invokePublic(target, method, args));
+            } catch (Throwable x) {
                 Map<String, Object> failure = new HashMap<>();
                 failure.put("class", x.getClass().getName());
                 failure.put("message", x.getMessage());
@@ -732,8 +703,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         }
     }
 
-    private static class CallerImpl implements RemoteCall.Caller
-    {
+    private static class CallerImpl implements RemoteCall.Caller {
         private final AtomicBoolean complete = new AtomicBoolean();
         private final BayeuxServer bayeux;
         private final LocalSession sender;
@@ -741,8 +711,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         private final String messageId;
         private final String channel;
 
-        private CallerImpl(BayeuxServer bayeux, LocalSession sender, ServerSession session, String messageId, String channel)
-        {
+        private CallerImpl(BayeuxServer bayeux, LocalSession sender, ServerSession session, String messageId, String channel) {
             this.bayeux = bayeux;
             this.sender = sender;
             this.session = session;
@@ -751,28 +720,23 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         }
 
         @Override
-        public ServerSession getServerSession()
-        {
+        public ServerSession getServerSession() {
             return session;
         }
 
         @Override
-        public boolean result(Object result)
-        {
+        public boolean result(Object result) {
             return deliver(result, true);
         }
 
         @Override
-        public boolean failure(Object failure)
-        {
+        public boolean failure(Object failure) {
             return deliver(failure, false);
         }
 
-        private boolean deliver(Object data, boolean successful)
-        {
+        private boolean deliver(Object data, boolean successful) {
             boolean completed = complete.compareAndSet(false, true);
-            if (completed)
-            {
+            if (completed) {
                 ServerMessage.Mutable message = bayeux.newMessage();
                 message.setId(messageId);
                 message.setSuccessful(successful);

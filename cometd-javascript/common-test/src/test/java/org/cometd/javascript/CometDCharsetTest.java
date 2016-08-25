@@ -19,11 +19,9 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
-public class CometDCharsetTest extends AbstractCometDTest
-{
+public class CometDCharsetTest extends AbstractCometDTest {
     @Test
-    public void testCharset() throws Exception
-    {
+    public void testCharset() throws Exception {
         String cyrillic = "\u0436"; // zhe
         String greek = "\u0398"; // theta
         String hebrew = "\u05d0"; // aleph

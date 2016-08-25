@@ -42,14 +42,11 @@ import org.junit.runner.Description;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
-public abstract class AbstractCometDTest
-{
+public abstract class AbstractCometDTest {
     @Rule
-    public final TestWatcher testName = new TestWatcher()
-    {
+    public final TestWatcher testName = new TestWatcher() {
         @Override
-        public void starting(Description description)
-        {
+        public void starting(Description description) {
             super.starting(description);
             String providerClass = getProviderClassName();
             System.err.printf("Running %s.%s() [%s]%n",
@@ -77,20 +74,17 @@ public abstract class AbstractCometDTest
     private WebSocketConnector wsConnector;
 
     @Before
-    public void initCometDServer() throws Exception
-    {
+    public void initCometDServer() throws Exception {
         Map<String, String> options = new HashMap<>();
         initCometDServer(options);
     }
 
-    protected void initCometDServer(Map<String, String> options) throws Exception
-    {
+    protected void initCometDServer(Map<String, String> options) throws Exception {
         prepareAndStartServer(options);
         initPage();
     }
 
-    protected void prepareAndStartServer(Map<String, String> options) throws Exception
-    {
+    protected void prepareAndStartServer(Map<String, String> options) throws Exception {
         String providerClass = getProviderClassName();
         provider = (TestProvider)Thread.currentThread().getContextClassLoader().loadClass(providerClass).newInstance();
 
@@ -113,8 +107,9 @@ public abstract class AbstractCometDTest
         String cometdURLMapping = cometdServletPath + "/*";
         cometdServlet = new CometDServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        for (Map.Entry<String, String> entry : options.entrySet())
+        for (Map.Entry<String, String> entry : options.entrySet()) {
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
+        }
         cometdServletHolder.setInitParameter("timeout", String.valueOf(metaConnectPeriod));
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
         context.addServlet(cometdServletHolder, cometdURLMapping);
@@ -127,8 +122,7 @@ public abstract class AbstractCometDTest
         cometdURL = contextURL + cometdServletPath;
     }
 
-    protected void startServer() throws Exception
-    {
+    protected void startServer() throws Exception {
         connector.setPort(port);
         server.start();
         port = connector.getLocalPort();
@@ -136,32 +130,27 @@ public abstract class AbstractCometDTest
     }
 
     @After
-    public void destroyCometDServer() throws Exception
-    {
+    public void destroyCometDServer() throws Exception {
         destroyPage();
         stopServer();
         cookieStore.clear();
     }
 
-    protected void stopServer() throws Exception
-    {
+    protected void stopServer() throws Exception {
         server.stop();
         server.join();
     }
 
-    private String getProviderClassName()
-    {
+    private String getProviderClassName() {
         return System.getProperty("toolkitTestProvider", JQueryTestProvider.class.getName());
     }
 
-    protected String getLogLevel()
-    {
+    protected String getLogLevel() {
         String property = Log.getLogger("org.cometd.javascript").isDebugEnabled() ? "debug" : "info";
         return property.toLowerCase(Locale.ENGLISH);
     }
 
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
+    protected void customizeContext(ServletContextHandler context) throws Exception {
         File baseDirectory = new File(System.getProperty("basedir", "."));
         File overlaidScriptDirectory = new File(baseDirectory, "target/scripts");
         File mainResourcesDirectory = new File(baseDirectory, "src/main/resources");
@@ -174,23 +163,19 @@ public abstract class AbstractCometDTest
                 }));
     }
 
-    protected void initPage() throws Exception
-    {
+    protected void initPage() throws Exception {
         initJavaScript();
         initCometD();
     }
 
-    protected void initCometD() throws Exception
-    {
+    protected void initCometD() throws Exception {
         provider.provideCometD(threadModel, contextURL);
     }
 
-    protected void initJavaScript() throws Exception
-    {
+    protected void initJavaScript() throws Exception {
         // Initializes the thread model
         org.mozilla.javascript.Context jsContext = org.mozilla.javascript.Context.enter();
-        try
-        {
+        try {
             ScriptableObject rootScope = jsContext.initStandardObjects();
 
             ScriptableObject.defineClass(rootScope, JavaScriptCookieStore.class);
@@ -219,86 +204,72 @@ public abstract class AbstractCometDTest
             jsContext.evaluateString(rootScope, "var sessionStorage = new SessionStorage();", "sessionStorage", 1, null);
             SessionStorage sessionStorage = (SessionStorage)rootScope.get("sessionStorage", rootScope);
             sessionStorage.setStore(sessionStore);
-        }
-        finally
-        {
+        } finally {
             org.mozilla.javascript.Context.exit();
         }
     }
 
-    protected void provideTimestampExtension() throws Exception
-    {
+    protected void provideTimestampExtension() throws Exception {
         provider.provideTimestampExtension(threadModel, contextURL);
     }
 
-    protected void provideTimesyncExtension() throws Exception
-    {
+    protected void provideTimesyncExtension() throws Exception {
         provider.provideTimesyncExtension(threadModel, contextURL);
     }
 
-    protected void provideMessageAcknowledgeExtension() throws Exception
-    {
+    protected void provideMessageAcknowledgeExtension() throws Exception {
         provider.provideMessageAcknowledgeExtension(threadModel, contextURL);
     }
 
-    protected void provideReloadExtension() throws Exception
-    {
+    protected void provideReloadExtension() throws Exception {
         provider.provideReloadExtension(threadModel, contextURL);
     }
 
-    protected void destroyPage() throws Exception
-    {
+    protected void destroyPage() throws Exception {
         destroyJavaScript();
     }
 
-    protected void destroyJavaScript() throws Exception
-    {
-        if (wsConnector != null)
+    protected void destroyJavaScript() throws Exception {
+        if (wsConnector != null) {
             wsConnector.stop();
-        if (xhrClient != null)
+        }
+        if (xhrClient != null) {
             xhrClient.stop();
-        if (threadModel != null)
+        }
+        if (threadModel != null) {
             threadModel.destroy();
+        }
     }
 
     @SuppressWarnings("unchecked")
-    protected <T> T evaluateScript(String script)
-    {
+    protected <T> T evaluateScript(String script) {
         return evaluateScript(null, script);
     }
 
     @SuppressWarnings("unchecked")
-    protected <T> T evaluateScript(String scriptName, String script)
-    {
+    protected <T> T evaluateScript(String scriptName, String script) {
         return (T)threadModel.evaluate(scriptName, script);
     }
 
-    protected void defineClass(Class<? extends Scriptable> clazz) throws InvocationTargetException, InstantiationException, IllegalAccessException
-    {
+    protected void defineClass(Class<? extends Scriptable> clazz) throws InvocationTargetException, InstantiationException, IllegalAccessException {
         threadModel.define(clazz);
     }
 
     @SuppressWarnings("unchecked")
-    protected <T> T get(String name)
-    {
-        return (T) threadModel.get(name);
+    protected <T> T get(String name) {
+        return (T)threadModel.get(name);
     }
 
-    protected void sleep(long time)
-    {
-        try
-        {
+    protected void sleep(long time) {
+        try {
             Thread.sleep(time);
-        }
-        catch (InterruptedException x)
-        {
+        } catch (InterruptedException x) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(x);
         }
     }
 
-    protected void disconnect() throws InterruptedException
-    {
+    protected void disconnect() throws InterruptedException {
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");

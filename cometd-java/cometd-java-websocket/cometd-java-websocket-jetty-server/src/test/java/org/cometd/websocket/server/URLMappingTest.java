@@ -21,39 +21,32 @@ import org.cometd.websocket.ClientServerWebSocketTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class URLMappingTest extends ClientServerWebSocketTest
-{
-    public URLMappingTest(String wsTransportType)
-    {
+public class URLMappingTest extends ClientServerWebSocketTest {
+    public URLMappingTest(String wsTransportType) {
         super(wsTransportType);
     }
 
     @Test
-    public void testURLMappingNoGlobbing() throws Exception
-    {
+    public void testURLMappingNoGlobbing() throws Exception {
         testURLMapping("/cometd");
     }
 
     @Test
-    public void testRootURLMappingNoGlobbing() throws Exception
-    {
+    public void testRootURLMappingNoGlobbing() throws Exception {
         testURLMapping("/");
     }
 
     @Test
-    public void testURLMappingWithGlobbing() throws Exception
-    {
+    public void testURLMappingWithGlobbing() throws Exception {
         testURLMapping("/cometd/*");
     }
 
     @Test
-    public void testRootURLMappingWithGlobbing() throws Exception
-    {
+    public void testRootURLMappingWithGlobbing() throws Exception {
         testURLMapping("/*");
     }
 
-    private void testURLMapping(String urlMapping) throws Exception
-    {
+    private void testURLMapping(String urlMapping) throws Exception {
         prepareAndStart(urlMapping, null);
 
         final BayeuxClient client = newBayeuxClient();

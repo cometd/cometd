@@ -43,19 +43,17 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class MultipleURLMappingsTest
-{
+public class MultipleURLMappingsTest {
     private static final String JSR_WS_TRANSPORT = "org.cometd.websocket.server.WebSocketTransport";
     private static final String JETTY_WS_TRANSPORT = "org.cometd.websocket.server.JettyWebSocketTransport";
 
     @Parameterized.Parameters(name = "{0}")
-    public static Iterable<Object[]> data()
-    {
+    public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]
-                        {
-                                {JSR_WS_TRANSPORT},
-                                {JETTY_WS_TRANSPORT}
-                        }
+                {
+                        {JSR_WS_TRANSPORT},
+                        {JETTY_WS_TRANSPORT}
+                }
         );
     }
 
@@ -68,14 +66,12 @@ public class MultipleURLMappingsTest
     private String servletPath1 = "/cometd1";
     private String servletPath2 = "/cometd2";
 
-    public MultipleURLMappingsTest(String wsTransportClass)
-    {
+    public MultipleURLMappingsTest(String wsTransportClass) {
         this.wsTransportClass = wsTransportClass;
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         server = new Server();
 
         connector = new ServerConnector(server);
@@ -93,8 +89,7 @@ public class MultipleURLMappingsTest
         context.addServlet(cometdServletHolder, servletPath1 + "/*");
         context.addServlet(cometdServletHolder, servletPath2 + "/*");
 
-        switch (wsTransportClass)
-        {
+        switch (wsTransportClass) {
             case JSR_WS_TRANSPORT:
                 wsClientContainer = ContainerProvider.getWebSocketContainer();
                 server.addBean(wsClientContainer);
@@ -110,15 +105,12 @@ public class MultipleURLMappingsTest
         server.start();
     }
 
-    private BayeuxClient newBayeuxClient(String servletPath)
-    {
+    private BayeuxClient newBayeuxClient(String servletPath) {
         return new BayeuxClient("http://localhost:" + connector.getLocalPort() + servletPath, newWebSocketTransport());
     }
 
-    private ClientTransport newWebSocketTransport()
-    {
-        switch (wsTransportClass)
-        {
+    private ClientTransport newWebSocketTransport() {
+        switch (wsTransportClass) {
             case JSR_WS_TRANSPORT:
                 return new WebSocketTransport(null, null, wsClientContainer);
             case JETTY_WS_TRANSPORT:
@@ -129,14 +121,12 @@ public class MultipleURLMappingsTest
     }
 
     @After
-    public void dispose() throws Exception
-    {
+    public void dispose() throws Exception {
         server.stop();
     }
 
     @Test
-    public void testMultipleURLMappings() throws Exception
-    {
+    public void testMultipleURLMappings() throws Exception {
         BayeuxClient client1 = newBayeuxClient(servletPath1);
         client1.handshake();
         Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -148,33 +138,25 @@ public class MultipleURLMappingsTest
         String channelName = "/foobarbaz";
         final CountDownLatch messageLatch = new CountDownLatch(4);
         final CountDownLatch subscribeLatch = new CountDownLatch(2);
-        client1.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-        {
+        client1.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
-        }, new ClientSessionChannel.MessageListener()
-        {
+        }, new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribeLatch.countDown();
             }
         });
-        client2.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-        {
+        client2.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
-        }, new ClientSessionChannel.MessageListener()
-        {
+        }, new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribeLatch.countDown();
             }
         });

@@ -24,16 +24,13 @@ import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class MetaConnectWithOtherMessagesTest extends AbstractBayeuxClientServerTest
-{
-    public MetaConnectWithOtherMessagesTest(String serverTransport)
-    {
+public class MetaConnectWithOtherMessagesTest extends AbstractBayeuxClientServerTest {
+    public MetaConnectWithOtherMessagesTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testFirstMetaConnectWithOtherMessages() throws Exception
-    {
+    public void testFirstMetaConnectWithOtherMessages() throws Exception {
         startServer(null);
 
         Request handshake = newBayeuxRequest("[{" +

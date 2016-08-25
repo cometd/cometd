@@ -47,8 +47,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServerSessionImpl implements ServerSession, Dumpable
-{
+public class ServerSessionImpl implements ServerSession, Dumpable {
     private static final AtomicLong _idCount = new AtomicLong();
 
     private static final Logger _logger = LoggerFactory.getLogger(ServerSession.class);
@@ -84,28 +83,24 @@ public class ServerSessionImpl implements ServerSession, Dumpable
     private boolean _broadcastToPublisher;
     private boolean _allowMessageDeliveryDuringHandshake;
 
-    protected ServerSessionImpl(BayeuxServerImpl bayeux)
-    {
+    protected ServerSessionImpl(BayeuxServerImpl bayeux) {
         this(bayeux, null, null);
     }
 
-    protected ServerSessionImpl(BayeuxServerImpl bayeux, LocalSessionImpl localSession, String idHint)
-    {
+    protected ServerSessionImpl(BayeuxServerImpl bayeux, LocalSessionImpl localSession, String idHint) {
         _bayeux = bayeux;
         _localSession = localSession;
 
         StringBuilder id = new StringBuilder(30);
         int len = 20;
-        if (idHint != null)
-        {
+        if (idHint != null) {
             len += idHint.length() + 1;
             id.append(idHint);
             id.append('_');
         }
         int index = id.length();
 
-        while (id.length() < len)
-        {
+        while (id.length() < len) {
             id.append(Long.toString(_bayeux.randomLong(), 36));
         }
 
@@ -114,257 +109,221 @@ public class ServerSessionImpl implements ServerSession, Dumpable
         _id = id.toString();
 
         ServerTransport transport = _bayeux.getCurrentTransport();
-        if (transport != null)
+        if (transport != null) {
             _maxInterval = transport.getMaxInterval();
+        }
 
         _broadcastToPublisher = _bayeux.isBroadcastToPublisher();
     }
 
-    public BayeuxServerImpl getBayeuxServer()
-    {
+    public BayeuxServerImpl getBayeuxServer() {
         return _bayeux;
     }
 
     /**
      * @return the remote user agent
      */
-    public String getUserAgent()
-    {
+    public String getUserAgent() {
         return _userAgent;
     }
 
     /**
      * @param userAgent the remote user agent
      */
-    public void setUserAgent(String userAgent)
-    {
+    public void setUserAgent(String userAgent) {
         _userAgent = userAgent;
     }
 
-    protected void sweep(long now)
-    {
-        if (isLocalSession())
+    protected void sweep(long now) {
+        if (isLocalSession()) {
             return;
+        }
 
         boolean remove = false;
         Scheduler scheduler = null;
-        synchronized (getLock())
-        {
-            if (_expireTime == 0)
-            {
-                if (_maxProcessing > 0 && now > _messageTime + _maxProcessing)
-                {
+        synchronized (getLock()) {
+            if (_expireTime == 0) {
+                if (_maxProcessing > 0 && now > _messageTime + _maxProcessing) {
                     _logger.info("Sweeping session during processing {}", this);
                     remove = true;
                 }
-            }
-            else
-            {
-                if (now > _expireTime)
-                {
-                    if (_logger.isDebugEnabled())
+            } else {
+                if (now > _expireTime) {
+                    if (_logger.isDebugEnabled()) {
                         _logger.debug("Sweeping session {}", this);
+                    }
                     remove = true;
                 }
             }
-            if (remove)
+            if (remove) {
                 scheduler = _scheduler;
+            }
         }
-        if (remove)
-        {
-            if (scheduler != null)
+        if (remove) {
+            if (scheduler != null) {
                 scheduler.cancel();
+            }
             _bayeux.removeServerSession(this, true);
         }
     }
 
-    public Set<ServerChannel> getSubscriptions()
-    {
+    public Set<ServerChannel> getSubscriptions() {
         return Collections.<ServerChannel>unmodifiableSet(_subscribedTo.keySet());
     }
 
-    public void addExtension(Extension extension)
-    {
+    public void addExtension(Extension extension) {
         _extensions.add(extension);
     }
 
-    public void removeExtension(Extension extension)
-    {
+    public void removeExtension(Extension extension) {
         _extensions.remove(extension);
     }
 
-    public List<Extension> getExtensions()
-    {
+    public List<Extension> getExtensions() {
         return Collections.unmodifiableList(_extensions);
     }
 
-    public void batch(Runnable batch)
-    {
+    public void batch(Runnable batch) {
         startBatch();
-        try
-        {
+        try {
             batch.run();
-        }
-        finally
-        {
+        } finally {
             endBatch();
         }
     }
 
-    public void deliver(Session sender, ServerMessage.Mutable message)
-    {
+    public void deliver(Session sender, ServerMessage.Mutable message) {
         ServerSession session = null;
-        if (sender instanceof ServerSession)
+        if (sender instanceof ServerSession) {
             session = (ServerSession)sender;
-        else if (sender instanceof LocalSession)
+        } else if (sender instanceof LocalSession) {
             session = ((LocalSession)sender).getServerSession();
+        }
 
-        if (message instanceof ServerMessageImpl)
+        if (message instanceof ServerMessageImpl) {
             ((ServerMessageImpl)message).setLocal(true);
+        }
 
-        if (!_bayeux.extendSend(session, this, message))
+        if (!_bayeux.extendSend(session, this, message)) {
             return;
+        }
 
         doDeliver(session, message);
     }
 
-    public void deliver(Session sender, String channelId, Object data)
-    {
+    public void deliver(Session sender, String channelId, Object data) {
         ServerMessage.Mutable message = _bayeux.newMessage();
         message.setChannel(channelId);
         message.setData(data);
         deliver(sender, message);
     }
 
-    protected void doDeliver(ServerSession sender, ServerMessage.Mutable mutable)
-    {
-        if (sender == this && !isBroadcastToPublisher())
+    protected void doDeliver(ServerSession sender, ServerMessage.Mutable mutable) {
+        if (sender == this && !isBroadcastToPublisher()) {
             return;
+        }
 
         ServerMessage.Mutable message = extendSend(mutable);
-        if (message == null)
+        if (message == null) {
             return;
+        }
 
         _bayeux.freeze(message);
 
-        if (!_listeners.isEmpty())
-        {
-            for (ServerSessionListener listener : _listeners)
-            {
-                if (listener instanceof MessageListener)
-                {
-                    if (!notifyOnMessage((MessageListener)listener, sender, message))
+        if (!_listeners.isEmpty()) {
+            for (ServerSessionListener listener : _listeners) {
+                if (listener instanceof MessageListener) {
+                    if (!notifyOnMessage((MessageListener)listener, sender, message)) {
                         return;
+                    }
                 }
             }
         }
 
         Boolean wakeup = enqueueMessage(sender, message);
-        if (wakeup == null)
+        if (wakeup == null) {
             return;
+        }
 
-        if (wakeup)
-        {
-            if (message.isLazy())
+        if (wakeup) {
+            if (message.isLazy()) {
                 flushLazy(message);
-            else
+            } else {
                 flush();
+            }
         }
     }
 
-    private Boolean enqueueMessage(ServerSession sender, ServerMessage.Mutable message)
-    {
-        synchronized (getLock())
-        {
-            if (!_listeners.isEmpty())
-            {
-                for (ServerSessionListener listener : _listeners)
-                {
-                    if (listener instanceof MaxQueueListener)
-                    {
+    private Boolean enqueueMessage(ServerSession sender, ServerMessage.Mutable message) {
+        synchronized (getLock()) {
+            if (!_listeners.isEmpty()) {
+                for (ServerSessionListener listener : _listeners) {
+                    if (listener instanceof MaxQueueListener) {
                         final int maxQueueSize = _maxQueue;
-                        if (maxQueueSize > 0 && _queue.size() > maxQueueSize)
-                        {
-                            if (!notifyQueueMaxed((MaxQueueListener)listener, this, _queue, sender, message))
+                        if (maxQueueSize > 0 && _queue.size() > maxQueueSize) {
+                            if (!notifyQueueMaxed((MaxQueueListener)listener, this, _queue, sender, message)) {
                                 return null;
+                            }
                         }
                     }
 
                 }
             }
             addMessage(message);
-            if (!_listeners.isEmpty())
-            {
-                for (ServerSessionListener listener : _listeners)
-                {
-                    if (listener instanceof QueueListener)
+            if (!_listeners.isEmpty()) {
+                for (ServerSessionListener listener : _listeners) {
+                    if (listener instanceof QueueListener) {
                         notifyQueued((QueueListener)listener, sender, message);
+                    }
                 }
             }
             return _batch == 0;
         }
     }
 
-    protected ServerMessage.Mutable extendSend(ServerMessage.Mutable mutable)
-    {
+    protected ServerMessage.Mutable extendSend(ServerMessage.Mutable mutable) {
         ServerMessage.Mutable message = null;
-        if (mutable.isMeta())
-        {
-            if (extendSendMeta(mutable))
+        if (mutable.isMeta()) {
+            if (extendSendMeta(mutable)) {
                 message = mutable;
-        }
-        else
-        {
+            }
+        } else {
             message = extendSendMessage(mutable);
         }
         return message;
     }
 
-    private boolean notifyQueueMaxed(MaxQueueListener listener, ServerSession session, Queue<ServerMessage> queue, ServerSession sender, ServerMessage message)
-    {
-        try
-        {
+    private boolean notifyQueueMaxed(MaxQueueListener listener, ServerSession session, Queue<ServerMessage> queue, ServerSession sender, ServerMessage message) {
+        try {
             return listener.queueMaxed(session, queue, sender, message);
-        }
-        catch (Throwable x)
-        {
+        } catch (Throwable x) {
             _logger.info("Exception while invoking listener " + listener, x);
             return true;
         }
     }
 
-    private boolean notifyOnMessage(MessageListener listener, ServerSession from, ServerMessage message)
-    {
-        try
-        {
+    private boolean notifyOnMessage(MessageListener listener, ServerSession from, ServerMessage message) {
+        try {
             return listener.onMessage(this, from, message);
-        }
-        catch (Throwable x)
-        {
+        } catch (Throwable x) {
             _logger.info("Exception while invoking listener " + listener, x);
             return true;
         }
     }
 
-    private void notifyQueued(QueueListener listener, ServerSession session, ServerMessage message)
-    {
-        try
-        {
+    private void notifyQueued(QueueListener listener, ServerSession session, ServerMessage message) {
+        try {
             listener.queued(session, message);
-        }
-        catch (Throwable x)
-        {
+        } catch (Throwable x) {
             _logger.info("Exception while invoking listener " + listener, x);
         }
     }
 
-    protected void handshake()
-    {
+    protected void handshake() {
         _handshook.set(true);
 
         AbstractServerTransport transport = (AbstractServerTransport)_bayeux.getCurrentTransport();
-        if (transport != null)
-        {
+        if (transport != null) {
             _maxQueue = transport.getOption(AbstractServerTransport.MAX_QUEUE_OPTION, -1);
             _maxInterval = transport.getMaxInterval();
             _maxProcessing = transport.getOption(AbstractServerTransport.MAX_PROCESSING_OPTION, -1);
@@ -372,16 +331,13 @@ public class ServerSessionImpl implements ServerSession, Dumpable
         }
     }
 
-    protected void connected()
-    {
+    protected void connected() {
         _connected.set(true);
     }
 
-    public void disconnect()
-    {
+    public void disconnect() {
         boolean connected = _bayeux.removeServerSession(this, false);
-        if (connected)
-        {
+        if (connected) {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(Channel.META_DISCONNECT);
             deliver(this, message);
@@ -389,93 +345,77 @@ public class ServerSessionImpl implements ServerSession, Dumpable
         }
     }
 
-    public boolean endBatch()
-    {
+    public boolean endBatch() {
         boolean result = false;
-        synchronized (getLock())
-        {
-            if (--_batch == 0 && _nonLazyMessages)
+        synchronized (getLock()) {
+            if (--_batch == 0 && _nonLazyMessages) {
                 result = true;
+            }
         }
-        if (result)
+        if (result) {
             flush();
+        }
         return result;
     }
 
-    public LocalSession getLocalSession()
-    {
+    public LocalSession getLocalSession() {
         return _localSession;
     }
 
-    public boolean isLocalSession()
-    {
+    public boolean isLocalSession() {
         return _localSession != null;
     }
 
-    public void startBatch()
-    {
-        synchronized (getLock())
-        {
+    public void startBatch() {
+        synchronized (getLock()) {
             ++_batch;
         }
     }
 
-    public void addListener(ServerSessionListener listener)
-    {
+    public void addListener(ServerSessionListener listener) {
         _listeners.add(listener);
     }
 
-    public String getId()
-    {
+    public String getId() {
         return _id;
     }
 
-    public Object getLock()
-    {
+    public Object getLock() {
         return this;
     }
 
-    public Queue<ServerMessage> getQueue()
-    {
+    public Queue<ServerMessage> getQueue() {
         return _queue;
     }
 
-    public boolean hasNonLazyMessages()
-    {
-        synchronized (getLock())
-        {
+    public boolean hasNonLazyMessages() {
+        synchronized (getLock()) {
             return _nonLazyMessages;
         }
     }
 
-    protected void addMessage(ServerMessage message)
-    {
-        synchronized (getLock())
-        {
+    protected void addMessage(ServerMessage message) {
+        synchronized (getLock()) {
             _queue.add(message);
             _nonLazyMessages |= !message.isLazy();
         }
     }
 
-    public List<ServerMessage> takeQueue()
-    {
+    public List<ServerMessage> takeQueue() {
         List<ServerMessage> copy = Collections.emptyList();
-        synchronized (getLock())
-        {
+        synchronized (getLock()) {
             // Always call listeners, even if the queue is
             // empty since they may add messages to the queue.
-            if (!_listeners.isEmpty())
-            {
-                for (ServerSessionListener listener : _listeners)
-                {
-                    if (listener instanceof DeQueueListener)
+            if (!_listeners.isEmpty()) {
+                for (ServerSessionListener listener : _listeners) {
+                    if (listener instanceof DeQueueListener) {
                         notifyDeQueue((DeQueueListener)listener, this, _queue);
+                    }
                 }
             }
 
             int size = _queue.size();
-            if (size > 0)
-            {
+            if (size > 0) {
                 copy = new ArrayList<>(size);
                 copy.addAll(_queue);
                 _queue.clear();
@@ -486,81 +426,70 @@ public class ServerSessionImpl implements ServerSession, Dumpable
         return copy;
     }
 
-    private void notifyDeQueue(DeQueueListener listener, ServerSession serverSession, Queue<ServerMessage> queue)
-    {
-        try
-        {
+    private void notifyDeQueue(DeQueueListener listener, ServerSession serverSession, Queue<ServerMessage> queue) {
+        try {
             listener.deQueue(serverSession, queue);
-        }
-        catch (Throwable x)
-        {
+        } catch (Throwable x) {
             _logger.info("Exception while invoking listener " + listener, x);
         }
     }
 
-    public void removeListener(ServerSessionListener listener)
-    {
+    public void removeListener(ServerSessionListener listener) {
         _listeners.remove(listener);
     }
 
-    public List<ServerSessionListener> getListeners()
-    {
+    public List<ServerSessionListener> getListeners() {
         return Collections.unmodifiableList(_listeners);
     }
 
-    public void setScheduler(AbstractServerTransport.Scheduler newScheduler)
-    {
-        if (newScheduler == null)
-        {
+    public void setScheduler(AbstractServerTransport.Scheduler newScheduler) {
+        if (newScheduler == null) {
             Scheduler oldScheduler;
-            synchronized (getLock())
-            {
+            synchronized (getLock()) {
                 oldScheduler = _scheduler;
-                if (oldScheduler != null)
+                if (oldScheduler != null) {
                     _scheduler = null;
-            }
-            if (oldScheduler != null)
-                oldScheduler.cancel();
-        }
-        else
-        {
-            Scheduler oldScheduler;
-            boolean schedule = false;
-            synchronized (getLock())
-            {
-                oldScheduler = _scheduler;
-                _scheduler = newScheduler;
-                if (hasNonLazyMessages() && _batch == 0)
-                {
-                    schedule = true;
-                    if (newScheduler instanceof AbstractHttpTransport.HttpScheduler)
-                        _scheduler = null;
                 }
             }
-            if (oldScheduler != null && oldScheduler != newScheduler)
+            if (oldScheduler != null) {
                 oldScheduler.cancel();
-            if (schedule)
+            }
+        } else {
+            Scheduler oldScheduler;
+            boolean schedule = false;
+            synchronized (getLock()) {
+                oldScheduler = _scheduler;
+                _scheduler = newScheduler;
+                if (hasNonLazyMessages() && _batch == 0) {
+                    schedule = true;
+                    if (newScheduler instanceof AbstractHttpTransport.HttpScheduler) {
+                        _scheduler = null;
+                    }
+                }
+            }
+            if (oldScheduler != null && oldScheduler != newScheduler) {
+                oldScheduler.cancel();
+            }
+            if (schedule) {
                 newScheduler.schedule();
+            }
         }
     }
 
-    public void flush()
-    {
+    public void flush() {
         Scheduler scheduler;
-        synchronized (getLock())
-        {
+        synchronized (getLock()) {
             _lazyTask.cancel();
 
             scheduler = _scheduler;
 
-            if (scheduler != null)
-            {
-                if (scheduler instanceof AbstractHttpTransport.HttpScheduler)
+            if (scheduler != null) {
+                if (scheduler instanceof AbstractHttpTransport.HttpScheduler) {
                     _scheduler = null;
+                }
             }
         }
-        if (scheduler != null)
-        {
+        if (scheduler != null) {
             scheduler.schedule();
             // If there is a scheduler, then it's a remote session
             // and we should not perform local delivery, so we return
@@ -568,233 +497,204 @@ public class ServerSessionImpl implements ServerSession, Dumpable
         }
 
         // do local delivery
-        if (_localSession != null && hasNonLazyMessages())
-        {
-            for (ServerMessage msg : takeQueue())
+        if (_localSession != null && hasNonLazyMessages()) {
+            for (ServerMessage msg : takeQueue()) {
                 _localSession.receive(new HashMapMessage(msg));
+            }
         }
     }
 
-    private void flushLazy(ServerMessage message)
-    {
-        synchronized (getLock())
-        {
+    private void flushLazy(ServerMessage message) {
+        synchronized (getLock()) {
             ServerChannel channel = _bayeux.getChannel(message.getChannel());
             long lazyTimeout = -1;
-            if (channel != null)
+            if (channel != null) {
                 lazyTimeout = channel.getLazyTimeout();
-            if (lazyTimeout <= 0)
+            }
+            if (lazyTimeout <= 0) {
                 lazyTimeout = _maxLazy;
+            }
 
-            if (lazyTimeout <= 0)
+            if (lazyTimeout <= 0) {
                 flush();
-            else
+            } else {
                 _lazyTask.schedule(lazyTimeout);
+            }
         }
     }
 
-    public void cancelSchedule()
-    {
+    public void cancelSchedule() {
         Scheduler scheduler;
-        synchronized (getLock())
-        {
+        synchronized (getLock()) {
             scheduler = _scheduler;
-            if (scheduler != null)
+            if (scheduler != null) {
                 _scheduler = null;
+            }
         }
-        if (scheduler != null)
+        if (scheduler != null) {
             scheduler.cancel();
-    }
-
-    public void cancelExpiration(boolean metaConnect)
-    {
-        long now = System.currentTimeMillis();
-        synchronized (getLock())
-        {
-            _messageTime = now;
-            if (metaConnect)
-                _expireTime = 0;
-            else if (_expireTime != 0)
-                _expireTime += now - _scheduleTime;
         }
-        if (_logger.isDebugEnabled())
-            _logger.debug("{} expiration for {}", metaConnect ? "Cancelling" : "Delaying", this);
     }
 
-    public void scheduleExpiration(long defaultInterval)
-    {
+    public void cancelExpiration(boolean metaConnect) {
+        long now = System.currentTimeMillis();
+        synchronized (getLock()) {
+            _messageTime = now;
+            if (metaConnect) {
+                _expireTime = 0;
+            } else if (_expireTime != 0) {
+                _expireTime += now - _scheduleTime;
+            }
+        }
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("{} expiration for {}", metaConnect ? "Cancelling" : "Delaying", this);
+        }
+    }
+
+    public void scheduleExpiration(long defaultInterval) {
         long interval = calculateInterval(defaultInterval);
         long now = System.currentTimeMillis();
-        synchronized (getLock())
-        {
+        synchronized (getLock()) {
             _scheduleTime = now;
             _expireTime = now + interval + _maxInterval;
         }
-        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Scheduled expiration for {}", this);
+        }
     }
 
-    protected long getMaxInterval()
-    {
+    protected long getMaxInterval() {
         return _maxInterval;
     }
 
-    long getIntervalTimestamp()
-    {
+    long getIntervalTimestamp() {
         return _expireTime;
     }
 
-    public Object getAttribute(String name)
-    {
+    public Object getAttribute(String name) {
         return _attributes.getAttribute(name);
     }
 
-    public Set<String> getAttributeNames()
-    {
+    public Set<String> getAttributeNames() {
         return _attributes.getAttributeNameSet();
     }
 
-    public Object removeAttribute(String name)
-    {
+    public Object removeAttribute(String name) {
         Object old = getAttribute(name);
         _attributes.removeAttribute(name);
         return old;
     }
 
-    public void setAttribute(String name, Object value)
-    {
+    public void setAttribute(String name, Object value) {
         _attributes.setAttribute(name, value);
     }
 
-    public boolean isHandshook()
-    {
+    public boolean isHandshook() {
         return _handshook.get();
     }
 
-    public boolean isConnected()
-    {
+    public boolean isConnected() {
         return _connected.get();
     }
 
-    public boolean isDisconnected()
-    {
+    public boolean isDisconnected() {
         return _disconnected.get();
     }
 
-    protected boolean extendRecv(ServerMessage.Mutable message)
-    {
-        if (!_extensions.isEmpty())
-        {
-            for (Extension extension : _extensions)
-            {
+    protected boolean extendRecv(ServerMessage.Mutable message) {
+        if (!_extensions.isEmpty()) {
+            for (Extension extension : _extensions) {
                 boolean proceed = message.isMeta() ?
                         notifyRcvMeta(extension, message) :
                         notifyRcv(extension, message);
-                if (!proceed)
+                if (!proceed) {
                     return false;
+                }
             }
         }
         return true;
     }
 
-    private boolean notifyRcvMeta(Extension extension, ServerMessage.Mutable message)
-    {
-        try
-        {
+    private boolean notifyRcvMeta(Extension extension, ServerMessage.Mutable message) {
+        try {
             return extension.rcvMeta(this, message);
-        }
-        catch (Throwable x)
-        {
+        } catch (Throwable x) {
             _logger.info("Exception while invoking extension " + extension, x);
             return true;
         }
     }
 
-    private boolean notifyRcv(Extension extension, ServerMessage.Mutable message)
-    {
-        try
-        {
+    private boolean notifyRcv(Extension extension, ServerMessage.Mutable message) {
+        try {
             return extension.rcv(this, message);
-        }
-        catch (Throwable x)
-        {
+        } catch (Throwable x) {
             _logger.info("Exception while invoking extension " + extension, x);
             return true;
         }
     }
 
-    protected boolean extendSendMeta(ServerMessage.Mutable message)
-    {
-        if (!message.isMeta())
+    protected boolean extendSendMeta(ServerMessage.Mutable message) {
+        if (!message.isMeta()) {
             throw new IllegalStateException();
+        }
 
-        if (!_extensions.isEmpty())
-        {
-            for (Extension extension : _extensions)
-                if (!notifySendMeta(extension, message))
+        if (!_extensions.isEmpty()) {
+            for (Extension extension : _extensions) {
+                if (!notifySendMeta(extension, message)) {
                     return false;
+                }
+            }
         }
 
         return true;
     }
 
-    private boolean notifySendMeta(Extension extension, ServerMessage.Mutable message)
-    {
-        try
-        {
+    private boolean notifySendMeta(Extension extension, ServerMessage.Mutable message) {
+        try {
             return extension.sendMeta(this, message);
-        }
-        catch (Throwable x)
-        {
+        } catch (Throwable x) {
             _logger.info("Exception while invoking extension " + extension, x);
             return true;
         }
     }
 
-    protected ServerMessage.Mutable extendSendMessage(ServerMessage.Mutable message)
-    {
-        if (message.isMeta())
+    protected ServerMessage.Mutable extendSendMessage(ServerMessage.Mutable message) {
+        if (message.isMeta()) {
             throw new IllegalStateException();
+        }
 
-        if (!_extensions.isEmpty())
-        {
-            for (Extension extension : _extensions)
-            {
+        if (!_extensions.isEmpty()) {
+            for (Extension extension : _extensions) {
                 message = notifySend(extension, message);
-                if (message == null)
+                if (message == null) {
                     return null;
+                }
             }
         }
 
         return message;
     }
 
-    private ServerMessage.Mutable notifySend(Extension extension, ServerMessage.Mutable message)
-    {
-        try
-        {
+    private ServerMessage.Mutable notifySend(Extension extension, ServerMessage.Mutable message) {
+        try {
             ServerMessage result = extension.send(this, message);
-            if (result instanceof ServerMessage.Mutable)
+            if (result instanceof ServerMessage.Mutable) {
                 return (ServerMessage.Mutable)result;
-            else
+            } else {
                 return result == null ? null : _bayeux.newMessage(result);
-        }
-        catch (Throwable x)
-        {
+            }
+        } catch (Throwable x) {
             _logger.info("Exception while invoking extension " + extension, x);
             return message;
         }
     }
 
-    public void reAdvise()
-    {
+    public void reAdvise() {
         _advisedTransport = null;
     }
 
-    public Map<String, Object> takeAdvice(ServerTransport transport)
-    {
-        if (transport != null && transport != _advisedTransport)
-        {
+    public Map<String, Object> takeAdvice(ServerTransport transport) {
+        if (transport != null && transport != _advisedTransport) {
             _advisedTransport = transport;
 
             // The timeout is calculated based on the values of the session/transport
@@ -809,10 +709,10 @@ public class ServerSessionImpl implements ServerSession, Dumpable
             advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
             advice.put(Message.INTERVAL_FIELD, interval);
             advice.put(Message.TIMEOUT_FIELD, timeout);
-            if (transport instanceof AbstractServerTransport)
-            {
-                if (((AbstractServerTransport)transport).isHandshakeReconnect())
+            if (transport instanceof AbstractServerTransport) {
+                if (((AbstractServerTransport)transport).isHandshakeReconnect()) {
                     advice.put(Message.MAX_INTERVAL_FIELD, getMaxInterval());
+                }
             }
             return advice;
         }
@@ -821,35 +721,29 @@ public class ServerSessionImpl implements ServerSession, Dumpable
         return null;
     }
 
-    public long getTimeout()
-    {
+    public long getTimeout() {
         return _timeout;
     }
 
-    public long getInterval()
-    {
+    public long getInterval() {
         return _interval;
     }
 
-    public void setTimeout(long timeoutMS)
-    {
+    public void setTimeout(long timeoutMS) {
         _timeout = timeoutMS;
         _advisedTransport = null;
     }
 
-    public void setInterval(long intervalMS)
-    {
+    public void setInterval(long intervalMS) {
         _interval = intervalMS;
         _advisedTransport = null;
     }
 
-    public boolean isBroadcastToPublisher()
-    {
+    public boolean isBroadcastToPublisher() {
         return _broadcastToPublisher;
     }
 
-    public void setBroadcastToPublisher(boolean value)
-    {
+    public void setBroadcastToPublisher(boolean value) {
         _broadcastToPublisher = value;
     }
 
@@ -857,86 +751,78 @@ public class ServerSessionImpl implements ServerSession, Dumpable
      * @param timedOut whether the session has been timed out
      * @return True if the session was connected.
      */
-    protected boolean removed(boolean timedOut)
-    {
-        if (!timedOut)
+    protected boolean removed(boolean timedOut) {
+        if (!timedOut) {
             _disconnected.set(true);
+        }
         boolean connected = _connected.getAndSet(false);
         boolean handshook = _handshook.getAndSet(false);
-        if (connected || handshook)
-        {
-            for (ServerChannelImpl channel : _subscribedTo.keySet())
+        if (connected || handshook) {
+            for (ServerChannelImpl channel : _subscribedTo.keySet()) {
                 channel.unsubscribe(this);
+            }
 
-            for (ServerSessionListener listener : _listeners)
-            {
-                if (listener instanceof ServerSession.RemoveListener)
+            for (ServerSessionListener listener : _listeners) {
+                if (listener instanceof ServerSession.RemoveListener) {
                     notifyRemoved((RemoveListener)listener, this, timedOut);
+                }
             }
         }
         return connected;
     }
 
-    private void notifyRemoved(RemoveListener listener, ServerSession serverSession, boolean timedout)
-    {
-        try
-        {
+    private void notifyRemoved(RemoveListener listener, ServerSession serverSession, boolean timedout) {
+        try {
             listener.removed(serverSession, timedout);
-        }
-        catch (Throwable x)
-        {
+        } catch (Throwable x) {
             _logger.info("Exception while invoking listener " + listener, x);
         }
     }
 
-    public void setMetaConnectDeliveryOnly(boolean meta)
-    {
+    public void setMetaConnectDeliveryOnly(boolean meta) {
         _metaConnectDelivery = meta;
     }
 
-    public boolean isMetaConnectDeliveryOnly()
-    {
+    public boolean isMetaConnectDeliveryOnly() {
         return _metaConnectDelivery;
     }
 
-    public boolean isAllowMessageDeliveryDuringHandshake()
-    {
+    public boolean isAllowMessageDeliveryDuringHandshake() {
         return _allowMessageDeliveryDuringHandshake;
     }
 
-    public void setAllowMessageDeliveryDuringHandshake(boolean allow)
-    {
+    public void setAllowMessageDeliveryDuringHandshake(boolean allow) {
         _allowMessageDeliveryDuringHandshake = allow;
     }
 
-    protected void subscribedTo(ServerChannelImpl channel)
-    {
+    protected void subscribedTo(ServerChannelImpl channel) {
         _subscribedTo.put(channel, Boolean.TRUE);
     }
 
-    protected void unsubscribedFrom(ServerChannelImpl channel)
-    {
+    protected void unsubscribedFrom(ServerChannelImpl channel) {
         _subscribedTo.remove(channel);
     }
 
-    public long calculateTimeout(long defaultTimeout)
-    {
-        if (_transientTimeout >= 0)
+    public long calculateTimeout(long defaultTimeout) {
+        if (_transientTimeout >= 0) {
             return _transientTimeout;
+        }
 
-        if (_timeout >= 0)
+        if (_timeout >= 0) {
             return _timeout;
+        }
 
         return defaultTimeout;
     }
 
-    public long calculateInterval(long defaultInterval)
-    {
-        if (_transientInterval >= 0)
+    public long calculateInterval(long defaultInterval) {
+        if (_transientInterval >= 0) {
             return _transientInterval;
+        }
 
-        if (_interval >= 0)
+        if (_interval >= 0) {
             return _interval;
+        }
 
         return defaultInterval;
     }
@@ -950,8 +836,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable
      * @param timeout the value to update the timeout to
      * @see #updateTransientInterval(long)
      */
-    public void updateTransientTimeout(long timeout)
-    {
+    public void updateTransientTimeout(long timeout) {
         _transientTimeout = timeout;
     }
 
@@ -964,39 +849,34 @@ public class ServerSessionImpl implements ServerSession, Dumpable
      * @param interval the value to update the interval to
      * @see #updateTransientTimeout(long)
      */
-    public void updateTransientInterval(long interval)
-    {
+    public void updateTransientInterval(long interval) {
         _transientInterval = interval;
     }
 
     @Override
-    public String dump()
-    {
+    public String dump() {
         return ContainerLifeCycle.dump(this);
     }
 
     @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
+    public void dump(Appendable out, String indent) throws IOException {
         ContainerLifeCycle.dumpObject(out, this);
 
         List<Object> children = new ArrayList<>();
 
-        children.add(new Dumpable()
-        {
+        children.add(new Dumpable() {
             @Override
-            public String dump()
-            {
+            public String dump() {
                 return null;
             }
 
             @Override
-            public void dump(Appendable out, String indent) throws IOException
-            {
+            public void dump(Appendable out, String indent) throws IOException {
                 List<ServerSessionListener> listeners = getListeners();
                 ContainerLifeCycle.dumpObject(out, "listeners: " + listeners.size());
-                if (_bayeux.isDetailedDump())
+                if (_bayeux.isDetailedDump()) {
                     ContainerLifeCycle.dump(out, indent, listeners);
+                }
             }
         });
 
@@ -1004,43 +884,36 @@ public class ServerSessionImpl implements ServerSession, Dumpable
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         long last;
         long expire;
         long now = System.currentTimeMillis();
-        synchronized (getLock())
-        {
+        synchronized (getLock()) {
             last = now - _messageTime;
             expire = _expireTime == 0 ? 0 : _expireTime - now;
         }
         return String.format("%s,last=%d,expire=%d", _id, last, expire);
     }
 
-    private class LazyTask implements Runnable
-    {
+    private class LazyTask implements Runnable {
         private long _execution;
         private volatile org.eclipse.jetty.util.thread.Scheduler.Task _task;
 
         @Override
-        public void run()
-        {
+        public void run() {
             flush();
             _execution = 0;
             _task = null;
         }
 
-        public boolean cancel()
-        {
+        public boolean cancel() {
             org.eclipse.jetty.util.thread.Scheduler.Task task = _task;
             return task != null && task.cancel();
         }
 
-        public boolean schedule(long lazyTimeout)
-        {
+        public boolean schedule(long lazyTimeout) {
             long execution = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(lazyTimeout);
-            if (_task == null || execution < _execution)
-            {
+            if (_task == null || execution < _execution) {
                 cancel();
                 _execution = execution;
                 _task = _bayeux.schedule(this, lazyTimeout);

@@ -26,11 +26,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class SpringAnnotationTest
-{
+public class SpringAnnotationTest {
     @Test
-    public void testSpringWiringOfCometDServices() throws Exception
-    {
+    public void testSpringWiringOfCometDServices() throws Exception {
         ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext();
         applicationContext.setConfigLocation("classpath:applicationContext.xml");
         applicationContext.refresh();

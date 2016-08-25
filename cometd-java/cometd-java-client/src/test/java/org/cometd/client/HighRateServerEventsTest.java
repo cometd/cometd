@@ -30,17 +30,14 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class HighRateServerEventsTest extends ClientServerTest
-{
+public class HighRateServerEventsTest extends ClientServerTest {
     @Before
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testHighRateServerEvents() throws Exception
-    {
+    public void testHighRateServerEvents() throws Exception {
         final String channelName = "/foo";
 
         LocalSession service = bayeux.newLocalSession("high_rate_test");
@@ -52,15 +49,11 @@ public class HighRateServerEventsTest extends ClientServerTest
 
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         final AtomicInteger messages = new AtomicInteger();
-        client.batch(new Runnable()
-        {
-            public void run()
-            {
+        client.batch(new Runnable() {
+            public void run() {
                 ClientSessionChannel channel = client.getChannel(channelName);
-                channel.subscribe(new ClientSessionChannel.MessageListener()
-                {
-                    public void onMessage(ClientSessionChannel channel, Message message)
-                    {
+                channel.subscribe(new ClientSessionChannel.MessageListener() {
+                    public void onMessage(ClientSessionChannel channel, Message message) {
                         messages.incrementAndGet();
                         latch.get().countDown();
                     }
@@ -76,8 +69,9 @@ public class HighRateServerEventsTest extends ClientServerTest
         int count = 500;
         messages.set(0);
         latch.set(new CountDownLatch(count));
-        for (int i = 0; i < count; ++i)
+        for (int i = 0; i < count; ++i) {
             service.getChannel(channelName).publish(new HashMap<String, Object>());
+        }
         long end = System.nanoTime();
         Assert.assertTrue(latch.get().await(count * 100, TimeUnit.MILLISECONDS));
         System.err.println("rate = " + count * 1_000_000_000L / (end - begin) + " messages/s");

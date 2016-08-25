@@ -29,13 +29,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mozilla.javascript.ScriptableObject;
 
-public class CometDMaxNetworkDelayTest extends AbstractCometDTest
-{
+public class CometDMaxNetworkDelayTest extends AbstractCometDTest {
     private final long maxNetworkDelay = 2000;
 
     @Test
-    public void testMaxNetworkDelay() throws Exception
-    {
+    public void testMaxNetworkDelay() throws Exception {
         bayeuxServer.addExtension(new DelayingExtension());
 
         defineClass(Latch.class);
@@ -44,10 +42,10 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
         Listener publishListener = get("publishListener");
         evaluateScript("cometd.addListener('/meta/publish', publishListener, publishListener.handle);");
         evaluateScript("cometd.configure({" +
-                       "url: '" + cometdURL + "', " +
-                       "maxNetworkDelay: " + maxNetworkDelay + ", " +
-                       "logLevel: '" + getLogLevel() + "'" +
-                       "});");
+                "url: '" + cometdURL + "', " +
+                "maxNetworkDelay: " + maxNetworkDelay + ", " +
+                "logLevel: '" + getLogLevel() + "'" +
+                "});");
 
         evaluateScript("cometd.handshake();");
 
@@ -75,50 +73,41 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
         Thread.sleep(maxNetworkDelay);
     }
 
-    public static class Listener extends ScriptableObject
-    {
+    public static class Listener extends ScriptableObject {
         private AtomicReference<List<Throwable>> failures;
         private CountDownLatch latch;
 
-        public String getClassName()
-        {
+        public String getClassName() {
             return "Listener";
         }
 
-        public void jsFunction_handle(Object jsMessage)
-        {
+        public void jsFunction_handle(Object jsMessage) {
             @SuppressWarnings("unchecked")
             Map<String, Object> message = (Map<String, Object>)Utils.jsToJava(jsMessage);
-            if ((Boolean)message.get("successful"))
+            if ((Boolean)message.get("successful")) {
                 failures.get().add(new AssertionError("Publish"));
+            }
             latch.countDown();
         }
 
-        public void expect(AtomicReference<List<Throwable>> failures, int count)
-        {
+        public void expect(AtomicReference<List<Throwable>> failures, int count) {
             this.failures = failures;
             this.latch = new CountDownLatch(count);
         }
 
-        public boolean await(long timeout) throws InterruptedException
-        {
+        public boolean await(long timeout) throws InterruptedException {
             return latch.await(timeout, TimeUnit.MILLISECONDS);
         }
     }
 
-    private class DelayingExtension extends BayeuxServer.Extension.Adapter
-    {
+    private class DelayingExtension extends BayeuxServer.Extension.Adapter {
         @Override
-        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-        {
+        public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
             // We hold the publish longer than the maxNetworkDelay
-            try
-            {
+            try {
                 Thread.sleep(2 * maxNetworkDelay);
                 return true;
-            }
-            catch (InterruptedException x)
-            {
+            } catch (InterruptedException x) {
                 throw new RuntimeException(x);
             }
         }

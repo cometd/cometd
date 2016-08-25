@@ -35,17 +35,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BayeuxClientExtensionTest extends ClientServerTest
-{
+public class BayeuxClientExtensionTest extends ClientServerTest {
     @Before
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testHandshake() throws Exception
-    {
+    public void testHandshake() throws Exception {
         BayeuxClient client = newBayeuxClient();
         CountingExtension extension = new CountingExtension(Channel.META_HANDSHAKE);
         client.addExtension(extension);
@@ -61,8 +58,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest
     }
 
     @Test
-    public void testConnect() throws Exception
-    {
+    public void testConnect() throws Exception {
         BayeuxClient client = newBayeuxClient();
         CountingExtension extension = new CountingExtension(Channel.META_CONNECT);
         client.addExtension(extension);
@@ -81,8 +77,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest
     }
 
     @Test
-    public void testSubscribe() throws Exception
-    {
+    public void testSubscribe() throws Exception {
         BayeuxClient client = newBayeuxClient();
         CountingExtension extension = new CountingExtension(Channel.META_SUBSCRIBE);
         client.addExtension(extension);
@@ -90,17 +85,13 @@ public class BayeuxClientExtensionTest extends ClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 latch.countDown();
             }
         });
-        client.getChannel("/foo").subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel("/foo").subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
             }
         });
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -114,8 +105,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest
     }
 
     @Test
-    public void testUnsubscribe() throws Exception
-    {
+    public void testUnsubscribe() throws Exception {
         BayeuxClient client = newBayeuxClient();
         CountingExtension extension = new CountingExtension(Channel.META_UNSUBSCRIBE);
         client.addExtension(extension);
@@ -123,24 +113,18 @@ public class BayeuxClientExtensionTest extends ClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 latch.countDown();
             }
         });
         final ClientSessionChannel channel = client.getChannel("/foo");
-        final ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        final ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
             }
         };
-        client.batch(new Runnable()
-        {
-            public void run()
-            {
+        client.batch(new Runnable() {
+            public void run() {
                 channel.subscribe(listener);
                 channel.unsubscribe(listener);
             }
@@ -156,8 +140,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest
     }
 
     @Test
-    public void testPublish() throws Exception
-    {
+    public void testPublish() throws Exception {
         BayeuxClient client = newBayeuxClient();
         String channelName = "/test";
         CountingExtension extension = new CountingExtension(channelName);
@@ -166,14 +149,10 @@ public class BayeuxClientExtensionTest extends ClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final ClientSessionChannel channel = client.getChannel(channelName);
-        client.batch(new Runnable()
-        {
-            public void run()
-            {
-                channel.subscribe(new ClientSessionChannel.MessageListener()
-                {
-                    public void onMessage(ClientSessionChannel channel, Message message)
-                    {
+        client.batch(new Runnable() {
+            public void run() {
+                channel.subscribe(new ClientSessionChannel.MessageListener() {
+                    public void onMessage(ClientSessionChannel channel, Message message) {
                     }
                 });
                 channel.publish(new HashMap<>());
@@ -192,8 +171,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest
     }
 
     @Test
-    public void testDisconnect() throws Exception
-    {
+    public void testDisconnect() throws Exception {
         BayeuxClient client = newBayeuxClient();
         CountingExtension extension = new CountingExtension(Channel.META_DISCONNECT);
         client.addExtension(extension);
@@ -212,26 +190,21 @@ public class BayeuxClientExtensionTest extends ClientServerTest
     }
 
     @Test
-    public void testReturningFalseOnSend() throws Exception
-    {
+    public void testReturningFalseOnSend() throws Exception {
         String channelName = "/test";
         final CountDownLatch latch = new CountDownLatch(1);
         MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
-        channel.getReference().addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+        channel.getReference().addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 latch.countDown();
                 return true;
             }
         });
 
         BayeuxClient client = newBayeuxClient();
-        client.addExtension(new ClientSession.Extension.Adapter()
-        {
+        client.addExtension(new ClientSession.Extension.Adapter() {
             @Override
-            public boolean send(ClientSession session, Message.Mutable message)
-            {
+            public boolean send(ClientSession session, Message.Mutable message) {
                 return false;
             }
         });
@@ -246,35 +219,28 @@ public class BayeuxClientExtensionTest extends ClientServerTest
     }
 
     @Test
-    public void testExtensionIsInvokedAfterNetworkFailure() throws Exception
-    {
+    public void testExtensionIsInvokedAfterNetworkFailure() throws Exception {
         final BayeuxClient client = newBayeuxClient();
         final String channelName = "/test";
         final AtomicReference<CountDownLatch> rcv = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-        client.addExtension(new ClientSession.Extension.Adapter()
-        {
+        client.addExtension(new ClientSession.Extension.Adapter() {
             @Override
-            public boolean rcv(ClientSession session, Message.Mutable message)
-            {
-                if (channelName.equals(message.getChannel()))
+            public boolean rcv(ClientSession session, Message.Mutable message) {
+                if (channelName.equals(message.getChannel())) {
                     rcv.get().countDown();
+                }
                 return true;
             }
 
             @Override
-            public boolean rcvMeta(ClientSession session, Message.Mutable message)
-            {
+            public boolean rcvMeta(ClientSession session, Message.Mutable message) {
                 return true;
             }
         });
-        client.handshake(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-                {
-                    public void onMessage(ClientSessionChannel channel, Message message)
-                    {
+        client.handshake(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+                    public void onMessage(ClientSessionChannel channel, Message message) {
                     }
                 });
             }
@@ -302,44 +268,42 @@ public class BayeuxClientExtensionTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
-    private class CountingExtension implements ClientSession.Extension
-    {
+    private class CountingExtension implements ClientSession.Extension {
         private final List<Message> rcvs = new ArrayList<>();
         private final List<Message> rcvMetas = new ArrayList<>();
         private final List<Message> sends = new ArrayList<>();
         private final List<Message> sendMetas = new ArrayList<>();
         private final String channel;
 
-        private CountingExtension(String channel)
-        {
+        private CountingExtension(String channel) {
             this.channel = channel;
         }
 
-        public boolean rcv(ClientSession session, Message.Mutable message)
-        {
-            if (ChannelId.isMeta(channel) || channel.equals(message.getChannel()))
+        public boolean rcv(ClientSession session, Message.Mutable message) {
+            if (ChannelId.isMeta(channel) || channel.equals(message.getChannel())) {
                 rcvs.add(message);
+            }
             return true;
         }
 
-        public boolean rcvMeta(ClientSession session, Message.Mutable message)
-        {
-            if (channel.equals(message.getChannel()))
+        public boolean rcvMeta(ClientSession session, Message.Mutable message) {
+            if (channel.equals(message.getChannel())) {
                 rcvMetas.add(message);
+            }
             return true;
         }
 
-        public boolean send(ClientSession session, Message.Mutable message)
-        {
-            if (ChannelId.isMeta(channel) || channel.equals(message.getChannel()))
+        public boolean send(ClientSession session, Message.Mutable message) {
+            if (ChannelId.isMeta(channel) || channel.equals(message.getChannel())) {
                 sends.add(message);
+            }
             return true;
         }
 
-        public boolean sendMeta(ClientSession session, Message.Mutable message)
-        {
-            if (channel.equals(message.getChannel()))
+        public boolean sendMeta(ClientSession session, Message.Mutable message) {
+            if (channel.equals(message.getChannel())) {
                 sendMetas.add(message);
+            }
             return true;
         }
     }

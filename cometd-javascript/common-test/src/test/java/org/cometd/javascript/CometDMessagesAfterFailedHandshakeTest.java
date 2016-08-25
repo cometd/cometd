@@ -15,8 +15,6 @@
  */
 package org.cometd.javascript;
 
-import java.util.Map;
-
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -25,17 +23,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest
-{
+public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest {
     @Before
-    public void init()
-    {
+    public void init() {
         bayeuxServer.setSecurityPolicy(new Policy());
     }
 
     @Test
-    public void testSubscribeAfterFailedHandshake() throws Exception
-    {
+    public void testSubscribeAfterFailedHandshake() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("var handshakeLatch = new Latch(1);");
@@ -67,8 +62,7 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest
     }
 
     @Test
-    public void testPublishAfterFailedHandshake() throws Exception
-    {
+    public void testPublishAfterFailedHandshake() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("var handshakeLatch = new Latch(1);");
@@ -99,11 +93,9 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest
         evaluateScript("cometd.disconnect(true);");
     }
 
-    private class Policy extends DefaultSecurityPolicy
-    {
+    private class Policy extends DefaultSecurityPolicy {
         @Override
-        public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-        {
+        public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
             return false;
         }
     }

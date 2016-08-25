@@ -42,32 +42,27 @@ import org.eclipse.jetty.io.EofException;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SlowConnectionTest extends AbstractBayeuxClientServerTest
-{
-    public SlowConnectionTest(String serverTransport)
-    {
+public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
+    public SlowConnectionTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testSessionSweptDoesNotSendReconnectNoneAdvice() throws Exception
-    {
+    public void testSessionSweptDoesNotSendReconnectNoneAdvice() throws Exception {
         long maxInterval = 1000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
         startServer(options);
 
         final CountDownLatch sweeperLatch = new CountDownLatch(1);
-        bayeux.addListener(new BayeuxServer.SessionListener()
-        {
-            public void sessionAdded(ServerSession session, ServerMessage message)
-            {
+        bayeux.addListener(new BayeuxServer.SessionListener() {
+            public void sessionAdded(ServerSession session, ServerMessage message) {
             }
 
-            public void sessionRemoved(ServerSession session, boolean timedout)
-            {
-                if (timedout)
+            public void sessionRemoved(ServerSession session, boolean timedout) {
+                if (timedout) {
                     sweeperLatch.countDown();
+                }
             }
         });
 
@@ -105,35 +100,29 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         Message.Mutable reply = new JettyJSONContextClient().parse(response.getContentAsString())[0];
         Assert.assertEquals(Channel.META_CONNECT, reply.getChannel());
         Map<String, Object> advice = reply.getAdvice(false);
-        if (advice != null)
+        if (advice != null) {
             Assert.assertFalse(Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)));
+        }
     }
 
     @Test
-    public void testSessionSweptWhileWritingQueueDoesNotSendReconnectNoneAdvice() throws Exception
-    {
+    public void testSessionSweptWhileWritingQueueDoesNotSendReconnectNoneAdvice() throws Exception {
         final long maxInterval = 1000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
         startServer(options);
 
         final String channelName = "/test";
-        JSONTransport transport = new JSONTransport(bayeux)
-        {
+        JSONTransport transport = new JSONTransport(bayeux) {
             @Override
-            protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException
-            {
-                try
-                {
-                    if (channelName.equals(message.getChannel()))
-                    {
+            protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException {
+                try {
+                    if (channelName.equals(message.getChannel())) {
                         session.scheduleExpiration(0);
                         TimeUnit.MILLISECONDS.sleep(2 * maxInterval);
                     }
                     super.writeMessage(response, output, session, message);
-                }
-                catch (InterruptedException x)
-                {
+                } catch (InterruptedException x) {
                     throw new InterruptedIOException();
                 }
             }
@@ -142,17 +131,15 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         bayeux.setTransports(transport);
 
         final CountDownLatch sweeperLatch = new CountDownLatch(1);
-        bayeux.addListener(new BayeuxServer.SessionListener()
-        {
-            public void sessionAdded(ServerSession session, ServerMessage message)
-            {
+        bayeux.addListener(new BayeuxServer.SessionListener() {
+            public void sessionAdded(ServerSession session, ServerMessage message) {
                 session.deliver(null, channelName, "test");
             }
 
-            public void sessionRemoved(ServerSession session, boolean timedout)
-            {
-                if (timedout)
+            public void sessionRemoved(ServerSession session, boolean timedout) {
+                if (timedout) {
                     sweeperLatch.countDown();
+                }
             }
         });
 
@@ -181,24 +168,21 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         Message.Mutable reply = replies[replies.length - 1];
         Assert.assertEquals(Channel.META_CONNECT, reply.getChannel());
         Map<String, Object> advice = reply.getAdvice(false);
-        if (advice != null)
+        if (advice != null) {
             Assert.assertFalse(Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)));
+        }
     }
 
     @Test
-    public void testSlowConnection() throws Exception
-    {
+    public void testSlowConnection() throws Exception {
         startServer(null);
 
         final CountDownLatch sendLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        final JSONTransport transport = new JSONTransport(bayeux)
-        {
+        final JSONTransport transport = new JSONTransport(bayeux) {
             @Override
-            protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException
-            {
-                if (!message.isMeta() && !message.isPublishReply())
-                {
+            protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException {
+                if (!message.isMeta() && !message.isPublishReply()) {
                     sendLatch.countDown();
                     await(closeLatch);
                     // Simulate that an exception is being thrown while writing
@@ -265,11 +249,9 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(clientId);
-        session.addListener(new ServerSession.RemoveListener()
-        {
+        session.addListener(new ServerSession.RemoveListener() {
             @Override
-            public void removed(ServerSession session, boolean timeout)
-            {
+            public void removed(ServerSession session, boolean timeout) {
                 removeLatch.countDown();
             }
         });
@@ -285,8 +267,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testLargeMessageOnSlowConnection() throws Exception
-    {
+    public void testLargeMessageOnSlowConnection() throws Exception {
         Map<String, String> options = new HashMap<>();
         long maxInterval = 5000;
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
@@ -349,11 +330,9 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(clientId);
-        session.addListener(new ServerSession.RemoveListener()
-        {
+        session.addListener(new ServerSession.RemoveListener() {
             @Override
-            public void removed(ServerSession session, boolean timeout)
-            {
+            public void removed(ServerSession session, boolean timeout) {
                 removeLatch.countDown();
             }
         });
@@ -365,14 +344,10 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         Assert.assertTrue(removeLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
     }
 
-    private void await(CountDownLatch latch)
-    {
-        try
-        {
+    private void await(CountDownLatch latch) {
+        try {
             latch.await();
-        }
-        catch (InterruptedException x)
-        {
+        } catch (InterruptedException x) {
             Thread.currentThread().interrupt();
         }
     }

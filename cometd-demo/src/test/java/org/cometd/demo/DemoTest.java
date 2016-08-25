@@ -36,11 +36,9 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class DemoTest
-{
+public class DemoTest {
     @Test
-    public void testDemo() throws Exception
-    {
+    public void testDemo() throws Exception {
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
@@ -48,7 +46,7 @@ public class DemoTest
 
         // Start the Server.
         Server server = Demo.start();
-        
+
         // Starts the HTTP client.
         HttpClient httpClient = new HttpClient(sslContextFactory);
         httpClient.start();
@@ -61,8 +59,7 @@ public class DemoTest
         WebSocketClient jettyWebSocketClient = new WebSocketClient(sslContextFactory);
         jettyWebSocketClient.start();
 
-        try
-        {
+        try {
             // Test clear-text communication.
             String clearTextURL = "http://localhost:" + Demo.HTTP_PORT + Demo.CONTEXT_PATH + "/cometd";
             BayeuxClient client = new BayeuxClient(clearTextURL, new WebSocketTransport(null, null, jsrWebSocketClient));
@@ -92,12 +89,11 @@ public class DemoTest
             MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
             Set<ObjectInstance> objectInstances = mbeanServer.queryMBeans(ObjectName.getInstance("org.cometd.server:*"), null);
             Assert.assertFalse(objectInstances.isEmpty());
-        }
-        finally
-        {
+        } finally {
             jettyWebSocketClient.stop();
-            if (jsrWebSocketClient instanceof LifeCycle)
+            if (jsrWebSocketClient instanceof LifeCycle) {
                 ((LifeCycle)jsrWebSocketClient).stop();
+            }
             httpClient.stop();
             server.stop();
         }

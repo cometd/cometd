@@ -32,8 +32,7 @@ import org.slf4j.LoggerFactory;
 /**
  * {@link ClientTransport}s are used by {@link org.cometd.client.BayeuxClient} to send and receive Bayeux messages.
  */
-public abstract class ClientTransport extends AbstractTransport
-{
+public abstract class ClientTransport extends AbstractTransport {
     public static final String URL_OPTION = "url";
     public static final String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
     public static final String JSON_CONTEXT_OPTION = "jsonContext";
@@ -44,60 +43,43 @@ public abstract class ClientTransport extends AbstractTransport
     private long maxNetworkDelay;
     private JSONContext.Client jsonContext;
 
-    protected ClientTransport(String name, String url, Map<String, Object> options)
-    {
+    protected ClientTransport(String name, String url, Map<String, Object> options) {
         super(name, options);
         this.url = url;
     }
 
-    public String getURL()
-    {
+    public String getURL() {
         return url;
     }
 
-    public void setURL(String url)
-    {
+    public void setURL(String url) {
         this.url = url;
     }
 
-    public void init()
-    {
+    public void init() {
         Object urlOption = getOption(URL_OPTION);
-        if (url == null)
+        if (url == null) {
             url = (String)urlOption;
+        }
 
         Object jsonContextOption = getOption(JSON_CONTEXT_OPTION);
-        if (jsonContextOption == null)
-        {
+        if (jsonContextOption == null) {
             jsonContext = new JettyJSONContextClient();
-        }
-        else
-        {
-            if (jsonContextOption instanceof String)
-            {
-                try
-                {
+        } else {
+            if (jsonContextOption instanceof String) {
+                try {
                     Class<?> jsonContextClass = Thread.currentThread().getContextClassLoader().loadClass((String)jsonContextOption);
-                    if (JSONContext.Client.class.isAssignableFrom(jsonContextClass))
-                    {
+                    if (JSONContext.Client.class.isAssignableFrom(jsonContextClass)) {
                         jsonContext = (JSONContext.Client)jsonContextClass.newInstance();
-                    }
-                    else
-                    {
+                    } else {
                         throw new IllegalArgumentException("Invalid implementation of " + JSONContext.Client.class.getName() + " provided: " + jsonContextOption);
                     }
-                }
-                catch (Exception x)
-                {
+                } catch (Exception x) {
                     throw new IllegalArgumentException("Invalid implementation of " + JSONContext.Client.class.getName() + " provided: " + jsonContextOption, x);
                 }
-            }
-            else if (jsonContextOption instanceof JSONContext.Client)
-            {
+            } else if (jsonContextOption instanceof JSONContext.Client) {
                 jsonContext = (JSONContext.Client)jsonContextOption;
-            }
-            else
-            {
+            } else {
                 throw new IllegalArgumentException("Invalid implementation of " + JSONContext.Client.class.getName() + " provided: " + jsonContextOption);
             }
         }
@@ -117,41 +99,34 @@ public abstract class ClientTransport extends AbstractTransport
      *
      * @see org.cometd.client.BayeuxClient#disconnect()
      */
-    public void terminate()
-    {
+    public void terminate() {
     }
 
     public abstract boolean accept(String version);
 
     public abstract void send(TransportListener listener, List<Message.Mutable> messages);
 
-    protected List<Message.Mutable> parseMessages(String content) throws ParseException
-    {
+    protected List<Message.Mutable> parseMessages(String content) throws ParseException {
         return new ArrayList<>(Arrays.asList(jsonContext.parse(content)));
     }
 
-    protected String generateJSON(List<Message.Mutable> messages)
-    {
+    protected String generateJSON(List<Message.Mutable> messages) {
         return jsonContext.generate(messages);
     }
 
-    public long getMaxNetworkDelay()
-    {
+    public long getMaxNetworkDelay() {
         return maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
     }
 
-    protected void setMaxNetworkDelay(long maxNetworkDelay)
-    {
+    protected void setMaxNetworkDelay(long maxNetworkDelay) {
         this.maxNetworkDelay = maxNetworkDelay;
     }
 
-    public interface Factory
-    {
+    public interface Factory {
         public ClientTransport newClientTransport(String url, Map<String, Object> options);
     }
 
-    public static class FailureInfo
-    {
+    public static class FailureInfo {
         public ClientTransport transport;
         public Throwable cause;
         public String error;
@@ -159,10 +134,8 @@ public abstract class ClientTransport extends AbstractTransport
         public String url;
         public long delay;
 
-        public BayeuxClient.State actionToState()
-        {
-            switch (action)
-            {
+        public BayeuxClient.State actionToState() {
+            switch (action) {
                 case Message.RECONNECT_HANDSHAKE_VALUE:
                     return BayeuxClient.State.REHANDSHAKING;
                 case Message.RECONNECT_NONE_VALUE:
@@ -173,8 +146,7 @@ public abstract class ClientTransport extends AbstractTransport
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return String.format("%s@%x[transport=%s,cause=%s,action=%s]",
                     getClass().getSimpleName(),
                     hashCode(),
@@ -184,8 +156,7 @@ public abstract class ClientTransport extends AbstractTransport
         }
     }
 
-    public interface FailureHandler
-    {
+    public interface FailureHandler {
         void handle(FailureInfo failureInfo);
     }
 }

@@ -36,18 +36,15 @@ import org.cometd.server.ext.TimestampExtension;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class MessageFlowControlTest extends ClientServerTest
-{
+public class MessageFlowControlTest extends ClientServerTest {
     @Test
-    public void testMessageFlowControlWithDeQueueListener() throws Exception
-    {
+    public void testMessageFlowControlWithDeQueueListener() throws Exception {
         startServer(null);
         testMessageFlowControlWithDeQueueListener(false, -1);
     }
 
     @Test
-    public void testMessageFlowControlWithDeQueueListenerAndLazyChannel() throws Exception
-    {
+    public void testMessageFlowControlWithDeQueueListenerAndLazyChannel() throws Exception {
         Map<String, String> initParams = new HashMap<>();
         long maxLazyTimeout = 1000;
         initParams.put("maxLazyTimeout", String.valueOf(maxLazyTimeout));
@@ -55,18 +52,16 @@ public class MessageFlowControlTest extends ClientServerTest
         testMessageFlowControlWithDeQueueListener(true, maxLazyTimeout);
     }
 
-    public void testMessageFlowControlWithDeQueueListener(final boolean lazyChannel, long maxLazyTimeout) throws Exception
-    {
+    public void testMessageFlowControlWithDeQueueListener(final boolean lazyChannel, long maxLazyTimeout) throws Exception {
         bayeux.addExtension(new TimestampExtension("yyyyMMddHHmmss"));
 
         final String channelName = "/test";
-        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
+        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
-                if (lazyChannel)
+                if (lazyChannel) {
                     channel.setLazy(true);
+                }
             }
         });
 
@@ -74,28 +69,19 @@ public class MessageFlowControlTest extends ClientServerTest
         final CountDownLatch queuedMessages = new CountDownLatch(totalMessages);
         final long toleranceSeconds = 2;
         final AtomicInteger keptMessages = new AtomicInteger();
-        bayeux.addListener(new BayeuxServer.SessionListener()
-        {
-            public void sessionAdded(ServerSession session, ServerMessage message)
-            {
-                session.addListener(new ServerSession.DeQueueListener()
-                {
-                    public void deQueue(ServerSession session, Queue<ServerMessage> queue)
-                    {
+        bayeux.addListener(new BayeuxServer.SessionListener() {
+            public void sessionAdded(ServerSession session, ServerMessage message) {
+                session.addListener(new ServerSession.DeQueueListener() {
+                    public void deQueue(ServerSession session, Queue<ServerMessage> queue) {
                         long lastTimeStamp = 0;
-                        for (Iterator<ServerMessage> iterator = queue.iterator(); iterator.hasNext();)
-                        {
+                        for (Iterator<ServerMessage> iterator = queue.iterator(); iterator.hasNext(); ) {
                             ServerMessage message = iterator.next();
-                            if (channelName.equals(message.getChannel()))
-                            {
+                            if (channelName.equals(message.getChannel())) {
                                 long timeStamp = Long.parseLong(message.get(Message.TIMESTAMP_FIELD).toString());
-                                if (timeStamp <= lastTimeStamp + toleranceSeconds)
-                                {
+                                if (timeStamp <= lastTimeStamp + toleranceSeconds) {
                                     System.err.println("removed " + message);
                                     iterator.remove();
-                                }
-                                else
-                                {
+                                } else {
                                     System.err.println("kept " + message);
                                     keptMessages.incrementAndGet();
                                     lastTimeStamp = timeStamp;
@@ -107,8 +93,7 @@ public class MessageFlowControlTest extends ClientServerTest
                 });
             }
 
-            public void sessionRemoved(ServerSession session, boolean timedout)
-            {
+            public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
 
@@ -120,18 +105,14 @@ public class MessageFlowControlTest extends ClientServerTest
         Thread.sleep(1000);
 
         final CountDownLatch subscribed = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribed.countDown();
             }
         });
         final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
-        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 System.err.println("message = " + message);
                 messages.offer(message);
             }
@@ -145,17 +126,20 @@ public class MessageFlowControlTest extends ClientServerTest
         // keep publish0, discard publish1 - publish2, ... publishN, drain - keep publish2,
         // discard publish3 to publishN). We take this in account when asserting below.
 
-        for (int i = 0; i < totalMessages; ++i)
+        for (int i = 0; i < totalMessages; ++i) {
             bayeux.getChannel(channelName).publish(null, "msg_" + i);
+        }
         // Wait for all the message to be processed on server side,
         // to avoids a race to access variable keptMessages
         Assert.assertTrue(queuedMessages.await(5, TimeUnit.SECONDS));
 
-        if (lazyChannel)
+        if (lazyChannel) {
             Thread.sleep(maxLazyTimeout);
+        }
 
-        for (int i = 0; i < keptMessages.get(); ++i)
+        for (int i = 0; i < keptMessages.get(); ++i) {
             Assert.assertNotNull(messages.poll(1, TimeUnit.SECONDS));
+        }
         Assert.assertNull(messages.poll(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);

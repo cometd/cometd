@@ -69,8 +69,7 @@ import org.slf4j.LoggerFactory;
  * @see SetiServlet
  */
 @ManagedObject("CometD cloud peer discovery component")
-public class Seti extends AbstractLifeCycle implements Dumpable
-{
+public class Seti extends AbstractLifeCycle implements Dumpable {
     public static final String SETI_ATTRIBUTE = Seti.class.getName();
     private static final String SETI_ALL_CHANNEL = "/seti/all";
 
@@ -82,8 +81,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable
     private final Logger _logger;
     private final LocalSession _session;
 
-    public Seti(Oort oort)
-    {
+    public Seti(Oort oort) {
         _oort = oort;
         _setiId = generateSetiId(oort.getURL());
         _logger = LoggerFactory.getLogger(getClass().getName() + "." + _setiId);
@@ -91,40 +89,33 @@ public class Seti extends AbstractLifeCycle implements Dumpable
     }
 
     @ManagedAttribute(value = "The Oort of this Seti", readonly = true)
-    public Oort getOort()
-    {
+    public Oort getOort() {
         return _oort;
     }
 
     @ManagedAttribute(value = "The unique ID of this Seti", readonly = true)
-    public String getId()
-    {
+    public String getId() {
         return _setiId;
     }
 
     @Override
-    protected void doStart() throws Exception
-    {
+    protected void doStart() throws Exception {
         BayeuxServer bayeux = _oort.getBayeuxServer();
 
         _session.handshake();
 
         bayeux.createChannelIfAbsent(SETI_ALL_CHANNEL).getReference().setPersistent(true);
         _oort.observeChannel(SETI_ALL_CHANNEL);
-        _session.getChannel(SETI_ALL_CHANNEL).subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        _session.getChannel(SETI_ALL_CHANNEL).subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 receiveBroadcast(message);
             }
         });
 
         String setiChannel = generateSetiChannel(_setiId);
         bayeux.createChannelIfAbsent(setiChannel).getReference().setPersistent(true);
-        _session.getChannel(setiChannel).subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        _session.getChannel(setiChannel).subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 receiveDirect(message);
             }
         });
@@ -133,16 +124,16 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         _oort.addCometListener(_cometListener);
 
         Set<String> associatedUserIds = getAssociatedUserIds();
-        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Broadcasting associated users {}", associatedUserIds);
+        }
         SetiPresence presence = new SetiPresence(true, associatedUserIds);
         presence.put(SetiPresence.ALIVE_FIELD, true);
         _session.getChannel(SETI_ALL_CHANNEL).publish(presence);
     }
 
     @Override
-    protected void doStop() throws Exception
-    {
+    protected void doStop() throws Exception {
         removeAssociationsAndPresences();
         _presenceListeners.clear();
 
@@ -155,22 +146,22 @@ public class Seti extends AbstractLifeCycle implements Dumpable
 
         BayeuxServer bayeux = _oort.getBayeuxServer();
         ServerChannel channel = bayeux.getChannel(setiChannel);
-        if (channel != null)
+        if (channel != null) {
             channel.setPersistent(false);
+        }
 
         _oort.deobserveChannel(SETI_ALL_CHANNEL);
         channel = bayeux.getChannel(SETI_ALL_CHANNEL);
-        if (channel != null)
+        if (channel != null) {
             channel.setPersistent(false);
+        }
     }
 
-    protected String generateSetiId(String oortURL)
-    {
+    protected String generateSetiId(String oortURL) {
         return Oort.replacePunctuation(oortURL, '_');
     }
 
-    protected String generateSetiChannel(String setiId)
-    {
+    protected String generateSetiChannel(String setiId) {
         return "/seti/" + setiId;
     }
 
@@ -185,27 +176,27 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      * @see #isAssociated(String)
      * @see #disassociate(String, ServerSession)
      */
-    public boolean associate(final String userId, final ServerSession session)
-    {
-        if (session == null)
+    public boolean associate(final String userId, final ServerSession session) {
+        if (session == null) {
             throw new NullPointerException();
+        }
 
         LocalLocation location = new LocalLocation(userId, session);
         boolean wasAssociated = isAssociated(userId);
         boolean added = associate(userId, location);
 
-        if (added)
-        {
-            if (_logger.isDebugEnabled())
+        if (added) {
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Associated session {} to user {}", session, userId);
+            }
 
             session.addListener(location);
             session.setAttribute(LocalLocation.class.getName(), location);
 
-            if (!wasAssociated)
-            {
-                if (_logger.isDebugEnabled())
+            if (!wasAssociated) {
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Broadcasting association addition for user {}", userId);
+                }
                 // Let everyone in the cluster know that this session is here
                 _session.getChannel(SETI_ALL_CHANNEL).publish(new SetiPresence(true, userId));
             }
@@ -214,31 +205,30 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         return added;
     }
 
-    protected boolean associate(String userId, Location location)
-    {
-        if (!isRunning())
+    protected boolean associate(String userId, Location location) {
+        if (!isRunning()) {
             return false;
+        }
 
-        synchronized (_uid2Location)
-        {
+        synchronized (_uid2Location) {
             Set<Location> locations = _uid2Location.get(userId);
-            if (locations == null)
-            {
+            if (locations == null) {
                 locations = new HashSet<>();
                 _uid2Location.put(userId, locations);
             }
             boolean result = locations.add(location);
-            if (_logger.isDebugEnabled())
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Associations: {}", _uid2Location.size());
+            }
             // Logging below can generate hugely long lines.
-            if (_logger.isTraceEnabled())
+            if (_logger.isTraceEnabled()) {
                 _logger.trace("Associations: {}", _uid2Location);
+            }
             return result;
         }
     }
 
-    private boolean associateRemote(String userId, SetiLocation location)
-    {
+    private boolean associateRemote(String userId, SetiLocation location) {
         // There is a possibility that a remote Seti sends an association,
         // but immediately afterwards crashes.
         // This Seti may process the crash _before_ the association, leaving
@@ -249,10 +239,10 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         // care of disassociating the remote users.
         boolean associated = associate(userId, location);
         String oortURL = location._oortURL;
-        if (associated && !_oort.isCometConnected(oortURL))
-        {
-            if (_logger.isDebugEnabled())
+        if (associated && !_oort.isCometConnected(oortURL)) {
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Disassociating {} since comet {} just disconnected", userId, oortURL);
+            }
             disassociate(userId, location);
             return false;
         }
@@ -267,17 +257,16 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      * @see #getAssociationCount(String)
      */
     @ManagedOperation(value = "Whether the given userId is associated locally", impact = "INFO")
-    public boolean isAssociated(@Name(value = "userId", description = "The userId to test for local association") String userId)
-    {
-        synchronized (_uid2Location)
-        {
+    public boolean isAssociated(@Name(value = "userId", description = "The userId to test for local association") String userId) {
+        synchronized (_uid2Location) {
             Set<Location> locations = _uid2Location.get(userId);
-            if (locations == null)
+            if (locations == null) {
                 return false;
-            for (Location location : locations)
-            {
-                if (location instanceof LocalLocation)
+            }
+            for (Location location : locations) {
+                if (location instanceof LocalLocation) {
                     return true;
+                }
             }
             return false;
         }
@@ -290,18 +279,17 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      * @see #getPresenceCount(String)
      */
     @ManagedOperation(value = "The number of local associations for the given userId", impact = "INFO")
-    public int getAssociationCount(@Name(value = "userId", description = "The userId to test for local association count") String userId)
-    {
-        synchronized (_uid2Location)
-        {
+    public int getAssociationCount(@Name(value = "userId", description = "The userId to test for local association count") String userId) {
+        synchronized (_uid2Location) {
             Set<Location> locations = _uid2Location.get(userId);
-            if (locations == null)
+            if (locations == null) {
                 return 0;
+            }
             int result = 0;
-            for (Location location : locations)
-            {
-                if (location instanceof LocalLocation)
+            for (Location location : locations) {
+                if (location instanceof LocalLocation) {
                     ++result;
+                }
             }
             return result;
         }
@@ -315,10 +303,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      * @see #getPresenceCount(String)
      */
     @ManagedOperation(value = "Whether the given userId is present in the cloud", impact = "INFO")
-    public boolean isPresent(@Name(value = "userId", description = "The userId to test for presence in the cloud") String userId)
-    {
-        synchronized (_uid2Location)
-        {
+    public boolean isPresent(@Name(value = "userId", description = "The userId to test for presence in the cloud") String userId) {
+        synchronized (_uid2Location) {
             Set<Location> locations = _uid2Location.get(userId);
             return locations != null;
         }
@@ -331,10 +317,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      * @see #getAssociationCount(String)
      */
     @ManagedOperation(value = "The number of local and remote associations for the given userId", impact = "INFO")
-    public int getPresenceCount(@Name(value = "userId", description = "The userId to test for presence count") String userId)
-    {
-        synchronized (_uid2Location)
-        {
+    public int getPresenceCount(@Name(value = "userId", description = "The userId to test for presence count") String userId) {
+        synchronized (_uid2Location) {
             Set<Location> locations = _uid2Location.get(userId);
             return locations == null ? 0 : locations.size();
         }
@@ -345,20 +329,19 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      * <p>If this is the last disassociation for this userId, broadcasts this information
      * on the Oort cloud, so that other comets will know that the given userId no longer is on this comet.</p>
      *
-     * @param userId the user identifier to disassociate
+     * @param userId  the user identifier to disassociate
      * @param session the session mapped to the userId
      * @return true if the session has been disassociated, false if it was not associated
      * @see #associate(String, ServerSession)
      */
-    public boolean disassociate(final String userId, ServerSession session)
-    {
+    public boolean disassociate(final String userId, ServerSession session) {
         LocalLocation location = new LocalLocation(userId, session);
         boolean removed = disassociate(userId, location);
 
-        if (removed)
-        {
-            if (_logger.isDebugEnabled())
+        if (removed) {
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Disassociated session {} from user {}", session, userId);
+            }
 
             location = (LocalLocation)session.removeAttribute(LocalLocation.class.getName());
             session.removeListener(location);
@@ -373,10 +356,10 @@ public class Seti extends AbstractLifeCycle implements Dumpable
             // one association is disassociated. The other comets do not know that the comet had multiple
             // associations, and if a presence message is sent, the remote comets will wrongly think
             // that the user is gone, while in reality it is still associated with the remaining association.
-            if (_session.isConnected() && !isAssociated(userId))
-            {
-                if (_logger.isDebugEnabled())
+            if (_session.isConnected() && !isAssociated(userId)) {
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Broadcasting association removal for user {}", userId);
+                }
                 // Let everyone in the cluster know that this session is not here anymore
                 _session.getChannel(SETI_ALL_CHANNEL).publish(new SetiPresence(false, userId));
             }
@@ -394,106 +377,98 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      * @return set of sessions that were disassociated
      * @see #associate(String, ServerSession)
      */
-    public Set<ServerSession> disassociate(final String userId)
-    {
+    public Set<ServerSession> disassociate(final String userId) {
         final Set<LocalLocation> userLocations = new HashSet<>();
-        synchronized (_uid2Location)
-        {
-            for (Location location : _uid2Location.get(userId))
-            {
-                if (location instanceof LocalLocation)
+        synchronized (_uid2Location) {
+            for (Location location : _uid2Location.get(userId)) {
+                if (location instanceof LocalLocation) {
                     userLocations.add((LocalLocation)location);
+                }
             }
         }
 
         final Set<ServerSession> removedUserSessions = new HashSet<>();
-        for (LocalLocation location : userLocations)
-        {
+        for (LocalLocation location : userLocations) {
             final ServerSession session = location._session;
             boolean removed = disassociate(userId, session);
-            if (removed)
+            if (removed) {
                 removedUserSessions.add(session);
+            }
         }
 
         return removedUserSessions;
     }
 
-    protected boolean disassociate(String userId, Location location)
-    {
-        synchronized (_uid2Location)
-        {
+    protected boolean disassociate(String userId, Location location) {
+        synchronized (_uid2Location) {
             boolean result = false;
             Set<Location> locations = _uid2Location.get(userId);
-            if (locations != null)
-            {
+            if (locations != null) {
                 result = locations.remove(location);
-                if (locations.isEmpty())
+                if (locations.isEmpty()) {
                     _uid2Location.remove(userId);
+                }
             }
-            if (_logger.isDebugEnabled())
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Associations: {}", _uid2Location.size());
+            }
             // Logging below can generate hugely long lines.
-            if (_logger.isTraceEnabled())
+            if (_logger.isTraceEnabled()) {
                 _logger.trace("Associations: {}", _uid2Location);
+            }
             return result;
         }
     }
 
-    protected void removeAssociationsAndPresences()
-    {
+    protected void removeAssociationsAndPresences() {
         final Set<String> userIds = new HashSet<>();
-        synchronized (_uid2Location)
-        {
+        synchronized (_uid2Location) {
             getAssociatedUserIds(userIds);
             _uid2Location.clear();
         }
-        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Broadcasting association removal for users {}", userIds);
+        }
         SetiPresence presence = new SetiPresence(false, userIds);
         presence.put(SetiPresence.ALIVE_FIELD, false);
         _session.getChannel(SETI_ALL_CHANNEL).publish(presence);
     }
 
-    protected void removePresences(String oortURL)
-    {
+    protected void removePresences(String oortURL) {
         List<String> userIds = new ArrayList<>();
-        synchronized (_uid2Location)
-        {
-            for (Iterator<Map.Entry<String, Set<Location>>> entries = _uid2Location.entrySet().iterator(); entries.hasNext();)
-            {
+        synchronized (_uid2Location) {
+            for (Iterator<Map.Entry<String, Set<Location>>> entries = _uid2Location.entrySet().iterator(); entries.hasNext(); ) {
                 Map.Entry<String, Set<Location>> entry = entries.next();
                 Set<Location> userLocations = entry.getValue();
-                for (Iterator<Location> iterator = userLocations.iterator(); iterator.hasNext(); )
-                {
+                for (Iterator<Location> iterator = userLocations.iterator(); iterator.hasNext(); ) {
                     Location location = iterator.next();
-                    if (location instanceof SetiLocation)
-                    {
-                        if (oortURL.equals(((SetiLocation)location)._oortURL))
-                        {
+                    if (location instanceof SetiLocation) {
+                        if (oortURL.equals(((SetiLocation)location)._oortURL)) {
                             iterator.remove();
                             userIds.add(entry.getKey());
                             break;
                         }
                     }
                 }
-                if (userLocations.isEmpty())
+                if (userLocations.isEmpty()) {
                     entries.remove();
+                }
             }
         }
-        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Removing presences of comet {} for users {}", oortURL, userIds);
-        for (String userId : userIds)
+        }
+        for (String userId : userIds) {
             notifyPresenceRemoved(oortURL, userId);
+        }
     }
 
     /**
      * @return the set of {@code userId}s known to this Seti, both local and remote
      */
     @ManagedAttribute(value = "The set of userIds known to this Seti", readonly = true)
-    public Set<String> getUserIds()
-    {
-        synchronized (_uid2Location)
-        {
+    public Set<String> getUserIds() {
+        synchronized (_uid2Location) {
             return new HashSet<>(_uid2Location.keySet());
         }
     }
@@ -501,23 +476,17 @@ public class Seti extends AbstractLifeCycle implements Dumpable
     /**
      * @return the set of {@code userId}s associated via {@link #associate(String, ServerSession)}
      */
-    public Set<String> getAssociatedUserIds()
-    {
+    public Set<String> getAssociatedUserIds() {
         Set<String> result = new HashSet<>();
         getAssociatedUserIds(result);
         return result;
     }
 
-    private void getAssociatedUserIds(Set<String> result)
-    {
-        synchronized (_uid2Location)
-        {
-            for (Map.Entry<String, Set<Location>> entry : _uid2Location.entrySet())
-            {
-                for (Location location : entry.getValue())
-                {
-                    if (location instanceof LocalLocation)
-                    {
+    private void getAssociatedUserIds(Set<String> result) {
+        synchronized (_uid2Location) {
+            for (Map.Entry<String, Set<Location>> entry : _uid2Location.entrySet()) {
+                for (Location location : entry.getValue()) {
+                    if (location instanceof LocalLocation) {
                         result.add(entry.getKey());
                         break;
                     }
@@ -534,8 +503,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      * @param data      the content of the message
      * @see #sendMessage(Collection, String, Object)
      */
-    public void sendMessage(final String toUserId, final String toChannel, final Object data)
-    {
+    public void sendMessage(final String toUserId, final String toChannel, final Object data) {
         sendMessage(Collections.singleton(toUserId), toChannel, data);
     }
 
@@ -546,24 +514,24 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      * @param toChannel the channel to send the message to
      * @param data      the content of the message
      */
-    public void sendMessage(final Collection<String> toUserIds, final String toChannel, final Object data)
-    {
-        for (String toUserId : toUserIds)
-        {
+    public void sendMessage(final Collection<String> toUserIds, final String toChannel, final Object data) {
+        for (String toUserId : toUserIds) {
             Set<Location> copy = new HashSet<>();
-            synchronized (_uid2Location)
-            {
+            synchronized (_uid2Location) {
                 Set<Location> locations = _uid2Location.get(toUserId);
-                if (locations == null)
+                if (locations == null) {
                     copy.add(new SetiLocation(toUserId, null));
-                else
+                } else {
                     copy.addAll(locations);
+                }
             }
 
-            if (_logger.isDebugEnabled())
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Sending message to locations {}", copy);
-            for (Location location : copy)
+            }
+            for (Location location : copy) {
                 location.send(toUserId, toChannel, data);
+            }
         }
     }
 
@@ -573,16 +541,17 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      *
      * @param message the message to deliver to a session connected to this comet
      */
-    protected void receiveDirect(Message message)
-    {
-        if (_logger.isDebugEnabled())
+    protected void receiveDirect(Message message) {
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Received direct message {}", message);
+        }
         Map<String, Object> data = message.getDataAsMap();
         Boolean presence = (Boolean)data.get(SetiPresence.PRESENCE_FIELD);
-        if (presence != null)
+        if (presence != null) {
             receivePresence(data);
-        else
+        } else {
             receiveMessage(data);
+        }
     }
 
     /**
@@ -597,16 +566,17 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      *
      * @param message the message to possibly deliver to a session connected to this comet
      */
-    protected void receiveBroadcast(Message message)
-    {
-        if (_logger.isDebugEnabled())
+    protected void receiveBroadcast(Message message) {
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Received broadcast message {}", message);
+        }
         Map<String, Object> data = message.getDataAsMap();
         Boolean presence = (Boolean)data.get(SetiPresence.PRESENCE_FIELD);
-        if (presence != null)
+        if (presence != null) {
             receivePresence(data);
-        else
+        } else {
             receiveMessage(data);
+        }
     }
 
     /**
@@ -614,109 +584,95 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      *
      * @param presence the presence message received
      */
-    protected void receivePresence(Map<String, Object> presence)
-    {
-        if (_logger.isDebugEnabled())
+    protected void receivePresence(Map<String, Object> presence) {
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Received presence message {}", presence);
+        }
         String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
-        if (_setiId.equals(generateSetiId(oortURL)))
+        if (_setiId.equals(generateSetiId(oortURL))) {
             receiveLocalPresence(presence);
-        else
+        } else {
             receiveRemotePresence(presence);
+        }
     }
 
-    private void receiveLocalPresence(Map<String, Object> presence)
-    {
+    private void receiveLocalPresence(Map<String, Object> presence) {
         String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
         boolean present = (Boolean)presence.get(SetiPresence.PRESENCE_FIELD);
         Set<String> userIds = convertPresenceUsers(presence);
-        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Notifying presence listeners {}", presence);
-        for (String userId : userIds)
-        {
-            if (present)
+        }
+        for (String userId : userIds) {
+            if (present) {
                 notifyPresenceAdded(oortURL, userId);
-            else
+            } else {
                 notifyPresenceRemoved(oortURL, userId);
+            }
         }
     }
 
-    private void receiveRemotePresence(Map<String, Object> presence)
-    {
+    private void receiveRemotePresence(Map<String, Object> presence) {
         String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
         boolean present = (Boolean)presence.get(SetiPresence.PRESENCE_FIELD);
         Set<String> userIds = convertPresenceUsers(presence);
 
-        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Received remote presence message from comet {} for {}", oortURL, userIds);
+        }
 
-        for (String userId : userIds)
-        {
+        for (String userId : userIds) {
             SetiLocation location = new SetiLocation(userId, oortURL);
-            if (present)
-            {
-                if (associateRemote(userId, location))
+            if (present) {
+                if (associateRemote(userId, location)) {
                     notifyPresenceAdded(oortURL, userId);
-            }
-            else
-            {
-                if (disassociate(userId, location))
+                }
+            } else {
+                if (disassociate(userId, location)) {
                     notifyPresenceRemoved(oortURL, userId);
+                }
             }
         }
 
-        if (presence.get(SetiPresence.ALIVE_FIELD) == Boolean.TRUE)
-        {
+        if (presence.get(SetiPresence.ALIVE_FIELD) == Boolean.TRUE) {
             // Message sent on startup by the remote Seti, push our associations
             OortComet oortComet = _oort.findComet(oortURL);
-            if (oortComet != null)
-            {
+            if (oortComet != null) {
                 Set<String> associatedUserIds = getAssociatedUserIds();
-                if (_logger.isDebugEnabled())
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Pushing associated users {} to comet {}", associatedUserIds, oortURL);
+                }
                 ClientSessionChannel channel = oortComet.getChannel(generateSetiChannel(generateSetiId(oortURL)));
                 channel.publish(new SetiPresence(true, associatedUserIds));
             }
         }
     }
 
-    public void addPresenceListener(PresenceListener listener)
-    {
+    public void addPresenceListener(PresenceListener listener) {
         _presenceListeners.add(listener);
     }
 
-    public void removePresenceListener(PresenceListener listener)
-    {
+    public void removePresenceListener(PresenceListener listener) {
         _presenceListeners.remove(listener);
     }
 
-    private void notifyPresenceAdded(String oortURL, String userId)
-    {
+    private void notifyPresenceAdded(String oortURL, String userId) {
         PresenceListener.Event event = new PresenceListener.Event(this, userId, oortURL);
-        for (PresenceListener listener : _presenceListeners)
-        {
-            try
-            {
+        for (PresenceListener listener : _presenceListeners) {
+            try {
                 listener.presenceAdded(event);
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 _logger.info("Exception while invoking listener " + listener, x);
             }
         }
     }
 
-    private void notifyPresenceRemoved(String oortURL, String userId)
-    {
+    private void notifyPresenceRemoved(String oortURL, String userId) {
         PresenceListener.Event event = new PresenceListener.Event(this, userId, oortURL);
-        for (PresenceListener listener : _presenceListeners)
-        {
-            try
-            {
+        for (PresenceListener listener : _presenceListeners) {
+            try {
                 listener.presenceRemoved(event);
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 _logger.info("Exception while invoking listener " + listener, x);
             }
         }
@@ -727,18 +683,15 @@ public class Seti extends AbstractLifeCycle implements Dumpable
      *
      * @param message the seti message received
      */
-    protected void receiveMessage(Map<String, Object> message)
-    {
+    protected void receiveMessage(Map<String, Object> message) {
         String userId = (String)message.get(SetiMessage.USER_ID_FIELD);
         String channel = (String)message.get(SetiMessage.CHANNEL_FIELD);
         Object data = message.get(SetiMessage.DATA_FIELD);
 
         Set<Location> copy = new HashSet<>();
-        synchronized (_uid2Location)
-        {
+        synchronized (_uid2Location) {
             Set<Location> locations = _uid2Location.get(userId);
-            if (locations != null)
-            {
+            if (locations != null) {
                 // Consider cometA, cometB and cometC and a user that is associated
                 // in both cometA and cometB. When cometC sends a message to the user,
                 // it knows that the user is in both cometA and cometB (thanks to presence
@@ -747,69 +700,68 @@ public class Seti extends AbstractLifeCycle implements Dumpable
                 // cometB and should not forward the message arriving from cometC to cometB
                 // since cometC will take care of sending to cometB.
                 // Hence, we forward the message only locally
-                for (Location location : locations)
-                {
-                    if (location instanceof LocalLocation)
+                for (Location location : locations) {
+                    if (location instanceof LocalLocation) {
                         copy.add(location);
+                    }
                 }
             }
         }
 
-        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled()) {
             _logger.debug("Received message {} for locations {}", message, copy);
-        for (Location location : copy)
+        }
+        for (Location location : copy) {
             location.receive(userId, channel, data);
+        }
     }
 
     @SuppressWarnings("unchecked")
-    private Set<String> convertPresenceUsers(Map<String, Object> presence)
-    {
+    private Set<String> convertPresenceUsers(Map<String, Object> presence) {
         Object value = presence.get(SetiPresence.USER_IDS_FIELD);
-        if (value instanceof Set)
+        if (value instanceof Set) {
             return (Set<String>)value;
-        if (value instanceof Collection)
+        }
+        if (value instanceof Collection) {
             return new HashSet<>((Collection<? extends String>)value);
-        if (value.getClass().isArray())
-        {
+        }
+        if (value.getClass().isArray()) {
             Set<String> result = new HashSet<>();
-            for (Object item : (Object[])value)
+            for (Object item : (Object[])value) {
                 result.add(item.toString());
+            }
             return result;
         }
         throw new IllegalArgumentException();
     }
 
-    public String dump()
-    {
+    public String dump() {
         return ContainerLifeCycle.dump(this);
     }
 
-    public void dump(Appendable out, String indent) throws IOException
-    {
+    public void dump(Appendable out, String indent) throws IOException {
         ContainerLifeCycle.dumpObject(out, this);
 
         List<Dumpable> children = new ArrayList<>();
 
-        children.add(new Dumpable()
-        {
+        children.add(new Dumpable() {
             @Override
-            public String dump()
-            {
+            public String dump() {
                 return null;
             }
 
             @Override
-            public void dump(Appendable out, String indent) throws IOException
-            {
+            public void dump(Appendable out, String indent) throws IOException {
                 List<String> state = new ArrayList<>();
-                synchronized (_uid2Location)
-                {
-                    for (Map.Entry<String, Set<Location>> entry : _uid2Location.entrySet())
+                synchronized (_uid2Location) {
+                    for (Map.Entry<String, Set<Location>> entry : _uid2Location.entrySet()) {
                         state.add(String.format("%s @ %s", entry.getKey(), entry.getValue()));
+                    }
                 }
                 ContainerLifeCycle.dumpObject(out, "locations: " + state.size());
-                if (((BayeuxServerImpl)getOort().getBayeuxServer()).isDetailedDump())
+                if (((BayeuxServerImpl)getOort().getBayeuxServer()).isDetailedDump()) {
                     ContainerLifeCycle.dump(out, indent, state);
+                }
             }
         });
 
@@ -817,16 +769,14 @@ public class Seti extends AbstractLifeCycle implements Dumpable
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return String.format("%s[%s]", getClass().getName(), getId());
     }
 
     /**
      * <p>The representation of where a user is.</p>
      */
-    protected interface Location
-    {
+    protected interface Location {
         public void send(String toUser, String toChannel, Object data);
 
         public void receive(String toUser, String toChannel, Object data);
@@ -839,53 +789,47 @@ public class Seti extends AbstractLifeCycle implements Dumpable
     /**
      * <p>A Location that represent a user connected to a local comet.</p>
      */
-    protected class LocalLocation implements Location, ServerSession.RemoveListener
-    {
+    protected class LocalLocation implements Location, ServerSession.RemoveListener {
         private final String _userId;
         private final ServerSession _session;
 
-        protected LocalLocation(String userId, ServerSession session)
-        {
+        protected LocalLocation(String userId, ServerSession session) {
             _userId = userId;
             _session = session;
         }
 
-        public void send(String toUser, String toChannel, Object data)
-        {
+        public void send(String toUser, String toChannel, Object data) {
             _session.deliver(Seti.this._session.getServerSession(), toChannel, data);
         }
 
-        public void receive(String toUser, String toChannel, Object data)
-        {
+        public void receive(String toUser, String toChannel, Object data) {
             send(toUser, toChannel, data);
         }
 
         @Override
-        public void removed(ServerSession session, boolean timeout)
-        {
+        public void removed(ServerSession session, boolean timeout) {
             disassociate(_userId, session);
         }
 
         @Override
-        public boolean equals(Object obj)
-        {
-            if (this == obj)
+        public boolean equals(Object obj) {
+            if (this == obj) {
                 return true;
-            if (!(obj instanceof LocalLocation))
+            }
+            if (!(obj instanceof LocalLocation)) {
                 return false;
+            }
             LocalLocation that = (LocalLocation)obj;
             return _userId.equals(that._userId) && _session.getId().equals(that._session.getId());
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return 31 * _userId.hashCode() + _session.getId().hashCode();
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return String.format("%s[%s]", getClass().getSimpleName(), _session);
         }
     }
@@ -893,26 +837,22 @@ public class Seti extends AbstractLifeCycle implements Dumpable
     /**
      * <p>A Location that represent a user connected to a remote comet.</p>
      */
-    protected class SetiLocation implements Location
-    {
+    protected class SetiLocation implements Location {
         private final String _userId;
         private final String _oortURL;
         private final String _setiChannel;
 
-        protected SetiLocation(String userId, String oortURL)
-        {
+        protected SetiLocation(String userId, String oortURL) {
             _userId = userId;
             _oortURL = oortURL;
             _setiChannel = oortURL == null ? SETI_ALL_CHANNEL : generateSetiChannel(generateSetiId(oortURL));
         }
 
-        public void send(String toUser, String toChannel, Object data)
-        {
+        public void send(String toUser, String toChannel, Object data) {
             _session.getChannel(_setiChannel).publish(new SetiMessage(toUser, toChannel, data));
         }
 
-        public void receive(String toUser, String toChannel, Object data)
-        {
+        public void receive(String toUser, String toChannel, Object data) {
             // A message has been sent to this comet because the sender thought
             // the user was in this comet. If it were, we would have found a
             // LocalLocation, but instead found this SetiLocation.
@@ -922,38 +862,35 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         }
 
         @Override
-        public boolean equals(Object obj)
-        {
-            if (this == obj)
+        public boolean equals(Object obj) {
+            if (this == obj) {
                 return true;
-            if (!(obj instanceof SetiLocation))
+            }
+            if (!(obj instanceof SetiLocation)) {
                 return false;
+            }
             SetiLocation that = (SetiLocation)obj;
             return _userId.equals(that._userId) && _setiChannel.equals(that._setiChannel);
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return 31 * _userId.hashCode() + _setiChannel.hashCode();
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return String.format("%s[%s]", getClass().getSimpleName(), _setiChannel);
         }
     }
 
-    private class SetiMessage extends HashMap<String, Object>
-    {
+    private class SetiMessage extends HashMap<String, Object> {
         private static final String USER_ID_FIELD = "userId";
         private static final String CHANNEL_FIELD = "channel";
         private static final String SETI_ID_FIELD = "setiId";
         private static final String DATA_FIELD = "data";
 
-        private SetiMessage(String toUser, String toChannel, Object data)
-        {
+        private SetiMessage(String toUser, String toChannel, Object data) {
             super(4);
             put(USER_ID_FIELD, toUser);
             put(CHANNEL_FIELD, toChannel);
@@ -962,20 +899,17 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    private class SetiPresence extends HashMap<String, Object>
-    {
+    private class SetiPresence extends HashMap<String, Object> {
         private static final String USER_IDS_FIELD = "userIds";
         private static final String OORT_URL_FIELD = "oortURL";
         private static final String ALIVE_FIELD = "alive";
         private static final String PRESENCE_FIELD = "presence";
 
-        private SetiPresence(boolean present, String userId)
-        {
+        private SetiPresence(boolean present, String userId) {
             this(present, Collections.singleton(userId));
         }
 
-        private SetiPresence(boolean present, Set<String> userIds)
-        {
+        private SetiPresence(boolean present, Set<String> userIds) {
             super(4);
             put(USER_IDS_FIELD, userIds);
             put(OORT_URL_FIELD, _oort.getURL());
@@ -986,16 +920,17 @@ public class Seti extends AbstractLifeCycle implements Dumpable
     /**
      * Listener interface that gets notified of remote Seti presence events.
      */
-    public interface PresenceListener extends EventListener
-    {
+    public interface PresenceListener extends EventListener {
         /**
          * Callback method invoked when a presence is added to a remote Seti
+         *
          * @param event the presence event
          */
         public void presenceAdded(Event event);
 
         /**
          * Callback method invoked when a presence is removed from a remote Seti
+         *
          * @param event the presence event
          */
         public void presenceRemoved(Event event);
@@ -1003,27 +938,22 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         /**
          * Empty implementation of {@link PresenceListener}
          */
-        public static class Adapter implements PresenceListener
-        {
-            public void presenceAdded(Event event)
-            {
+        public static class Adapter implements PresenceListener {
+            public void presenceAdded(Event event) {
             }
 
-            public void presenceRemoved(Event event)
-            {
+            public void presenceRemoved(Event event) {
             }
         }
 
         /**
          * Seti presence event object, delivered to {@link PresenceListener} methods.
          */
-        public static class Event extends EventObject
-        {
+        public static class Event extends EventObject {
             private final String userId;
             private final String url;
 
-            public Event(Seti source, String userId, String url)
-            {
+            public Event(Seti source, String userId, String url) {
                 super(source);
                 this.userId = userId;
                 this.url = url;
@@ -1032,38 +962,33 @@ public class Seti extends AbstractLifeCycle implements Dumpable
             /**
              * @return the local Seti object
              */
-            public Seti getSeti()
-            {
+            public Seti getSeti() {
                 return (Seti)getSource();
             }
 
             /**
              * @return the userId associated to this presence event
              */
-            public String getUserId()
-            {
+            public String getUserId() {
                 return userId;
             }
 
             /**
              * @return the Oort URL where this presence event happened
              */
-            public String getOortURL()
-            {
+            public String getOortURL() {
                 return url;
             }
 
             /**
              * @return whether this presence event happened on the local Seti or on a remote Seti
              */
-            public boolean isLocal()
-            {
+            public boolean isLocal() {
                 return getSeti().getOort().getURL().equals(getOortURL());
             }
 
             @Override
-            public String toString()
-            {
+            public String toString() {
                 return String.format("%s[%s %s on %s]",
                         getClass().getName(),
                         getUserId(),
@@ -1073,29 +998,28 @@ public class Seti extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    private class CometListener implements Oort.CometListener
-    {
-        public void cometJoined(Event event)
-        {
+    private class CometListener implements Oort.CometListener {
+        public void cometJoined(Event event) {
             String oortURL = event.getCometURL();
             OortComet oortComet = _oort.findComet(oortURL);
-            if (_logger.isDebugEnabled())
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Comet joined: {} with {}", oortURL, oortComet);
-            if (oortComet != null)
-            {
+            }
+            if (oortComet != null) {
                 ClientSessionChannel channel = oortComet.getChannel(generateSetiChannel(generateSetiId(oortURL)));
                 Set<String> userIds = getAssociatedUserIds();
-                if (_logger.isDebugEnabled())
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Pushing associated users {} to comet {}", userIds, oortURL);
+                }
                 channel.publish(new SetiPresence(true, userIds));
             }
         }
 
-        public void cometLeft(Event event)
-        {
+        public void cometLeft(Event event) {
             String oortURL = event.getCometURL();
-            if (_logger.isDebugEnabled())
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Comet left: {}", oortURL);
+            }
             removePresences(oortURL);
         }
     }

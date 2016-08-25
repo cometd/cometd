@@ -33,11 +33,9 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDLongPollingUnsubscribeFailureTest extends AbstractCometDLongPollingTest
-{
+public class CometDLongPollingUnsubscribeFailureTest extends AbstractCometDLongPollingTest {
     @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
+    protected void customizeContext(ServletContextHandler context) throws Exception {
         super.customizeContext(context);
         UnsubscribeThrowingFilter filter = new UnsubscribeThrowingFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
@@ -45,8 +43,7 @@ public class CometDLongPollingUnsubscribeFailureTest extends AbstractCometDLongP
     }
 
     @Test
-    public void testUnsubscribeFailure() throws Exception
-    {
+    public void testUnsubscribeFailure() throws Exception {
         defineClass(Latch.class);
 
         evaluateScript("var readyLatch = new Latch(1);");
@@ -82,32 +79,29 @@ public class CometDLongPollingUnsubscribeFailureTest extends AbstractCometDLongP
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class UnsubscribeThrowingFilter implements Filter
-    {
+    public static class UnsubscribeThrowingFilter implements Filter {
         private int messages;
 
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
+        public void init(FilterConfig filterConfig) throws ServletException {
         }
 
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
 
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
             String uri = request.getRequestURI();
-            if (!uri.endsWith("/handshake") && !uri.endsWith("/connect"))
+            if (!uri.endsWith("/handshake") && !uri.endsWith("/connect")) {
                 ++messages;
+            }
             // The second non-handshake and non-connect message will be the unsubscribe, throw
-            if (messages == 2)
+            if (messages == 2) {
                 throw new IOException();
+            }
             chain.doFilter(request, response);
         }
 
-        public void destroy()
-        {
+        public void destroy() {
         }
     }
 }

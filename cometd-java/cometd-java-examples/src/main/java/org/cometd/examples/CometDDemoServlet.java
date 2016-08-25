@@ -43,18 +43,17 @@ import org.cometd.server.ext.TimesyncExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CometDDemoServlet extends HttpServlet
-{
+public class CometDDemoServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(CometDDemoServlet.class);
 
     @Override
-    public void init() throws ServletException
-    {
+    public void init() throws ServletException {
         super.init();
         final BayeuxServerImpl bayeux = (BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
 
-        if (bayeux == null)
+        if (bayeux == null) {
             throw new UnavailableException("No BayeuxServer!");
+        }
 
         // Create extensions
         bayeux.addExtension(new TimesyncExtension());
@@ -62,10 +61,8 @@ public class CometDDemoServlet extends HttpServlet
 
         // Deny unless granted
 
-        bayeux.createChannelIfAbsent("/**", new ServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
+        bayeux.createChannelIfAbsent("/**", new ServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_NONE);
             }
         });
@@ -80,58 +77,51 @@ public class CometDDemoServlet extends HttpServlet
 
         bayeux.createChannelIfAbsent("/foo/bar/baz", new ConfigurableServerChannel.Initializer.Persistent());
 
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug(bayeux.dump());
+        }
     }
 
     @Override
-    public void destroy()
-    {
+    public void destroy() {
         super.destroy();
     }
 
     @Service("echo")
-    public static class EchoRPC
-    {
+    public static class EchoRPC {
         @Configure("/service/echo")
-        private void configureEcho(ConfigurableServerChannel channel)
-        {
+        private void configureEcho(ConfigurableServerChannel channel) {
             channel.addAuthorizer(GrantAuthorizer.GRANT_SUBSCRIBE_PUBLISH);
         }
 
         @RemoteCall("echo")
-        public void doEcho(RemoteCall.Caller caller, Map<String, Object> data)
-        {
+        public void doEcho(RemoteCall.Caller caller, Map<String, Object> data) {
             logger.info("ECHO from " + caller.getServerSession() + ": " + data);
             caller.result(data);
         }
     }
 
     @Service("monitor")
-    public static class Monitor
-    {
+    public static class Monitor {
         @Listener("/meta/subscribe")
-        public void monitorSubscribe(ServerSession session, ServerMessage message)
-        {
+        public void monitorSubscribe(ServerSession session, ServerMessage message) {
             logger.info("Monitored Subscribe from " + session + " for " + message.get(Message.SUBSCRIPTION_FIELD));
         }
 
         @Listener("/meta/unsubscribe")
-        public void monitorUnsubscribe(ServerSession session, ServerMessage message)
-        {
+        public void monitorUnsubscribe(ServerSession session, ServerMessage message) {
             logger.info("Monitored Unsubscribe from " + session + " for " + message.get(Message.SUBSCRIPTION_FIELD));
         }
 
         @Listener("/meta/*")
-        public void monitorMeta(ServerSession session, ServerMessage message)
-        {
-            if (logger.isDebugEnabled())
+        public void monitorMeta(ServerSession session, ServerMessage message) {
+            if (logger.isDebugEnabled()) {
                 logger.debug(message.toString());
+            }
         }
     }
 
-    public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
-    {
+    public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
         ((HttpServletResponse)res).sendError(503);
     }
 }

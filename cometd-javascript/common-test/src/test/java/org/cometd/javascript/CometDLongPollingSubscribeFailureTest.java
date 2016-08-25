@@ -36,11 +36,9 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPollingTest
-{
+public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPollingTest {
     @Test
-    public void testSubscribeFailure() throws Exception
-    {
+    public void testSubscribeFailure() throws Exception {
         SubscribeThrowingFilter filter = new SubscribeThrowingFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
         context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
@@ -73,21 +71,15 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
     }
 
     @Test
-    public void testSubscribeFailedOnlyOnClient() throws Exception
-    {
+    public void testSubscribeFailedOnlyOnClient() throws Exception {
         final long maxNetworkDelay = 2000;
         final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
 
-        bayeuxServer.getChannel(Channel.META_SUBSCRIBE).addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
-                try
-                {
+        bayeuxServer.getChannel(Channel.META_SUBSCRIBE).addListener(new ServerChannel.MessageListener() {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+                try {
                     Thread.sleep(sleep);
-                }
-                catch (InterruptedException x)
-                {
+                } catch (InterruptedException x) {
                     // Ignored.
                 }
                 return true;
@@ -122,29 +114,25 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
         disconnect();
     }
 
-    public static class SubscribeThrowingFilter implements Filter
-    {
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
+    public static class SubscribeThrowingFilter implements Filter {
+        public void init(FilterConfig filterConfig) throws ServletException {
         }
 
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
 
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
+        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
             String uri = request.getRequestURI();
             if (!uri.endsWith("/handshake") &&
                     !uri.endsWith("/connect") &&
-                    !uri.endsWith("/disconnect"))
+                    !uri.endsWith("/disconnect")) {
                 throw new IOException();
+            }
             chain.doFilter(request, response);
         }
 
-        public void destroy()
-        {
+        public void destroy() {
         }
     }
 }

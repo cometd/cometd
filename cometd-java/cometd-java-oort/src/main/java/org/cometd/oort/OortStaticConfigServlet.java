@@ -34,25 +34,21 @@ import org.cometd.bayeux.server.BayeuxServer;
  * @see OortConfigServlet
  * @see OortMulticastConfigServlet
  */
-public class OortStaticConfigServlet extends OortConfigServlet
-{
+public class OortStaticConfigServlet extends OortConfigServlet {
     public final static String OORT_CLOUD_PARAM = "oort.cloud";
 
     @Override
-    protected void configureCloud(ServletConfig config, Oort oort) throws Exception
-    {
+    protected void configureCloud(ServletConfig config, Oort oort) throws Exception {
         String cloud = config.getInitParameter(OORT_CLOUD_PARAM);
-        if (cloud != null && cloud.length() > 0)
-        {
+        if (cloud != null && cloud.length() > 0) {
             String[] urls = cloud.split(",");
-            for (String comet : urls)
-            {
+            for (String comet : urls) {
                 comet = comet.trim();
-                if (comet.length() > 0)
-                {
+                if (comet.length() > 0) {
                     OortComet oortComet = oort.observeComet(comet);
-                    if (oortComet == null)
+                    if (oortComet == null) {
                         throw new IllegalArgumentException("Invalid value for " + OORT_CLOUD_PARAM);
+                    }
                 }
             }
         }

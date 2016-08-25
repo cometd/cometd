@@ -34,6 +34,5 @@ import org.cometd.bayeux.server.ServerSession;
 @Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface Session
-{
+public @interface Session {
 }

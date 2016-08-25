@@ -21,21 +21,18 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDWebSocketServerProtocolTest extends AbstractCometDWebSocketTest
-{
+public class CometDWebSocketServerProtocolTest extends AbstractCometDWebSocketTest {
     private static final String PROTOCOL = "bayeux/1.0";
 
     @Override
-    public void initCometDServer() throws Exception
-    {
+    public void initCometDServer() throws Exception {
         Map<String, String> options = new HashMap<String, String>();
         options.put("ws.protocol", PROTOCOL);
         initCometDServer(options);
     }
 
     @Test
-    public void testClientWithoutWebSocketProtocolServerWithWebSocketProtocol() throws Exception
-    {
+    public void testClientWithoutWebSocketProtocolServerWithWebSocketProtocol() throws Exception {
         evaluateScript("cometd.configure({" +
                 "url: '" + cometdURL + "', " +
                 "logLevel: '" + getLogLevel() + "'" +
@@ -63,8 +60,7 @@ public class CometDWebSocketServerProtocolTest extends AbstractCometDWebSocketTe
     }
 
     @Test
-    public void testClientWithWebSocketProtocolServerWithWebSocketProtocol() throws Exception
-    {
+    public void testClientWithWebSocketProtocolServerWithWebSocketProtocol() throws Exception {
         evaluateScript("cometd.configure({" +
                 "url: '" + cometdURL + "', " +
                 "protocol: '" + PROTOCOL + "', " +

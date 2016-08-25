@@ -37,11 +37,9 @@ import org.cometd.server.ServerMessageImpl;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class JacksonContextTest extends ClientServerTest
-{
+public class JacksonContextTest extends ClientServerTest {
     @Test
-    public void testAllMessagesUseJackson() throws Exception
-    {
+    public void testAllMessagesUseJackson() throws Exception {
         Map<String, String> serverParams = new HashMap<>();
         serverParams.put(AbstractServerTransport.JSON_CONTEXT_OPTION, JacksonJSONContextServer.class.getName());
         startServer(serverParams);
@@ -70,24 +68,21 @@ public class JacksonContextTest extends ClientServerTest
 
         final ClientSessionChannel channel = client.getChannel(channelName);
         final CountDownLatch clientLatch = new CountDownLatch(3);
-        client.batch(new Runnable()
-        {
-            public void run()
-            {
-                channel.subscribe(new ClientSessionChannel.MessageListener()
-                {
+        client.batch(new Runnable() {
+            public void run() {
+                channel.subscribe(new ClientSessionChannel.MessageListener() {
                     private boolean republishSeen;
                     private boolean deliverSeen;
 
-                    public void onMessage(ClientSessionChannel channel, Message message)
-                    {
+                    public void onMessage(ClientSessionChannel channel, Message message) {
                         System.err.println("message = " + message);
                         Map<String, Object> data = message.getDataAsMap();
                         Assert.assertTrue(data.containsKey("publish"));
                         republishSeen |= data.containsKey("republish");
                         deliverSeen |= data.containsKey("deliver");
-                        if (clientLatch.getCount() == 1 && !republishSeen && !deliverSeen)
+                        if (clientLatch.getCount() == 1 && !republishSeen && !deliverSeen) {
                             Assert.fail();
+                        }
                         clientLatch.countDown();
                     }
                 });
@@ -103,35 +98,31 @@ public class JacksonContextTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
-    public static class JacksonService extends AbstractService
-    {
+    public static class JacksonService extends AbstractService {
         private final String channelName;
 
-        public JacksonService(BayeuxServer bayeux, String channelName, final CountDownLatch localLatch)
-        {
+        public JacksonService(BayeuxServer bayeux, String channelName, final CountDownLatch localLatch) {
             super(bayeux, channelName);
             this.channelName = channelName;
             addService(channelName, "process");
 
-            getLocalSession().getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
-            {
+            getLocalSession().getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
                 private boolean republishSeen;
 
-                public void onMessage(ClientSessionChannel channel, Message message)
-                {
+                public void onMessage(ClientSessionChannel channel, Message message) {
                     System.err.println("local message = " + message);
                     Map<String, Object> data = message.getDataAsMap();
                     Assert.assertTrue(data.containsKey("publish"));
                     republishSeen |= data.containsKey("republish");
-                    if (localLatch.getCount() == 1 && !republishSeen)
+                    if (localLatch.getCount() == 1 && !republishSeen) {
                         Assert.fail();
+                    }
                     localLatch.countDown();
                 }
             });
         }
 
-        public void process(ServerSession session, ServerMessage message)
-        {
+        public void process(ServerSession session, ServerMessage message) {
             // Republish
             Map<String, Object> data = message.getDataAsMap();
             Map<String, Object> republishData = new HashMap<>(data);

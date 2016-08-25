@@ -46,33 +46,28 @@ import org.cometd.client.transport.TransportListener;
 import org.cometd.websocket.client.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public class WebSocketTransport extends AbstractWebSocketTransport
-{
+public class WebSocketTransport extends AbstractWebSocketTransport {
     private final WebSocketContainer _webSocketContainer;
     private boolean _webSocketSupported;
     private boolean _webSocketConnected;
 
-    public WebSocketTransport(Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketContainer webSocketContainer)
-    {
+    public WebSocketTransport(Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketContainer webSocketContainer) {
         this(null, options, scheduler, webSocketContainer);
     }
 
-    public WebSocketTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketContainer webSocketContainer)
-    {
+    public WebSocketTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler, WebSocketContainer webSocketContainer) {
         super(url, options, scheduler);
         _webSocketContainer = webSocketContainer;
         _webSocketSupported = true;
     }
 
     @Override
-    public boolean accept(String version)
-    {
+    public boolean accept(String version) {
         return _webSocketSupported;
     }
 
     @Override
-    public void init()
-    {
+    public void init() {
         super.init();
 
         // JSR 356 does not expose a way to set the connect timeout - ignored
@@ -84,12 +79,11 @@ public class WebSocketTransport extends AbstractWebSocketTransport
         _webSocketConnected = false;
     }
 
-    protected Delegate connect(String uri, TransportListener listener, List<Mutable> messages)
-    {
-        try
-        {
-            if (logger.isDebugEnabled())
+    protected Delegate connect(String uri, TransportListener listener, List<Mutable> messages) {
+        try {
+            if (logger.isDebugEnabled()) {
                 logger.debug("Opening websocket session to {}", uri);
+            }
             _webSocketContainer.setDefaultMaxSessionIdleTimeout(getIdleTimeout());
             ClientEndpointConfig.Configurator configurator = new Configurator();
             String protocol = getProtocol();
@@ -99,181 +93,149 @@ public class WebSocketTransport extends AbstractWebSocketTransport
             Delegate delegate = connect(_webSocketContainer, config, uri);
             _webSocketConnected = true;
             return delegate;
-        }
-        catch (ConnectException | SocketTimeoutException | UnresolvedAddressException x)
-        {
+        } catch (ConnectException | SocketTimeoutException | UnresolvedAddressException x) {
             // Cannot connect, assume the server supports WebSocket until proved otherwise
             listener.onFailure(x, messages);
-        }
-        catch (Throwable x)
-        {
+        } catch (Throwable x) {
             _webSocketSupported = isStickyReconnect() && _webSocketConnected;
             listener.onFailure(x, messages);
         }
         return null;
     }
 
-    protected Delegate connect(WebSocketContainer container, ClientEndpointConfig configuration, String uri) throws IOException
-    {
-        try
-        {
+    protected Delegate connect(WebSocketContainer container, ClientEndpointConfig configuration, String uri) throws IOException {
+        try {
             WebSocketDelegate delegate = newDelegate();
             container.connectToServer(delegate._endpoint, configuration, new URI(uri));
             return delegate;
-        }
-        catch (DeploymentException | URISyntaxException x)
-        {
+        } catch (DeploymentException | URISyntaxException x) {
             throw new IOException(x);
         }
     }
 
-    protected WebSocketDelegate newDelegate()
-    {
+    protected WebSocketDelegate newDelegate() {
         return new WebSocketDelegate();
     }
 
-    protected class WebSocketDelegate extends Delegate implements MessageHandler.Whole<String>
-    {
+    protected class WebSocketDelegate extends Delegate implements MessageHandler.Whole<String> {
         private final Endpoint _endpoint = new WebSocketEndpoint();
         private Session _session;
 
-        private void onOpen(Session session)
-        {
-            synchronized (this)
-            {
+        private void onOpen(Session session) {
+            synchronized (this) {
                 _session = session;
             }
             session.addMessageHandler(this);
-            if (logger.isDebugEnabled())
+            if (logger.isDebugEnabled()) {
                 logger.debug("Opened websocket session {}", session);
+            }
         }
 
         @Override
-        public void onMessage(String data)
-        {
+        public void onMessage(String data) {
             onData(data);
         }
 
         @Override
-        public void send(String content)
-        {
+        public void send(String content) {
             Session session;
-            synchronized (this)
-            {
+            synchronized (this) {
                 session = _session;
             }
-            try
-            {
-                if (session == null)
+            try {
+                if (session == null) {
                     throw new IOException("Unconnected");
+                }
 
                 // Blocking sends for the client, using
                 // AsyncRemote to allow concurrent sends.
                 session.getAsyncRemote().sendText(content).get();
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 fail(x, "Exception");
             }
         }
 
         @Override
-        protected void shutdown(String reason)
-        {
+        protected void shutdown(String reason) {
             Session session;
-            synchronized (this)
-            {
+            synchronized (this) {
                 session = _session;
                 close();
             }
-            if (session != null)
-            {
-                if (logger.isDebugEnabled())
+            if (session != null) {
+                if (logger.isDebugEnabled()) {
                     logger.debug("Closing ({}) websocket session {}", reason, session);
-                try
-                {
+                }
+                try {
                     // Limits of the WebSocket APIs, otherwise an exception is thrown.
                     reason = reason.substring(0, Math.min(reason.length(), 30));
                     session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
-                }
-                catch (Throwable x)
-                {
+                } catch (Throwable x) {
                     logger.trace("Could not close websocket session " + session, x);
                 }
             }
         }
 
         @Override
-        protected boolean isOpen()
-        {
-            synchronized (this)
-            {
+        protected boolean isOpen() {
+            synchronized (this) {
                 return _session != null;
             }
         }
 
-        protected void close()
-        {
-            synchronized (this)
-            {
+        protected void close() {
+            synchronized (this) {
                 _session = null;
             }
         }
 
-        private class WebSocketEndpoint extends Endpoint
-        {
+        private class WebSocketEndpoint extends Endpoint {
             @Override
-            public void onOpen(Session session, EndpointConfig config)
-            {
+            public void onOpen(Session session, EndpointConfig config) {
                 WebSocketDelegate.this.onOpen(session);
             }
 
             @Override
-            public void onClose(Session session, CloseReason closeReason)
-            {
+            public void onClose(Session session, CloseReason closeReason) {
                 WebSocketDelegate.this.onClose(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());
             }
 
             @Override
-            public void onError(Session session, Throwable failure)
-            {
+            public void onError(Session session, Throwable failure) {
                 failMessages(failure);
             }
         }
     }
 
-    private class Configurator extends ClientEndpointConfig.Configurator
-    {
+    private class Configurator extends ClientEndpointConfig.Configurator {
         @Override
-        public void beforeRequest(Map<String, List<String>> headers)
-        {
+        public void beforeRequest(Map<String, List<String>> headers) {
             CookieStore cookieStore = getCookieStore();
             List<HttpCookie> cookies = cookieStore.get(URI.create(getURL()));
-            if (!cookies.isEmpty())
-            {
+            if (!cookies.isEmpty()) {
                 List<String> cookieHeader = headers.get("Cookie");
-                if (cookieHeader == null)
+                if (cookieHeader == null) {
                     cookieHeader = headers.get("cookie");
-                if (cookieHeader == null)
+                }
+                if (cookieHeader == null) {
                     headers.put("Cookie", cookieHeader = new ArrayList<>());
-                for (HttpCookie cookie : cookies)
+                }
+                for (HttpCookie cookie : cookies) {
                     cookieHeader.add(cookie.getName() + "=" + cookie.getValue());
+                }
             }
         }
 
         @Override
-        public void afterResponse(HandshakeResponse hr)
-        {
+        public void afterResponse(HandshakeResponse hr) {
             Map<String, List<String>> headers = hr.getHeaders();
 
             storeCookies(headers);
 
             _webSocketSupported = false;
             // Must do case-insensitive search.
-            for (String name : headers.keySet())
-            {
-                if (HandshakeResponse.SEC_WEBSOCKET_ACCEPT.equalsIgnoreCase(name))
-                {
+            for (String name : headers.keySet()) {
+                if (HandshakeResponse.SEC_WEBSOCKET_ACCEPT.equalsIgnoreCase(name)) {
                     _webSocketSupported = true;
                     break;
                 }
@@ -281,19 +243,16 @@ public class WebSocketTransport extends AbstractWebSocketTransport
         }
     }
 
-    public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory
-    {
+    public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
         private final WebSocketContainer container = ContainerProvider.getWebSocketContainer();
 
-        public Factory()
-        {
+        public Factory() {
             // The WebSocketContainer is already started, so we must explicitly manage it.
             addBean(container, true);
         }
 
         @Override
-        public ClientTransport newClientTransport(String url, Map<String, Object> options)
-        {
+        public ClientTransport newClientTransport(String url, Map<String, Object> options) {
             ScheduledExecutorService scheduler = (ScheduledExecutorService)options.get(ClientTransport.SCHEDULER_OPTION);
             return new WebSocketTransport(url, options, scheduler, container);
         }

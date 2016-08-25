@@ -32,13 +32,11 @@ import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ServerSessionExpirationTest extends ClientServerTest
-{
+public class ServerSessionExpirationTest extends ClientServerTest {
     private final Logger logger = Log.getLogger(ServerSessionExpirationTest.class);
 
     @Test
-    public void testExpirationCancelledByPublish() throws Exception
-    {
+    public void testExpirationCancelledByPublish() throws Exception {
         Map<String, String> serverOptions = new HashMap<>();
         long timeout = 2000;
         serverOptions.put("timeout", String.valueOf(timeout));
@@ -49,16 +47,12 @@ public class ServerSessionExpirationTest extends ClientServerTest
         long backOffIncrement = 3000;
         final AtomicBoolean networkDown = new AtomicBoolean();
         final CountDownLatch failedConnect = new CountDownLatch(2);
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)
-        {
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient) {
             @Override
-            public void send(TransportListener listener, List<Message.Mutable> messages)
-            {
+            public void send(TransportListener listener, List<Message.Mutable> messages) {
                 logger.info("send {}", messages);
-                if (messages.size() == 1 && Channel.META_CONNECT.equals(messages.get(0).getChannel()))
-                {
-                    if (networkDown.get())
-                    {
+                if (messages.size() == 1 && Channel.META_CONNECT.equals(messages.get(0).getChannel())) {
+                    if (networkDown.get()) {
                         logger.info("network down");
                         listener.onFailure(new Exception(), messages);
                         failedConnect.countDown();
@@ -76,11 +70,9 @@ public class ServerSessionExpirationTest extends ClientServerTest
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(client.getId());
-        session.addListener(new ServerSession.RemoveListener()
-        {
+        session.addListener(new ServerSession.RemoveListener() {
             @Override
-            public void removed(ServerSession session, boolean timeout)
-            {
+            public void removed(ServerSession session, boolean timeout) {
                 logger.info("removed");
                 removeLatch.countDown();
             }
@@ -113,8 +105,7 @@ public class ServerSessionExpirationTest extends ClientServerTest
     }
 
     @Test
-    public void testExpirationNotCancelledByLackOfConnect() throws Exception
-    {
+    public void testExpirationNotCancelledByLackOfConnect() throws Exception {
         Map<String, String> serverOptions = new HashMap<>();
         long timeout = 2000;
         serverOptions.put("timeout", String.valueOf(timeout));
@@ -125,16 +116,12 @@ public class ServerSessionExpirationTest extends ClientServerTest
         long backOffIncrement = 3000;
         final AtomicBoolean networkDown = new AtomicBoolean();
         final CountDownLatch failedConnect = new CountDownLatch(2);
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)
-        {
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient) {
             @Override
-            public void send(TransportListener listener, List<Message.Mutable> messages)
-            {
+            public void send(TransportListener listener, List<Message.Mutable> messages) {
                 logger.info("send {}", messages);
-                if (messages.size() == 1 && Channel.META_CONNECT.equals(messages.get(0).getChannel()))
-                {
-                    if (networkDown.get())
-                    {
+                if (messages.size() == 1 && Channel.META_CONNECT.equals(messages.get(0).getChannel())) {
+                    if (networkDown.get()) {
                         logger.info("network down");
                         listener.onFailure(new Exception(), messages);
                         failedConnect.countDown();
@@ -152,11 +139,9 @@ public class ServerSessionExpirationTest extends ClientServerTest
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(client.getId());
-        session.addListener(new ServerSession.RemoveListener()
-        {
+        session.addListener(new ServerSession.RemoveListener() {
             @Override
-            public void removed(ServerSession session, boolean timeout)
-            {
+            public void removed(ServerSession session, boolean timeout) {
                 logger.info("removed");
                 removeLatch.countDown();
             }

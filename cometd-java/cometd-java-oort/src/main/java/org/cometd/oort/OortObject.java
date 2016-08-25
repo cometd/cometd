@@ -121,8 +121,7 @@ import org.slf4j.LoggerFactory;
  *
  * @param <T> the type of value object stored in this oort object
  */
-public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServerChannel.Initializer, Oort.CometListener, Iterable<OortObject.Info<T>>
-{
+public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServerChannel.Initializer, Oort.CometListener, Iterable<OortObject.Info<T>> {
     public static final String OORT_OBJECTS_CHANNEL = "/oort/objects";
     private static final String ACTION_FIELD_PUSH_VALUE = "oort.object.push";
     private static final String ACTION_FIELD_PULL_VALUE = "oort.object.pull";
@@ -139,8 +138,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     private final String serviceChannel;
     private final ServerChannel.MessageListener serviceListener;
 
-    public OortObject(Oort oort, String name, Factory<T> factory)
-    {
+    public OortObject(Oort oort, String name, Factory<T> factory) {
         this.oort = oort;
         this.name = name;
         this.factory = factory;
@@ -153,14 +151,14 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     }
 
     @Override
-    protected void doStart() throws Exception
-    {
+    protected void doStart() throws Exception {
         ObjectPart part = new ObjectPart();
         parts.put(oort.getURL(), part);
         Info<T> info = newInfo(factory.newObject(null));
         part.update(info);
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Set local {}", info);
+        }
 
         sender.handshake();
         oort.addCometListener(this);
@@ -175,26 +173,29 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         // to avoid missing responses from other nodes.
         channel.publish(getLocalSession(), info);
 
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("{} started", this);
+        }
     }
 
     @Override
-    protected void doStop() throws Exception
-    {
+    protected void doStop() throws Exception {
         oort.deobserveChannel(broadcastChannel);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         ServerChannel channel = bayeuxServer.getChannel(broadcastChannel);
-        if (channel != null)
+        if (channel != null) {
             channel.removeListener(broadcastListener);
+        }
         channel = bayeuxServer.getChannel(serviceChannel);
-        if (channel != null)
+        if (channel != null) {
             channel.removeListener(serviceListener);
+        }
         oort.removeCometListener(this);
         sender.disconnect();
         parts.clear();
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("{} stopped", this);
+        }
     }
 
     /**
@@ -204,40 +205,35 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * @param channel the channel to configure
      * @see #getChannelName()
      */
-    public void configureChannel(ConfigurableServerChannel channel)
-    {
+    public void configureChannel(ConfigurableServerChannel channel) {
         // Allow subclasses to override
     }
 
     /**
      * @return the {@link Oort} instance associated with this oort object
      */
-    public Oort getOort()
-    {
+    public Oort getOort() {
         return oort;
     }
 
     /**
      * @return the name of this oort object, that must be unique across the node.
      */
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
     /**
      * @return the factory to create objects contained in this oort object
      */
-    public Factory<T> getFactory()
-    {
+    public Factory<T> getFactory() {
         return factory;
     }
 
     /**
      * @return the local session that sends messages to other nodes
      */
-    public LocalSession getLocalSession()
-    {
+    public LocalSession getLocalSession() {
         return sender;
     }
 
@@ -249,8 +245,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * @return the channel name used by this oort object
      * @see #configureChannel(ConfigurableServerChannel)
      */
-    public String getChannelName()
-    {
+    public String getChannelName() {
         return broadcastChannel;
     }
 
@@ -263,8 +258,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * @deprecated use {@link #setAndShare(Object, Result)} instead
      */
     @Deprecated
-    public T setAndShare(T newObject)
-    {
+    public T setAndShare(T newObject) {
         Result.Deferred<T> result = new Result.Deferred<>();
         setAndShare(newObject, result);
         return result.get();
@@ -277,39 +271,38 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * but when the {@link Result} parameter is notified.</p>
      *
      * @param newObject the new object to set
-     * @param callback the callback invoked with the old object,
-     *                 or {@code null} if there is no interest in the old object
+     * @param callback  the callback invoked with the old object,
+     *                  or {@code null} if there is no interest in the old object
      */
-    public void setAndShare(T newObject, Result<T> callback)
-    {
-        if (newObject == null)
+    public void setAndShare(T newObject, Result<T> callback) {
+        if (newObject == null) {
             throw new NullPointerException();
+        }
 
         Data<T> data = new Data<>(4, callback);
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
         data.put(Info.OBJECT_FIELD, serialize(newObject));
 
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Sharing {}", data);
+        }
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
     }
 
-    protected Object serialize(T object)
-    {
+    protected Object serialize(T object) {
         return object;
     }
 
-    protected Object deserialize(Object object)
-    {
+    protected Object deserialize(Object object) {
         return object;
     }
 
-    protected Info<T> newInfo(T local)
-    {
-        if (local == null)
+    protected Info<T> newInfo(T local) {
+        if (local == null) {
             throw new NullPointerException();
+        }
         Info<T> info = new Info<>(oort.getURL(), null);
         info.put(Info.OORT_URL_FIELD, oort.getURL());
         info.put(Info.NAME_FIELD, getName());
@@ -318,24 +311,24 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         return info;
     }
 
-    public void cometJoined(Event event)
-    {
+    public void cometJoined(Event event) {
         String remoteOortURL = event.getCometURL();
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Oort {} joined", remoteOortURL);
+        }
         pushInfo(remoteOortURL, null);
     }
 
-    public void cometLeft(Event event)
-    {
+    public void cometLeft(Event event) {
         String remoteOortURL = event.getCometURL();
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Oort {} left", remoteOortURL);
+        }
         Info<T> info = removeInfo(remoteOortURL);
-        if (info != null)
-        {
-            if (logger.isDebugEnabled())
+        if (info != null) {
+            if (logger.isDebugEnabled()) {
                 logger.debug("Removed remote {}", info);
+            }
             notifyRemoved(info);
         }
     }
@@ -343,8 +336,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     /**
      * @return an iterator over the {@link Info} known to this oort object
      */
-    public Iterator<Info<T>> iterator()
-    {
+    public Iterator<Info<T>> iterator() {
         return getInfos().iterator();
     }
 
@@ -352,14 +344,12 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * @param oortURL the oort URL used to search the corresponding {@link Info}
      * @return the {@link Info} with the given oort URL, or null if no such {@link Info} exists
      */
-    public Info<T> getInfo(String oortURL)
-    {
+    public Info<T> getInfo(String oortURL) {
         ObjectPart part = parts.get(oortURL);
         return part == null ? null : part.getInfo();
     }
 
-    Info<T> removeInfo(String oortURL)
-    {
+    Info<T> removeInfo(String oortURL) {
         ObjectPart part = parts.remove(oortURL);
         return part == null ? null : part.getInfo();
     }
@@ -367,14 +357,13 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     /**
      * @param object the object used to search the corresponding {@link Info}
      * @return the first {@link Info} whose object equals (via a possibly overridden {@link Object#equals(Object)})
-     *         the given {@code object}
+     * the given {@code object}
      */
-    public Info<T> getInfoByObject(T object)
-    {
-        for (Info<T> info : this)
-        {
-            if (info.getObject().equals(object))
+    public Info<T> getInfoByObject(T object) {
+        for (Info<T> info : this) {
+            if (info.getObject().equals(object)) {
                 return info;
+            }
         }
         return null;
     }
@@ -386,64 +375,49 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * @param <R>      the merge result type
      * @return the merged result
      */
-    public <R> R merge(Merger<T, R> strategy)
-    {
+    public <R> R merge(Merger<T, R> strategy) {
         return strategy.merge(getInfos());
     }
 
     /**
      * @param listener the listener to add
      */
-    public void addListener(Listener<T> listener)
-    {
+    public void addListener(Listener<T> listener) {
         listeners.add(listener);
     }
 
     /**
      * @param listener the listener to remove
      */
-    public void removeListener(Listener<T> listener)
-    {
+    public void removeListener(Listener<T> listener) {
         listeners.remove(listener);
     }
 
-    protected void notifyUpdated(Info<T> oldInfo, Info<T> newInfo)
-    {
-        for (Listener<T> listener : listeners)
-        {
-            try
-            {
+    protected void notifyUpdated(Info<T> oldInfo, Info<T> newInfo) {
+        for (Listener<T> listener : listeners) {
+            try {
                 listener.onUpdated(oldInfo, newInfo);
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 logger.info("Exception while invoking listener " + listener, x);
             }
         }
     }
 
-    protected void notifyRemoved(Info<T> info)
-    {
-        for (Listener<T> listener : listeners)
-        {
-            try
-            {
+    protected void notifyRemoved(Info<T> info) {
+        for (Listener<T> listener : listeners) {
+            try {
                 listener.onRemoved(info);
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 logger.info("Exception while invoking listener " + listener, x);
             }
         }
     }
 
-    protected void onObject(Map<String, Object> data)
-    {
+    protected void onObject(Map<String, Object> data) {
         String oortURL = (String)data.get(Info.OORT_URL_FIELD);
         boolean local = oort.getURL().equals(oortURL);
         Object object = data.get(Info.OBJECT_FIELD);
-        if (!local)
-        {
+        if (!local) {
             object = deserialize(object);
             // Convert the object, for example from a
             // JSON serialized Map to a ConcurrentMap.
@@ -456,95 +430,93 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         ObjectPart part = part(oortURL);
         Info<T> oldInfo = part.update(newInfo);
 
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("Performed {} update of {} with {}",
-                newInfo.isLocal() ? "local" : "remote",
-                oldInfo, newInfo);
+                    newInfo.isLocal() ? "local" : "remote",
+                    oldInfo, newInfo);
+        }
 
         notifyUpdated(oldInfo, newInfo);
 
         // If we did not have an info for the new Oort, then it's a
         // new OortObject and we need to push our own data to it.
-        if (oldInfo == null)
-        {
+        if (oldInfo == null) {
             // We want to avoid an additional message at initialization.
             // We are A, we just received infoB from B, which we did not have,
             // so we push infoA to B. Very likely, B will receive infoA, find
             // that it does not have info for A and push infoB to A, again.
             // Therefore we add a "peer" field, that tells whether the push
             // of the info comes from, and we skip the extra push.
-            if (!oort.getURL().equals(data.get(Info.PEER_FIELD)))
+            if (!oort.getURL().equals(data.get(Info.PEER_FIELD))) {
                 pushInfoReply(oortURL);
+            }
         }
 
         // Set the result
-        if (data instanceof Data)
+        if (data instanceof Data) {
             ((Data<T>)data).setResult(oldInfo == null ? null : oldInfo.getObject());
+        }
     }
 
-    private ObjectPart part(String oortURL)
-    {
+    private ObjectPart part(String oortURL) {
         ObjectPart part = parts.get(oortURL);
-        if (part == null)
-        {
+        if (part == null) {
             part = new ObjectPart();
             ObjectPart existing = parts.putIfAbsent(oortURL, part);
-            if (existing != null)
+            if (existing != null) {
                 part = existing;
+            }
         }
         return part;
     }
 
-    protected void pushInfo(String oortURL, Map<String, Object> fields)
-    {
+    protected void pushInfo(String oortURL, Map<String, Object> fields) {
         OortComet oortComet = oort.findComet(oortURL);
         Info<T> info = getInfo(oort.getURL());
-        if (oortComet != null && info != null)
-        {
+        if (oortComet != null && info != null) {
             Map<String, Object> message = fields;
-            if (message == null)
+            if (message == null) {
                 message = new HashMap<>();
+            }
             message.putAll(info);
             message.put(Info.ACTION_FIELD, ACTION_FIELD_PUSH_VALUE);
-            if (logger.isDebugEnabled())
+            if (logger.isDebugEnabled()) {
                 logger.debug("Pushing (to {}): {}", oortURL, message);
+            }
             oortComet.getChannel(serviceChannel).publish(message);
         }
     }
 
-    private void pushInfoReply(String oortURL)
-    {
+    private void pushInfoReply(String oortURL) {
         Map<String, Object> fields = new HashMap<>();
         fields.put(Info.PEER_FIELD, oortURL);
         pushInfo(oortURL, fields);
     }
 
-    protected void pullInfo(String oortURL)
-    {
+    protected void pullInfo(String oortURL) {
         OortComet oortComet = oort.getComet(oortURL);
-        if (oortComet != null)
-        {
+        if (oortComet != null) {
             Map<String, Object> message = new HashMap<>();
             message.put(Info.OORT_URL_FIELD, getOort().getURL());
             message.put(Info.NAME_FIELD, getName());
             message.put(Info.ACTION_FIELD, ACTION_FIELD_PULL_VALUE);
-            if (logger.isDebugEnabled())
+            if (logger.isDebugEnabled()) {
                 logger.debug("Pulling (from {}): {}", oortURL, message);
+            }
             oortComet.getChannel(serviceChannel).publish(message);
         }
     }
 
-    protected Collection<Info<T>> getInfos()
-    {
+    protected Collection<Info<T>> getInfos() {
         List<Info<T>> result = new ArrayList<>(parts.size());
-        for (ObjectPart part : parts.values())
+        for (ObjectPart part : parts.values()) {
             result.add(part.getInfo());
+        }
         return result;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return String.format("%s[%s]@%s", getClass().getSimpleName(), getName(), getOort().getURL());
     }
 
@@ -553,8 +525,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      *
      * @param <T> the type of the object
      */
-    public static class Info<T> extends HashMap<String, Object>
-    {
+    public static class Info<T> extends HashMap<String, Object> {
         public static final String VERSION_FIELD = "oort.info.version";
         public static final String OORT_URL_FIELD = "oort.info.url";
         public static final String NAME_FIELD = "oort.info.name";
@@ -566,32 +537,29 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         // The local Oort URL.
         private final String oortURL;
 
-        protected Info(String oortURL, Map<? extends String, ?> map)
-        {
+        protected Info(String oortURL, Map<? extends String, ?> map) {
             super(4);
             this.oortURL = oortURL;
-            if (map != null)
+            if (map != null) {
                 putAll(map);
+            }
         }
 
-        protected long getVersion()
-        {
+        protected long getVersion() {
             return ((Number)get(VERSION_FIELD)).longValue();
         }
 
         /**
          * @return the oort URL of this part
          */
-        public String getOortURL()
-        {
+        public String getOortURL() {
             return (String)get(OORT_URL_FIELD);
         }
 
         /**
          * @return the name of the oort object
          */
-        public String getName()
-        {
+        public String getName() {
             return (String)get(NAME_FIELD);
         }
 
@@ -599,22 +567,19 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
          * @return the object value
          */
         @SuppressWarnings("unchecked")
-        public T getObject()
-        {
+        public T getObject() {
             return (T)get(OBJECT_FIELD);
         }
 
         /**
          * @return whether this Info is local to this node
          */
-        public boolean isLocal()
-        {
+        public boolean isLocal() {
             return oortURL.equals(getOortURL());
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             T object = getObject();
             String objectString = object instanceof Object[] ? Arrays.toString((Object[])object) : String.valueOf(object);
             long version = containsKey(VERSION_FIELD) ? ((Number)get(VERSION_FIELD)).longValue() : -1;
@@ -622,20 +587,18 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         }
     }
 
-    protected static class Data<T> extends HashMap<String, Object>
-    {
+    protected static class Data<T> extends HashMap<String, Object> {
         private final Result<T> callback;
 
-        protected Data(int initialCapacity, Result<T> callback)
-        {
+        protected Data(int initialCapacity, Result<T> callback) {
             super(initialCapacity);
             this.callback = callback;
         }
 
-        protected void setResult(T result)
-        {
-            if (callback != null)
+        protected void setResult(T result) {
+            if (callback != null) {
                 callback.onResult(result);
+            }
         }
     }
 
@@ -644,8 +607,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      *
      * @param <T> the type of the objects created
      */
-    public interface Factory<T>
-    {
+    public interface Factory<T> {
         /**
          * Creates a new non-null object from the given {@code representation}.
          * The {@code representation} may be the result of JSON serialization,
@@ -665,8 +627,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * @param <T> the oort object type
      * @param <R> the merge result type
      */
-    public interface Merger<T, R>
-    {
+    public interface Merger<T, R> {
         /**
          * Merges the given {@link Info}s.
          *
@@ -682,8 +643,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      *
      * @param <T> the object type
      */
-    public interface Listener<T> extends EventListener
-    {
+    public interface Listener<T> extends EventListener {
         /**
          * Callback method invoked when the object value is updated.
          *
@@ -705,14 +665,11 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
          *
          * @param <T> the object type
          */
-        public static class Adapter<T> implements Listener<T>
-        {
-            public void onUpdated(Info<T> oldInfo, Info<T> newInfo)
-            {
+        public static class Adapter<T> implements Listener<T> {
+            public void onUpdated(Info<T> oldInfo, Info<T> newInfo) {
             }
 
-            public void onRemoved(Info<T> info)
-            {
+            public void onRemoved(Info<T> info) {
             }
         }
     }
@@ -725,20 +682,18 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * Therefore {@link #onObject(Map)} is called concurrently, but only for different
      * nodes (either remote or local).</p>
      */
-    private class BroadcastListener implements ServerChannel.MessageListener
-    {
+    private class BroadcastListener implements ServerChannel.MessageListener {
         @Override
-        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-        {
+        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
             Map<String, Object> data = message.getDataAsMap();
             String oortURL = (String)data.get(Info.OORT_URL_FIELD);
             ObjectPart part = part(oortURL);
 
-            if (logger.isDebugEnabled())
+            if (logger.isDebugEnabled()) {
                 logger.debug("Received broadcast {}", message);
+            }
 
-            if (part != null)
-            {
+            if (part != null) {
                 part.enqueue(data);
                 part.process();
             }
@@ -754,27 +709,26 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * Therefore {@link #onObject(Map)} is called concurrently but only for different
      * remote nodes.</p>
      */
-    private class ServiceListener implements ServerChannel.MessageListener
-    {
+    private class ServiceListener implements ServerChannel.MessageListener {
         @Override
-        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-        {
+        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
             Map<String, Object> data = message.getDataAsMap();
             String oortURL = (String)data.get(Info.OORT_URL_FIELD);
 
             // Pulls are messages that read the local object, not
             // the object specified by the data's OORT_URL_FIELD,
             // and as such they must be queued to the local ObjectPart.
-            if (ACTION_FIELD_PULL_VALUE.equals(data.get(Info.ACTION_FIELD)))
+            if (ACTION_FIELD_PULL_VALUE.equals(data.get(Info.ACTION_FIELD))) {
                 oortURL = oort.getURL();
+            }
 
             ObjectPart part = part(oortURL);
 
-            if (logger.isDebugEnabled())
+            if (logger.isDebugEnabled()) {
                 logger.debug("Received service {}", message);
+            }
 
-            if (part != null)
-            {
+            if (part != null) {
                 part.enqueue(data);
                 part.process();
             }
@@ -788,8 +742,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      *
      * @param <R> the result type
      */
-    public interface Result<R>
-    {
+    public interface Result<R> {
         /**
          * <p>Callback method invoked when the result is available.</p>
          *
@@ -803,14 +756,12 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
          *
          * @param <D> the result type
          */
-        public static class Deferred<D> implements Result<D>
-        {
+        public static class Deferred<D> implements Result<D> {
             private final CountDownLatch latch = new CountDownLatch(1);
             private D result;
 
             @Override
-            public void onResult(D result)
-            {
+            public void onResult(D result) {
                 this.result = result;
                 latch.countDown();
             }
@@ -824,24 +775,20 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
              * @param unit the time unit
              * @return the result if available, otherwise an exception is thrown
              * @throws InterruptedException if the thread is interrupted while waiting
-             * @throws TimeoutException if the time elapses before the result is available
+             * @throws TimeoutException     if the time elapses before the result is available
              */
-            public D get(long time, TimeUnit unit) throws InterruptedException, TimeoutException
-            {
-                if (latch.await(time, unit))
+            public D get(long time, TimeUnit unit) throws InterruptedException, TimeoutException {
+                if (latch.await(time, unit)) {
                     return result;
+                }
                 throw new TimeoutException();
             }
 
-            D get()
-            {
-                try
-                {
+            D get() {
+                try {
                     latch.await();
                     return result;
-                }
-                catch (InterruptedException e)
-                {
+                } catch (InterruptedException e) {
                     throw new IllegalStateException();
                 }
             }
@@ -854,65 +801,54 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * and to provide a consistent view of the Info object to readers invoking
      * for example, {@link #getInfo(String)}.</p>
      */
-    private class ObjectPart
-    {
+    private class ObjectPart {
         private final Queue<Map<String, Object>> updates = new ArrayDeque<>();
         private boolean active;
         private long versions;
         private Info<T> info;
 
-        private Info<T> getInfo()
-        {
-            synchronized (this)
-            {
+        private Info<T> getInfo() {
+            synchronized (this) {
                 return info;
             }
         }
 
-        private Info<T> update(Info<T> newInfo)
-        {
-            synchronized (this)
-            {
+        private Info<T> update(Info<T> newInfo) {
+            synchronized (this) {
                 Info<T> oldInfo = info;
                 info = newInfo;
                 return oldInfo;
             }
         }
 
-        private void enqueue(Map<String, Object> data)
-        {
-            synchronized (this)
-            {
+        private void enqueue(Map<String, Object> data) {
+            synchronized (this) {
                 boolean local = oort.getURL().equals(data.get(Info.OORT_URL_FIELD));
-                if (local)
-                {
+                if (local) {
                     long version = ++versions;
                     data.put(Info.VERSION_FIELD, version);
-                    if (logger.isDebugEnabled())
+                    if (logger.isDebugEnabled()) {
                         logger.debug("Generated version={} for {}", version, data);
+                    }
                 }
                 updates.offer(data);
             }
         }
 
-        private void process()
-        {
-            synchronized (this)
-            {
-                if (active)
+        private void process() {
+            synchronized (this) {
+                if (active) {
                     return;
+                }
                 active = true;
             }
 
-            while (true)
-            {
+            while (true) {
                 Map<String, Object> data;
                 long current;
-                synchronized (this)
-                {
+                synchronized (this) {
                     data = updates.poll();
-                    if (data == null)
-                    {
+                    if (data == null) {
                         active = false;
                         return;
                     }
@@ -921,26 +857,25 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
                 String oortURL = (String)data.get(Info.OORT_URL_FIELD);
 
-                if (ACTION_FIELD_PULL_VALUE.equals(data.get(Info.ACTION_FIELD)))
-                {
+                if (ACTION_FIELD_PULL_VALUE.equals(data.get(Info.ACTION_FIELD))) {
                     pushInfoReply(oortURL);
                     continue;
                 }
-                
-                if (ACTION_FIELD_PUSH_VALUE.equals(data.get(Info.ACTION_FIELD)))
-                {
-                    if (!oort.getURL().equals(data.get(Info.PEER_FIELD)))
-                    {
+
+                if (ACTION_FIELD_PUSH_VALUE.equals(data.get(Info.ACTION_FIELD))) {
+                    if (!oort.getURL().equals(data.get(Info.PEER_FIELD))) {
                         // If it was explicitly pushed, no matter what, we push back.
                         pushInfoReply(oortURL);
                     }
                 }
-                
+
                 long version = ((Number)data.get(Info.VERSION_FIELD)).longValue();
-                if (logger.isDebugEnabled())
+                if (logger.isDebugEnabled()) {
                     logger.debug("Processing update, version={}, data={}", current, data);
-                if (version > current)
+                }
+                if (version > current) {
                     onObject(data);
+                }
             }
         }
     }

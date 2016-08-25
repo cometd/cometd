@@ -21,11 +21,9 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTest
-{
+public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTest {
     @Test
-    public void testPublishHeldUntilHandshook() throws Exception
-    {
+    public void testPublishHeldUntilHandshook() throws Exception {
         defineClass(Latch.class);
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +

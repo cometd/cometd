@@ -30,11 +30,9 @@ import org.eclipse.jetty.util.security.Credential;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class HandshakeWithAuthenticationTest extends ClientServerTest
-{
+public class HandshakeWithAuthenticationTest extends ClientServerTest {
     @Test
-    public void testHandshakeWithBasicAuthenticationHeaders() throws Exception
-    {
+    public void testHandshakeWithBasicAuthenticationHeaders() throws Exception {
         startServer(null);
         int port = connector.getLocalPort();
         server.stop();
@@ -66,11 +64,9 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest
         connector.setPort(port);
         server.start();
 
-        LongPollingTransport transport = new LongPollingTransport(null, httpClient)
-        {
+        LongPollingTransport transport = new LongPollingTransport(null, httpClient) {
             @Override
-            protected void customize(Request request)
-            {
+            protected void customize(Request request) {
                 String authorization = userName + ":" + password;
                 authorization = B64Code.encode(authorization);
                 request.header("Authorization", "Basic " + authorization);

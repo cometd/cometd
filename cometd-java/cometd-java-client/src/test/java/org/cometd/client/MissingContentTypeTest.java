@@ -21,18 +21,14 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class MissingContentTypeTest extends ClientServerTest
-{
+public class MissingContentTypeTest extends ClientServerTest {
     @Test
-    public void testMissingContentType() throws Exception
-    {
+    public void testMissingContentType() throws Exception {
         startServer(null);
 
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)
-        {
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient) {
             @Override
-            protected void customize(Request request)
-            {
+            protected void customize(Request request) {
                 request.header(HttpHeader.CONTENT_TYPE, null);
             }
         });

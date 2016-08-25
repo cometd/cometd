@@ -23,20 +23,17 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDTransportNegotiationFailureTest extends AbstractCometDTest
-{
+public class CometDTransportNegotiationFailureTest extends AbstractCometDTest {
     @Test
-    public void testTransportNegotiationFailureForClientLongPollingServerCallbackPolling() throws Exception
-    {
+    public void testTransportNegotiationFailureForClientLongPollingServerCallbackPolling() throws Exception {
         // Only callback-polling on server (via extension), only long-polling on client.
         bayeuxServer.setAllowedTransports("long-polling", "callback-polling");
-        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter()
-        {
+        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter() {
             @Override
-            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-            {
-                if (Channel.META_HANDSHAKE.equals(message.getChannel()))
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
+                if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
                     message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, new String[]{"callback-polling"});
+                }
                 return true;
             }
         });
@@ -67,8 +64,7 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTest
     }
 
     @Test
-    public void testTransportNegotiationFailureForClientLongPollingServerWebSocket() throws Exception
-    {
+    public void testTransportNegotiationFailureForClientLongPollingServerWebSocket() throws Exception {
         // Only websocket on server, only long-polling on client.
         bayeuxServer.setAllowedTransports("websocket");
         evaluateScript("keep_only_long_polling_transport",
@@ -97,13 +93,12 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTest
     }
 
     @Test
-    public void testTransportNegotiationFailureForClientWebSocketServerLongPolling() throws Exception
-    {
+    public void testTransportNegotiationFailureForClientWebSocketServerLongPolling() throws Exception {
         // Only long-polling on server, only websocket on client.
         bayeuxServer.setAllowedTransports("long-polling");
         evaluateScript("keep_only_websocket_transport",
                 "cometd.unregisterTransports();" +
-                "cometd.registerTransport('websocket', originalTransports['websocket']);");
+                        "cometd.registerTransport('websocket', originalTransports['websocket']);");
 
         defineClass(Latch.class);
         evaluateScript("var failureLatch = new Latch(2);");

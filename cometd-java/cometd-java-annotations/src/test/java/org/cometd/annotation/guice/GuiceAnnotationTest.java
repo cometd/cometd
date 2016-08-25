@@ -27,11 +27,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class GuiceAnnotationTest
-{
+public class GuiceAnnotationTest {
     @Test
-    public void testGuiceWiringOfCometDServices() throws Exception
-    {
+    public void testGuiceWiringOfCometDServices() throws Exception {
         // Configure Guice
         Injector injector = Guice.createInjector(new CometDModule());
         // Manually start BayeuxServer

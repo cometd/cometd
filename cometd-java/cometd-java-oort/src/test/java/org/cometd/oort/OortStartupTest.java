@@ -37,15 +37,13 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class OortStartupTest
-{
+public class OortStartupTest {
     @Rule
     public final TestTracker testName = new TestTracker();
     private final Map<Integer, Server> servers = new ConcurrentHashMap<>();
     private Map<Integer, ServletContextHandler> contexts = new ConcurrentHashMap<>();
 
-    protected int startTwoNodes(Class<? extends HttpServlet> startupServletClass, Map<String, String> options) throws Exception
-    {
+    protected int startTwoNodes(Class<? extends HttpServlet> startupServletClass, Map<String, String> options) throws Exception {
         Random random = new Random();
         int port1 = 20000 + random.nextInt(20000);
         int port2 = port1 + 1;
@@ -56,8 +54,7 @@ public class OortStartupTest
         return port1;
     }
 
-    private void startNode(Class<? extends HttpServlet> startupServletClass, Map<String, String> options, int port1, int port2) throws Exception
-    {
+    private void startNode(Class<? extends HttpServlet> startupServletClass, Map<String, String> options, int port1, int port2) throws Exception {
         Server server = new Server();
         servers.put(port1, server);
 
@@ -76,10 +73,10 @@ public class OortStartupTest
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
-        if (options != null)
-        {
-            for (Map.Entry<String, String> entry : options.entrySet())
+        if (options != null) {
+            for (Map.Entry<String, String> entry : options.entrySet()) {
                 cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
+            }
         }
         cometdServletHolder.setInitOrder(1);
         context.addServlet(cometdServletHolder, cometdURLMapping);
@@ -92,8 +89,7 @@ public class OortStartupTest
         context.addServlet(oortServletHolder, "/no_mapping_1");
 
         // Startup servlet.
-        if (startupServletClass != null)
-        {
+        if (startupServletClass != null) {
             ServletHolder startupServletHolder = new ServletHolder(startupServletClass);
             startupServletHolder.setInitOrder(3);
             context.addServlet(startupServletHolder, "/no_mapping_2");
@@ -103,8 +99,7 @@ public class OortStartupTest
     }
 
     @Test
-    public void testTwoNodeStartupOneNodeRestartWithinMaxInterval() throws Exception
-    {
+    public void testTwoNodeStartupOneNodeRestartWithinMaxInterval() throws Exception {
         long maxInterval = 8000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
@@ -172,24 +167,19 @@ public class OortStartupTest
         Assert.assertNotEquals(oldOortId2, oortObject1.getInfo(oort2.getURL()).getObject());
     }
 
-    public static class OortObjectStartupServlet extends HttpServlet
-    {
+    public static class OortObjectStartupServlet extends HttpServlet {
         private static final String NAME = "counter";
         private OortObject<String> ids;
 
         @Override
-        public void init() throws ServletException
-        {
-            try
-            {
+        public void init() throws ServletException {
+            try {
                 Oort oort = (Oort)getServletContext().getAttribute(Oort.OORT_ATTRIBUTE);
                 ids = new OortObject<>(oort, NAME, OortObjectFactories.forString(""));
                 getServletContext().setAttribute(NAME, ids);
                 ids.start();
                 ids.setAndShare(oort.getId(), null);
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 throw new ServletException(x);
             }
         }

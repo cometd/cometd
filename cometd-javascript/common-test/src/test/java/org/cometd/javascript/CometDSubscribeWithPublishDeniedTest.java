@@ -23,11 +23,9 @@ import org.cometd.server.DefaultSecurityPolicy;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDSubscribeWithPublishDeniedTest extends AbstractCometDTest
-{
+public class CometDSubscribeWithPublishDeniedTest extends AbstractCometDTest {
     @Test
-    public void testSubscribeWithPublishDenied() throws Exception
-    {
+    public void testSubscribeWithPublishDenied() throws Exception {
         bayeuxServer.setSecurityPolicy(new Policy());
 
         defineClass(Latch.class);
@@ -77,11 +75,9 @@ public class CometDSubscribeWithPublishDeniedTest extends AbstractCometDTest
         evaluateScript("cometd.disconnect(true);");
     }
 
-    private class Policy extends DefaultSecurityPolicy
-    {
+    private class Policy extends DefaultSecurityPolicy {
         @Override
-        public boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
-        {
+        public boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
             return false;
         }
     }

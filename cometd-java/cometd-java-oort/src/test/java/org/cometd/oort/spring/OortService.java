@@ -25,13 +25,11 @@ import org.cometd.oort.Seti;
 @Singleton
 @Named
 @Service
-public class OortService
-{
+public class OortService {
     public final Seti seti;
 
     @Inject
-    public OortService(Seti seti)
-    {
+    public OortService(Seti seti) {
         this.seti = seti;
     }
 }

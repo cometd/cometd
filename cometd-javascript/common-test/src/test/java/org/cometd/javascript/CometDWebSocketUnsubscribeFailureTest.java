@@ -22,11 +22,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDWebSocketUnsubscribeFailureTest extends AbstractCometDWebSocketTest
-{
+public class CometDWebSocketUnsubscribeFailureTest extends AbstractCometDWebSocketTest {
     @Test
-    public void testUnsubscribeFailure() throws Exception
-    {
+    public void testUnsubscribeFailure() throws Exception {
         bayeuxServer.addExtension(new DeleteMetaUnsubscribeExtension());
 
         defineClass(Latch.class);
@@ -59,11 +57,9 @@ public class CometDWebSocketUnsubscribeFailureTest extends AbstractCometDWebSock
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class DeleteMetaUnsubscribeExtension extends BayeuxServer.Extension.Adapter
-    {
+    public static class DeleteMetaUnsubscribeExtension extends BayeuxServer.Extension.Adapter {
         @Override
-        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-        {
+        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             return !Channel.META_UNSUBSCRIBE.equals(message.getChannel());
         }
     }

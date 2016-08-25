@@ -35,28 +35,24 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class RemoteCallTest
-{
+public class RemoteCallTest {
     private BayeuxServerImpl bayeuxServer;
     private ServerAnnotationProcessor processor;
 
     @Before
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         bayeuxServer = new BayeuxServerImpl();
         bayeuxServer.start();
         processor = new ServerAnnotationProcessor(bayeuxServer);
     }
 
     @After
-    public void destroy() throws Exception
-    {
+    public void destroy() throws Exception {
         bayeuxServer.stop();
     }
 
     @Test
-    public void testRemoteCallWithResult() throws Exception
-    {
+    public void testRemoteCallWithResult() throws Exception {
         Object callerData = "callerData";
         final Object calleeData = "calleeData";
 
@@ -68,13 +64,12 @@ public class RemoteCallTest
         remote.handshake();
         ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + RemoteCallWithResultService.CHANNEL);
         final CountDownLatch latch = new CountDownLatch(1);
-        channel.addListener(new ClientSessionChannel.MessageListener()
-        {
+        channel.addListener(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isPublishReply())
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isPublishReply()) {
                     return;
+                }
                 assertTrue(message.isSuccessful());
                 assertEquals(calleeData, message.getData());
                 latch.countDown();
@@ -86,33 +81,27 @@ public class RemoteCallTest
     }
 
     @Service
-    public static class RemoteCallWithResultService
-    {
+    public static class RemoteCallWithResultService {
         public static final String CHANNEL = "/target";
 
         private final Object callerData;
         private final Object calleeData;
 
-        public RemoteCallWithResultService(Object callerData, Object calleeData)
-        {
+        public RemoteCallWithResultService(Object callerData, Object calleeData) {
             this.callerData = callerData;
             this.calleeData = calleeData;
         }
 
         @RemoteCall(CHANNEL)
-        public void service(final RemoteCall.Caller caller, Object data)
-        {
-            if (!callerData.equals(data))
-            {
+        public void service(final RemoteCall.Caller caller, Object data) {
+            if (!callerData.equals(data)) {
                 caller.failure("Invalid data from caller: " + data);
                 return;
             }
 
-            new Thread(new Runnable()
-            {
+            new Thread(new Runnable() {
                 @Override
-                public void run()
-                {
+                public void run() {
                     caller.result(calleeData);
                 }
             }).start();
@@ -120,8 +109,7 @@ public class RemoteCallTest
     }
 
     @Test
-    public void testRemoteCallWithParametersWithResult() throws Exception
-    {
+    public void testRemoteCallWithParametersWithResult() throws Exception {
         Object service = new RemoteCallWithParametersWithResultService();
         boolean processed = processor.process(service);
         assertTrue(processed);
@@ -132,13 +120,12 @@ public class RemoteCallTest
         final String parameter = "param1";
         ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + "/test/" + parameter);
         final CountDownLatch latch = new CountDownLatch(1);
-        channel.addListener(new ClientSessionChannel.MessageListener()
-        {
+        channel.addListener(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isPublishReply())
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isPublishReply()) {
                     return;
+                }
                 assertEquals(parameter, message.getData());
                 latch.countDown();
             }
@@ -149,18 +136,15 @@ public class RemoteCallTest
     }
 
     @Service
-    public static class RemoteCallWithParametersWithResultService
-    {
+    public static class RemoteCallWithParametersWithResultService {
         @RemoteCall("/test/{p}")
-        public void serviceWithParameter(RemoteCall.Caller caller, Object data, @Param("p") String param)
-        {
+        public void serviceWithParameter(RemoteCall.Caller caller, Object data, @Param("p") String param) {
             caller.result(param);
         }
     }
 
     @Test
-    public void testTwoRemoteCallsWithResult() throws Exception
-    {
+    public void testTwoRemoteCallsWithResult() throws Exception {
         Object service = new TwoRemoteCallsWithResultService();
         boolean processed = processor.process(service);
         assertTrue(processed);
@@ -175,26 +159,24 @@ public class RemoteCallTest
         final List<Message> responses = new ArrayList<>();
 
         ClientSessionChannel channel1 = remote1.getChannel(Channel.SERVICE + TwoRemoteCallsWithResultService.CHANNEL);
-        channel1.addListener(new ClientSessionChannel.MessageListener()
-        {
+        channel1.addListener(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isPublishReply())
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isPublishReply()) {
                     return;
+                }
                 responses.add(message);
                 latch.countDown();
             }
         });
 
         ClientSessionChannel channel2 = remote2.getChannel(Channel.SERVICE + TwoRemoteCallsWithResultService.CHANNEL);
-        channel2.addListener(new ClientSessionChannel.MessageListener()
-        {
+        channel2.addListener(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isPublishReply())
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isPublishReply()) {
                     return;
+                }
                 responses.add(message);
                 latch.countDown();
             }
@@ -213,20 +195,17 @@ public class RemoteCallTest
     }
 
     @Service
-    public static class TwoRemoteCallsWithResultService
-    {
+    public static class TwoRemoteCallsWithResultService {
         public static final String CHANNEL = "/two_remote";
 
         @RemoteCall(CHANNEL)
-        public void service(RemoteCall.Caller caller, Object data)
-        {
+        public void service(RemoteCall.Caller caller, Object data) {
             caller.result(data);
         }
     }
 
     @Test
-    public void testRemoteCallWithFailure() throws Exception
-    {
+    public void testRemoteCallWithFailure() throws Exception {
         final String failure = "failure";
 
         Object service = new RemoteCallWithFailureService();
@@ -237,13 +216,12 @@ public class RemoteCallTest
         remote.handshake();
         ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + RemoteCallWithFailureService.CHANNEL);
         final CountDownLatch latch = new CountDownLatch(1);
-        channel.addListener(new ClientSessionChannel.MessageListener()
-        {
+        channel.addListener(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isPublishReply())
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isPublishReply()) {
                     return;
+                }
                 assertFalse(message.isSuccessful());
                 assertEquals(failure, message.getData());
                 latch.countDown();
@@ -255,20 +233,17 @@ public class RemoteCallTest
     }
 
     @Service
-    public static class RemoteCallWithFailureService
-    {
+    public static class RemoteCallWithFailureService {
         public static final String CHANNEL = "/call_failure";
 
         @RemoteCall(CHANNEL)
-        public void service(RemoteCall.Caller caller, String data)
-        {
+        public void service(RemoteCall.Caller caller, String data) {
             caller.failure(data);
         }
     }
 
     @Test
-    public void testRemoteCallWithUncaughtException() throws Exception
-    {
+    public void testRemoteCallWithUncaughtException() throws Exception {
         Object service = new RemoteCallWithUncaughtExceptionService();
         boolean processed = processor.process(service);
         assertTrue(processed);
@@ -277,13 +252,12 @@ public class RemoteCallTest
         remote.handshake();
         ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + RemoteCallWithUncaughtExceptionService.CHANNEL);
         final CountDownLatch latch = new CountDownLatch(1);
-        channel.addListener(new ClientSessionChannel.MessageListener()
-        {
+        channel.addListener(new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isPublishReply())
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isPublishReply()) {
                     return;
+                }
                 assertFalse(message.isSuccessful());
                 assertNotNull(message.getData());
                 latch.countDown();
@@ -295,13 +269,11 @@ public class RemoteCallTest
     }
 
     @Service
-    public static class RemoteCallWithUncaughtExceptionService
-    {
+    public static class RemoteCallWithUncaughtExceptionService {
         public static final String CHANNEL = "/uncaught";
 
         @RemoteCall(CHANNEL)
-        public void service(RemoteCall.Caller caller, Object data)
-        {
+        public void service(RemoteCall.Caller caller, Object data) {
             throw new NullPointerException();
         }
     }

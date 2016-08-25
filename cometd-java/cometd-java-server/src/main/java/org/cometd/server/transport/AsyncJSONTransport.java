@@ -35,38 +35,33 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
-public class AsyncJSONTransport extends AbstractHttpTransport
-{
+public class AsyncJSONTransport extends AbstractHttpTransport {
     private static final String PREFIX = "long-polling.json";
     private static final String NAME = "long-polling";
     private static final int BUFFER_CAPACITY = 512;
-    private static final ThreadLocal<byte[]> buffers = new ThreadLocal<byte[]>()
-    {
+    private static final ThreadLocal<byte[]> buffers = new ThreadLocal<byte[]>() {
         @Override
-        protected byte[] initialValue()
-        {
+        protected byte[] initialValue() {
             return new byte[BUFFER_CAPACITY];
         }
     };
 
-    public AsyncJSONTransport(BayeuxServerImpl bayeux)
-    {
+    public AsyncJSONTransport(BayeuxServerImpl bayeux) {
         super(bayeux, NAME);
         setOptionPrefix(PREFIX);
     }
 
     @Override
-    public boolean accept(HttpServletRequest request)
-    {
+    public boolean accept(HttpServletRequest request) {
         return "POST".equalsIgnoreCase(request.getMethod());
     }
 
     @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {
+    public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         String encoding = request.getCharacterEncoding();
-        if (encoding == null)
+        if (encoding == null) {
             encoding = "UTF-8";
+        }
         request.setCharacterEncoding(encoding);
         AsyncContext asyncContext = request.startAsync(request, response);
         // Explicitly disable the timeout, to prevent
@@ -79,165 +74,150 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         input.setReadListener(reader);
     }
 
-    protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
-    {
+    protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
         AsyncContext asyncContext = request.getAsyncContext();
         return newHttpScheduler(request, response, asyncContext, session, reply, browserId, timeout);
     }
 
-    protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
-    {
+    protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
         return new AsyncLongPollScheduler(request, response, asyncContext, session, reply, browserId, timeout);
     }
 
     @Override
-    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
-    {
+    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies) {
         AsyncContext asyncContext = request.getAsyncContext();
-        try
-        {
+        try {
             // Always write asynchronously
             response.setContentType("application/json;charset=UTF-8");
             ServletOutputStream output = response.getOutputStream();
             output.setWriteListener(new Writer(request, response, asyncContext, session, scheduleExpiration, messages, replies));
-        }
-        catch (Exception x)
-        {
-            if (_logger.isDebugEnabled())
+        } catch (Exception x) {
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Exception while writing messages", x);
+            }
             error(request, response, asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
-    protected abstract class AbstractReader implements ReadListener
-    {
+    protected abstract class AbstractReader implements ReadListener {
         private final HttpServletRequest request;
         private final HttpServletResponse response;
         protected final AsyncContext asyncContext;
 
-        protected AbstractReader(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext)
-        {
+        protected AbstractReader(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext) {
             this.request = request;
             this.response = response;
             this.asyncContext = asyncContext;
         }
 
         @Override
-        public void onDataAvailable() throws IOException
-        {
+        public void onDataAvailable() throws IOException {
             ServletInputStream input = request.getInputStream();
-            if (_logger.isDebugEnabled())
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Asynchronous read start from {}", input);
+            }
             byte[] buffer = buffers.get();
             // First check for isReady() because it has
             // side effects, and then for isFinished().
-            while (input.isReady() && !input.isFinished())
-            {
+            while (input.isReady() && !input.isFinished()) {
                 int read = input.read(buffer);
-                if (_logger.isDebugEnabled())
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Asynchronous read {} bytes from {}", read, input);
-                if (read >= 0)
+                }
+                if (read >= 0) {
                     append(buffer, 0, read);
+                }
             }
-            if (!input.isFinished())
-                if (_logger.isDebugEnabled())
+            if (!input.isFinished()) {
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Asynchronous read pending from {}", input);
+                }
+            }
         }
 
         protected abstract void append(byte[] buffer, int offset, int length);
 
         @Override
-        public void onAllDataRead() throws IOException
-        {
+        public void onAllDataRead() throws IOException {
             ServletInputStream input = request.getInputStream();
             String json = finish();
-            if (_logger.isDebugEnabled())
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Asynchronous read end from {}: {}", input, json);
+            }
             process(json);
         }
 
         protected abstract String finish();
 
-        protected void process(String json) throws IOException
-        {
+        protected void process(String json) throws IOException {
             getBayeux().setCurrentTransport(AsyncJSONTransport.this);
             setCurrentRequest(request);
-            try
-            {
+            try {
                 ServerMessage.Mutable[] messages = parseMessages(json);
-                if (_logger.isDebugEnabled())
+                if (_logger.isDebugEnabled()) {
                     _logger.debug("Parsed {} messages", messages == null ? -1 : messages.length);
-                if (messages != null)
+                }
+                if (messages != null) {
                     processMessages(request, response, messages);
-                else
+                } else {
                     asyncContext.complete();
-            }
-            catch (ParseException x)
-            {
+                }
+            } catch (ParseException x) {
                 handleJSONParseException(request, response, json, x);
                 asyncContext.complete();
-            }
-            finally
-            {
+            } finally {
                 setCurrentRequest(null);
                 getBayeux().setCurrentTransport(null);
             }
         }
 
         @Override
-        public void onError(Throwable throwable)
-        {
+        public void onError(Throwable throwable) {
             error(request, response, asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 
-    protected class UTF8Reader extends AbstractReader
-    {
+    protected class UTF8Reader extends AbstractReader {
         private final Utf8StringBuilder content = new Utf8StringBuilder(BUFFER_CAPACITY);
 
-        protected UTF8Reader(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext)
-        {
+        protected UTF8Reader(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext) {
             super(request, response, asyncContext);
         }
 
         @Override
-        protected void append(byte[] buffer, int offset, int length)
-        {
+        protected void append(byte[] buffer, int offset, int length) {
             content.append(buffer, offset, length);
         }
 
         @Override
-        protected String finish()
-        {
+        protected String finish() {
             return content.toString();
         }
     }
 
-    protected class CharsetReader extends AbstractReader
-    {
+    protected class CharsetReader extends AbstractReader {
         private byte[] content = new byte[BUFFER_CAPACITY];
         private final Charset charset;
         private int count;
 
-        public CharsetReader(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, Charset charset)
-        {
+        public CharsetReader(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, Charset charset) {
             super(request, response, asyncContext);
             this.charset = charset;
         }
 
         @Override
-        protected void append(byte[] buffer, int offset, int length)
-        {
+        protected void append(byte[] buffer, int offset, int length) {
             int size = content.length;
             int newSize = size;
-            while (newSize - count < length)
+            while (newSize - count < length) {
                 newSize <<= 1;
+            }
 
-            if (newSize < 0)
+            if (newSize < 0) {
                 throw new IllegalArgumentException("Message too large");
+            }
 
-            if (newSize != size)
-            {
+            if (newSize != size) {
                 byte[] newContent = new byte[newSize];
                 System.arraycopy(content, 0, newContent, 0, count);
                 content = newContent;
@@ -248,14 +228,12 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         }
 
         @Override
-        protected String finish()
-        {
+        protected String finish() {
             return new String(content, 0, count, charset);
         }
     }
 
-    protected class Writer implements WriteListener
-    {
+    protected class Writer implements WriteListener {
         private final HttpServletRequest request;
         private final HttpServletResponse response;
         private final AsyncContext asyncContext;
@@ -268,8 +246,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         private boolean needsComma;
         private State state = State.BEGIN;
 
-        protected Writer(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies)
-        {
+        protected Writer(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies) {
             this.request = request;
             this.response = response;
             this.asyncContext = asyncContext;
@@ -280,80 +257,73 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         }
 
         @Override
-        public void onWritePossible() throws IOException
-        {
+        public void onWritePossible() throws IOException {
             ServletOutputStream output = response.getOutputStream();
 
-            if (_logger.isDebugEnabled())
+            if (_logger.isDebugEnabled()) {
                 _logger.debug("Messages/replies {}/{} to write for session {}", messages.size(), replies.length, session);
+            }
 
-            while (true)
-            {
-                switch (state)
-                {
-                    case BEGIN:
-                    {
+            while (true) {
+                switch (state) {
+                    case BEGIN: {
                         state = State.HANDSHAKE;
-                        if (!writeBegin(output))
+                        if (!writeBegin(output)) {
                             return;
+                        }
                         break;
                     }
-                    case HANDSHAKE:
-                    {
+                    case HANDSHAKE: {
                         state = State.MESSAGES;
-                        if (!writeHandshakeReply(output))
+                        if (!writeHandshakeReply(output)) {
                             return;
+                        }
                         break;
                     }
-                    case MESSAGES:
-                    {
-                        if (!writeMessages(output))
+                    case MESSAGES: {
+                        if (!writeMessages(output)) {
                             return;
+                        }
                         state = State.REPLIES;
                         break;
                     }
-                    case REPLIES:
-                    {
-                        if (!writeReplies(output))
+                    case REPLIES: {
+                        if (!writeReplies(output)) {
                             return;
+                        }
                         state = State.END;
                         break;
                     }
-                    case END:
-                    {
+                    case END: {
                         state = State.COMPLETE;
-                        if (!writeEnd(output))
+                        if (!writeEnd(output)) {
                             return;
+                        }
                         break;
                     }
-                    case COMPLETE:
-                    {
+                    case COMPLETE: {
                         asyncContext.complete();
                         return;
                     }
-                    default:
-                    {
+                    default: {
                         throw new IllegalStateException();
                     }
                 }
             }
         }
 
-        private boolean writeBegin(ServletOutputStream output) throws IOException
-        {
+        private boolean writeBegin(ServletOutputStream output) throws IOException {
             output.write('[');
             return output.isReady();
         }
 
-        private boolean writeHandshakeReply(ServletOutputStream output) throws IOException
-        {
-            if (replies.length > 0)
-            {
+        private boolean writeHandshakeReply(ServletOutputStream output) throws IOException {
+            if (replies.length > 0) {
                 ServerMessage.Mutable reply = replies[0];
-                if (Channel.META_HANDSHAKE.equals(reply.getChannel()))
-                {
-                    if (allowMessageDeliveryDuringHandshake(session) && !messages.isEmpty())
+                if (Channel.META_HANDSHAKE.equals(reply.getChannel())) {
+                    if (allowMessageDeliveryDuringHandshake(session) && !messages.isEmpty()) {
                         reply.put("x-messages", messages.size());
+                    }
                     getBayeux().freeze(reply);
                     output.write(toJSONBytes(reply, "UTF-8"));
                     needsComma = true;
@@ -363,29 +333,20 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             return output.isReady();
         }
 
-        private boolean writeMessages(ServletOutputStream output) throws IOException
-        {
-            try
-            {
+        private boolean writeMessages(ServletOutputStream output) throws IOException {
+            try {
                 int size = messages.size();
-                while (output.isReady())
-                {
-                    if (messageIndex == size)
-                    {
+                while (output.isReady()) {
+                    if (messageIndex == size) {
                         // Start the interval timeout after writing the
                         // messages since they may take time to be written.
                         startExpiration();
                         return true;
-                    }
-                    else
-                    {
-                        if (needsComma)
-                        {
+                    } else {
+                        if (needsComma) {
                             output.write(',');
                             needsComma = false;
-                        }
-                        else
-                        {
+                        } else {
                             ServerMessage message = messages.get(messageIndex);
                             output.write(toJSONBytes(message, "UTF-8"));
                             needsComma = messageIndex < size;
@@ -394,9 +355,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                     }
                 }
                 return false;
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 // Start the interval timeout also in case of
                 // exceptions to ensure the session can be swept.
                 startExpiration();
@@ -404,41 +363,30 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             }
         }
 
-        private void startExpiration()
-        {
-            if (scheduleExpiration && session != null && (session.isHandshook() || session.isConnected()))
+        private void startExpiration() {
+            if (scheduleExpiration && session != null && (session.isHandshook() || session.isConnected())) {
                 session.scheduleExpiration(getInterval());
+            }
         }
 
-        private boolean writeReplies(ServletOutputStream output) throws IOException
-        {
+        private boolean writeReplies(ServletOutputStream output) throws IOException {
             int size = replies.length;
-            while (output.isReady())
-            {
-                if (replyIndex == size)
-                {
+            while (output.isReady()) {
+                if (replyIndex == size) {
                     return true;
-                }
-                else
-                {
+                } else {
                     ServerMessage.Mutable reply = replies[replyIndex];
-                    if (reply != null)
-                    {
-                        if (needsComma)
-                        {
+                    if (reply != null) {
+                        if (needsComma) {
                             output.write(',');
                             needsComma = false;
-                        }
-                        else
-                        {
+                        } else {
                             getBayeux().freeze(reply);
                             output.write(toJSONBytes(reply, "UTF-8"));
                             needsComma = replyIndex < size;
                             ++replyIndex;
                         }
-                    }
-                    else
-                    {
+                    } else {
                         ++replyIndex;
                     }
                 }
@@ -446,15 +394,13 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             return false;
         }
 
-        private boolean writeEnd(ServletOutputStream output) throws IOException
-        {
+        private boolean writeEnd(ServletOutputStream output) throws IOException {
             output.write(']');
             return output.isReady();
         }
 
         @Override
-        public void onError(Throwable throwable)
-        {
+        public void onError(Throwable throwable) {
             // Start the interval timeout also in case of
             // errors to ensure the session can be swept.
             startExpiration();
@@ -462,21 +408,17 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         }
     }
 
-    private enum State
-    {
+    private enum State {
         BEGIN, HANDSHAKE, MESSAGES, REPLIES, END, COMPLETE
     }
 
-    private class AsyncLongPollScheduler extends LongPollScheduler
-    {
-        private AsyncLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout)
-        {
+    private class AsyncLongPollScheduler extends LongPollScheduler {
+        private AsyncLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
             super(request, response, asyncContext, session, reply, browserId, timeout);
         }
 
         @Override
-        protected void dispatch()
-        {
+        protected void dispatch() {
             // Direct call to resume() to write the messages in the queue and the replies.
             // Since the write is async, we will never block here and thus never delay other sessions.
             resume(getRequest(), getResponse(), getAsyncContext(), getServerSession(), getMetaConnectReply());

@@ -28,22 +28,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BrowserMappingTest extends AbstractBayeuxClientServerTest
-{
-    public BrowserMappingTest(String serverTransport)
-    {
+public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
+    public BrowserMappingTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Before
-    public void prepare() throws Exception
-    {
+    public void prepare() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testBayeuxBrowserMapping() throws Exception
-    {
+    public void testBayeuxBrowserMapping() throws Exception {
         AbstractHttpTransport transport = new JSONTransport(bayeux);
         transport.init();
 
@@ -56,8 +52,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testSameDomainWithCookieHoldsConnect() throws Exception
-    {
+    public void testSameDomainWithCookieHoldsConnect() throws Exception {
         Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -92,8 +87,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testSameDomainWithoutCookieDoesNotHoldConnect() throws Exception
-    {
+    public void testSameDomainWithoutCookieDoesNotHoldConnect() throws Exception {
         Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -131,8 +125,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testSameDomainWithoutCookieWithOptionHoldsConnect() throws Exception
-    {
+    public void testSameDomainWithoutCookieWithOptionHoldsConnect() throws Exception {
         Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -171,8 +164,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testDifferentDomainWithoutCookieHoldsConnect() throws Exception
-    {
+    public void testDifferentDomainWithoutCookieHoldsConnect() throws Exception {
         Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -211,8 +203,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testCookieConfiguration() throws Exception
-    {
+    public void testCookieConfiguration() throws Exception {
         String cookieName = "cookie_name";
         String cookieDomain = "cookie_domain";
         String cookiePath = "cookie_path";
@@ -238,10 +229,10 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         String cookie = headers.get(HttpHeader.SET_COOKIE);
         String[] parts = cookie.split(";");
         boolean hasCookieName = false;
-        for (String part : parts)
-        {
-            if (part.startsWith(cookieName + "="))
+        for (String part : parts) {
+            if (part.startsWith(cookieName + "=")) {
                 hasCookieName = true;
+            }
         }
         Assert.assertTrue(hasCookieName);
         Assert.assertTrue(Arrays.asList(parts).contains("Path=" + cookiePath));

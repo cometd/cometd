@@ -31,11 +31,9 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class BayeuxClientRemoteCallTest extends AbstractClientServerTest
-{
+public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
     @Test
-    public void testRemoteCallWithResult() throws Exception
-    {
+    public void testRemoteCallWithResult() throws Exception {
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
         final String response = "response";
         Assert.assertTrue(processor.process(new RemoteCallWithResultService(response)));
@@ -45,11 +43,9 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.remoteCall(RemoteCallWithResultService.TARGET, "request", new ClientSession.MessageListener()
-        {
+        client.remoteCall(RemoteCallWithResultService.TARGET, "request", new ClientSession.MessageListener() {
             @Override
-            public void onMessage(Message message)
-            {
+            public void onMessage(Message message) {
                 Assert.assertTrue(message.isSuccessful());
                 Assert.assertEquals(response, message.getData());
                 latch.countDown();
@@ -62,26 +58,22 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest
     }
 
     @Service
-    public static class RemoteCallWithResultService
-    {
+    public static class RemoteCallWithResultService {
         public static final String TARGET = "/result";
         private final String response;
 
-        public RemoteCallWithResultService(String response)
-        {
+        public RemoteCallWithResultService(String response) {
             this.response = response;
         }
 
         @RemoteCall(TARGET)
-        public void service(RemoteCall.Caller caller, Object data)
-        {
+        public void service(RemoteCall.Caller caller, Object data) {
             caller.result(response);
         }
     }
 
     @Test
-    public void testRemoteCallTimeout() throws Exception
-    {
+    public void testRemoteCallTimeout() throws Exception {
         long timeout = 1000;
 
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
@@ -93,11 +85,9 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.remoteCall(RemoteCallWithTimeoutService.TARGET, "", new ClientSession.MessageListener()
-        {
+        client.remoteCall(RemoteCallWithTimeoutService.TARGET, "", new ClientSession.MessageListener() {
             @Override
-            public void onMessage(Message message)
-            {
+            public void onMessage(Message message) {
                 Assert.assertFalse(message.isSuccessful());
                 latch.countDown();
             }
@@ -109,34 +99,27 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest
     }
 
     @Service
-    public static class RemoteCallWithTimeoutService
-    {
+    public static class RemoteCallWithTimeoutService {
         public static final String TARGET = "/timeout";
         private final long timeout;
 
-        public RemoteCallWithTimeoutService(long timeout)
-        {
+        public RemoteCallWithTimeoutService(long timeout) {
             this.timeout = timeout;
         }
 
         @RemoteCall(TARGET)
-        public void service(RemoteCall.Caller caller, Object data)
-        {
-            try
-            {
+        public void service(RemoteCall.Caller caller, Object data) {
+            try {
                 Thread.sleep(timeout);
                 caller.result("ok");
-            }
-            catch (Exception x)
-            {
+            } catch (Exception x) {
                 caller.failure(x.toString());
             }
         }
     }
 
     @Test
-    public void testRemoteCallWithFailure() throws Exception
-    {
+    public void testRemoteCallWithFailure() throws Exception {
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
         final String failure = "failure";
         Assert.assertTrue(processor.process(new RemoteCallWithFailureService(failure)));
@@ -146,11 +129,9 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.remoteCall(RemoteCallWithFailureService.TARGET, "request", new ClientSession.MessageListener()
-        {
+        client.remoteCall(RemoteCallWithFailureService.TARGET, "request", new ClientSession.MessageListener() {
             @Override
-            public void onMessage(Message message)
-            {
+            public void onMessage(Message message) {
                 Assert.assertFalse(message.isSuccessful());
                 Assert.assertEquals(failure, message.getData());
                 latch.countDown();
@@ -163,26 +144,22 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest
     }
 
     @Service
-    public static class RemoteCallWithFailureService
-    {
+    public static class RemoteCallWithFailureService {
         public static final String TARGET = "/failure";
         private final String failure;
 
-        public RemoteCallWithFailureService(String failure)
-        {
+        public RemoteCallWithFailureService(String failure) {
             this.failure = failure;
         }
 
         @RemoteCall(TARGET)
-        public void service(RemoteCall.Caller caller, Object data)
-        {
+        public void service(RemoteCall.Caller caller, Object data) {
             caller.failure(failure);
         }
     }
 
     @Test
-    public void testRemoteCallWithCustomData() throws Exception
-    {
+    public void testRemoteCallWithCustomData() throws Exception {
         JettyJSONContextServer jsonContextServer = (JettyJSONContextServer)bayeux.getJSONContext();
         jsonContextServer.getJSON().addConvertor(Custom.class, new CustomConvertor());
 
@@ -202,11 +179,9 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.remoteCall(RemoteCallWithCustomDataService.TARGET, new Custom(request), new ClientSession.MessageListener()
-        {
+        client.remoteCall(RemoteCallWithCustomDataService.TARGET, new Custom(request), new ClientSession.MessageListener() {
             @Override
-            public void onMessage(Message message)
-            {
+            public void onMessage(Message message) {
                 Assert.assertTrue(message.isSuccessful());
                 Custom data = (Custom)message.getData();
                 Assert.assertEquals(response, data.payload);
@@ -220,52 +195,45 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest
     }
 
     @Service
-    public static class RemoteCallWithCustomDataService
-    {
+    public static class RemoteCallWithCustomDataService {
         public static final String TARGET = "/custom_data";
 
         private String request;
         private String response;
 
-        public RemoteCallWithCustomDataService(String request, String response)
-        {
+        public RemoteCallWithCustomDataService(String request, String response) {
             this.request = request;
             this.response = response;
         }
 
         @RemoteCall(TARGET)
-        public void service(RemoteCall.Caller caller, Custom custom)
-        {
-            if (request.equals(custom.payload))
+        public void service(RemoteCall.Caller caller, Custom custom) {
+            if (request.equals(custom.payload)) {
                 caller.result(new Custom(response));
-            else
+            } else {
                 caller.failure("failed");
+            }
         }
     }
 
-    public static class Custom
-    {
+    public static class Custom {
         public final String payload;
 
-        public Custom(String payload)
-        {
+        public Custom(String payload) {
             this.payload = payload;
         }
     }
 
-    private class CustomConvertor implements JSON.Convertor
-    {
+    private class CustomConvertor implements JSON.Convertor {
         @Override
-        public void toJSON(Object obj, JSON.Output out)
-        {
+        public void toJSON(Object obj, JSON.Output out) {
             Custom custom = (Custom)obj;
             out.addClass(custom.getClass());
             out.add("payload", custom.payload);
         }
 
         @Override
-        public Object fromJSON(Map object)
-        {
+        public Object fromJSON(Map object) {
             return new Custom((String)object.get("payload"));
         }
     }

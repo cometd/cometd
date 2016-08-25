@@ -36,24 +36,20 @@ import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
-{
-    public MessageDeliveryDuringHandshakeTest(Transport transport)
-    {
+public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest {
+    public MessageDeliveryDuringHandshakeTest(Transport transport) {
         super(transport);
     }
 
     @Test
-    public void testMessagesNotSentInHandshakeResponse() throws Exception
-    {
+    public void testMessagesNotSentInHandshakeResponse() throws Exception {
         startServer(serverOptions());
         BayeuxClient client = newBayeuxClient();
         testMessagesInHandshakeResponse(client, false);
     }
 
     @Test
-    public void testMessagesSentInHandshakeResponse() throws Exception
-    {
+    public void testMessagesSentInHandshakeResponse() throws Exception {
         Map<String, String> options = serverOptions();
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
         startServer(options);
@@ -62,8 +58,7 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
     }
 
     @Test
-    public void testMessagesSentInHandshakeResponseWithAckExtension() throws Exception
-    {
+    public void testMessagesSentInHandshakeResponseWithAckExtension() throws Exception {
         Map<String, String> options = serverOptions();
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
         startServer(options);
@@ -73,46 +68,39 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
         testMessagesInHandshakeResponse(client, true);
     }
 
-    private void testMessagesInHandshakeResponse(BayeuxClient client, final boolean allowHandshakeMessages) throws Exception
-    {
+    private void testMessagesInHandshakeResponse(BayeuxClient client, final boolean allowHandshakeMessages) throws Exception {
         final String channelName = "/test";
-        bayeux.addListener(new BayeuxServer.SessionListener()
-        {
+        bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
-            public void sessionAdded(ServerSession session, ServerMessage message)
-            {
+            public void sessionAdded(ServerSession session, ServerMessage message) {
                 // Send messages during the handshake processing.
                 session.deliver(null, channelName, "data1");
                 session.deliver(null, channelName, "data2");
             }
 
             @Override
-            public void sessionRemoved(ServerSession session, boolean timedout)
-            {
+            public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
 
         final CountDownLatch messagesLatch = new CountDownLatch(1);
         final ServerChannel metaConnectChannel = bayeux.getChannel(Channel.META_CONNECT);
-        metaConnectChannel.addListener(new ServerChannel.MessageListener()
-        {
+        metaConnectChannel.addListener(new ServerChannel.MessageListener() {
             @Override
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
-            {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 // Check the queue when receiving the first /meta/connect.
-                if (((ServerSessionImpl)from).getQueue().isEmpty() == allowHandshakeMessages)
+                if (((ServerSessionImpl)from).getQueue().isEmpty() == allowHandshakeMessages) {
                     messagesLatch.countDown();
+                }
                 metaConnectChannel.removeListener(this);
                 return true;
             }
         });
 
         final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
-        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
-        {
+        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
             @Override
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messages.offer(message);
             }
         };

@@ -20,10 +20,8 @@ import java.net.URL;
 import org.cometd.javascript.TestProvider;
 import org.cometd.javascript.ThreadModel;
 
-public class DojoTestProvider implements TestProvider
-{
-    public void provideCometD(ThreadModel threadModel, String fullContextURL) throws Exception
-    {
+public class DojoTestProvider implements TestProvider {
+    public void provideCometD(ThreadModel threadModel, String fullContextURL) throws Exception {
         // Order of the script evaluation is important, as they depend one from the other
         threadModel.evaluate(new URL(fullContextURL + "/env.js"));
         // Rhino 1.7 puts the top Java packages in the root scope.
@@ -52,23 +50,19 @@ public class DojoTestProvider implements TestProvider
                 "cometd.registerTransport('long-polling', originalTransports['long-polling']);");
     }
 
-    public void provideMessageAcknowledgeExtension(ThreadModel threadModel, String contextURL) throws Exception
-    {
+    public void provideMessageAcknowledgeExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate("ack extension", "require(['dojox/cometd/ack']);");
     }
 
-    public void provideReloadExtension(ThreadModel threadModel, String contextURL) throws Exception
-    {
+    public void provideReloadExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate("reload extension", "require(['dojox/cometd/reload']);");
     }
 
-    public void provideTimestampExtension(ThreadModel threadModel, String contextURL) throws Exception
-    {
+    public void provideTimestampExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate("timestamp extension", "require(['dojox/cometd/timestamp']);");
     }
 
-    public void provideTimesyncExtension(ThreadModel threadModel, String contextURL) throws Exception
-    {
+    public void provideTimesyncExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate("timesync extension", "require(['dojox/cometd/timesync']);");
     }
 }

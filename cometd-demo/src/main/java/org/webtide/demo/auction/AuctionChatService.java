@@ -39,37 +39,33 @@ import org.cometd.oort.SetiServlet;
 import org.cometd.server.AbstractService;
 import org.cometd.server.authorizer.GrantAuthorizer;
 
-public class AuctionChatService extends AbstractService
-{
+public class AuctionChatService extends AbstractService {
     // A map(channel, map(userName, clientId))
     private final ConcurrentMap<String, Set<String>> _members = new ConcurrentHashMap<>();
     private Oort _oort;
     private Seti _seti;
 
-    public AuctionChatService(ServletContext context)
-    {
+    public AuctionChatService(ServletContext context) {
         super((BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE), "chat");
 
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
-        if (_oort == null)
+        if (_oort == null) {
             throw new RuntimeException("Missing " + Oort.OORT_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
                     "is an Oort servlet declared in web.xml ?");
+        }
         _seti = (Seti)context.getAttribute(Seti.SETI_ATTRIBUTE);
-        if (_seti == null)
+        if (_seti == null) {
             throw new RuntimeException("Missing " + Seti.SETI_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
                     "is " + SetiServlet.class.getSimpleName() + " declared in web.xml ?");
+        }
 
-        getBayeux().createChannelIfAbsent("/auction/chat/**", new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
+        getBayeux().createChannelIfAbsent("/auction/chat/**", new ConfigurableServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }
         });
-        getBayeux().createChannelIfAbsent("/service/auction/chat", new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
+        getBayeux().createChannelIfAbsent("/service/auction/chat", new ConfigurableServerChannel.Initializer() {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }
         });
@@ -77,65 +73,58 @@ public class AuctionChatService extends AbstractService
         addService("/service/auction/chat", "privateChat");
     }
 
-    public void trackMembers(final ServerSession joiner, ServerMessage message)
-    {
+    public void trackMembers(final ServerSession joiner, ServerMessage message) {
         final String channelName = message.getChannel();
         Object data = message.getData();
-        if (data instanceof Object[])
-        {
+        if (data instanceof Object[]) {
             Set<String> members = _members.get(channelName);
-            if (members == null)
-            {
+            if (members == null) {
                 Set<String> newMembers = new HashSet<>();
                 members = _members.putIfAbsent(channelName, newMembers);
-                if (members == null)
+                if (members == null) {
                     members = newMembers;
+                }
             }
             boolean added = false;
-            for (Object user : (Object[])data)
+            for (Object user : (Object[])data) {
                 added |= members.add(user.toString());
-            if (added)
-            {
+            }
+            if (added) {
                 _logger.info("Members: {}", members);
                 // Broadcast the members to all existing members
                 getBayeux().getChannel(channelName).publish(getServerSession(), members);
             }
-        }
-        else if (data instanceof Map)
-        {
+        } else if (data instanceof Map) {
             Map<String, Object> map = (Map<String, Object>)data;
 
-            if (Boolean.TRUE.equals(map.get("join")))
-            {
+            if (Boolean.TRUE.equals(map.get("join"))) {
 
                 Set<String> members = _members.get(channelName);
-                if (members == null)
-                {
+                if (members == null) {
                     Set<String> newMembers = new HashSet<>();
                     members = _members.putIfAbsent(channelName, newMembers);
-                    if (members == null)
+                    if (members == null) {
                         members = newMembers;
+                    }
                 }
 
                 final String userName = (String)map.get("user");
 
                 members.add(userName);
 
-                if (!_oort.isOort(joiner))
+                if (!_oort.isOort(joiner)) {
                     _seti.associate(userName, joiner);
+                }
 
-                joiner.addListener(new ServerSession.RemoveListener()
-                {
+                joiner.addListener(new ServerSession.RemoveListener() {
                     @Override
-                    public void removed(ServerSession session, boolean timeout)
-                    {
-                        if (!_oort.isOort(joiner))
+                    public void removed(ServerSession session, boolean timeout) {
+                        if (!_oort.isOort(joiner)) {
                             _seti.disassociate(userName, session);
-                        if (timeout)
-                        {
+                        }
+                        if (timeout) {
                             ServerChannel channel = getBayeux().getChannel(channelName);
-                            if (channel != null)
-                            {
+                            if (channel != null) {
                                 Map<String, Object> leave = new HashMap<>();
                                 leave.put("leave", Boolean.TRUE);
                                 leave.put("user", userName);
@@ -151,15 +140,14 @@ public class AuctionChatService extends AbstractService
 
             }
 
-            if (Boolean.TRUE.equals(map.get("leave")))
-            {
+            if (Boolean.TRUE.equals(map.get("leave"))) {
                 Set<String> members = _members.get(channelName);
-                if (members == null)
-                {
+                if (members == null) {
                     Set<String> newMembers = new HashSet<>();
                     members = _members.putIfAbsent(channelName, newMembers);
-                    if (members == null)
+                    if (members == null) {
                         members = newMembers;
+                    }
                 }
 
                 String userName = (String)map.get("user");
@@ -172,8 +160,7 @@ public class AuctionChatService extends AbstractService
         }
     }
 
-    public void privateChat(ServerSession source, ServerMessage message)
-    {
+    public void privateChat(ServerSession source, ServerMessage message) {
         Map<String, Object> data = message.getDataAsMap();
         String toUid = (String)data.get("peer");
         String toChannel = (String)data.get("room");
@@ -181,4 +168,3 @@ public class AuctionChatService extends AbstractService
         _seti.sendMessage(toUid, toChannel, data);
     }
 }
-

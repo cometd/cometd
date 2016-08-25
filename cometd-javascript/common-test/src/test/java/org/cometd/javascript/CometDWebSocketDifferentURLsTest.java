@@ -18,11 +18,9 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDWebSocketDifferentURLsTest extends AbstractCometDWebSocketTest
-{
+public class CometDWebSocketDifferentURLsTest extends AbstractCometDWebSocketTest {
     @Test
-    public void testDifferentURLs() throws Exception
-    {
+    public void testDifferentURLs() throws Exception {
         evaluateScript("cometd.configure({" +
                 "url: 'http://wrong/', " +
                 "urls: {" +

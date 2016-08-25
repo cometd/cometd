@@ -32,17 +32,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
-{
+public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest {
     @Before
-    public void init() throws Exception
-    {
+    public void init() throws Exception {
         startServer(null);
     }
 
     @Test
-    public void testUnsubscribeSubscribeBroadcast() throws Exception
-    {
+    public void testUnsubscribeSubscribeBroadcast() throws Exception {
         final String actionField = "action";
         final String unsubscribeAction = "unsubscribe";
         final String subscribeAction = "subscribe";
@@ -60,10 +57,8 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
         client.startBatch();
-        testChannel.subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        testChannel.subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.get().countDown();
             }
         });
@@ -98,8 +93,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
     }
 
     @Test
-    public void testUnsubscribeSubscribeService() throws Exception
-    {
+    public void testUnsubscribeSubscribeService() throws Exception {
         final String testChannelName = "/service/test";
         new ServiceChannelService(bayeux, testChannelName);
 
@@ -108,20 +102,17 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful())
+        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isSuccessful()) {
                     subscribeLatch.countDown();
+                }
             }
         });
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
-        testChannel.subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        testChannel.subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.get().countDown();
             }
         });
@@ -151,8 +142,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
     }
 
     @Test
-    public void testUnsubscribeDisconnectSubscribe() throws Exception
-    {
+    public void testUnsubscribeDisconnectSubscribe() throws Exception {
         final String actionField = "action";
         final String unsubscribeAction = "unsubscribe";
         final String testChannelName = "/test";
@@ -169,10 +159,8 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
         client.startBatch();
-        testChannel.subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        testChannel.subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.get().countDown();
             }
         });
@@ -203,8 +191,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
-    public static class SystemChannelService1 extends AbstractService
-    {
+    public static class SystemChannelService1 extends AbstractService {
         private final String actionField;
         private final String unsubscribeAction;
         private final String testChannelName;
@@ -212,8 +199,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         private final String subscribeAction;
         private final CountDownLatch resubscribeLatch;
 
-        public SystemChannelService1(BayeuxServer bayeux, String systemChannelName, String actionField, String unsubscribeAction, String testChannelName, CountDownLatch unsubscribeLatch, String subscribeAction, CountDownLatch resubscribeLatch)
-        {
+        public SystemChannelService1(BayeuxServer bayeux, String systemChannelName, String actionField, String unsubscribeAction, String testChannelName, CountDownLatch unsubscribeLatch, String subscribeAction, CountDownLatch resubscribeLatch) {
             super(bayeux, "test");
             this.actionField = actionField;
             this.unsubscribeAction = unsubscribeAction;
@@ -224,49 +210,42 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
             addService(systemChannelName, "processSystemMessage");
         }
 
-        public void processSystemMessage(ServerSession session, ServerMessage message)
-        {
+        public void processSystemMessage(ServerSession session, ServerMessage message) {
             Map<String, Object> data = message.getDataAsMap();
             String action = (String)data.get(actionField);
-            if (unsubscribeAction.equals(action))
-            {
+            if (unsubscribeAction.equals(action)) {
                 boolean unsubscribed = getBayeux().getChannel(testChannelName).unsubscribe(session);
-                if (unsubscribed)
+                if (unsubscribed) {
                     unsubscribeLatch.countDown();
-            }
-            else if (subscribeAction.equals(action))
-            {
+                }
+            } else if (subscribeAction.equals(action)) {
                 boolean subscribed = getBayeux().getChannel(testChannelName).subscribe(session);
-                if (subscribed)
+                if (subscribed) {
                     resubscribeLatch.countDown();
+                }
             }
         }
     }
 
-    public static class ServiceChannelService extends AbstractService
-    {
-        public ServiceChannelService(BayeuxServer bayeux, String testChannelName)
-        {
+    public static class ServiceChannelService extends AbstractService {
+        public ServiceChannelService(BayeuxServer bayeux, String testChannelName) {
             super(bayeux, "test");
             addService(testChannelName, "processServiceMessage");
         }
 
-        public void processServiceMessage(ServerSession session, ServerMessage.Mutable message)
-        {
+        public void processServiceMessage(ServerSession session, ServerMessage.Mutable message) {
             session.deliver(getServerSession(), message);
         }
     }
 
-    public static class SystemChannelService2 extends AbstractService
-    {
+    public static class SystemChannelService2 extends AbstractService {
         private final String actionField;
         private final String unsubscribeAction;
         private final String testChannelName;
         private final AtomicReference<ServerSession> sessionRef;
         private final CountDownLatch unsubscribeLatch;
 
-        public SystemChannelService2(BayeuxServer bayeux, String systemChannelName, String actionField, String unsubscribeAction, String testChannelName, AtomicReference<ServerSession> sessionRef, CountDownLatch unsubscribeLatch)
-        {
+        public SystemChannelService2(BayeuxServer bayeux, String systemChannelName, String actionField, String unsubscribeAction, String testChannelName, AtomicReference<ServerSession> sessionRef, CountDownLatch unsubscribeLatch) {
             super(bayeux, "test");
             this.actionField = actionField;
             this.unsubscribeAction = unsubscribeAction;
@@ -276,15 +255,12 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
             addService(systemChannelName, "processSystemMessage");
         }
 
-        public void processSystemMessage(ServerSession session, ServerMessage message)
-        {
+        public void processSystemMessage(ServerSession session, ServerMessage message) {
             Map<String, Object> data = message.getDataAsMap();
             String action = (String)data.get(actionField);
-            if (unsubscribeAction.equals(action))
-            {
+            if (unsubscribeAction.equals(action)) {
                 boolean unsubscribed = getBayeux().getChannel(testChannelName).unsubscribe(session);
-                if (unsubscribed)
-                {
+                if (unsubscribed) {
                     sessionRef.set(session);
                     unsubscribeLatch.countDown();
                 }

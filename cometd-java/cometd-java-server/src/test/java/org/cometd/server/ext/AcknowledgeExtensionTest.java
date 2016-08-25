@@ -32,16 +32,13 @@ import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest
-{
-    public AcknowledgeExtensionTest(String serverTransport)
-    {
+public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
+    public AcknowledgeExtensionTest(String serverTransport) {
         super(serverTransport);
     }
 
     @Test
-    public void testMetaConnectResendReturnsUnacknowledgedMessages() throws Exception
-    {
+    public void testMetaConnectResendReturnsUnacknowledgedMessages() throws Exception {
         timeout = 5000;
         startServer(null);
         bayeux.addExtension(new AcknowledgedMessagesExtension());
@@ -129,13 +126,10 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(2, messages.length);
         Message.Mutable m1 = messages[0];
         Message.Mutable m2 = messages[1];
-        if (channel.equals(m1.getChannel()))
-        {
+        if (channel.equals(m1.getChannel())) {
             Assert.assertEquals(Channel.META_CONNECT, m2.getChannel());
             Assert.assertEquals(data, m1.getData());
-        }
-        else
-        {
+        } else {
             Assert.assertEquals(Channel.META_CONNECT, m1.getChannel());
             Assert.assertEquals(channel, m2.getChannel());
             Assert.assertEquals(data, m2.getData());
@@ -150,8 +144,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest
     }
 
     @Test
-    public void testMetaConnectResendHoldsUnacknowledgedLazyMessages() throws Exception
-    {
+    public void testMetaConnectResendHoldsUnacknowledgedLazyMessages() throws Exception {
         timeout = 5000;
         startServer(null);
         bayeux.addExtension(new AcknowledgedMessagesExtension());
@@ -231,13 +224,10 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest
         connect.send(listener);
 
         // It must be held because there are only lazy messages.
-        try
-        {
+        try {
             listener.get(1, TimeUnit.SECONDS);
             Assert.fail();
-        }
-        catch (TimeoutException x)
-        {
+        } catch (TimeoutException x) {
             // Expected.
         }
 
@@ -249,13 +239,10 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(2, messages.length);
         Message.Mutable m1 = messages[0];
         Message.Mutable m2 = messages[1];
-        if (channel.equals(m1.getChannel()))
-        {
+        if (channel.equals(m1.getChannel())) {
             Assert.assertEquals(Channel.META_CONNECT, m2.getChannel());
             Assert.assertEquals(data, m1.getData());
-        }
-        else
-        {
+        } else {
             Assert.assertEquals(Channel.META_CONNECT, m1.getChannel());
             Assert.assertEquals(channel, m2.getChannel());
             Assert.assertEquals(data, m2.getData());

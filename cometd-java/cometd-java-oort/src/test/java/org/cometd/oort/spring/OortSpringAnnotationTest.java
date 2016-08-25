@@ -34,11 +34,9 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class OortSpringAnnotationTest
-{
+public class OortSpringAnnotationTest {
     @Test
-    public void testSpringWiringOfOort() throws Exception
-    {
+    public void testSpringWiringOfOort() throws Exception {
         Server server = new Server();
         ServletContextHandler context = new ServletContextHandler(server, "/");
         WebSocketServerContainerInitializer.configureContext(context);

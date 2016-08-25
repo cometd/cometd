@@ -28,8 +28,7 @@ import org.cometd.bayeux.Session;
  * interface provides method to configure extension, access channels
  * and to initiate the communication with a Bayeux server(s).</p>
  */
-public interface ClientSession extends Session
-{
+public interface ClientSession extends Session {
     /**
      * Adds an extension to this session.
      *
@@ -137,8 +136,7 @@ public interface ClientSession extends Session
      *
      * @see #remoteCall(String, Object, MessageListener)
      */
-    public interface MessageListener extends Bayeux.BayeuxListener
-    {
+    public interface MessageListener extends Bayeux.BayeuxListener {
         /**
          * Callback invoked when a remote call response is received.
          *
@@ -156,8 +154,7 @@ public interface ClientSession extends Session
      *
      * @see ClientSession#addExtension(Extension)
      */
-    public interface Extension
-    {
+    public interface Extension {
         /**
          * Callback method invoked every time a normal message is received.
          *
@@ -197,25 +194,20 @@ public interface ClientSession extends Session
         /**
          * Empty implementation of {@link Extension}.
          */
-        public static class Adapter implements Extension
-        {
-            public boolean rcv(ClientSession session, Message.Mutable message)
-            {
+        public static class Adapter implements Extension {
+            public boolean rcv(ClientSession session, Message.Mutable message) {
                 return true;
             }
 
-            public boolean rcvMeta(ClientSession session, Message.Mutable message)
-            {
+            public boolean rcvMeta(ClientSession session, Message.Mutable message) {
                 return true;
             }
 
-            public boolean send(ClientSession session, Message.Mutable message)
-            {
+            public boolean send(ClientSession session, Message.Mutable message) {
                 return true;
             }
 
-            public boolean sendMeta(ClientSession session, Message.Mutable message)
-            {
+            public boolean sendMeta(ClientSession session, Message.Mutable message) {
                 return true;
             }
         }

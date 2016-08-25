@@ -25,42 +25,37 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject
-public class BayeuxServerImplMBean extends ObjectMBean
-{
+public class BayeuxServerImplMBean extends ObjectMBean {
     private final BayeuxServerImpl bayeux;
 
-    public BayeuxServerImplMBean(Object managedObject)
-    {
+    public BayeuxServerImplMBean(Object managedObject) {
         super(managedObject);
         bayeux = (BayeuxServerImpl)managedObject;
     }
 
     @ManagedAttribute(value = "The number of sessions", readonly = true)
-    public int getSessions()
-    {
+    public int getSessions() {
         return bayeux.getSessions().size();
     }
 
     @ManagedAttribute(value = "The channel names of this server", readonly = true)
-    public Set<String> getChannels()
-    {
+    public Set<String> getChannels() {
         Set<String> channels = new TreeSet<>();
-        for (ServerChannel channel : bayeux.getChannels())
+        for (ServerChannel channel : bayeux.getChannels()) {
             channels.add(channel.getId());
+        }
         return channels;
     }
 
     // Replicated here because ConcurrentMap.KeySet is not serializable
     @ManagedAttribute(value = "The transports known by this server", readonly = true)
-    public Set<String> getKnownTransportNames()
-    {
+    public Set<String> getKnownTransportNames() {
         return new TreeSet<>(bayeux.getKnownTransportNames());
     }
 
     // Replicated here because ConcurrentMap.KeySet is not serializable
     @ManagedAttribute(value = "The configuration option names", readonly = true)
-    public Set<String> getOptionNames()
-    {
+    public Set<String> getOptionNames() {
         return new TreeSet<>(bayeux.getOptionNames());
     }
 }

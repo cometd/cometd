@@ -25,8 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 
-public class JSONTransport extends AbstractStreamHttpTransport
-{
+public class JSONTransport extends AbstractStreamHttpTransport {
     public final static String PREFIX = "long-polling.json";
     public final static String NAME = "long-polling";
     public final static String MIME_TYPE_OPTION = "mimeType";
@@ -34,44 +33,41 @@ public class JSONTransport extends AbstractStreamHttpTransport
     private boolean _jsonDebug = false;
     private String _mimeType = "application/json;charset=UTF-8";
 
-    public JSONTransport(BayeuxServerImpl bayeux)
-    {
+    public JSONTransport(BayeuxServerImpl bayeux) {
         super(bayeux, NAME);
         setOptionPrefix(PREFIX);
     }
 
     @Override
-    public void init()
-    {
+    public void init() {
         super.init();
         _jsonDebug = getOption(JSON_DEBUG_OPTION, _jsonDebug);
         _mimeType = getOption(MIME_TYPE_OPTION, _mimeType);
     }
 
     @Override
-    public boolean accept(HttpServletRequest request)
-    {
+    public boolean accept(HttpServletRequest request) {
         return "POST".equals(request.getMethod());
     }
 
     @Override
-    protected ServerMessage.Mutable[] parseMessages(HttpServletRequest request) throws IOException, ParseException
-    {
+    protected ServerMessage.Mutable[] parseMessages(HttpServletRequest request) throws IOException, ParseException {
         String charset = request.getCharacterEncoding();
-        if (charset == null)
+        if (charset == null) {
             request.setCharacterEncoding("UTF-8");
+        }
         String contentType = request.getContentType();
-        if (contentType == null || contentType.startsWith("application/json"))
+        if (contentType == null || contentType.startsWith("application/json")) {
             return parseMessages(request.getReader(), _jsonDebug);
-        else if (contentType.startsWith("application/x-www-form-urlencoded"))
+        } else if (contentType.startsWith("application/x-www-form-urlencoded")) {
             return parseMessages(request.getParameterValues(MESSAGE_PARAM));
-        else
+        } else {
             throw new IOException("Invalid Content-Type " + contentType);
+        }
     }
 
     @Override
-    protected ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException
-    {
+    protected ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType(_mimeType);
         ServletOutputStream output = response.getOutputStream();
         output.write('[');
@@ -79,8 +75,7 @@ public class JSONTransport extends AbstractStreamHttpTransport
     }
 
     @Override
-    protected void endWrite(HttpServletResponse response, ServletOutputStream output) throws IOException
-    {
+    protected void endWrite(HttpServletResponse response, ServletOutputStream output) throws IOException {
         output.write(']');
         output.close();
     }

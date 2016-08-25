@@ -30,34 +30,27 @@ import org.w3c.dom.events.EventListener;
  * of callback-polling transport.
  * This class is used from the env.js script.
  */
-public class ScriptInjectionEventListener implements EventListener
-{
+public class ScriptInjectionEventListener implements EventListener {
     private final ThreadModel threadModel;
     private final Scriptable thiz;
     private final Function function;
     private final Map domNodes;
 
-    public ScriptInjectionEventListener(ThreadModel threadModel, Scriptable thiz, Function function, Map domNodes)
-    {
+    public ScriptInjectionEventListener(ThreadModel threadModel, Scriptable thiz, Function function, Map domNodes) {
         this.threadModel = threadModel;
         this.thiz = thiz;
         this.function = function;
         this.domNodes = domNodes;
     }
 
-    public void handleEvent(Event evt)
-    {
-        if ("DOMNodeInserted".equals(evt.getType()))
-        {
+    public void handleEvent(Event evt) {
+        if ("DOMNodeInserted".equals(evt.getType())) {
             Object target = evt.getTarget();
-            if (target instanceof Element)
-            {
+            if (target instanceof Element) {
                 Element element = (Element)target;
-                if ("script".equalsIgnoreCase(element.getNodeName()))
-                {
+                if ("script".equalsIgnoreCase(element.getNodeName())) {
                     String src = element.getAttribute("src");
-                    if (src != null && src.length() > 0)
-                    {
+                    if (src != null && src.length() > 0) {
                         threadModel.invoke(true, thiz, thiz, function, domNodes.get(element));
                     }
                 }

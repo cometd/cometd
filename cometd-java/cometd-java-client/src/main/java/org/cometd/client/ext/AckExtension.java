@@ -36,8 +36,7 @@ import org.cometd.bayeux.client.ClientSession.Extension;
  * Messages are not acknowledged one by one, but instead a group of messages is
  * acknowledged when long poll returns.</p>
  */
-public class AckExtension extends Extension.Adapter
-{
+public class AckExtension extends Extension.Adapter {
     public static final String ACK_FIELD = "ack";
 
     private boolean _serverSupportsAcks;
@@ -46,16 +45,12 @@ public class AckExtension extends Extension.Adapter
     private long _batch;
 
     @Override
-    public boolean rcvMeta(ClientSession session, Mutable message)
-    {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel()))
-        {
+    public boolean rcvMeta(ClientSession session, Mutable message) {
+        if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
             Map<String, Object> ext = message.getExt(false);
-            if (ext != null)
-            {
+            if (ext != null) {
                 Object field = ext.get(ACK_FIELD);
-                if (field instanceof Map)
-                {
+                if (field instanceof Map) {
                     // New format.
                     @SuppressWarnings("unchecked")
                     Map<String, Object> ack = (Map<String, Object>)field;
@@ -64,40 +59,32 @@ public class AckExtension extends Extension.Adapter
                     // Check if there are messages.
                     Object batch = ack.get("batch");
                     Object size = ack.get("size");
-                    if (batch instanceof Number && size instanceof Number)
-                    {
+                    if (batch instanceof Number && size instanceof Number) {
                         _transientBatch = ((Number)batch).longValue();
                         _size = ((Number)size).intValue();
                     }
-                }
-                else
-                {
+                } else {
                     // Old format.
                     _serverSupportsAcks = Boolean.TRUE.equals(field);
                 }
             }
-        }
-        else if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful() && _serverSupportsAcks)
-        {
+        } else if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful() && _serverSupportsAcks) {
             Map<String, Object> ext = message.getExt(false);
-            if (ext != null)
-            {
+            if (ext != null) {
                 Object ack = ext.get(ACK_FIELD);
-                if (ack instanceof Number)
+                if (ack instanceof Number) {
                     _batch = ((Number)ack).longValue();
+                }
             }
         }
         return true;
     }
 
     @Override
-    public boolean rcv(ClientSession session, Mutable message)
-    {
-        if (_size > 0)
-        {
+    public boolean rcv(ClientSession session, Mutable message) {
+        if (_size > 0) {
             --_size;
-            if (_size == 0)
-            {
+            if (_size == 0) {
                 _batch = _transientBatch;
                 _transientBatch = 0;
             }
@@ -106,20 +93,17 @@ public class AckExtension extends Extension.Adapter
     }
 
     @Override
-    public boolean sendMeta(ClientSession session, Mutable message)
-    {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel()))
-        {
+    public boolean sendMeta(ClientSession session, Mutable message) {
+        if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
             _serverSupportsAcks = false;
             _transientBatch = 0;
             _batch = 0;
             _size = 0;
             message.getExt(true).put(ACK_FIELD, Boolean.TRUE);
-        }
-        else if (Channel.META_CONNECT.equals(message.getChannel()))
-        {
-            if (_serverSupportsAcks)
+        } else if (Channel.META_CONNECT.equals(message.getChannel())) {
+            if (_serverSupportsAcks) {
                 message.getExt(true).put(ACK_FIELD, _batch);
+            }
         }
         return true;
     }

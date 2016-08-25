@@ -44,17 +44,14 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SetiTest extends OortTest
-{
+public class SetiTest extends OortTest {
     private List<Seti> setis = new ArrayList<>();
 
-    public SetiTest(String serverTransport)
-    {
+    public SetiTest(String serverTransport) {
         super(serverTransport);
     }
 
-    protected Seti startSeti(Oort oort) throws Exception
-    {
+    protected Seti startSeti(Oort oort) throws Exception {
         Seti seti = new Seti(oort);
         seti.start();
         setis.add(seti);
@@ -62,20 +59,18 @@ public class SetiTest extends OortTest
     }
 
     @After
-    public void stopSetis() throws Exception
-    {
-        for (int i = setis.size() - 1; i >= 0; --i)
+    public void stopSetis() throws Exception {
+        for (int i = setis.size() - 1; i >= 0; --i) {
             stopSeti(setis.get(i));
+        }
     }
 
-    protected void stopSeti(Seti seti) throws Exception
-    {
+    protected void stopSeti(Seti seti) throws Exception {
         seti.stop();
     }
 
     @Test
-    public void testAssociateAndSendMessage() throws Exception
-    {
+    public void testAssociateAndSendMessage() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -127,10 +122,8 @@ public class SetiTest extends OortTest
 
         String channel = "/service/forward";
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        client2.getChannel(channel).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client2.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
         });
@@ -142,8 +135,7 @@ public class SetiTest extends OortTest
     }
 
     @Test
-    public void testDisassociate() throws Exception
-    {
+    public void testDisassociate() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -195,10 +187,8 @@ public class SetiTest extends OortTest
 
         String channel = "/service/forward";
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        client2.getChannel(channel).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client2.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
         });
@@ -211,8 +201,7 @@ public class SetiTest extends OortTest
     }
 
     @Test
-    public void testAutomaticDisassociation() throws Exception
-    {
+    public void testAutomaticDisassociation() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -246,11 +235,9 @@ public class SetiTest extends OortTest
         final AtomicReference<String> session2 = new AtomicReference<>();
         HttpClient httpClient = new HttpClient();
         httpClient.start();
-        BayeuxClient client2 = new BayeuxClient(oort2.getURL(), new LongPollingTransport(null, httpClient))
-        {
+        BayeuxClient client2 = new BayeuxClient(oort2.getURL(), new LongPollingTransport(null, httpClient)) {
             @Override
-            protected void processConnect(Message.Mutable connect)
-            {
+            protected void processConnect(Message.Mutable connect) {
                 // Send the login message, so Seti can associate this user
                 Map<String, Object> login2 = new HashMap<>();
                 login2.put("user", "user2");
@@ -275,11 +262,9 @@ public class SetiTest extends OortTest
 
         // Wait for the server to expire client2 and for Seti to disassociate it
         final CountDownLatch removedLatch = new CountDownLatch(1);
-        oort2.getBayeuxServer().getSession(session2.get()).addListener(new ServerSession.RemoveListener()
-        {
+        oort2.getBayeuxServer().getSession(session2.get()).addListener(new ServerSession.RemoveListener() {
             @Override
-            public void removed(ServerSession session, boolean timeout)
-            {
+            public void removed(ServerSession session, boolean timeout) {
                 removedLatch.countDown();
             }
         });
@@ -292,8 +277,7 @@ public class SetiTest extends OortTest
     }
 
     @Test
-    public void testAssociationWithMultipleSessions() throws Exception
-    {
+    public void testAssociationWithMultipleSessions() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -385,26 +369,20 @@ public class SetiTest extends OortTest
         String channel = "/service/forward";
         final LatchListener messageLatch = new LatchListener(3);
         final AtomicInteger counter = new AtomicInteger();
-        client1A.getChannel(channel).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client1A.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 counter.incrementAndGet();
                 messageLatch.countDown();
             }
         });
-        client1B.getChannel(channel).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client1B.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 counter.incrementAndGet();
                 messageLatch.countDown();
             }
         });
-        client1C.getChannel(channel).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client1C.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 counter.incrementAndGet();
                 messageLatch.countDown();
             }
@@ -445,8 +423,7 @@ public class SetiTest extends OortTest
     }
 
     @Test
-    public void testIsPresent() throws Exception
-    {
+    public void testIsPresent() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -471,15 +448,12 @@ public class SetiTest extends OortTest
 
         final CountDownLatch presenceOnLatch = new CountDownLatch(1);
         final CountDownLatch presenceOffLatch = new CountDownLatch(1);
-        Seti.PresenceListener listener = new Seti.PresenceListener()
-        {
-            public void presenceAdded(Event event)
-            {
+        Seti.PresenceListener listener = new Seti.PresenceListener() {
+            public void presenceAdded(Event event) {
                 presenceOnLatch.countDown();
             }
 
-            public void presenceRemoved(Event event)
-            {
+            public void presenceRemoved(Event event) {
                 presenceOffLatch.countDown();
             }
         };
@@ -518,8 +492,7 @@ public class SetiTest extends OortTest
     }
 
     @Test
-    public void testIsPresentWhenNodeJoins() throws Exception
-    {
+    public void testIsPresentWhenNodeJoins() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Seti seti1 = startSeti(oort1);
@@ -533,10 +506,8 @@ public class SetiTest extends OortTest
         login1.put("user", userId);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
         final CountDownLatch publishLatch = new CountDownLatch(1);
-        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 publishLatch.countDown();
             }
         });
@@ -564,11 +535,9 @@ public class SetiTest extends OortTest
 
         // Stop Seti1
         final CountDownLatch presenceOffLatch = new CountDownLatch(1);
-        seti2.addPresenceListener(new Seti.PresenceListener.Adapter()
-        {
+        seti2.addPresenceListener(new Seti.PresenceListener.Adapter() {
             @Override
-            public void presenceRemoved(Event event)
-            {
+            public void presenceRemoved(Event event) {
                 presenceOffLatch.countDown();
             }
         });
@@ -577,8 +546,7 @@ public class SetiTest extends OortTest
     }
 
     @Test
-    public void testPresenceFiresEventLocally() throws Exception
-    {
+    public void testPresenceFiresEventLocally() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -607,22 +575,21 @@ public class SetiTest extends OortTest
         final CountDownLatch remotePresenceOnLatch = new CountDownLatch(1);
         final CountDownLatch localPresenceOffLatch = new CountDownLatch(1);
         final CountDownLatch remotePresenceOffLatch = new CountDownLatch(1);
-        Seti.PresenceListener listener = new Seti.PresenceListener()
-        {
-            public void presenceAdded(Event event)
-            {
-                if (event.isLocal())
+        Seti.PresenceListener listener = new Seti.PresenceListener() {
+            public void presenceAdded(Event event) {
+                if (event.isLocal()) {
                     localPresenceOnLatch.countDown();
-                else
+                } else {
                     remotePresenceOnLatch.countDown();
+                }
             }
 
-            public void presenceRemoved(Event event)
-            {
-                if (event.isLocal())
+            public void presenceRemoved(Event event) {
+                if (event.isLocal()) {
                     localPresenceOffLatch.countDown();
-                else
+                } else {
                     remotePresenceOffLatch.countDown();
+                }
             }
         };
         seti2.addPresenceListener(listener);
@@ -633,10 +600,8 @@ public class SetiTest extends OortTest
         String userId1 = "user1";
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
-        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch1.countDown();
             }
         });
@@ -649,10 +614,8 @@ public class SetiTest extends OortTest
         String userId2 = "user2";
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
-        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch2.countDown();
             }
         });
@@ -664,10 +627,8 @@ public class SetiTest extends OortTest
         Map<String, Object> logout2 = new HashMap<>();
         logout2.put("user", userId2);
         ClientSessionChannel logoutChannel2 = client2.getChannel("/service/logout");
-        logoutChannel2.publish(logout2, new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        logoutChannel2.publish(logout2, new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 logoutLatch2.countDown();
             }
         });
@@ -679,10 +640,8 @@ public class SetiTest extends OortTest
         Map<String, Object> logout1 = new HashMap<>();
         logout1.put("user", userId1);
         ClientSessionChannel logoutChannel1 = client1.getChannel("/service/logout");
-        logoutChannel1.publish(logout1, new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        logoutChannel1.publish(logout1, new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 logoutLatch1.countDown();
             }
         });
@@ -693,8 +652,7 @@ public class SetiTest extends OortTest
     }
 
     @Test
-    public void testStopRemovesAssociationsAndPresences() throws Exception
-    {
+    public void testStopRemovesAssociationsAndPresences() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -729,10 +687,8 @@ public class SetiTest extends OortTest
         String userId1 = "user1";
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
-        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch1.countDown();
             }
         });
@@ -744,10 +700,8 @@ public class SetiTest extends OortTest
         String userId2 = "user2";
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
-        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch2.countDown();
             }
         });
@@ -774,8 +728,7 @@ public class SetiTest extends OortTest
     }
 
     @Test
-    public void testNetworkDisconnectAndReconnect() throws Exception
-    {
+    public void testNetworkDisconnectAndReconnect() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -810,10 +763,8 @@ public class SetiTest extends OortTest
         String userId1 = "user1";
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
-        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch1.countDown();
             }
         });
@@ -825,10 +776,8 @@ public class SetiTest extends OortTest
         String userId2 = "user2";
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
-        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch2.countDown();
             }
         });
@@ -888,8 +837,7 @@ public class SetiTest extends OortTest
     }
 
     @Test
-    public void testMultipleServerCrashes() throws Exception
-    {
+    public void testMultipleServerCrashes() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -922,10 +870,8 @@ public class SetiTest extends OortTest
         String userId1 = "user1";
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
-        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch1.countDown();
             }
         });
@@ -933,8 +879,7 @@ public class SetiTest extends OortTest
         Assert.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
 
         int switches = 2;
-        for (int i = 0; i < switches; ++i)
-        {
+        for (int i = 0; i < switches; ++i) {
             // Simulate network crash
             oortComet12.disconnect();
             oortComet12.waitFor(5000, BayeuxClient.State.DISCONNECTED);
@@ -953,10 +898,8 @@ public class SetiTest extends OortTest
             client1 = startClient(oort2, null);
             final CountDownLatch loginLatch2 = new CountDownLatch(1);
             loginChannel1 = client1.getChannel("/service/login");
-            loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
-            {
-                public void onMessage(ClientSessionChannel channel, Message message)
-                {
+            loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+                public void onMessage(ClientSessionChannel channel, Message message) {
                     loginLatch2.countDown();
                 }
             });
@@ -1003,10 +946,8 @@ public class SetiTest extends OortTest
             client1 = startClient(oort1, null);
             final CountDownLatch loginLatch3 = new CountDownLatch(1);
             loginChannel1 = client1.getChannel("/service/login");
-            loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
-            {
-                public void onMessage(ClientSessionChannel channel, Message message)
-                {
+            loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+                public void onMessage(ClientSessionChannel channel, Message message) {
                     loginLatch3.countDown();
                 }
             });
@@ -1038,19 +979,16 @@ public class SetiTest extends OortTest
     }
 
     @Test
-    public void testMessageToObservedChannelIsForwarded() throws Exception
-    {
+    public void testMessageToObservedChannelIsForwarded() throws Exception {
         testForwardBehaviour(true);
     }
 
     @Test
-    public void testMessageToNonObservedChannelIsNotForwarded() throws Exception
-    {
+    public void testMessageToNonObservedChannelIsNotForwarded() throws Exception {
         testForwardBehaviour(false);
     }
 
-    private void testForwardBehaviour(boolean forward) throws Exception
-    {
+    private void testForwardBehaviour(boolean forward) throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -1085,10 +1023,8 @@ public class SetiTest extends OortTest
         String userId1 = "user1";
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
-        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch1.countDown();
             }
         });
@@ -1100,10 +1036,8 @@ public class SetiTest extends OortTest
         String userId2 = "user2";
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
-        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch2.countDown();
             }
         });
@@ -1117,8 +1051,7 @@ public class SetiTest extends OortTest
         final String serviceChannel = "/service/foo";
         final String broadcastChannel = "/foo";
 
-        if (forward)
-        {
+        if (forward) {
             oort2.observeChannel(broadcastChannel);
             // Give some time for the subscribe to happen
             Thread.sleep(1000);
@@ -1130,10 +1063,8 @@ public class SetiTest extends OortTest
         LatchListener subscribeListener = new LatchListener(1);
         final CountDownLatch messageLatch = new CountDownLatch(1);
         client2.getChannel(Channel.META_SUBSCRIBE).addListener(subscribeListener);
-        client2.getChannel(broadcastChannel).subscribe(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
+        client2.getChannel(broadcastChannel).subscribe(new ClientSessionChannel.MessageListener() {
+            public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
         });
@@ -1144,29 +1075,24 @@ public class SetiTest extends OortTest
         Assert.assertEquals(forward, messageLatch.await(1, TimeUnit.SECONDS));
     }
 
-    public static class BroadcastService extends AbstractService
-    {
+    public static class BroadcastService extends AbstractService {
         private final String broadcastChannel;
 
-        public BroadcastService(Seti seti, String channel, String broadcastChannel)
-        {
+        public BroadcastService(Seti seti, String channel, String broadcastChannel) {
             super(seti.getOort().getBayeuxServer(), seti.getId());
             this.broadcastChannel = broadcastChannel;
             addService(channel, "process");
         }
 
-        public void process(ServerSession session, ServerMessage message)
-        {
+        public void process(ServerSession session, ServerMessage message) {
             getLocalSession().getChannel(broadcastChannel).publish("data2");
         }
     }
 
-    public static class SetiService extends AbstractService
-    {
+    public static class SetiService extends AbstractService {
         private final Seti seti;
 
-        private SetiService(Seti seti)
-        {
+        private SetiService(Seti seti) {
             super(seti.getOort().getBayeuxServer(), seti.getId());
             this.seti = seti;
             addService("/service/login", "login");
@@ -1174,31 +1100,27 @@ public class SetiTest extends OortTest
             addService("/service/forward", "forward");
         }
 
-        public void login(ServerSession session, ServerMessage message)
-        {
-            Map<String,Object> data = message.getDataAsMap();
+        public void login(ServerSession session, ServerMessage message) {
+            Map<String, Object> data = message.getDataAsMap();
             String user = (String)data.get("user");
             seti.associate(user, session);
         }
 
-        public void logout(ServerSession session, ServerMessage message)
-        {
-            Map<String,Object> data = message.getDataAsMap();
+        public void logout(ServerSession session, ServerMessage message) {
+            Map<String, Object> data = message.getDataAsMap();
             String user = (String)data.get("user");
             seti.disassociate(user, session);
         }
 
-        public void forward(ServerSession session, ServerMessage message)
-        {
-            Map<String,Object> data = message.getDataAsMap();
+        public void forward(ServerSession session, ServerMessage message) {
+            Map<String, Object> data = message.getDataAsMap();
             String peer = (String)data.get("peer");
             seti.sendMessage(peer, message.getChannel(), data);
         }
     }
 
     @Test
-    public void testConcurrent() throws Exception
-    {
+    public void testConcurrent() throws Exception {
         Server server1 = startServer(0);
         final Oort oort1 = startOort(server1);
         Server server2 = startServer(0);
@@ -1224,21 +1146,16 @@ public class SetiTest extends OortTest
         CountDownLatch absentLatch = new CountDownLatch(threads * iterations);
         seti2.addPresenceListener(new UserAbsentListener(absentLatch));
 
-        for (int i = 0; i < threads; ++i)
-        {
+        for (int i = 0; i < threads; ++i) {
             final int index = i;
-            new Thread(new Runnable()
-            {
+            new Thread(new Runnable() {
                 @Override
-                public void run()
-                {
-                    try
-                    {
+                public void run() {
+                    try {
                         Map<String, ServerSession> sessions = new HashMap<>();
 
                         barrier.await();
-                        for (int j = 0; j < iterations; ++j)
-                        {
+                        for (int j = 0; j < iterations; ++j) {
                             String key = String.valueOf(index * iterations + j);
                             LocalSession localSession = oort1.getBayeuxServer().newLocalSession(key);
                             localSession.handshake();
@@ -1248,13 +1165,10 @@ public class SetiTest extends OortTest
                         }
 
                         barrier.await();
-                        for (Map.Entry<String, ServerSession> entry : sessions.entrySet())
-                        {
+                        for (Map.Entry<String, ServerSession> entry : sessions.entrySet()) {
                             seti1.disassociate(entry.getKey(), entry.getValue());
                         }
-                    }
-                    catch (Throwable x)
-                    {
+                    } catch (Throwable x) {
                         x.printStackTrace();
                     }
                 }
@@ -1283,8 +1197,7 @@ public class SetiTest extends OortTest
     }
 
     @Test
-    public void testDisassociationRemovesListeners() throws Exception
-    {
+    public void testDisassociationRemovesListeners() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
 
@@ -1301,32 +1214,26 @@ public class SetiTest extends OortTest
         Assert.assertEquals(0, ((ServerSessionImpl)session).getListeners().size());
     }
 
-    private static class UserPresentListener extends Seti.PresenceListener.Adapter
-    {
+    private static class UserPresentListener extends Seti.PresenceListener.Adapter {
         private final CountDownLatch latch;
 
-        private UserPresentListener(CountDownLatch latch)
-        {
+        private UserPresentListener(CountDownLatch latch) {
             this.latch = latch;
         }
 
-        public void presenceAdded(Event event)
-        {
+        public void presenceAdded(Event event) {
             latch.countDown();
         }
     }
 
-    private static class UserAbsentListener extends Seti.PresenceListener.Adapter
-    {
+    private static class UserAbsentListener extends Seti.PresenceListener.Adapter {
         private final CountDownLatch latch;
 
-        private UserAbsentListener(CountDownLatch latch)
-        {
+        private UserAbsentListener(CountDownLatch latch) {
             this.latch = latch;
         }
 
-        public void presenceRemoved(Event event)
-        {
+        public void presenceRemoved(Event event) {
             latch.countDown();
         }
     }

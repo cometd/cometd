@@ -27,18 +27,16 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
-public class CometDInitDisconnectTest extends AbstractCometDTest
-{
+public class CometDInitDisconnectTest extends AbstractCometDTest {
     @Test
-    public void testInitDisconnect() throws Exception
-    {
+    public void testInitDisconnect() throws Exception {
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var latch = new Latch(2);");
         Latch latch = get("latch");
         String script = "cometd.addListener('/**', function(message) { window.console.info(message.channel); latch.countDown(); });" +
-                        // Expect 2 messages: handshake and connect
-                        "cometd.handshake();";
+                // Expect 2 messages: handshake and connect
+                "cometd.handshake();";
         evaluateScript(script);
         Assert.assertTrue(latch.await(5000));
 
@@ -63,26 +61,20 @@ public class CometDInitDisconnectTest extends AbstractCometDTest
     }
 
     @Test
-    public void testHandshakeDisconnect() throws Exception
-    {
+    public void testHandshakeDisconnect() throws Exception {
         // Dojo has a bug where aborting an XHR from the
         // handshake listener does not notify the XHR error
         // handlers, so the disconnect listener is not invoked.
         Assume.assumeTrue(System.getProperty("toolkitTestProvider").equalsIgnoreCase(JQueryTestProvider.class.getName()));
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
-        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter()
-        {
+        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter() {
             @Override
-            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-            {
-                if (Channel.META_HANDSHAKE.equals(message.getChannel()))
-                {
-                    to.addListener(new ServerSession.RemoveListener()
-                    {
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
+                if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
+                    to.addListener(new ServerSession.RemoveListener() {
                         @Override
-                        public void removed(ServerSession session, boolean timeout)
-                        {
+                        public void removed(ServerSession session, boolean timeout) {
                             removeLatch.countDown();
                         }
                     });

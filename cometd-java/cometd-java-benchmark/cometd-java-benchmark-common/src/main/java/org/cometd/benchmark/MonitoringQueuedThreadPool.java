@@ -22,8 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-public class MonitoringQueuedThreadPool extends QueuedThreadPool
-{
+public class MonitoringQueuedThreadPool extends QueuedThreadPool {
     private final AtomicLong tasks = new AtomicLong();
     private final AtomicLong maxTaskLatency = new AtomicLong();
     private final AtomicLong totalTaskLatency = new AtomicLong();
@@ -33,8 +32,7 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
     private final AtomicInteger threads = new AtomicInteger();
     private final AtomicInteger maxThreads = new AtomicInteger();
 
-    public MonitoringQueuedThreadPool(int maxThreads)
-    {
+    public MonitoringQueuedThreadPool(int maxThreads) {
         // Use a very long idle timeout to avoid creation/destruction of threads
         super(maxThreads, maxThreads, 24 * 3600 * 1000, new MonitoringBlockingArrayQueue(maxThreads, maxThreads));
         queue = (MonitoringBlockingArrayQueue)getQueue();
@@ -42,25 +40,19 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
     }
 
     @Override
-    public void execute(final Runnable job)
-    {
+    public void execute(final Runnable job) {
         final long begin = System.nanoTime();
-        super.execute(new Runnable()
-        {
-            public void run()
-            {
+        super.execute(new Runnable() {
+            public void run() {
                 long queueLatency = System.nanoTime() - begin;
                 tasks.incrementAndGet();
                 Atomics.updateMax(maxQueueLatency, queueLatency);
                 totalQueueLatency.addAndGet(queueLatency);
                 Atomics.updateMax(maxThreads, threads.incrementAndGet());
                 long start = System.nanoTime();
-                try
-                {
+                try {
                     job.run();
-                }
-                finally
-                {
+                } finally {
                     long taskLatency = System.nanoTime() - start;
                     threads.decrementAndGet();
                     Atomics.updateMax(maxTaskLatency, taskLatency);
@@ -70,8 +62,7 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
         });
     }
 
-    public void reset()
-    {
+    public void reset() {
         tasks.set(0);
         maxTaskLatency.set(0);
         totalTaskLatency.set(0);
@@ -82,108 +73,94 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
         maxThreads.set(0);
     }
 
-    public long getTasks()
-    {
+    public long getTasks() {
         return tasks.get();
     }
 
-    public int getMaxActiveThreads()
-    {
+    public int getMaxActiveThreads() {
         return maxThreads.get();
     }
 
-    public int getMaxQueueSize()
-    {
+    public int getMaxQueueSize() {
         return queue.maxSize.get();
     }
 
-    public long getAverageQueueLatency()
-    {
+    public long getAverageQueueLatency() {
         long count = tasks.get();
         return count == 0 ? -1 : totalQueueLatency.get() / count;
     }
 
-    public long getMaxQueueLatency()
-    {
+    public long getMaxQueueLatency() {
         return maxQueueLatency.get();
     }
 
-    public long getMaxTaskLatency()
-    {
+    public long getMaxTaskLatency() {
         return maxTaskLatency.get();
     }
 
-    public long getAverageTaskLatency()
-    {
+    public long getAverageTaskLatency() {
         long count = tasks.get();
         return count == 0 ? -1 : totalTaskLatency.get() / count;
     }
 
-    public static class MonitoringBlockingArrayQueue extends BlockingArrayQueue<Runnable>
-    {
+    public static class MonitoringBlockingArrayQueue extends BlockingArrayQueue<Runnable> {
         private final AtomicInteger size = new AtomicInteger();
         private final AtomicInteger maxSize = new AtomicInteger();
 
-        public MonitoringBlockingArrayQueue(int capacity, int growBy)
-        {
+        public MonitoringBlockingArrayQueue(int capacity, int growBy) {
             super(capacity, growBy);
         }
 
-        public void reset()
-        {
+        public void reset() {
             size.set(0);
             maxSize.set(0);
         }
 
         @Override
-        public void clear()
-        {
+        public void clear() {
             reset();
             super.clear();
         }
 
         @Override
-        public boolean offer(Runnable job)
-        {
+        public boolean offer(Runnable job) {
             boolean added = super.offer(job);
-            if (added)
+            if (added) {
                 increment();
+            }
             return added;
         }
 
-        private void increment()
-        {
+        private void increment() {
             Atomics.updateMax(maxSize, size.incrementAndGet());
         }
 
         @Override
-        public Runnable poll()
-        {
+        public Runnable poll() {
             Runnable job = super.poll();
-            if (job != null)
+            if (job != null) {
                 decrement();
+            }
             return job;
         }
 
         @Override
-        public Runnable poll(long time, TimeUnit unit) throws InterruptedException
-        {
+        public Runnable poll(long time, TimeUnit unit) throws InterruptedException {
             Runnable job = super.poll(time, unit);
-            if (job != null)
+            if (job != null) {
                 decrement();
+            }
             return job;
         }
 
         @Override
-        public Runnable take() throws InterruptedException
-        {
+        public Runnable take() throws InterruptedException {
             Runnable job = super.take();
             decrement();
             return job;
         }
 
-        private void decrement()
-        {
+        private void decrement() {
             size.decrementAndGet();
         }
     }

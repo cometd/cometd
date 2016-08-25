@@ -1,6 +1,6 @@
-#set( $symbol_pound = '#' )
-#set( $symbol_dollar = '$' )
-#set( $symbol_escape = '\' )
+#set($symbol_pound='#')
+#set($symbol_dollar='$')
+#set($symbol_escape='\')
 
 package ${package};
 
@@ -22,13 +22,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.ServletContextAware;
 
 @Component
-public class CometDInitializer implements ServletContextAware
-{
+public class CometDInitializer implements ServletContextAware {
     private ServletContext servletContext;
 
     @Bean(initMethod = "start", destroyMethod = "stop")
-    public BayeuxServer bayeuxServer()
-    {
+    public BayeuxServer bayeuxServer() {
         BayeuxServerImpl bean = new BayeuxServerImpl();
         bean.setTransports(new WebSocketTransport(bean), new JSONTransport(bean), new JSONPTransport(bean));
         servletContext.setAttribute(BayeuxServer.ATTRIBUTE, bean);
@@ -38,32 +36,27 @@ public class CometDInitializer implements ServletContextAware
     }
 
     @Override
-    public void setServletContext(ServletContext servletContext)
-    {
+    public void setServletContext(ServletContext servletContext) {
         this.servletContext = servletContext;
     }
 
     @Component
-    public static class Processor implements DestructionAwareBeanPostProcessor
-    {
+    public static class Processor implements DestructionAwareBeanPostProcessor {
         @Inject
         private BayeuxServer bayeuxServer;
         private ServerAnnotationProcessor processor;
 
         @PostConstruct
-        private void init()
-        {
+        private void init() {
             this.processor = new ServerAnnotationProcessor(bayeuxServer);
         }
 
         @PreDestroy
-        private void destroy()
-        {
+        private void destroy() {
         }
 
         @Override
-        public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException
-        {
+        public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException {
             processor.processDependencies(bean);
             processor.processConfigurations(bean);
             processor.processCallbacks(bean);
@@ -71,20 +64,17 @@ public class CometDInitializer implements ServletContextAware
         }
 
         @Override
-        public Object postProcessAfterInitialization(Object bean, String name) throws BeansException
-        {
+        public Object postProcessAfterInitialization(Object bean, String name) throws BeansException {
             return bean;
         }
 
         @Override
-        public void postProcessBeforeDestruction(Object bean, String name) throws BeansException
-        {
+        public void postProcessBeforeDestruction(Object bean, String name) throws BeansException {
             processor.deprocessCallbacks(bean);
         }
 
         @Override
-        public boolean requiresDestruction(Object bean)
-        {
+        public boolean requiresDestruction(Object bean) {
             return true;
         }
     }
