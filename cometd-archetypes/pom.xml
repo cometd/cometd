@@ -9,7 +9,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.cometd.archetypes</groupId>
-    <artifactId>cometd-archetypes-project</artifactId>
+    <artifactId>cometd-archetypes</artifactId>
     <packaging>pom</packaging>
     <name>CometD :: Archetypes</name>
     <description>${project.version} - CometD archetype for creating a server-side event-driven web application</description>
