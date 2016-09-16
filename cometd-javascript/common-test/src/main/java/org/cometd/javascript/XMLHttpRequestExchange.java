@@ -183,9 +183,9 @@ public class XMLHttpRequestExchange extends ScriptableObject {
             aborted = true;
             responseText = null;
             getRequest().getHeaders().clear();
-            if (!async || readyState == ReadyState.HEADERS_RECEIVED || readyState == ReadyState.LOADING) {
+            if (async && (readyState == ReadyState.HEADERS_RECEIVED || readyState == ReadyState.LOADING)) {
                 readyState = ReadyState.DONE;
-                notifyReadyStateChange(false);
+                notifyReadyStateChange(true);
                 notifyError();
             }
             readyState = ReadyState.UNSENT;
@@ -280,7 +280,11 @@ public class XMLHttpRequestExchange extends ScriptableObject {
 
         @Override
         public String toString() {
-            return requestText == null ? getRequest().toString() : String.format("%s%n%s", getRequest(), requestText);
+            if (requestText == null) {
+                return String.format("%s(%s)", getRequest(), readyState);
+            } else {
+                return String.format("%s(%s)%n%s", getRequest(), readyState, requestText);
+            }
         }
     }
 }

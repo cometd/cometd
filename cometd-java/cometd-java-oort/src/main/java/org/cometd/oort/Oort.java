@@ -212,6 +212,10 @@ public class Oort extends ContainerLifeCycle {
         _scheduler.shutdown();
 
         super.doStop();
+
+        for (ClientTransport.Factory factory : _transportFactories) {
+            removeBean(factory);
+        }
     }
 
     @ManagedAttribute(value = "The BayeuxServer of this Oort", readonly = true)
@@ -260,6 +264,11 @@ public class Oort extends ContainerLifeCycle {
 
     public List<ClientTransport.Factory> getClientTransportFactories() {
         return _transportFactories;
+    }
+
+    public void setClientTransportFactories(List<ClientTransport.Factory> factories) {
+        _transportFactories.clear();
+        _transportFactories.addAll(factories);
     }
 
     /**
