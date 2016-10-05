@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function() {
-    function bind(AckExtension, cometd) {
-        var result = new AckExtension();
-        cometd.registerExtension('ack', result);
-        return result;
-    }
 
+(function(root, factory){
     if (typeof define === 'function' && define.amd) {
-        define(['org/cometd/AckExtension', 'jquery.cometd'], bind);
+        define(['jquery.cometd', 'org/cometd/AckExtension'], factory);
+    } else if (typeof exports === 'object') {
+        module.exports = factory(require('cometd/jquery.cometd'), require('cometd/AckExtension'));
     } else {
-        bind(org.cometd.AckExtension, jQuery.cometd);
+        factory(jQuery.cometd, root.org.cometd.AckExtension);
     }
-})();
+}(this, function(cometd, AckExtension) {
+    var result = new AckExtension();
+    cometd.registerExtension('ack', result);
+    return result;
+}));

@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-(function() {
-    function bind(org_cometd) {
-        /**
-         * The timestamp extension adds the optional timestamp field to all outgoing messages.
-         */
-        return org_cometd.TimeStampExtension = function() {
-            this.outgoing = function(message) {
-                message.timestamp = new Date().toUTCString();
-                return message;
-            };
-        };
-    }
-
+(function(root, factory){
     if (typeof define === 'function' && define.amd) {
-        define(['org/cometd'], bind);
+        define(['org/cometd'], factory);
+    } else if (typeof exports === 'object') {
+        module.exports = factory(require('cometd'));
     } else {
-        bind(org.cometd);
+        factory(root.org.cometd);
     }
-}());
+}(this, function(cometdModule) {
+    // The timestamp extension adds the optional timestamp field to all outgoing messages.
+    return cometdModule.TimeStampExtension = function() {
+        this.outgoing = function(message) {
+            message.timestamp = new Date().toUTCString();
+            return message;
+        };
+    };
+}));

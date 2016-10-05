@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 define(['org/cometd/TimeStampExtension', 'dojox/cometd'],
     function(TimeStampExtension, cometd) {
         var result = new TimeStampExtension();

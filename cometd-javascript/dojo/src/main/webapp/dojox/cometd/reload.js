@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 define(['org/cometd/ReloadExtension', 'dojox/cometd'],
     function(ReloadExtension, cometd) {
         var result = new ReloadExtension();

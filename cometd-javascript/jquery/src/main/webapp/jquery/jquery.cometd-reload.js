@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function() {
-    function bind(ReloadExtension, cometd) {
-        var result = new ReloadExtension();
-        cometd.registerExtension('reload', result);
-        return result;
-    }
 
+(function(root, factory){
     if (typeof define === 'function' && define.amd) {
-        define(['org/cometd/ReloadExtension', 'jquery.cometd'], bind);
+        define(['jquery.cometd', 'org/cometd/ReloadExtension'], factory);
+    } else if (typeof exports === 'object') {
+        module.exports = factory(require('cometd/jquery.cometd'), require('cometd/ReloadExtension'));
     } else {
-        bind(org.cometd.ReloadExtension, jQuery.cometd);
+        factory(jQuery.cometd, root.org.cometd.ReloadExtension);
     }
-})();
+}(this, function(cometd, ReloadExtension){
+    var result = new ReloadExtension();
+    cometd.registerExtension('reload', result);
+    return result;
+}));

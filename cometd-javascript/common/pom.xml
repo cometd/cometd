@@ -11,74 +11,17 @@
     <packaging>war</packaging>
     <name>CometD :: JavaScript :: Common</name>
 
-    <properties>
-        <jsSourceDir>${basedir}/src/main/js</jsSourceDir>
-        <jsTargetDir>${project.build.directory}/js</jsTargetDir>
-    </properties>
-
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>interpolate-js</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <resources>
-                                <resource>
-                                    <directory>${jsSourceDir}</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                            <outputDirectory>${jsTargetDir}</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>yuicompressor-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>aggregate-js</id>
-                        <goals>
-                            <goal>compress</goal>
-                        </goals>
-                        <configuration>
-                            <aggregations>
-                                <aggregation>
-                                    <output>${project.build.directory}/${project.build.finalName}/org/cometd.js</output>
-                                    <insertNewLine>true</insertNewLine>
-                                    <includes>
-                                        <include>${jsTargetDir}/org/cometd/cometd-header.js</include>
-                                        <include>${jsTargetDir}/org/cometd/cometd-namespace.js</include>
-                                        <include>${jsTargetDir}/org/cometd/Utils.js</include>
-                                        <include>${jsTargetDir}/org/cometd/TransportRegistry.js</include>
-                                        <include>${jsTargetDir}/org/cometd/Transport.js</include>
-                                        <include>${jsTargetDir}/org/cometd/RequestTransport.js</include>
-                                        <include>${jsTargetDir}/org/cometd/LongPollingTransport.js</include>
-                                        <include>${jsTargetDir}/org/cometd/CallbackPollingTransport.js</include>
-                                        <include>${jsTargetDir}/org/cometd/WebSocketTransport.js</include>
-                                        <include>${jsTargetDir}/org/cometd/CometD.js</include>
-                                        <include>${jsTargetDir}/org/cometd/cometd-amd.js</include>
-                                    </includes>
-                                </aggregation>
-                            </aggregations>
-                        </configuration>
-                    </execution>
-                </executions>
+                <artifactId>maven-war-plugin</artifactId>
                 <configuration>
-                    <disableOptimizations>true</disableOptimizations>
-                    <nosuffix>true</nosuffix>
-                    <nomunge>true</nomunge>
-                    <jswarn>false</jswarn>
-                    <excludes>
-                        <exclude>${basedir}/src/main/webapp/**</exclude>
-                    </excludes>
+                    <webResources>
+                        <webResource>
+                            <directory>src/main/webapp</directory>
+                            <filtering>true</filtering>
+                        </webResource>
+                    </webResources>
                 </configuration>
             </plugin>
         </plugins>

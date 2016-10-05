@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CometD chat</title>
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Varela+Round">
+    <link rel="stylesheet" type="text/css" href="chat.css">
+    <script type="text/javascript" src="../../org/cometd.js"></script>
+    <script type="text/javascript" src="../../org/cometd/AckExtension.js"></script>
+    <script type="text/javascript" src="../../org/cometd/ReloadExtension.js"></script>
+    <script type="text/javascript" src="chat.js"></script>
+    <script type="text/javascript">
+        var config = {
+            contextPath: location.href.replace(/https?:\/\/[^\/]*/, '').replace(/\/vanilla-examples\/.*$/, '')
+        }
+    </script>
+</head>
+
+<body>
+
+<h1>CometD Chat Example</h1>
+
+<a href="../..">Main Demo Index</a>
+
+<div id="chatroom">
+    <div id="chat"></div>
+    <div id="members"></div>
+    <div id="input">
+        <div id="join">
+            <table>
+                <tbody>
+                <tr>
+                    <td>
+                        <input id="useServer" type="checkbox" />
+                    </td>
+                    <td>
+                        <label for="useServer" title="Selects whether to use cross-domain CometD">Use Alternate Server</label>
+                    </td>
+                    <td>
+                        <input id="altServer" type="text" value="http://127.0.0.1:8080/cometd" />
+                    </td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>&nbsp;</td>
+                    <td>
+                        Enter Chat Nickname
+                    </td>
+                    <td>
+                        <input id="username" type="text" />
+                    </td>
+                    <td>
+                        <button id="joinButton" class="button">Join</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="joined">
+            Chat:
+            &nbsp;
+            <input id="phrase" type="text" />
+            <button id="sendButton" class="button">Send</button>
+            <button id="leaveButton" class="button">Leave</button>
+        </div>
+    </div>
+</div>
+<br />
+<div style="padding: 0.25em;">Tip: Use username[,username2]::text to send private messages</div>
+
+</body>
+
+</html>

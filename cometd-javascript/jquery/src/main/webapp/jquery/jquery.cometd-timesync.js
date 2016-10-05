@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function() {
-    function bind(TimeSyncExtension, cometd) {
-        var result = new TimeSyncExtension();
-        cometd.registerExtension('timesync', result);
-        return result;
-    }
 
+(function(root, factory){
     if (typeof define === 'function' && define.amd) {
-        define(['org/cometd/TimeSyncExtension', 'jquery.cometd'], bind);
+        define(['jquery.cometd', 'org/cometd/TimeSyncExtension'], factory);
+    } else if (typeof exports === 'object') {
+        module.exports = factory(require('cometd/jquery.cometd'), require('cometd/TimeSyncExtension'));
     } else {
-        bind(org.cometd.TimeSyncExtension, jQuery.cometd);
+        factory(jQuery.cometd, root.org.cometd.TimeSyncExtension);
     }
-})();
+}(this, function(cometd, TimeSyncExtension) {
+    var result = new TimeSyncExtension();
+    cometd.registerExtension('timesync', result);
+    return result;
+}));

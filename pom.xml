@@ -416,11 +416,6 @@
                     <version>${jetty-version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>net.alchim31.maven</groupId>
-                    <artifactId>yuicompressor-maven-plugin</artifactId>
-                    <version>1.5.1</version>
-                </plugin>
-                <plugin>
                     <groupId>org.asciidoctor</groupId>
                     <artifactId>asciidoctor-maven-plugin</artifactId>
                     <version>1.5.3</version>
