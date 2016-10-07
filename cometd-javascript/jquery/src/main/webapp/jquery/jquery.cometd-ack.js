@@ -16,7 +16,7 @@
 
 (function(root, factory){
     if (typeof exports === 'object') {
-        module.exports = factory(require('cometd/jquery.cometd'), require('cometd/AckExtension'));
+        module.exports = factory(require('./jquery.cometd'), require('./AckExtension'));
     } else if (typeof define === 'function' && define.amd) {
         define(['jquery.cometd', 'org/cometd/AckExtension'], factory);
     } else {

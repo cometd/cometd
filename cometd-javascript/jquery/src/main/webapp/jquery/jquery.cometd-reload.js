@@ -16,7 +16,7 @@
 
 (function(root, factory){
     if (typeof exports === 'object') {
-        module.exports = factory(require('cometd/jquery.cometd'), require('cometd/ReloadExtension'));
+        module.exports = factory(require('./jquery.cometd'), require('./ReloadExtension'));
     } else if (typeof define === 'function' && define.amd) {
         define(['jquery.cometd', 'org/cometd/ReloadExtension'], factory);
     } else {
