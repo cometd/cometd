@@ -15,10 +15,10 @@
  */
 
 (function(root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        define(['org/cometd'], factory);
-    } else if (typeof exports === 'object') {
+    if (typeof exports === 'object') {
         module.exports = factory(require('cometd'));
+    } else if (typeof define === 'function' && define.amd) {
+        define(['org/cometd'], factory);
     } else {
         factory(root.org.cometd);
     }

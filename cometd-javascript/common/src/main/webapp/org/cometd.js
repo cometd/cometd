@@ -17,12 +17,12 @@
 /* CometD Version ${project.version} */
 
 (function(root, factory){
-    if (typeof define === 'function' && define.amd) {
-        // AMD.
-        define([], factory);
-    } else if (typeof exports === 'object') {
+    if (typeof exports === 'object') {
         // CommonJS.
         module.exports = factory();
+    } else if (typeof define === 'function' && define.amd) {
+        // AMD.
+        define([], factory);
     } else {
         // Globals.
         root.org = root.org || {};

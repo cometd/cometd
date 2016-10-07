@@ -15,10 +15,10 @@
  */
 
 (function(root, factory){
-    if (typeof define === 'function' && define.amd) {
-        define(['jquery.cometd', 'org/cometd/TimeSyncExtension'], factory);
-    } else if (typeof exports === 'object') {
+    if (typeof exports === 'object') {
         module.exports = factory(require('cometd/jquery.cometd'), require('cometd/TimeSyncExtension'));
+    } else if (typeof define === 'function' && define.amd) {
+        define(['jquery.cometd', 'org/cometd/TimeSyncExtension'], factory);
     } else {
         factory(jQuery.cometd, root.org.cometd.TimeSyncExtension);
     }
