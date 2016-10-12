@@ -973,7 +973,7 @@
                     var message = envelope.messages[i];
                     if (message.id) {
                         messageIds.push(message.id);
-                        context.timeouts[message.id] = this.setTimeout(function() {
+                        context.timeouts[message.id] = self.setTimeout(function() {
                             _cometd._debug('Transport', self.getType(), 'timing out message', message.id, 'after', delay, 'on', context);
                             _forceClose.call(self, context, {code: 1000, reason: 'Message Timeout'});
                         }, delay);
