@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.After;
 import org.junit.Rule;
@@ -62,8 +63,8 @@ public abstract class OortTest {
     @Rule
     public final TestTracker testName = new TestTracker();
     protected Logger logger = LoggerFactory.getLogger(getClass());
-    private final List<Server> servers = new ArrayList<>();
-    private final List<Oort> oorts = new ArrayList<>();
+    protected final List<Server> servers = new ArrayList<>();
+    protected final List<Oort> oorts = new ArrayList<>();
     private final List<BayeuxClient> clients = new ArrayList<>();
     private final String serverTransport;
 
@@ -76,7 +77,9 @@ public abstract class OortTest {
     }
 
     protected Server startServer(int port, Map<String, String> options) throws Exception {
-        Server server = new Server();
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server_" + servers.size());
+        Server server = new Server(serverThreads);
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(port);
         server.addConnector(connector);
