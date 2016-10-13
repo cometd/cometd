@@ -1,6 +1,6 @@
 (function($) {
     var stateKey = 'org.cometd.demo.state';
-    $(document).ready(function() {
+    $(function() {
         // Check if there was a saved application state
         var jsonState = window.sessionStorage.getItem(stateKey);
         window.sessionStorage.removeItem(stateKey);
@@ -251,7 +251,7 @@
             }, 0);
         }
 
-        $(window).unload(function() {
+        $(window).on('unload', function() {
             // Save the application state only if the user was chatting
             if (_username) {
                 $.cometd.reload();

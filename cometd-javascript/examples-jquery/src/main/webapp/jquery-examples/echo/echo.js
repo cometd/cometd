@@ -1,13 +1,13 @@
 require({
         baseUrl: "../../jquery",
         paths: {
-            jquery: "jquery-2.2.4",
+            jquery: "https://code.jquery.com/jquery-3.1.1",
             org: "../org"
         }
     },
     ["jquery", "jquery.cometd", "jquery.cometd-timestamp", "jquery.cometd-reload"/*, "jquery.cometd-ack"*/],
     function($, cometd) {
-        $(document).ready(function() {
+        $(function() {
             function echoRpc(text) {
                 console.debug("Echoing", text);
 

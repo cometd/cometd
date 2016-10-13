@@ -1,7 +1,7 @@
 (function($) {
     var cometd = $.cometd;
 
-    $(document).ready(function() {
+    $(function() {
         function _connectionEstablished() {
             $('#body').append('<div>CometD Connection Established</div>');
         }
@@ -48,7 +48,7 @@
         }
 
         // Disconnect when the page unloads
-        $(window).unload(function() {
+        $(window).on('unload', function() {
             cometd.disconnect(true);
         });
 

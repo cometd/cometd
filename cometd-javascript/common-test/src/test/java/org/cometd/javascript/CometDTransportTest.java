@@ -30,8 +30,8 @@ public class CometDTransportTest extends AbstractCometDTest {
                 "var readyLatch = new Latch(1);" +
                         "function LocalTransport()" +
                         "{" +
-                        "    var _super = new org.cometd.RequestTransport();" +
-                        "    var that = org.cometd.Transport.derive(_super);" +
+                        "    var _super = new cometdModule.RequestTransport();" +
+                        "    var that = cometdModule.Transport.derive(_super);" +
                         "    var _sends = 0;" +
                         "" +
                         "    that.getSends = function() { return _sends; };" +

@@ -3096,6 +3096,7 @@
     return {
         CometD: CometD,
         Transport: Transport,
+        RequestTransport: RequestTransport,
         LongPollingTransport: LongPollingTransport,
         CallbackPollingTransport: CallbackPollingTransport,
         WebSocketTransport: WebSocketTransport,

@@ -31,11 +31,16 @@ public class DojoTestProvider implements TestProvider {
         threadModel.evaluate("window_location", "window.location = '" + fullContextURL + "'");
         String dojoBaseURL = "/dojo";
         threadModel.evaluate(new URL(fullContextURL + dojoBaseURL + "/dojo.js.uncompressed.js"));
-        threadModel.evaluate("cometd", "var cometd;" +
+        threadModel.evaluate("cometd", "" +
+                "var cometdModule;" +
+                "var cometd;" +
                 "require({" +
                 "    packages: [{name: 'org', location: '../org'}]," +
                 "    baseUrl: '" + dojoBaseURL + "'" +
-                "}, ['dojox/cometd'], function(c) { cometd = c; });");
+                "}, ['org/cometd', 'dojox/cometd'], function(m, c) {" +
+                "    cometdModule = m;" +
+                "    cometd = c; " +
+                "});");
         threadModel.evaluate("original_transports", "" +
                 "var originalTransports = {};" +
                 "var transportNames = cometd.getTransportTypes();" +

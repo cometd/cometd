@@ -34,7 +34,7 @@ var window = this;
             return '5.0 (X11; en-US)';
         },
         get userAgent() {
-            return 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.4) Gecko/2008111318 Ubuntu/8.10 (intrepid) Firefox/3.0.4';
+            return 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:49.0) Gecko/20100101 Firefox/49.0';
         },
         get language() {
             return 'en-US';
@@ -241,20 +241,24 @@ var window = this;
      * @param script the script element injected
      */
     function makeScriptRequest(script) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", script.src, true);
-        xhr.onload = function() {
-            eval(this.responseText);
+        if (script.src) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", script.src, true);
+            xhr.onload = function() {
+                eval(this.responseText);
 
-            if (script.onload && typeof script.onload === 'function') {
-                script.onload.call(script);
-            } else {
-                var event = window.document.createEvent();
-                event.initEvent('load', true, true);
-                script.dispatchEvent(event);
-            }
-        };
-        xhr.send();
+                if (script.onload && typeof script.onload === 'function') {
+                    script.onload.call(script);
+                } else {
+                    var event = window.document.createEvent();
+                    event.initEvent('load', true, true);
+                    script.dispatchEvent(event);
+                }
+            };
+            xhr.send();
+        } else if (script.text) {
+            eval(script.text);
+        }
     }
 
     var _domNodes = new Packages.java.util.HashMap();
@@ -272,6 +276,11 @@ var window = this;
         var jsNode = isElement ? new DOMElement(javaNode) : new DOMNode(javaNode);
         _domNodes.put(javaNode, jsNode);
         return jsNode;
+    }
+
+    function makeHTMLDocument(html) {
+        var bytes = (new Packages.java.lang.String(html)).getBytes("UTF8");
+        return new DOMDocument(new Packages.java.io.ByteArrayInputStream(bytes));
     }
 
 
@@ -377,6 +386,15 @@ var window = this;
     };
 
 
+    // DOM Implementation
+    window.DOMImplementation = function() {
+    };
+    DOMImplementation.prototype = {
+        createHTMLDocument: function(title) {
+            return makeHTMLDocument("<html><head><title>" + title + "</title></head><body></body></html>");
+        }
+    };
+
     // DOM Document
     window.DOMDocument = function(stream) {
         this._file = stream;
@@ -385,13 +403,17 @@ var window = this;
         if (!_domNodes.containsKey(this._dom))
             _domNodes.put(this._dom, this);
 
-        var listener = Packages.org.cometd.javascript.ScriptInjectionEventListener(threadModel, window, makeScriptRequest, _domNodes);
+        var listener = new Packages.org.cometd.javascript.ScriptInjectionEventListener(threadModel, window, makeScriptRequest, _domNodes);
         this._dom.addEventListener('DOMNodeInserted', listener, false);
+
+        this._impl = new DOMImplementation();
     };
     DOMDocument.prototype = extend(new DOMNode(), {
         // START OFFICIAL DOM
 //        doctype
-//        implementation
+        get implementation() {
+           return this._impl;
+        },
         get documentElement() {
             return makeNode(this._dom.getDocumentElement());
         },
@@ -735,11 +757,9 @@ var window = this;
         },
         get contentDocument() {
             if (this.nodeName == "IFRAME") {
-                if (!this._doc)
-                    this._doc = new DOMDocument(
-                        new Packages.java.io.ByteArrayInputStream((new Packages.java.lang.String(
-                            "<html><head></head><body></body></html>"))
-                            .getBytes("UTF8")));
+                if (!this._doc) {
+                    this._doc = makeHTMLDocument("<html><head></head><body></body></html>");
+                }
                 return this._doc;
             } else
                 return null;
@@ -748,8 +768,7 @@ var window = this;
 
 
     // Fake document object. Dojo needs a script element to work properly.
-    window.document = new DOMDocument(new Packages.java.io.ByteArrayInputStream(
-        (new Packages.java.lang.String("<html><head><title></title><script></script></head><body></body></html>")).getBytes("UTF8")));
+    window.document = makeHTMLDocument("<html><head><title></title><script></script></head><body></body></html>");
     window.document.head = window.document.getElementsByTagName('head')[0];
 
 

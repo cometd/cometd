@@ -1,13 +1,13 @@
 require({
         baseUrl: '../../jquery',
         paths: {
-            jquery: 'jquery-2.2.4',
+            jquery: 'https://code.jquery.com/jquery-3.1.1',
             org: '../org'
         }
     },
     ['jquery', 'jquery.cometd', 'jquery.cometd-reload'],
     function($, cometd) {
-        $(document).ready(function() {
+        $(function() {
             /* handshake listener to report client IDs */
             cometd.addListener('/meta/handshake', function(message) {
                 if (message.successful) {
@@ -35,7 +35,7 @@ require({
             });
 
             /* Setup reload extension */
-            $(window).unload(function() {
+            $(window).on('unload', function() {
                 cometd.reload();
             });
         });

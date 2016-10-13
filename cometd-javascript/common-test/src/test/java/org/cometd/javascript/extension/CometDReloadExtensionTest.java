@@ -39,7 +39,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         String attributeName = "reload.test";
         evaluateScript("" +
                 "cometd.unregisterExtension('reload');" +
-                "cometd.registerExtension('reload', new org.cometd.ReloadExtension({" +
+                "cometd.registerExtension('reload', new cometdModule.ReloadExtension({" +
                 "    name: '" + attributeName + "'" +
                 "}));" +
                 "" +
