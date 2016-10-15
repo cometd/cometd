@@ -38,10 +38,12 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Ignore
 public class OortStringMapDisconnectTest extends OortTest {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final List<Seti> setis = new ArrayList<>();
