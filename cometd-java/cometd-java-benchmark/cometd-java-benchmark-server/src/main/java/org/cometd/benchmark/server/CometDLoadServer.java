@@ -25,11 +25,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -45,7 +43,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.benchmark.Config;
 import org.cometd.benchmark.MonitoringQueuedThreadPool;
-import org.cometd.benchmark.MonitoringThreadPoolExecutor;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
@@ -75,67 +72,113 @@ import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 
-public class BayeuxLoadServer {
+public class CometDLoadServer {
+    private final MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(0);
+    private final BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
+    private final Server server = new Server(jettyThreadPool);
+    private boolean interactive = true;
+    private int port = 8080;
+    private boolean tls = false;
+    private int selectors = Runtime.getRuntime().availableProcessors();
+    private int maxThreads = 256;
+    private String transports = "jsrws,asynchttp";
+    private boolean statistics = true;
+    private boolean latencies = true;
+    private boolean longRequests = false;
+    private RequestLatencyHandler requestLatencyHandler;
+    private StatisticsHandler statisticsHandler;
+
     public static void main(String[] args) throws Exception {
-        BayeuxLoadServer server = new BayeuxLoadServer();
+        CometDLoadServer server = new CometDLoadServer();
+        parseArguments(args, server);
         server.run();
+    }
+
+    private static void parseArguments(String[] args, CometDLoadServer server) {
+        for (String arg : args) {
+            if (arg.equals("--auto")) {
+                server.interactive = false;
+            } else if (arg.startsWith("--port=")) {
+                server.port = Integer.parseInt(arg.substring("--port=".length()));
+            } else if (arg.equals("--tls")) {
+                server.tls = true;
+            } else if (arg.startsWith("--maxThreads=")) {
+                server.maxThreads = Integer.parseInt(arg.substring("--maxThreads=".length()));
+            } else if (arg.startsWith("--transports=")) {
+                server.transports = arg.substring("--transports=".length());
+            } else if (arg.equals("--statistics")) {
+                server.statistics = true;
+            } else if (arg.equals("--latencies")) {
+                server.latencies = true;
+            } else if (arg.equals("--longRequests")) {
+                server.longRequests = true;
+            }
+        }
     }
 
     public void run() throws Exception {
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
 
-        int port = 8080;
-        System.err.printf("listen port [%d]: ", port);
-        String value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(port);
+        int port = this.port;
+        if (interactive) {
+            System.err.printf("listen port [%d]: ", port);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(port);
+            }
+            port = Integer.parseInt(value);
         }
-        port = Integer.parseInt(value);
 
-        boolean ssl = false;
-        System.err.printf("use ssl [%b]: ", ssl);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(ssl);
+        boolean tls = this.tls;
+        if (interactive) {
+            System.err.printf("use tls [%b]: ", tls);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(tls);
+            }
+            tls = Boolean.parseBoolean(value);
         }
-        ssl = Boolean.parseBoolean(value);
 
-        int selectors = Runtime.getRuntime().availableProcessors();
-        System.err.printf("selectors [%d]: ", selectors);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(selectors);
+        int selectors = this.selectors;
+        if (interactive) {
+            System.err.printf("selectors [%d]: ", selectors);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(selectors);
+            }
+            selectors = Integer.parseInt(value);
         }
-        selectors = Integer.parseInt(value);
 
-        int maxThreads = Integer.parseInt(System.getProperty("cometd.threads", "256"));
-        System.err.printf("max threads [%d]: ", maxThreads);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(maxThreads);
+        int maxThreads = this.maxThreads;
+        if (interactive) {
+            maxThreads = Integer.parseInt(System.getProperty("cometd.threads", String.valueOf(maxThreads)));
+            System.err.printf("max threads [%d]: ", maxThreads);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(maxThreads);
+            }
+            maxThreads = Integer.parseInt(value);
         }
-        maxThreads = Integer.parseInt(value);
 
-        BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
         bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
 
-        MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(maxThreads);
-        MonitoringThreadPoolExecutor websocketThreadPool = new MonitoringThreadPoolExecutor(maxThreads, jettyThreadPool.getIdleTimeout(), TimeUnit.MILLISECONDS, new ThreadPoolExecutor.AbortPolicy());
-
         String availableTransports = "jsrws,jettyws,http,asynchttp";
-        String transports = "jsrws,http";
-        System.err.printf("transports (%s) [%s]: ", availableTransports, transports);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = transports;
+        String transports = this.transports;
+        if (interactive) {
+            System.err.printf("transports (%s) [%s]: ", availableTransports, transports);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = transports;
+            }
+            transports = value;
         }
-        for (String token : value.split(",")) {
+        for (String token : transports.split(",")) {
             switch (token.trim()) {
                 case "jsrws":
-                    bayeuxServer.addTransport(new LoadWebSocketTransport(bayeuxServer, websocketThreadPool));
+                    bayeuxServer.addTransport(new WebSocketTransport(bayeuxServer));
                     break;
                 case "jettyws":
-                    bayeuxServer.addTransport(new LoadJettyWebSocketTransport(bayeuxServer, websocketThreadPool));
+                    bayeuxServer.addTransport(new JettyWebSocketTransport(bayeuxServer));
                     break;
                 case "http":
                     bayeuxServer.addTransport(new JSONTransport(bayeuxServer));
@@ -148,38 +191,44 @@ public class BayeuxLoadServer {
             }
         }
 
-        boolean stats = true;
-        System.err.printf("record statistics [%b]: ", stats);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(stats);
+        boolean statistics = this.statistics;
+        if (interactive) {
+            System.err.printf("record statistics [%b]: ", statistics);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(statistics);
+            }
+            statistics = Boolean.parseBoolean(value);
         }
-        stats = Boolean.parseBoolean(value);
 
-        boolean reqs = true;
-        System.err.printf("record latencies [%b]: ", reqs);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(reqs);
+        boolean latencies = this.latencies;
+        if (interactive) {
+            System.err.printf("record latencies [%b]: ", latencies);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(latencies);
+            }
+            latencies = Boolean.parseBoolean(value);
         }
-        reqs = Boolean.parseBoolean(value);
 
-        boolean qos = false;
-        System.err.printf("detect long requests [%b]: ", qos);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(qos);
+        boolean longRequests = this.longRequests;
+        if (interactive) {
+            System.err.printf("detect long requests [%b]: ", longRequests);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(longRequests);
+            }
+            longRequests = Boolean.parseBoolean(value);
         }
-        qos = Boolean.parseBoolean(value);
 
-        Server server = new Server(jettyThreadPool);
+        jettyThreadPool.setMaxThreads(maxThreads);
 
         // Setup JMX
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbeanContainer);
 
         SslContextFactory sslContextFactory = null;
-        if (ssl) {
+        if (tls) {
             Path keyStoreFile = Paths.get("src/main/resources/keystore.jks");
             if (Files.exists(keyStoreFile)) {
                 throw new FileNotFoundException(keyStoreFile.toString());
@@ -205,21 +254,19 @@ public class BayeuxLoadServer {
 
         HandlerWrapper handler = server;
 
-        RequestLatencyHandler requestLatencyHandler = null;
-        if (reqs) {
+        if (latencies) {
             requestLatencyHandler = new RequestLatencyHandler();
             handler.setHandler(requestLatencyHandler);
             handler = requestLatencyHandler;
         }
 
-        if (qos) {
+        if (longRequests) {
             RequestQoSHandler requestQoSHandler = new RequestQoSHandler();
             handler.setHandler(requestQoSHandler);
             handler = requestQoSHandler;
         }
 
-        StatisticsHandler statisticsHandler = null;
-        if (stats) {
+        if (statistics) {
             statisticsHandler = new StatisticsHandler();
             handler.setHandler(statisticsHandler);
             handler = statisticsHandler;
@@ -256,24 +303,19 @@ public class BayeuxLoadServer {
 
         server.start();
 
-        new StatisticsService(bayeuxServer, jettyThreadPool, websocketThreadPool, statisticsHandler, requestLatencyHandler);
+        new StatisticsService(this);
     }
 
     public static class StatisticsService extends AbstractService {
         private final PlatformMonitor monitor = new PlatformMonitor();
-        private final MonitoringQueuedThreadPool jettyThreadPool;
-        private final MonitoringThreadPoolExecutor websocketThreadPool;
-        private final StatisticsHandler statisticsHandler;
-        private final RequestLatencyHandler requestLatencyHandler;
+        private final CometDLoadServer server;
 
-        private StatisticsService(BayeuxServer bayeux, MonitoringQueuedThreadPool jettyThreadPool, MonitoringThreadPoolExecutor websocketThreadPool, StatisticsHandler statisticsHandler, RequestLatencyHandler requestLatencyHandler) {
-            super(bayeux, "statistics-service");
-            this.jettyThreadPool = jettyThreadPool;
-            this.websocketThreadPool = websocketThreadPool;
-            this.statisticsHandler = statisticsHandler;
-            this.requestLatencyHandler = requestLatencyHandler;
+        private StatisticsService(CometDLoadServer server) {
+            super(server.bayeuxServer, "statistics-service");
+            this.server = server;
             addService("/service/statistics/start", "startStatistics");
             addService("/service/statistics/stop", "stopStatistics");
+            addService("/service/statistics/exit", "exit");
         }
 
         public void startStatistics(ServerSession remote, ServerMessage message) {
@@ -284,20 +326,17 @@ public class BayeuxLoadServer {
                     System.err.println();
                     System.err.println(start);
 
-                    if (jettyThreadPool != null) {
-                        jettyThreadPool.reset();
-                    }
-                    if (websocketThreadPool != null) {
-                        websocketThreadPool.reset();
+                    if (server.jettyThreadPool != null) {
+                        server.jettyThreadPool.reset();
                     }
 
-                    if (statisticsHandler != null) {
-                        statisticsHandler.statsReset();
+                    if (server.statisticsHandler != null) {
+                        server.statisticsHandler.statsReset();
                     }
 
-                    if (requestLatencyHandler != null) {
-                        requestLatencyHandler.reset();
-                        requestLatencyHandler.doNotTrackCurrentRequest();
+                    if (server.requestLatencyHandler != null) {
+                        server.requestLatencyHandler.reset();
+                        server.requestLatencyHandler.doNotTrackCurrentRequest();
                     }
                 }
             }
@@ -309,47 +348,55 @@ public class BayeuxLoadServer {
                 if (stop != null) {
                     System.err.println(stop);
 
-                    if (requestLatencyHandler != null) {
-                        requestLatencyHandler.print();
-                        requestLatencyHandler.doNotTrackCurrentRequest();
+                    if (server.requestLatencyHandler != null) {
+                        server.requestLatencyHandler.print();
+                        server.requestLatencyHandler.doNotTrackCurrentRequest();
                     }
 
-                    if (statisticsHandler != null) {
+                    if (server.statisticsHandler != null) {
                         System.err.printf("Requests times (total/avg/max - stddev): %d/%d/%d ms - %d%n",
-                                statisticsHandler.getDispatchedTimeTotal(),
-                                ((Double)statisticsHandler.getDispatchedTimeMean()).longValue(),
-                                statisticsHandler.getDispatchedTimeMax(),
-                                ((Double)statisticsHandler.getDispatchedTimeStdDev()).longValue());
+                                server.statisticsHandler.getDispatchedTimeTotal(),
+                                ((Double)server.statisticsHandler.getDispatchedTimeMean()).longValue(),
+                                server.statisticsHandler.getDispatchedTimeMax(),
+                                ((Double)server.statisticsHandler.getDispatchedTimeStdDev()).longValue());
                         System.err.printf("Requests (total/failed/max - rate): %d/%d/%d - %d requests/s%n",
-                                statisticsHandler.getDispatched(),
-                                statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx(),
-                                statisticsHandler.getDispatchedActiveMax(),
-                                statisticsHandler.getStatsOnMs() == 0 ? -1 : statisticsHandler.getDispatched() * 1000L / statisticsHandler.getStatsOnMs());
+                                server.statisticsHandler.getDispatched(),
+                                server.statisticsHandler.getResponses4xx() + server.statisticsHandler.getResponses5xx(),
+                                server.statisticsHandler.getDispatchedActiveMax(),
+                                server.statisticsHandler.getStatsOnMs() == 0 ? -1 : server.statisticsHandler.getDispatched() * 1000L / server.statisticsHandler.getStatsOnMs());
                     }
 
-                    if (jettyThreadPool != null) {
+                    if (server.jettyThreadPool != null) {
                         System.err.printf("Jetty Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms | Task Latency avg/max = %d/%d ms%n",
-                                jettyThreadPool.getTasks(),
-                                jettyThreadPool.getMaxActiveThreads(),
-                                jettyThreadPool.getMaxQueueSize(),
-                                TimeUnit.NANOSECONDS.toMillis(jettyThreadPool.getAverageQueueLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(jettyThreadPool.getMaxQueueLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(jettyThreadPool.getAverageTaskLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(jettyThreadPool.getMaxTaskLatency()));
+                                server.jettyThreadPool.getTasks(),
+                                server.jettyThreadPool.getMaxActiveThreads(),
+                                server.jettyThreadPool.getMaxQueueSize(),
+                                TimeUnit.NANOSECONDS.toMillis(server.jettyThreadPool.getAverageQueueLatency()),
+                                TimeUnit.NANOSECONDS.toMillis(server.jettyThreadPool.getMaxQueueLatency()),
+                                TimeUnit.NANOSECONDS.toMillis(server.jettyThreadPool.getAverageTaskLatency()),
+                                TimeUnit.NANOSECONDS.toMillis(server.jettyThreadPool.getMaxTaskLatency()));
                     }
-                    if (websocketThreadPool != null) {
-                        System.err.printf("WebSocket Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms | Task Latency avg/max = %d/%d ms%n",
-                                websocketThreadPool.getTasks(),
-                                websocketThreadPool.getMaxActiveThreads(),
-                                websocketThreadPool.getMaxQueueSize(),
-                                TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getAverageQueueLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getMaxQueueLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getAverageTaskLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getMaxTaskLatency()));
-                    }
+
                     System.err.println();
                 }
             }
+        }
+
+        public void exit(ServerSession remote, ServerMessage message) throws Exception {
+            remote.disconnect();
+            // Cannot stop the server from a threadPool thread.
+            new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        if (!server.interactive) {
+                            server.server.stop();
+                        }
+                    } catch (Throwable x) {
+                        _logger.trace("", x);
+                    }
+                }
+            }.start();
         }
     }
 
@@ -471,34 +518,6 @@ public class BayeuxLoadServer {
 
         public void doNotTrackCurrentRequest() {
             currentEnabled.set(false);
-        }
-    }
-
-    public static class LoadJettyWebSocketTransport extends JettyWebSocketTransport {
-        private final Executor executor;
-
-        public LoadJettyWebSocketTransport(BayeuxServerImpl bayeux, Executor executor) {
-            super(bayeux);
-            this.executor = executor;
-        }
-
-        @Override
-        protected Executor newExecutor() {
-            return executor;
-        }
-    }
-
-    public static class LoadWebSocketTransport extends WebSocketTransport {
-        private final Executor executor;
-
-        public LoadWebSocketTransport(BayeuxServerImpl bayeux, Executor executor) {
-            super(bayeux);
-            this.executor = executor;
-        }
-
-        @Override
-        protected Executor newExecutor() {
-            return executor;
         }
     }
 }

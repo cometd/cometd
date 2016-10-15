@@ -30,7 +30,7 @@
                         <!--<argument>-XX:+UseG1GC</argument>-->
                         <argument>-cp</argument>
                         <classpath />
-                        <argument>org.cometd.benchmark.client.BayeuxLoadClient</argument>
+                        <argument>org.cometd.benchmark.client.CometDLoadClient</argument>
                     </arguments>
                 </configuration>
             </plugin>

@@ -34,7 +34,7 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool {
 
     public MonitoringQueuedThreadPool(int maxThreads) {
         // Use a very long idle timeout to avoid creation/destruction of threads
-        super(maxThreads, maxThreads, 24 * 3600 * 1000, new MonitoringBlockingArrayQueue(maxThreads, maxThreads));
+        super(maxThreads, maxThreads, 24 * 3600 * 1000, new MonitoringBlockingArrayQueue(maxThreads, 256));
         queue = (MonitoringBlockingArrayQueue)getQueue();
         setStopTimeout(2000);
     }

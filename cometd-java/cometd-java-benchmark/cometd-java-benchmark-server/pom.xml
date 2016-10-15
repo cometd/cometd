@@ -31,7 +31,7 @@
                         <!--<argument>-XX:+UseG1GC</argument>-->
                         <argument>-cp</argument>
                         <classpath />
-                        <argument>org.cometd.benchmark.server.BayeuxLoadServer</argument>
+                        <argument>org.cometd.benchmark.server.CometDLoadServer</argument>
                     </arguments>
                 </configuration>
             </plugin>

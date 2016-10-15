@@ -19,6 +19,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -62,7 +63,7 @@ import org.eclipse.jetty.toolchain.perf.PlatformTimer;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 
-public class BayeuxLoadClient implements MeasureConverter {
+public class CometDLoadClient implements MeasureConverter {
     private static final String ID_FIELD = "ID";
     private static final String START_FIELD = "start";
 
@@ -73,7 +74,7 @@ public class BayeuxLoadClient implements MeasureConverter {
     private final AtomicLong ids = new AtomicLong();
     private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<LoadBayeuxClient>());
     private final ConcurrentMap<String, ChannelId> channelIds = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Integer, AtomicInteger> rooms = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, AtomicInteger> roomMap = new ConcurrentHashMap<>();
     private final AtomicLong start = new AtomicLong();
     private final AtomicLong end = new AtomicLong();
     private final AtomicLong responses = new AtomicLong();
@@ -84,15 +85,76 @@ public class BayeuxLoadClient implements MeasureConverter {
     private final AtomicStampedReference<String> maxTime = new AtomicStampedReference<>(null, 0);
     private final Map<String, AtomicStampedReference<Long>> sendTimes = new ConcurrentHashMap<>();
     private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<>();
-    private ScheduledExecutorService scheduler;
-    private MonitoringQueuedThreadPool threadPool;
-    private HttpClient httpClient;
-    private WebSocketContainer webSocketContainer;
-    private WebSocketClient webSocketClient;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(8);
+    private final MonitoringQueuedThreadPool threadPool = new MonitoringQueuedThreadPool(0);
+    private final HttpClient httpClient = new HttpClient();
+    private final WebSocketContainer webSocketContainer = ContainerProvider.getWebSocketContainer();
+    private final WebSocketClient webSocketClient = new WebSocketClient();
+    private boolean interactive = true;
+    private String host = "localhost";
+    private int port = 8080;
+    private ClientTransportType transport = ClientTransportType.LONG_POLLING;
+    private boolean tls = false;
+    private int maxThreads = 256;
+    private String context = Config.CONTEXT_PATH;
+    private String channel = "/chat/demo";
+    private int rooms = 100;
+    private int roomsPerClient = 10;
+    private boolean ackExtension = false;
+    private int iterations = 5;
+    private int clients = 1000;
+    private int batches = 1000;
+    private int batchSize = 10;
+    private long batchPause = 10000;
+    private int messageSize = 50;
+    private boolean randomize = false;
 
     public static void main(String[] args) throws Exception {
-        BayeuxLoadClient client = new BayeuxLoadClient();
+        CometDLoadClient client = new CometDLoadClient();
+        parseArguments(args, client);
         client.run();
+    }
+
+    private static void parseArguments(String[] args, CometDLoadClient client) {
+        for (String arg : args) {
+            if (arg.equals("--auto")) {
+                client.interactive = false;
+            } else if (arg.startsWith("--host=")) {
+                client.host = arg.substring("--host=".length());
+            } else if (arg.startsWith("--port=")) {
+                client.port = Integer.parseInt(arg.substring("--port=".length()));
+            } else if (arg.startsWith("--transport=")) {
+                client.transport = ClientTransportType.valueOf(arg.substring("--transport=".length()));
+            } else if (arg.equals("--tls")) {
+                client.tls = true;
+            } else if (arg.startsWith("--maxThreads=")) {
+                client.maxThreads = Integer.parseInt(arg.substring("--maxThreads=".length()));
+            } else if (arg.startsWith("--context=")) {
+                client.context = arg.substring("--context=".length());
+            } else if (arg.startsWith("--channel=")) {
+                client.channel = arg.substring("--channel=".length());
+            } else if (arg.startsWith("--rooms=")) {
+                client.rooms = Integer.parseInt(arg.substring("--rooms=".length()));
+            } else if (arg.startsWith("--roomsPerClient=")) {
+                client.roomsPerClient = Integer.parseInt(arg.substring("--roomsPerClient=".length()));
+            } else if (arg.equals("--ackExtension")) {
+                client.ackExtension = true;
+            } else if (arg.startsWith("--iterations=")) {
+                client.iterations = Integer.parseInt(arg.substring("--iterations=".length()));
+            } else if (arg.startsWith("--clients=")) {
+                client.clients = Integer.parseInt(arg.substring("--clients=".length()));
+            } else if (arg.startsWith("--batches=")) {
+                client.batches = Integer.parseInt(arg.substring("--batches=".length()));
+            } else if (arg.startsWith("--batchSize=")) {
+                client.batchSize = Integer.parseInt(arg.substring("--batchSize=".length()));
+            } else if (arg.startsWith("--batchPause=")) {
+                client.batchPause = Long.parseLong(arg.substring("--batchPause=".length()));
+            } else if (arg.startsWith("--messageSize=")) {
+                client.messageSize = Integer.parseInt(arg.substring("--messageSize=".length()));
+            } else if (arg.equals("--randomize")) {
+                client.randomize = true;
+            }
+        }
     }
 
     public void run() throws Exception {
@@ -103,102 +165,124 @@ public class BayeuxLoadClient implements MeasureConverter {
 
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
 
-        String host = System.getProperty("cometd.server", "localhost");
-        System.err.printf("server [%s]: ", host);
-        String value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = host;
+        String host = this.host;
+        if (interactive) {
+            host = System.getProperty("cometd.server", host);
+            System.err.printf("server [%s]: ", host);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = host;
+            }
+            host = value;
         }
-        host = value;
 
-        int port = Integer.parseInt(System.getProperty("cometd.port", "8080"));
-        System.err.printf("port [%d]: ", port);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(port);
+        int port = this.port;
+        if (interactive) {
+            port = Integer.parseInt(System.getProperty("cometd.port", String.valueOf(port)));
+            System.err.printf("port [%d]: ", port);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(port);
+            }
+            port = Integer.parseInt(value);
         }
-        port = Integer.parseInt(value);
 
-        ClientTransportType clientTransportType = ClientTransportType.LONG_POLLING;
-        System.err.printf("transports:%n");
-        for (ClientTransportType type : ClientTransportType.values()) {
-            System.err.printf("  %d - %s%n", type.ordinal(), type.getName());
+        ClientTransportType transport = this.transport;
+        if (interactive) {
+            System.err.printf("transports:%n");
+            for (ClientTransportType type : ClientTransportType.values()) {
+                System.err.printf("  %d - %s%n", type.ordinal(), type.getName());
+            }
+            System.err.printf("transport [%d]: ", transport.ordinal());
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(transport.ordinal());
+            }
+            transport = ClientTransportType.values()[Integer.parseInt(value)];
         }
-        System.err.printf("transport [%d]: ", clientTransportType.ordinal());
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(clientTransportType.ordinal());
-        }
-        clientTransportType = ClientTransportType.values()[Integer.parseInt(value)];
 
-        boolean ssl = false;
-        System.err.printf("use ssl [%b]: ", ssl);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(ssl);
+        boolean tls = this.tls;
+        if (interactive) {
+            System.err.printf("use tls [%b]: ", tls);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(tls);
+            }
+            tls = Boolean.parseBoolean(value);
         }
-        ssl = Boolean.parseBoolean(value);
 
-        int maxThreads = Integer.parseInt(System.getProperty("cometd.threads", "256"));
-        System.err.printf("max threads [%d]: ", maxThreads);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(maxThreads);
+        int maxThreads = this.maxThreads;
+        if (interactive) {
+            maxThreads = Integer.parseInt(System.getProperty("cometd.threads", String.valueOf(maxThreads)));
+            System.err.printf("max threads [%d]: ", maxThreads);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(maxThreads);
+            }
+            maxThreads = Integer.parseInt(value);
         }
-        maxThreads = Integer.parseInt(value);
 
-        String contextPath = Config.CONTEXT_PATH;
-        System.err.printf("context [%s]: ", contextPath);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = contextPath;
+        String contextPath = this.context;
+        if (interactive) {
+            System.err.printf("context [%s]: ", contextPath);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = contextPath;
+            }
+            contextPath = value;
         }
-        String uri = value + Config.SERVLET_PATH;
-        String url = (ssl ? "https" : "http") + "://" + host + ":" + port + uri;
+        String url = (tls ? "https" : "http") + "://" + host + ":" + port + contextPath + Config.SERVLET_PATH;
 
-        String channel = System.getProperty("cometd.channel", "/chat/demo");
-        System.err.printf("channel [%s]: ", channel);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = channel;
+        String channel = this.channel;
+        if (interactive) {
+            channel = System.getProperty("cometd.channel", channel);
+            System.err.printf("channel [%s]: ", channel);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = channel;
+            }
+            channel = value;
         }
-        channel = value;
 
-        int rooms = Integer.parseInt(System.getProperty("cometd.rooms", "100"));
-        System.err.printf("rooms [%d]: ", rooms);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(rooms);
+        int rooms = this.rooms;
+        if (interactive) {
+            rooms = Integer.parseInt(System.getProperty("cometd.rooms", String.valueOf(rooms)));
+            System.err.printf("rooms [%d]: ", rooms);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(rooms);
+            }
+            rooms = Integer.parseInt(value);
         }
-        rooms = Integer.parseInt(value);
 
-        int roomsPerClient = 10;
-        System.err.printf("rooms per client [%d]: ", roomsPerClient);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(roomsPerClient);
+        int roomsPerClient = this.roomsPerClient;
+        if (interactive) {
+            System.err.printf("rooms per client [%d]: ", roomsPerClient);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(roomsPerClient);
+            }
+            roomsPerClient = Integer.parseInt(value);
         }
-        roomsPerClient = Integer.parseInt(value);
 
-        boolean enableAckExtension = false;
-        System.err.printf("enable ack extension [%b]: ", enableAckExtension);
-        value = console.readLine().trim();
-        if (value.length() == 0) {
-            value = String.valueOf(enableAckExtension);
+        boolean ackExtension = this.ackExtension;
+        if (interactive) {
+            System.err.printf("enable ack extension [%b]: ", ackExtension);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(ackExtension);
+            }
+            ackExtension = Boolean.parseBoolean(value);
         }
-        enableAckExtension = Boolean.parseBoolean(value);
-
-        scheduler = Executors.newScheduledThreadPool(8);
 
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         mbeanContainer.beanAdded(null, this);
 
-        threadPool = new MonitoringQueuedThreadPool(maxThreads);
+        threadPool.setMaxThreads(maxThreads);
         threadPool.setDaemon(true);
         threadPool.start();
         mbeanContainer.beanAdded(null, threadPool);
 
-        httpClient = new HttpClient();
         httpClient.addBean(mbeanContainer);
         httpClient.setMaxConnectionsPerDestination(60000);
         httpClient.setMaxRequestsQueuedPerDestination(10000);
@@ -207,12 +291,10 @@ public class BayeuxLoadClient implements MeasureConverter {
         httpClient.start();
         mbeanContainer.beanAdded(null, httpClient);
 
-        webSocketContainer = ContainerProvider.getWebSocketContainer();
         // Make sure the container is stopped when the HttpClient is stopped
         httpClient.addBean(webSocketContainer, true);
         mbeanContainer.beanAdded(null, webSocketContainer);
 
-        webSocketClient = new WebSocketClient();
         webSocketClient.setExecutor(threadPool);
         webSocketClient.setMasker(new ZeroMasker());
         webSocketClient.getPolicy().setInputBufferSize(8 * 1024);
@@ -224,30 +306,28 @@ public class BayeuxLoadClient implements MeasureConverter {
         DisconnectListener disconnectListener = new DisconnectListener();
         LatencyListener latencyListener = new LatencyListener();
 
-        LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(clientTransportType), null, false);
+        LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(transport), null, false);
         statsClient.handshake();
-
-        int clients = 1000;
-        int batchCount = 1000;
-        int batchSize = 10;
-        long batchPause = 10000;
-        int messageSize = 50;
-        boolean randomize = false;
 
         while (true) {
             System.err.println();
             System.err.println("-----");
 
-            System.err.printf("clients [%d]: ", clients);
-            value = console.readLine();
-            if (value == null) {
-                break;
+            int clients = this.clients;
+            if (interactive) {
+                System.err.printf("clients [%d]: ", clients);
+                String value = console.readLine();
+                if (value == null) {
+                    break;
+                }
+                value = value.trim();
+                if (value.length() == 0) {
+                    value = String.valueOf(clients);
+                }
+                clients = Integer.parseInt(value);
+            } else if (iterations-- == 0) {
+                clients = 0;
             }
-            value = value.trim();
-            if (value.length() == 0) {
-                value = String.valueOf(clients);
-            }
-            clients = Integer.parseInt(value);
 
             System.err.println("Waiting for clients to be ready...");
 
@@ -255,7 +335,7 @@ public class BayeuxLoadClient implements MeasureConverter {
             int currentClients = bayeuxClients.size();
             if (currentClients < clients) {
                 for (int i = 0; i < clients - currentClients; ++i) {
-                    LoadBayeuxClient client = new LoadBayeuxClient(url, scheduler, newClientTransport(clientTransportType), latencyListener, enableAckExtension);
+                    LoadBayeuxClient client = new LoadBayeuxClient(url, scheduler, newClientTransport(transport), latencyListener, ackExtension);
                     client.getChannel(Channel.META_HANDSHAKE).addListener(handshakeListener);
                     client.getChannel(Channel.META_DISCONNECT).addListener(disconnectListener);
                     client.handshake();
@@ -305,56 +385,70 @@ public class BayeuxLoadClient implements MeasureConverter {
 
             reset();
 
-            System.err.printf("batch count [%d]: ", batchCount);
-            value = console.readLine().trim();
-            if (value.length() == 0) {
-                value = String.valueOf(batchCount);
-            }
-            batchCount = Integer.parseInt(value);
-
-            System.err.printf("batch size [%d]: ", batchSize);
-            value = console.readLine().trim();
-            if (value.length() == 0) {
-                value = String.valueOf(batchSize);
-            }
-            batchSize = Integer.parseInt(value);
-
-            System.err.printf("batch pause (\u00B5s) [%d]: ", batchPause);
-            value = console.readLine().trim();
-            if (value.length() == 0) {
-                value = String.valueOf(batchPause);
-            }
-            batchPause = Long.parseLong(value);
-
-            System.err.printf("message size [%d]: ", messageSize);
-            value = console.readLine().trim();
-            if (value.length() == 0) {
-                value = String.valueOf(messageSize);
-            }
-            messageSize = Integer.parseInt(value);
-            String chat = "";
-            for (int i = 0; i < messageSize; i++) {
-                chat += "x";
+            int batches = this.batches;
+            if (interactive) {
+                System.err.printf("batch count [%d]: ", batches);
+                String value = console.readLine().trim();
+                if (value.length() == 0) {
+                    value = String.valueOf(batches);
+                }
+                batches = Integer.parseInt(value);
             }
 
-            System.err.printf("randomize sends [%b]: ", randomize);
-            value = console.readLine().trim();
-            if (value.length() == 0) {
-                value = String.valueOf(randomize);
+            int batchSize = this.batchSize;
+            if (interactive) {
+                System.err.printf("batch size [%d]: ", batchSize);
+                String value = console.readLine().trim();
+                if (value.length() == 0) {
+                    value = String.valueOf(batchSize);
+                }
+                batchSize = Integer.parseInt(value);
             }
-            randomize = Boolean.parseBoolean(value);
 
-            // Send a message to the server to signal the start of the test
+            long batchPause = this.batchPause;
+            if (interactive) {
+                System.err.printf("batch pause (\u00B5s) [%d]: ", batchPause);
+                String value = console.readLine().trim();
+                if (value.length() == 0) {
+                    value = String.valueOf(batchPause);
+                }
+                batchPause = Long.parseLong(value);
+            }
+
+            int messageSize = this.messageSize;
+            if (interactive) {
+                System.err.printf("message size [%d]: ", messageSize);
+                String value = console.readLine().trim();
+                if (value.length() == 0) {
+                    value = String.valueOf(messageSize);
+                }
+                messageSize = Integer.parseInt(value);
+            }
+            char[] chars = new char[messageSize];
+            Arrays.fill(chars, 'x');
+            String chat = new String(chars);
+
+            boolean randomize = this.randomize;
+            if (interactive) {
+                System.err.printf("randomize sends [%b]: ", randomize);
+                String value = console.readLine().trim();
+                if (value.length() == 0) {
+                    value = String.valueOf(randomize);
+                }
+                randomize = Boolean.parseBoolean(value);
+            }
+
+            // Send a message to the server to signal the start of the test.
             statsClient.begin();
 
             PlatformMonitor.Start start = monitor.start();
             System.err.println();
             System.err.println(start);
             System.err.printf("Testing %d clients in %d rooms, %d rooms/client%n", bayeuxClients.size(), rooms, roomsPerClient);
-            System.err.printf("Sending %d batches of %dx%d bytes messages every %d \u00B5s%n", batchCount, batchSize, messageSize, batchPause);
+            System.err.printf("Sending %d batches of %dx%d bytes messages every %d \u00B5s%n", batches, batchSize, messageSize, batchPause);
 
             long begin = System.nanoTime();
-            long expected = runBatches(batchCount, batchSize, batchPause, chat, randomize, channel);
+            long expected = runBatches(batches, batchSize, batchPause, chat, randomize, channel);
             long end = System.nanoTime();
 
             PlatformMonitor.Stop stop = monitor.stop();
@@ -364,15 +458,15 @@ public class BayeuxLoadClient implements MeasureConverter {
             if (elapsedNanos > 0) {
                 System.err.printf("Outgoing: Elapsed = %d ms | Rate = %d messages/s - %d requests/s - ~%.3f Mib/s%n",
                         TimeUnit.NANOSECONDS.toMillis(elapsedNanos),
-                        batchCount * batchSize * 1000L * 1000 * 1000 / elapsedNanos,
-                        batchCount * 1000L * 1000 * 1000 / elapsedNanos,
-                        batchCount * batchSize * messageSize * 8F * 1000 * 1000 * 1000 / elapsedNanos / 1024 / 1024
+                        batches * batchSize * 1000L * 1000 * 1000 / elapsedNanos,
+                        batches * 1000L * 1000 * 1000 / elapsedNanos,
+                        batches * batchSize * messageSize * 8F * 1000 * 1000 * 1000 / elapsedNanos / 1024 / 1024
                 );
             }
 
             waitForMessages(expected);
 
-            // Send a message to the server to signal the end of the test
+            // Send a message to the server to signal the end of the test.
             statsClient.end();
 
             printReport(expected, messageSize);
@@ -380,7 +474,7 @@ public class BayeuxLoadClient implements MeasureConverter {
             reset();
         }
 
-        statsClient.disconnect(1000);
+        statsClient.exit();
 
         webSocketClient.stop();
 
@@ -417,8 +511,8 @@ public class BayeuxLoadClient implements MeasureConverter {
             int room = -1;
             AtomicInteger clientsPerRoom = null;
             while (clientsPerRoom == null || clientsPerRoom.get() == 0) {
-                room = nextRandom(rooms.size());
-                clientsPerRoom = rooms.get(room);
+                room = nextRandom(roomMap.size());
+                clientsPerRoom = roomMap.get(room);
             }
             Map<String, Object> message = new HashMap<>(5);
             // Additional fields to simulate a chat message
@@ -677,10 +771,10 @@ public class BayeuxLoadClient implements MeasureConverter {
                 getChannel(getChannelId(channel + "/" + room)).subscribe(latencyListener);
             }
 
-            AtomicInteger clientsPerRoom = rooms.get(room);
+            AtomicInteger clientsPerRoom = roomMap.get(room);
             if (clientsPerRoom == null) {
                 clientsPerRoom = new AtomicInteger();
-                AtomicInteger existing = rooms.putIfAbsent(room, clientsPerRoom);
+                AtomicInteger existing = roomMap.putIfAbsent(room, clientsPerRoom);
                 if (existing != null) {
                     clientsPerRoom = existing;
                 }
@@ -692,7 +786,7 @@ public class BayeuxLoadClient implements MeasureConverter {
 
         public void destroy() {
             for (Integer room : subscriptions) {
-                AtomicInteger clientsPerRoom = rooms.get(room);
+                AtomicInteger clientsPerRoom = roomMap.get(room);
                 clientsPerRoom.decrementAndGet();
             }
             subscriptions.clear();
@@ -704,6 +798,10 @@ public class BayeuxLoadClient implements MeasureConverter {
 
         public void end() throws InterruptedException {
             notifyServer("/service/statistics/stop");
+        }
+
+        public void exit() throws InterruptedException {
+            notifyServer("/service/statistics/exit");
         }
 
         private void notifyServer(String channelName) throws InterruptedException {
@@ -724,7 +822,7 @@ public class BayeuxLoadClient implements MeasureConverter {
                 Map<String, Object> data = message.getDataAsMap();
                 if (data != null && message.getChannelId().isBroadcast()) {
                     int room = (Integer)data.get("room");
-                    int clientsInRoom = rooms.get(room).get();
+                    int clientsInRoom = roomMap.get(room).get();
                     String id = (String)data.get(ID_FIELD);
                     sendTimes.put(id, new AtomicStampedReference<>(now, clientsInRoom));
                     // There is no write-cheap concurrent list in JDK, so let's use a synchronized wrapper
