@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.Executor;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -46,7 +45,6 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.websocket.server.common.AbstractBayeuxContext;
 import org.cometd.websocket.server.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.LifeCycle;
 
 public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
     public WebSocketTransport(BayeuxServerImpl bayeux) {
@@ -94,19 +92,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
                 throw new RuntimeException(x);
             }
         }
-    }
-
-    @Override
-    public void destroy() {
-        Executor threadPool = getExecutor();
-        if (threadPool instanceof LifeCycle) {
-            try {
-                ((LifeCycle)threadPool).stop();
-            } catch (Exception x) {
-                _logger.trace("", x);
-            }
-        }
-        super.destroy();
     }
 
     protected boolean checkOrigin(String origin) {

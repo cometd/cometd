@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
 
 import javax.servlet.ServletContext;
 
@@ -29,7 +28,6 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.websocket.server.common.AbstractBayeuxContext;
 import org.cometd.websocket.server.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -115,19 +113,6 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
     }
 
     protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response) {
-    }
-
-    @Override
-    public void destroy() {
-        Executor threadPool = getExecutor();
-        if (threadPool instanceof LifeCycle) {
-            try {
-                ((LifeCycle)threadPool).stop();
-            } catch (Exception x) {
-                _logger.trace("", x);
-            }
-        }
-        super.destroy();
     }
 
     protected boolean checkOrigin(ServletUpgradeRequest request, String origin) {

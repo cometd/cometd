@@ -24,9 +24,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -54,13 +51,11 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     public static final String BUFFER_SIZE_OPTION = "bufferSize";
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
-    public static final String THREAD_POOL_MAX_SIZE_OPTION = "threadPoolMaxSize";
     public static final String COMETD_URL_MAPPING_OPTION = "cometdURLMapping";
     public static final String REQUIRE_HANDSHAKE_PER_CONNECTION_OPTION = "requireHandshakePerConnection";
     public static final String ENABLE_EXTENSION_PREFIX_OPTION = "enableExtension.";
 
     private final ThreadLocal<BayeuxContext> _bayeuxContext = new ThreadLocal<>();
-    private Executor _executor;
     private ScheduledExecutorService _scheduler;
     private String _protocol;
     private int _messagesPerFrame;
@@ -74,7 +69,6 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     @Override
     public void init() {
         super.init();
-        _executor = newExecutor();
         _scheduler = newScheduledExecutor();
         _protocol = getOption(PROTOCOL_OPTION, null);
         _messagesPerFrame = getOption(MESSAGES_PER_FRAME_OPTION, 1);
@@ -84,18 +78,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     @Override
     public void destroy() {
         _scheduler.shutdown();
-
-        Executor threadPool = _executor;
-        if (threadPool instanceof ExecutorService) {
-            ((ExecutorService)threadPool).shutdown();
-        }
-
         super.destroy();
-    }
-
-    protected Executor newExecutor() {
-        int size = getOption(THREAD_POOL_MAX_SIZE_OPTION, 64);
-        return Executors.newFixedThreadPool(size);
     }
 
     protected ScheduledExecutorService newScheduledExecutor() {
@@ -103,10 +86,6 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
         scheduler.setRemoveOnCancelPolicy(true);
         return scheduler;
-    }
-
-    public Executor getExecutor() {
-        return _executor;
     }
 
     public ScheduledExecutorService getScheduler() {
