@@ -362,7 +362,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
 
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.META_CONNECT_DELIVERY_OPTION, "true");
-        options.put("ws." + org.cometd.websocket.server.JettyWebSocketTransport.THREAD_POOL_MAX_SIZE_OPTION, "8");
         prepareAndStart(options);
 
         final BayeuxClient client = newBayeuxClient();
