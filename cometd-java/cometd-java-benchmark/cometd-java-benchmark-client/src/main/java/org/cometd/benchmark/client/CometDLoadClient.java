@@ -16,12 +16,16 @@
 package org.cometd.benchmark.client;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +43,10 @@ import java.util.concurrent.atomic.AtomicStampedReference;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.HdrHistogram.AtomicHistogram;
+import org.HdrHistogram.Histogram;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
@@ -108,6 +115,7 @@ public class CometDLoadClient implements MeasureConverter {
     private long batchPause = 10000;
     private int messageSize = 50;
     private boolean randomize = false;
+    private String file = "./result.json";
 
     public static void main(String[] args) throws Exception {
         CometDLoadClient client = new CometDLoadClient();
@@ -153,6 +161,8 @@ public class CometDLoadClient implements MeasureConverter {
                 client.messageSize = Integer.parseInt(arg.substring("--messageSize=".length()));
             } else if (arg.equals("--randomize")) {
                 client.randomize = true;
+            } else if (arg.startsWith("--file=")) {
+                client.file = arg.substring("--file=".length());
             }
         }
     }
@@ -454,22 +464,84 @@ public class CometDLoadClient implements MeasureConverter {
             PlatformMonitor.Stop stop = monitor.stop();
             System.err.println(stop);
 
-            long elapsedNanos = end - begin;
-            if (elapsedNanos > 0) {
+            long sendElapsed = end - begin;
+            long sendTime = TimeUnit.NANOSECONDS.toMillis(sendElapsed);
+            long sendRate = 0;
+            if (sendElapsed > 0) {
+                sendRate = batches * batchSize * 1000L * 1000 * 1000 / sendElapsed;
                 System.err.printf("Outgoing: Elapsed = %d ms | Rate = %d messages/s - %d requests/s - ~%.3f Mib/s%n",
-                        TimeUnit.NANOSECONDS.toMillis(elapsedNanos),
-                        batches * batchSize * 1000L * 1000 * 1000 / elapsedNanos,
-                        batches * 1000L * 1000 * 1000 / elapsedNanos,
-                        batches * batchSize * messageSize * 8F * 1000 * 1000 * 1000 / elapsedNanos / 1024 / 1024
+                        sendTime,
+                        sendRate,
+                        batches * 1000L * 1000 * 1000 / sendElapsed,
+                        batches * batchSize * messageSize * 8F * 1000 * 1000 * 1000 / sendElapsed / 1024 / 1024
                 );
             }
 
             waitForMessages(expected);
+            long messages = this.messages.get();
+
+            long receiveElapsed = this.end.get() - this.start.get();
+            long receiveRate = 0;
+            if (receiveElapsed > 0) {
+                receiveRate = messages * 1000 * 1000 * 1000 / receiveElapsed;
+            }
 
             // Send a message to the server to signal the end of the test.
             statsClient.end();
 
-            printReport(expected, messageSize);
+            Histogram histogram = printResults(messages, expected, receiveElapsed, messageSize);
+            if (!interactive) {
+                Map<String, Object> run = new LinkedHashMap<>();
+                Map<String, Object> config = new LinkedHashMap<>();
+                run.put("config", config);
+                config.put("cores", start.cores);
+                config.put("totalMemory", new Measure(start.gibiBytes(start.totalMemory), "GiB"));
+                config.put("os", start.os);
+                config.put("jvm", start.jvm);
+                config.put("totalHeap", new Measure(start.gibiBytes(start.heap.getMax()), "GiB"));
+                config.put("date", new Date(start.date).toString());
+                config.put("transport", transport.getName());
+                config.put("clients", bayeuxClients.size());
+                config.put("rooms", rooms);
+                config.put("roomsPerClient", roomsPerClient);
+                config.put("batches", batches);
+                config.put("batchSize", batchSize);
+                config.put("batchPause", new Measure(batchPause, "\u00B5s"));
+                config.put("messageSize", new Measure(messageSize, "B"));
+                Map<String, Object> results = new LinkedHashMap<>();
+                run.put("results", results);
+                results.put("cpu", new Measure(stop.percent(stop.cpuTime, stop.time) / start.cores, "%"));
+                results.put("jitTime", new Measure(stop.jitTime, "ms"));
+                results.put("messages", messages);
+                results.put("sendTime", new Measure(TimeUnit.NANOSECONDS.toMillis(sendElapsed), "ms"));
+                results.put("sendRate", new Measure(sendRate, "messages/s"));
+                results.put("receiveTime", new Measure(TimeUnit.NANOSECONDS.toMillis(receiveElapsed), "ms"));
+                results.put("receiveRate", new Measure(receiveRate, "messages/s"));
+                Map<String, Object> latency = new LinkedHashMap<>();
+                results.put("latency", latency);
+                latency.put("min", new Measure(convert(histogram.getMinValue()), "\u00B5s"));
+                latency.put("p50", new Measure(convert(histogram.getValueAtPercentile(50D)), "\u00B5s"));
+                latency.put("p99", new Measure(convert(histogram.getValueAtPercentile(99D)), "\u00B5s"));
+                latency.put("max", new Measure(convert(histogram.getMaxValue()), "\u00B5s"));
+                Map<String, Object> threadPool = new LinkedHashMap<>();
+                results.put("threadPool", threadPool);
+                threadPool.put("tasks", this.threadPool.getTasks());
+                threadPool.put("queueSizeMax", this.threadPool.getMaxQueueSize());
+                threadPool.put("activeThreadsMax", this.threadPool.getMaxActiveThreads());
+                threadPool.put("queueLatencyAverage", new Measure(TimeUnit.NANOSECONDS.toMillis(this.threadPool.getAverageQueueLatency()), "ms"));
+                threadPool.put("queueLatencyMax", new Measure(TimeUnit.NANOSECONDS.toMillis(this.threadPool.getMaxQueueLatency()), "ms"));
+                threadPool.put("taskTimeAverage", new Measure(TimeUnit.NANOSECONDS.toMillis(this.threadPool.getAverageTaskLatency()), "ms"));
+                threadPool.put("taskTimeMax", new Measure(TimeUnit.NANOSECONDS.toMillis(this.threadPool.getMaxTaskLatency()), "ms"));
+                Map<String, Object> gc = new LinkedHashMap<>();
+                results.put("gc", gc);
+                gc.put("youngCount", stop.youngCount);
+                gc.put("youngTime", new Measure(stop.youngTime, "ms"));
+                gc.put("oldCount", stop.oldCount);
+                gc.put("oldTime", new Measure(stop.oldTime, "ms"));
+                gc.put("youngGarbage", new Measure(stop.mebiBytes(stop.edenBytes + stop.survivorBytes), "MiB"));
+                gc.put("oldGarbage", new Measure(stop.mebiBytes(stop.tenuredBytes), "MiB"));
+                saveResults(run, file);
+            }
 
             reset();
         }
@@ -612,11 +684,9 @@ public class CometDLoadClient implements MeasureConverter {
         }
     }
 
-    public void printReport(long expectedCount, int messageSize) {
-        long messageCount = messages.get();
+    private Histogram printResults(long messageCount, long expectedCount, long elapsedNanos, int messageSize) {
         System.err.printf("Messages - Success/Expected = %d/%d%n", messageCount, expectedCount);
 
-        long elapsedNanos = end.get() - start.get();
         if (elapsedNanos > 0) {
             System.err.printf("Incoming - Elapsed = %d ms | Rate = %d messages/s - %d responses/s(%.2f%%) - ~%.3f Mib/s%n",
                     TimeUnit.NANOSECONDS.toMillis(elapsedNanos),
@@ -627,7 +697,8 @@ public class CometDLoadClient implements MeasureConverter {
             );
         }
 
-        System.err.println(new HistogramSnapshot(histogram.copy(), 20, "Messages - Latency", "\u00B5s", this));
+        AtomicHistogram histogram = this.histogram.copy();
+        System.err.println(new HistogramSnapshot(histogram, 20, "Messages - Latency", "\u00B5s", this));
 
         System.err.printf("Messages - Network Latency Min/Ave/Max = %d/%d/%d ms%n",
                 TimeUnit.NANOSECONDS.toMillis(minLatency.get()),
@@ -644,6 +715,20 @@ public class CometDLoadClient implements MeasureConverter {
                 TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxQueueLatency()),
                 TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageTaskLatency()),
                 TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxTaskLatency()));
+
+        return histogram;
+    }
+
+    private void saveResults(Map<String, Object> run, String path) {
+        try {
+            File file = new File(path);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.enable(SerializationFeature.INDENT_OUTPUT);
+            mapper.writeValue(file, run);
+            System.err.printf("Results saved to file %s%n", file.getAbsolutePath());
+        } catch (IOException x) {
+            System.err.printf("Could not save results to file %s%n", path);
+        }
     }
 
     @Override
@@ -872,6 +957,14 @@ public class CometDLoadClient implements MeasureConverter {
 
         public String getName() {
             return name;
+        }
+    }
+
+    private static class Measure extends HashMap<String, Object> {
+        public Measure(Object value, String unit) {
+            super(2);
+            put("value", value);
+            put("unit", unit);
         }
     }
 }
