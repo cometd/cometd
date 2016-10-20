@@ -837,20 +837,18 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         // possible to subscribe to meta channels and service channels.
         Set<String> wildSubscribers = null;
         if (ChannelId.isBroadcast(mutable.getChannel())) {
-            for (int i = 0, size = wildChannels.size(); i < size; ++i) {
-                ServerChannelImpl wildChannel = _channels.get(wildChannels.get(i));
+            for (String wildName : wildChannels) {
+                ServerChannelImpl wildChannel = _channels.get(wildName);
                 if (wildChannel == null) {
                     continue;
                 }
                 Set<ServerSession> subscribers = wildChannel.subscribers();
-                if (!subscribers.isEmpty()) {
-                    for (ServerSession session : subscribers) {
-                        if (wildSubscribers == null) {
-                            wildSubscribers = new HashSet<>();
-                        }
-                        if (wildSubscribers.add(session.getId())) {
-                            ((ServerSessionImpl)session).doDeliver(from, mutable);
-                        }
+                for (ServerSession session : subscribers) {
+                    if (wildSubscribers == null) {
+                        wildSubscribers = new HashSet<>();
+                    }
+                    if (wildSubscribers.add(session.getId())) {
+                        ((ServerSessionImpl)session).doDeliver(from, mutable);
                     }
                 }
             }
@@ -858,11 +856,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
         // Call the leaf subscribers
         Set<ServerSession> subscribers = to.subscribers();
-        if (!subscribers.isEmpty()) {
-            for (ServerSession session : subscribers) {
-                if (wildSubscribers == null || !wildSubscribers.contains(session.getId())) {
-                    ((ServerSessionImpl)session).doDeliver(from, mutable);
-                }
+        for (ServerSession session : subscribers) {
+            if (wildSubscribers == null || !wildSubscribers.contains(session.getId())) {
+                ((ServerSessionImpl)session).doDeliver(from, mutable);
             }
         }
 
@@ -882,12 +878,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                 mutable.setLazy(true);
             }
             List<ServerChannelListener> listeners = channel.listeners();
-            if (!listeners.isEmpty()) {
-                for (ServerChannelListener listener : listeners) {
-                    if (listener instanceof MessageListener) {
-                        if (!notifyOnMessage((MessageListener)listener, from, to, mutable)) {
-                            return false;
-                        }
+            for (ServerChannelListener listener : listeners) {
+                if (listener instanceof MessageListener) {
+                    if (!notifyOnMessage((MessageListener)listener, from, to, mutable)) {
+                        return false;
                     }
                 }
             }
@@ -897,11 +891,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
     private void notifyHandlerListeners(ServerSessionImpl from, ServerChannelImpl to, Mutable mutable) {
         List<ServerChannelListener> listeners = to.listeners();
-        if (!listeners.isEmpty()) {
-            for (ServerChannelListener listener : listeners) {
-                if (listener instanceof HandlerListener) {
-                    ((HandlerListener)listener).onMessage(from, mutable);
-                }
+        for (ServerChannelListener listener : listeners) {
+            if (listener instanceof HandlerListener) {
+                ((HandlerListener)listener).onMessage(from, mutable);
             }
         }
     }
@@ -942,14 +934,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     protected boolean extendRecv(ServerSession from, ServerMessage.Mutable message) {
-        if (!_extensions.isEmpty()) {
-            for (Extension extension : _extensions) {
-                boolean proceed = message.isMeta() ?
-                        notifyRcvMeta(extension, from, message) :
-                        notifyRcv(extension, from, message);
-                if (!proceed) {
-                    return false;
-                }
+        for (Extension extension : _extensions) {
+            boolean proceed = message.isMeta() ?
+                    notifyRcvMeta(extension, from, message) :
+                    notifyRcv(extension, from, message);
+            if (!proceed) {
+                return false;
             }
         }
         return true;
@@ -974,23 +964,21 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     protected boolean extendSend(ServerSession from, ServerSession to, Mutable message) {
-        if (!_extensions.isEmpty()) {
-            // Cannot use listIterator(int): it is not thread safe
-            ListIterator<Extension> i = _extensions.listIterator();
-            while (i.hasNext()) {
-                i.next();
-            }
-            while (i.hasPrevious()) {
-                final Extension extension = i.previous();
-                boolean proceed = message.isMeta() ?
-                        notifySendMeta(extension, to, message) :
-                        notifySend(extension, from, to, message);
-                if (!proceed) {
-                    if (_logger.isDebugEnabled()) {
-                        _logger.debug("Extension {} interrupted message processing for {}", extension, message);
-                    }
-                    return false;
+        // Cannot use listIterator(int): it is not thread safe
+        ListIterator<Extension> i = _extensions.listIterator();
+        while (i.hasNext()) {
+            i.next();
+        }
+        while (i.hasPrevious()) {
+            final Extension extension = i.previous();
+            boolean proceed = message.isMeta() ?
+                    notifySendMeta(extension, to, message) :
+                    notifySend(extension, from, to, message);
+            if (!proceed) {
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Extension {} interrupted message processing for {}", extension, message);
                 }
+                return false;
             }
         }
         if (_logger.isDebugEnabled()) {

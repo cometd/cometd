@@ -230,12 +230,10 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
         _bayeux.freeze(message);
 
-        if (!_listeners.isEmpty()) {
-            for (ServerSessionListener listener : _listeners) {
-                if (listener instanceof MessageListener) {
-                    if (!notifyOnMessage((MessageListener)listener, sender, message)) {
-                        return;
-                    }
+        for (ServerSessionListener listener : _listeners) {
+            if (listener instanceof MessageListener) {
+                if (!notifyOnMessage((MessageListener)listener, sender, message)) {
+                    return;
                 }
             }
         }
@@ -256,25 +254,20 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     private Boolean enqueueMessage(ServerSession sender, ServerMessage.Mutable message) {
         synchronized (getLock()) {
-            if (!_listeners.isEmpty()) {
-                for (ServerSessionListener listener : _listeners) {
-                    if (listener instanceof MaxQueueListener) {
-                        final int maxQueueSize = _maxQueue;
-                        if (maxQueueSize > 0 && _queue.size() > maxQueueSize) {
-                            if (!notifyQueueMaxed((MaxQueueListener)listener, this, _queue, sender, message)) {
-                                return null;
-                            }
+            for (ServerSessionListener listener : _listeners) {
+                if (listener instanceof MaxQueueListener) {
+                    final int maxQueueSize = _maxQueue;
+                    if (maxQueueSize > 0 && _queue.size() > maxQueueSize) {
+                        if (!notifyQueueMaxed((MaxQueueListener)listener, this, _queue, sender, message)) {
+                            return null;
                         }
                     }
-
                 }
             }
             addMessage(message);
-            if (!_listeners.isEmpty()) {
-                for (ServerSessionListener listener : _listeners) {
-                    if (listener instanceof QueueListener) {
-                        notifyQueued((QueueListener)listener, sender, message);
-                    }
+            for (ServerSessionListener listener : _listeners) {
+                if (listener instanceof QueueListener) {
+                    notifyQueued((QueueListener)listener, sender, message);
                 }
             }
             return _batch == 0;
@@ -406,11 +399,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         synchronized (getLock()) {
             // Always call listeners, even if the queue is
             // empty since they may add messages to the queue.
-            if (!_listeners.isEmpty()) {
-                for (ServerSessionListener listener : _listeners) {
-                    if (listener instanceof DeQueueListener) {
-                        notifyDeQueue((DeQueueListener)listener, this, _queue);
-                    }
+            for (ServerSessionListener listener : _listeners) {
+                if (listener instanceof DeQueueListener) {
+                    notifyDeQueue((DeQueueListener)listener, this, _queue);
                 }
             }
 
@@ -602,14 +593,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     protected boolean extendRecv(ServerMessage.Mutable message) {
-        if (!_extensions.isEmpty()) {
-            for (Extension extension : _extensions) {
-                boolean proceed = message.isMeta() ?
-                        notifyRcvMeta(extension, message) :
-                        notifyRcv(extension, message);
-                if (!proceed) {
-                    return false;
-                }
+        for (Extension extension : _extensions) {
+            boolean proceed = message.isMeta() ?
+                    notifyRcvMeta(extension, message) :
+                    notifyRcv(extension, message);
+            if (!proceed) {
+                return false;
             }
         }
         return true;
@@ -638,11 +627,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             throw new IllegalStateException();
         }
 
-        if (!_extensions.isEmpty()) {
-            for (Extension extension : _extensions) {
-                if (!notifySendMeta(extension, message)) {
-                    return false;
-                }
+        for (Extension extension : _extensions) {
+            if (!notifySendMeta(extension, message)) {
+                return false;
             }
         }
 
@@ -663,12 +650,10 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             throw new IllegalStateException();
         }
 
-        if (!_extensions.isEmpty()) {
-            for (Extension extension : _extensions) {
-                message = notifySend(extension, message);
-                if (message == null) {
-                    return null;
-                }
+        for (Extension extension : _extensions) {
+            message = notifySend(extension, message);
+            if (message == null) {
+                return null;
             }
         }
 
