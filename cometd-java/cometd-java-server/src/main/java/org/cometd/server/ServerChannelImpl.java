@@ -316,11 +316,9 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
     protected void sweep() {
         waitForInitialized();
 
-        if (!_subscribers.isEmpty()) {
-            for (ServerSession session : _subscribers) {
-                if (!session.isHandshook()) {
-                    unsubscribe(session);
-                }
+        for (ServerSession session : _subscribers) {
+            if (!session.isHandshook()) {
+                unsubscribe(session);
             }
         }
 
@@ -336,11 +334,9 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
             return;
         }
 
-        if (!_listeners.isEmpty()) {
-            for (ServerChannelListener listener : _listeners) {
-                if (!(listener instanceof ServerChannelListener.Weak)) {
-                    return;
-                }
+        for (ServerChannelListener listener : _listeners) {
+            if (!(listener instanceof ServerChannelListener.Weak)) {
+                return;
             }
         }
 
