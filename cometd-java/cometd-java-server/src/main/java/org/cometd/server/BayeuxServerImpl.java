@@ -377,10 +377,22 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     public MarkedReference<ServerChannel> createChannelIfAbsent(String channelName, Initializer... initializers) {
+        ChannelId channelId;
         boolean initialized = false;
         ServerChannelImpl channel = _channels.get(channelName);
         if (channel == null) {
-            ChannelId channelId = new ChannelId(channelName);
+            // Creating the ChannelId will also normalize the channelName.
+            channelId = new ChannelId(channelName);
+            String id = channelId.getId();
+            if (!id.equals(channelName)) {
+                channelName = id;
+                channel = _channels.get(channelName);
+            }
+        } else {
+            channelId = channel.getChannelId();
+        }
+
+        if (channel == null) {
             ServerChannelImpl candidate = new ServerChannelImpl(this, channelId);
             channel = _channels.putIfAbsent(channelName, candidate);
             if (channel == null) {
@@ -419,7 +431,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             // This is not 100% fool proof (e.g. this thread is preempted long enough for the sweeper
             // to remove the channel, but the alternative is to have a global lock)
             _channels.putIfAbsent(channelName, channel);
-
         }
         // Another thread may add this channel concurrently, so wait until it is initialized
         channel.waitForInitialized();
@@ -725,7 +736,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         Authorizer.Result result = null;
         List<String> wilds = channelId.getWilds();
         for (int i = 0, size = wilds.size(); i <= size; ++i) {
-            String channelName = i < size ? wilds.get(i) : channelId.toString();
+            String channelName = i < size ? wilds.get(i) : channelId.getId();
             ServerChannelImpl channel = _channels.get(channelName);
             if (channel != null) {
                 Authorizer.Result authz = isChannelOperationAuthorized(channel, operation, session, message, channelId);

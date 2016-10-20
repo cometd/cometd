@@ -264,7 +264,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
     }
 
     public String getId() {
-        return _id.toString();
+        return _id.getId();
     }
 
     public boolean isMeta() {
