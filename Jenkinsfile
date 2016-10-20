@@ -10,49 +10,49 @@ node {
     List mvnEnv8 = ["PATH+MVN=${mvnTool}/bin", "PATH+JDK=${jdk8}/bin", "JAVA_HOME=${jdk8}/", "MAVEN_HOME=${mvnTool}"]
     mvnEnv8.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
 
-    stage 'Checkout'
-
-    checkout scm
-
-    stage 'Build JDK 7'
-
-    withEnv(mvnEnv7) {
-        sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
-        // Report failures in the jenkins UI
-        step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+    stage 'Checkout' {
+        checkout scm
     }
 
-    stage 'Build JDK 8'
-
-    withEnv(mvnEnv8) {
-        sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
-        // Report failures in the jenkins UI.
-        step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
-        // Collect the JaCoCo execution results.
-        step([$class: 'JacocoPublisher', execPattern: 'target/jacoco*.exec', classPattern: 'target/classes', sourcePattern: 'src/main/java'])
+    stage 'Build JDK 7' {
+        withEnv(mvnEnv7) {
+            sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
+            // Report failures in the jenkins UI
+            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+        }
     }
 
-    stage 'Build JDK 8 - Jetty 9.3.x'
-
-    withEnv(mvnEnv8) {
-        sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.3.13.v20161014"
-        // Report failures in the jenkins UI
-        step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+    stage 'Build JDK 8' {
+        withEnv(mvnEnv8) {
+            sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
+            // Report failures in the jenkins UI.
+            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+            // Collect the JaCoCo execution results.
+            step([$class: 'JacocoPublisher', execPattern: '**/target/jacoco.exec', classPattern: '**/target/classes', sourcePattern: '**/src/main/java'])
+        }
     }
 
-    stage 'Javadoc'
+    stage 'Build JDK 8 - Jetty 9.3.x' {
+        withEnv(mvnEnv8) {
+	    sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.3.13.v20161014"
+            // Report failures in the jenkins UI
+            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+        }
+    }
 
-    withEnv(mvnEnv8) {
-        sh "mvn -B javadoc:javadoc"
+    stage 'Javadoc' {
+        withEnv(mvnEnv8) {
+            sh "mvn -B javadoc:javadoc"
+        }
     }
 
     /*
-    stage 'Documentation'
-
-    dir("cometd-documentation") {
-      withEnv(mvnEnv8) {
-        sh "mvn clean install"
-      }
+    stage 'Documentation' {
+        dir("cometd-documentation") {
+            withEnv(mvnEnv8) {
+                sh "mvn clean install"
+            }
+        }
     }
     */
 }
