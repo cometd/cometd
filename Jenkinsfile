@@ -26,8 +26,10 @@ node {
 
     withEnv(mvnEnv8) {
         sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
-        // Report failures in the jenkins UI
+        // Report failures in the jenkins UI.
         step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+        // Collect the JaCoCo execution results.
+        step([$class: 'JacocoPublisher', execPattern: 'target/jacoco*.exec', classPattern: 'target/classes', sourcePattern: 'src/main/java'])
     }
 
     stage 'Javadoc'
