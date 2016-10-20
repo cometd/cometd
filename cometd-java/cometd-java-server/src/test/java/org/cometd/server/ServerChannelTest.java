@@ -18,6 +18,7 @@ package org.cometd.server;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
@@ -60,10 +61,21 @@ public class ServerChannelTest {
         _bayeux.createChannelIfAbsent("/foo/bar");
 
         Assert.assertNull(_bayeux.getChannel("/foo"));
-        Assert.assertNotNull(_bayeux.getChannel("/foo/bar"));
+        ServerChannel fooBar = _bayeux.getChannel("/foo/bar");
+        Assert.assertNotNull(fooBar);
         Assert.assertEquals(2, _bayeuxChannelListener._calls);
         Assert.assertEquals("initadded", _bayeuxChannelListener._method);
         Assert.assertEquals("/foo/bar", _bayeuxChannelListener._channel);
+
+        // Same channel with trailing slash.
+        MarkedReference<ServerChannel> channelRef = _bayeux.createChannelIfAbsent("/foo/bar/");
+        Assert.assertFalse(channelRef.isMarked());
+        Assert.assertSame(channelRef.getReference(), fooBar);
+
+        // Same channel with trailing whitespace.
+        channelRef = _bayeux.createChannelIfAbsent("/foo/bar/ ");
+        Assert.assertFalse(channelRef.isMarked());
+        Assert.assertSame(channelRef.getReference(), fooBar);
 
         _bayeux.createChannelIfAbsent("/foo/bob");
 

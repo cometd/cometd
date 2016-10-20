@@ -122,7 +122,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     }
 
     public ClientSessionChannel getChannel(ChannelId channelId) {
-        return getChannel(channelId.toString(), channelId);
+        return getChannel(channelId.getId(), channelId);
     }
 
     private ClientSessionChannel getChannel(String channelName, ChannelId channelId) {
@@ -539,7 +539,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
         @Override
         public String getId() {
-            return _id.toString();
+            return _id.getId();
         }
 
         @Override

@@ -143,6 +143,16 @@ public class ChannelId {
     }
 
     /**
+     * <p>Returns the normalized channel id string.</p>
+     * <p>Normalization involves trimming white spaces and removing trailing slashes.</p>
+     *
+     * @return the normalized channel id string
+     */
+    public String getId() {
+        return _id;
+    }
+
+    /**
      * @return whether this {@code ChannelId} is either {@link #isShallowWild() shallow wild}
      * or {@link #isDeepWild() deep wild}
      */
@@ -347,7 +357,7 @@ public class ChannelId {
 
     @Override
     public String toString() {
-        return _id;
+        return getId();
     }
 
     /**
