@@ -10,11 +10,11 @@ node {
     List mvnEnv8 = ["PATH+MVN=${mvnTool}/bin", "PATH+JDK=${jdk8}/bin", "JAVA_HOME=${jdk8}/", "MAVEN_HOME=${mvnTool}"]
     mvnEnv8.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
 
-    stage 'Checkout' {
+    stage('Checkout') {
         checkout scm
     }
 
-    stage 'Build JDK 7' {
+    stage('Build JDK 7') {
         withEnv(mvnEnv7) {
             sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
             // Report failures in the jenkins UI
@@ -22,7 +22,7 @@ node {
         }
     }
 
-    stage 'Build JDK 8' {
+    stage('Build JDK 8') {
         withEnv(mvnEnv8) {
             sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
             // Report failures in the jenkins UI.
@@ -32,14 +32,14 @@ node {
         }
     }
 
-    stage 'Javadoc' {
+    stage('Javadoc') {
         withEnv(mvnEnv8) {
             sh "mvn -B javadoc:javadoc"
         }
     }
 
     /*
-    stage 'Documentation' {
+    stage('Documentation') {
         dir("cometd-documentation") {
             withEnv(mvnEnv8) {
                 sh "mvn clean install"
