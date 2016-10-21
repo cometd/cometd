@@ -28,7 +28,11 @@ node {
             // Report failures in the jenkins UI.
             step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
             // Collect the JaCoCo execution results.
-            step([$class: 'JacocoPublisher', execPattern: '**/target/jacoco.exec', classPattern: '**/target/classes', sourcePattern: '**/src/main/java'])
+            step([$class: 'JacocoPublisher',
+                  exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
+                  execPattern: '**/target/jacoco.exec',
+                  classPattern: '**/target/classes',
+                  sourcePattern: '**/src/main/java'])
         }
     }
 
