@@ -282,6 +282,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
         private boolean protocolMatches;
 
         public void clear() {
+            ContextHolder.holder.set(null);
             bayeuxContext = null;
             // Use a sensible default in case getNegotiatedSubprotocol() is not invoked.
             protocolMatches = true;
