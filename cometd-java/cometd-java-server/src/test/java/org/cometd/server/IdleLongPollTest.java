@@ -48,8 +48,8 @@ public class IdleLongPollTest extends AbstractBayeuxClientServerTest {
         final long sleep = 500;
         JSONTransport transport = new JSONTransport(bayeux) {
             @Override
-            protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
-                return new DispatchingLongPollScheduler(request, response, asyncContext, session, reply, browserId, timeout) {
+            protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
+                return new DispatchingLongPollScheduler(request, response, asyncContext, session, reply, timeout) {
                     private final AtomicInteger decrements = new AtomicInteger();
 
                     @Override

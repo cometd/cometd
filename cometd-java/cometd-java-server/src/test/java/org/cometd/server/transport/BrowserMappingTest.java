@@ -16,16 +16,19 @@
 package org.cometd.server.transport;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.cometd.server.AbstractBayeuxClientServerTest;
-import org.cometd.server.AbstractServerTransport;
+import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
@@ -33,26 +36,26 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         super(serverTransport);
     }
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
     @Test
     public void testBayeuxBrowserMapping() throws Exception {
+        startServer(null);
+
         AbstractHttpTransport transport = new JSONTransport(bayeux);
         transport.init();
 
-        String browserId = "browser1";
-        Assert.assertTrue(transport.incBrowserId(browserId, null));
-        Assert.assertFalse(transport.incBrowserId(browserId, null));
-        transport.decBrowserId(browserId, null);
-        Assert.assertTrue(transport.incBrowserId(browserId, null));
-        transport.decBrowserId(browserId, null);
+        ServerSessionImpl session = new ServerSessionImpl(bayeux);
+        session.setBrowserId("browser1");
+        Assert.assertTrue(transport.incBrowserId(session, false));
+        Assert.assertFalse(transport.incBrowserId(session, false));
+        transport.decBrowserId(session, false);
+        Assert.assertTrue(transport.incBrowserId(session, false));
+        transport.decBrowserId(session, false);
     }
 
     @Test
     public void testSameDomainWithCookieHoldsConnect() throws Exception {
+        startServer(null);
+
         Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -62,6 +65,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "}]");
         ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(isSuccessful(response));
 
         String clientId = extractClientId(response);
 
@@ -73,6 +77,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "}]");
         response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(isSuccessful(response));
 
         long begin = System.currentTimeMillis();
         Request connect2 = newBayeuxRequest("[{" +
@@ -82,12 +87,15 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "}]");
         response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(isSuccessful(response));
         long elapsed = System.currentTimeMillis() - begin;
         Assert.assertTrue("" + elapsed, elapsed >= (timeout - timeout / 10));
     }
 
     @Test
-    public void testSameDomainWithoutCookieDoesNotHoldConnect() throws Exception {
+    public void testSameDomainWithoutCookieYieldsUnknownClient() throws Exception {
+        startServer(null);
+
         Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -97,6 +105,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "}]");
         ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(isSuccessful(response));
 
         String clientId = extractClientId(response);
 
@@ -108,8 +117,9 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "}]");
         response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(isSuccessful(response));
 
-        // Remove cookie
+        // Remove cookie.
         httpClient.getCookieStore().removeAll();
 
         long begin = System.nanoTime();
@@ -120,12 +130,17 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "}]");
         response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertFalse(isSuccessful(response));
         long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
         Assert.assertTrue("" + elapsed, elapsed < timeout / 2);
     }
 
     @Test
-    public void testSameDomainWithoutCookieWithOptionHoldsConnect() throws Exception {
+    public void testSameDomainWithoutCookieTrustClientSessionHoldsConnect() throws Exception {
+        Map<String, String> options = new HashMap<>();
+        options.put(AbstractHttpTransport.TRUST_CLIENT_SESSION, String.valueOf(true));
+        startServer(options);
+
         Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -135,10 +150,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "}]");
         ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
-
-        AbstractServerTransport transport = (AbstractServerTransport)bayeux.getTransport("long-polling");
-        transport.setOption(AbstractHttpTransport.ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION, true);
-        transport.init();
+        Assert.assertTrue(isSuccessful(response));
 
         String clientId = extractClientId(response);
 
@@ -150,6 +162,10 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "}]");
         response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(isSuccessful(response));
+
+        // Remove cookie.
+        httpClient.getCookieStore().removeAll();
 
         long begin = System.currentTimeMillis();
         Request connect2 = newBayeuxRequest("[{" +
@@ -159,12 +175,17 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "}]");
         response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(isSuccessful(response));
         long elapsed = System.currentTimeMillis() - begin;
-        Assert.assertTrue("" + elapsed, elapsed >= (timeout - timeout / 10));
+        Assert.assertTrue("" + elapsed, elapsed >= timeout - (timeout / 10));
     }
 
     @Test
-    public void testDifferentDomainWithoutCookieHoldsConnect() throws Exception {
+    public void testDifferentDomainWithoutCookieTrustClientSessionHoldsConnect() throws Exception {
+        Map<String, String> options = new HashMap<>();
+        options.put(AbstractHttpTransport.TRUST_CLIENT_SESSION, String.valueOf(true));
+        startServer(options);
+
         Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -174,8 +195,12 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "}]");
         ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(isSuccessful(response));
 
         String clientId = extractClientId(response);
+
+        // Remove cookie.
+        httpClient.getCookieStore().removeAll();
 
         // First connect always returns immediately
         Request connect1 = newBayeuxRequest("[{" +
@@ -187,6 +212,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         connect1.header("Origin", "http://localhost:" + port);
         response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(isSuccessful(response));
 
         long begin = System.currentTimeMillis();
         Request connect2 = newBayeuxRequest("[{" +
@@ -198,6 +224,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         connect2.header("Origin", "http://localhost:" + port);
         response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(isSuccessful(response));
         long elapsed = System.currentTimeMillis() - begin;
         Assert.assertTrue("" + elapsed, elapsed >= (timeout - timeout / 10));
     }
@@ -208,12 +235,11 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         String cookieDomain = "cookie_domain";
         String cookiePath = "cookie_path";
 
-        JSONTransport transport = new JSONTransport(bayeux);
-        transport.setOption(JSONTransport.BROWSER_COOKIE_NAME_OPTION, cookieName);
-        transport.setOption(JSONTransport.BROWSER_COOKIE_DOMAIN_OPTION, cookieDomain);
-        transport.setOption(JSONTransport.BROWSER_COOKIE_PATH_OPTION, cookiePath);
-        transport.init();
-        bayeux.setTransports(transport);
+        Map<String, String> options = new HashMap<>();
+        options.put(JSONTransport.BROWSER_COOKIE_NAME_OPTION, cookieName);
+        options.put(JSONTransport.BROWSER_COOKIE_DOMAIN_OPTION, cookieDomain);
+        options.put(JSONTransport.BROWSER_COOKIE_PATH_OPTION, cookiePath);
+        startServer(options);
 
         Request handshake = newBayeuxRequest("" +
                 "[{" +
@@ -224,6 +250,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "}]");
         ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(isSuccessful(response));
 
         HttpFields headers = response.getHeaders();
         String cookie = headers.get(HttpHeader.SET_COOKIE);
@@ -237,5 +264,12 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         Assert.assertTrue(hasCookieName);
         Assert.assertTrue(Arrays.asList(parts).contains("Path=" + cookiePath));
         Assert.assertTrue(Arrays.asList(parts).contains("Domain=" + cookieDomain));
+    }
+
+    private boolean isSuccessful(ContentResponse response) {
+        String content = response.getContentAsString();
+        Matcher matcher = Pattern.compile("\"successful\"\\s*:\\s*(true|false)").matcher(content);
+        Assert.assertTrue(matcher.find());
+        return Boolean.parseBoolean(matcher.group(1));
     }
 }

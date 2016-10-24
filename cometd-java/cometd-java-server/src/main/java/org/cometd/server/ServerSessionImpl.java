@@ -82,12 +82,13 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     private boolean _nonLazyMessages;
     private boolean _broadcastToPublisher;
     private boolean _allowMessageDeliveryDuringHandshake;
+    private String _browserId;
 
-    protected ServerSessionImpl(BayeuxServerImpl bayeux) {
+    public ServerSessionImpl(BayeuxServerImpl bayeux) {
         this(bayeux, null, null);
     }
 
-    protected ServerSessionImpl(BayeuxServerImpl bayeux, LocalSessionImpl localSession, String idHint) {
+    public ServerSessionImpl(BayeuxServerImpl bayeux, LocalSessionImpl localSession, String idHint) {
         _bayeux = bayeux;
         _localSession = localSession;
 
@@ -132,6 +133,22 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
      */
     public void setUserAgent(String userAgent) {
         _userAgent = userAgent;
+    }
+
+    /**
+     * @return the remote client identifier
+     */
+    public String getBrowserId() {
+        return _browserId;
+    }
+
+    /**
+     * <p>Sets a remote client identifier, typically a browser.</p>
+     *
+     * @param browserId the remote client identifier
+     */
+    public void setBrowserId(String browserId) {
+        _browserId = browserId;
     }
 
     protected void sweep(long now) {

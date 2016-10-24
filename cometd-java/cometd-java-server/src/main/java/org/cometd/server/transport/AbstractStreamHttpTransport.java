@@ -75,16 +75,16 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
     }
 
     @Override
-    protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
+    protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
         AsyncContext asyncContext = request.startAsync(request, response);
         asyncContext.setTimeout(0);
-        HttpScheduler scheduler = newHttpScheduler(request, response, asyncContext, session, reply, browserId, timeout);
+        HttpScheduler scheduler = newHttpScheduler(request, response, asyncContext, session, reply, timeout);
         request.setAttribute(SCHEDULER_ATTRIBUTE, scheduler);
         return scheduler;
     }
 
-    protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
-        return new DispatchingLongPollScheduler(request, response, asyncContext, session, reply, browserId, timeout);
+    protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
+        return new DispatchingLongPollScheduler(request, response, asyncContext, session, reply, timeout);
     }
 
     protected abstract ServerMessage.Mutable[] parseMessages(HttpServletRequest request) throws IOException, ParseException;
@@ -186,8 +186,8 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
     protected abstract void endWrite(HttpServletResponse response, ServletOutputStream output) throws IOException;
 
     protected class DispatchingLongPollScheduler extends LongPollScheduler {
-        public DispatchingLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
-            super(request, response, asyncContext, session, reply, browserId, timeout);
+        public DispatchingLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
+            super(request, response, asyncContext, session, reply, timeout);
         }
 
         protected void dispatch() {

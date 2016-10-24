@@ -158,13 +158,15 @@ that different server transports accept:
 
 | maxSessionsPerBrowser
 | 1
-| The max number of sessions (tabs/frames) allowed to long poll from the same browser;
-  a negative value allows unlimited sessions (see also <<_java_server_multiple_sessions,this section>>).
+| The max number of sessions (tabs/frames) allowed to long poll from the same browser
+  using the HTTP/1.1 protocol; a negative value allows unlimited sessions (see also
+  <<_java_server_multiple_sessions,this section>>).
 
-| allowMultiSessionsNoBrowser
-| false
-| Whether to allow multiple sessions (tabs/frames) in case the browser cannot be detected
-  (see also <<_java_server_multiple_sessions,this section>>).
+| http2MaxSessionsPerBrowser
+| -1
+| The max number of sessions (tabs/frames) allows to long poll from the same browser
+  using the HTTP/2 protocol; a negative value allows unlimited sessions (see also
+  <<_java_server_multiple_sessions,this section>>).
 
 | multiSessionInterval
 | 2000

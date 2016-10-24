@@ -74,13 +74,13 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         input.setReadListener(reader);
     }
 
-    protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
+    protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
         AsyncContext asyncContext = request.getAsyncContext();
-        return newHttpScheduler(request, response, asyncContext, session, reply, browserId, timeout);
+        return newHttpScheduler(request, response, asyncContext, session, reply, timeout);
     }
 
-    protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
-        return new AsyncLongPollScheduler(request, response, asyncContext, session, reply, browserId, timeout);
+    protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
+        return new AsyncLongPollScheduler(request, response, asyncContext, session, reply, timeout);
     }
 
     @Override
@@ -413,8 +413,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
     }
 
     private class AsyncLongPollScheduler extends LongPollScheduler {
-        private AsyncLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
-            super(request, response, asyncContext, session, reply, browserId, timeout);
+        private AsyncLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
+            super(request, response, asyncContext, session, reply, timeout);
         }
 
         @Override

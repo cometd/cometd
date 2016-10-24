@@ -66,9 +66,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String BROWSER_COOKIE_SECURE_OPTION = "browserCookieSecure";
     public final static String BROWSER_COOKIE_HTTP_ONLY_OPTION = "browserCookieHttpOnly";
     public final static String MAX_SESSIONS_PER_BROWSER_OPTION = "maxSessionsPerBrowser";
+    public final static String HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION = "http2MaxSessionsPerBrowser";
     public final static String MULTI_SESSION_INTERVAL_OPTION = "multiSessionInterval";
     public final static String AUTOBATCH_OPTION = "autoBatch";
-    public final static String ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION = "allowMultiSessionsNoBrowser";
     public final static String TRUST_CLIENT_SESSION = "trustClientSession";
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
@@ -82,9 +82,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     private boolean _browserCookieSecure;
     private boolean _browserCookieHttpOnly;
     private int _maxSessionsPerBrowser;
+    private int _http2MaxSessionsPerBrowser;
     private long _multiSessionInterval;
     private boolean _autoBatch;
-    private boolean _allowMultiSessionsNoBrowser;
     private boolean _trustClientSession;
     private long _lastSweep;
 
@@ -102,9 +102,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         _browserCookieSecure = getOption(BROWSER_COOKIE_SECURE_OPTION, false);
         _browserCookieHttpOnly = getOption(BROWSER_COOKIE_HTTP_ONLY_OPTION, true);
         _maxSessionsPerBrowser = getOption(MAX_SESSIONS_PER_BROWSER_OPTION, 1);
+        _http2MaxSessionsPerBrowser = getOption(HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION, -1);
         _multiSessionInterval = getOption(MULTI_SESSION_INTERVAL_OPTION, 2000);
         _autoBatch = getOption(AUTOBATCH_OPTION, true);
-        _allowMultiSessionsNoBrowser = getOption(ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION, false);
         _trustClientSession = getOption(TRUST_CLIENT_SESSION, false);
     }
 
@@ -114,10 +114,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     protected boolean isAutoBatch() {
         return _autoBatch;
-    }
-
-    protected boolean isAllowMultiSessionsNoBrowser() {
-        return _allowMultiSessionsNoBrowser;
     }
 
     public void setCurrentRequest(HttpServletRequest request) {
@@ -132,7 +128,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     public abstract void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
 
-    protected abstract HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout);
+    protected abstract HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout);
 
     protected abstract void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies);
 
@@ -250,7 +246,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                     id = setBrowserId(request, response);
                 }
                 final String browserId = id;
-
+                session.setBrowserId(browserId);
                 synchronized (_sessions) {
                     Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
                     if (sessions == null) {
@@ -291,16 +287,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         if (reply != null && session != null) {
             if (!session.hasNonLazyMessages() && reply.isSuccessful()) {
                 // Detect if we have multiple sessions from the same browser.
-                // Note that CORS requests may not send cookies, so we need to
-                // handle them specially: they always have the Origin header.
-                String browserId = findBrowserId(request);
-                boolean allowSuspendConnect;
-                if (browserId != null) {
-                    allowSuspendConnect = incBrowserId(browserId, session);
-                } else {
-                    allowSuspendConnect = isAllowMultiSessionsNoBrowser() || request.getHeader("Origin") != null;
-                }
-
+                boolean allowSuspendConnect = incBrowserId(session, isHTTP2(request));
                 if (allowSuspendConnect) {
                     long timeout = session.calculateTimeout(getTimeout());
 
@@ -312,21 +299,18 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                         // We will suspend anyway, but setting the scheduler on the
                         // session will decide atomically if we need to resume or not.
 
-                        HttpScheduler scheduler = suspend(request, response, session, reply, browserId, timeout);
+                        HttpScheduler scheduler = suspend(request, response, session, reply, timeout);
                         metaConnectSuspended(request, response, scheduler.getAsyncContext(), session);
                         // Setting the scheduler may resume the /meta/connect
                         session.setScheduler(scheduler);
                         reply = null;
                     } else {
-                        decBrowserId(browserId, session);
+                        decBrowserId(session, isHTTP2(request));
                     }
                 } else {
                     // There are multiple sessions from the same browser
                     Map<String, Object> advice = reply.getAdvice(true);
-
-                    if (browserId != null) {
-                        advice.put("multiple-clients", true);
-                    }
+                    advice.put("multiple-clients", true);
 
                     long multiSessionInterval = getMultiSessionInterval();
                     if (multiSessionInterval > 0) {
@@ -346,6 +330,10 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         return reply;
+    }
+
+    protected boolean isHTTP2(HttpServletRequest request) {
+        return "HTTP/2.0".equals(request.getProtocol());
     }
 
     protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean sendQueue, boolean scheduleExpiration, ServerMessage.Mutable... replies) {
@@ -409,21 +397,24 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     }
 
     /**
-     * Increment the browser ID count.
+     * Increments the count of sessions for the given browser identifier.
      *
-     * @param browserId the browser ID to increment the count for
-     * @param session   the session that cause the browser ID increment
-     * @return true if the browser ID count is below the max sessions per browser value.
+     * @param session the session that increments the count
+     * @param http2   whether the HTTP protocol is HTTP/2
+     * @return true if the count is below the max sessions per browser value.
      * If false is returned, the count is not incremented.
+     *
+     * @see #decBrowserId(ServerSessionImpl, boolean)
      */
-    protected boolean incBrowserId(String browserId, ServerSession session) {
-        if (_maxSessionsPerBrowser < 0) {
+    protected boolean incBrowserId(ServerSessionImpl session, boolean http2) {
+        int maxSessionsPerBrowser = http2 ? _http2MaxSessionsPerBrowser : _maxSessionsPerBrowser;
+        if (maxSessionsPerBrowser < 0) {
             return true;
-        }
-        if (_maxSessionsPerBrowser == 0) {
+        } else if (maxSessionsPerBrowser == 0) {
             return false;
         }
 
+        String browserId = session.getBrowserId();
         AtomicInteger count = _browserMap.get(browserId);
         if (count == null) {
             AtomicInteger newCount = new AtomicInteger();
@@ -442,7 +433,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         boolean result = true;
-        if (sessions > _maxSessionsPerBrowser) {
+        if (sessions > maxSessionsPerBrowser) {
             sessions = count.decrementAndGet();
             result = false;
         }
@@ -454,8 +445,10 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return result;
     }
 
-    protected void decBrowserId(String browserId, ServerSession session) {
-        if (_maxSessionsPerBrowser <= 0 || browserId == null) {
+    protected void decBrowserId(ServerSessionImpl session, boolean http2) {
+        int maxSessionsPerBrowser = http2 ? _http2MaxSessionsPerBrowser : _maxSessionsPerBrowser;
+        String browserId = session.getBrowserId();
+        if (maxSessionsPerBrowser <= 0 || browserId == null) {
             return;
         }
 
@@ -676,17 +669,15 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         private final AsyncContext asyncContext;
         private final ServerSessionImpl session;
         private final ServerMessage.Mutable reply;
-        private final String browserId;
         private final org.eclipse.jetty.util.thread.Scheduler.Task task;
         private final AtomicBoolean cancel;
 
-        protected LongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, String browserId, long timeout) {
+        protected LongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
             this.request = request;
             this.response = response;
             this.asyncContext = asyncContext;
             this.session = session;
             this.reply = reply;
-            this.browserId = browserId;
             asyncContext.addListener(this);
             this.task = getBayeux().schedule(this, timeout);
             this.cancel = new AtomicBoolean();
@@ -756,7 +747,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         private void resume() {
-            decBrowserId(browserId, session);
+            decBrowserId(session, isHTTP2(request));
             dispatch();
         }
 
@@ -780,7 +771,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         protected abstract void dispatch();
 
         protected void error(int code) {
-            decBrowserId(browserId, session);
+            decBrowserId(session, isHTTP2(request));
             AbstractHttpTransport.this.error(getRequest(), getResponse(), getAsyncContext(), code);
         }
     }
