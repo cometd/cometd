@@ -44,7 +44,7 @@
                         <configuration>
                             <executable>${project.build.scriptSourceDirectory}/release.sh</executable>
                             <arguments>
-                                <argument>${project.basedir}</argument>
+                                <argument>${project.basedir}/..</argument>
                                 <argument>${project.version}</argument>
                             </arguments>
                         </configuration>
