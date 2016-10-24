@@ -34,6 +34,7 @@
     </pluginRepositories>
 
     <properties>
+        <project-directory>${project.build.directory}</project-directory>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- tag::jetty-version[] -->
         <jetty-version>9.2.19.v20160908</jetty-version>
@@ -148,6 +149,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
+                        <inherited>false</inherited>
                         <executions>
                             <execution>
                                 <id>release</id>
@@ -158,7 +160,7 @@
                                 <configuration>
                                     <executable>${project.build.scriptSourceDirectory}/release.sh</executable>
                                     <arguments>
-                                        <argument>${project.build.directory}</argument>
+                                        <argument>${project-directory}</argument>
                                         <argument>${project.version}</argument>
                                     </arguments>
                                 </configuration>
