@@ -34,7 +34,6 @@
     </pluginRepositories>
 
     <properties>
-        <project-directory>${project.build.directory}</project-directory>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- tag::jetty-version[] -->
         <jetty-version>9.2.19.v20160908</jetty-version>
@@ -125,13 +124,20 @@
         <module>cometd-java</module>
         <module>cometd-javascript</module>
         <module>cometd-demo</module>
-        <module>cometd-distribution</module>
         <module>cometd-documentation</module>
     </modules>
 
     <profiles>
         <profile>
             <id>release</id>
+            <activation>
+                <property>
+                    <name>simon</name>
+                </property>
+            </activation>
+            <modules>
+                <module>cometd-distribution</module>
+            </modules>
             <build>
                 <plugins>
                     <plugin>
@@ -143,27 +149,6 @@
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <inherited>false</inherited>
-                        <executions>
-                            <execution>
-                                <id>release</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>${project.build.scriptSourceDirectory}/release.sh</executable>
-                                    <arguments>
-                                        <argument>${project-directory}</argument>
-                                        <argument>${project.version}</argument>
-                                    </arguments>
-                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
