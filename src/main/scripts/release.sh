@@ -18,7 +18,7 @@ COMETD_JS_DIR=${COMETD_DIR}/target/release/cometd-javascript
 VERSION=$2
 
 if yes_no "Update JavaScript Resources to NPM/Bower repository ? (Y/n)" y; then
-    git clone https://github.com/cometd/cometd-javascript.git ${COMETD_JS_DIR}
+    git clone git@github.com:cometd/cometd-javascript.git ${COMETD_JS_DIR}
 
     cp ${COMETD_DIR}/cometd-javascript/common/src/main/webapp/org/cometd.js ${COMETD_JS_DIR}
     cp ${COMETD_DIR}/cometd-javascript/common/src/main/webapp/org/cometd/AckExtension.js ${COMETD_JS_DIR}
