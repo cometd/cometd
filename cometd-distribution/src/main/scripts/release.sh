@@ -28,7 +28,7 @@ if yes_no "Update JavaScript Resources to NPM/Bower repository ? (Y/n)" y; then
 
     cd ${COMETD_JS_DIR}
 
-    cat << EOF > ${COMETD_JS_DIR}/package.json
+    cat <<EOF > ${COMETD_JS_DIR}/package.json
 {
   "name": "cometd",
   "version": "${VERSION}",
@@ -36,7 +36,8 @@ if yes_no "Update JavaScript Resources to NPM/Bower repository ? (Y/n)" y; then
 }
 EOF
 
-    git commit -am "Release ${VERSION}."
+    git add .
+    git commit -m "Release ${VERSION}."
     git tag -am "Release ${VERSION}." ${VERSION}
     git push --follow-tags
 fi
