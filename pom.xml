@@ -125,19 +125,12 @@
         <module>cometd-javascript</module>
         <module>cometd-demo</module>
         <module>cometd-documentation</module>
+        <module>cometd-distribution</module>
     </modules>
 
     <profiles>
         <profile>
             <id>release</id>
-            <activation>
-                <property>
-                    <name>simon</name>
-                </property>
-            </activation>
-            <modules>
-                <module>cometd-distribution</module>
-            </modules>
             <build>
                 <plugins>
                     <plugin>
