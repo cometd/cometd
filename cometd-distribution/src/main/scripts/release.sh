@@ -20,11 +20,12 @@ VERSION=$2
 if yes_no "Update JavaScript Resources to NPM/Bower repository ? (Y/n)" y; then
     git clone git@github.com:cometd/cometd-javascript.git ${COMETD_JS_DIR}
 
-    cp ${COMETD_DIR}/cometd-javascript/common/src/main/webapp/org/cometd.js ${COMETD_JS_DIR}
-    cp ${COMETD_DIR}/cometd-javascript/common/src/main/webapp/org/cometd/AckExtension.js ${COMETD_JS_DIR}
-    cp ${COMETD_DIR}/cometd-javascript/common/src/main/webapp/org/cometd/ReloadExtension.js ${COMETD_JS_DIR}
-    cp ${COMETD_DIR}/cometd-javascript/common/src/main/webapp/org/cometd/TimeStampExtension.js ${COMETD_JS_DIR}
-    cp ${COMETD_DIR}/cometd-javascript/common/src/main/webapp/org/cometd/TimeSyncExtension.js ${COMETD_JS_DIR}
+    COMETD_JS_SOURCE=${COMETD_DIR}/cometd-javascript/common/target/cometd-javascript-common-${VERSION}
+    cp ${COMETD_JS_SOURCE}/org/cometd.js ${COMETD_JS_DIR}
+    cp ${COMETD_JS_SOURCE}/org/cometd/AckExtension.js ${COMETD_JS_DIR}
+    cp ${COMETD_JS_SOURCE}/org/cometd/ReloadExtension.js ${COMETD_JS_DIR}
+    cp ${COMETD_JS_SOURCE}/org/cometd/TimeStampExtension.js ${COMETD_JS_DIR}
+    cp ${COMETD_JS_SOURCE}/org/cometd/TimeSyncExtension.js ${COMETD_JS_DIR}
 
     cd ${COMETD_JS_DIR}
 
