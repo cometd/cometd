@@ -5,6 +5,9 @@ echo "Running release script with arguments" "$@"
 COMETD_DIR=$1
 VERSION=$2
 
+echo "Uploading distribution"
+dd if=${COMETD_DIR}/cometd-distribution/target/cometd-distribution-${VERSION}-distribution.tar.gz | ssh ubuntu@download.cometd.org "sudo -u www-data dd of=/var/www/download.cometd.org/cometd-${VERSION}-distribution.tar.gz"
+
 echo "Updating cometd-javascript repository"
 COMETD_JS_DIR=${COMETD_DIR}/target/release/cometd-javascript
 git clone git@github.com:cometd/cometd-javascript.git ${COMETD_JS_DIR}
