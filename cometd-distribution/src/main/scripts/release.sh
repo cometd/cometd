@@ -79,3 +79,8 @@ cat <<EOF > ${COMETD_DOJO_DIR}/package.json
   }
 }
 EOF
+
+git add .
+git commit -m "Release ${VERSION}."
+git tag -am "Release ${VERSION}." ${VERSION}
+git push --follow-tags
