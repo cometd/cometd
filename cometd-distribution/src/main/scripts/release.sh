@@ -8,6 +8,12 @@ VERSION=$2
 echo "Uploading distribution"
 dd if=${COMETD_DIR}/cometd-distribution/target/cometd-distribution-${VERSION}-distribution.tar.gz | ssh ubuntu@download.cometd.org "sudo -u www-data dd of=/var/www/download.cometd.org/cometd-${VERSION}-distribution.tar.gz"
 
+echo "Uploading javadocs"
+DOCS_DIR="/var/www/docs.cometd.org/${VERSION}"
+ssh ubuntu@docs.cometd.org "sudo -u www-data mkdir -p ${DOCS_DIR}/apidocs"
+dd if=${COMETD_DIR}/cometd-java/target/cometd-java-${VERSION}-javadoc.jar | ssh ubuntu@docs.cometd.org "sudo -u www-data dd of=${DOCS_DIR}/cometd-java-${VERSION}-javadoc.jar"
+ssh ubuntu@docs.cometd.org "sudo -u www-data unzip ${DOCS_DIR}/cometd-java-${VERSION}-javadoc.jar -d ${DOCS_DIR}/apidocs"
+
 echo "Updating cometd-javascript repository"
 COMETD_JS_DIR=${COMETD_DIR}/target/release/cometd-javascript
 git clone git@github.com:cometd/cometd-javascript.git ${COMETD_JS_DIR}
