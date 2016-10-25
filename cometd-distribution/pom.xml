@@ -49,6 +49,7 @@
                                     <arguments>
                                         <argument>${project.basedir}/..</argument>
                                         <argument>${project.version}</argument>
+                                        <argument>${dojo-version}</argument>
                                     </arguments>
                                 </configuration>
                             </execution>
