@@ -12,7 +12,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <html.directory>${project.build.directory}/html/current/reference</html.directory>
+        <html.directory>${project.build.directory}/html/reference</html.directory>
     </properties>
 
     <build>

@@ -14,6 +14,12 @@ ssh ubuntu@docs.cometd.org "sudo -u www-data mkdir -p ${DOCS_DIR}/apidocs"
 dd if=${COMETD_DIR}/cometd-java/target/cometd-java-${VERSION}-javadoc.jar | ssh ubuntu@docs.cometd.org "sudo -u www-data dd of=${DOCS_DIR}/cometd-java-${VERSION}-javadoc.jar"
 ssh ubuntu@docs.cometd.org "sudo -u www-data unzip ${DOCS_DIR}/cometd-java-${VERSION}-javadoc.jar -d ${DOCS_DIR}/apidocs"
 
+echo "Uploading reference book"
+tar cvf - -C ${COMETD_DIR}/cometd-documentation/target/html . | ssh ubuntu@docs.cometd.org "sudo -u www-data tar -C ${DOCS_DIR} -xf -"
+
+echo "Relinking documentation"
+ssh ubuntu@docs.cometd.org "sudo -u www-data ln -fns ${DOCS_DIR} current"
+
 echo "Updating cometd-javascript repository"
 COMETD_JS_DIR=${COMETD_DIR}/target/release/cometd-javascript
 git clone git@github.com:cometd/cometd-javascript.git ${COMETD_JS_DIR}
