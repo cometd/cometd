@@ -21,7 +21,7 @@ echo "Uploading reference book"
 tar cvf - -C ${COMETD_DIR}/cometd-documentation/target/html . | ssh ubuntu@docs.cometd.org "sudo -u www-data tar -C ${DOCS_DIR} -xf -"
 
 echo "Relinking documentation"
-ssh ubuntu@docs.cometd.org "sudo -u www-data ln -fns ${DOCS_DIR} ${DOCS_ROOT}/current"
+ssh ubuntu@docs.cometd.org "sudo -u www-data bash -c 'cd ${DOCS_ROOT} && ln -fns ${VERSION} current'"
 
 echo "Updating cometd-javascript repository"
 COMETD_JS_DIR=${COMETD_DIR}/target/release/cometd-javascript
