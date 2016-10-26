@@ -60,6 +60,8 @@ git commit -m "Release ${VERSION}."
 git tag -am "Release ${VERSION}." ${VERSION}
 git push --follow-tags
 
+npm publish
+
 echo "Updating cometd-dojo repository"
 COMETD_DOJO_DIR=${COMETD_DIR}/target/release/cometd-dojo
 DOJO_VERSION=$3
