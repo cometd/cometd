@@ -14,6 +14,18 @@
  * limitations under the License.
  */
 angular.module('cometd-reload', ['cometd'])
-    .run(['cometd', function(cometd) {
-        cometd.registerExtension('reload', new org.cometd.ReloadExtension());
+    .run(['$rootScope', 'cometd', function($rootScope, cometd) {
+        function _angularize(fn) {
+            return function() {
+                var self = this;
+                var args = arguments;
+                return $rootScope.$apply(function() {
+                    return fn.apply(self, args);
+                });
+            }
+        }
+
+        var reloadExtension = new org.cometd.ReloadExtension();
+        reloadExtension._receive = _angularize(reloadExtension._receive);
+        cometd.registerExtension('reload', reloadExtension);
     }]);

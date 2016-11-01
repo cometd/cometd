@@ -76,7 +76,13 @@
             }
         }
 
+        function _receive(response) {
+            _cometd.receive(response);
+        }
+
         this.configure = _configure;
+
+        this._receive = _receive;
 
         this.registered = function(name, cometd) {
             _cometd = cometd;
@@ -114,6 +120,7 @@
                                 // it when we replay the handshake response.
                                 var callback = _cometd._getCallback(message.id);
 
+                                var self = this;
                                 setTimeout(function() {
                                     _debug('Reload extension replaying handshake response', oldState.handshakeResponse);
                                     _state.handshakeResponse = oldState.handshakeResponse;
@@ -133,7 +140,7 @@
                                     // Use the same transport as before.
                                     response.supportedConnectionTypes = [_state.transportType];
 
-                                    _cometd.receive(response);
+                                    self._receive(response);
                                     _debug('Reload extension replayed handshake response', response);
                                 }, 0);
 

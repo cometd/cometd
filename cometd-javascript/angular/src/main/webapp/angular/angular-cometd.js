@@ -76,7 +76,7 @@ angular.module('cometd', [])
 
         $rootScope.CometD = function(name) {
             var cometd = new org.cometd.CometD(name);
-
+            cometd.unregisterTransports();
             // Registration order is important.
             if (window.WebSocket) {
                 var ws = new org.cometd.WebSocketTransport();
