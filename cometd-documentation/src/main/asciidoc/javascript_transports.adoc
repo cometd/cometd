@@ -131,20 +131,20 @@ cometd.unregisterTransport('websocket');
 ====
 
 [[_javascript_transports_cross_origin]]
-==== The cross-domain Mode
+==== The cross-origin Mode
 
-Firefox 3.5 introduced the capability for XMLHttpRequest calls to be performed
+Recent browsers introduced the capability for `XMLHttpRequest` calls to be performed
 towards a different domain (see https://developer.mozilla.org/En/HTTP_access_control[HTTP Access Control]).
 The JavaScript CometD implementation also supports this, with no configuration
-necessary on the client (if the browser supports XMLHttpRequest cross-domain calls,
-CometD uses them) and with a bit of configuration for the server.
-See the http://wiki.eclipse.org/Jetty/Feature/Cross_Origin_Filter[Jetty Cross Origin Filter documentation]
-for the server configuration.
+necessary on the client (if the browser supports `XMLHttpRequest` cross-domain calls,
+CometD uses them) and with a bit of configuration for the server, explained in
+<<_java_server_configuration_advanced,this section>>.
 
 To use the cross-domain mode, you need: 
 
-* A cross-domain compliant browser (for example Firefox 3.5).
-* A compliant server (for example, Jetty configured with the `CrossOriginFilter.`)
+* A cross-domain compliant browser.
+* A compliant server (for example, Jetty configured with the `CrossOriginFilter`).
 
 With this setup, even when the communication with the Bayeux server is cross-domain,
-CometD uses the `long-polling` transport, avoiding the drawbacks of the `callback-polling` transport.
+CometD uses the `long-polling` transport, avoiding the drawbacks of the `callback-polling`
+transport.

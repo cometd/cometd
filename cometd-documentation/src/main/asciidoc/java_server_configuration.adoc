@@ -298,7 +298,7 @@ Here is an example of `web.xml` configuration for the `CrossOriginFilter`:
 ----
 ====
 
-Refer to the http://wiki.eclipse.org/Jetty/Feature/Cross_Origin_Filter[Jetty Cross Origin Filter documentation]
+Refer to the https://www.eclipse.org/jetty/documentation/current/cross-origin-filter.html[Jetty Cross Origin Filter documentation]
 for the filter configuration.
 
 [[_java_server_configuration_servlet_30]]
