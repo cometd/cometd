@@ -25,7 +25,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
@@ -38,12 +37,10 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore
 public class OortStringMapDisconnectTest extends OortTest {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final List<Seti> setis = new ArrayList<>();
@@ -148,7 +145,6 @@ public class OortStringMapDisconnectTest extends OortTest {
             List<BayeuxClient> clientsPerNode = clients.get(i);
             for (BayeuxClient client : clientsPerNode) {
                 client.disconnect();
-//                Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
             }
         }
 
@@ -193,24 +189,16 @@ public class OortStringMapDisconnectTest extends OortTest {
         Assert.assertTrue(joinLatch.await(nodes * 2, TimeUnit.SECONDS));
         Thread.sleep(1000);
 
-        int startEvents = 0;
-        for (int i = nodes; i > 0; --i) {
-            startEvents += i;
-        }
-
         // Start the Setis.
-        final CountDownLatch setiLatch = new CountDownLatch(startEvents);
+        final CountDownLatch setiLatch = new CountDownLatch(edges);
         for (final Oort oort : oorts) {
-            oort.getBayeuxServer().createChannelIfAbsent("/seti/all").getReference().addListener(new ServerChannel.MessageListener() {
+            Seti seti = new Seti(oort) {
                 @Override
-                public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                    if (message.getDataAsMap().get("alive") == Boolean.TRUE) {
-                        setiLatch.countDown();
-                    }
-                    return true;
+                protected void receiveRemotePresence(Map<String, Object> presence) {
+                    setiLatch.countDown();
+                    super.receiveRemotePresence(presence);
                 }
-            });
-            Seti seti = new Seti(oort);
+            };
             setis.add(seti);
             seti.start();
         }
@@ -219,7 +207,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         // Start the OortStringMaps.
         String name = "users";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
-        final CountDownLatch mapLatch = new CountDownLatch(startEvents);
+        final CountDownLatch mapLatch = new CountDownLatch(edges);
         for (Oort oort : oorts) {
             OortStringMap<String> users = new OortStringMap<>(oort, name, factory);
             oortStringMaps.add(users);
