@@ -35,6 +35,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
@@ -76,6 +77,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     private final Map<String, Set<Location>> _uid2Location = new HashMap<>();
     private final List<PresenceListener> _presenceListeners = new CopyOnWriteArrayList<>();
     private final Oort.CometListener _cometListener = new CometListener();
+    private final ServerChannel.SubscriptionListener _initialStateListener = new InitialStateListener();
     private final Oort _oort;
     private final String _setiId;
     private final Logger _logger;
@@ -104,32 +106,28 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         _session.handshake();
 
-        bayeux.createChannelIfAbsent(SETI_ALL_CHANNEL).getReference().setPersistent(true);
-        _oort.observeChannel(SETI_ALL_CHANNEL);
+        ServerChannel setiAllChannel = bayeux.createChannelIfAbsent(SETI_ALL_CHANNEL).getReference();
+        setiAllChannel.addListener(_initialStateListener);
         _session.getChannel(SETI_ALL_CHANNEL).subscribe(new ClientSessionChannel.MessageListener() {
             public void onMessage(ClientSessionChannel channel, Message message) {
                 receiveBroadcast(message);
             }
         });
+        _oort.observeChannel(SETI_ALL_CHANNEL);
 
-        String setiChannel = generateSetiChannel(_setiId);
-        bayeux.createChannelIfAbsent(setiChannel).getReference().setPersistent(true);
-        _session.getChannel(setiChannel).subscribe(new ClientSessionChannel.MessageListener() {
+        String setiChannelName = generateSetiChannel(_setiId);
+        _session.getChannel(setiChannelName).subscribe(new ClientSessionChannel.MessageListener() {
             public void onMessage(ClientSessionChannel channel, Message message) {
                 receiveDirect(message);
             }
         });
-        _oort.observeChannel(setiChannel);
+        _oort.observeChannel(setiChannelName);
 
         _oort.addCometListener(_cometListener);
 
-        Set<String> associatedUserIds = getAssociatedUserIds();
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Broadcasting associated users {}", associatedUserIds);
+            _logger.debug("{} started", this);
         }
-        SetiPresence presence = new SetiPresence(true, associatedUserIds);
-        presence.put(SetiPresence.ALIVE_FIELD, true);
-        _session.getChannel(SETI_ALL_CHANNEL).publish(presence);
     }
 
     @Override
@@ -141,19 +139,13 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         _oort.removeCometListener(_cometListener);
 
-        String setiChannel = generateSetiChannel(_setiId);
-        _oort.deobserveChannel(setiChannel);
-
-        BayeuxServer bayeux = _oort.getBayeuxServer();
-        ServerChannel channel = bayeux.getChannel(setiChannel);
-        if (channel != null) {
-            channel.setPersistent(false);
-        }
+        String setiChannelName = generateSetiChannel(_setiId);
+        _oort.deobserveChannel(setiChannelName);
 
         _oort.deobserveChannel(SETI_ALL_CHANNEL);
-        channel = bayeux.getChannel(SETI_ALL_CHANNEL);
-        if (channel != null) {
-            channel.setPersistent(false);
+        ServerChannel setiAllChannel = _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL);
+        if (setiAllChannel != null) {
+            setiAllChannel.removeListener(_initialStateListener);
         }
     }
 
@@ -596,7 +588,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         }
     }
 
-    private void receiveLocalPresence(Map<String, Object> presence) {
+    protected void receiveLocalPresence(Map<String, Object> presence) {
         String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
         boolean present = (Boolean)presence.get(SetiPresence.PRESENCE_FIELD);
         Set<String> userIds = convertPresenceUsers(presence);
@@ -612,7 +604,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         }
     }
 
-    private void receiveRemotePresence(Map<String, Object> presence) {
+    protected void receiveRemotePresence(Map<String, Object> presence) {
         String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
         boolean present = (Boolean)presence.get(SetiPresence.PRESENCE_FIELD);
         Set<String> userIds = convertPresenceUsers(presence);
@@ -1021,6 +1013,25 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
                 _logger.debug("Comet left: {}", oortURL);
             }
             removePresences(oortURL);
+        }
+    }
+
+    private class InitialStateListener implements ServerChannel.SubscriptionListener {
+        @Override
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
+            if (!session.isLocalSession()) {
+                Set<String> associatedUserIds = getAssociatedUserIds();
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Broadcasting associated users {}", associatedUserIds);
+                }
+                SetiPresence presence = new SetiPresence(true, associatedUserIds);
+                presence.put(SetiPresence.ALIVE_FIELD, true);
+                session.deliver(_session, SETI_ALL_CHANNEL, presence);
+            }
+        }
+
+        @Override
+        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
         }
     }
 }
