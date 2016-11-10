@@ -1332,8 +1332,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             }
 
             if (_validation) {
-                for (int i = 0; i < subscriptions.size(); ++i) {
-                    String subscription = subscriptions.get(i);
+                for (String subscription : subscriptions) {
                     if (!validate(subscription)) {
                         throw new IllegalArgumentException("Invalid message subscription: " + subscription);
                     }
@@ -1403,10 +1402,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             }
 
             if (_validation) {
-                for (int i = 0; i < subscriptions.size(); ++i) {
-                    String subscription = subscriptions.get(i);
+                for (String subscription : subscriptions) {
                     if (!validate(subscription)) {
-                        throw new IllegalArgumentException("Invalid message subscription: " + subscription);
+                        throw new IllegalArgumentException("Invalid message unsubscription: " + subscription);
                     }
                 }
             }
