@@ -142,13 +142,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             sweepPeriodOption = defaultSweepPeriod;
         }
         final long sweepPeriod = sweepPeriodOption;
-        _scheduler.schedule(new Runnable() {
+        schedule(new Runnable() {
             @Override
             public void run() {
                 sweep();
-                _scheduler.schedule(this, sweepPeriod, TimeUnit.MILLISECONDS);
+                schedule(this, sweepPeriod);
             }
-        }, sweepPeriod, TimeUnit.MILLISECONDS);
+        }, sweepPeriod);
 
         _validation = getOption(VALIDATE_MESSAGE_FIELDS_OPTION, true);
         _broadcastToPublisher = getOption(BROADCAST_TO_PUBLISHER_OPTION, true);
@@ -299,6 +299,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
     }
 
+    /**
+     * <p>Entry point to schedule tasks in CometD.</p>
+     * <p>Subclasses may override and run the task in a {@link java.util.concurrent.Executor},
+     * rather than in the scheduler thread.</p>
+     *
+     * @param task the task to schedule
+     * @param delay the delay, in milliseconds, to run the task
+     * @return the task promise
+     */
     public Scheduler.Task schedule(Runnable task, long delay) {
         return _scheduler.schedule(task, delay, TimeUnit.MILLISECONDS);
     }
@@ -1140,8 +1149,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
     private void validateSubscriptions(List<String> subscriptions) {
         if (_validation) {
-            for (int i = 0; i < subscriptions.size(); ++i) {
-                String subscription = subscriptions.get(i);
+            for (String subscription : subscriptions) {
                 if (!validate(subscription)) {
                     throw new IllegalArgumentException("Invalid message subscription: " + subscription);
                 }
