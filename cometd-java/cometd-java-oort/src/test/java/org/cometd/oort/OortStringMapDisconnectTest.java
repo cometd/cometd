@@ -76,7 +76,7 @@ public class OortStringMapDisconnectTest extends OortTest {
     @Test
     public void testMassiveDisconnect() throws Exception {
         int nodes = 4;
-        int usersPerNode = 1000;
+        int usersPerNode = 500;
         int totalUsers = nodes * usersPerNode;
         // One event in a node is replicated to other "nodes" nodes.
         int totalEvents = nodes * totalUsers;
@@ -136,7 +136,8 @@ public class OortStringMapDisconnectTest extends OortTest {
             }
         }
 
-        Assert.assertTrue(putLatch.await(totalEvents * 10L, TimeUnit.MILLISECONDS));
+        long await = Math.max(1000, totalEvents * 10L);
+        Assert.assertTrue(putLatch.await(await, TimeUnit.MILLISECONDS));
 
         Thread.sleep(1000);
 
@@ -148,7 +149,7 @@ public class OortStringMapDisconnectTest extends OortTest {
             }
         }
 
-        Assert.assertTrue(removedLatch.await(totalEvents * 10L, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(removedLatch.await(await, TimeUnit.MILLISECONDS));
         for (OortStringMap<String> oortStringMap : oortStringMaps) {
             ConcurrentMap<String, String> merge = oortStringMap.merge(OortObjectMergers.<String, String>concurrentMapUnion());
             Assert.assertThat(merge.size(), Matchers.equalTo(0));
@@ -188,6 +189,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         }
         Assert.assertTrue(joinLatch.await(nodes * 2, TimeUnit.SECONDS));
         Thread.sleep(1000);
+        logger.debug("Oorts joined");
 
         // Start the Setis.
         final CountDownLatch setiLatch = new CountDownLatch(edges);
@@ -203,6 +205,7 @@ public class OortStringMapDisconnectTest extends OortTest {
             seti.start();
         }
         Assert.assertTrue(setiLatch.await(5, TimeUnit.SECONDS));
+        logger.debug("Setis started");
 
         // Start the OortStringMaps.
         String name = "users";
@@ -222,6 +225,7 @@ public class OortStringMapDisconnectTest extends OortTest {
             users.start();
         }
         Assert.assertTrue(mapLatch.await(5, TimeUnit.SECONDS));
+        logger.debug("OortObjects started");
 
         // Verify that the OortStringMaps are setup correctly.
         final String setupKey = "setup";
@@ -242,15 +246,23 @@ public class OortStringMapDisconnectTest extends OortTest {
             }
         };
         for (OortStringMap<String> oortStringMap : oortStringMaps) {
+            // It is possible that the put() and remove() result
+            // in a whole Map change, rather than individual
+            // changes, so the delta listener is required.
+            oortStringMap.addListener(new OortMap.DeltaListener<>(oortStringMap));
             oortStringMap.addEntryListener(setupListener);
         }
         OortStringMap<String> oortStringMap1 = oortStringMaps.get(0);
         OortObject.Result.Deferred<String> putAction = new OortObject.Result.Deferred<>();
         oortStringMap1.putAndShare(setupKey, setupKey, putAction);
         Assert.assertNull(putAction.get(5, TimeUnit.SECONDS));
+        logger.debug("Setup putAndShare() complete");
+
         OortObject.Result.Deferred<String> removeAction = new OortObject.Result.Deferred<>();
         oortStringMap1.removeAndShare(setupKey, removeAction);
         Assert.assertNotNull(removeAction.get(5, TimeUnit.SECONDS));
+        logger.debug("Setup removeAndShare() complete");
+
         Assert.assertTrue(setupLatch.await(5, TimeUnit.SECONDS));
     }
 
