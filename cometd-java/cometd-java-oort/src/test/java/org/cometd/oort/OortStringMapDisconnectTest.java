@@ -25,7 +25,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
@@ -38,12 +37,10 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore
 public class OortStringMapDisconnectTest extends OortTest {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final List<Seti> setis = new ArrayList<>();
@@ -79,7 +76,7 @@ public class OortStringMapDisconnectTest extends OortTest {
     @Test
     public void testMassiveDisconnect() throws Exception {
         int nodes = 4;
-        int usersPerNode = 1000;
+        int usersPerNode = 500;
         int totalUsers = nodes * usersPerNode;
         // One event in a node is replicated to other "nodes" nodes.
         int totalEvents = nodes * totalUsers;
@@ -139,7 +136,8 @@ public class OortStringMapDisconnectTest extends OortTest {
             }
         }
 
-        Assert.assertTrue(putLatch.await(totalEvents * 10L, TimeUnit.MILLISECONDS));
+        long await = Math.max(1000, totalEvents * 10L);
+        Assert.assertTrue(putLatch.await(await, TimeUnit.MILLISECONDS));
 
         Thread.sleep(1000);
 
@@ -148,11 +146,10 @@ public class OortStringMapDisconnectTest extends OortTest {
             List<BayeuxClient> clientsPerNode = clients.get(i);
             for (BayeuxClient client : clientsPerNode) {
                 client.disconnect();
-//                Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
             }
         }
 
-        Assert.assertTrue(removedLatch.await(totalEvents * 10L, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(removedLatch.await(await, TimeUnit.MILLISECONDS));
         for (OortStringMap<String> oortStringMap : oortStringMaps) {
             ConcurrentMap<String, String> merge = oortStringMap.merge(OortObjectMergers.<String, String>concurrentMapUnion());
             Assert.assertThat(merge.size(), Matchers.equalTo(0));
@@ -192,34 +189,28 @@ public class OortStringMapDisconnectTest extends OortTest {
         }
         Assert.assertTrue(joinLatch.await(nodes * 2, TimeUnit.SECONDS));
         Thread.sleep(1000);
-
-        int startEvents = 0;
-        for (int i = nodes; i > 0; --i) {
-            startEvents += i;
-        }
+        logger.debug("Oorts joined");
 
         // Start the Setis.
-        final CountDownLatch setiLatch = new CountDownLatch(startEvents);
+        final CountDownLatch setiLatch = new CountDownLatch(edges);
         for (final Oort oort : oorts) {
-            oort.getBayeuxServer().createChannelIfAbsent("/seti/all").getReference().addListener(new ServerChannel.MessageListener() {
+            Seti seti = new Seti(oort) {
                 @Override
-                public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                    if (message.getDataAsMap().get("alive") == Boolean.TRUE) {
-                        setiLatch.countDown();
-                    }
-                    return true;
+                protected void receiveRemotePresence(Map<String, Object> presence) {
+                    setiLatch.countDown();
+                    super.receiveRemotePresence(presence);
                 }
-            });
-            Seti seti = new Seti(oort);
+            };
             setis.add(seti);
             seti.start();
         }
         Assert.assertTrue(setiLatch.await(5, TimeUnit.SECONDS));
+        logger.debug("Setis started");
 
         // Start the OortStringMaps.
         String name = "users";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
-        final CountDownLatch mapLatch = new CountDownLatch(startEvents);
+        final CountDownLatch mapLatch = new CountDownLatch(edges);
         for (Oort oort : oorts) {
             OortStringMap<String> users = new OortStringMap<>(oort, name, factory);
             oortStringMaps.add(users);
@@ -234,6 +225,7 @@ public class OortStringMapDisconnectTest extends OortTest {
             users.start();
         }
         Assert.assertTrue(mapLatch.await(5, TimeUnit.SECONDS));
+        logger.debug("OortObjects started");
 
         // Verify that the OortStringMaps are setup correctly.
         final String setupKey = "setup";
@@ -254,15 +246,23 @@ public class OortStringMapDisconnectTest extends OortTest {
             }
         };
         for (OortStringMap<String> oortStringMap : oortStringMaps) {
+            // It is possible that the put() and remove() result
+            // in a whole Map change, rather than individual
+            // changes, so the delta listener is required.
+            oortStringMap.addListener(new OortMap.DeltaListener<>(oortStringMap));
             oortStringMap.addEntryListener(setupListener);
         }
         OortStringMap<String> oortStringMap1 = oortStringMaps.get(0);
         OortObject.Result.Deferred<String> putAction = new OortObject.Result.Deferred<>();
         oortStringMap1.putAndShare(setupKey, setupKey, putAction);
         Assert.assertNull(putAction.get(5, TimeUnit.SECONDS));
+        logger.debug("Setup putAndShare() complete");
+
         OortObject.Result.Deferred<String> removeAction = new OortObject.Result.Deferred<>();
         oortStringMap1.removeAndShare(setupKey, removeAction);
         Assert.assertNotNull(removeAction.get(5, TimeUnit.SECONDS));
+        logger.debug("Setup removeAndShare() complete");
+
         Assert.assertTrue(setupLatch.await(5, TimeUnit.SECONDS));
     }
 

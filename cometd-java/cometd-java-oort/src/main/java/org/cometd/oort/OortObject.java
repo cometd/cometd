@@ -135,6 +135,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     private final LocalSession sender;
     private final String broadcastChannel;
     private final ServerChannel.MessageListener broadcastListener;
+    private final ServerChannel.SubscriptionListener initialStateListener;
     private final String serviceChannel;
     private final ServerChannel.MessageListener serviceListener;
 
@@ -146,6 +147,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         this.sender = oort.getBayeuxServer().newLocalSession(getClass().getSimpleName() + "." + name);
         this.broadcastChannel = OORT_OBJECTS_CHANNEL + "/" + name;
         this.broadcastListener = new BroadcastListener();
+        this.initialStateListener = new InitialStateListener();
         this.serviceChannel = Channel.SERVICE + broadcastChannel;
         this.serviceListener = new ServiceListener();
     }
@@ -165,13 +167,9 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         ServerChannel channel = bayeuxServer.createChannelIfAbsent(broadcastChannel, this).getReference();
         channel.addListener(broadcastListener);
+        channel.addListener(initialStateListener);
         oort.observeChannel(broadcastChannel);
         bayeuxServer.createChannelIfAbsent(serviceChannel, this).getReference().addListener(serviceListener);
-
-        // Notify other nodes of our initial value.
-        // Must be done after registering listeners,
-        // to avoid missing responses from other nodes.
-        channel.publish(getLocalSession(), info);
 
         if (logger.isDebugEnabled()) {
             logger.debug("{} started", this);
@@ -184,6 +182,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         ServerChannel channel = bayeuxServer.getChannel(broadcastChannel);
         if (channel != null) {
+            channel.removeListener(initialStateListener);
             channel.removeListener(broadcastListener);
         }
         channel = bayeuxServer.getChannel(serviceChannel);
@@ -685,18 +684,16 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     private class BroadcastListener implements ServerChannel.MessageListener {
         @Override
         public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-            Map<String, Object> data = message.getDataAsMap();
-            String oortURL = (String)data.get(Info.OORT_URL_FIELD);
-            ObjectPart part = part(oortURL);
-
             if (logger.isDebugEnabled()) {
                 logger.debug("Received broadcast {}", message);
             }
 
-            if (part != null) {
-                part.enqueue(data);
-                part.process();
-            }
+            Map<String, Object> data = message.getDataAsMap();
+            String oortURL = (String)data.get(Info.OORT_URL_FIELD);
+
+            ObjectPart part = part(oortURL);
+            part.enqueue(data);
+            part.process();
 
             return true;
         }
@@ -712,9 +709,12 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     private class ServiceListener implements ServerChannel.MessageListener {
         @Override
         public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Received service {}", message);
+            }
+
             Map<String, Object> data = message.getDataAsMap();
             String oortURL = (String)data.get(Info.OORT_URL_FIELD);
-
             // Pulls are messages that read the local object, not
             // the object specified by the data's OORT_URL_FIELD,
             // and as such they must be queued to the local ObjectPart.
@@ -723,15 +723,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             }
 
             ObjectPart part = part(oortURL);
-
-            if (logger.isDebugEnabled()) {
-                logger.debug("Received service {}", message);
-            }
-
-            if (part != null) {
-                part.enqueue(data);
-                part.process();
-            }
+            part.enqueue(data);
+            part.process();
 
             return true;
         }
@@ -877,6 +870,18 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
                     onObject(data);
                 }
             }
+        }
+    }
+
+    private class InitialStateListener implements ServerChannel.SubscriptionListener {
+        @Override
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
+            // Deliver the local state to the node that subscribed.
+            session.deliver(getLocalSession(), channel.getId(), getInfo(getOort().getURL()));
+        }
+
+        @Override
+        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
         }
     }
 }
