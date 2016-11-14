@@ -19,12 +19,12 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -380,6 +380,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
     /**
      * @param listener the listener to add
+     * @see #removeListener(Listener)
      */
     public void addListener(Listener<T> listener) {
         listeners.add(listener);
@@ -387,9 +388,20 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
     /**
      * @param listener the listener to remove
+     * @see #addListener(Listener)
      */
     public void removeListener(Listener<T> listener) {
         listeners.remove(listener);
+    }
+
+    /**
+     * Removes all listeners.
+     *
+     * @see #addListener(Listener)
+     * @see #removeListener(Listener)
+     */
+    public void removeListeners() {
+        listeners.clear();
     }
 
     protected void notifyUpdated(Info<T> oldInfo, Info<T> newInfo) {
@@ -795,7 +807,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * for example, {@link #getInfo(String)}.</p>
      */
     private class ObjectPart {
-        private final Queue<Map<String, Object>> updates = new ArrayDeque<>();
+        private final Deque<Map<String, Object>> updates = new ArrayDeque<>();
         private boolean active;
         private long versions;
         private Info<T> info;

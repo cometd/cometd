@@ -641,6 +641,7 @@ public class Oort extends ContainerLifeCycle {
      * Registers the given listener to be notified of comet events.
      *
      * @param listener the listener to add
+     * @see #removeCometListener(CometListener)
      */
     public void addCometListener(CometListener listener) {
         _cometListeners.add(listener);
@@ -650,9 +651,20 @@ public class Oort extends ContainerLifeCycle {
      * Deregisters the given listener from being notified of comet events.
      *
      * @param listener the listener to remove
+     * @see #addCometListener(CometListener)
      */
     public void removeCometListener(CometListener listener) {
         _cometListeners.remove(listener);
+    }
+
+    /**
+     * Deregisters all comet listeners.
+     *
+     * @see #addCometListener(CometListener)
+     * @see #removeCometListener(CometListener)
+     */
+    public void removeCometListeners() {
+        _cometListeners.clear();
     }
 
     private void notifyCometJoined(String remoteOortId, String remoteOortURL) {

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -142,8 +143,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         Thread.sleep(1000);
 
         // Disconnect clients.
-        for (int i = 0; i < nodes; i++) {
-            List<BayeuxClient> clientsPerNode = clients.get(i);
+        for (List<BayeuxClient> clientsPerNode : clients) {
             for (BayeuxClient client : clientsPerNode) {
                 client.disconnect();
             }
@@ -152,12 +152,13 @@ public class OortStringMapDisconnectTest extends OortTest {
         Assert.assertTrue(removedLatch.await(await, TimeUnit.MILLISECONDS));
         for (OortStringMap<String> oortStringMap : oortStringMaps) {
             ConcurrentMap<String, String> merge = oortStringMap.merge(OortObjectMergers.<String, String>concurrentMapUnion());
-            Assert.assertThat(merge.size(), Matchers.equalTo(0));
+            Assert.assertThat(merge.toString(), merge.size(), Matchers.equalTo(0));
         }
 
-        Assert.assertTrue(presenceLatch.await(100, TimeUnit.SECONDS));
+        Assert.assertTrue(presenceLatch.await(await, TimeUnit.MILLISECONDS));
         for (Seti seti : setis) {
-            Assert.assertThat(seti.getUserIds().size(), Matchers.equalTo(0));
+            Set<String> userIds = seti.getUserIds();
+            Assert.assertThat(userIds.toString(), userIds.size(), Matchers.equalTo(0));
         }
     }
 
@@ -264,6 +265,11 @@ public class OortStringMapDisconnectTest extends OortTest {
         logger.debug("Setup removeAndShare() complete");
 
         Assert.assertTrue(setupLatch.await(5, TimeUnit.SECONDS));
+
+        for (OortStringMap<String> oortStringMap : oortStringMaps) {
+            oortStringMap.removeListeners();
+            oortStringMap.removeEntryListeners();
+        }
     }
 
     public static class UserService extends AbstractService implements ServerSession.RemoveListener {

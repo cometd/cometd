@@ -75,6 +75,10 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
         listeners.remove(listener);
     }
 
+    public void removeEntryListeners() {
+        listeners.clear();
+    }
+
     /**
      * <p>Blocking version of {@link #putAndShare(Object, Object, Result)}, but deprecated.</p>
      * <p>This method will be removed in a future release.</p>
