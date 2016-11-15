@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-define(['org/cometd/AckExtension', 'dojox/cometd'],
-    function(AckExtension, cometd) {
-        var result = new AckExtension();
-        cometd.registerExtension('ack', result);
+define(['cometd/TimeSyncExtension', 'dojox/cometd'],
+    function(TimeSyncExtension, cometd) {
+        var result = new TimeSyncExtension();
+        cometd.registerExtension('timesync', result);
         return result;
     });

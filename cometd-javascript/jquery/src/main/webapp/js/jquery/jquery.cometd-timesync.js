@@ -16,14 +16,14 @@
 
 (function(root, factory){
     if (typeof exports === 'object') {
-        module.exports = factory(require('./jquery.cometd'), require('./AckExtension'));
+        module.exports = factory(require('./jquery.cometd'), require('cometd/TimeSyncExtension'));
     } else if (typeof define === 'function' && define.amd) {
-        define(['jquery.cometd', 'org/cometd/AckExtension'], factory);
+        define(['jquery.cometd', 'cometd/TimeSyncExtension'], factory);
     } else {
-        factory(jQuery.cometd, root.org.cometd.AckExtension);
+        factory(jQuery.cometd, root.org.cometd.TimeSyncExtension);
     }
-}(this, function(cometd, AckExtension) {
-    var result = new AckExtension();
-    cometd.registerExtension('ack', result);
+}(this, function(cometd, TimeSyncExtension) {
+    var result = new TimeSyncExtension();
+    cometd.registerExtension('timesync', result);
     return result;
 }));

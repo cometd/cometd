@@ -14,9 +14,16 @@
  * limitations under the License.
  */
 
-define(['org/cometd/TimeStampExtension', 'dojox/cometd'],
-    function(TimeStampExtension, cometd) {
-        var result = new TimeStampExtension();
-        cometd.registerExtension('timestamp', result);
-        return result;
-    });
+(function(root, factory){
+    if (typeof exports === 'object') {
+        module.exports = factory(require('./jquery.cometd'), require('cometd/TimeStampExtension'));
+    } else if (typeof define === 'function' && define.amd) {
+        define(['jquery.cometd', 'cometd/TimeStampExtension'], factory);
+    } else {
+        factory(jQuery.cometd, root.org.cometd.TimeStampExtension);
+    }
+}(this, function(cometd, TimeStampExtension) {
+    var result = new TimeStampExtension();
+    cometd.registerExtension('timestamp', result);
+    return result;
+}));

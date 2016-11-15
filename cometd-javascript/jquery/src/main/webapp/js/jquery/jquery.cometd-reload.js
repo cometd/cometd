@@ -14,9 +14,16 @@
  * limitations under the License.
  */
 
-define(['org/cometd/ReloadExtension', 'dojox/cometd'],
-    function(ReloadExtension, cometd) {
-        var result = new ReloadExtension();
-        cometd.registerExtension('reload', result);
-        return result;
-    });
+(function(root, factory){
+    if (typeof exports === 'object') {
+        module.exports = factory(require('./jquery.cometd'), require('cometd/ReloadExtension'));
+    } else if (typeof define === 'function' && define.amd) {
+        define(['jquery.cometd', 'cometd/ReloadExtension'], factory);
+    } else {
+        factory(jQuery.cometd, root.org.cometd.ReloadExtension);
+    }
+}(this, function(cometd, ReloadExtension){
+    var result = new ReloadExtension();
+    cometd.registerExtension('reload', result);
+    return result;
+}));

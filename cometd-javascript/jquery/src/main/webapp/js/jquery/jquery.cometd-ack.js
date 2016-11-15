@@ -16,14 +16,14 @@
 
 (function(root, factory){
     if (typeof exports === 'object') {
-        module.exports = factory(require('./jquery.cometd'), require('./ReloadExtension'));
+        module.exports = factory(require('./jquery.cometd'), require('cometd/AckExtension'));
     } else if (typeof define === 'function' && define.amd) {
-        define(['jquery.cometd', 'org/cometd/ReloadExtension'], factory);
+        define(['jquery.cometd', 'cometd/AckExtension'], factory);
     } else {
-        factory(jQuery.cometd, root.org.cometd.ReloadExtension);
+        factory(jQuery.cometd, root.org.cometd.AckExtension);
     }
-}(this, function(cometd, ReloadExtension){
-    var result = new ReloadExtension();
-    cometd.registerExtension('reload', result);
+}(this, function(cometd, AckExtension) {
+    var result = new AckExtension();
+    cometd.registerExtension('ack', result);
     return result;
 }));

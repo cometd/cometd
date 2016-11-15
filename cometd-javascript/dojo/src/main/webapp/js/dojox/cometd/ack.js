@@ -14,16 +14,9 @@
  * limitations under the License.
  */
 
-(function(root, factory){
-    if (typeof exports === 'object') {
-        module.exports = factory(require('./jquery.cometd'), require('./TimeSyncExtension'));
-    } else if (typeof define === 'function' && define.amd) {
-        define(['jquery.cometd', 'org/cometd/TimeSyncExtension'], factory);
-    } else {
-        factory(jQuery.cometd, root.org.cometd.TimeSyncExtension);
-    }
-}(this, function(cometd, TimeSyncExtension) {
-    var result = new TimeSyncExtension();
-    cometd.registerExtension('timesync', result);
-    return result;
-}));
+define(['cometd/AckExtension', 'dojox/cometd'],
+    function(AckExtension, cometd) {
+        var result = new AckExtension();
+        cometd.registerExtension('ack', result);
+        return result;
+    });

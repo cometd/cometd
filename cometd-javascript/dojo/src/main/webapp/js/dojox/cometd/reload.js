@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-define(['org/cometd/TimeSyncExtension', 'dojox/cometd'],
-    function(TimeSyncExtension, cometd) {
-        var result = new TimeSyncExtension();
-        cometd.registerExtension('timesync', result);
+define(['cometd/ReloadExtension', 'dojox/cometd'],
+    function(ReloadExtension, cometd) {
+        var result = new ReloadExtension();
+        cometd.registerExtension('reload', result);
         return result;
     });

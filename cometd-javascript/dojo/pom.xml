@@ -24,7 +24,7 @@
                         </goals>
                         <configuration>
                             <target>
-                                <copy file="${basedir}/src/main/webapp/dojox/cometd/main.js" tofile="${project.build.directory}/${project.build.finalName}/dojox/cometd.js" />
+                                <copy file="${basedir}/src/main/webapp/js/dojox/cometd/main.js" tofile="${project.build.directory}/${project.build.finalName}/js/dojox/cometd.js" />
                             </target>
                         </configuration>
                     </execution>
@@ -42,8 +42,10 @@
                         <overlay>
                             <groupId>org.dojotoolkit</groupId>
                             <artifactId>dojo-war</artifactId>
+                            <targetPath>/js</targetPath>
                             <excludes>
                                 <exclude>META-INF/**</exclude>
+                                <exclude>WEB-INF/**</exclude>
                                 <exclude>dojox/cometd.js*</exclude>
                                 <exclude>dojox/cometd</exclude>
                                 <exclude>dojox/cometd/**</exclude>

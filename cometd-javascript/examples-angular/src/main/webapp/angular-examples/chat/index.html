@@ -3,14 +3,15 @@
 
 <head>
     <title>CometD Angular Chat</title>
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Varela+Round">
     <link rel="stylesheet" type="text/css" href="chat.css">
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 
-    <script type="text/javascript" src="../../angular/angular-1.5.5.js"></script>
-    <script type="text/javascript" src="../../org/cometd.js"></script>
-    <script type="text/javascript" src="../../org/cometd/ReloadExtension.js"></script>
-    <script type="text/javascript" src="../../angular/angular-cometd.js"></script>
-    <script type="text/javascript" src="../../angular/angular-cometd-reload.js"></script>
+    <script type="text/javascript" src="../../js/cometd/cometd.js"></script>
+    <script type="text/javascript" src="../../js/cometd/ReloadExtension.js"></script>
+    <script type="text/javascript" src="https://code.angularjs.org/1.5.8/angular.js"></script>
+    <script type="text/javascript" src="../../js/angular/angular-cometd.js"></script>
+    <script type="text/javascript" src="../../js/angular/angular-cometd-reload.js"></script>
     <script type="text/javascript" src="chat.js"></script>
     <script type="text/javascript">
         var config = {
@@ -22,9 +23,8 @@
 <body ng-app="cometdAngularChat">
 
 <h1>CometD Chat Example</h1>
-<h6>
-    <a href="../..">Main Demo index</a>
-</h6>
+
+<a href="../..">Main Demo Index</a>
 
 <div id="chatRoom" ng-controller="chatRoom">
     <div id="chat">

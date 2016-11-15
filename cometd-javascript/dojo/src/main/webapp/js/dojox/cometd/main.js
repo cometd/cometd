@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/request/script'],
+define(['cometd/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/request/script'],
     function(cometdModule, JSON, dojox, dojoXHR, dojoSCRIPT) {
         function LongPollingTransport() {
             var _super = new cometdModule.LongPollingTransport();

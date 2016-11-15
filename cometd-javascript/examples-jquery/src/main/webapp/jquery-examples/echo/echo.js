@@ -1,8 +1,8 @@
 require({
-        baseUrl: "../../jquery",
+        baseUrl: "../../js/jquery",
         paths: {
             jquery: "https://code.jquery.com/jquery-3.1.1",
-            org: "../org"
+            cometd: "../cometd"
         }
     },
     ["jquery", "jquery.cometd", "jquery.cometd-timestamp", "jquery.cometd-reload"/*, "jquery.cometd-ack"*/],

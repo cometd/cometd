@@ -1,7 +1,7 @@
 require({
-        baseUrl: '../..',
-        // Specify 'paths' since CometD is not bundled with Dojo anymore
+        baseUrl: '../../js',
         paths: {
+            'cometd': 'cometd',
             'dojox/cometd': 'dojox/cometd'
         }
     },

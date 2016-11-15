@@ -29,15 +29,15 @@ public class DojoTestProvider implements TestProvider {
         // so we need to remove the Java package to avoid clashes.
         threadModel.remove("org");
         threadModel.evaluate("window_location", "window.location = '" + fullContextURL + "'");
-        String dojoBaseURL = "/dojo";
+        String dojoBaseURL = "/js/dojo";
         threadModel.evaluate(new URL(fullContextURL + dojoBaseURL + "/dojo.js.uncompressed.js"));
         threadModel.evaluate("cometd", "" +
                 "var cometdModule;" +
                 "var cometd;" +
                 "require({" +
-                "    packages: [{name: 'org', location: '../org'}]," +
+                "    packages: [{name: 'cometd', location: '../cometd'}]," +
                 "    baseUrl: '" + dojoBaseURL + "'" +
-                "}, ['org/cometd', 'dojox/cometd'], function(m, c) {" +
+                "}, ['cometd/cometd', 'dojox/cometd'], function(m, c) {" +
                 "    cometdModule = m;" +
                 "    cometd = c; " +
                 "});");

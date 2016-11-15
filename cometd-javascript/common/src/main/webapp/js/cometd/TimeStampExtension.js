@@ -16,14 +16,18 @@
 
 (function(root, factory){
     if (typeof exports === 'object') {
-        module.exports = factory(require('./jquery.cometd'), require('./TimeStampExtension'));
+        module.exports = factory(require('./cometd'));
     } else if (typeof define === 'function' && define.amd) {
-        define(['jquery.cometd', 'org/cometd/TimeStampExtension'], factory);
+        define(['./cometd'], factory);
     } else {
-        factory(jQuery.cometd, root.org.cometd.TimeStampExtension);
+        factory(root.org.cometd);
     }
-}(this, function(cometd, TimeStampExtension) {
-    var result = new TimeStampExtension();
-    cometd.registerExtension('timestamp', result);
-    return result;
+}(this, function(cometdModule) {
+    // The timestamp extension adds the optional timestamp field to all outgoing messages.
+    return cometdModule.TimeStampExtension = function() {
+        this.outgoing = function(message) {
+            message.timestamp = new Date().toUTCString();
+            return message;
+        };
+    };
 }));

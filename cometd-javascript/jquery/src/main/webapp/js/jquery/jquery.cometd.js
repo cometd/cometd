@@ -16,9 +16,9 @@
 
 (function(root, factory) {
     if (typeof exports === 'object') {
-        module.exports = factory(require('jquery'), require('./cometd'));
+        module.exports = factory(require('jquery'), require('cometd/cometd'));
     } else if (typeof define === 'function' && define.amd) {
-        define(['jquery', 'org/cometd'], factory);
+        define(['jquery', 'cometd/cometd'], factory);
     } else {
         factory(jQuery, root.org.cometd);
     }
