@@ -100,6 +100,16 @@ public class OortLong extends AbstractLifeCycle {
     }
 
     /**
+     * Removes all listeners.
+     *
+     * @see #addListener(OortObject.Listener)
+     * @see #removeListener(OortObject.Listener)
+     */
+    public void removeListeners() {
+        value.removeListeners();
+    }
+
+    /**
      * @return the local value
      */
     public long get() {

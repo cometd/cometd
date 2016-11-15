@@ -648,6 +648,10 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         _presenceListeners.remove(listener);
     }
 
+    public void removePresenceListeners() {
+        _presenceListeners.clear();
+    }
+
     private void notifyPresenceAdded(String oortURL, String userId) {
         PresenceListener.Event event = new PresenceListener.Event(this, userId, oortURL);
         for (PresenceListener listener : _presenceListeners) {

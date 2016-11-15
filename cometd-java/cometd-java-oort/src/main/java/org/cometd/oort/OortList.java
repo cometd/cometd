@@ -59,6 +59,10 @@ public class OortList<E> extends OortContainer<List<E>> {
         listeners.remove(listener);
     }
 
+    public void removeElementListeners() {
+        listeners.clear();
+    }
+
     /**
      * Returns whether the given {@code element} is present in the local entity list of this node.
      * Differently from {@link #isPresent(Object)}, only the local entity list is scanned.
