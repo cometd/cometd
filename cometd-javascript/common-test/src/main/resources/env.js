@@ -139,7 +139,7 @@ var window = this;
             }
             var formatter = new Packages.java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss.SSS');
             var log = formatter.format(new Packages.java.util.Date());
-            log += ' ' + Packages.java.lang.Thread.currentThread().getId();
+            log += ' ' + Packages.java.lang.Thread.currentThread().getName();
             log += ' ' + text;
             Packages.java.lang.System.err.println(log);
         }
