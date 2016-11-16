@@ -196,10 +196,11 @@ org.cometd.RequestTransport = function() {
                 }
             }
         }
-        if (_metaConnectRequest) {
-            this._debug('Aborting metaConnect request', _metaConnectRequest);
-            if (!this.abortXHR(_metaConnectRequest.xhr)) {
-                this.transportFailure(_metaConnectRequest.envelope, _metaConnectRequest, {reason: 'abort'});
+        var metaConnectRequest = _metaConnectRequest;
+        if (metaConnectRequest) {
+            this._debug('Aborting metaConnect request', metaConnectRequest);
+            if (!this.abortXHR(metaConnectRequest.xhr)) {
+                this.transportFailure(metaConnectRequest.envelope, metaConnectRequest, {reason: 'abort'});
             }
         }
         this.reset();
