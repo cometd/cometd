@@ -17,7 +17,7 @@ COMETD_DIR=$1
 VERSION=$2
 
 echo "Uploading distribution"
-dd if=${COMETD_DIR}/cometd-distribution/target/cometd-distribution-${VERSION}-distribution.tar.gz | ssh ubuntu@download.cometd.org "sudo -u www-data dd of=/var/www/download.cometd.org/cometd-${VERSION}-distribution.tar.gz"
+dd status=progress if=${COMETD_DIR}/cometd-distribution/target/cometd-distribution-${VERSION}-distribution.tar.gz | ssh ubuntu@download.cometd.org "sudo -u www-data dd of=/var/www/download.cometd.org/cometd-${VERSION}-distribution.tar.gz"
 
 echo "Uploading javadocs"
 cd ${COMETD_DIR}/cometd-java
@@ -25,7 +25,7 @@ mvn javadoc:aggregate-jar
 DOCS_ROOT="/var/www/docs.cometd.org"
 DOCS_DIR="${DOCS_ROOT}/${VERSION}"
 ssh ubuntu@docs.cometd.org "sudo -u www-data mkdir -p ${DOCS_DIR}/apidocs"
-dd if=${COMETD_DIR}/cometd-java/target/cometd-java-${VERSION}-javadoc.jar | ssh ubuntu@docs.cometd.org "sudo -u www-data dd of=${DOCS_DIR}/cometd-java-${VERSION}-javadoc.jar"
+dd status=progress if=${COMETD_DIR}/cometd-java/target/cometd-java-${VERSION}-javadoc.jar | ssh ubuntu@docs.cometd.org "sudo -u www-data dd of=${DOCS_DIR}/cometd-java-${VERSION}-javadoc.jar"
 ssh ubuntu@docs.cometd.org "sudo -u www-data unzip ${DOCS_DIR}/cometd-java-${VERSION}-javadoc.jar -d ${DOCS_DIR}/apidocs"
 
 echo "Uploading reference book"
