@@ -411,16 +411,23 @@ The round trip from client to server back to client is now complete.
 [[_concepts_threading]]
 ==== Threading
 
-When Bayeux messages is received by the server, a thread is allocated to handle
-the messages, and server-side listeners are invoked in this thread.
+When Bayeux messages are received by the server, a thread is allocated
+(by the Servlet Container, not by CometD) to handle
+the messages, and server-side CometD listeners are invoked in this thread.
 The CometD implementation does not spawn new threads to call server-side
 listeners; in this way the threading model is kept simple and very similar to
 the Servlet threading model.
 
-This simple threading model implies that if a server-side listener takes a long
+The CometD implementation also relies on a scheduler to perform periodic or
+delayed tasks.
+The execution of these tasks may invoke server-side CometD listeners, notably
+implementations of `BayeuxServer.SessionListener#sessionRemoved` and
+`ServerSession.RemoveListener`.
+
+This simple threading model implies that if a server-side CometD listener takes a long
 time to process the message and to return control to the implementation, then
 the implementation cannot process the next messages that may arrive, most often
-halting the whole server processing.
+halting the whole server processing and causing client disconnections.
 
 This is due to the fact that a Bayeux client uses a limited number of connections
 to interact with the server.
