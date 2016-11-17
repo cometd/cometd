@@ -85,7 +85,7 @@ git clone git@github.com:cometd/cometd-dojo.git ${COMETD_DOJO_DIR}
 
 COMETD_DOJO_SOURCE=${COMETD_DIR}/cometd-javascript/dojo/target/cometd-javascript-dojo-${VERSION}/js
 cp -v ${COMETD_DOJO_SOURCE}/cometd/cometd.js ${COMETD_DOJO_DIR}/org/
-cp -v ${COMETD_DOJO_SOURCE}/cometd/*Extension.js ${COMETD_DOJO_DIR}/cometd/
+cp -v ${COMETD_DOJO_SOURCE}/cometd/*Extension.js ${COMETD_DOJO_DIR}/org/cometd/
 cp -v ${COMETD_DOJO_SOURCE}/dojox/cometd.js ${COMETD_DOJO_DIR}
 cp -v ${COMETD_DOJO_SOURCE}/dojox/cometd/* ${COMETD_DOJO_DIR}/cometd
 
