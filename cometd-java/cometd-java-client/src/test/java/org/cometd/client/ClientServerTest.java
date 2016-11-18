@@ -19,6 +19,7 @@ import java.util.Map;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
@@ -45,7 +46,7 @@ public abstract class ClientServerTest {
     protected HttpClient httpClient;
     protected String cometdServletPath;
     protected String cometdURL;
-    protected BayeuxServer bayeux;
+    protected BayeuxServerImpl bayeux;
 
     public void startServer(Map<String, String> initParams) throws Exception {
         server = new Server();
@@ -73,7 +74,7 @@ public abstract class ClientServerTest {
         int port = connector.getLocalPort();
         cometdURL = "http://localhost:" + port + cometdServletPath;
 
-        bayeux = (BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeux = (BayeuxServerImpl)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
 
         httpClient = new HttpClient();
         httpClient.start();
