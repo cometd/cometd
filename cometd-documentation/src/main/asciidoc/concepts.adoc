@@ -662,3 +662,24 @@ a client can unsubscribe from a channel by sending an _unsubscribe_ message
 (a message sent on a `/meta/unsubscribe` channel). A client can publish messages
 containing application-specific data at any time while it is connected, and to
 any broadcast channel (even if it is not subscribed to that channel).
+
+[[_concepts_binary_data]]
+==== Binary Data
+
+The <<_bayeux,Bayeux protocol>> data format is the JSON format, because the
+Bayeux protocol was designed when JavaScript did not have binary data types.
+
+This means that Bayeux messages can only carry data in textual representation,
+even if nowadays JavaScript supports binary types such as `ArrayBuffer`.
+
+However, it is possible to use CometD to upload binary data to server-side
+applications by first converting the binary data into a textual format,
+for example using https://en.wikipedia.org/wiki/Base64[Base64] or
+https://rfc.zeromq.org/spec:32/Z85/[Z85], and performing the reverse process
+on the server-side.
+
+The binary-to-textual and textual-to-binary conversions may be performed
+by a custom CometD extension in a way that is transparent to both the protocol
+and the application: the extension will test the `data` field of the message
+and if it finds that it is a binary type it will convert it to textual,
+and viceversa.
