@@ -217,10 +217,6 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             session = ((LocalSession)sender).getServerSession();
         }
 
-        if (message instanceof ServerMessageImpl) {
-            ((ServerMessageImpl)message).setLocal(true);
-        }
-
         if (!_bayeux.extendSend(session, this, message)) {
             return;
         }

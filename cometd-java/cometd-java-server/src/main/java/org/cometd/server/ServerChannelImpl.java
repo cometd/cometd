@@ -294,10 +294,6 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
             mutable.setId(null);
         }
 
-        if (mutable instanceof ServerMessageImpl) {
-            ((ServerMessageImpl)mutable).setLocal(true);
-        }
-
         if (_bayeux.extendSend(session, null, mutable)) {
             _bayeux.doPublish(session, this, mutable);
         }

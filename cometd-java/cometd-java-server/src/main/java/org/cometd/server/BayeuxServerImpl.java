@@ -560,9 +560,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
     @Override
     public ServerMessage.Mutable newMessage() {
-        ServerMessageImpl result = new ServerMessageImpl();
-        result.setLocal(true);
-        return result;
+        return new ServerMessageImpl();
     }
 
     public ServerMessage.Mutable newMessage(ServerMessage tocopy) {
@@ -913,12 +911,16 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             if (message.isFrozen()) {
                 return;
             }
-            if (!message.isLocal() && !ChannelId.isBroadcast(message.getChannel())) {
+            if (!ChannelId.isBroadcast(message.getChannel()) && !isReply(message)) {
                 return;
             }
             String json = _jsonContext.generate(message);
             message.freeze(json);
         }
+    }
+
+    private boolean isReply(ServerMessageImpl message) {
+        return message.containsKey(Message.SUCCESSFUL_FIELD);
     }
 
     private boolean notifyOnMessage(MessageListener listener, ServerSession from, ServerChannel to, Mutable mutable) {
