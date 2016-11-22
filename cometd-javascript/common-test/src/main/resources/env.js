@@ -288,7 +288,7 @@ var window = this;
     window.DOMNode = function(node) {
         this._dom = node;
     };
-    DOMNode.prototype = {
+    window.DOMNode.prototype = {
         // START OFFICIAL DOM
         get nodeName() {
             return this._dom.getNodeName();
@@ -389,7 +389,7 @@ var window = this;
     // DOM Implementation
     window.DOMImplementation = function() {
     };
-    DOMImplementation.prototype = {
+    window.DOMImplementation.prototype = {
         createHTMLDocument: function(title) {
             return makeHTMLDocument("<html><head><title>" + title + "</title></head><body></body></html>");
         }
@@ -408,7 +408,7 @@ var window = this;
 
         this._impl = new DOMImplementation();
     };
-    DOMDocument.prototype = extend(new DOMNode(), {
+    window.DOMDocument.prototype = extend(new DOMNode(), {
         // START OFFICIAL DOM
 //        doctype
         get implementation() {
@@ -521,7 +521,7 @@ var window = this;
             this[i] = makeNode(node);
         }
     };
-    DOMNodeList.prototype = {
+    window.DOMNodeList.prototype = {
         toString: function() {
             return "[ " +
                 Array.prototype.join.call(this, ", ") + " ]";
@@ -556,7 +556,7 @@ var window = this;
                 this.style[style[0]] = style[1];
         }
     };
-    DOMElement.prototype = extend(new DOMNode(), {
+    window.DOMElement.prototype = extend(new DOMNode(), {
         // START OFFICIAL DOM
         get tagName() {
             return this._dom.getTagName();
