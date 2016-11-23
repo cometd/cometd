@@ -169,6 +169,9 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
 
             endWrite(response, output);
         } catch (Exception x) {
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Failure writing messages", x);
+            }
             AsyncContext asyncContext = null;
             if (request.isAsyncStarted()) {
                 asyncContext = request.getAsyncContext();

@@ -401,6 +401,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
 
         @Override
         public void onError(Throwable throwable) {
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Failure writing messages", throwable);
+            }
             // Start the interval timeout also in case of
             // errors to ensure the session can be swept.
             startExpiration();
