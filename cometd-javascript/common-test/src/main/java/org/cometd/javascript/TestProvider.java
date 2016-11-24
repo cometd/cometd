@@ -25,4 +25,6 @@ public interface TestProvider {
     public void provideTimestampExtension(ThreadModel threadModel, String contextURL) throws Exception;
 
     public void provideTimesyncExtension(ThreadModel threadModel, String contextURL) throws Exception;
+
+    public void provideBinaryExtension(ThreadModel threadModel, String contextURL) throws Exception;
 }

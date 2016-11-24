@@ -68,4 +68,10 @@ public class JQueryTestProvider implements TestProvider {
         threadModel.evaluate(new URL(contextURL + "/js/cometd/TimeSyncExtension.js"));
         threadModel.evaluate(new URL(contextURL + "/js/jquery/jquery.cometd-timesync.js"));
     }
+
+    @Override
+    public void provideBinaryExtension(ThreadModel threadModel, String contextURL) throws Exception {
+        threadModel.evaluate(new URL(contextURL + "/js/cometd/BinaryExtension.js"));
+        threadModel.evaluate(new URL(contextURL + "/js/jquery/jquery.cometd-binary.js"));
+    }
 }

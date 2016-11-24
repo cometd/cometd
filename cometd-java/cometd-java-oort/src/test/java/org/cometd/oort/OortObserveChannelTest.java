@@ -15,12 +15,20 @@
  */
 package org.cometd.oort;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.cometd.bayeux.BinaryData;
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
-import org.cometd.common.HashMapMessage;
+import org.cometd.server.ext.BinaryExtension;
 import org.eclipse.jetty.server.Server;
 import org.junit.Assert;
 import org.junit.Test;
@@ -87,13 +95,13 @@ public class OortObserveChannelTest extends OortTest {
         Assert.assertTrue(subscribeLatch3.await(5, TimeUnit.SECONDS));
 
         // Sending a message to Oort2, must be received by client1 but not by client3
-        client2.getChannel(channelName).publish(new HashMapMessage());
+        client2.getChannel(channelName).publish(new HashMap<>());
         Assert.assertTrue(messageLatch1.await(5, TimeUnit.SECONDS));
         Assert.assertFalse(messageLatch3.await(1, TimeUnit.SECONDS));
 
         // Sending a message to Oort3, must be received by client1 and by client3
         messageLatch1.reset(1);
-        client3.getChannel(channelName).publish(new HashMapMessage());
+        client3.getChannel(channelName).publish(new HashMap<>());
         Assert.assertTrue(messageLatch1.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(messageLatch3.await(5, TimeUnit.SECONDS));
     }
@@ -137,7 +145,7 @@ public class OortObserveChannelTest extends OortTest {
         Assert.assertTrue(subscribeLatch1.await(5, TimeUnit.SECONDS));
 
         // Sending a message to Oort2, must be received by client1
-        client2.getChannel(channelName).publish(new HashMapMessage());
+        client2.getChannel(channelName).publish(new HashMap<>());
         Assert.assertTrue(messageLatch1.await(5, TimeUnit.SECONDS));
 
         // Be sure it's been received once only
@@ -182,7 +190,7 @@ public class OortObserveChannelTest extends OortTest {
         Assert.assertTrue(subscribeLatch1.await(5, TimeUnit.SECONDS));
 
         // Sending a message to Oort2, must be received by client1
-        client2.getChannel(channelName).publish(new HashMapMessage());
+        client2.getChannel(channelName).publish(new HashMap<>());
         Assert.assertTrue(messageLatch1.await(5, TimeUnit.SECONDS));
 
         // Deobserve the channel
@@ -193,7 +201,82 @@ public class OortObserveChannelTest extends OortTest {
 
         // Resend, the message must not be received
         messageLatch1.reset(1);
-        client2.getChannel(channelName).publish(new HashMapMessage());
+        client2.getChannel(channelName).publish(new HashMap());
         Assert.assertFalse(messageLatch1.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testBinaryMessageOnObservedChannel() throws Exception {
+        Server server1 = startServer(0);
+        BayeuxServer bayeux1 = (BayeuxServer)server1.getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeux1.addExtension(new BinaryExtension());
+        Oort oort1 = startOort(server1);
+        oort1.getOortSession().addExtension(new org.cometd.client.ext.BinaryExtension());
+        oort1.setBinaryExtensionEnabled(true);
+        Server server2 = startServer(0);
+        BayeuxServer bayeux2 = (BayeuxServer)server2.getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeux2.addExtension(new BinaryExtension());
+        Oort oort2 = startOort(server2);
+        oort2.getOortSession().addExtension(new org.cometd.client.ext.BinaryExtension());
+        oort2.setBinaryExtensionEnabled(true);
+
+        CountDownLatch latch = new CountDownLatch(2);
+        CometJoinedListener listener = new CometJoinedListener(latch);
+        oort1.addCometListener(listener);
+        oort2.addCometListener(listener);
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        OortComet oortComet21 = oort2.findComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        BayeuxClient client1 = startClient(oort1, null);
+        client1.addExtension(new org.cometd.client.ext.BinaryExtension());
+        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        BayeuxClient client2 = startClient(oort2, null);
+        client2.addExtension(new org.cometd.client.ext.BinaryExtension());
+        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Oort1 observes the channel, so any publish to Oort2 is forwarded to Oort1.
+        String channelName = "/oort_binary";
+        oort1.observeChannel(channelName);
+
+        // Wait a while to be sure to be subscribed.
+        Thread.sleep(1000);
+
+        final byte[] bytes = new byte[1024];
+        new Random().nextBytes(bytes);
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+
+        // Subscribe client1.
+        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        final CountDownLatch messageLatch = new CountDownLatch(1);
+        client1.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                BinaryData data = (BinaryData)message.getData();
+                byte[] payload = data.asBytes();
+                if (Arrays.equals(payload, bytes))
+                    messageLatch.countDown();
+            }
+        }, new ClientSessionChannel.MessageListener() {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                subscribeLatch.countDown();
+            }
+        });
+        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+
+        // Sending a message to Oort2, must be received by client1.
+        final CountDownLatch publishLatch = new CountDownLatch(1);
+        client2.getChannel(channelName).publish(new BinaryData(null, buffer, true), new ClientSessionChannel.MessageListener() {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                publishLatch.countDown();
+            }
+        });
+
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
     }
 }

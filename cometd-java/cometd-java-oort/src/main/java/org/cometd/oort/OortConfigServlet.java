@@ -54,6 +54,7 @@ public abstract class OortConfigServlet extends HttpServlet {
     public static final String OORT_SECRET_PARAM = "oort.secret";
     public static final String OORT_CHANNELS_PARAM = "oort.channels";
     public static final String OORT_ENABLE_ACK_EXTENSION_PARAM = "enableAckExtension";
+    public static final String OORT_ENABLE_BINARY_EXTENSION_PARAM = "enableBinaryExtension";
     public static final String OORT_JSON_CONTEXT_PARAM = "jsonContext";
     protected static final Logger LOG = LoggerFactory.getLogger(OortConfigServlet.class);
 
@@ -84,6 +85,12 @@ public abstract class OortConfigServlet extends HttpServlet {
                 enableAckExtension = "true";
             }
             oort.setAckExtensionEnabled(Boolean.parseBoolean(enableAckExtension));
+
+            String enableBinaryExtension = config.getInitParameter(OORT_ENABLE_BINARY_EXTENSION_PARAM);
+            if (enableBinaryExtension == null) {
+                enableBinaryExtension = "true";
+            }
+            oort.setBinaryExtensionEnabled(Boolean.parseBoolean(enableBinaryExtension));
 
             String jsonContext = config.getInitParameter(OORT_JSON_CONTEXT_PARAM);
             if (jsonContext != null) {
