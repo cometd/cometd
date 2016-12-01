@@ -19,14 +19,12 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.junit.After;
 import org.junit.Assert;
@@ -248,99 +246,6 @@ public class BayeuxServerTest {
         session2.getServerSession().disconnect();
         Assert.assertFalse(session2.isConnected());
         Assert.assertFalse(ss2.isConnected());
-    }
-
-    @Test
-    public void testExtensions() throws Exception {
-        final Queue<String> events = new ConcurrentLinkedQueue<>();
-        _bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
-            @Override
-            public boolean send(ServerSession from, ServerSession to, Mutable message) {
-                if ("three".equals(message.getData())) {
-                    message.setData("four");
-                }
-                return !"ignoreSend".equals(message.getData());
-            }
-
-            @Override
-            public boolean rcv(ServerSession from, Mutable message) {
-                if ("one".equals(message.getData())) {
-                    message.setData("two");
-                }
-                return !"ignoreRcv".equals(message.getData());
-            }
-        });
-
-        final LocalSession session0 = _bayeux.newLocalSession("s0");
-        session0.handshake();
-        //final LocalSession session1 = _bayeux.newLocalSession("s1");
-        //session1.handshake();
-
-        session0.addExtension(new ClientSession.Extension.Adapter() {
-            @Override
-            public boolean send(ClientSession session, org.cometd.bayeux.Message.Mutable message) {
-                if ("zero".equals(message.getData())) {
-                    message.setData("one");
-                }
-                return true;
-            }
-
-            @Override
-            public boolean rcv(ClientSession session, org.cometd.bayeux.Message.Mutable message) {
-                if ("five".equals(message.getData())) {
-                    message.setData("six");
-                }
-                return true;
-            }
-        });
-
-        session0.getServerSession().addExtension(new ServerSession.Extension.Adapter() {
-            @Override
-            public boolean rcv(ServerSession from, Mutable message) {
-                if ("two".equals(message.getData())) {
-                    message.setData("three");
-                }
-                return true;
-            }
-
-            @Override
-            public ServerMessage send(ServerSession session, ServerMessage message) {
-                if (message.isMeta()) {
-                    new Throwable().printStackTrace();
-                }
-                if ("four".equals(message.getData())) {
-                    ServerMessage.Mutable cloned = _bayeux.newMessage(message);
-                    cloned.setData("five");
-                    return cloned;
-                }
-                return message;
-            }
-        });
-
-        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                events.add(channel.getSession().getId());
-                events.add(message.getData().toString());
-            }
-        };
-
-        session0.getChannel("/foo/bar").subscribe(listener);
-        // session1.getChannel("/foo/bar").subscribe(listener);
-
-        session0.getChannel("/foo/bar").publish("zero");
-        session0.getChannel("/foo/bar").publish("ignoreSend");
-        session0.getChannel("/foo/bar").publish("ignoreRcv");
-
-        Thread.sleep(100);
-
-        Assert.assertEquals(session0.getId(), events.poll());
-        Assert.assertEquals("six", events.poll());
-
-        /*
-        Assert.assertEquals(session1.getId(),events.poll());
-        Assert.assertEquals("four",events.poll());
-        Assert.assertEquals(null,events.poll());
-        */
     }
 
     class CListener implements BayeuxServer.ChannelListener {

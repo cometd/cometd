@@ -363,8 +363,6 @@ The `BayeuxServer` processes each message in the following steps:
 . It invokes authorization checks for both the security policy and the authorizers;
   if the authorization is denied, a reply is sent to the client indicating the
   failure, and no further processing is performed for the message.
-. If the message is a service or broadcast message, the message passes through
-  `BayeuxServer` extensions (methods `send()` or `sendMeta()`).
 . It invokes server channel listeners; the application adds server channel listeners
   on the server, and offers the last chance to modify the message before it is
   eventually sent to all subscribers (if it is a broadcast message). All subscribers
@@ -377,15 +375,17 @@ The `BayeuxServer` processes each message in the following steps:
   message interface or an unmodifiable one to represent the message object.
   This step is the last processing step for an incoming non-broadcast message, and
   it therefore ends its journey on the server.
-  A reply is sent to publishers to confirm that the message made it to the server
-  (see below), but the message is not broadcast to other server sessions.
-. If the message is a broadcast message, for each server session that subscribes
-  to the channel, the message passes through `ServerSession` extensions (methods
-  `send()` or `sendMeta()`), then the server session queue listeners are invoked
-  and finally the message is added to the server session queue for delivery.
+. If the message is a broadcast message, the message passes through
+  `BayeuxServer` extensions (methods `send()` or `sendMeta()`), then for each server
+  session that subscribed to the channel, the message passes through `ServerSession`
+  extensions (methods `send()` or `sendMeta()`).
+. If the message is a broadcast message, for each server session that subscribed
+  to the channel, the message passes through `ServerSession` listeners, that have
+  last chance to discard the message for that session; then the server session queue
+  listeners (`MaxQueueListener` and `QueueListener`) are invoked and finally the
+  message is added to the server session queue for delivery.
 . If the message is a lazy message (see also <<_java_server_lazy_messages,the lazy messages section>>),
-  it is sent on first occasion.
-  Otherwise the message is delivered immediately.
+  it is sent on first occasion, otherwise the message is delivered immediately.
   If the server session onto which the message is queued corresponds to a remote
   client session, it is assigned a thread to deliver the messages in its queue
   through the server transport.

@@ -217,11 +217,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             session = ((LocalSession)sender).getServerSession();
         }
 
-        if (!_bayeux.extendSend(session, this, message)) {
-            return;
+        if (_bayeux.extendSend(session, this, message)) {
+            doDeliver(session, message);
         }
-
-        doDeliver(session, message);
     }
 
     public void deliver(Session sender, String channelId, Object data) {

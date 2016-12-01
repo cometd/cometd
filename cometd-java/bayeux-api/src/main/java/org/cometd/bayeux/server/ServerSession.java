@@ -164,16 +164,16 @@ public interface ServerSession extends Session {
     }
 
     /**
-     * <p>Listeners objects that implement this interface will be notified of message arrival.</p>
+     * <p>Listeners objects that implement this interface will be notified of message sending.</p>
      */
     public interface MessageListener extends ServerSessionListener {
         /**
-         * <p>Callback invoked when a message is received.</p>
-         * <p>Implementers can decide to return false to signal that the message should not be
-         * processed, meaning that other listeners will not be notified and that the message
-         * will be discarded.</p>
+         * <p>Callback invoked when a message is sent.</p>
+         * <p>Implementers can decide to return false to signal that the message should not
+         * be further processed, meaning that other session listeners will not be notified
+         * and that the message will be discarded for this session.</p>
          *
-         * @param session the session that received the message
+         * @param session the session that will receive the message
          * @param sender  the session that sent the message
          * @param message the message sent
          * @return whether the processing of the message should continue

@@ -280,22 +280,15 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
             throw new IllegalStateException("Wild publish");
         }
 
-        ServerSessionImpl session = (from instanceof ServerSessionImpl)
-                ? (ServerSessionImpl)from
-                : ((from instanceof LocalSession) ? (ServerSessionImpl)((LocalSession)from).getServerSession() : null);
-
-        if (ChannelId.isBroadcast(mutable.getChannel())) {
-            // Do not leak the clientId to other subscribers
-            // as we are now "sending" this message.
-            mutable.setClientId(null);
-
-            // Reset the messageId to avoid clashes with message-based transports such
-            // as websocket whose clients may rely on the messageId to match request/responses.
-            mutable.setId(null);
+        ServerSessionImpl session = null;
+        if (from instanceof ServerSessionImpl) {
+            session = (ServerSessionImpl)from;
+        } else if (from instanceof LocalSession) {
+            session = (ServerSessionImpl)((LocalSession)from).getServerSession();
         }
 
         if (_bayeux.extendSend(session, null, mutable)) {
-            _bayeux.doPublish(session, this, mutable);
+            _bayeux.doPublish(session, this, mutable, false);
         }
     }
 

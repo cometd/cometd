@@ -304,7 +304,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
      * <p>Subclasses may override and run the task in a {@link java.util.concurrent.Executor},
      * rather than in the scheduler thread.</p>
      *
-     * @param task the task to schedule
+     * @param task  the task to schedule
      * @param delay the delay, in milliseconds, to run the task
      * @return the task promise
      */
@@ -683,7 +683,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                     if (session == null && !Channel.META_HANDSHAKE.equals(channelName)) {
                         unknownSession(reply);
                     } else {
-                        doPublish(session, channel, message);
+                        doPublish(session, channel, message, true);
                     }
                 } else {
                     if (session == null) {
@@ -694,7 +694,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                             String denyReason = ((Authorizer.Result.Denied)publishResult).getReason();
                             error(reply, "403:" + denyReason + ":publish denied");
                         } else {
-                            channel.publish(session, message);
+                            doPublish(session, channel, message, true);
                             reply.setSuccessful(true);
                         }
                     }
@@ -818,12 +818,28 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         return result;
     }
 
-    protected void doPublish(ServerSessionImpl from, ServerChannelImpl to, final ServerMessage.Mutable mutable) {
+    protected void doPublish(ServerSessionImpl from, ServerChannelImpl to, final ServerMessage.Mutable mutable, boolean receiving) {
+        boolean broadcast = to.isBroadcast();
+        if (broadcast) {
+            // Do not leak the clientId to other subscribers
+            // as we are now "sending" this message.
+            mutable.setClientId(null);
+            // Reset the messageId to avoid clashes with message-based transports such
+            // as websocket whose clients may rely on the messageId to match request/responses.
+            mutable.setId(null);
+        }
+
         List<String> wildChannels = to.getChannelId().getWilds();
 
         // First notify the channel listeners.
         if (!notifyListeners(from, to, mutable, wildChannels)) {
             return;
+        }
+
+        if (broadcast && receiving) {
+            if (!extendSend(from, null, mutable)) {
+                return;
+            }
         }
 
         // Exactly at this point, we convert the message to JSON and therefore
@@ -842,8 +858,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         // We need a special treatment in case of subscription to /**, otherwise
         // we will deliver meta messages and service messages as if it could be
         // possible to subscribe to meta channels and service channels.
-        Set<String> wildSubscribers = null;
-        if (ChannelId.isBroadcast(mutable.getChannel())) {
+        if (broadcast) {
+            Set<String> wildSubscribers = null;
             for (String wildName : wildChannels) {
                 ServerChannelImpl wildChannel = _channels.get(wildName);
                 if (wildChannel == null) {
@@ -859,18 +875,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                     }
                 }
             }
-        }
 
-        // Call the leaf subscribers
-        Set<ServerSession> subscribers = to.subscribers();
-        for (ServerSession session : subscribers) {
-            if (wildSubscribers == null || !wildSubscribers.contains(session.getId())) {
-                ((ServerSessionImpl)session).doDeliver(from, mutable);
+            // Call the leaf subscribers
+            Set<ServerSession> subscribers = to.subscribers();
+            for (ServerSession session : subscribers) {
+                if (wildSubscribers == null || !wildSubscribers.contains(session.getId())) {
+                    ((ServerSessionImpl)session).doDeliver(from, mutable);
+                }
             }
-        }
-
-        // Meta handlers
-        if (to.isMeta()) {
+        } else if (to.isMeta()) {
             notifyHandlerListeners(from, to, mutable);
         }
     }
