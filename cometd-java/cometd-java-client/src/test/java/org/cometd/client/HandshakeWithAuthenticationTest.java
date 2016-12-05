@@ -15,6 +15,10 @@
  */
 package org.cometd.client;
 
+import java.io.BufferedWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 
 import org.cometd.client.transport.LongPollingTransport;
@@ -26,7 +30,6 @@ import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Constraint;
-import org.eclipse.jetty.util.security.Credential;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,9 +42,13 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
 
         final String userName = "cometd";
         final String password = "cometd";
-        String[] roles = {"admin"};
+        String role = "admin";
+        Path authProps = Files.createTempFile("cometd-autentication", ".properties");
+        try (BufferedWriter writer = Files.newBufferedWriter(authProps, StandardCharsets.UTF_8)) {
+            writer.write(String.format("%s:%s,%s", userName, password, role));
+        }
         HashLoginService loginService = new HashLoginService("CometD-Realm");
-        loginService.putUser(userName, Credential.getCredential(password), roles);
+        loginService.setConfig(authProps.toString());
         server.addBean(loginService);
 
         Handler handler = server.getHandler();
@@ -51,7 +58,7 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
 
         Constraint constraint = new Constraint();
         constraint.setAuthenticate(true);
-        constraint.setRoles(roles);
+        constraint.setRoles(new String[]{role});
 
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec(cometdServletPath + "/*");
