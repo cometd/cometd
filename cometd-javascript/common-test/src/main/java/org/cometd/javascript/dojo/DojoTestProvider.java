@@ -70,4 +70,9 @@ public class DojoTestProvider implements TestProvider {
     public void provideTimesyncExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate("timesync extension", "require(['dojox/cometd/timesync']);");
     }
+
+    @Override
+    public void provideBinaryExtension(ThreadModel threadModel, String contextURL) throws Exception {
+        threadModel.evaluate("binary extension", "require(['dojox/cometd/binary']);");
+    }
 }

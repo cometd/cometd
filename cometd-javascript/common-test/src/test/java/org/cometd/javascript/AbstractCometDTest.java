@@ -225,6 +225,10 @@ public abstract class AbstractCometDTest {
         provider.provideReloadExtension(threadModel, contextURL);
     }
 
+    protected void provideBinaryExtension() throws Exception {
+        provider.provideBinaryExtension(threadModel, contextURL);
+    }
+
     protected void destroyPage() throws Exception {
         destroyJavaScript();
     }

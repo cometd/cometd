@@ -174,7 +174,13 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
     @Override
     protected void send(Message.Mutable message) {
-        send(_session, (ServerMessage.Mutable)message);
+        if (message instanceof ServerMessage.Mutable) {
+            send(_session, (ServerMessage.Mutable)message);
+        } else {
+            ServerMessage.Mutable mutable = newMessage();
+            mutable.putAll(message);
+            send(_session, mutable);
+        }
     }
 
     /**

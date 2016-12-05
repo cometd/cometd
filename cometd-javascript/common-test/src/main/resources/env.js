@@ -914,4 +914,46 @@ var window = this;
 
     window.sessionStorage = sessionStorage;
 
+    window.ArrayBuffer = function(length) {
+        this._byteBuffer = Packages.java.nio.ByteBuffer.allocate(length);
+    };
+    window.ArrayBuffer.prototype = {
+        get byteLength() {
+            return this._byteBuffer.capacity();
+        },
+        get _buffer() {
+            return this._byteBuffer;
+        }
+    };
+
+    window.DataView = function(buffer, offset, length) {
+        this._buffer = buffer;
+        this._offset = offset || 0;
+        this._length = length || buffer.byteLength;
+        var bb = buffer._buffer;
+        var position = bb.position();
+        var limit = bb.limit();
+        bb.limit(position + this._offset + this._length);
+        bb.position(position + this._offset);
+        this._view = bb.slice();
+        bb.position(position);
+        bb.limit(limit);
+    };
+    window.DataView.prototype = {
+        get buffer() {
+            return this._buffer;
+        },
+        get byteLength() {
+            return this._length;
+        },
+        get byteOffset() {
+            return this._offset;
+        },
+        getUint8: function(offset) {
+            return this._view.get(offset) & 0xFF;
+        },
+        setUint8: function(offset, value) {
+            this._view.put(offset, Packages.java.lang.Integer.valueOf(value).byteValue());
+        }
+    };
 })();

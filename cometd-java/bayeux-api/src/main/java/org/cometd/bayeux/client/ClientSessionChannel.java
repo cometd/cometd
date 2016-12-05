@@ -82,13 +82,24 @@ public interface ClientSessionChannel extends Channel {
 
     /**
      * <p>Publishes the given {@code data} onto this channel, notifying the given
-     * {@code listener} of the publish result, whether successful or unsuccessful.</p>
+     * {@code callback} of the publish result, whether successful or unsuccessful.</p>
      *
      * @param data     the data to publish
-     * @param listener the message listener to notify of the publish result
+     * @param callback the message callback to notify of the publish result
      * @see #publish(Object)
+     * @see #publish(Message.Mutable, MessageListener)
      */
-    public void publish(Object data, MessageListener listener);
+    public void publish(Object data, MessageListener callback);
+
+    /**
+     * <p>Publishes the given {@code message} onto this channel, notifying the
+     * given {@code callback} of the publish result.</p>
+     *
+     * @param message  the message to publish
+     * @param callback the message callback to notify of the publish result
+     * @see #publish(Object, MessageListener)
+     */
+    public void publish(Message.Mutable message, MessageListener callback);
 
     /**
      * <p>Equivalent to {@link #subscribe(ClientSessionChannel.MessageListener, ClientSessionChannel.MessageListener)

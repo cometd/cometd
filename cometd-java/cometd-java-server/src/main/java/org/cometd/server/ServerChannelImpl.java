@@ -280,6 +280,8 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
             throw new IllegalStateException("Wild publish");
         }
 
+        mutable.setChannel(getId());
+
         ServerSessionImpl session = null;
         if (from instanceof ServerSessionImpl) {
             session = (ServerSessionImpl)from;
@@ -294,10 +296,6 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
 
     public void publish(Session from, Object data) {
         ServerMessage.Mutable mutable = _bayeux.newMessage();
-        mutable.setChannel(getId());
-        if (from != null) {
-            mutable.setClientId(from.getId());
-        }
         mutable.setData(data);
         publish(from, mutable);
     }

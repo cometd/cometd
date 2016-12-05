@@ -15,6 +15,7 @@
  */
 package org.cometd.client;
 
+import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -22,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.common.HashMapMessage;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,7 +64,7 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest {
                 });
                 Assert.assertTrue(subscribe.await(5, TimeUnit.SECONDS));
 
-                client2.getChannel(channel).publish(new HashMapMessage());
+                client2.getChannel(channel).publish(new HashMap<>());
 
                 Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
                 Assert.assertNull(messageRef.get().getClientId());

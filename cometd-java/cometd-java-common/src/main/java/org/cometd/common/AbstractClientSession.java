@@ -426,12 +426,21 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
         @Override
         public void publish(Object data, MessageListener callback) {
+            if (data instanceof Message.Mutable) {
+                publish((Message.Mutable)data, callback);
+            } else {
+                Message.Mutable message = newMessage();
+                message.setData(data);
+                publish(message, callback);
+            }
+        }
+
+        @Override
+        public void publish(Message.Mutable message, MessageListener callback) {
             throwIfReleased();
-            Message.Mutable message = newMessage();
             String messageId = newMessageId();
             message.setId(messageId);
             message.setChannel(getId());
-            message.setData(data);
             registerCallback(messageId, callback);
             send(message);
         }

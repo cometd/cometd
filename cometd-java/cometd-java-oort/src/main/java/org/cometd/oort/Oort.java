@@ -55,6 +55,7 @@ import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.JSONContext;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
+import org.cometd.server.ext.BinaryExtension;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.B64Code;
@@ -115,6 +116,9 @@ public class Oort extends ContainerLifeCycle {
     private String _secret;
     private boolean _ackExtensionEnabled;
     private Extension _ackExtension;
+    private boolean _binaryExtensionEnabled;
+    private Extension _serverBinaryExtension;
+    private ClientSession.Extension _binaryExtension;
     private JSONContext.Client _jsonContext;
 
     public Oort(BayeuxServer bayeux, String url) {
@@ -158,6 +162,20 @@ public class Oort extends ContainerLifeCycle {
             }
         }
 
+        if (isBinaryExtensionEnabled()) {
+            _oortSession.addExtension(_binaryExtension = new org.cometd.client.ext.BinaryExtension());
+            boolean present = false;
+            for (Extension extension : _bayeux.getExtensions()) {
+                if (extension instanceof BinaryExtension) {
+                    present = true;
+                    break;
+                }
+            }
+            if (!present) {
+                _bayeux.addExtension(_serverBinaryExtension = new BinaryExtension());
+            }
+        }
+
         _bayeux.addExtension(_oortExtension);
 
         ServerChannel oortCloudChannel = _bayeux.createChannelIfAbsent(OORT_CLOUD_CHANNEL).getReference();
@@ -173,6 +191,7 @@ public class Oort extends ContainerLifeCycle {
     @Override
     protected void doStop() throws Exception {
         _oortSession.disconnect();
+        _oortSession.removeExtension(_binaryExtension);
 
         List<OortComet> comets = new ArrayList<>();
         synchronized (_lock) {
@@ -205,6 +224,11 @@ public class Oort extends ContainerLifeCycle {
         _ackExtension = null;
         if (ackExtension != null) {
             _bayeux.removeExtension(ackExtension);
+        }
+        Extension binaryExtension = _serverBinaryExtension;
+        _serverBinaryExtension = null;
+        if (binaryExtension != null) {
+            _bayeux.removeExtension(binaryExtension);
         }
 
         _bayeux.removeExtension(_oortExtension);
@@ -252,6 +276,15 @@ public class Oort extends ContainerLifeCycle {
 
     public void setAckExtensionEnabled(boolean value) {
         _ackExtensionEnabled = value;
+    }
+
+    @ManagedAttribute("Whether the binary extension is enabled")
+    public boolean isBinaryExtensionEnabled() {
+        return _binaryExtensionEnabled;
+    }
+
+    public void setBinaryExtensionEnabled(boolean value) {
+        _binaryExtensionEnabled = value;
     }
 
     public JSONContext.Client getJSONContextClient() {
@@ -382,6 +415,18 @@ public class Oort extends ContainerLifeCycle {
             }
             if (!present) {
                 oortComet.addExtension(new AckExtension());
+            }
+        }
+        if (isBinaryExtensionEnabled()) {
+            boolean present = false;
+            for (ClientSession.Extension extension : oortComet.getExtensions()) {
+                if (extension instanceof org.cometd.client.ext.BinaryExtension) {
+                    present = true;
+                    break;
+                }
+            }
+            if (!present) {
+                oortComet.addExtension(new org.cometd.client.ext.BinaryExtension());
             }
         }
     }
