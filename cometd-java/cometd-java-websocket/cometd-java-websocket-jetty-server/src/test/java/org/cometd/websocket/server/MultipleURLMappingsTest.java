@@ -35,6 +35,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -79,7 +80,16 @@ public class MultipleURLMappingsTest {
 
         context = new ServletContextHandler(server, "/", true, false);
 
-        WebSocketServerContainerInitializer.configureContext(context);
+        switch (wsTransportClass) {
+            case JSR_WS_TRANSPORT:
+                WebSocketServerContainerInitializer.configureContext(context);
+                break;
+            case JETTY_WS_TRANSPORT:
+                WebSocketUpgradeFilter.configureContext(context);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported transport " + wsTransportClass);
+        }
 
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("transports", wsTransportClass);

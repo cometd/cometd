@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
@@ -90,7 +91,16 @@ public abstract class AbstractClientServerTest {
 
         context = new ServletContextHandler(server, "/");
 
-        WebSocketServerContainerInitializer.configureContext(context);
+        switch (transport) {
+            case JAVAX_WEBSOCKET:
+                WebSocketServerContainerInitializer.configureContext(context);
+                break;
+            case JETTY_WEBSOCKET:
+                WebSocketUpgradeFilter.configureContext(context);
+                break;
+            default:
+                break;
+        }
 
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);

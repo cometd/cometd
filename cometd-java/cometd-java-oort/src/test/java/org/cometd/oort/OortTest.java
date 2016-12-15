@@ -41,6 +41,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
@@ -86,7 +87,13 @@ public abstract class OortTest {
 
         ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
 
-        WebSocketServerContainerInitializer.configureContext(context);
+        if (serverTransport.equals(WebSocketTransport.class.getName())) {
+            WebSocketServerContainerInitializer.configureContext(context);
+        } else if (serverTransport.equals(JettyWebSocketTransport.class.getName())) {
+            WebSocketUpgradeFilter.configureContext(context);
+        } else {
+            throw new IllegalArgumentException("Unsupported transport " + serverTransport);
+        }
 
         // CometD servlet
         String cometdServletPath = "/cometd";

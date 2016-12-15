@@ -27,14 +27,14 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.websocket.server.common.AbstractBayeuxContext;
 import org.cometd.websocket.server.common.AbstractWebSocketTransport;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
-import org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec;
+import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -58,12 +58,12 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
             throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING_OPTION + "' parameter");
         }
 
-        WebSocketUpgradeFilter wsFilter = (WebSocketUpgradeFilter)context.getAttribute(WebSocketUpgradeFilter.class.getName());
-        if (wsFilter == null) {
-            throw new IllegalArgumentException("Missing WebSocketUpgradeFilter");
+        NativeWebSocketConfiguration wsConfig = (NativeWebSocketConfiguration)context.getAttribute(NativeWebSocketConfiguration.class.getName());
+        if (wsConfig == null) {
+            throw new IllegalArgumentException("Missing WebSocketConfiguration");
         }
 
-        WebSocketPolicy policy = wsFilter.getFactory().getPolicy();
+        WebSocketPolicy policy = wsConfig.getFactory().getPolicy();
         int bufferSize = getOption(BUFFER_SIZE_OPTION, policy.getInputBufferSize());
         policy.setInputBufferSize(bufferSize);
         int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, policy.getMaxTextMessageSize());
@@ -72,7 +72,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         policy.setIdleTimeout((int)idleTimeout);
 
         for (String mapping : normalizeURLMapping(cometdURLMapping)) {
-            wsFilter.addMapping(new ServletPathSpec(mapping), new WebSocketCreator() {
+            wsConfig.addMapping(new ServletPathSpec(mapping), new WebSocketCreator() {
                 @Override
                 public Object createWebSocket(ServletUpgradeRequest request, ServletUpgradeResponse response) {
                     String origin = request.getHeader("Origin");
