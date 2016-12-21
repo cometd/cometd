@@ -220,16 +220,22 @@ that different server transports accept:
   rejected by the recipient because they are too big.
 
 | ws.bufferSize
-| 65536
+| <impl>
 | The size, in bytes, of the buffer used to read and write WebSocket frames.
+  The default value depends on the implementation. For the Jetty WebSocket
+  implementation, this value is 4096.
 
 | ws.maxMessageSize
-| 65520
+| <impl>
 | The maximum size, in bytes, of an incoming WebSocket message.
+  The default value depends on the implementation. For the Jetty WebSocket
+  implementation this value is 65536.
 
 | ws.idleTimeout
-| 300000
+| <impl>
 | The idle timeout, in milliseconds, for the WebSocket connection.
+  The default value depends on the implementation. For the Jetty WebSocket
+  implementation this value is 300000.
 
 | ws.requireHandshakePerConnection
 | false
