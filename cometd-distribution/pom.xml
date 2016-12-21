@@ -12,11 +12,11 @@
     <name>CometD :: Distribution</name>
 
     <build>
+        <finalName>cometd-${project.version}</finalName>
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
-                    <finalName>cometd-${project.version}</finalName>
                     <descriptors>
                         <descriptor>src/main/assembly/distribution.xml</descriptor>
                     </descriptors>

@@ -50,7 +50,7 @@ $ git checkout <version>
 $ mvn clean install -DskipTests=true
 ...
 $ cd cometd-distribution
-$ mvn assembly:assembly
+$ mvn assembly:single
 ----
 
 This creates the distribution tarball in the `cometd-distribution/target` directory.
