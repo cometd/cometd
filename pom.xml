@@ -8,42 +8,17 @@
     <name>CometD</name>
     <version>3.0.11-SNAPSHOT</version>
 
-    <repositories>
-        <repository>
-            <id>jetty-staging</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-1282</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>jetty-staging</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-1282</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- tag::jetty-version[] -->
         <jetty-version>9.2.20.v20161216</jetty-version>
         <!-- end::jetty-version[] -->
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
-        <slf4j-version>1.7.21</slf4j-version>
-        <spring-version>4.3.2.RELEASE</spring-version>
+        <slf4j-version>1.7.22</slf4j-version>
+        <spring-version>4.3.4.RELEASE</spring-version>
         <jackson1-version>1.9.13</jackson1-version>
-        <jackson2-version>2.8.1</jackson2-version>
-        <dojo-version>1.11.2</dojo-version>
+        <jackson2-version>2.8.5</jackson2-version>
+        <dojo-version>1.11.3</dojo-version>
         <rhino-version>1.7R4</rhino-version>
     </properties>
 
@@ -327,7 +302,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>2.6</version>
+                    <version>3.0.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -337,12 +312,12 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.5.1</version>
+                    <version>3.6.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>2.10</version>
+                    <version>3.0.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -382,7 +357,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.0.1</version>
+                    <version>3.0.2</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -392,7 +367,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.5.1</version>
+                    <version>3.6</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -410,12 +385,12 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-war-plugin</artifactId>
-                    <version>2.6</version>
+                    <version>3.0.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.7.7.201606060606</version>
+                    <version>0.7.8</version>
                 </plugin>
                 <plugin>
                     <groupId>com.mycila</groupId>
@@ -426,11 +401,6 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>1.5.0</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>3.0.4</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.felix</groupId>
