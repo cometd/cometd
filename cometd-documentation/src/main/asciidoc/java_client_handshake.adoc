@@ -32,6 +32,9 @@ ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transpor
 
 // Here set up the BayeuxClient, for example:
 // client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() { ... });
+
+// Handshake
+client.handshake();
 ----
 ====
 
@@ -41,8 +44,11 @@ The scheme of the URL must always be either "http" or "https". The CometD
 Java Client implementation will transparently take care of converting the scheme
 to "ws" or "wss" in case of usage of the WebSocket protocol.
 
-When `BayeuxClient.handshake()` is called, the `BayeuxClient` performs the
-handshake with the Bayeux server and establishes the long poll connection asynchronously.
+Once `handshake()` has been called, you must not call `handshake()` again unless
+you have explicitly disconnected by calling `disconnect()`.
+
+When `handshake()` is called, the `BayeuxClient` performs the handshake with the
+Bayeux server and establishes the long poll connection asynchronously.
 
 [NOTE]
 ====

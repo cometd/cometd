@@ -1759,6 +1759,8 @@
             _batch = 0;
             _resetBackoff();
             _transport = null;
+            _reestablish = false;
+            _connected = false;
 
             // Fail any existing queued message
             if (_messageQueue.length > 0) {
@@ -2532,8 +2534,9 @@
          * @param handshakeCallback a function to be invoked when the handshake is acknowledged
          */
         this.handshake = function(handshakeProps, handshakeCallback) {
-            _setStatus('disconnected');
-            _reestablish = false;
+            if (_status !== 'disconnected') {
+                throw 'Illegal state: handshaken';
+            }
             _handshake(handshakeProps, handshakeCallback);
         };
 
@@ -2676,7 +2679,7 @@
                 throw 'Illegal argument type: channel must be a string';
             }
             if (_isDisconnected()) {
-                throw 'Illegal state: already disconnected';
+                throw 'Illegal state: disconnected';
             }
 
             // Normalize arguments
@@ -2728,7 +2731,7 @@
                 throw 'Illegal arguments number: required 1, got ' + arguments.length;
             }
             if (_isDisconnected()) {
-                throw 'Illegal state: already disconnected';
+                throw 'Illegal state: disconnected';
             }
 
             if (_isFunction(unsubscribeProps)) {
@@ -2792,7 +2795,7 @@
                 throw 'Illegal argument: cannot publish to meta channels';
             }
             if (_isDisconnected()) {
-                throw 'Illegal state: already disconnected';
+                throw 'Illegal state: disconnected';
             }
 
             if (_isFunction(content)) {
@@ -2865,7 +2868,7 @@
                 throw 'Illegal argument type: target must be a string';
             }
             if (_isDisconnected()) {
-                throw 'Illegal state: already disconnected';
+                throw 'Illegal state: disconnected';
             }
 
             if (_isFunction(content)) {

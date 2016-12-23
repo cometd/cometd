@@ -271,22 +271,16 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
     @Override
     public void handshake(final Map<String, Object> fields, final ClientSessionChannel.MessageListener callback) {
-        initialize();
-
-        List<String> allowedTransports = getAllowedTransports();
-        // Pick the first transport for the handshake, it will renegotiate if not right
-        final ClientTransport transport = transportRegistry.negotiate(allowedTransports.toArray(), BAYEUX_VERSION).get(0);
-        prepareTransport(null, transport);
-        if (logger.isDebugEnabled()) {
-            logger.debug("Using initial transport {} from {}", transport.getName(), allowedTransports);
+        if (sessionState.update(State.HANDSHAKING)) {
+            sessionState.submit(new Runnable() {
+                @Override
+                public void run() {
+                    sessionState.handshaking(fields, callback);
+                }
+            });
+        } else {
+            throw new IllegalStateException();
         }
-
-        sessionState.submit(new Runnable() {
-            @Override
-            public void run() {
-                sessionState.handshaking(transport, fields, callback);
-            }
-        });
     }
 
     /**
@@ -1343,21 +1337,27 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             }
         }
 
-        private boolean handshaking(ClientTransport transport, Map<String, Object> fields, ClientSessionChannel.MessageListener callback) {
-            boolean result;
+        private boolean handshaking(Map<String, Object> fields, ClientSessionChannel.MessageListener callback) {
+            initialize();
+
+            List<String> allowedTransports = getAllowedTransports();
+            // Pick the first transport for the handshake, it will renegotiate if not right
+            final ClientTransport transport = transportRegistry.negotiate(allowedTransports.toArray(), BAYEUX_VERSION).get(0);
+            prepareTransport(null, transport);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Using initial transport {} from {}", transport.getName(), allowedTransports);
+            }
+
             synchronized (this) {
-                result = update(State.HANDSHAKING);
-                if (result) {
-                    this.transport = transport;
-                    this.handshakeFields = fields;
-                    this.handshakeCallback = callback;
-                }
+                this.transport = transport;
+                this.handshakeFields = fields;
+                this.handshakeCallback = callback;
             }
-            if (result) {
-                resetSubscriptions();
-                sendHandshake();
-            }
-            return result;
+
+            resetSubscriptions();
+            sendHandshake();
+
+            return true;
         }
 
         private boolean rehandshaking(long backOff) {

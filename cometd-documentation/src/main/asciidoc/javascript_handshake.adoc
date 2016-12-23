@@ -16,6 +16,18 @@ The Bayeux handshake creates a network communication with the Bayeux server,
 negotiates the type of transport to use, and negotiates a number of protocol
 parameters to be used in subsequent communications.
 
+Once `handshake()` has been called, you must not call `handshake()` again
+unless you have explicitly disconnected by calling `disconnect()`.
+
+This is typically easy to enforce, by binding the call to `handshake()`
+to the page load event (that happens only once).
+
+Alternatively, if the `handshake()` is triggered by interaction with the user
+interface (for example by clicking on a button), it is fairly easy to either
+disable the user interface (for example, disabling the button immediately
+after the click), or use a boolean variable to guard against multiple
+handshakes.
+
 As with several functions of the JavaScript CometD API, `handshake()` is an
 asynchronous function: it returns immediately, well before the Bayeux handshake
 steps have completed.
