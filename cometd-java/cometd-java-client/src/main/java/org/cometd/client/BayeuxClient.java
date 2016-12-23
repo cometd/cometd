@@ -406,7 +406,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     protected boolean sendConnect() {
-        ClientTransport transport = sessionState.getTransport();
+        ClientTransport transport = getTransport();
+        if (transport == null) {
+            return false;
+        }
 
         Message.Mutable message = newMessage();
         message.setId(newMessageId());
