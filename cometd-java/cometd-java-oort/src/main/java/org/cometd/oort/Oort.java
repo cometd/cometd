@@ -342,7 +342,7 @@ public class Oort extends ContainerLifeCycle {
             oortComet = getComet(cometURL);
             if (oortComet != null) {
                 if (_logger.isDebugEnabled()) {
-                    _logger.debug("Comet {} is already connected", cometURL);
+                    _logger.debug("Comet {} is already connected with {}", cometURL, oortComet);
                 }
                 return oortComet;
             }
@@ -350,7 +350,7 @@ public class Oort extends ContainerLifeCycle {
             oortComet = _pendingComets.get(cometURL);
             if (oortComet != null) {
                 if (_logger.isDebugEnabled()) {
-                    _logger.debug("Comet {} is already connecting", cometURL);
+                    _logger.debug("Comet {} is already connecting with {}", cometURL, oortComet);
                 }
                 return oortComet;
             }
@@ -363,7 +363,7 @@ public class Oort extends ContainerLifeCycle {
         oortComet.getChannel(Channel.META_HANDSHAKE).addListener(new HandshakeListener(cometURL, oortComet));
 
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Connecting to comet {}", cometURL);
+            _logger.debug("Connecting to comet {} with {}", cometURL, oortComet);
         }
 
         Map<String, Object> fields = newOortHandshakeFields(cometURL, oortAliasURL);

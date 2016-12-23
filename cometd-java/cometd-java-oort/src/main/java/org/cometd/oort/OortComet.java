@@ -99,7 +99,11 @@ public class OortComet extends BayeuxClient {
 
     @Override
     public String toString() {
-        return _cometURL + "@" + getId();
+        return String.format("%s@%x[%s@%s]",
+                getClass().getSimpleName(),
+                System.identityHashCode(this),
+                _cometURL,
+                getId());
     }
 
     private class HandshakeListener implements ClientSessionChannel.MessageListener {
