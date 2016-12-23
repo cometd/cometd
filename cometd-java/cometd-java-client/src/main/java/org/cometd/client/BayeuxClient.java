@@ -1222,7 +1222,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         private long backOff;
         private long unconnectTime;
         private boolean active;
-        private boolean waiting;
         private int handshakeMessages;
 
         private void reset() {
@@ -1236,7 +1235,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             backOff = 0;
             unconnectTime = 0;
             active = false;
-            waiting = false;
             handshakeMessages = 0;
         }
 
@@ -1345,7 +1343,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         private boolean handshaking(ClientTransport transport, Map<String, Object> fields, ClientSessionChannel.MessageListener callback) {
             boolean result;
             synchronized (this) {
-                reset();
                 result = update(State.HANDSHAKING);
                 if (result) {
                     this.transport = transport;
@@ -1478,8 +1475,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             } else {
                 transport.terminate();
             }
+
             BayeuxClient.this.terminate();
-            update(State.DISCONNECTED);
+
+            synchronized (this) {
+                update(State.DISCONNECTED);
+                reset();
+            }
         }
 
         private void submit(Runnable action) {
@@ -1490,12 +1492,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             }
             if (empty && process()) {
                 synchronized (this) {
-                    if (waiting) {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Notifying threads in waitFor()");
-                        }
-                        notifyAll();
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Notifying threads in waitFor()");
                     }
+                    notifyAll();
                 }
             }
         }
@@ -1543,14 +1543,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         private boolean await(long time) {
             synchronized (this) {
-                waiting = true;
                 try {
                     wait(time);
                     return false;
                 } catch (InterruptedException x) {
                     return true;
-                } finally {
-                    waiting = false;
                 }
             }
         }
