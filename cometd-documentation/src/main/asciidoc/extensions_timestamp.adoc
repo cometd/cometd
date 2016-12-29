@@ -15,7 +15,7 @@ To enable support for time-stamped messages, you must add the extension to
 the `org.cometd.bayeux.server.BayeuxServer` instance during initialization:
 
 ====
-[source,javascript]
+[source,java]
 ----
 bayeuxServer.addExtension(new org.cometd.server.ext.TimestampExtension());
 ----

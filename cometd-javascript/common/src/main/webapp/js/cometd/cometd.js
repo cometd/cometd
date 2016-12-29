@@ -2800,10 +2800,11 @@
 
             if (_isFunction(content)) {
                 publishCallback = content;
-                content = publishProps = {};
+                content = {};
+                publishProps = undefined;
             } else if (_isFunction(publishProps)) {
                 publishCallback = publishProps;
-                publishProps = {};
+                publishProps = undefined;
             }
 
             var bayeuxMessage = {

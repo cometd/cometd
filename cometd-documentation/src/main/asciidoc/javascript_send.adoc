@@ -63,7 +63,7 @@ cometd.publish('/mychannel', { mydata: { foo: 'bar' } }, function(publishAck) {
 
 [NOTE]
 ====
-Calling `publish()` _ does not _ mean that you have published the message
+Calling `publish()` _does not_ mean that you have published the message
 when `publish()` returns.
 ====
 

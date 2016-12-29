@@ -76,7 +76,7 @@ The `subscribe()` function:
 
 [NOTE]
 ====
-Calling `subscribe()` _ does not_ mean that you have completed the subscription
+Calling `subscribe()` _does not_ mean that you have completed the subscription
 with the server when function returns.
 ====
 

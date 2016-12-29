@@ -25,8 +25,8 @@ logical _conduit_ between one client and the server.
 The CometD project uses the Bayeux protocol (see also <<_bayeux,the Bayeux protocol section>>)
 to exchange information between the client and the server.
 The unit of information exchanged is a Bayeux _message_ formatted in http://json.org[JSON].
-A message contains several _fields_, some of which the Bayeux protocol mandates,
-and others that applications might add.
+A message contains several _fields_, some of which are mandated by the Bayeux protocol,
+and others may be added by applications.
 A field is a key/value pair; saying that a message has a _foo_ field means
 that the message has a field whose key is the string _foo_.
 

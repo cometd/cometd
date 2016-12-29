@@ -67,7 +67,7 @@ in the HTML page via the `<script>` tag:
 ====
 
 In both Dojo and jQuery extension bindings, the extension is registered on
-the default `cometd` object under the name _ack_.
+the default `cometd` object under the name "ack".
 
 Furthermore, you can programmatically disable/enable the extension before
 initialization by setting the `ackEnabled` boolean field on the `cometd` object:
