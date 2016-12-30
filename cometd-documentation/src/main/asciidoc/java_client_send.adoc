@@ -96,6 +96,30 @@ If you don't, your messages continue to queue up, and your application
 does not work as expected.
 ====
 
+[[_java_client_send_binary]]
+===== Publishing Binary Data
+
+You can send binary data such as a `byte[]` or a `ByteBuffer` by using the
+`org.cometd.bayeux.BinaryData` class.
+
+Remember that you must have the binary extension enabled as specified
+in <<_extensions_binary,the binary extension section>>.
+
+====
+[source,java]
+----
+ClientSession client = ...;
+client.handshake();
+
+byte[] bytes = ...;
+client.getChannel("/channel").publish(new BinaryData(bytes, true, null));
+----
+====
+
+As explained in the <<_concepts_binary_data,concepts section>>, CometD takes care
+of converting the `BinaryData` object into the right format and adds the binary
+extension to the message.
+
 [[_java_client_rpc]]
 ===== Remote Calls
 
@@ -144,3 +168,34 @@ call returns, or when it fails (for example due to network failures), with
 the response message.
 Data returned by the server via `RemoteCall.Caller.result()` or
 `RemoteCall.Caller.failure()` will be available in the response message.
+
+[[_java_client_rpc_binary]]
+===== Remote Calls with Binary Data
+
+Similarly to publishing messages with binary data, it is possible to perform
+remote calls with binary data.
+
+Remember that you must have the binary extension enabled in the client as specified
+in <<_extensions_binary,the binary extension section>>.
+
+Here is an example that sends a `ByteBuffer`:
+
+====
+[source,java]
+----
+ClientSession client = ...;
+client.handshake();
+
+ByteBuffer buffer = ...;
+client.remoteCall("target", new BinaryData(buffer, true, null), new MessageListener() {
+    @Override
+    public void onMessage(Message message) {
+        if (message.isSuccessful()) {
+            // Use the result.
+        } else {
+            // Remote call failed.
+        }
+    }
+}
+----
+====

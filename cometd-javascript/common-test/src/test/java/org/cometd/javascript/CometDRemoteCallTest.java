@@ -21,8 +21,10 @@ import java.util.Map;
 import org.cometd.annotation.RemoteCall;
 import org.cometd.annotation.ServerAnnotationProcessor;
 import org.cometd.annotation.Service;
+import org.cometd.bayeux.BinaryData;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.JettyJSONContextServer;
+import org.cometd.server.ext.BinaryExtension;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.Assert;
 import org.junit.Test;
@@ -254,6 +256,58 @@ public class CometDRemoteCallTest extends AbstractCometDTest {
         @Override
         public Object fromJSON(Map object) {
             return new Custom((String)object.get("payload"));
+        }
+    }
+
+    @Test
+    public void testRemoteCallBinary() throws Exception {
+        bayeuxServer.addExtension(new BinaryExtension());
+        provideBinaryExtension();
+
+        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeuxServer);
+        String response = "response";
+        processor.process(new RemoteCallBinaryService());
+
+        defineClass(Latch.class);
+
+        evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
+        Thread.sleep(1000); // Wait for /meta/connect
+
+        evaluateScript("var latch = new Latch(1);");
+        Latch latch = get("latch");
+
+        evaluateScript("" +
+                "var buffer = new ArrayBuffer(16);" +
+                "var view1 = new DataView(buffer);" +
+                "for (var d = 0; d < view1.byteLength; ++d) {" +
+                "    view1.setUint8(d, d);" +
+                "}" +
+                "var meta = {" +
+                "    contentType: 'application/octet-stream'" +
+                "};" +
+                "cometd.remoteCallBinary('" + RemoteCallBinaryService.CHANNEL + "', view1, true, meta, function(response) {" +
+                "    window.assert(response.successful === true, 'missing successful field');" +
+                "    var data = response.data;" +
+                "    window.assert(meta.contentType === data.meta.contentType);" +
+                "    var view2 = new DataView(data.data);" +
+                "    for (var i = 0; i < view1.byteLength; ++i) {" +
+                "        window.assert(view2.getUint8(i) === view1.getUint8(i));" +
+                "    }" +
+                "    latch.countDown();" +
+                "});");
+
+        Assert.assertTrue(latch.await(5000));
+
+        disconnect();
+    }
+
+    @Service
+    public static class RemoteCallBinaryService {
+        public static final String CHANNEL = "/binary";
+
+        @RemoteCall(CHANNEL)
+        public void onBinary(RemoteCall.Caller caller, BinaryData data) {
+            caller.result(data);
         }
     }
 }

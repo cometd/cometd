@@ -323,6 +323,51 @@ The channel specified by the `@Subscription` annotation may be a
 what already documented in the
 <<_java_server_services_annotated_server_side_listener,listener section>>.
 
+[[_java_server_services_annotated_server_side_binary]]
+===== Server-Side Annotated Service with Binary Data
+
+Services that receives binary data are similar to other annotated services.
+
+Remember that you must have the binary extension enabled as specified
+in <<_extensions_binary,the binary extension section>>.
+
+The only difference is that the `data` field of the message is an object
+of type `org.cometd.bayeux.BinaryData`.
+
+For example:
+
+====
+[source,java]
+----
+@Service("uploadService")
+public class UploadService {
+    @Inject
+    private BayeuxServer bayeux;
+    @Session
+    private ServerSession serverSession;
+
+    @Listener("/binary")
+    public void upload(ServerSession remote, ServerMessage message) throws IOException {
+        BinaryData binary = (BinaryData)message.getData();
+
+        Map<String, Object> meta = binary.getMetaData();
+        String fileName = (String)meta.get("fileName");
+        Path path = Paths.get(System.getProperty("java.io.tmpdir"), fileName);
+
+        ByteBuffer buffer = binary.asByteBuffer();
+
+        try (ByteChannel channel = Files.newByteChannel(path, StandardOpenOption.APPEND)) {
+            channel.write(buffer);
+        }
+
+        if (binary.isLast()) {
+            // Do something with the whole file.
+        }
+    }
+}
+----
+====
+
 [[_java_server_services_annotated_server_side_remote_call]]
 ===== Remote Call Configuration Support
 

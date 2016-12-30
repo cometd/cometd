@@ -269,7 +269,7 @@ public class OortObserveChannelTest extends OortTest {
 
         // Sending a message to Oort2, must be received by client1.
         final CountDownLatch publishLatch = new CountDownLatch(1);
-        client2.getChannel(channelName).publish(new BinaryData(null, buffer, true), new ClientSessionChannel.MessageListener() {
+        client2.getChannel(channelName).publish(new BinaryData(buffer, true, null), new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 publishLatch.countDown();

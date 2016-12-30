@@ -60,7 +60,7 @@ public class BinaryExtensionTest extends ClientServerTest {
                 if (Arrays.equals(payload, bytes)) {
                     Map<String, Object> meta = data.getMetaData();
                     ServerSession remote = bayeux.getSession((String)meta.get("peer"));
-                    remote.deliver(service, channelName, new BinaryData(null, data.asByteBuffer(), data.isLast()));
+                    remote.deliver(service, channelName, new BinaryData(data.asByteBuffer(), data.isLast(), null));
                 }
             }
         });
@@ -87,7 +87,7 @@ public class BinaryExtensionTest extends ClientServerTest {
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Map<String, Object> meta = new HashMap<>();
                 meta.put("peer", channel.getSession().getId());
-                client.getChannel(channelName).publish(new BinaryData(meta, buffer, true));
+                client.getChannel(channelName).publish(new BinaryData(buffer, true, meta));
             }
         });
 
@@ -133,7 +133,7 @@ public class BinaryExtensionTest extends ClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
-        bayeux.getChannel(channelName).publish(null, new BinaryData(null, buffer, true));
+        bayeux.getChannel(channelName).publish(null, new BinaryData(buffer, true, null));
 
         Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 

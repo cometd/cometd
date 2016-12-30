@@ -2838,12 +2838,12 @@
                 callback = data;
                 data = new ArrayBuffer(0);
                 last = true;
-            }
-            if (_isFunction(last)) {
+                meta = undefined;
+            } else if (_isFunction(last)) {
                 callback = last;
                 last = true;
-            }
-            if (_isFunction(meta)) {
+                meta = undefined;
+            } else if (_isFunction(meta)) {
                 callback = meta;
                 meta = undefined;
             }
@@ -2861,7 +2861,7 @@
             this.publish(channel, content, ext, callback);
         };
 
-        this.remoteCall = function(target, content, timeout, callback) {
+        this.remoteCall = function(target, content, timeout, callProps, callback) {
             if (arguments.length < 1) {
                 throw 'Illegal arguments number: required 1, got ' + arguments.length;
             }
@@ -2876,9 +2876,14 @@
                 callback = content;
                 content = {};
                 timeout = _config.maxNetworkDelay;
+                callProps = undefined;
             } else if (_isFunction(timeout)) {
                 callback = timeout;
                 timeout = _config.maxNetworkDelay;
+                callProps = undefined;
+            } else if (_isFunction(callProps)) {
+                callback = callProps;
+                callProps = undefined;
             }
 
             if (typeof timeout !== 'number') {
@@ -2895,28 +2900,65 @@
                 channel: channel,
                 data: content
             };
+            var message = this._mixin(false, {}, callProps, bayeuxMessage);
 
             var context = {
                 callback: callback
             };
             if (timeout > 0) {
                 context.timeout = Utils.setTimeout(_cometd, function() {
-                    _cometd._debug('Timing out remote call', bayeuxMessage, 'after', timeout, 'ms');
+                    _cometd._debug('Timing out remote call', message, 'after', timeout, 'ms');
                     _failMessage({
-                        id: bayeuxMessage.id,
+                        id: message.id,
                         error: '406::timeout',
                         successful: false,
                         failure: {
-                            message : bayeuxMessage,
+                            message : message,
                             reason: 'Remote Call Timeout'
                         }
                     });
                 }, timeout);
-                _cometd._debug('Scheduled remote call timeout', bayeuxMessage, 'in', timeout, 'ms');
+                _cometd._debug('Scheduled remote call timeout', message, 'in', timeout, 'ms');
             }
-            _remoteCalls[bayeuxMessage.id] = context;
+            _remoteCalls[message.id] = context;
 
-            _queueSend(bayeuxMessage);
+            _queueSend(message);
+        };
+
+        this.remoteCallBinary = function(target, data, last, meta, timeout, callback) {
+            if (_isFunction(data)) {
+                callback = data;
+                data = new ArrayBuffer(0);
+                last = true;
+                meta = undefined;
+                timeout = _config.maxNetworkDelay;
+            } else if (_isFunction(last)) {
+                callback = last;
+                last = true;
+                meta = undefined;
+                timeout = _config.maxNetworkDelay;
+            } else if (_isFunction(meta)) {
+                callback = meta;
+                meta = undefined;
+                timeout = _config.maxNetworkDelay;
+            } else if (_isFunction(timeout)) {
+                callback = timeout;
+                timeout = _config.maxNetworkDelay;
+            }
+
+            var content = {
+                meta: meta,
+                data: data,
+                last: last
+            };
+            var ext = {
+                ext: {
+                    binary: {
+                    }
+                }
+            };
+
+            this.remoteCall(target, content, timeout, ext, callback);
         };
 
         /**

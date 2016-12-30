@@ -34,33 +34,26 @@ public class BinaryData extends HashMap<String, Object> {
     public static final String DATA = "data";
     public static final String LAST = "last";
 
-    public BinaryData(Map<String, Object> metaData, ByteBuffer byteBuffer, boolean last) {
+    public BinaryData(ByteBuffer byteBuffer, boolean last, Map<String, Object> metaData) {
         super(4);
-        if (metaData != null) {
-            put(META, metaData);
-        }
         put(DATA, byteBuffer);
         put(LAST, last);
-    }
-
-    public BinaryData(Map<String, Object> metaData, byte[] bytes, boolean last) {
-        super(4);
         if (metaData != null) {
             put(META, metaData);
         }
+    }
+
+    public BinaryData(byte[] bytes, boolean last, Map<String, Object> metaData) {
+        super(4);
         put(DATA, bytes);
         put(LAST, last);
+        if (metaData != null) {
+            put(META, metaData);
+        }
     }
 
     public BinaryData(Map<? extends String, ?> map) {
         super(map);
-    }
-
-    /**
-     * @return the meta data associated with the binary chunk
-     */
-    public Map<String, Object> getMetaData() {
-        return (Map<String, Object>)get(META);
     }
 
     /**
@@ -99,5 +92,12 @@ public class BinaryData extends HashMap<String, Object> {
      */
     public boolean isLast() {
         return (Boolean)get(LAST);
+    }
+
+    /**
+     * @return the meta data associated with the binary chunk
+     */
+    public Map<String, Object> getMetaData() {
+        return (Map<String, Object>)get(META);
     }
 }

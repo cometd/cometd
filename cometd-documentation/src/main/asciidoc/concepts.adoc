@@ -673,20 +673,82 @@ any broadcast channel (even if it is not subscribed to that channel).
 [[_concepts_binary_data]]
 ==== Binary Data
 
-The <<_bayeux,Bayeux protocol>> data format is the JSON format, because the
+The <<_bayeux,Bayeux protocol>> message format is the JSON format, because the
 Bayeux protocol was designed when JavaScript did not have binary data types.
 
-This means that Bayeux messages can only carry data in textual representation,
-even if nowadays JavaScript supports binary types such as `ArrayBuffer`.
+Recent versions of JavaScript have
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays[typed arrays]
+that can be used to represent raw binary data such as files or images.
+A typical example of a JavaScript typed array is `Uint8Array` that represents
+an array of unsigned, 8-bit, integers.
+In turn, typed arrays are based on the lower level `ArrayBuffer` and `DataView`
+types.
 
-However, it is possible to use CometD to upload binary data to server-side
-applications by first converting the binary data into a textual format,
-for example using https://en.wikipedia.org/wiki/Base64[Base64] or
-https://rfc.zeromq.org/spec:32/Z85/[Z85], and performing the reverse process
-on the server-side.
+The JavaScript Web APIs have been enriched to use `ArrayBuffer` or higher level
+typed arrays such as `Uint8Array`. In this way, applications can now read the
+content of a file via JavaScript APIs such as `FileReader.readAsArrayBuffer()`
+or use `XMLHttpRequest` to send and receive data as `ArrayBuffer`.
 
-The binary-to-textual and textual-to-binary conversions may be performed
-by a custom CometD extension in a way that is transparent to both the protocol
-and the application: the extension will test the `data` field of the message
-and if it finds that it is a binary type it will convert it to textual,
-and viceversa.
+Java, of course, always had binary types in the form of `byte[]` and `ByteBuffer`.
+
+Since Bayeux messages can only carry data in textual representation,
+the CometD libraries support upload and download of binary data by converting
+the binary data represented by JavaScript's `ArrayBuffer` or Java's `byte[]`
+into a textual format using the https://rfc.zeromq.org/spec:32/Z85/[Z85]
+encoding/decoding and by using a specific format for the `data` field of a message.
+
+The encoding/decoding to/from the binary representation is performed by
+CometD extensions on both the client and the server, see
+<<_extensions_binary,the binary extension section>>.
+
+When transporting binary data, the format of the `data` field of a message is
+a specific one, represented by the `org.cometd.bayeux.BinaryData` class in Java
+and by an equivalent structure in JavaScript, that is an object with the following
+fields:
+
+* The `data` field, carrying the binary representation of the data.
+* The `last` field, that tells whether the `data` field is the last chunk
+  of binary data.
+* An optional `meta` field, carrying related additional metadata such as a file
+  name, an image name, the MIME type of the binary representation (for example,
+  `image/png`), etc.
+
+A complete binary message therefore looks like this, in JSON format, _after_
+the Z85 encoding:
+
+====
+[source,json]
+----
+{
+    "id": "123456",
+    "channel": "/binary",
+    "clientId": "Un1q31d3nt1f13r",
+    "data": {
+        "data": "HelloWorld", /* Z85 encoded binary data */
+        "last": true,
+        "meta": {
+            "content-type": "image/png"
+        }
+    },
+    "ext": {
+        "binary": {
+        }
+    }
+}
+----
+====
+
+Applications do not need to worry about the specific message format above
+because CometD offers APIs that simplify the creation of messages
+with binary data, for example see <<_javascript_publish_binary,how to publish
+binary data from JavaScript>>, <<_java_client_send_binary,how to publish
+binary data from Java>> and
+<<_java_server_services_annotated_server_side_binary,the binary services section>>.
+The CometD implementation takes care of producing the right message
+format under the covers.
+
+JavaScript applications can use `ArrayBuffer`, `DataView` or any typed array
+object as the binary representation.
+
+Java applications (either client or server) must use the `org.cometd.bayeux.BinaryData`
+object as the binary representation.
