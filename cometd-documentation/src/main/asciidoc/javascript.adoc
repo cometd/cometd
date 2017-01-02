@@ -3,29 +3,48 @@
 == JavaScript Library
 
 The CometD JavaScript library is a portable JavaScript implementation with
-_bindings_ for the major JavaScript toolkits, currently
-http://dojotoolkit.org/[Dojo] and http://jquery.com/[jQuery].
+a _vanilla_ implementation, entirely based on pure JavaScript and the standard
+objects available in the browser, and _bindings_ for the major JavaScript toolkits,
+currently https://dojotoolkit.org/[Dojo], https://jquery.com/[jQuery] and
+https://angularjs.org/[Angular 1].
 This means that the CometD Bayeux JavaScript implementation is written in pure
 JavaScript with no dependencies on the toolkits, and that the toolkit bindings
 add the syntactic sugar that makes the Bayeux APIs feel like they are native
 to the toolkit.
 For example, it is possible to refer to the standard `cometd` object using the
-following notation:
+following notations:
 
 ====
 [source,javascript]
 ----
-// Dojo style
-var cometd = dojox.cometd;
+// CommonJS style
+var cometd = require('cometd');
+
+// AMD style
+require(['cometd'], function(cometd) {
+    ...
+});
+
+// Vanilla style
+var cometd = new org.cometd.CometD();
 
 // jQuery style
 var cometd = $.cometd;
+
+// Angular style
+angular.module('cometdApp', ['cometd'])
+    .controller('cometdCtrl', ['cometd'], function(cometd) {
+        ...
+    });
+
+// Old Dojo style
+var cometd = dojox.cometd;
 ----
 ====
 
 If you followed <<_primer,the primer>>, you might have noticed that the skeleton
-project requires you to reference both the portable implementation, under
-`org/cometd.js`, and one binding – for example Dojo's – under `dojox/cometd.js`.
+project proposes you to reference both the portable implementation, under
+`cometd/cometd.js`, and one binding – for example Dojo's – under `dojox/cometd.js`.
 For jQuery, the binding is under `jquery/jquery.cometd.js`.
 The use of the Bayeux APIs from the JavaScript toolkits is almost identical, and
 the following sections do not refer to a particular toolkit.
