@@ -3,9 +3,11 @@
 
 [appendix]
 [[_migration]]
-== Migrating from CometD 2
+== Migration Guides
 
-=== Required JDK Version Changes
+=== Migrating from CometD 2
+
+==== Required JDK Version Changes
 
 [cols="1,1", options="header"]
 |===
@@ -13,7 +15,7 @@
 | JDK 5    | JDK 7
 |===
 
-=== Servlet Specification Changes
+==== Servlet Specification Changes
 
 [cols="1,1", options="header"]
 |===
@@ -21,7 +23,7 @@
 | Servlet 2.5 | Servlet 3.0 (recommended Servlet 3.1 with JSR 356's `javax.websocket` support)
 |===
 
-=== Class Names Changes
+==== Class Names Changes
 
 Package names did not change.
 
@@ -34,7 +36,7 @@ Package names did not change.
 
 NOTE: Pay attention to the capital `D' of Comet**D**
 
-=== Maven Artifacts Changes
+==== Maven Artifacts Changes
 
 Only the WebSocket artifacts have changed.
 
@@ -50,7 +52,7 @@ Only the WebSocket artifacts have changed.
 | `org.cometd.java:cometd-java-websocket-jetty-client` (Jetty WebSocket Client)
 |===
 
-=== `web.xml` Changes
+==== `web.xml` Changes
 
 [cols="1a,1a", options="header"]
 |===
@@ -110,7 +112,7 @@ at this point it is too late for the `websocket` transport to handle the request
 handled by the next transport (typically the `long-polling` transport).
 ====
 
-=== CometD Servlet Parameters Changes
+==== CometD Servlet Parameters Changes
 
 [cols="1,1,10", options="header"]
 |===
@@ -142,7 +144,7 @@ handled by the next transport (typically the `long-polling` transport).
   `servlet-mapping` of the CometD Servlet, for example `+/cometd/*+`.
 |===
 
-=== Method Signature Changes
+==== Method Signature Changes
 
 [cols="1a,1a", options="header"]
 |===
@@ -195,7 +197,7 @@ handled by the next transport (typically the `long-polling` transport).
     `queueMaxed(ServerSession, *Queue<ServerMessage>*, *ServerSession*, *Message*)`
 |===
 
-=== Inherited Services Service Method Signature Changes
+==== Inherited Services Service Method Signature Changes
 
 [cols="1a,1a", options="header"]
 |===
@@ -207,5 +209,196 @@ handled by the next transport (typically the `long-polling` transport).
 | `class MyService extends AbstractService`::
     `myMethod(ServerSession, *ServerMessage*)`
 |===
+
+[[_migration_30_to_31]]
+=== Migrating from CometD 3.0 to CometD 3.1
+
+Migration from CometD 3.0.x to CometD 3.1.x should be very easy, and most of the
+times just matter of updating the CometD version with no further changes to the
+application or the configuration.
+
+Below you can find the detailed list of the changes introduced in CometD 3.1.x.
+
+==== API Behavior Changes
+
+The handshake operation will now throw an exception if executed multiple times
+without explicitly disconnecting in-between.
+
+Handshaking should be performed only once, and applications should enforce this
+by using once events such as `DOMContentLoaded`, or by guarding the handshake
+with a `boolean` field.
+For further information, see
+<<_javascript_handshake,the JavaScript handshake section>> or the
+<<_java_client_handshake,the Java client handshake section>>.
+
+==== Binary Data
+
+CometD now allows to send/receive messages with binary data, see
+<<_concepts_binary_data,the binary data section>>.
+
+==== CometD Servlet Parameters Changes
+
+[cols="1,1,10a", options="header"]
+|===
+| CometD 3.0.x
+| CometD 3.1.x
+| Notes
+
+| allowMultiSessionsNoBrowser
+|
+| Removed
+
+|
+| maxProcessing
+| Added, see <<_java_server_configuration,the server configuration section>>
+
+|
+| http2MaxSessionsPerBrowser
+| Added, see <<_java_server_configuration,the server configuration section>>
+
+|
+| ws.enableExtension.<extension_name>
+| Added, see <<_java_server_configuration,the server configuration section>>
+|===
+
+==== CometD APIs Additions
+
+* `org.cometd.bayeux.BinaryData`, to support <<_concepts_binary_data,binary data>>.
+* `boolean BayeuxServer.removeSession(ServerSession session)`
+* `void ClientSession.remoteCall(String target, Object data, MessageListener callback)`
+
+=== JavaScript Implementation Changes
+
+The JavaScript implementation now supports two more bindings, for
+https://angularjs.org/[Angular 1] (Angular 2 not supported yet)
+and for _vanilla_ JavaScript (i.e. plain JavaScript without frameworks or
+other libraries).
+
+The JavaScript implementation is now available via https://www.npmjs.com/[NPM]
+and https://bower.io/[Bower], and compatible with both CommonJS modules and
+AMD modules.
+
+
+The location of the JavaScript files has changed when explicitly referenced.
+For applications built with Maven using the overlay WARs, the JavaScript files
+location has changed:
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 3.0.x
+| CometD 3.1.x
+
+|
+----
+org/
+  cometd.js
+  cometd/
+    AckExtension.js
+    ReloadExtension.js
+    TimeStampExtension.js
+    TimeSyncExtension.js
+----
+|
+----
+js/
+  cometd/
+    cometd.js
+    AckExtension.js
+    BinaryExtension.js
+    ReloadExtension.js
+    TimeStampExtension.js
+    TimeSyncExtension.js
+----
+|===
+
+Applications should be changed accordingly:
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 3.0.x
+| CometD 3.1.x
+
+|
+====
+[source,html]
+[subs=+quotes]
+.index.html
+----
+<!-- CometD 3.0.x with WAR overlays. -->
+<script type="text/javascript" src="**org/**cometd.js"></script>
+----
+====
+|
+====
+[source,html]
+[subs=+quotes]
+.index.html
+----
+<!-- CometD 3.1.x with WAR overlays. -->
+<script type="text/javascript" src="**js/cometd/**cometd.js"></script>
+----
+====
+
+|
+====
+[source,javascript]
+[subs=+quotes]
+.application.js
+----
+/// CometD 3.0.x with AMD.
+require({
+        baseUrl: 'js/jquery',
+        paths: {
+            jquery: 'jquery-2.2.4',
+            *org: '../org'*
+        }
+    },
+    ['jquery','jquery.cometd'],
+    function($, cometd) {
+        ...
+    });
+----
+====
+|
+====
+[source,javascript]
+[subs=+quotes]
+.application.js
+----
+/// CometD 3.1.x with AMD.
+require({
+        baseUrl: "js/jquery",
+        paths: {
+            jquery: "jquery-3.1.1",
+            *cometd: "../cometd"*
+        }
+    },
+    ['jquery','jquery.cometd'],
+    function($, cometd) {
+        ...
+    });
+----
+====
+|===
+
+The <<_extensions_reload,reload extension>> has been rewritten to use the
+`SessionStorage` rather than using short-lived cookies.
+
+Two new APIs are available to simplify sending messages with binary data:
+
+* `cometd.publishBinary(channel, data, last, meta, callback)`
+* `cometd.remoteCallBinary(target, data, last, meta, timeout, callback)`
+
+==== Jetty WebSocket Server Transport Requirements
+
+Server side applications that want to make use of the Jetty WebSocket server
+transport are now required to use Jetty versions:
+
+* `9.2.20.v20161216` or later in the 9.2.x series (requires JDK 7)
+* `9.3.15.v20161220` or later in the 9.3.x series (requires JDK 8)
+* `9.4.0.v20161208` or later in the 9.4.x series (requires JDK 8)
+
+Application that use the default JSR 356 transport or that do not use WebSocket
+can work with any Jetty version.
 
 :numbered:
