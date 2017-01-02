@@ -42,6 +42,7 @@ in the HTML page via the `<script>` tag:
 In both Dojo and jQuery extension bindings, the extension is registered
 on the default `cometd` object under the name "reload".
 
+[[_extensions_reload_configuration]]
 ==== Configuring the Reload Extension
 
 The reload extension accepts the following configuration parameters:
@@ -52,22 +53,16 @@ The reload extension accepts the following configuration parameters:
 | Default Value
 | Parameter Description
 
-| cookieName
+| name
 | org.cometd.reload
-| The name of the short-lived cookie the reload extension uses to save the connection state details
-
-| cookiePath
-| /
-| The path of the short-lived cookie the reload extension uses
-
-| cookieMaxAge
-| 5
-| The max age, in seconds, of the short-lived cookie the reload extension uses
+| The name of the key the reload extension uses to save the connection state details
 |===
 
 The JavaScript `cometd` object is normally already configured with the
 default reload extension configuration.
-To reconfigure the reload extension:
+
+The reload extension object may be reconfigured, although there should not be,
+in general, the need to do so. To reconfigure the reload extension:
 
 * Reconfigure the extension at startup:
 +
@@ -76,11 +71,11 @@ To reconfigure the reload extension:
 ----
 var cometd = dojox.cometd; // Use $.cometd if using jquery
 cometd.getExtension('reload').configure({
-    cookieMaxAge: 15
+    name: 'com.acme.Company.reload'
 });
 ----
 ====
-* Reconfigure the extension every time the `cometd.reload()` function is invoked:
+* Reconfigure the extension when the `cometd.reload()` function is invoked:
 +
 ====
 [source,javascript]
@@ -88,15 +83,10 @@ cometd.getExtension('reload').configure({
 var cometd = dojox.cometd; // Use $.cometd if using jquery
 ...
 cometd.reload({
-    cookieMaxAge: 15
+    name: 'com.acme.Company.reload'
 });
 ----
 ====
-
-If you increase the `maxCookieAge`, be aware that you should probably increase
-the value of `maxInterval` too (see also
-<<_java_server_configuration,the server configuration section>>), to avoid the
-server expiring the session while the page is reloading.
 
 ==== Understanding Reload Extension Details
 
@@ -135,13 +125,16 @@ and the reload extension tracks this successful handshake.
 On page reload, or when the page is navigated to another CometD page, the
 application code must call `cometd.reload()` (for example, on the page
 _unload_ event handler, see note below). When `cometd.reload()` is called, the
-reload extension saves a short-lived cookie with the CometD session state details.
+reload extension saves the CometD session state details in the
+https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage[`SessionStorage`]
+under the name specified by the <<_extensions_reload_configuration,configuration>>.
+
 When the new page loads up, it will execute the same code executed on the first
 page load, namely the code that configured CometD, that registered channel
 listeners, and that finally called `cometd.handshake()`.
-The reload extension is invoked upon the new handshake, sees that the short
-lived cookie saved previously is there, and re-establishes the CometD session
-with the information stored in the short lived cookie.
+The reload extension is invoked upon the new handshake, will find the CometD
+session state saved in the `SessionStorage` and will re-establish
+the CometD session with the information retrieved from the `SessionStorage`.
 
 [NOTE]
 ====
@@ -153,7 +146,7 @@ are different events triggered for a single user action such as closing the
 browser window, hitting the browser back button or clicking on a link.
 
 As a rule of thumb, function `cometd.reload()` should be called from an
-event handler that allows to write cookies.
+event handler that allows to write to the `SessionStorage`.
 
 Typically the `window.onbeforeunload` event is a good place to call
 `cometd.reload()`, but historically the `window.onunload` event worked
