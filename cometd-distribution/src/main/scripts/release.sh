@@ -2,7 +2,8 @@
 
 yes_no() {
     while true; do
-        read -p "$1 " yn
+        echo -n $1 ""
+        read yn
         case ${yn:-$2} in
             [Yy]* ) return 0;;
             [Nn]* ) return 1;;
