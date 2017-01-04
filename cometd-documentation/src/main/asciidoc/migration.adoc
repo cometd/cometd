@@ -250,6 +250,20 @@ CometD 3.1.x behavior is to invoke `BayeuxServer.Extension.send(...)` and
 `ServerSession.Extension.send(...)` only for broadcast messages _after_
 invoking the `ServerChannel.MessageListener` listeners.
 
+==== HTTP/2 Support
+
+CometD applications are typically independent of the transport used to send or
+receive messages.
+
+However, if the transport is HTTP/2, CometD can be configured to take advantage
+of the HTTP/2 transport by removing the limit on the number of outstanding long
+polls, see the `http2MaxSessionsPerBrowser` parameter below.
+
+Where before a CometD applications opened in multiple browser tabs only had one
+tab performing the long poll (and all the other tabs performing a normal poll),
+now with HTTP/2 it is possible to remove this limitation and have all the tabs
+performing the long poll.
+
 ==== CometD Servlet Parameters Changes
 
 [cols="1,1,10a", options="header"]
@@ -291,7 +305,6 @@ other libraries).
 The JavaScript implementation is now available via https://www.npmjs.com/[NPM]
 and https://bower.io/[Bower], and compatible with both CommonJS modules and
 AMD modules.
-
 
 The location of the JavaScript files has changed when explicitly referenced.
 For applications built with Maven using the overlay WARs, the JavaScript files
