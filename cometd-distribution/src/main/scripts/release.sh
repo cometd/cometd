@@ -43,10 +43,7 @@ git clone git@github.com:cometd/cometd-javascript.git ${COMETD_JS_DIR}
 
 COMETD_JS_SOURCE=${COMETD_DIR}/cometd-javascript/common/target/cometd-javascript-common-${VERSION}/js
 cp -v ${COMETD_JS_SOURCE}/cometd/cometd.js ${COMETD_JS_DIR}
-cp -v ${COMETD_JS_SOURCE}/cometd/AckExtension.js ${COMETD_JS_DIR}
-cp -v ${COMETD_JS_SOURCE}/cometd/ReloadExtension.js ${COMETD_JS_DIR}
-cp -v ${COMETD_JS_SOURCE}/cometd/TimeStampExtension.js ${COMETD_JS_DIR}
-cp -v ${COMETD_JS_SOURCE}/cometd/TimeSyncExtension.js ${COMETD_JS_DIR}
+cp -v ${COMETD_JS_SOURCE}/cometd/*Extension.js ${COMETD_JS_DIR}
 
 cd ${COMETD_JS_DIR}
 
