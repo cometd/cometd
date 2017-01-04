@@ -236,6 +236,20 @@ For further information, see
 CometD now allows to send/receive messages with binary data, see
 <<_concepts_binary_data,the binary data section>>.
 
+==== Message Processing Order Changes
+
+The processing of incoming messages has slightly changed, affecting only writers
+of custom extensions (implementations of `BayeuxServer.Extension` or
+`ServerSession.Extension`).
+
+Previous behavior was to invoke `BayeuxServer.Extension.send(...)` and
+`ServerSession.Extension.send(...)` for both broadcast and service messages
+_before_ invoking the `ServerChannel.MessageListener` listeners.
+
+CometD 3.1.x behavior is to invoke `BayeuxServer.Extension.send(...)` and
+`ServerSession.Extension.send(...)` only for broadcast messages _after_
+invoking the `ServerChannel.MessageListener` listeners.
+
 ==== CometD Servlet Parameters Changes
 
 [cols="1,1,10a", options="header"]
