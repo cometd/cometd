@@ -25,6 +25,9 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.JSONContext;
@@ -45,13 +48,15 @@ public class JettyCustomSerializationTest extends ClientServerTest {
 
         startServer(serverOptions);
 
-        String channelName = "/data";
+        String broadcastChannelName = "/data";
+        final String serviceChannelName = "/service/data";
         final String content = "random";
-        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch broadcastLatch = new CountDownLatch(1);
+        final CountDownLatch serviceLatch = new CountDownLatch(2);
 
-        LocalSession service = bayeux.newLocalSession("custom_serialization");
+        final LocalSession service = bayeux.newLocalSession("custom_serialization");
         service.handshake();
-        service.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+        service.getChannel(broadcastChannelName).subscribe(new ClientSessionChannel.MessageListener() {
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Data data = (Data)message.getData();
                 Assert.assertEquals(content, data.content);
@@ -59,20 +64,57 @@ public class JettyCustomSerializationTest extends ClientServerTest {
                 Assert.assertNotNull(ext);
                 Extra extra = (Extra)ext.get("extra");
                 Assert.assertEquals(content, extra.content);
-                latch.countDown();
+                broadcastLatch.countDown();
+            }
+        });
+
+        bayeux.createChannelIfAbsent(serviceChannelName).getReference().addListener(new ServerChannel.MessageListener() {
+            @Override
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+                Data data = (Data)message.getData();
+                Assert.assertEquals(content, data.content);
+                Map<String, Object> ext = message.getExt();
+                Assert.assertNotNull(ext);
+                Extra extra = (Extra)ext.get("extra");
+                Assert.assertEquals(content, extra.content);
+                serviceLatch.countDown();
+
+                ServerMessage.Mutable mutable = bayeux.newMessage();
+                mutable.setChannel(serviceChannelName);
+                mutable.setData(new Data(content));
+                mutable.getExt(true).put("extra", new Extra(content));
+                from.deliver(service, message);
+
+                return true;
             }
         });
 
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientOptions, httpClient));
         client.addExtension(new ExtraExtension(content));
+        client.getChannel(serviceChannelName).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (!message.isPublishReply()) {
+                    Data data = (Data)message.getData();
+                    Assert.assertEquals(content, data.content);
+                    Map<String, Object> ext = message.getExt();
+                    Assert.assertNotNull(ext);
+                    Extra extra = (Extra)ext.get("extra");
+                    Assert.assertEquals(content, extra.content);
+                    serviceLatch.countDown();
+                }
+            }
+        });
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
-        // Wait for the connect to establish
+        // Wait for the /meta/connect.
         Thread.sleep(1000);
 
-        client.getChannel(channelName).publish(new Data(content));
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        client.getChannel(broadcastChannelName).publish(new Data(content));
+        client.getChannel(serviceChannelName).publish(new Data(content));
+        Assert.assertTrue(broadcastLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(serviceLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -82,7 +124,7 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         JSONContext.Client jsonContext = new TestJettyJSONContextClient();
         Data data1 = new Data("data");
         Extra extra1 = new Extra("extra");
-        Map<String, Object> map1 = new HashMap<String, Object>();
+        Map<String, Object> map1 = new HashMap<>();
         map1.put("data", data1);
         map1.put("extra", extra1);
         String json = jsonContext.getGenerator().generate(map1);

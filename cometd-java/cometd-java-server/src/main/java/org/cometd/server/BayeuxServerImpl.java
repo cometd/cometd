@@ -852,7 +852,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         // For example, it is impossible to prevent things like
         // ((CustomObject)serverMessage.getData()).change() or
         // ((Map)serverMessage.getExt().get("map")).put().
-        freeze(mutable);
+        if (broadcast || !receiving) {
+            freeze(mutable);
+        }
 
         // Call the wild subscribers, which can only get broadcast messages.
         // We need a special treatment in case of subscription to /**, otherwise
@@ -924,16 +926,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             if (message.isFrozen()) {
                 return;
             }
-            if (!ChannelId.isBroadcast(message.getChannel()) && !isReply(message)) {
-                return;
-            }
             String json = _jsonContext.generate(message);
             message.freeze(json);
         }
-    }
-
-    private boolean isReply(ServerMessageImpl message) {
-        return message.containsKey(Message.SUCCESSFUL_FIELD);
     }
 
     private boolean notifyOnMessage(MessageListener listener, ServerSession from, ServerChannel to, Mutable mutable) {
