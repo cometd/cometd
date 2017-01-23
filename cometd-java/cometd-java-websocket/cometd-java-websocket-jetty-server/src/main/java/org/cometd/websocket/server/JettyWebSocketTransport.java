@@ -27,7 +27,6 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.websocket.server.common.AbstractBayeuxContext;
 import org.cometd.websocket.server.common.AbstractWebSocketTransport;
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -72,7 +71,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         policy.setIdleTimeout((int)idleTimeout);
 
         for (String mapping : normalizeURLMapping(cometdURLMapping)) {
-            wsConfig.addMapping(new ServletPathSpec(mapping), new WebSocketCreator() {
+            wsConfig.addMapping(mapping, new WebSocketCreator() {
                 @Override
                 public Object createWebSocket(ServletUpgradeRequest request, ServletUpgradeResponse response) {
                     String origin = request.getHeader("Origin");
