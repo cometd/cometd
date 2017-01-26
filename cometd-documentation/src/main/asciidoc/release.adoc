@@ -23,6 +23,17 @@ $ mvn release:perform -Darguments=-Dgpg.passphrase=...
 $ git push origin master
 ----
 
+When the Maven Release Plugin runs it activates the `release` profile, running
+sections of the `pom.xml` files that perform additional actions, such as building
+the distribution tarball.
+
+As the last step, the Maven Release Plugin will run an interactive Linux shell
+script that performs a number of automated steps such as uploading the distribution
+tarball, creating and uploading the JavaDocs, copying files to dependent GitHub
+repositories, publishing to NPM, etc.
+
+Below the manual steps that needs to be done to finish the release process.
+
 [[_release_repository]]
 === Managing the Repository
 
@@ -40,27 +51,6 @@ from the toolbar, enter a description such as "CometD Release 1.0.0", then click
 on the "Release" button.
 This will publish the project to the Maven Central Repository.
 
-[[_release_distribution]]
-=== Creating the Distribution
-
-----
-$ cd $COMETD
-$ git checkout <version>
-...
-$ mvn clean install -DskipTests=true
-...
-$ cd cometd-distribution
-$ mvn assembly:single
-----
-
-This creates the distribution tarball in the `cometd-distribution/target` directory.
-Then upload it.
-
-----
-$ cd $COMETD/cometd-distribution
-$ dd if=target/cometd-<version>-distribution.tar.gz | ssh <user>@download.cometd.org "sudo -u www-data dd of=/var/www/download.cometd.org/cometd-<version>-distribution.tar.gz"
-----
-
 [[_release_archetype]]
 === Upload the Archetype Catalog
 
@@ -71,51 +61,9 @@ the release just prepared, then upload it.
 $ dd if=$HOME/.m2/archetype-catalog.xml | ssh <user>@cometd.org "sudo -u www-data dd of=/var/www/cometd.org/archetype-catalog.xml"
 ----
 
-[[_release_docs]]
-=== Create and Upload the Documentation
-
-First, rename the documentation directory `current` to the previous release version of CometD.
-
-----
-$ ssh <user>@docs.cometd.org "sudo -u www-data mv /var/www/docs.cometd.org/current /var/www/docs.cometd.org/<previous-version>"
-----
-
-Then, build and upload the CometD Reference Manual.
-This will also re-create the documentation directory `current`.
-
-[[_release_javadocs]]
-=== Create and Upload the Javadocs
-
-----
-$ cd $COMETD/cometd-java
-$ mvn javadoc:aggregate-jar
-$ dd if=target/cometd-java-<version>-javadoc.jar | ssh <user>@docs.cometd.org "sudo -u www-data dd of=/var/www/docs.cometd.org/current/cometd-java-<version>-javadoc.jar"
-----
-
-Then `ssh` into the host, unzip the javadocs jar file into the `apidocs` directory.
-
 [[_release_issues]]
 === Close the GitHub Issues Milestone
 
 Close the https://github.com/cometd/cometd/milestones[GitHub Issues Milestone].
-
-[[_release_dojo]]
-=== Update the Dojo Bindings
-
-----
-$ git clone https://github.com/cometd/cometd-dojo.git
-$ cd cometd-dojo
-----
-
-Make sure that the JavaScript files are in sync with the main CometD distribution.
-
-Edit the `package.json` file, update the CometD version and the Dojo version,
-then commit it.
-
-----
-$ git push
-$ git tag -a "<version>" -m "CometD Release <version>."
-$ git push --tags
-----
 
 :numbered:
