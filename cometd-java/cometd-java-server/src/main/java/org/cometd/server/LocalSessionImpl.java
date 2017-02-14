@@ -217,11 +217,9 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         message.setId(messageId);
 
         ServerMessage.Mutable reply = _bayeux.handle(from, message);
+        reply = _bayeux.extendReply(from, _session, reply);
         if (reply != null) {
-            reply = _bayeux.extendReply(from, _session, reply);
-            if (reply != null) {
-                receive(reply);
-            }
+            receive(reply);
         }
     }
 

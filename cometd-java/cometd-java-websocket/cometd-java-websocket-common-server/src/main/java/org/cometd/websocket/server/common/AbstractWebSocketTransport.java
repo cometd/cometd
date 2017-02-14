@@ -340,7 +340,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
         private ServerMessage.Mutable processMetaHandshake(ServerSessionImpl session, ServerMessage.Mutable message) {
             ServerMessage.Mutable reply = getBayeux().handle(session, message);
-            if (reply != null && reply.isSuccessful()) {
+            if (reply.isSuccessful()) {
                 session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
                 if (session != null) {
                     session.setScheduler(this);
@@ -353,7 +353,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             // Remember the connected status before handling the message.
             boolean wasConnected = session != null && session.isConnected();
             ServerMessage.Mutable reply = getBayeux().handle(session, message);
-            if (reply != null && session != null) {
+            if (session != null) {
                 if (reply.isSuccessful() && session.isConnected()) {
                     // We need to set the scheduler again, in case the connection
                     // has temporarily broken and we have created a new scheduler.

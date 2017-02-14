@@ -186,9 +186,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                             throw new IOException();
                         }
                         ServerMessage.Mutable reply = processMetaHandshake(request, response, session, message);
-                        if (reply != null) {
-                            session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-                        }
+                        session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
                         messages[i] = processReply(session, reply);
                         sendQueue = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
                         sendReplies = reply != null;
@@ -238,39 +236,37 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     protected ServerMessage.Mutable processMetaHandshake(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message) {
         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-        if (reply != null) {
-            session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-            if (session != null) {
-                String id = findBrowserId(request);
-                if (id == null) {
-                    id = setBrowserId(request, response);
+        session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+        if (session != null) {
+            String id = findBrowserId(request);
+            if (id == null) {
+                id = setBrowserId(request, response);
+            }
+            final String browserId = id;
+            session.setBrowserId(browserId);
+            synchronized (_sessions) {
+                Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
+                if (sessions == null) {
+                    // The list is modified inside sync blocks, but
+                    // iterated outside, so it must be concurrent.
+                    sessions = new CopyOnWriteArrayList<>();
+                    _sessions.put(browserId, sessions);
                 }
-                final String browserId = id;
-                session.setBrowserId(browserId);
-                synchronized (_sessions) {
-                    Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
-                    if (sessions == null) {
-                        // The list is modified inside sync blocks, but
-                        // iterated outside, so it must be concurrent.
-                        sessions = new CopyOnWriteArrayList<>();
-                        _sessions.put(browserId, sessions);
-                    }
-                    sessions.add(session);
-                }
+                sessions.add(session);
+            }
 
-                session.addListener(new ServerSession.RemoveListener() {
-                    @Override
-                    public void removed(ServerSession session, boolean timeout) {
-                        synchronized (_sessions) {
-                            Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
-                            sessions.remove(session);
-                            if (sessions.isEmpty()) {
-                                _sessions.remove(browserId);
-                            }
+            session.addListener(new ServerSession.RemoveListener() {
+                @Override
+                public void removed(ServerSession session, boolean timeout) {
+                    synchronized (_sessions) {
+                        Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
+                        sessions.remove(session);
+                        if (sessions.isEmpty()) {
+                            _sessions.remove(browserId);
                         }
                     }
-                });
-            }
+                }
+            });
         }
         return reply;
     }
@@ -284,7 +280,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
         boolean wasConnected = session != null && session.isConnected();
         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-        if (reply != null && session != null) {
+        if (session != null) {
             if (!session.hasNonLazyMessages() && reply.isSuccessful()) {
                 // Detect if we have multiple sessions from the same browser.
                 boolean allowSuspendConnect = incBrowserId(session, isHTTP2(request));
