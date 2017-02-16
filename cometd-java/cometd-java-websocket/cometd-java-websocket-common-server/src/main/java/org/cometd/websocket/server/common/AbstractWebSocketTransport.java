@@ -270,26 +270,19 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             boolean sendReplies = true;
             boolean scheduleExpiration = true;
             List<ServerMessage.Mutable> replies = new ArrayList<>(messages.length);
-            for (int i = 0; i < messages.length; i++) {
-                ServerMessage.Mutable message = messages[i];
+            for (ServerMessage.Mutable message : messages) {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Processing {}", message);
                 }
 
-                // Session expired concurrently ?
-                if (session != null && !session.isHandshook()) {
+                if (session == null) {
+                    if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
+                        session = getBayeux().newServerSession();
+                    } else if (!_requireHandshakePerConnection) {
+                        _session = session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
+                    }
+                } else if (!session.getId().equals(message.getClientId()) || session.isDisconnected()) {
                     _session = session = null;
-                }
-
-                String clientId = message.getClientId();
-
-                if (session == null && !_requireHandshakePerConnection) {
-                    _session = session = (ServerSessionImpl)getBayeux().getSession(clientId);
-                }
-
-                // Session hijacked ?
-                if (session != null && !session.getId().equals(clientId)) {
-                    session = null;
                 }
 
                 switch (message.getChannel()) {
@@ -298,8 +291,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                             throw new IOException();
                         }
                         ServerMessage.Mutable reply = processMetaHandshake(session, message);
-                        if (reply != null) {
-                            _session = session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+                        if (reply.isSuccessful()) {
+                            _session = session;
                         }
                         reply = processReply(session, reply);
                         if (reply != null) {
@@ -341,10 +334,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         private ServerMessage.Mutable processMetaHandshake(ServerSessionImpl session, ServerMessage.Mutable message) {
             ServerMessage.Mutable reply = getBayeux().handle(session, message);
             if (reply.isSuccessful()) {
-                session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-                if (session != null) {
-                    session.setScheduler(this);
-                }
+                session.setScheduler(this);
             }
             return reply;
         }

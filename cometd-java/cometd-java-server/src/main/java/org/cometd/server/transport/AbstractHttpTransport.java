@@ -147,25 +147,14 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                     _logger.debug("Processing {}", message);
                 }
 
-                // Try to find the session.
-                String clientId = message.getClientId();
-                if (sessions != null) {
-                    if (clientId != null) {
-                        for (ServerSessionImpl s : sessions) {
-                            if (s.getId().equals(clientId)) {
-                                session = s;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (session == null && _trustClientSession) {
-                    session = (ServerSessionImpl)getBayeux().getSession(clientId);
+                if (session == null) {
+                    session = findSession(sessions, message);
+                } else if (!session.getId().equals(message.getClientId())) {
+                    session = null;
                 }
 
                 if (session != null) {
-                    if (session.isHandshook()) {
+                    if (!session.isDisconnected()) {
                         if (autoBatch && !batch) {
                             batch = true;
                             session.startBatch();
@@ -186,15 +175,14 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                             throw new IOException();
                         }
                         ServerMessage.Mutable reply = processMetaHandshake(request, response, session, message);
-                        session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-                        messages[i] = processReply(session, reply);
+                        messages[i] = reply = processReply(session, reply);
                         sendQueue = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
                         sendReplies = reply != null;
                         break;
                     }
                     case Channel.META_CONNECT: {
                         ServerMessage.Mutable reply = processMetaConnect(request, response, session, message);
-                        messages[i] = processReply(session, reply);
+                        messages[i] = reply = processReply(session, reply);
                         sendQueue = sendReplies = reply != null;
                         break;
                     }
@@ -220,6 +208,30 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
     }
 
+    protected ServerSessionImpl findSession(Collection<ServerSessionImpl> sessions, ServerMessage.Mutable message) {
+        if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
+            return getBayeux().newServerSession();
+        }
+
+        // Is there an existing, trusted, session ?
+        String clientId = message.getClientId();
+        if (sessions != null) {
+            if (clientId != null) {
+                for (ServerSessionImpl session : sessions) {
+                    if (session.getId().equals(clientId)) {
+                        return session;
+                    }
+                }
+            }
+        }
+
+        if (_trustClientSession) {
+            return (ServerSessionImpl)getBayeux().getSession(clientId);
+        }
+
+        return null;
+    }
+
     protected Collection<ServerSessionImpl> findCurrentSessions(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
@@ -236,8 +248,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     protected ServerMessage.Mutable processMetaHandshake(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message) {
         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-        session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-        if (session != null) {
+        if (reply.isSuccessful()) {
             String id = findBrowserId(request);
             if (id == null) {
                 id = setBrowserId(request, response);

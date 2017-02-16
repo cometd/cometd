@@ -549,7 +549,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
     }
 
-    protected ServerSessionImpl newServerSession() {
+    public ServerSessionImpl newServerSession() {
         return new ServerSessionImpl(this);
     }
 
@@ -1312,10 +1312,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private class HandshakeHandler extends HandlerListener {
         @Override
         public void onMessage(ServerSessionImpl session, final Mutable message) {
-            if (session == null) {
-                session = newServerSession();
-            }
-
             BayeuxContext context = getContext();
             if (context != null) {
                 session.setUserAgent(context.getHeader("User-Agent"));
@@ -1336,7 +1332,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             addServerSession(session, message);
 
             reply.setSuccessful(true);
-            reply.put(Message.CLIENT_ID_FIELD, session.getId());
+            reply.setClientId(session.getId());
             reply.put(Message.VERSION_FIELD, "1.0");
             reply.put(Message.MIN_VERSION_FIELD, "1.0");
             reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, getAllowedTransports());
