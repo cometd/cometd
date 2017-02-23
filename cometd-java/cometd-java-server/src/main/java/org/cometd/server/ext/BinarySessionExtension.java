@@ -26,25 +26,25 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.Z85;
 
 /**
- * <p>A server extension that encodes {@code byte[]} or {@link ByteBuffer} into a {@link BinaryData}
- * object using the {@link Z85} format for outgoing messages, and decodes {@link BinaryData}
- * objects back into {@code byte[]} or {@link ByteBuffer} for incoming messages.</p>
+ * <p>An extension that encodes/decodes binary data for a {@link ServerSession}.</p>
  *
- * @see BinarySessionExtension
+ * @see BinaryExtension
  */
-public class BinaryExtension extends BayeuxServer.Extension.Adapter {
+public class BinarySessionExtension extends ServerSession.Extension.Adapter {
+    private final BayeuxServer bayeuxServer;
     private final boolean decodeToByteBuffer;
 
-    public BinaryExtension() {
-        this(true);
+    public BinarySessionExtension(BayeuxServer bayeuxServer) {
+        this(bayeuxServer, true);
     }
 
-    public BinaryExtension(boolean decodeToByteBuffer) {
+    public BinarySessionExtension(BayeuxServer bayeuxServer, boolean decodeToByteBuffer) {
+        this.bayeuxServer = bayeuxServer;
         this.decodeToByteBuffer = decodeToByteBuffer;
     }
 
     @Override
-    public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
+    public boolean rcv(ServerSession session, ServerMessage.Mutable message) {
         Map<String, Object> ext = message.getExt();
         if (ext != null) {
             if (ext.remove(BinaryData.EXT_NAME) != null) {
@@ -62,9 +62,11 @@ public class BinaryExtension extends BayeuxServer.Extension.Adapter {
     }
 
     @Override
-    public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
+    public ServerMessage send(ServerSession session, ServerMessage message) {
         Object data = message.getData();
         if (data instanceof BinaryData) {
+            ServerMessage.Mutable result = bayeuxServer.newMessage();
+            result.putAll(message);
             BinaryData binaryData = (BinaryData)data;
             Object binary = binaryData.get(BinaryData.DATA);
             String encoded;
@@ -77,10 +79,12 @@ public class BinaryExtension extends BayeuxServer.Extension.Adapter {
             }
             Map<String, Object> newData = new HashMap<>(binaryData);
             newData.put(BinaryData.DATA, encoded);
-            message.setData(newData);
-            Map<String, Object> ext = message.getExt(true);
+            result.setData(newData);
+            Map<String, Object> ext = result.getExt(true);
             ext.put(BinaryData.EXT_NAME, new HashMap<>(0));
+            return result;
+        } else {
+            return message;
         }
-        return true;
     }
 }

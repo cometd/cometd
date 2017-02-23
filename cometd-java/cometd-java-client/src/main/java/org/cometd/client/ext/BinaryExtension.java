@@ -24,6 +24,11 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.common.Z85;
 
+/**
+ * <p>A client extension that encodes {@code byte[]} or {@link ByteBuffer} into a {@link BinaryData}
+ * object using the {@link Z85} format for outgoing messages, and decodes {@link BinaryData}
+ * objects back into {@code byte[]} or {@link ByteBuffer} for incoming messages.</p>
+ */
 public class BinaryExtension extends ClientSession.Extension.Adapter {
     private final boolean decodeToByteBuffer;
 
@@ -39,7 +44,7 @@ public class BinaryExtension extends ClientSession.Extension.Adapter {
     public boolean rcv(ClientSession session, Message.Mutable message) {
         Map<String, Object> ext = message.getExt();
         if (ext != null) {
-            if (ext.containsKey(BinaryData.EXT_NAME)) {
+            if (ext.remove(BinaryData.EXT_NAME) != null) {
                 Map<String, Object> data = message.getDataAsMap();
                 BinaryData newData = new BinaryData(data);
                 message.setData(newData);
