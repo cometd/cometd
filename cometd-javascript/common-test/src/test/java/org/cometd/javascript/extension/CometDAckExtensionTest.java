@@ -31,6 +31,7 @@ public class CometDAckExtensionTest extends AbstractCometDTest {
     public void initExtension() throws Exception {
         bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         ackService = new AckService(bayeuxServer);
+        provideMessageAcknowledgeExtension();
     }
 
     @Test
@@ -51,8 +52,6 @@ public class CometDAckExtensionTest extends AbstractCometDTest {
                 "   return message;" +
                 "}" +
                 "});");
-        provideMessageAcknowledgeExtension();
-
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
@@ -92,8 +91,6 @@ public class CometDAckExtensionTest extends AbstractCometDTest {
                 "   return message;" +
                 "}" +
                 "});");
-        provideMessageAcknowledgeExtension();
-
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
