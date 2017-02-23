@@ -190,16 +190,6 @@ cometd.unregisterExtension('loggerExt');
 
 It is not possible to register two extensions under the same name.
 
-You can register more than one extension, and CometD supplies them in
-registration order: outgoing extensions functions are called in registration
-order and, by default, incoming registration functions are called in reverse
-registration order.
-See also the `reverseIncomingExtensions` configuration parameter in
-<<_javascript_configure,the JavaScript library configuration section>>.
-For example, if you register `extA` and `extB`, for outgoing messages the
-functions called are: `extA.outgoing()` and then `extB.outgoing()`, while for
-incoming messages the functions called are `extB.incoming()` and then `extA.incoming()`.
-
 [[_extensions_exceptions]]
 === Extension Exception Handling
 

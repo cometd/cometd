@@ -1216,7 +1216,6 @@
             backoffIncrement: 1000,
             maxBackoff: 60000,
             logLevel: 'info',
-            reverseIncomingExtensions: true,
             maxNetworkDelay: 10000,
             requestHeaders: {},
             appendMessageTypeToURL: true,
@@ -1481,8 +1480,7 @@
                     break;
                 }
 
-                var index = _config.reverseIncomingExtensions ? _extensions.length - 1 - i : i;
-                var extension = _extensions[index];
+                var extension = _extensions[i];
                 var callback = extension.extension.incoming;
                 if (_isFunction(callback)) {
                     var result = _applyExtension(extension.extension, callback, extension.name, message, false);
