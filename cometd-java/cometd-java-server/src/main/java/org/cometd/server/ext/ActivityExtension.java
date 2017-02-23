@@ -44,7 +44,7 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter {
     private final long maxInactivityPeriod;
 
     /**
-     * Creates a {@link ActivityExtension} to be installed in the {@link BayeuxServer}
+     * Creates an ActivityExtension to be installed in the {@link BayeuxServer}
      *
      * @param activity            the activity to monitor
      * @param maxInactivityPeriod the max inactivity period, in milliseconds
@@ -69,9 +69,9 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter {
     }
 
     @Override
-    public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful()) {
-            to.addExtension(newSessionExtension(to, message));
+    public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
+        if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
+            session.addExtension(newSessionExtension(session, message));
         }
         return true;
     }
@@ -79,11 +79,11 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter {
     /**
      * Creates a new {@link ServerSession.Extension} that monitors the activity of the given {@link ServerSession}
      *
-     * @param session        the {@code ServerSession} to monitor
-     * @param handshakeReply the handshake reply message
+     * @param session   the {@code ServerSession} to monitor
+     * @param handshake the handshake message
      * @return a new {@code ServerSession.Extension} that monitors the {@code ServerSession} activity
      */
-    protected ServerSession.Extension newSessionExtension(ServerSession session, ServerMessage handshakeReply) {
+    protected ServerSession.Extension newSessionExtension(ServerSession session, ServerMessage handshake) {
         return new SessionExtension(getActivity(), getMaxInactivityPeriod());
     }
 

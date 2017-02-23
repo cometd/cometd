@@ -836,23 +836,20 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             return;
         }
 
-        if (broadcast && receiving) {
+        if (broadcast || !receiving) {
             if (!extendSend(from, null, mutable)) {
                 return;
             }
-        }
-
-        // Exactly at this point, we convert the message to JSON and therefore
-        // any further modification will be lost.
-        // This is an optimization so that if the message is sent to a million
-        // subscribers, we generate the JSON only once.
-        // From now on, user code is passed a ServerMessage reference (and not
-        // ServerMessage.Mutable), and we attempt to return immutable data
-        // structures, even if it is not possible to guard against all cases.
-        // For example, it is impossible to prevent things like
-        // ((CustomObject)serverMessage.getData()).change() or
-        // ((Map)serverMessage.getExt().get("map")).put().
-        if (broadcast || !receiving) {
+            // Exactly at this point, we convert the message to JSON and therefore
+            // any further modification will be lost.
+            // This is an optimization so that if the message is sent to a million
+            // subscribers, we generate the JSON only once.
+            // From now on, user code is passed a ServerMessage reference (and not
+            // ServerMessage.Mutable), and we attempt to return immutable data
+            // structures, even if it is not possible to guard against all cases.
+            // For example, it is impossible to prevent things like
+            // ((CustomObject)serverMessage.getData()).change() or
+            // ((Map)serverMessage.getExt().get("map")).put().
             freeze(mutable);
         }
 

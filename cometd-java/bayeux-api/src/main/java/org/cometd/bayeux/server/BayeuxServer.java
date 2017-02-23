@@ -269,11 +269,10 @@ public interface BayeuxServer extends Bayeux {
     /**
      * <p>Extension API for {@link BayeuxServer}.</p>
      * <p>Implementations of this interface allow to modify incoming and outgoing messages
-     * respectively just before and just after they are handled by the implementation,
-     * either on client side or server side.</p>
-     * <p>Extensions are be registered in order and one extension may allow subsequent
-     * extensions to process the message by returning true from the callback method, or
-     * forbid further processing by returning false.</p>
+     * before any other processing performed by the implementation.</p>
+     * <p>Multiple extensions can be registered; the extension <em>receive</em> methods
+     * are invoked in registration order, while the extension <em>send</em> methods are
+     * invoked in registration reverse order.</p>
      *
      * @see BayeuxServer#addExtension(Extension)
      */

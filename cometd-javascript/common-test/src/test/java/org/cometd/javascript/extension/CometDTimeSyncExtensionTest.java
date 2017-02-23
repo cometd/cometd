@@ -26,8 +26,6 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTest {
     public void testTimeSync() throws Exception {
         bayeuxServer.addExtension(new TimesyncExtension());
 
-        provideTimesyncExtension();
-
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
@@ -55,6 +53,8 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTest {
                 "    return message;" +
                 "}" +
                 "});");
+        provideTimesyncExtension();
+
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");

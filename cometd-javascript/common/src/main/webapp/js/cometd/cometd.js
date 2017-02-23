@@ -1493,7 +1493,7 @@
         }
 
         function _applyOutgoingExtensions(message) {
-            for (var i = 0; i < _extensions.length; ++i) {
+            for (var i = _extensions.length - 1; i >= 0 ; --i) {
                 if (message === undefined || message === null) {
                     break;
                 }

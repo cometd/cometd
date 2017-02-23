@@ -142,66 +142,53 @@ public class CometDExtensionsTest extends AbstractCometDTest {
     public void testExtensionOrder() throws Exception {
         defineClass(Latch.class);
 
-        // Default incoming extension order is reverse
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
-        evaluateScript("cometd.registerExtension('ext1', {" +
-                "incoming: function(message) " +
-                "{" +
-                "    if (message.ext2 === 1) message.ext1 = 1;" +
-                "    return message;" +
-                "} " +
-                "});");
-        evaluateScript("cometd.registerExtension('ext2', {" +
-                "incoming: function(message) " +
-                "{" +
-                "    if (message.ext1 !== 1) message.ext2 = 1;" +
-                "    return message;" +
-                "} " +
-                "});");
-
-        evaluateScript("var ok = false;");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) " +
-                "{" +
-                "    if (message.ext1 === 1 && message.ext2 === 1) ok = true;" +
-                "});");
-        evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
-        evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
-
-        Assert.assertTrue((Boolean)get("ok"));
-
-        evaluateScript("cometd.disconnect(true);");
-        // Wait for the connect to return
-        Thread.sleep(1000);
-
-        evaluateScript("cometd.unregisterExtension('ext1');");
-        evaluateScript("cometd.unregisterExtension('ext2');");
-        evaluateScript("ok = false;");
-        // Set incoming extension order to be forward
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "', reverseIncomingExtensions: false});");
+        String channelName = "/ext_order";
 
         evaluateScript("cometd.registerExtension('ext1', {" +
-                "incoming: function(message) " +
-                "{" +
-                "    if (message.ext2 !== 1) message.ext1 = 1;" +
+                "incoming: function(message) {" +
+                "    if (message.channel === '" + channelName + "' && message.in_ext2 !== 1) {" +
+                "        message.in_ext1 = 1;" +
+                "    }" +
                 "    return message;" +
-                "} " +
+                "}," +
+                "outgoing: function(message) {" +
+                "    if (message.channel === '" + channelName + "' && message.out_ext2 === 1) {" +
+                "        message.out_ext1 = 1;" +
+                "    }" +
+                "}" +
                 "});");
         evaluateScript("cometd.registerExtension('ext2', {" +
-                "incoming: function(message) " +
-                "{" +
-                "    if (message.ext1 === 1) message.ext2 = 1;" +
+                "incoming: function(message) {" +
+                "    if (message.channel === '" + channelName + "' && message.in_ext1 === 1) {" +
+                "        message.in_ext2 = 1;" +
+                "    }" +
                 "    return message;" +
-                "} " +
+                "}," +
+                "outgoing: function(message) {" +
+                "    if (message.channel === '" + channelName + "' && message.out_ext1 !== 1) {" +
+                "        message.out_ext2 = 1;" +
+                "    }" +
+                "}" +
                 "});");
-        readyLatch.reset(1);
-        evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
 
-        Assert.assertTrue((Boolean)get("ok"));
+        evaluateScript("var latch = new Latch(1);");
+        Latch latch = get("latch");
+        evaluateScript("cometd.handshake(function(handshakeReply) {" +
+                "cometd.batch(function() {" +
+                "    cometd.subscribe('" + channelName + "', function(m) {" +
+                "        if (m.in_ext1 === 1 && m.in_ext2 === 1 && m.out_ext1 === 1 && m.out_ext2 === 1) {" +
+                "            latch.countDown();" +
+                "        } else {" +
+                "            window.console.info('Wrong extension order', m);" +
+                "        }" +
+                "    });" +
+                "    cometd.publish('" + channelName + "', 'wxyz');" +
+                "});" +
+                "});");
+
+        Assert.assertTrue(latch.await(5000));
 
         evaluateScript("cometd.disconnect(true);");
     }
