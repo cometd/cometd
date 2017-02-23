@@ -57,12 +57,12 @@ By signing off your `git` commits, you agree that you can certify
 what stated by the Developer Certificate of Origin.
 That is enough for the CometD project to accept your contribution.
 
-The Developer Certificate of Origin (from http://developercertificate.org/):
+The Developer Certificate of Origin (from https://developercertificate.org/):
 
 ====
 [source,text]
 ----
-include::http://developercertificate.org/[lines=14..49]
+include::https://developercertificate.org/[lines=14..50]
 ----
 ====
 
