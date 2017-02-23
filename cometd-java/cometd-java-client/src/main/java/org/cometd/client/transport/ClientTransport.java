@@ -37,6 +37,7 @@ public abstract class ClientTransport extends AbstractTransport {
     public static final String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
     public static final String JSON_CONTEXT_OPTION = "jsonContext";
     public static final String SCHEDULER_OPTION = "scheduler";
+    public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     private String url;

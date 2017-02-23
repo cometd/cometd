@@ -65,8 +65,12 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         WebSocketPolicy policy = wsConfig.getFactory().getPolicy();
         int bufferSize = getOption(BUFFER_SIZE_OPTION, policy.getInputBufferSize());
         policy.setInputBufferSize(bufferSize);
-        int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, policy.getMaxTextMessageSize());
+        int maxMessageSize = getMaxMessageSize();
+        if (maxMessageSize < 0) {
+            maxMessageSize = policy.getMaxTextMessageSize();
+        }
         policy.setMaxTextMessageSize(maxMessageSize);
+
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, policy.getIdleTimeout());
         policy.setIdleTimeout((int)idleTimeout);
 

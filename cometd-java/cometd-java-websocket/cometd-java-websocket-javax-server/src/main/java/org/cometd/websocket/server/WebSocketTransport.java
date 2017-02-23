@@ -71,8 +71,12 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
         }
 
         // JSR 356 does not support a input buffer size option
-        int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, container.getDefaultMaxTextMessageBufferSize());
+        int maxMessageSize = getMaxMessageSize();
+        if (maxMessageSize < 0) {
+            maxMessageSize = container.getDefaultMaxTextMessageBufferSize();
+        }
         container.setDefaultMaxTextMessageBufferSize(maxMessageSize);
+
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, container.getDefaultMaxSessionIdleTimeout());
         container.setDefaultMaxSessionIdleTimeout(idleTimeout);
 

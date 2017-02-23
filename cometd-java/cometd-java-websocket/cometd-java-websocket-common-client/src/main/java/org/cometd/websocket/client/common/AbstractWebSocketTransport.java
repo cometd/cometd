@@ -45,7 +45,6 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     public final static String PROTOCOL_OPTION = "protocol";
     public final static String CONNECT_TIMEOUT_OPTION = "connectTimeout";
     public final static String IDLE_TIMEOUT_OPTION = "idleTimeout";
-    public final static String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public final static String STICKY_RECONNECT_OPTION = "stickyReconnect";
 
     private ScheduledExecutorService _scheduler;

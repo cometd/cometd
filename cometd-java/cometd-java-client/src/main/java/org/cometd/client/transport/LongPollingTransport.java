@@ -48,12 +48,16 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 public class LongPollingTransport extends HttpClientTransport {
     public static final String NAME = "long-polling";
     public static final String PREFIX = "long-polling.json";
+    /**
+     * @deprecated use {@link ClientTransport#MAX_MESSAGE_SIZE_OPTION} instead
+     */
+    @Deprecated
     public static final String MAX_BUFFER_SIZE_OPTION = "maxBufferSize";
 
     private final HttpClient _httpClient;
     private final List<Request> _requests = new ArrayList<>();
     private volatile boolean _aborted;
-    private volatile int _maxBufferSize;
+    private volatile int _maxMessageSize;
     private volatile boolean _appendMessageType;
     private volatile CookieManager _cookieManager;
     private volatile Map<String, Object> _advice;
@@ -85,7 +89,7 @@ public class LongPollingTransport extends HttpClientTransport {
         }
         setMaxNetworkDelay(defaultMaxNetworkDelay);
 
-        _maxBufferSize = getOption(MAX_BUFFER_SIZE_OPTION, 1024 * 1024);
+        _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, getOption(MAX_BUFFER_SIZE_OPTION, 1024 * 1024));
 
         Pattern uriRegexp = Pattern.compile("(^https?://(((\\[[^\\]]+\\])|([^:/\\?#]+))(:(\\d+))?))?([^\\?#]*)(.*)?");
         Matcher uriMatcher = uriRegexp.matcher(getURL());
@@ -174,7 +178,7 @@ public class LongPollingTransport extends HttpClientTransport {
         // so there are no races between the two timeouts
         request.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
         request.timeout(maxNetworkDelay, TimeUnit.MILLISECONDS);
-        request.send(new BufferingResponseListener(_maxBufferSize) {
+        request.send(new BufferingResponseListener(_maxMessageSize) {
             @Override
             public boolean onHeader(Response response, HttpField field) {
                 HttpHeader header = field.getHeader();

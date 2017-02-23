@@ -49,7 +49,6 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     public static final String PROTOCOL_OPTION = "protocol";
     public static final String MESSAGES_PER_FRAME_OPTION = "messagesPerFrame";
     public static final String BUFFER_SIZE_OPTION = "bufferSize";
-    public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public static final String COMETD_URL_MAPPING_OPTION = "cometdURLMapping";
     public static final String REQUIRE_HANDSHAKE_PER_CONNECTION_OPTION = "requireHandshakePerConnection";

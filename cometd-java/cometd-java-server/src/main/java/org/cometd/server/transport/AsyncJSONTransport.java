@@ -103,6 +103,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         private final HttpServletRequest request;
         private final HttpServletResponse response;
         protected final AsyncContext asyncContext;
+        private int total;
 
         protected AbstractReader(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext) {
             this.request = request;
@@ -116,15 +117,22 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Asynchronous read start from {}", input);
             }
+            int maxMessageSize = getMaxMessageSize();
             byte[] buffer = buffers.get();
-            // First check for isReady() because it has
-            // side effects, and then for isFinished().
-            while (input.isReady() && !input.isFinished()) {
+            while (input.isReady()) {
                 int read = input.read(buffer);
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Asynchronous read {} bytes from {}", read, input);
                 }
-                if (read >= 0) {
+                if (read < 0) {
+                    break;
+                } else {
+                    if (maxMessageSize > 0) {
+                        total += read;
+                        if (total > maxMessageSize) {
+                            throw new IOException("Max message size " + maxMessageSize + " exceeded");
+                        }
+                    }
                     append(buffer, 0, read);
                 }
             }

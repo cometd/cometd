@@ -25,7 +25,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.JSONContext;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
@@ -50,6 +49,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     public static final String JSON_CONTEXT_OPTION = "jsonContext";
     public static final String HANDSHAKE_RECONNECT_OPTION = "handshakeReconnect";
     public static final String ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE = "allowMessageDeliveryDuringHandshake";
+    public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass().getName());
     private final BayeuxServerImpl _bayeux;
@@ -58,9 +58,10 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     private long _timeout = 30000;
     private long _maxLazyTimeout = 5000;
     private boolean _metaConnectDeliveryOnly = false;
-    private JSONContext.Server jsonContext;
+    private JSONContext.Server _jsonContext;
     private boolean _handshakeReconnect;
     private boolean _allowHandshakeDelivery;
+    private int _maxMessageSize;
 
     /**
      * <p>The constructor is passed the {@link BayeuxServerImpl} instance for
@@ -136,6 +137,14 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _allowHandshakeDelivery = allow;
     }
 
+    public int getMaxMessageSize() {
+        return _maxMessageSize;
+    }
+
+    public void setMaxMessageSize(int maxMessageSize) {
+        _maxMessageSize = maxMessageSize;
+    }
+
     /**
      * Initializes the transport, resolving default and direct options.
      */
@@ -145,24 +154,47 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _timeout = getOption(TIMEOUT_OPTION, _timeout);
         _maxLazyTimeout = getOption(MAX_LAZY_TIMEOUT_OPTION, _maxLazyTimeout);
         _metaConnectDeliveryOnly = getOption(META_CONNECT_DELIVERY_OPTION, _metaConnectDeliveryOnly);
-        jsonContext = (JSONContext.Server)getOption(JSON_CONTEXT_OPTION);
+        _jsonContext = (JSONContext.Server)getOption(JSON_CONTEXT_OPTION);
         _handshakeReconnect = getOption(HANDSHAKE_RECONNECT_OPTION, false);
         _allowHandshakeDelivery = getOption(ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, false);
+        _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, -1);
     }
 
     public void destroy() {
     }
 
     protected ServerMessage.Mutable[] parseMessages(BufferedReader reader, boolean jsonDebug) throws ParseException, IOException {
-        if (jsonDebug) {
-            return parseMessages(IO.toString(reader));
+        if (jsonDebug || getMaxMessageSize() > 0) {
+            return parseMessages(read(reader));
         } else {
-            return jsonContext.parse(reader);
+            return _jsonContext.parse(reader);
         }
     }
 
     protected ServerMessage.Mutable[] parseMessages(String json) throws ParseException {
-        return jsonContext.parse(json);
+        return _jsonContext.parse(json);
+    }
+
+    private String read(BufferedReader reader) throws IOException {
+        int maxMessageSize = getMaxMessageSize();
+        StringBuilder builder = new StringBuilder();
+        int total = 0;
+        char[] buffer = new char[1024];
+        while (true) {
+            int read = reader.read(buffer);
+            if (read < 0) {
+                break;
+            } else {
+                if (maxMessageSize > 0) {
+                    total += read;
+                    if (total > maxMessageSize) {
+                        throw new IOException("Max message size " + maxMessageSize + " exceeded");
+                    }
+                }
+                builder.append(buffer, 0, read);
+            }
+        }
+        return builder.toString();
     }
 
     /**

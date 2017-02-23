@@ -49,6 +49,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient.State;
+import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.common.TransportException;
@@ -997,12 +998,12 @@ public class BayeuxClientTest extends ClientServerTest {
     }
 
     @Test
-    public void testMaxBufferSizeExceededViaMetaConnect() throws Exception {
+    public void testMaxMessageSizeExceededViaMetaConnect() throws Exception {
         startServer(null);
 
         Map<String, Object> options = new HashMap<>();
-        int maxBufferSize = 1024;
-        options.put(LongPollingTransport.MAX_BUFFER_SIZE_OPTION, maxBufferSize);
+        int maxMessageSize = 1024;
+        options.put(ClientTransport.MAX_MESSAGE_SIZE_OPTION, maxMessageSize);
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(options, httpClient));
 
         final CountDownLatch metaConnectLatch = new CountDownLatch(1);
@@ -1038,7 +1039,7 @@ public class BayeuxClientTest extends ClientServerTest {
         // it will be delivered via /meta/connect, and fail
         // because it's too big, so we'll have a notification
         // to the /meta/connect listener.
-        char[] chars = new char[maxBufferSize];
+        char[] chars = new char[maxMessageSize];
         Arrays.fill(chars, '0');
         String data = new String(chars);
         bayeux.getChannel(channelName).publish(null, data);
@@ -1050,12 +1051,12 @@ public class BayeuxClientTest extends ClientServerTest {
     }
 
     @Test
-    public void testMaxBufferSizeExceededViaPublish() throws Exception {
+    public void testMaxMessageSizeExceededViaPublish() throws Exception {
         startServer(null);
 
         Map<String, Object> options = new HashMap<>();
-        int maxBufferSize = 1024;
-        options.put(LongPollingTransport.MAX_BUFFER_SIZE_OPTION, maxBufferSize);
+        int maxMessageSize = 1024;
+        options.put(ClientTransport.MAX_MESSAGE_SIZE_OPTION, maxMessageSize);
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(options, httpClient));
 
         client.handshake();
@@ -1080,7 +1081,7 @@ public class BayeuxClientTest extends ClientServerTest {
         // Publish a large message that will be echoed back.
         // It will be delivered via the publish, and fail
         // because it's too big.
-        char[] chars = new char[maxBufferSize];
+        char[] chars = new char[maxMessageSize];
         Arrays.fill(chars, '0');
         String data = new String(chars);
         final CountDownLatch callbackLatch = new CountDownLatch(1);
