@@ -12,8 +12,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- tag::jetty-version[] -->
         <jetty-version>9.2.21.v20170120</jetty-version>
-        <!--<jetty-version>9.3.16.v20170120</jetty-version>-->
-        <!--<jetty-version>9.4.2.v20170220</jetty-version>-->
+        <!--<jetty-version>9.3.17.v20170317</jetty-version>-->
+        <!--<jetty-version>9.4.3.v20170317</jetty-version>-->
         <!-- end::jetty-version[] -->
         <slf4j-version>1.7.22</slf4j-version>
         <spring-version>4.3.4.RELEASE</spring-version>
