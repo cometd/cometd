@@ -18,7 +18,6 @@ package org.cometd.server.ext;
 import java.util.Map;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
@@ -38,22 +37,20 @@ public class AcknowledgedMessagesExtension extends Extension.Adapter {
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName());
 
     @Override
-    public boolean sendMeta(ServerSession remote, Mutable message) {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful()) {
-            Message rcv = message.getAssociated();
-
-            Map<String, Object> rcvExt = rcv.getExt();
+    public boolean rcvMeta(ServerSession remote, Mutable message) {
+        if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
+            Map<String, Object> rcvExt = message.getExt();
             boolean clientRequestedAcks = rcvExt != null && rcvExt.get("ack") == Boolean.TRUE;
 
             if (clientRequestedAcks && remote != null) {
-                ServerSessionImpl session = (ServerSessionImpl)remote;
                 if (_logger.isDebugEnabled()) {
-                    _logger.debug("Enabled message acknowledgement for session {}", session);
+                    _logger.debug("Enabled message acknowledgement for session {}", remote);
                 }
 
-                AcknowledgedMessagesSessionExtension extension = new AcknowledgedMessagesSessionExtension(session);
+                AcknowledgedMessagesSessionExtension extension = new AcknowledgedMessagesSessionExtension(remote);
 
                 // Make sure that adding the extension and importing the queue is atomic.
+                ServerSessionImpl session = (ServerSessionImpl)remote;
                 synchronized (session.getLock()) {
                     session.addExtension(extension);
                     extension.importMessages(session);

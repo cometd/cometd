@@ -289,9 +289,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
             session = (ServerSessionImpl)((LocalSession)from).getServerSession();
         }
 
-        if (_bayeux.extendSend(session, null, mutable)) {
-            _bayeux.doPublish(session, this, mutable, false);
-        }
+        _bayeux.doPublish(session, this, mutable, false);
     }
 
     public void publish(Session from, Object data) {

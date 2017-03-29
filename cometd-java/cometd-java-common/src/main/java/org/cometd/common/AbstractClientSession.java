@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,34 +80,29 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     }
 
     protected boolean extendSend(Message.Mutable message) {
-        if (message.isMeta()) {
-            for (Extension extension : _extensions) {
-                if (!extension.sendMeta(this, message)) {
-                    return false;
-                }
-            }
-        } else {
-            for (Extension extension : _extensions) {
-                if (!extension.send(this, message)) {
-                    return false;
-                }
+        ListIterator<Extension> i = _extensions.listIterator();
+        while (i.hasNext()) {
+            i.next();
+        }
+        while (i.hasPrevious()) {
+            Extension extension = i.previous();
+            boolean proceed = message.isMeta() ?
+                    extension.sendMeta(this, message) :
+                    extension.send(this, message);
+            if (!proceed) {
+                return false;
             }
         }
         return true;
     }
 
     protected boolean extendRcv(Message.Mutable message) {
-        if (message.isMeta()) {
-            for (Extension extension : _extensions) {
-                if (!extension.rcvMeta(this, message)) {
-                    return false;
-                }
-            }
-        } else {
-            for (Extension extension : _extensions) {
-                if (!extension.rcv(this, message)) {
-                    return false;
-                }
+        for (Extension extension : _extensions) {
+            boolean proceed = message.isMeta() ?
+                    extension.rcvMeta(this, message) :
+                    extension.rcv(this, message);
+            if (!proceed) {
+                return false;
             }
         }
         return true;

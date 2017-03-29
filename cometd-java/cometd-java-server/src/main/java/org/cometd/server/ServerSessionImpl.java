@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -286,15 +287,24 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     protected ServerMessage.Mutable extendSend(ServerMessage.Mutable mutable) {
-        ServerMessage.Mutable message = null;
-        if (mutable.isMeta()) {
-            if (extendSendMeta(mutable)) {
-                message = mutable;
-            }
-        } else {
-            message = extendSendMessage(mutable);
+        ListIterator<Extension> i = _extensions.listIterator();
+        while (i.hasNext()) {
+            i.next();
         }
-        return message;
+        while (i.hasPrevious()) {
+            Extension extension = i.previous();
+            if (mutable.isMeta()) {
+                if (!notifySendMeta(extension, mutable)) {
+                    return null;
+                }
+            } else {
+                mutable = notifySend(extension, mutable);
+                if (mutable == null) {
+                    return null;
+                }
+            }
+        }
+        return mutable;
     }
 
     private boolean notifyQueueMaxed(MaxQueueListener listener, ServerSession session, Queue<ServerMessage> queue, ServerSession sender, ServerMessage message) {
@@ -633,20 +643,6 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    protected boolean extendSendMeta(ServerMessage.Mutable message) {
-        if (!message.isMeta()) {
-            throw new IllegalStateException();
-        }
-
-        for (Extension extension : _extensions) {
-            if (!notifySendMeta(extension, message)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     private boolean notifySendMeta(Extension extension, ServerMessage.Mutable message) {
         try {
             return extension.sendMeta(this, message);
@@ -654,21 +650,6 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             _logger.info("Exception while invoking extension " + extension, x);
             return true;
         }
-    }
-
-    protected ServerMessage.Mutable extendSendMessage(ServerMessage.Mutable message) {
-        if (message.isMeta()) {
-            throw new IllegalStateException();
-        }
-
-        for (Extension extension : _extensions) {
-            message = notifySend(extension, message);
-            if (message == null) {
-                return null;
-            }
-        }
-
-        return message;
     }
 
     private ServerMessage.Mutable notifySend(Extension extension, ServerMessage.Mutable message) {
