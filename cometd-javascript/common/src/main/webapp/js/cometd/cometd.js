@@ -519,7 +519,7 @@
                 try {
                     var state = xhr.readyState;
                     xhr.abort();
-                    return state !== XMLHttpRequest.UNSENT;
+                    return state !== window.XMLHttpRequest.UNSENT;
                 } catch (x) {
                     this._debug(x);
                 }
@@ -553,7 +553,7 @@
         };
 
         _self.xhrSend = function(packet) {
-            var xhr = new XMLHttpRequest();
+            var xhr = new window.XMLHttpRequest();
             xhr.withCredentials = true;
             xhr.open('POST', packet.url, packet.sync !== true);
             var headers = packet.headers;
@@ -1360,7 +1360,12 @@
          * @return whether the given hostAndPort is cross domain
          */
         this._isCrossDomain = function(hostAndPort) {
-            return hostAndPort && hostAndPort !== window.location.host;
+            if (window.location && window.location.host) {
+                if (hostAndPort) {
+                    return hostAndPort !== window.location.host;
+                }
+            }
+            return false;
         };
 
         function _configure(configuration) {
