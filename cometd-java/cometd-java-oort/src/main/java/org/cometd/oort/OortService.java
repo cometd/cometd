@@ -250,6 +250,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         }
     }
 
+    @Override
     public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
         if (forwardChannelName.equals(message.getChannel())) {
             onForwardMessage(message.getDataAsMap(), false);

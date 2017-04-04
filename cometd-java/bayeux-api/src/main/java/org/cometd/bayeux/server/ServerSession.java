@@ -287,18 +287,22 @@ public interface ServerSession extends Session {
          * Empty implementation of {@link Extension}.
          */
         public static class Adapter implements Extension {
+            @Override
             public boolean rcv(ServerSession session, ServerMessage.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
                 return true;
             }
 
+            @Override
             public ServerMessage send(ServerSession session, ServerMessage message) {
                 return message;
             }
 
+            @Override
             public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
                 return true;
             }

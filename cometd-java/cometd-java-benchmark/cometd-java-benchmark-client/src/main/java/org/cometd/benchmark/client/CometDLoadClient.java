@@ -763,6 +763,7 @@ public class CometDLoadClient implements MeasureConverter {
             this.roomsPerClient = roomsPerClient;
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (message.isSuccessful()) {
                 final LoadBayeuxClient client = (LoadBayeuxClient)channel.getSession();
@@ -773,6 +774,7 @@ public class CometDLoadClient implements MeasureConverter {
                     bayeuxClients.add(client);
 
                     client.batch(new Runnable() {
+                        @Override
                         public void run() {
                             List<Integer> roomsSubscribedTo = new ArrayList<>();
                             for (int j = 0; j < roomsPerClient; ++j) {
@@ -794,6 +796,7 @@ public class CometDLoadClient implements MeasureConverter {
     }
 
     private class DisconnectListener implements ClientSessionChannel.MessageListener {
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (message.isSuccessful()) {
                 LoadBayeuxClient client = (LoadBayeuxClient)channel.getSession();
@@ -804,6 +807,7 @@ public class CometDLoadClient implements MeasureConverter {
     }
 
     private class LatencyListener implements ClientSessionChannel.MessageListener {
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, Object> data = message.getDataAsMap();
             if (data != null) {
@@ -893,6 +897,7 @@ public class CometDLoadClient implements MeasureConverter {
             final CountDownLatch latch = new CountDownLatch(1);
             ClientSessionChannel channel = getChannel(channelName);
             channel.publish(new HashMap<String, Object>(1), new ClientSessionChannel.MessageListener() {
+                @Override
                 public void onMessage(ClientSessionChannel channel, Message message) {
                     latch.countDown();
                 }

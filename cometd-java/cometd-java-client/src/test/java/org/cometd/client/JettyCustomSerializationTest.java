@@ -57,6 +57,7 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         final LocalSession service = bayeux.newLocalSession("custom_serialization");
         service.handshake();
         service.getChannel(broadcastChannelName).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Data data = (Data)message.getData();
                 Assert.assertEquals(content, data.content);
@@ -181,12 +182,14 @@ public class JettyCustomSerializationTest extends ClientServerTest {
     }
 
     private static class DataConvertor implements JSON.Convertor {
+        @Override
         public void toJSON(Object object, JSON.Output output) {
             Data data = (Data)object;
             output.addClass(Data.class);
             output.add("content", data.content);
         }
 
+        @Override
         public Object fromJSON(Map map) {
             String content = (String)map.get("content");
             return new Data(content);
@@ -194,12 +197,14 @@ public class JettyCustomSerializationTest extends ClientServerTest {
     }
 
     private static class ExtraConvertor implements JSON.Convertor {
+        @Override
         public void toJSON(Object object, JSON.Output output) {
             Extra extra = (Extra)object;
             output.addClass(Extra.class);
             output.add("content", extra.content);
         }
 
+        @Override
         public Object fromJSON(Map map) {
             String content = (String)map.get("content");
             return new Extra(content);

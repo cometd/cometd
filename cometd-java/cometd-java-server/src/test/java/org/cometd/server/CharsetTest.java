@@ -52,6 +52,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest {
         final String data = new String(new byte[]{(byte)0xC3, (byte)0xA9}, "UTF-8");
         String channelName = "/test_charset";
         bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 String messageData = (String)message.getData();
                 Assert.assertEquals(data, messageData);
@@ -102,6 +103,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest {
         final String data = new String(new byte[]{(byte)0xE1}, encoding);
         String channelName = "/test_charset";
         bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 String messageData = (String)message.getData();
                 Assert.assertEquals(data, messageData);

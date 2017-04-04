@@ -62,6 +62,7 @@ public class CometDDemoServlet extends HttpServlet {
         // Deny unless granted
 
         bayeux.createChannelIfAbsent("/**", new ServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_NONE);
             }
@@ -121,6 +122,7 @@ public class CometDDemoServlet extends HttpServlet {
         }
     }
 
+    @Override
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
         ((HttpServletResponse)res).sendError(503);
     }

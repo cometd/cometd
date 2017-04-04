@@ -38,9 +38,11 @@ public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTes
     @Test
     public void testWebSocketHeaderRemoved() throws Exception {
         context.addFilter(new FilterHolder(new Filter() {
+            @Override
             public void init(FilterConfig filterConfig) throws ServletException {
             }
 
+            @Override
             public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
                 try {
                     // Wrap the response to remove the header
@@ -57,6 +59,7 @@ public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTes
                 }
             }
 
+            @Override
             public void destroy() {
             }
         }), cometdServletPath, EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));

@@ -195,18 +195,22 @@ public interface ClientSession extends Session {
          * Empty implementation of {@link Extension}.
          */
         public static class Adapter implements Extension {
+            @Override
             public boolean rcv(ClientSession session, Message.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean rcvMeta(ClientSession session, Message.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean send(ClientSession session, Message.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean sendMeta(ClientSession session, Message.Mutable message) {
                 return true;
             }

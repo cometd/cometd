@@ -40,6 +40,7 @@ public class DeliverWithTimeStampExtensionTest extends ClientServerTest {
         final CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }

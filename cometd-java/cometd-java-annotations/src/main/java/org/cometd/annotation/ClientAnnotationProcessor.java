@@ -374,6 +374,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
             this.subscription = subscription;
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, String> matches = channelId.bind(message.getChannelId());
             if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames)) {
@@ -407,6 +408,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
             this.subscription = subscription;
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, String> matches = channelId.bind(message.getChannelId());
             if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames)) {
@@ -433,11 +435,13 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
             this.bean = bean;
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (message.isSuccessful()) {
                 final List<SubscriptionCallback> subscriptions = subscribers.get(bean);
                 if (subscriptions != null) {
                     clientSession.batch(new Runnable() {
+                        @Override
                         public void run() {
                             for (SubscriptionCallback subscription : subscriptions) {
                                 subscription.subscribe();

@@ -273,9 +273,11 @@ public class OortList<E> extends OortContainer<List<E>> {
          * @param <E> the element type
          */
         public static class Adapter<E> implements ElementListener<E> {
+            @Override
             public void onAdded(Info<List<E>> info, List<E> elements) {
             }
 
+            @Override
             public void onRemoved(Info<List<E>> info, List<E> elements) {
             }
         }
@@ -303,6 +305,7 @@ public class OortList<E> extends OortContainer<List<E>> {
             this.oortList = oortList;
         }
 
+        @Override
         public void onUpdated(Info<List<E>> oldInfo, Info<List<E>> newInfo) {
             List<E> oldList = oldInfo == null ? Collections.<E>emptyList() : oldInfo.getObject();
             List<E> newList = newInfo.getObject();
@@ -321,6 +324,7 @@ public class OortList<E> extends OortContainer<List<E>> {
             }
         }
 
+        @Override
         public void onRemoved(Info<List<E>> info) {
             oortList.notifyElementsRemoved(info, info.getObject());
         }

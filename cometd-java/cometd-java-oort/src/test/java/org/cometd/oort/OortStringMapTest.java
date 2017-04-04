@@ -160,11 +160,13 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         oortMap1.addListener(new OortMap.DeltaListener<>(oortMap1));
         oortMap2.addListener(new OortMap.DeltaListener<>(oortMap2));
         OortMap.EntryListener<String, String> entryListener = new OortMap.EntryListener<String, String>() {
+            @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 puts.add(entry);
                 setLatch2.get().countDown();
             }
 
+            @Override
             public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 removes.add(entry);
                 setLatch2.get().countDown();

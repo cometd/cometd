@@ -71,11 +71,13 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         setSeeOwnPublishes(false);
 
         getBayeux().createChannelIfAbsent("/service" + AUCTION_ROOT + "*", new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }
         });
         getBayeux().createChannelIfAbsent(AUCTION_ROOT + "*", new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }
@@ -173,6 +175,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         return _categoryDao.getAllCategories();
     }
 
+    @Override
     public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
         if (!session.isLocalSession() && channel.getId().startsWith(AUCTION_ROOT + "item")) {
             String itemIdS = channel.getId().substring((AUCTION_ROOT + "item").length());
@@ -186,21 +189,26 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         }
     }
 
+    @Override
     public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
     }
 
+    @Override
     public void channelAdded(ServerChannel channel) {
         if (channel.getId().startsWith(AUCTION_ROOT + "item")) {
             getLocalSession().getChannel(channel.getId()).subscribe(this);
         }
     }
 
+    @Override
     public void channelRemoved(String channelId) {
     }
 
+    @Override
     public void onMessage(ClientSessionChannel channel, Message message) {
     }
 
+    @Override
     public void configureChannel(ConfigurableServerChannel channel) {
     }
 }

@@ -133,6 +133,7 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest {
             // and the disconnect may not be delivered, since the client won't issue
             // a new long poll, and the disconnect will remain in the queue
             session.batch(new Runnable() {
+                @Override
                 public void run() {
                     session.deliver(getServerSession(), kickMessage);
                     session.disconnect();

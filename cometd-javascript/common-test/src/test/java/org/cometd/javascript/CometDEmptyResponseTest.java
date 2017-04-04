@@ -61,9 +61,11 @@ public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest {
     }
 
     public static class EmptyResponseFilter implements Filter {
+        @Override
         public void init(FilterConfig filterConfig) throws ServletException {
         }
 
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
@@ -72,6 +74,7 @@ public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest {
             response.setContentType("application/json;charset=UTF-8");
         }
 
+        @Override
         public void destroy() {
         }
     }

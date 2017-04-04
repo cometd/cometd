@@ -40,6 +40,7 @@ public class DataFilterMessageListener implements ServerChannel.MessageListener 
         _filters = Arrays.asList(filters);
     }
 
+    @Override
     public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
         try {
             Object data = message.getData();

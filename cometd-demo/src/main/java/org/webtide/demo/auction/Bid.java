@@ -57,6 +57,7 @@ public class Bid implements Cloneable, JSON.Convertible {
         bidder = aBidder;
     }
 
+    @Override
     public Bid clone() {
         try {
             return (Bid)super.clone();
@@ -65,15 +66,18 @@ public class Bid implements Cloneable, JSON.Convertible {
         }
     }
 
+    @Override
     public void fromJSON(Map object) {
     }
 
+    @Override
     public void toJSON(Output out) {
         out.add("itemId", itemId);
         out.add("amount", amount);
         out.add("bidder", bidder);
     }
 
+    @Override
     public String toString() {
         return JSON.toString(this);
     }

@@ -542,6 +542,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         final CountDownLatch latch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener lastConnectListener = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 final Map<String, Object> advice = message.getAdvice();
                 if (!message.isSuccessful() ||
@@ -847,6 +848,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             logger.debug("Scheduled handshake in {}+{} ms", interval, backOff);
         }
         return scheduleAction(new Runnable() {
+            @Override
             public void run() {
                 sendHandshake();
             }
@@ -858,6 +860,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             logger.debug("Scheduled connect in {}+{} ms", interval, backOff);
         }
         return scheduleAction(new Runnable() {
+            @Override
             public void run() {
                 sendConnect();
             }

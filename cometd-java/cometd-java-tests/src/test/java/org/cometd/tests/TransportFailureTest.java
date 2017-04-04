@@ -115,6 +115,7 @@ public class TransportFailureTest {
         final CountDownLatch successLatch = new CountDownLatch(1);
         final CountDownLatch failedLatch = new CountDownLatch(1);
         client.handshake(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     successLatch.countDown();
@@ -149,6 +150,7 @@ public class TransportFailureTest {
 
         final CountDownLatch failedLatch = new CountDownLatch(1);
         client.handshake(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     failedLatch.countDown();
@@ -216,6 +218,7 @@ public class TransportFailureTest {
 
         final CountDownLatch failedLatch = new CountDownLatch(1);
         client.handshake(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     failedLatch.countDown();

@@ -28,6 +28,7 @@ public class OortDemoServlet extends HttpServlet {
     private ServerAnnotationProcessor _processor;
     private OortChatService _service;
 
+    @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
@@ -44,6 +45,7 @@ public class OortDemoServlet extends HttpServlet {
         bayeux.addExtension(new TimesyncExtension());
     }
 
+    @Override
     public void destroy() {
         _processor.deprocess(_service);
     }

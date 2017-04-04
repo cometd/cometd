@@ -57,6 +57,7 @@ public class MessageFlowControlTest extends ClientServerTest {
 
         final String channelName = "/test";
         bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
                 if (lazyChannel) {
@@ -70,8 +71,10 @@ public class MessageFlowControlTest extends ClientServerTest {
         final long toleranceSeconds = 2;
         final AtomicInteger keptMessages = new AtomicInteger();
         bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 session.addListener(new ServerSession.DeQueueListener() {
+                    @Override
                     public void deQueue(ServerSession session, Queue<ServerMessage> queue) {
                         long lastTimeStamp = 0;
                         for (Iterator<ServerMessage> iterator = queue.iterator(); iterator.hasNext(); ) {
@@ -93,6 +96,7 @@ public class MessageFlowControlTest extends ClientServerTest {
                 });
             }
 
+            @Override
             public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
@@ -106,12 +110,14 @@ public class MessageFlowControlTest extends ClientServerTest {
 
         final CountDownLatch subscribed = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribed.countDown();
             }
         });
         final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
         client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 System.err.println("message = " + message);
                 messages.offer(message);

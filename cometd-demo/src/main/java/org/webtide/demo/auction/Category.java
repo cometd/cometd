@@ -58,10 +58,12 @@ public class Category implements Cloneable, Comparable<Category>, JSON.Convertib
         id = aId;
     }
 
+    @Override
     public int hashCode() {
         return id.hashCode();
     }
 
+    @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
@@ -75,6 +77,7 @@ public class Category implements Cloneable, Comparable<Category>, JSON.Convertib
         return ((Category)obj).getId().equals(id);
     }
 
+    @Override
     public Category clone() {
         try {
             return (Category)super.clone();
@@ -83,19 +86,23 @@ public class Category implements Cloneable, Comparable<Category>, JSON.Convertib
         }
     }
 
+    @Override
     public int compareTo(Category o) {
         return categoryName.compareTo(o.categoryName);
     }
 
+    @Override
     public void fromJSON(Map object) {
     }
 
+    @Override
     public void toJSON(Output out) {
         out.add("categoryId", id);
         out.add("categoryName", categoryName);
         out.add("description", description);
     }
 
+    @Override
     public String toString() {
         return JSON.toString(this);
     }

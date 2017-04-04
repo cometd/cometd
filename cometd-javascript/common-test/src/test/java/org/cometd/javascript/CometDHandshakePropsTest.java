@@ -66,19 +66,23 @@ public class CometDHandshakePropsTest extends AbstractCometDTest {
     }
 
     private class TokenSecurityPolicy implements SecurityPolicy {
+        @Override
         public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
             Map<String, Object> ext = message.getExt();
             return ext != null && ext.containsKey("token");
         }
 
+        @Override
         public boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message) {
             return true;
         }
 
+        @Override
         public boolean canSubscribe(BayeuxServer server, ServerSession client, ServerChannel channel, ServerMessage messsage) {
             return true;
         }
 
+        @Override
         public boolean canPublish(BayeuxServer server, ServerSession client, ServerChannel channel, ServerMessage messsage) {
             return true;
         }

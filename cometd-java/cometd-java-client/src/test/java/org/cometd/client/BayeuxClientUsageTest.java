@@ -140,6 +140,7 @@ public class BayeuxClientUsageTest extends ClientServerTest {
     private void testClient(BayeuxClient client) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     latch.countDown();
@@ -149,6 +150,7 @@ public class BayeuxClientUsageTest extends ClientServerTest {
 
         final BlockingQueue<Message> metaMessages = new ArrayBlockingQueue<>(16);
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 // Skip /meta/connect messages because they arrive without notice
                 // and most likely fail the test that it is waiting for other messages
@@ -171,6 +173,7 @@ public class BayeuxClientUsageTest extends ClientServerTest {
 
         final BlockingQueue<Message> messages = new ArrayBlockingQueue<>(16);
         ClientSessionChannel.MessageListener subscriber = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messages.offer(message);
             }

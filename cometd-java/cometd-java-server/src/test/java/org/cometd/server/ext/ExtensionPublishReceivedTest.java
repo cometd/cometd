@@ -81,21 +81,25 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
         private final List<Message> sends = new ArrayList<>();
         private final List<Message> sendMetas = new ArrayList<>();
 
+        @Override
         public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
             rcvs.add(message);
             return true;
         }
 
+        @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             rcvMetas.add(message);
             return true;
         }
 
+        @Override
         public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
             sends.add(message);
             return true;
         }
 
+        @Override
         public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
             sendMetas.add(message);
             return true;

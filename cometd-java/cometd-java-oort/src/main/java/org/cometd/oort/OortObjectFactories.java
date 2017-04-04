@@ -70,6 +70,7 @@ public class OortObjectFactories {
             this.defaultValue = defaultValue;
         }
 
+        @Override
         public Boolean newObject(Object representation) {
             if (representation == null) {
                 return defaultValue;
@@ -88,6 +89,7 @@ public class OortObjectFactories {
             this.defaultValue = defaultValue;
         }
 
+        @Override
         public Long newObject(Object representation) {
             if (representation == null) {
                 return defaultValue;
@@ -125,6 +127,7 @@ public class OortObjectFactories {
             this.defaultValue = defaultValue;
         }
 
+        @Override
         @SuppressWarnings("unchecked")
         public Map<K, V> newObject(Object representation) {
             if (representation == null) {
@@ -144,6 +147,7 @@ public class OortObjectFactories {
             this.defaultValue = defaultValue;
         }
 
+        @Override
         @SuppressWarnings("unchecked")
         public ConcurrentMap<K, V> newObject(Object representation) {
             if (representation == null) {
@@ -166,6 +170,7 @@ public class OortObjectFactories {
             this.defaultValue = defaultValue;
         }
 
+        @Override
         @SuppressWarnings("unchecked")
         public List<E> newObject(Object representation) {
             if (representation == null) {

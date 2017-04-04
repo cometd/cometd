@@ -87,6 +87,7 @@ public class BayeuxClientTest extends ClientServerTest {
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertFalse(message.isSuccessful());
                 latch.get().countDown();
@@ -118,6 +119,7 @@ public class BayeuxClientTest extends ClientServerTest {
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertFalse(message.isSuccessful());
                 latch.get().countDown();
@@ -148,6 +150,7 @@ public class BayeuxClientTest extends ClientServerTest {
         });
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertFalse(message.isSuccessful());
                 latch.get().countDown();
@@ -186,6 +189,7 @@ public class BayeuxClientTest extends ClientServerTest {
             }
         };
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 handshake.set(message);
                 handshakeLatch.countDown();
@@ -223,6 +227,7 @@ public class BayeuxClientTest extends ClientServerTest {
         };
 
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 connected.set(message.isSuccessful());
                 if (message.isSuccessful()) {
@@ -232,6 +237,7 @@ public class BayeuxClientTest extends ClientServerTest {
         });
 
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 connected.set(false);
                 if (message.isSuccessful()) {
@@ -241,6 +247,7 @@ public class BayeuxClientTest extends ClientServerTest {
         });
 
         client.getChannel("/**").addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel session, Message message) {
                 if (!message.isMeta() && !message.isPublishReply() || Channel.META_SUBSCRIBE.equals(message.getChannel()) || Channel.META_DISCONNECT.equals(message.getChannel())) {
                     queue.offer(message);
@@ -308,6 +315,7 @@ public class BayeuxClientTest extends ClientServerTest {
         };
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(1));
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     connectLatch.get().countDown();
@@ -331,6 +339,7 @@ public class BayeuxClientTest extends ClientServerTest {
         String channelName = "/chat/msg";
         MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
         channel.getReference().addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
                 results.add(from.getId());
                 results.add(channel.getId());
@@ -361,6 +370,7 @@ public class BayeuxClientTest extends ClientServerTest {
         String channelName = "/chat/msg";
         MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
         channel.getReference().addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
                 results.add(from.getId());
                 results.add(channel.getId());
@@ -391,6 +401,7 @@ public class BayeuxClientTest extends ClientServerTest {
         final BayeuxClient client = newBayeuxClient();
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful() && client.isHandshook()) {
                     latch.countDown();
@@ -419,6 +430,7 @@ public class BayeuxClientTest extends ClientServerTest {
         final CountDownLatch latch = new CountDownLatch(1);
         BayeuxClient client = new BayeuxClient("http://localhost/cometd", new LongPollingTransport(null, httpClient));
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertFalse(message.isSuccessful());
 
@@ -449,6 +461,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
         final CountDownLatch connectLatch = new CountDownLatch(2);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (connectLatch.getCount() > 1 && message.isSuccessful() ||
                         connectLatch.getCount() == 1 && !message.isSuccessful()) {
@@ -528,6 +541,7 @@ public class BayeuxClientTest extends ClientServerTest {
             }
         };
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     connectLatch.get().countDown();
@@ -535,6 +549,7 @@ public class BayeuxClientTest extends ClientServerTest {
             }
         });
         client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     failureLatch.countDown();
@@ -579,6 +594,7 @@ public class BayeuxClientTest extends ClientServerTest {
             }
         };
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     connectLatch.get().countDown();
@@ -593,6 +609,7 @@ public class BayeuxClientTest extends ClientServerTest {
         ClientSessionChannel channel = client.getChannel(channelName);
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         channel.subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.get().countDown();
             }
@@ -620,6 +637,7 @@ public class BayeuxClientTest extends ClientServerTest {
         final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<>(new CountDownLatch(1));
         final AtomicReference<CountDownLatch> unconnectedLatch = new AtomicReference<>(new CountDownLatch(2));
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     connectedLatch.get().countDown();
@@ -728,6 +746,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     subscribeLatch.countDown();
@@ -738,6 +757,7 @@ public class BayeuxClientTest extends ClientServerTest {
         String channelName = "/**";
         final CountDownLatch publishLatch = new CountDownLatch(1);
         client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 publishLatch.countDown();
             }
@@ -749,6 +769,7 @@ public class BayeuxClientTest extends ClientServerTest {
         // they are not broadcasted due to the subscription to /**
         final CountDownLatch serviceLatch = new CountDownLatch(1);
         client.getChannel("/service/foo").addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 // Ignore publish reply, only care about message with data
                 if (message.containsKey(Message.DATA_FIELD)) {
@@ -761,6 +782,7 @@ public class BayeuxClientTest extends ClientServerTest {
         // sent by the client are not broadcasted back due to the subscription to /**
         final CountDownLatch metaLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     metaLatch.countDown();
@@ -802,6 +824,7 @@ public class BayeuxClientTest extends ClientServerTest {
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
 
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 results.offer(message);
             }
@@ -811,6 +834,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
         // Subscribe without waiting
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
             }
         });
@@ -842,6 +866,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
         // Subscribe again
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
             }
         });
@@ -874,6 +899,7 @@ public class BayeuxClientTest extends ClientServerTest {
         results.clear();
         // Subscribe again
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
             }
         });
@@ -901,6 +927,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
         // Subscribe again
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
             }
         });
@@ -925,6 +952,7 @@ public class BayeuxClientTest extends ClientServerTest {
         BayeuxClient client = newBayeuxClient();
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 // Verify the failure object is there
                 @SuppressWarnings("unchecked")
@@ -972,6 +1000,7 @@ public class BayeuxClientTest extends ClientServerTest {
         ClientSessionChannel channel = client.getChannel(channelName);
         final CountDownLatch latch = new CountDownLatch(1);
         channel.addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isPublishReply()) {
                     latch.countDown();
@@ -985,6 +1014,7 @@ public class BayeuxClientTest extends ClientServerTest {
         Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
 
         bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession session, ServerChannel channel, Mutable message) {
                 session.deliver(null, channelName, message.getData());
                 return true;
@@ -1103,9 +1133,11 @@ public class BayeuxClientTest extends ClientServerTest {
     private static class TestFilter implements Filter {
         volatile int code = 0;
 
+        @Override
         public void destroy() {
         }
 
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             if (code != 0) {
                 ((HttpServletResponse)response).sendError(code);
@@ -1114,6 +1146,7 @@ public class BayeuxClientTest extends ClientServerTest {
             }
         }
 
+        @Override
         public void init(FilterConfig filterConfig) throws ServletException {
         }
     }

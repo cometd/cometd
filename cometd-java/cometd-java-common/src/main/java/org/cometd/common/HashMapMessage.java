@@ -32,47 +32,57 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         putAll(message);
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public Map<String, Object> getAdvice() {
         return (Map<String, Object>)get(ADVICE_FIELD);
     }
 
+    @Override
     public String getChannel() {
         return (String)get(CHANNEL_FIELD);
     }
 
+    @Override
     public ChannelId getChannelId() {
         return new ChannelId(getChannel());
     }
 
+    @Override
     public String getClientId() {
         return (String)get(CLIENT_ID_FIELD);
     }
 
+    @Override
     public Object getData() {
         return get(DATA_FIELD);
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public Map<String, Object> getDataAsMap() {
         return (Map<String, Object>)get(DATA_FIELD);
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public Map<String, Object> getExt() {
         return (Map<String, Object>)get(EXT_FIELD);
     }
 
+    @Override
     public String getId() {
         // Support also old-style ids of type long
         Object id = get(ID_FIELD);
         return id == null ? null : String.valueOf(id);
     }
 
+    @Override
     public String getJSON() {
         return _jsonContext.generate(this);
     }
 
+    @Override
     public Map<String, Object> getAdvice(boolean create) {
         Map<String, Object> advice = getAdvice();
         if (create && advice == null) {
@@ -82,6 +92,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         return advice;
     }
 
+    @Override
     public Map<String, Object> getDataAsMap(boolean create) {
         @SuppressWarnings("unchecked")
         Map<String, Object> data = getDataAsMap();
@@ -92,6 +103,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         return data;
     }
 
+    @Override
     public Map<String, Object> getExt(boolean create) {
         Map<String, Object> ext = getExt();
         if (create && ext == null) {
@@ -101,19 +113,23 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         return ext;
     }
 
+    @Override
     public boolean isMeta() {
         return ChannelId.isMeta(getChannel());
     }
 
+    @Override
     public boolean isPublishReply() {
         return !isMeta() && !containsKey(DATA_FIELD);
     }
 
+    @Override
     public boolean isSuccessful() {
         Boolean value = (Boolean)get(Message.SUCCESSFUL_FIELD);
         return value != null && value;
     }
 
+    @Override
     public void setChannel(String channel) {
         if (channel == null) {
             remove(CHANNEL_FIELD);
@@ -122,6 +138,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         }
     }
 
+    @Override
     public void setClientId(String clientId) {
         if (clientId == null) {
             remove(CLIENT_ID_FIELD);
@@ -130,6 +147,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         }
     }
 
+    @Override
     public void setData(Object data) {
         if (data == null) {
             remove(DATA_FIELD);
@@ -138,6 +156,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         }
     }
 
+    @Override
     public void setId(String id) {
         if (id == null) {
             remove(ID_FIELD);
@@ -146,6 +165,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         }
     }
 
+    @Override
     public void setSuccessful(boolean successful) {
         put(SUCCESSFUL_FIELD, successful);
     }

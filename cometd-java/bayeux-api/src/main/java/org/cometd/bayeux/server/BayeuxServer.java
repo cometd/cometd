@@ -318,18 +318,22 @@ public interface BayeuxServer extends Bayeux {
          * Empty implementation of {@link Extension}.
          */
         public static class Adapter implements Extension {
+            @Override
             public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 return true;
             }

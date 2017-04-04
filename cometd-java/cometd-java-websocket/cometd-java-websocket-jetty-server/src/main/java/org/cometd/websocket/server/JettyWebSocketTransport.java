@@ -122,6 +122,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         return true;
     }
 
+    @Override
     protected void send(final Session wsSession, final ServerSession session, String data, final Callback callback) {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Sending {}", data);
@@ -174,6 +175,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
             super(context);
         }
 
+        @Override
         public void onWebSocketConnect(Session session) {
             _wsSession = session;
         }
@@ -182,10 +184,12 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         public void onWebSocketBinary(byte[] payload, int offset, int len) {
         }
 
+        @Override
         public void onWebSocketText(String data) {
             onMessage(_wsSession, data);
         }
 
+        @Override
         public void onWebSocketClose(int code, String reason) {
             onClose(code, reason);
         }

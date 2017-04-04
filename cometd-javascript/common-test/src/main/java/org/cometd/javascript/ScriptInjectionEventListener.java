@@ -43,6 +43,7 @@ public class ScriptInjectionEventListener implements EventListener {
         this.domNodes = domNodes;
     }
 
+    @Override
     public void handleEvent(Event evt) {
         if ("DOMNodeInserted".equals(evt.getType())) {
             Object target = evt.getTarget();

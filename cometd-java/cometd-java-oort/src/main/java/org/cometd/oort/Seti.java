@@ -109,6 +109,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         ServerChannel setiAllChannel = bayeux.createChannelIfAbsent(SETI_ALL_CHANNEL).getReference();
         setiAllChannel.addListener(_initialStateListener);
         _session.getChannel(SETI_ALL_CHANNEL).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 receiveBroadcast(message);
             }
@@ -117,6 +118,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         String setiChannelName = generateSetiChannel(_setiId);
         _session.getChannel(setiChannelName).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 receiveDirect(message);
             }
@@ -731,10 +733,12 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         throw new IllegalArgumentException();
     }
 
+    @Override
     public String dump() {
         return ContainerLifeCycle.dump(this);
     }
 
+    @Override
     public void dump(Appendable out, String indent) throws IOException {
         ContainerLifeCycle.dumpObject(out, this);
 
@@ -777,8 +781,10 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         public void receive(String toUser, String toChannel, Object data);
 
+        @Override
         public int hashCode();
 
+        @Override
         public boolean equals(Object obj);
     }
 
@@ -794,10 +800,12 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
             _session = session;
         }
 
+        @Override
         public void send(String toUser, String toChannel, Object data) {
             _session.deliver(Seti.this._session.getServerSession(), toChannel, data);
         }
 
+        @Override
         public void receive(String toUser, String toChannel, Object data) {
             send(toUser, toChannel, data);
         }
@@ -844,10 +852,12 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
             _setiChannel = oortURL == null ? SETI_ALL_CHANNEL : generateSetiChannel(generateSetiId(oortURL));
         }
 
+        @Override
         public void send(String toUser, String toChannel, Object data) {
             _session.getChannel(_setiChannel).publish(new SetiMessage(toUser, toChannel, data));
         }
 
+        @Override
         public void receive(String toUser, String toChannel, Object data) {
             // A message has been sent to this comet because the sender thought
             // the user was in this comet. If it were, we would have found a
@@ -935,9 +945,11 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
          * Empty implementation of {@link PresenceListener}
          */
         public static class Adapter implements PresenceListener {
+            @Override
             public void presenceAdded(Event event) {
             }
 
+            @Override
             public void presenceRemoved(Event event) {
             }
         }
@@ -995,6 +1007,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     }
 
     private class CometListener implements Oort.CometListener {
+        @Override
         public void cometJoined(Event event) {
             String oortURL = event.getCometURL();
             OortComet oortComet = _oort.findComet(oortURL);
@@ -1011,6 +1024,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
             }
         }
 
+        @Override
         public void cometLeft(Event event) {
             String oortURL = event.getCometURL();
             if (_logger.isDebugEnabled()) {

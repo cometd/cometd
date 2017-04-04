@@ -86,6 +86,7 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor {
     public void execute(final Runnable task) {
         final long begin = System.nanoTime();
         super.execute(new Runnable() {
+            @Override
             public void run() {
                 long latency = System.nanoTime() - begin;
                 tasks.incrementAndGet();

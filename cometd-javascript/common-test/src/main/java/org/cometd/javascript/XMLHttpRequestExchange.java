@@ -43,6 +43,7 @@ public class XMLHttpRequestExchange extends ScriptableObject {
         exchange = new CometDExchange((XMLHttpRequestClient)client, (ThreadModel)threadModel, thiz, method, url, async);
     }
 
+    @Override
     public String getClassName() {
         return "XMLHttpRequestExchange";
     }

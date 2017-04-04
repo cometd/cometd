@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServlet;
  * @see OortMulticastConfigServlet
  */
 public class SetiServlet extends HttpServlet {
+    @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
@@ -54,6 +55,7 @@ public class SetiServlet extends HttpServlet {
         return new Seti(oort);
     }
 
+    @Override
     public void destroy() {
         try {
             ServletContext servletContext = getServletConfig().getServletContext();

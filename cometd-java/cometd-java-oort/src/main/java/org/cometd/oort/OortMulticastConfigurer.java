@@ -295,6 +295,7 @@ public class OortMulticastConfigurer extends AbstractLifeCycle {
             this.channel = channel;
         }
 
+        @Override
         public void run() {
             try {
                 if (logger.isDebugEnabled()) {
@@ -340,6 +341,7 @@ public class OortMulticastConfigurer extends AbstractLifeCycle {
             this.channel = channel;
         }
 
+        @Override
         public void run() {
             if (logger.isDebugEnabled()) {
                 logger.debug("Entering multicast sender thread");

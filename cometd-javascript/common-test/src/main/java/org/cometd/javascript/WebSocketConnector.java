@@ -32,6 +32,7 @@ public class WebSocketConnector extends ScriptableObject {
         this.cookieStore = cookieStore;
     }
 
+    @Override
     public String getClassName() {
         return "WebSocketConnector";
     }

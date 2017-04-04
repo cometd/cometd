@@ -49,6 +49,7 @@ public class Bidder implements Cloneable, JSON.Convertible {
     }
 
 
+    @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
@@ -62,6 +63,7 @@ public class Bidder implements Cloneable, JSON.Convertible {
         return ((Bidder)obj).getName().equals(getUsername());
     }
 
+    @Override
     public int hashCode() {
         if (getUsername() == null) {
             return 0;
@@ -69,6 +71,7 @@ public class Bidder implements Cloneable, JSON.Convertible {
         return getUsername().hashCode();
     }
 
+    @Override
     public Bidder clone() {
         try {
             return (Bidder)super.clone();
@@ -77,14 +80,17 @@ public class Bidder implements Cloneable, JSON.Convertible {
         }
     }
 
+    @Override
     public void fromJSON(Map object) {
     }
 
+    @Override
     public void toJSON(Output out) {
         out.add("username", username);
         out.add("name", name);
     }
 
+    @Override
     public String toString() {
         return JSON.toString(this);
     }

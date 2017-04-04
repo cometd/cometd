@@ -47,6 +47,7 @@ public class CookiesTest extends ClientServerTest {
         final AtomicReference<HttpCookie> browserCookie = new AtomicReference<>();
         final BayeuxClient client = newBayeuxClient();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 browserCookie.set(client.getCookie("BAYEUX_BROWSER"));
             }
@@ -111,6 +112,7 @@ public class CookiesTest extends ClientServerTest {
 
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
             }
         });

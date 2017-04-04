@@ -50,10 +50,12 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         _session.addListener(this);
     }
 
+    @Override
     public boolean rcv(ServerSession from, Mutable message) {
         return true;
     }
 
+    @Override
     public boolean rcvMeta(ServerSession session, Mutable message) {
         if (Channel.META_CONNECT.equals(message.getChannel())) {
             Map<String, Object> ext = message.getExt(false);
@@ -92,12 +94,14 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         }
     }
 
+    @Override
     public ServerMessage send(ServerSession session, ServerMessage message) {
         // Too early to do anything with the message.
         // Other extensions and/or listener may modify/veto it.
         return message;
     }
 
+    @Override
     public void queued(ServerSession sender, ServerMessage message) {
         // This method is called after all the extensions and the other
         // listeners, so only here are sure that the message is not vetoed.
@@ -109,6 +113,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         }
     }
 
+    @Override
     public boolean sendMeta(ServerSession to, Mutable message) {
         String channel = message.getChannel();
         Map<String, Object> ext = message.getExt(true);
@@ -158,6 +163,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         }
     }
 
+    @Override
     public void deQueue(ServerSession session, Queue<ServerMessage> queue) {
         synchronized (_session.getLock()) {
             Long batch = _batches.remove(Thread.currentThread().getId());

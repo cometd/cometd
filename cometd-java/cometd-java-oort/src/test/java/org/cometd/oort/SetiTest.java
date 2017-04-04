@@ -123,6 +123,7 @@ public class SetiTest extends OortTest {
         String channel = "/service/forward";
         final CountDownLatch messageLatch = new CountDownLatch(1);
         client2.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
@@ -188,6 +189,7 @@ public class SetiTest extends OortTest {
         String channel = "/service/forward";
         final CountDownLatch messageLatch = new CountDownLatch(1);
         client2.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
@@ -370,18 +372,21 @@ public class SetiTest extends OortTest {
         final LatchListener messageLatch = new LatchListener(3);
         final AtomicInteger counter = new AtomicInteger();
         client1A.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 counter.incrementAndGet();
                 messageLatch.countDown();
             }
         });
         client1B.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 counter.incrementAndGet();
                 messageLatch.countDown();
             }
         });
         client1C.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 counter.incrementAndGet();
                 messageLatch.countDown();
@@ -449,10 +454,12 @@ public class SetiTest extends OortTest {
         final CountDownLatch presenceOnLatch = new CountDownLatch(1);
         final CountDownLatch presenceOffLatch = new CountDownLatch(1);
         Seti.PresenceListener listener = new Seti.PresenceListener() {
+            @Override
             public void presenceAdded(Event event) {
                 presenceOnLatch.countDown();
             }
 
+            @Override
             public void presenceRemoved(Event event) {
                 presenceOffLatch.countDown();
             }
@@ -507,6 +514,7 @@ public class SetiTest extends OortTest {
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
         final CountDownLatch publishLatch = new CountDownLatch(1);
         loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 publishLatch.countDown();
             }
@@ -576,6 +584,7 @@ public class SetiTest extends OortTest {
         final CountDownLatch localPresenceOffLatch = new CountDownLatch(1);
         final CountDownLatch remotePresenceOffLatch = new CountDownLatch(1);
         Seti.PresenceListener listener = new Seti.PresenceListener() {
+            @Override
             public void presenceAdded(Event event) {
                 if (event.isLocal()) {
                     localPresenceOnLatch.countDown();
@@ -584,6 +593,7 @@ public class SetiTest extends OortTest {
                 }
             }
 
+            @Override
             public void presenceRemoved(Event event) {
                 if (event.isLocal()) {
                     localPresenceOffLatch.countDown();
@@ -601,6 +611,7 @@ public class SetiTest extends OortTest {
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
         loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch1.countDown();
             }
@@ -615,6 +626,7 @@ public class SetiTest extends OortTest {
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
         loginChannel2.publish(login2, new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch2.countDown();
             }
@@ -628,6 +640,7 @@ public class SetiTest extends OortTest {
         logout2.put("user", userId2);
         ClientSessionChannel logoutChannel2 = client2.getChannel("/service/logout");
         logoutChannel2.publish(logout2, new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 logoutLatch2.countDown();
             }
@@ -641,6 +654,7 @@ public class SetiTest extends OortTest {
         logout1.put("user", userId1);
         ClientSessionChannel logoutChannel1 = client1.getChannel("/service/logout");
         logoutChannel1.publish(logout1, new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 logoutLatch1.countDown();
             }
@@ -688,6 +702,7 @@ public class SetiTest extends OortTest {
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
         loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch1.countDown();
             }
@@ -701,6 +716,7 @@ public class SetiTest extends OortTest {
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
         loginChannel2.publish(login2, new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch2.countDown();
             }
@@ -764,6 +780,7 @@ public class SetiTest extends OortTest {
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
         loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch1.countDown();
             }
@@ -777,6 +794,7 @@ public class SetiTest extends OortTest {
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
         loginChannel2.publish(login2, new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch2.countDown();
             }
@@ -871,6 +889,7 @@ public class SetiTest extends OortTest {
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
         loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch1.countDown();
             }
@@ -899,6 +918,7 @@ public class SetiTest extends OortTest {
             final CountDownLatch loginLatch2 = new CountDownLatch(1);
             loginChannel1 = client1.getChannel("/service/login");
             loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+                @Override
                 public void onMessage(ClientSessionChannel channel, Message message) {
                     loginLatch2.countDown();
                 }
@@ -947,6 +967,7 @@ public class SetiTest extends OortTest {
             final CountDownLatch loginLatch3 = new CountDownLatch(1);
             loginChannel1 = client1.getChannel("/service/login");
             loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+                @Override
                 public void onMessage(ClientSessionChannel channel, Message message) {
                     loginLatch3.countDown();
                 }
@@ -1024,6 +1045,7 @@ public class SetiTest extends OortTest {
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
         loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch1.countDown();
             }
@@ -1037,6 +1059,7 @@ public class SetiTest extends OortTest {
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
         loginChannel2.publish(login2, new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 loginLatch2.countDown();
             }
@@ -1064,6 +1087,7 @@ public class SetiTest extends OortTest {
         final CountDownLatch messageLatch = new CountDownLatch(1);
         client2.getChannel(Channel.META_SUBSCRIBE).addListener(subscribeListener);
         client2.getChannel(broadcastChannel).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
@@ -1221,6 +1245,7 @@ public class SetiTest extends OortTest {
             this.latch = latch;
         }
 
+        @Override
         public void presenceAdded(Event event) {
             latch.countDown();
         }
@@ -1233,6 +1258,7 @@ public class SetiTest extends OortTest {
             this.latch = latch;
         }
 
+        @Override
         public void presenceRemoved(Event event) {
             latch.countDown();
         }

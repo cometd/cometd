@@ -69,6 +69,7 @@ public class GrantAuthorizer implements Authorizer {
         _operations = operations;
     }
 
+    @Override
     public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
         if (_operations.contains(operation)) {
             return Result.grant();
@@ -76,6 +77,7 @@ public class GrantAuthorizer implements Authorizer {
         return Result.ignore();
     }
 
+    @Override
     public String toString() {
         return getClass().getSimpleName() + _operations;
     }

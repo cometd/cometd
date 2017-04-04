@@ -187,6 +187,7 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribeLatch.countDown();
             }
@@ -201,6 +202,7 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
 
         final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
         bayeuxClient.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 unsubscribeLatch.countDown();
             }
@@ -244,6 +246,7 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribeLatch.countDown();
             }
@@ -334,6 +337,7 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
 
         final AtomicReference<CountDownLatch> subscribeLatch = new AtomicReference<>(new CountDownLatch(1));
         bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribeLatch.get().countDown();
             }

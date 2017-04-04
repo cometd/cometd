@@ -84,6 +84,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
         };
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertFalse(message.isSuccessful());
                 latch.countDown();
@@ -93,6 +94,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         client.getChannel("/test").subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
             }
         });
@@ -116,6 +118,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
         };
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertTrue(message.isSuccessful());
                 latch.countDown();
@@ -124,6 +127,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
         final CountDownLatch failLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertFalse(message.isSuccessful());
                 failLatch.countDown();
@@ -134,6 +138,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
 
         final CountDownLatch publishLatch = new CountDownLatch(1);
         channel.subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 publishLatch.countDown();
             }
@@ -170,6 +175,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
         final CountDownLatch publishLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     publishLatch.countDown();
@@ -192,6 +198,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
         final int sleep = 1000;
         final AtomicBoolean handshaken = new AtomicBoolean();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 try {
                     Thread.sleep(sleep);
@@ -203,6 +210,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
         });
         final CountDownLatch connectLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (handshaken.get()) {
                     connectLatch.countDown();
@@ -234,6 +242,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
 
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 try {
                     handshakeLatch.await();
@@ -247,9 +256,11 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
 
         final CountDownLatch messageLatch = new CountDownLatch(1);
         client.batch(new Runnable() {
+            @Override
             public void run() {
                 ClientSessionChannel channel = client.getChannel(channelName);
                 channel.subscribe(new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                         messageLatch.countDown();
                     }

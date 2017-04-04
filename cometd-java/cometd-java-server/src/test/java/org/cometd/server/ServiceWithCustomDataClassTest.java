@@ -81,12 +81,14 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
     }
 
     public static class HolderConvertor implements JSON.Convertor {
+        @Override
         public void toJSON(Object obj, JSON.Output out) {
             Holder holder = (Holder)obj;
             out.addClass(Holder.class);
             out.add("field", holder.field);
         }
 
+        @Override
         public Object fromJSON(Map map) {
             String value = (String)map.get("field");
             Holder holder = new Holder();

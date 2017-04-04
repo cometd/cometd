@@ -74,6 +74,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         input.setReadListener(reader);
     }
 
+    @Override
     protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
         AsyncContext asyncContext = request.getAsyncContext();
         return newHttpScheduler(request, response, asyncContext, session, reply, timeout);

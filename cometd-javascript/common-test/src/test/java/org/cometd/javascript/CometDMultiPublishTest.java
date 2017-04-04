@@ -98,6 +98,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
         private AtomicReference<List<Throwable>> failures;
         private CountDownLatch latch;
 
+        @Override
         public String getClassName() {
             return "Handler";
         }
@@ -140,9 +141,11 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
     public static class PublishThrowingFilter implements Filter {
         private int messages;
 
+        @Override
         public void init(FilterConfig filterConfig) throws ServletException {
         }
 
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
@@ -159,6 +162,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
             chain.doFilter(request, response);
         }
 
+        @Override
         public void destroy() {
         }
     }

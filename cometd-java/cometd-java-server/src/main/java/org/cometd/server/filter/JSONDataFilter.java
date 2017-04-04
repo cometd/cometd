@@ -36,6 +36,7 @@ public class JSONDataFilter implements DataFilter {
     public void init(Object init) {
     }
 
+    @Override
     public Object filter(ServerSession from, ServerChannel to, Object data) {
         if (data == null) {
             return null;

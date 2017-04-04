@@ -148,6 +148,7 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
     }
 
     private class JSONParser implements JSONContext.Parser {
+        @Override
         @SuppressWarnings("unchecked")
         public <T> T parse(Reader reader, Class<T> type) throws ParseException {
             return (T)getJSON().parse(new JSON.ReaderSource(reader));
@@ -155,6 +156,7 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
     }
 
     private class JSONGenerator implements JSONContext.Generator {
+        @Override
         public String generate(Object object) {
             return getJSON().toJSON(object);
         }

@@ -55,6 +55,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
         LocalSession service = bayeux.newLocalSession("custom_serialization");
         service.handshake();
         service.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Data data = (Data)message.getData();
                 Assert.assertEquals(dataContent, data.content);

@@ -111,9 +111,11 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         private boolean handshook;
         private String clientId;
 
+        @Override
         public void init(FilterConfig filterConfig) throws ServletException {
         }
 
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
@@ -148,6 +150,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
             }
         }
 
+        @Override
         public void destroy() {
         }
     }

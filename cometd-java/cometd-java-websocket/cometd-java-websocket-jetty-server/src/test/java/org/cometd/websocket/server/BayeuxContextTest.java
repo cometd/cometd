@@ -67,6 +67,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 BayeuxContext context = bayeux.getContext();
                 Assert.assertEquals(context.getHeader("Host"), context.getHeader("HOST"));
@@ -92,6 +93,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         final String cookieValue = "value";
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 BayeuxContext context = bayeux.getContext();
                 Assert.assertEquals(cookieValue, context.getCookie(cookieName));
@@ -151,6 +153,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 BayeuxContext context = bayeux.getContext();
                 for (int i = 0; i < cookieNames.size(); ++i) {
@@ -244,12 +247,14 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assert.assertNotNull(bayeux.getContext().getHttpSessionId());
                 Assert.assertEquals(SessionConstants.ATTRIBUTE_VALUE, bayeux.getContext().getHttpSessionAttribute(SessionConstants.ATTRIBUTE_NAME));
                 latch.countDown();
             }
 
+            @Override
             public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
@@ -270,11 +275,13 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assert.assertSame(bayeux, bayeux.getContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
                 latch.countDown();
             }
 
+            @Override
             public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
@@ -310,6 +317,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         final BayeuxClient client1 = newBayeuxClient();
         // The connect operation is blocking, so we must use another thread.
         new Thread(new Runnable() {
+            @Override
             public void run() {
                 client1.handshake();
             }

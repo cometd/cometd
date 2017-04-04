@@ -85,9 +85,11 @@ public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPolli
     public static class PublishThrowingFilter implements Filter {
         private int messages;
 
+        @Override
         public void init(FilterConfig filterConfig) throws ServletException {
         }
 
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
@@ -104,6 +106,7 @@ public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPolli
             chain.doFilter(request, response);
         }
 
+        @Override
         public void destroy() {
         }
     }

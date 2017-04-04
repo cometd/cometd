@@ -375,9 +375,11 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
          * @param <V> the value type
          */
         public static class Adapter<K, V> implements EntryListener<K, V> {
+            @Override
             public void onPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry) {
             }
 
+            @Override
             public void onRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry) {
             }
         }
@@ -470,6 +472,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
             this.oortMap = oortMap;
         }
 
+        @Override
         public void onUpdated(Info<ConcurrentMap<K, V>> oldInfo, Info<ConcurrentMap<K, V>> newInfo) {
             Map<K, V> oldMap = oldInfo == null ? Collections.<K, V>emptyMap() : oldInfo.getObject();
             Map<K, V> newMap = new HashMap<>(newInfo.getObject());
@@ -490,6 +493,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
             }
         }
 
+        @Override
         public void onRemoved(Info<ConcurrentMap<K, V>> info) {
             for (Map.Entry<K, V> oldEntry : info.getObject().entrySet()) {
                 Entry<K, V> entry = new Entry<>(oldEntry.getKey(), oldEntry.getValue(), null);

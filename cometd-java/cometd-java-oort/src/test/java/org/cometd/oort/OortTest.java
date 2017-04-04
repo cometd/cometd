@@ -191,6 +191,7 @@ public abstract class OortTest {
             reset(counts);
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (!message.isMeta() || message.isSuccessful()) {
                 count.incrementAndGet();
@@ -223,6 +224,7 @@ public abstract class OortTest {
             this.latch = latch;
         }
 
+        @Override
         public void cometJoined(Event event) {
             latch.countDown();
         }
@@ -235,6 +237,7 @@ public abstract class OortTest {
             this.latch = latch;
         }
 
+        @Override
         public void cometLeft(Event event) {
             latch.countDown();
         }

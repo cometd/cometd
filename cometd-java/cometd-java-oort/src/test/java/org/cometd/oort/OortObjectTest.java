@@ -65,6 +65,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         // The other OortObject listens to receive the object
         final CountDownLatch objectLatch2 = new CountDownLatch(1);
         oortObject2.addListener(new OortObject.Listener.Adapter<Map<String, Object>>() {
+            @Override
             public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo) {
                 Assert.assertFalse(newInfo.isLocal());
                 Assert.assertNotNull(oldInfo);
@@ -306,6 +307,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
                     if (data != null) {
                         if (value2 == ((Number)data.get(OortObject.Info.OBJECT_FIELD)).longValue()) {
                             new Thread() {
+                                @Override
                                 public void run() {
                                     try {
                                         sleep(delay);

@@ -777,10 +777,12 @@ public class Oort extends ContainerLifeCycle {
         List<Dumpable> children = new ArrayList<>();
 
         children.add(new Dumpable() {
+            @Override
             public String dump() {
                 return null;
             }
 
+            @Override
             public void dump(Appendable out, String indent) throws IOException {
                 Set<String> knownComets = getKnownComets();
                 ContainerLifeCycle.dumpObject(out, "connected comets: " + knownComets.size());
@@ -789,10 +791,12 @@ public class Oort extends ContainerLifeCycle {
         });
 
         children.add(new Dumpable() {
+            @Override
             public String dump() {
                 return null;
             }
 
+            @Override
             public void dump(Appendable out, String indent) throws IOException {
                 Set<String> observedChannels = getObservedChannels();
                 ContainerLifeCycle.dumpObject(out, "observed channels: " + observedChannels.size());
@@ -803,6 +807,7 @@ public class Oort extends ContainerLifeCycle {
         ContainerLifeCycle.dump(out, indent, children);
     }
 
+    @Override
     public String toString() {
         return String.format("%s[%s]", getClass().getSimpleName(), getURL());
     }
@@ -901,6 +906,7 @@ public class Oort extends ContainerLifeCycle {
      * to A (in this case B). When C receives this message, it knows it has to connect to B also.</p>
      */
     protected class CloudListener implements ServerChannel.MessageListener {
+        @Override
         public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
             if (!from.isLocalSession()) {
                 joinComets(message);
@@ -910,6 +916,7 @@ public class Oort extends ContainerLifeCycle {
     }
 
     protected class JoinListener implements ServerChannel.MessageListener {
+        @Override
         public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
             Map<String, Object> data = message.getDataAsMap();
             String remoteOortId = (String)data.get(EXT_OORT_ID_FIELD);
@@ -964,9 +971,11 @@ public class Oort extends ContainerLifeCycle {
          * Empty implementation of {@link CometListener}
          */
         public static class Adapter implements CometListener {
+            @Override
             public void cometJoined(Event event) {
             }
 
+            @Override
             public void cometLeft(Event event) {
             }
         }
@@ -1051,6 +1060,7 @@ public class Oort extends ContainerLifeCycle {
     }
 
     private class OortCometLoopListener implements ServerSession.MessageListener {
+        @Override
         public boolean onMessage(ServerSession session, ServerSession sender, ServerMessage message) {
             // Prevent loops by not delivering a message from self or Oort session to remote Oort comets
             if (session.getId().equals(sender.getId()) || isOort(sender)) {
@@ -1075,6 +1085,7 @@ public class Oort extends ContainerLifeCycle {
             this.oortComet = oortComet;
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, Object> ext = message.getExt();
             if (ext == null) {

@@ -55,6 +55,7 @@ public class OortLongMapTest extends AbstractOortObjectTest {
         // The other OortObject listens to receive the object
         final CountDownLatch objectLatch2 = new CountDownLatch(1);
         oortMap2.addListener(new OortObject.Listener.Adapter<ConcurrentMap<Long, Object>>() {
+            @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<Long, Object>> oldInfo, OortObject.Info<ConcurrentMap<Long, Object>> newInfo) {
                 Assert.assertFalse(newInfo.isLocal());
                 Assert.assertNotNull(oldInfo);

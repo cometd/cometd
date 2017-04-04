@@ -28,6 +28,7 @@ public class AuctionServlet extends HttpServlet {
     AuctionService _auction;
     AuctionChatService _chat;
 
+    @Override
     public void init() throws ServletException {
         CategoryDao dao = new CategoryDao();
 
@@ -57,10 +58,12 @@ public class AuctionServlet extends HttpServlet {
         _chat = new AuctionChatService(getServletContext());
     }
 
+    @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
     }
 
+    @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
     }

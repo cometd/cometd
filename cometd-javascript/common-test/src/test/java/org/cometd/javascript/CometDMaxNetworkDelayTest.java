@@ -77,6 +77,7 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest {
         private AtomicReference<List<Throwable>> failures;
         private CountDownLatch latch;
 
+        @Override
         public String getClassName() {
             return "Listener";
         }

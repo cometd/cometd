@@ -44,6 +44,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         String channelName = "/testLazy";
         MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
                 channel.setLazy(true);
@@ -56,6 +57,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribeLatch.countDown();
             }
@@ -63,6 +65,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicLong begin = new AtomicLong();
         client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.getDataAsMap() == null) {
                     return;
@@ -100,6 +103,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         String channelName = "/testLazy";
         MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setLazyTimeout(channelLazyTimeout);
                 channel.setPersistent(true);
@@ -112,6 +116,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribeLatch.countDown();
             }
@@ -119,6 +124,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicLong begin = new AtomicLong();
         client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.getDataAsMap() == null) {
                     return;
@@ -157,6 +163,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         String shortLazyChannelName = "/shortLazy";
         MarkedReference<ServerChannel> shortLazyChannel = bayeux.createChannelIfAbsent(shortLazyChannelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setLazyTimeout(channelLazyTimeout);
                 channel.setPersistent(true);
@@ -165,6 +172,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         String longLazyChannelName = "/longLazy";
         MarkedReference<ServerChannel> longLazyChannel = bayeux.createChannelIfAbsent(longLazyChannelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setLazyTimeout(globalLazyTimeout);
                 channel.setPersistent(true);
@@ -177,6 +185,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         final CountDownLatch subscribeLatch = new CountDownLatch(2);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribeLatch.countDown();
             }
@@ -184,6 +193,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicLong begin = new AtomicLong();
         ClientSessionChannel.MessageListener messageListener = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.getDataAsMap() == null) {
                     return;
@@ -230,9 +240,11 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         String channelName = "/lazyDeliverData";
         MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
                 channel.addListener(new ServerChannel.MessageListener() {
+                    @Override
                     public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                         for (ServerSession subscriber : channel.getSubscribers()) {
                             subscriber.deliver(from, message.getChannel(), message.getData());
@@ -249,6 +261,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribeLatch.countDown();
             }
@@ -256,6 +269,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         final AtomicLong begin = new AtomicLong();
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.getDataAsMap() == null) {
                     return;
@@ -294,9 +308,11 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         String channelName = "/lazyDeliverMessage";
         MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
                 channel.addListener(new ServerChannel.MessageListener() {
+                    @Override
                     public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                         ServerMessage.Mutable newMessage = bayeux.newMessage();
                         newMessage.setChannel(message.getChannel());
@@ -318,6 +334,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribeLatch.countDown();
             }
@@ -325,6 +342,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         final AtomicLong begin = new AtomicLong();
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.getDataAsMap() == null) {
                     return;
@@ -364,6 +382,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         final String channelName = "/testQueueLazy";
         final MarkedReference<ServerChannel> serverChannel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setLazy(true);
                 channel.setPersistent(true);
@@ -374,8 +393,10 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         final AtomicLong begin = new AtomicLong();
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                         if (message.getDataAsMap() == null) {
                             return;
@@ -392,6 +413,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             private final AtomicInteger connects = new AtomicInteger();
 
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 int connects = this.connects.incrementAndGet();
                 if (connects == 1) {
@@ -403,6 +425,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         });
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 subscribeLatch.countDown();
             }
@@ -428,6 +451,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         String parentChannelName = "/foo";
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.createChannelIfAbsent(parentChannelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
                 channel.setLazy(true);
@@ -436,9 +460,11 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         String childChannelName = parentChannelName + "/bar";
         MarkedReference<ServerChannel> childChannel = bayeux.createChannelIfAbsent(childChannelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
                 channel.addListener(new ServerChannel.MessageListener() {
+                    @Override
                     public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                         Assert.assertFalse(message.isLazy());
                         latch.countDown();
@@ -463,6 +489,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         String wildChannelName = parentChannelName + "/*";
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.createChannelIfAbsent(wildChannelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
                 channel.setLazy(true);
@@ -471,9 +498,11 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         String childChannelName = parentChannelName + "/bar";
         MarkedReference<ServerChannel> childChannel = bayeux.createChannelIfAbsent(childChannelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
                 channel.addListener(new ServerChannel.MessageListener() {
+                    @Override
                     public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                         Assert.assertTrue(message.isLazy());
                         latch.countDown();

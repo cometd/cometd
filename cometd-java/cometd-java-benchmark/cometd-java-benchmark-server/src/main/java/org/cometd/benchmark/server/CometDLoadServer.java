@@ -417,6 +417,7 @@ public class CometDLoadServer {
             final AtomicBoolean longRequest = new AtomicBoolean(false);
             final Thread thread = Thread.currentThread();
             ScheduledFuture<?> task = scheduler.scheduleWithFixedDelay(new Runnable() {
+                @Override
                 public void run() {
                     longRequest.set(true);
                     onLongRequestDetected(requestId, httpRequest, thread);

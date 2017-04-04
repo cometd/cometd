@@ -103,9 +103,11 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
             this.delay = delay;
         }
 
+        @Override
         public void init(FilterConfig filterConfig) throws ServletException {
         }
 
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
@@ -126,6 +128,7 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
             chain.doFilter(request, response);
         }
 
+        @Override
         public void destroy() {
         }
     }

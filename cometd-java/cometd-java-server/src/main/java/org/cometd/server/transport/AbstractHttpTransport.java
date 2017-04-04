@@ -364,6 +364,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         flush(request, response, session, true, true, processReply(session, reply));
     }
 
+    @Override
     public BayeuxContext getContext() {
         HttpServletRequest request = getCurrentRequest();
         if (request != null) {
@@ -514,6 +515,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     /**
      * Sweeps the transport for old Browser IDs
      */
+    @Override
     protected void sweep() {
         long now = System.currentTimeMillis();
         long elapsed = now - _lastSweep;
@@ -547,38 +549,47 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             _request = request;
         }
 
+        @Override
         public Principal getUserPrincipal() {
             return _request.getUserPrincipal();
         }
 
+        @Override
         public boolean isUserInRole(String role) {
             return _request.isUserInRole(role);
         }
 
+        @Override
         public InetSocketAddress getRemoteAddress() {
             return new InetSocketAddress(_request.getRemoteHost(), _request.getRemotePort());
         }
 
+        @Override
         public InetSocketAddress getLocalAddress() {
             return new InetSocketAddress(_request.getLocalName(), _request.getLocalPort());
         }
 
+        @Override
         public String getHeader(String name) {
             return _request.getHeader(name);
         }
 
+        @Override
         public List<String> getHeaderValues(String name) {
             return Collections.list(_request.getHeaders(name));
         }
 
+        @Override
         public String getParameter(String name) {
             return _request.getParameter(name);
         }
 
+        @Override
         public List<String> getParameterValues(String name) {
             return Arrays.asList(_request.getParameterValues(name));
         }
 
+        @Override
         public String getCookie(String name) {
             Cookie[] cookies = _request.getCookies();
             if (cookies != null) {
@@ -591,6 +602,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             return null;
         }
 
+        @Override
         public String getHttpSessionId() {
             HttpSession session = _request.getSession(false);
             if (session != null) {
@@ -599,6 +611,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             return null;
         }
 
+        @Override
         public Object getHttpSessionAttribute(String name) {
             HttpSession session = _request.getSession(false);
             if (session != null) {
@@ -607,6 +620,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             return null;
         }
 
+        @Override
         public void setHttpSessionAttribute(String name, Object value) {
             HttpSession session = _request.getSession(false);
             if (session != null) {
@@ -616,6 +630,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
         }
 
+        @Override
         public void invalidateHttpSession() {
             HttpSession session = _request.getSession(false);
             if (session != null) {
@@ -623,6 +638,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
         }
 
+        @Override
         public Object getRequestAttribute(String name) {
             return _request.getAttribute(name);
         }
@@ -639,14 +655,17 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
         }
 
+        @Override
         public Object getContextAttribute(String name) {
             return getServletContext().getAttribute(name);
         }
 
+        @Override
         public String getContextInitParameter(String name) {
             return getServletContext().getInitParameter(name);
         }
 
+        @Override
         public String getURL() {
             StringBuffer url = _request.getRequestURL();
             String query = _request.getQueryString();

@@ -23,6 +23,7 @@ import org.mozilla.javascript.ScriptableObject;
 public class Latch extends ScriptableObject {
     private volatile CountDownLatch latch;
 
+    @Override
     public String getClassName() {
         return "Latch";
     }

@@ -125,6 +125,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     /**
      * @return the remote user agent
      */
+    @Override
     public String getUserAgent() {
         return _userAgent;
     }
@@ -185,22 +186,27 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
+    @Override
     public Set<ServerChannel> getSubscriptions() {
         return Collections.<ServerChannel>unmodifiableSet(_subscribedTo.keySet());
     }
 
+    @Override
     public void addExtension(Extension extension) {
         _extensions.add(extension);
     }
 
+    @Override
     public void removeExtension(Extension extension) {
         _extensions.remove(extension);
     }
 
+    @Override
     public List<Extension> getExtensions() {
         return Collections.unmodifiableList(_extensions);
     }
 
+    @Override
     public void batch(Runnable batch) {
         startBatch();
         try {
@@ -210,6 +216,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
+    @Override
     public void deliver(Session sender, ServerMessage.Mutable message) {
         ServerSession session = null;
         if (sender instanceof ServerSession) {
@@ -223,6 +230,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
+    @Override
     public void deliver(Session sender, String channelId, Object data) {
         ServerMessage.Mutable message = _bayeux.newMessage();
         message.setChannel(channelId);
@@ -349,6 +357,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         _connected.set(true);
     }
 
+    @Override
     public void disconnect() {
         boolean connected = _bayeux.removeServerSession(this, false);
         if (connected) {
@@ -359,6 +368,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
+    @Override
     public boolean endBatch() {
         boolean result = false;
         synchronized (getLock()) {
@@ -372,24 +382,29 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         return result;
     }
 
+    @Override
     public LocalSession getLocalSession() {
         return _localSession;
     }
 
+    @Override
     public boolean isLocalSession() {
         return _localSession != null;
     }
 
+    @Override
     public void startBatch() {
         synchronized (getLock()) {
             ++_batch;
         }
     }
 
+    @Override
     public void addListener(ServerSessionListener listener) {
         _listeners.add(listener);
     }
 
+    @Override
     public String getId() {
         return _id;
     }
@@ -446,6 +461,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
+    @Override
     public void removeListener(ServerSessionListener listener) {
         _listeners.remove(listener);
     }
@@ -583,28 +599,34 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         return _expireTime;
     }
 
+    @Override
     public Object getAttribute(String name) {
         return _attributes.getAttribute(name);
     }
 
+    @Override
     public Set<String> getAttributeNames() {
         return _attributes.getAttributeNameSet();
     }
 
+    @Override
     public Object removeAttribute(String name) {
         Object old = getAttribute(name);
         _attributes.removeAttribute(name);
         return old;
     }
 
+    @Override
     public void setAttribute(String name, Object value) {
         _attributes.setAttribute(name, value);
     }
 
+    @Override
     public boolean isHandshook() {
         return _handshook.get();
     }
 
+    @Override
     public boolean isConnected() {
         return _connected.get();
     }
@@ -698,19 +720,23 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         return null;
     }
 
+    @Override
     public long getTimeout() {
         return _timeout;
     }
 
+    @Override
     public long getInterval() {
         return _interval;
     }
 
+    @Override
     public void setTimeout(long timeoutMS) {
         _timeout = timeoutMS;
         _advisedTransport = null;
     }
 
+    @Override
     public void setInterval(long intervalMS) {
         _interval = intervalMS;
         _advisedTransport = null;

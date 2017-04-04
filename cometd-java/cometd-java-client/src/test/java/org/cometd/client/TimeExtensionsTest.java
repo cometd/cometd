@@ -45,6 +45,7 @@ public class TimeExtensionsTest extends ClientServerTest {
 
         final Queue<Message> messages = new ConcurrentLinkedQueue<>();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messages.add(message);
             }
@@ -78,6 +79,7 @@ public class TimeExtensionsTest extends ClientServerTest {
 
         final Queue<Message> messages = new ConcurrentLinkedQueue<>();
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messages.add(message);
             }

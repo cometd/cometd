@@ -33,6 +33,7 @@ public class AbstractTransport implements Transport {
         _options = options == null ? new HashMap<String, Object>(1) : options;
     }
 
+    @Override
     public String getName() {
         return _name;
     }
@@ -54,6 +55,7 @@ public class AbstractTransport implements Transport {
      *
      * @param name the option name to return the value for.
      */
+    @Override
     public Object getOption(String name) {
         Object value = _options.get(name);
         String prefix = null;
@@ -83,6 +85,7 @@ public class AbstractTransport implements Transport {
         _options.put(name, value);
     }
 
+    @Override
     public String getOptionPrefix() {
         return _optionPrefix;
     }
@@ -124,6 +127,7 @@ public class AbstractTransport implements Transport {
         _prefix = prefix.split("\\.");
     }
 
+    @Override
     public Set<String> getOptionNames() {
         Set<String> names = new HashSet<String>();
         for (String name : _options.keySet()) {

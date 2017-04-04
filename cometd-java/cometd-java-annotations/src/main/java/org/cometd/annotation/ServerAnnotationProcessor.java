@@ -142,6 +142,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             String[] channels = configure.value();
             for (String channel : channels) {
                 final Initializer init = new Initializer() {
+                    @Override
                     public void configureChannel(ConfigurableServerChannel channel) {
                         if (logger.isDebugEnabled()) {
                             logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
@@ -599,6 +600,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             this.receiveOwnPublishes = receiveOwnPublishes;
         }
 
+        @Override
         public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
             if (from == localSession.getServerSession() && !receiveOwnPublishes) {
                 return true;
@@ -637,6 +639,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             this.subscription = subscription;
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, String> matches = channelId.bind(message.getChannelId());
             if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames)) {

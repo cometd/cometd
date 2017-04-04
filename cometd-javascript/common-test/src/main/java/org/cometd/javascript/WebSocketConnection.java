@@ -65,6 +65,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
         }
     }
 
+    @Override
     public String getClassName() {
         return "WebSocketConnection";
     }

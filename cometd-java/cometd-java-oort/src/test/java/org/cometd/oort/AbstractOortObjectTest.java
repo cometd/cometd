@@ -107,12 +107,14 @@ public abstract class AbstractOortObjectTest extends OortTest {
             this.latch = new CountDownLatch(parties);
         }
 
+        @Override
         public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             if (channelName.equals(channel.getId())) {
                 latch.countDown();
             }
         }
 
+        @Override
         public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
         }
 

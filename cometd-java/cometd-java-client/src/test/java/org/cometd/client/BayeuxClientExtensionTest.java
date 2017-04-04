@@ -86,11 +86,13 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 latch.countDown();
             }
         });
         client.getChannel("/foo").subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
             }
         });
@@ -114,16 +116,19 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 latch.countDown();
             }
         });
         final ClientSessionChannel channel = client.getChannel("/foo");
         final ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
             }
         };
         client.batch(new Runnable() {
+            @Override
             public void run() {
                 channel.subscribe(listener);
                 channel.unsubscribe(listener);
@@ -150,8 +155,10 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
 
         final ClientSessionChannel channel = client.getChannel(channelName);
         client.batch(new Runnable() {
+            @Override
             public void run() {
                 channel.subscribe(new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                     }
                 });
@@ -195,6 +202,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         final CountDownLatch latch = new CountDownLatch(1);
         MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
         channel.getReference().addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 latch.countDown();
                 return true;
@@ -238,8 +246,10 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
             }
         });
         client.handshake(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                     }
                 });
@@ -279,6 +289,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
             this.channel = channel;
         }
 
+        @Override
         public boolean rcv(ClientSession session, Message.Mutable message) {
             if (ChannelId.isMeta(channel) || channel.equals(message.getChannel())) {
                 rcvs.add(message);
@@ -286,6 +297,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
             return true;
         }
 
+        @Override
         public boolean rcvMeta(ClientSession session, Message.Mutable message) {
             if (channel.equals(message.getChannel())) {
                 rcvMetas.add(message);
@@ -293,6 +305,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
             return true;
         }
 
+        @Override
         public boolean send(ClientSession session, Message.Mutable message) {
             if (ChannelId.isMeta(channel) || channel.equals(message.getChannel())) {
                 sends.add(message);
@@ -300,6 +313,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
             return true;
         }
 
+        @Override
         public boolean sendMeta(ClientSession session, Message.Mutable message) {
             if (channel.equals(message.getChannel())) {
                 sendMetas.add(message);

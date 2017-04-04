@@ -87,9 +87,11 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
         final String channelName = "/autobatch";
         final CountDownLatch messageLatch = new CountDownLatch(1);
         client.batch(new Runnable() {
+            @Override
             public void run() {
                 ClientSessionChannel channel = client.getChannel(channelName);
                 channel.subscribe(new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                         messageLatch.countDown();
                     }

@@ -21,6 +21,7 @@ import org.cometd.javascript.TestProvider;
 import org.cometd.javascript.ThreadModel;
 
 public class JQueryTestProvider implements TestProvider {
+    @Override
     public void provideCometD(ThreadModel threadModel, String contextURL) throws Exception {
         // Order of the script evaluation is important, as they depend one from the other
         threadModel.evaluate(new URL(contextURL + "/json2.js"));
@@ -49,21 +50,25 @@ public class JQueryTestProvider implements TestProvider {
                 "cometd.registerTransport('websocket', originalTransports['websocket']);");
     }
 
+    @Override
     public void provideMessageAcknowledgeExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate(new URL(contextURL + "/js/cometd/AckExtension.js"));
         threadModel.evaluate(new URL(contextURL + "/js/jquery/jquery.cometd-ack.js"));
     }
 
+    @Override
     public void provideReloadExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate(new URL(contextURL + "/js/cometd/ReloadExtension.js"));
         threadModel.evaluate(new URL(contextURL + "/js/jquery/jquery.cometd-reload.js"));
     }
 
+    @Override
     public void provideTimestampExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate(new URL(contextURL + "/js/cometd/TimeStampExtension.js"));
         threadModel.evaluate(new URL(contextURL + "/js/jquery/jquery.cometd-timestamp.js"));
     }
 
+    @Override
     public void provideTimesyncExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate(new URL(contextURL + "/js/cometd/TimeSyncExtension.js"));
         threadModel.evaluate(new URL(contextURL + "/js/jquery/jquery.cometd-timesync.js"));

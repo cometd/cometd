@@ -54,6 +54,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         this.rootScope = rootScope;
     }
 
+    @Override
     public void init() throws Exception {
         assert rootScope != null;
         queue.clear();
@@ -61,6 +62,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         thread.start();
     }
 
+    @Override
     public void destroy() throws Exception {
         running = false;
         for (FutureTask<Object> task : queue) {
@@ -70,10 +72,12 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         thread.join();
     }
 
+    @Override
     public String getClassName() {
         return "JavaScriptThreadModel";
     }
 
+    @Override
     public void run() {
         context = Context.enter();
         context.setGeneratingDebug(true);
@@ -92,8 +96,10 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         }
     }
 
+    @Override
     public Object evaluate(final URL url) throws IOException {
         FutureTask<Object> future = new FutureTask<>(new Callable<Object>() {
+            @Override
             public Object call() throws IOException {
                 return context.evaluateReader(rootScope, new InputStreamReader(url.openStream()), url.toExternalForm(), 1, null);
             }
@@ -116,8 +122,10 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         }
     }
 
+    @Override
     public Object evaluate(final String scriptName, final String script) {
         FutureTask<Object> future = new FutureTask<>(new Callable<Object>() {
+            @Override
             public Object call() {
                 return context.evaluateString(rootScope, script, scriptName == null ? nextScriptName() : scriptName, 1, null);
             }
@@ -146,8 +154,10 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         return invoke(true, scope, thiz, function);
     }
 
+    @Override
     public Object invoke(boolean sync, final Scriptable scope, final Scriptable thiz, final Function function, final Object... arguments) {
         Callable<Object> invocation = new Callable<Object>() {
+            @Override
             public Object call() {
                 return function.call(context, scope, thiz, arguments);
             }
@@ -155,8 +165,10 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         return invoke(true, invocation);
     }
 
+    @Override
     public Object invoke(boolean sync, final Scriptable scope, final Scriptable thiz, final String functionName, final Object... arguments) {
         Callable<Object> invocation = new Callable<Object>() {
+            @Override
             public Object call() throws Exception {
                 try {
                     Object property = ScriptableObject.getProperty(thiz, functionName);
@@ -213,8 +225,10 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         }
     }
 
+    @Override
     public void define(final Class<? extends Scriptable> clazz) throws InvocationTargetException, IllegalAccessException, InstantiationException {
         FutureTask<Object> future = new FutureTask<>(new Callable<Object>() {
+            @Override
             public Object call() throws InvocationTargetException, IllegalAccessException, InstantiationException {
                 ScriptableObject.defineClass(rootScope, clazz);
                 return null;
@@ -243,8 +257,10 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         }
     }
 
+    @Override
     public Object get(final String name) {
         FutureTask<Object> future = new FutureTask<>(new Callable<Object>() {
+            @Override
             public Object call() {
                 return rootScope.get(name, rootScope);
             }
@@ -274,6 +290,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
     @Override
     public void remove(final String name) {
         FutureTask<Object> future = new FutureTask<>(new Callable<Object>() {
+            @Override
             public Object call() {
                 rootScope.delete(name);
                 return null;

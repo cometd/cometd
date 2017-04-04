@@ -81,6 +81,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _bayeux = bayeux;
     }
 
+    @Override
     public Object getAdvice() {
         return null;
     }
@@ -88,6 +89,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     /**
      * @return the interval in milliseconds
      */
+    @Override
     public long getInterval() {
         return _interval;
     }
@@ -95,6 +97,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     /**
      * @return the maxInterval in milliseconds
      */
+    @Override
     public long getMaxInterval() {
         return _maxInterval;
     }
@@ -102,6 +105,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     /**
      * @return the max lazy timeout in milliseconds before flushing lazy messages
      */
+    @Override
     public long getMaxLazyTimeout() {
         return _maxLazyTimeout;
     }
@@ -109,10 +113,12 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     /**
      * @return the timeout in milliseconds
      */
+    @Override
     public long getTimeout() {
         return _timeout;
     }
 
+    @Override
     public boolean isMetaConnectDeliveryOnly() {
         return _metaConnectDeliveryOnly;
     }

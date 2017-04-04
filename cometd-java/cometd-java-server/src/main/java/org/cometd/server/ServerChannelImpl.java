@@ -90,6 +90,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
         _sweeperPasses.set(0);
     }
 
+    @Override
     public boolean subscribe(ServerSession session) {
         return subscribe((ServerSessionImpl)session, null);
     }
@@ -143,6 +144,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
         }
     }
 
+    @Override
     public boolean unsubscribe(ServerSession session) {
         return unsubscribe((ServerSessionImpl)session, null);
     }
@@ -193,6 +195,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
         }
     }
 
+    @Override
     public Set<ServerSession> getSubscribers() {
         return Collections.unmodifiableSet(subscribers());
     }
@@ -201,26 +204,32 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
         return _subscribers;
     }
 
+    @Override
     public boolean isBroadcast() {
         return !isMeta() && !isService();
     }
 
+    @Override
     public boolean isDeepWild() {
         return _id.isDeepWild();
     }
 
+    @Override
     public boolean isLazy() {
         return _lazy;
     }
 
+    @Override
     public boolean isPersistent() {
         return _persistent;
     }
 
+    @Override
     public boolean isWild() {
         return _id.isWild();
     }
 
+    @Override
     public void setLazy(boolean lazy) {
         _lazy = lazy;
         if (!lazy) {
@@ -228,29 +237,35 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
         }
     }
 
+    @Override
     public long getLazyTimeout() {
         return _lazyTimeout;
     }
 
+    @Override
     public void setLazyTimeout(long lazyTimeout) {
         _lazyTimeout = lazyTimeout;
         setLazy(lazyTimeout > 0);
     }
 
+    @Override
     public void setPersistent(boolean persistent) {
         resetSweeperPasses();
         _persistent = persistent;
     }
 
+    @Override
     public void addListener(ServerChannelListener listener) {
         resetSweeperPasses();
         _listeners.add(listener);
     }
 
+    @Override
     public void removeListener(ServerChannelListener listener) {
         _listeners.remove(listener);
     }
 
+    @Override
     public List<ServerChannelListener> getListeners() {
         return Collections.unmodifiableList(listeners());
     }
@@ -259,22 +274,27 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
         return _listeners;
     }
 
+    @Override
     public ChannelId getChannelId() {
         return _id;
     }
 
+    @Override
     public String getId() {
         return _id.getId();
     }
 
+    @Override
     public boolean isMeta() {
         return _id.isMeta();
     }
 
+    @Override
     public boolean isService() {
         return _id.isService();
     }
 
+    @Override
     public void publish(Session from, ServerMessage.Mutable mutable) {
         if (isWild()) {
             throw new IllegalStateException("Wild publish");
@@ -292,6 +312,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
         _bayeux.doPublish(session, this, mutable, false);
     }
 
+    @Override
     public void publish(Session from, Object data) {
         ServerMessage.Mutable mutable = _bayeux.newMessage();
         mutable.setData(data);
@@ -332,6 +353,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
         remove();
     }
 
+    @Override
     public void remove() {
         if (_bayeux.removeServerChannel(this)) {
             for (ServerSession subscriber : _subscribers) {
@@ -343,32 +365,39 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
         _listeners.clear();
     }
 
+    @Override
     public void setAttribute(String name, Object value) {
         _attributes.setAttribute(name, value);
     }
 
+    @Override
     public Object getAttribute(String name) {
         return _attributes.getAttribute(name);
     }
 
+    @Override
     public Set<String> getAttributeNames() {
         return _attributes.getAttributeNameSet();
     }
 
+    @Override
     public Object removeAttribute(String name) {
         Object old = getAttribute(name);
         _attributes.removeAttribute(name);
         return old;
     }
 
+    @Override
     public void addAuthorizer(Authorizer authorizer) {
         _authorizers.add(authorizer);
     }
 
+    @Override
     public void removeAuthorizer(Authorizer authorizer) {
         _authorizers.remove(authorizer);
     }
 
+    @Override
     public List<Authorizer> getAuthorizers() {
         return Collections.unmodifiableList(authorizers());
     }

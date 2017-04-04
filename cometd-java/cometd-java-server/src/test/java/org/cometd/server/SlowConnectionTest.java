@@ -56,9 +56,11 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
 
         final CountDownLatch sweeperLatch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
             }
 
+            @Override
             public void sessionRemoved(ServerSession session, boolean timedout) {
                 if (timedout) {
                     sweeperLatch.countDown();
@@ -132,10 +134,12 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
 
         final CountDownLatch sweeperLatch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 session.deliver(null, channelName, "test");
             }
 
+            @Override
             public void sessionRemoved(ServerSession session, boolean timedout) {
                 if (timedout) {
                     sweeperLatch.countDown();

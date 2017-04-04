@@ -65,12 +65,14 @@ public class ServerRestartTest extends ClientServerTest {
         // Add listeners to check the behavior of the client
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 handshakeLatch.countDown();
             }
         });
         final CountDownLatch connectLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 connectLatch.countDown();
             }

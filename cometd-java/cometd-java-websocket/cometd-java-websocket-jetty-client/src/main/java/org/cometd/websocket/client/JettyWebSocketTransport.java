@@ -76,6 +76,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         _webSocketConnected = false;
     }
 
+    @Override
     protected Delegate connect(String uri, TransportListener listener, List<Mutable> messages) {
         try {
             if (logger.isDebugEnabled()) {

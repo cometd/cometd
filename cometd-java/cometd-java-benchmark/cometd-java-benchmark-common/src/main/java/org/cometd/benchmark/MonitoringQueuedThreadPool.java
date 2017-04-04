@@ -43,6 +43,7 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool {
     public void execute(final Runnable job) {
         final long begin = System.nanoTime();
         super.execute(new Runnable() {
+            @Override
             public void run() {
                 long queueLatency = System.nanoTime() - begin;
                 tasks.incrementAndGet();

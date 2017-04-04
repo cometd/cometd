@@ -105,6 +105,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
     protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response) {
     }
 
+    @Override
     protected void send(final Session wsSession, final ServerSession session, String data, final Callback callback) {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Sending {}", data);

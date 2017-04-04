@@ -43,10 +43,12 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
     @Test
     public void testAuthorizersOnSlashStarStar() throws Exception {
         bayeux.createChannelIfAbsent("/**", new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 // Grant create and subscribe to all and publishes only to service channels
                 channel.addAuthorizer(GrantAuthorizer.GRANT_CREATE_SUBSCRIBE);
                 channel.addAuthorizer(new Authorizer() {
+                    @Override
                     public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
                         if (operation == Operation.PUBLISH && channel.isService()) {
                             return Result.grant();
@@ -100,8 +102,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
     public void testIgnoringAuthorizerDenies() throws Exception {
         String channelName = "/test";
         bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(new Authorizer() {
+                    @Override
                     public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
                         return Result.ignore();
                     }
@@ -180,14 +184,17 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
     @Test
     public void testDenyAuthorizerDenies() throws Exception {
         bayeux.createChannelIfAbsent("/test/*", new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }
         });
         String channelName = "/test/denied";
         bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(new Authorizer() {
+                    @Override
                     public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
                         return Result.deny("test");
                     }
@@ -238,14 +245,17 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
     @Test
     public void testAddRemoveAuthorizer() throws Exception {
         bayeux.createChannelIfAbsent("/test/*", new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_NONE);
             }
         });
         String channelName = "/test/granted";
         bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(final ConfigurableServerChannel channel) {
                 channel.addAuthorizer(new Authorizer() {
+                    @Override
                     public Result authorize(Operation operation, ChannelId channelId, ServerSession session, ServerMessage message) {
                         channel.removeAuthorizer(this);
                         return Result.grant();

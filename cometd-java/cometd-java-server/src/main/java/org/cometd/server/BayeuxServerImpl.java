@@ -324,6 +324,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         return _options;
     }
 
+    @Override
     @ManagedOperation(value = "The value of the given configuration option", impact = "INFO")
     public Object getOption(@Name("optionName") String qualifiedName) {
         return _options.get(qualifiedName);

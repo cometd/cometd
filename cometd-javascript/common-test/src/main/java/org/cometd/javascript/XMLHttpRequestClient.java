@@ -32,6 +32,7 @@ public class XMLHttpRequestClient extends ScriptableObject {
         this.cookieStore = cookieStore;
     }
 
+    @Override
     public String getClassName() {
         return "XMLHttpRequestClient";
     }

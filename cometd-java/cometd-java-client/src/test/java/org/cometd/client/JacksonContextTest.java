@@ -69,11 +69,13 @@ public class JacksonContextTest extends ClientServerTest {
         final ClientSessionChannel channel = client.getChannel(channelName);
         final CountDownLatch clientLatch = new CountDownLatch(3);
         client.batch(new Runnable() {
+            @Override
             public void run() {
                 channel.subscribe(new ClientSessionChannel.MessageListener() {
                     private boolean republishSeen;
                     private boolean deliverSeen;
 
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                         System.err.println("message = " + message);
                         Map<String, Object> data = message.getDataAsMap();
@@ -109,6 +111,7 @@ public class JacksonContextTest extends ClientServerTest {
             getLocalSession().getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
                 private boolean republishSeen;
 
+                @Override
                 public void onMessage(ClientSessionChannel channel, Message message) {
                     System.err.println("local message = " + message);
                     Map<String, Object> data = message.getDataAsMap();

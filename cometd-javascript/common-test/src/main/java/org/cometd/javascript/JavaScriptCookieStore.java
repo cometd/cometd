@@ -29,6 +29,7 @@ import org.mozilla.javascript.ScriptableObject;
 public class JavaScriptCookieStore extends ScriptableObject {
     private Store store;
 
+    @Override
     public String getClassName() {
         return "JavaScriptCookieStore";
     }

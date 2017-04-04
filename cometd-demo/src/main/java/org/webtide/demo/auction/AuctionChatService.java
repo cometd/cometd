@@ -60,11 +60,13 @@ public class AuctionChatService extends AbstractService {
         }
 
         getBayeux().createChannelIfAbsent("/auction/chat/**", new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }
         });
         getBayeux().createChannelIfAbsent("/service/auction/chat", new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }

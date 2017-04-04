@@ -307,6 +307,7 @@ public abstract class AbstractService {
             doInvoke(method, fromClient, msg);
         } else {
             threadPool.execute(new Runnable() {
+                @Override
                 public void run() {
                     doInvoke(method, fromClient, msg);
                 }
@@ -334,6 +335,7 @@ public abstract class AbstractService {
             this.method = method;
         }
 
+        @Override
         public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
             if (isSeeOwnPublishes() || from != getServerSession()) {
                 invoke(method, from, message);

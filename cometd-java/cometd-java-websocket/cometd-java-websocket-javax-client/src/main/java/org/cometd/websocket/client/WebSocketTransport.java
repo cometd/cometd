@@ -79,6 +79,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         _webSocketConnected = false;
     }
 
+    @Override
     protected Delegate connect(String uri, TransportListener listener, List<Mutable> messages) {
         try {
             if (logger.isDebugEnabled()) {
@@ -183,6 +184,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
             }
         }
 
+        @Override
         protected void close() {
             synchronized (this) {
                 _session = null;

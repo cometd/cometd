@@ -46,6 +46,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.handshake(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 latch.countDown();
             }
@@ -76,6 +77,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         final CountDownLatch successLatch = new CountDownLatch(1);
         final CountDownLatch failureLatch = new CountDownLatch(1);
         client.handshake(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     successLatch.countDown();
@@ -97,8 +99,10 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.handshake(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 client.disconnect(new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                         latch.countDown();
                     }
@@ -116,8 +120,10 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         final String channelName = "/bar";
         final CountDownLatch latch = new CountDownLatch(1);
         client.handshake(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 client.getChannel(channelName).subscribe(new MessageListenerAdapter(), new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                         latch.countDown();
                     }
@@ -144,8 +150,10 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         client.handshake(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 client.getChannel(channelName).subscribe(new MessageListenerAdapter(), new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                         latch.countDown();
                     }
@@ -165,11 +173,14 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         final String channelName = "/bar";
         final CountDownLatch latch = new CountDownLatch(1);
         client.handshake(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 final MessageListenerAdapter listener = new MessageListenerAdapter();
                 client.getChannel(channelName).subscribe(listener, new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                         client.getChannel(channelName).unsubscribe(listener, new ClientSessionChannel.MessageListener() {
+                            @Override
                             public void onMessage(ClientSessionChannel channel, Message message) {
                                 latch.countDown();
                             }
@@ -193,6 +204,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap(), new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertTrue(message.isSuccessful());
                 latch.get().countDown();
@@ -226,6 +238,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap(), new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertFalse(message.isSuccessful());
                 latch.get().countDown();
@@ -252,6 +265,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap(), new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertFalse(message.isSuccessful());
                 latch.get().countDown();
@@ -274,6 +288,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap(), new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Assert.assertFalse(message.isSuccessful());
                 latch.get().countDown();
@@ -286,6 +301,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
     }
 
     private class MessageListenerAdapter implements ClientSessionChannel.MessageListener {
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
         }
     }

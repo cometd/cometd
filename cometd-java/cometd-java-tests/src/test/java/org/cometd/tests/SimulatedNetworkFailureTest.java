@@ -67,6 +67,7 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
             }
         };
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 boolean wasConnected = connected.get();
                 connected.set(message.isSuccessful());
@@ -81,6 +82,7 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
         String channelName = "/test";
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     publishLatch.get().countDown();
@@ -146,6 +148,7 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
             }
         };
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     handshakeLatch.countDown();
@@ -153,6 +156,7 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
             }
         });
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 boolean wasConnected = connected.get();
                 connected.set(message.isSuccessful());
@@ -167,6 +171,7 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
         String channelName = "/test";
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     publishLatch.get().countDown();

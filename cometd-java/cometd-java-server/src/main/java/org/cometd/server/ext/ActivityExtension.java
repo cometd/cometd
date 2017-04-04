@@ -130,6 +130,7 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter {
             return lastActivity.get();
         }
 
+        @Override
         public boolean rcv(ServerSession session, ServerMessage.Mutable message) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Marking active session {}, received message {}", session, message);
@@ -138,6 +139,7 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter {
             return true;
         }
 
+        @Override
         public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
             if (Channel.META_CONNECT.equals(message.getChannel())) {
                 if (isInactive()) {
@@ -155,6 +157,7 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter {
             return true;
         }
 
+        @Override
         public ServerMessage send(ServerSession session, ServerMessage message) {
             if (activity == Activity.CLIENT_SERVER) {
                 if (logger.isDebugEnabled()) {
@@ -165,6 +168,7 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter {
             return message;
         }
 
+        @Override
         public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
             if (!Channel.META_CONNECT.equals(message.getChannel()) && activity == Activity.CLIENT_SERVER) {
                 if (logger.isDebugEnabled()) {

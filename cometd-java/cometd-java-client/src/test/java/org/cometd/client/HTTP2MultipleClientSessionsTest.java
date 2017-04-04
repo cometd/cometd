@@ -72,6 +72,7 @@ public class HTTP2MultipleClientSessionsTest extends ClientServerTest {
         BayeuxClient client1 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
         client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     connects1.offer(message);
@@ -90,6 +91,7 @@ public class HTTP2MultipleClientSessionsTest extends ClientServerTest {
         final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
         client2.putCookie(browserCookie);
         client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 connects2.offer(message);
             }
@@ -103,6 +105,7 @@ public class HTTP2MultipleClientSessionsTest extends ClientServerTest {
         final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<>();
         client3.putCookie(browserCookie);
         client3.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 connects3.offer(message);
             }

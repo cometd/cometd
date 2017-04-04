@@ -64,6 +64,7 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
             private final AtomicInteger connects = new AtomicInteger();
 
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 // The test must slow down the first connect enough
                 // for the maxNetworkDelay to expire on client, and
@@ -101,6 +102,7 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
         final CountDownLatch messageLatch1 = new CountDownLatch(1);
         final CountDownLatch messageLatch2 = new CountDownLatch(1);
         final ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (messageLatch1.getCount() == 0) {
                     messageLatch2.countDown();
@@ -111,6 +113,7 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
 
         final CountDownLatch clientSubscribeLatch = new CountDownLatch(1);
         final ClientSessionChannel.MessageListener subscribeCallback = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     clientSubscribeLatch.countDown();
@@ -119,6 +122,7 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
         };
 
         client.handshake(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     client.getChannel(channelName).subscribe(messageCallback, subscribeCallback);

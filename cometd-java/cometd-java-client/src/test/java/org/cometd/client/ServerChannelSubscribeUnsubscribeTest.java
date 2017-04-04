@@ -58,6 +58,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest {
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
         client.startBatch();
         testChannel.subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.get().countDown();
             }
@@ -103,6 +104,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest {
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     subscribeLatch.countDown();
@@ -112,6 +114,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest {
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
         testChannel.subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.get().countDown();
             }
@@ -160,6 +163,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest {
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
         client.startBatch();
         testChannel.subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.get().countDown();
             }

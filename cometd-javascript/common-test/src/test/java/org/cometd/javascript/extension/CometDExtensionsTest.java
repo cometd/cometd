@@ -234,6 +234,7 @@ public class CometDExtensionsTest extends AbstractCometDTest {
             ++incoming;
         }
 
+        @Override
         public String getClassName() {
             return "Listener";
         }

@@ -193,6 +193,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             super(request, response, asyncContext, session, reply, timeout);
         }
 
+        @Override
         protected void dispatch() {
             // We dispatch() when either we are suspended or timed out, instead of doing a write() + complete().
             // If we have to write a message to 10 clients, and the first client write() blocks, then we would

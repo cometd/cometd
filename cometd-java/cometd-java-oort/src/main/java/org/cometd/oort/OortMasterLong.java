@@ -144,9 +144,11 @@ public class OortMasterLong extends OortMasterService<Long, OortMasterLong.Conte
          * Empty implementation of {@link Callback}
          */
         public static class Adapter implements Callback {
+            @Override
             public void succeeded(Long result) {
             }
 
+            @Override
             public void failed(Object failure) {
             }
         }

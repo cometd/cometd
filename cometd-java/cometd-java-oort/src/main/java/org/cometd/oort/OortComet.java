@@ -58,6 +58,7 @@ public class OortComet extends BayeuxClient {
             }
 
             ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
+                @Override
                 public void onMessage(ClientSessionChannel channel, Message message) {
                     if (logger.isDebugEnabled()) {
                         logger.debug("Republishing message {} from {}", message, _cometURL);
@@ -107,6 +108,7 @@ public class OortComet extends BayeuxClient {
     }
 
     private class HandshakeListener implements ClientSessionChannel.MessageListener {
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (!message.isSuccessful()) {
                 return;
@@ -123,9 +125,11 @@ public class OortComet extends BayeuxClient {
             }
 
             batch(new Runnable() {
+                @Override
                 public void run() {
                     // Subscribe to cloud notifications
                     getChannel(Oort.OORT_CLOUD_CHANNEL).subscribe(new ClientSessionChannel.MessageListener() {
+                        @Override
                         public void onMessage(ClientSessionChannel channel, Message message) {
                             if (message.isSuccessful()) {
                                 _oort.joinComets(message);

@@ -52,6 +52,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         final CountDownLatch connectLatch = new CountDownLatch(2);
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
         bayeux.getChannel("/meta/connect").addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 connectLatch.countDown();
                 if (connectLatch.getCount() == 0) {

@@ -58,6 +58,7 @@ public abstract class OortConfigServlet extends HttpServlet {
     public static final String OORT_JSON_CONTEXT_PARAM = "jsonContext";
     protected static final Logger LOG = LoggerFactory.getLogger(OortConfigServlet.class);
 
+    @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
@@ -138,6 +139,7 @@ public abstract class OortConfigServlet extends HttpServlet {
      */
     protected abstract void configureCloud(ServletConfig config, Oort oort) throws Exception;
 
+    @Override
     public void destroy() {
         try {
             ServletContext servletContext = getServletConfig().getServletContext();
