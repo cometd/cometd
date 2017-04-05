@@ -183,7 +183,7 @@ public class ActivityExtension extends BayeuxServer.Extension.Adapter {
             lastActivity.set(System.nanoTime());
         }
 
-        protected boolean isInactive() {
+        public boolean isInactive() {
             return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - getLastActivity()) > getMaxInactivityPeriod();
         }
 
