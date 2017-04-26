@@ -1803,8 +1803,10 @@
             // Reset the transports if we're not retrying the handshake
             if (_isDisconnected()) {
                 _transports.reset(true);
-                _updateAdvice(_config.advice);
             }
+
+            // Reset the advice.
+            _updateAdvice({});
 
             _batch = 0;
 
