@@ -265,9 +265,9 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         private void processMessages(S wsSession, ServerMessage.Mutable[] messages) throws IOException {
             ServerSessionImpl session = _session;
 
-            boolean sendQueue = true;
-            boolean sendReplies = true;
-            boolean scheduleExpiration = true;
+            boolean sendQueue = false;
+            boolean sendReplies = false;
+            boolean scheduleExpiration = false;
             List<ServerMessage.Mutable> replies = new ArrayList<>(messages.length);
             for (ServerMessage.Mutable message : messages) {
                 if (_logger.isDebugEnabled()) {
@@ -299,6 +299,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         }
                         sendQueue = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
                         sendReplies = reply != null;
+                        scheduleExpiration = true;
                         break;
                     }
                     case Channel.META_CONNECT: {
@@ -310,6 +311,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         boolean deliver = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
                         sendQueue = deliver && reply != null;
                         sendReplies = reply != null;
+                        scheduleExpiration = true;
                         break;
                     }
                     default: {
@@ -318,8 +320,11 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         if (reply != null) {
                             replies.add(reply);
                         }
-                        sendQueue = false;
-                        scheduleExpiration = false;
+                        // Leave sendQueue unchanged.
+                        if (reply != null) {
+                            sendReplies = true;
+                        }
+                        // Leave scheduleExpiration unchanged.
                         break;
                     }
                 }

@@ -137,9 +137,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         ServerSessionImpl session = null;
         boolean autoBatch = isAutoBatch();
         boolean batch = false;
-        boolean sendQueue = true;
-        boolean sendReplies = true;
-        boolean scheduleExpiration = true;
+        boolean sendQueue = false;
+        boolean sendReplies = false;
+        boolean scheduleExpiration = false;
         try {
             for (int i = 0; i < messages.length; ++i) {
                 ServerMessage.Mutable message = messages[i];
@@ -178,21 +178,29 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                         messages[i] = reply = processReply(session, reply);
                         sendQueue = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
                         sendReplies = reply != null;
+                        scheduleExpiration = true;
                         break;
                     }
                     case Channel.META_CONNECT: {
-                        ServerMessage.Mutable reply = processMetaConnect(request, response, session, message);
+                        boolean canSuspend = messages.length == 1;
+                        ServerMessage.Mutable reply = processMetaConnect(request, response, session, message, canSuspend);
                         messages[i] = reply = processReply(session, reply);
-                        sendQueue = sendReplies = reply != null;
+                        sendQueue = !canSuspend || reply != null;
+                        sendReplies = sendQueue;
+                        scheduleExpiration = true;
                         break;
                     }
                     default: {
                         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-                        messages[i] = processReply(session, reply);
-                        if (isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly()) {
-                            sendQueue = false;
+                        messages[i] = reply = processReply(session, reply);
+                        boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
+                        if (!metaConnectDelivery) {
+                            sendQueue = true;
                         }
-                        scheduleExpiration = false;
+                        if (reply != null) {
+                            sendReplies = true;
+                        }
+                        // Leave scheduleExpiration unchanged.
                         break;
                     }
                 }
@@ -282,7 +290,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return reply;
     }
 
-    protected ServerMessage.Mutable processMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message) {
+    protected ServerMessage.Mutable processMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message, boolean canSuspend) {
         if (session != null) {
             // Cancel the previous scheduler to cancel any prior waiting long poll.
             // This should also decrement the browser ID.
@@ -292,7 +300,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         boolean wasConnected = session != null && session.isConnected();
         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
         if (session != null) {
-            if (!session.hasNonLazyMessages() && reply.isSuccessful()) {
+            if (canSuspend && !session.hasNonLazyMessages() && reply.isSuccessful()) {
                 // Detect if we have multiple sessions from the same browser.
                 boolean allowSuspendConnect = incBrowserId(session, isHTTP2(request));
                 if (allowSuspendConnect) {
