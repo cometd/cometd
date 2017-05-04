@@ -396,7 +396,7 @@ require({
 require({
         baseUrl: "js/jquery",
         paths: {
-            jquery: "jquery-3.1.1",
+            jquery: "jquery-3.2.1",
             *cometd: "../cometd"*
         }
     },

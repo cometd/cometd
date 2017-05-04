@@ -5,7 +5,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-    <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.js"></script>
     <script type="text/javascript" src="${symbol_dollar}{pageContext.request.contextPath}/js/cometd/cometd.js"></script>
     <script type="text/javascript" src="${symbol_dollar}{pageContext.request.contextPath}/js/jquery/jquery.cometd.js"></script>
     <script type="text/javascript" src="application.js"></script>
