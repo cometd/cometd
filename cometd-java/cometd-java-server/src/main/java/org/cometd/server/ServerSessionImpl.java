@@ -369,6 +369,13 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     @Override
+    public void startBatch() {
+        synchronized (getLock()) {
+            ++_batch;
+        }
+    }
+
+    @Override
     public boolean endBatch() {
         boolean result = false;
         synchronized (getLock()) {
@@ -390,13 +397,6 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     @Override
     public boolean isLocalSession() {
         return _localSession != null;
-    }
-
-    @Override
-    public void startBatch() {
-        synchronized (getLock()) {
-            ++_batch;
-        }
     }
 
     @Override
@@ -488,7 +488,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             synchronized (getLock()) {
                 oldScheduler = _scheduler;
                 _scheduler = newScheduler;
-                if (hasNonLazyMessages() && _batch == 0) {
+                if (shouldSchedule()) {
                     schedule = true;
                     if (newScheduler instanceof AbstractHttpTransport.HttpScheduler) {
                         _scheduler = null;
@@ -501,6 +501,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             if (schedule) {
                 newScheduler.schedule();
             }
+        }
+    }
+
+    public boolean shouldSchedule() {
+        synchronized (getLock()) {
+            return hasNonLazyMessages() && _batch == 0;
         }
     }
 

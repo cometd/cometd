@@ -143,7 +143,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         response = disconnect.send();
         Assert.assertEquals(200, response.getStatus());
         Assert.assertEquals(1, publishes.get());
-        // The response to the subscribe must be that the client is unknown
+        // The response to the publish must be that the client is unknown
         Assert.assertTrue(response.getContentAsString().contains("402::"));
     }
 

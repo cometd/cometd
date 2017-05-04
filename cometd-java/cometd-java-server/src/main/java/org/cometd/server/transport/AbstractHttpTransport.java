@@ -68,7 +68,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String MAX_SESSIONS_PER_BROWSER_OPTION = "maxSessionsPerBrowser";
     public final static String HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION = "http2MaxSessionsPerBrowser";
     public final static String MULTI_SESSION_INTERVAL_OPTION = "multiSessionInterval";
-    public final static String AUTOBATCH_OPTION = "autoBatch";
     public final static String TRUST_CLIENT_SESSION = "trustClientSession";
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
@@ -84,7 +83,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     private int _maxSessionsPerBrowser;
     private int _http2MaxSessionsPerBrowser;
     private long _multiSessionInterval;
-    private boolean _autoBatch;
     private boolean _trustClientSession;
     private long _lastSweep;
 
@@ -104,16 +102,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         _maxSessionsPerBrowser = getOption(MAX_SESSIONS_PER_BROWSER_OPTION, 1);
         _http2MaxSessionsPerBrowser = getOption(HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION, -1);
         _multiSessionInterval = getOption(MULTI_SESSION_INTERVAL_OPTION, 2000);
-        _autoBatch = getOption(AUTOBATCH_OPTION, true);
         _trustClientSession = getOption(TRUST_CLIENT_SESSION, false);
     }
 
     protected long getMultiSessionInterval() {
         return _multiSessionInterval;
-    }
-
-    protected boolean isAutoBatch() {
-        return _autoBatch;
     }
 
     public void setCurrentRequest(HttpServletRequest request) {
@@ -133,40 +126,29 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     protected abstract void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies);
 
     protected void processMessages(HttpServletRequest request, HttpServletResponse response, ServerMessage.Mutable[] messages) throws IOException {
+        if (messages.length == 0) {
+            throw new IOException();
+        }
+
         Collection<ServerSessionImpl> sessions = findCurrentSessions(request);
-        ServerSessionImpl session = null;
-        boolean autoBatch = isAutoBatch();
-        boolean batch = false;
+        ServerMessage.Mutable message = messages[0];
+        ServerSessionImpl session = findSession(sessions, message);
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("Processing {} messages for session {}", messages.length, session);
+        }
+        boolean batch = session != null && !Channel.META_CONNECT.equals(message.getChannel());
+        if (batch) {
+            session.startBatch();
+        }
+
         boolean sendQueue = false;
         boolean sendReplies = false;
         boolean scheduleExpiration = false;
         try {
             for (int i = 0; i < messages.length; ++i) {
-                ServerMessage.Mutable message = messages[i];
+                message = messages[i];
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Processing {}", message);
-                }
-
-                if (session == null) {
-                    session = findSession(sessions, message);
-                } else if (!session.getId().equals(message.getClientId())) {
-                    session = null;
-                }
-
-                if (session != null) {
-                    if (!session.isDisconnected()) {
-                        if (autoBatch && !batch) {
-                            batch = true;
-                            session.startBatch();
-                        }
-                    } else {
-                        // Disconnected concurrently.
-                        if (batch) {
-                            batch = false;
-                            session.endBatch();
-                        }
-                        session = null;
-                    }
                 }
 
                 switch (message.getChannel()) {
@@ -300,7 +282,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         boolean wasConnected = session != null && session.isConnected();
         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
         if (session != null) {
-            if (canSuspend && !session.hasNonLazyMessages() && reply.isSuccessful()) {
+            boolean maySuspend = !session.shouldSchedule();
+            if (canSuspend && maySuspend && reply.isSuccessful()) {
                 // Detect if we have multiple sessions from the same browser.
                 boolean allowSuspendConnect = incBrowserId(session, isHTTP2(request));
                 if (allowSuspendConnect) {

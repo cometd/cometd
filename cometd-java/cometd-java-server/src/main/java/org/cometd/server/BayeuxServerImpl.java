@@ -657,47 +657,38 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private void handle(ServerSessionImpl session, Mutable message, Mutable reply) {
         String channelName = message.getChannel();
 
-        if (session != null) {
-            session.cancelExpiration(Channel.META_CONNECT.equals(channelName));
+        if (session == null || session.isDisconnected()) {
+            unknownSession(reply);
+            return;
         }
+
+        session.cancelExpiration(Channel.META_CONNECT.equals(channelName));
 
         if (channelName == null) {
             error(reply, "400::channel missing");
         } else {
             ServerChannelImpl channel = getServerChannel(channelName);
             if (channel == null) {
-                if (session == null) {
-                    unknownSession(reply);
+                Authorizer.Result creationResult = isCreationAuthorized(session, message, channelName);
+                if (creationResult instanceof Authorizer.Result.Denied) {
+                    String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
+                    error(reply, "403:" + denyReason + ":create denied");
                 } else {
-                    Authorizer.Result creationResult = isCreationAuthorized(session, message, channelName);
-                    if (creationResult instanceof Authorizer.Result.Denied) {
-                        String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
-                        error(reply, "403:" + denyReason + ":create denied");
-                    } else {
-                        channel = (ServerChannelImpl)createChannelIfAbsent(channelName).getReference();
-                    }
+                    channel = (ServerChannelImpl)createChannelIfAbsent(channelName).getReference();
                 }
             }
 
             if (channel != null) {
                 if (channel.isMeta()) {
-                    if (session == null && !Channel.META_HANDSHAKE.equals(channelName)) {
-                        unknownSession(reply);
+                    doPublish(session, channel, message, true);
+                } else {
+                    Authorizer.Result publishResult = isPublishAuthorized(channel, session, message);
+                    if (publishResult instanceof Authorizer.Result.Denied) {
+                        String denyReason = ((Authorizer.Result.Denied)publishResult).getReason();
+                        error(reply, "403:" + denyReason + ":publish denied");
                     } else {
                         doPublish(session, channel, message, true);
-                    }
-                } else {
-                    if (session == null) {
-                        unknownSession(reply);
-                    } else {
-                        Authorizer.Result publishResult = isPublishAuthorized(channel, session, message);
-                        if (publishResult instanceof Authorizer.Result.Denied) {
-                            String denyReason = ((Authorizer.Result.Denied)publishResult).getReason();
-                            error(reply, "403:" + denyReason + ":publish denied");
-                        } else {
-                            doPublish(session, channel, message, true);
-                            reply.setSuccessful(true);
-                        }
+                        reply.setSuccessful(true);
                     }
                 }
             }
