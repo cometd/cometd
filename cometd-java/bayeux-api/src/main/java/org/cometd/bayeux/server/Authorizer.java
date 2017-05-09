@@ -17,6 +17,7 @@ package org.cometd.bayeux.server;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
+import org.cometd.bayeux.Promise;
 
 /**
  * <p>{@link Authorizer}s authorize {@link Operation operations} on {@link ServerChannel channels}.</p>
@@ -130,7 +131,14 @@ public interface Authorizer {
      * @param channel   the channel for which the authorization has been requested
      * @param session   the session that is requesting the authorization
      * @param message   the message that triggered the authorization request
-     * @return the result of the authorization
+     * @param promise   the promise to notify of the authorization result
+     */
+    default void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
+        promise.succeed(authorize(operation, channel, session, message));
+    }
+
+    /**
+     * <p>Blocking version of {@link #authorize(Operation, ChannelId, ServerSession, ServerMessage, Promise)}.</p>
      */
     Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message);
 

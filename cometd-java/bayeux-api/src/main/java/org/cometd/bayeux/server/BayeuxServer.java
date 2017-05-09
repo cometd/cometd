@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.MarkedReference;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -278,65 +279,66 @@ public interface BayeuxServer extends Bayeux {
      */
     public interface Extension {
         /**
-         * <p>Callback method invoked every time a normal message is incoming.</p>
+         * <p>Callback method invoked every time a message is incoming.</p>
          *
          * @param from    the session that sent the message
          * @param message the incoming message
-         * @return true if message processing should continue, false if it should stop
+         * @param promise the promise to notify whether message processing should continue
          */
-        boolean rcv(ServerSession from, ServerMessage.Mutable message);
+        default void incoming(ServerSession from, ServerMessage.Mutable message, Promise<Boolean> promise) {
+            promise.succeed(message.isMeta() ? rcvMeta(from, message) : rcv(from, message));
+        }
 
         /**
-         * <p>Callback method invoked every time a meta message is incoming.</p>
-         *
-         * @param from    the session that sent the message
-         * @param message the incoming meta message
-         * @return true if message processing should continue, false if it should stop
+         * <p>Blocking version of {@link #incoming(ServerSession, ServerMessage.Mutable, Promise)}
+         * for non-meta messages.</p>
          */
-        boolean rcvMeta(ServerSession from, ServerMessage.Mutable message);
+        default boolean rcv(ServerSession from, ServerMessage.Mutable message) {
+            return true;
+        }
 
         /**
-         * <p>Callback method invoked every time a normal message is outgoing.</p>
+         * <p>Blocking version of {@link #incoming(ServerSession, ServerMessage.Mutable, Promise)}
+         * for meta messages.</p>
+         */
+        default boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
+            return true;
+        }
+
+        /**
+         * <p>Callback method invoked every time a message is outgoing.</p>
          *
          * @param from    the session that sent the message or null
          * @param to      the session the message is sent to, or null for a publish.
          * @param message the outgoing message
-         * @return true if message processing should continue, false if it should stop
+         * @param promise the promise to notify whether message processing should continue
          */
-        boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message);
+        default void outgoing(ServerSession from, ServerSession to, ServerMessage.Mutable message, Promise<Boolean> promise) {
+            promise.succeed(message.isMeta() ? sendMeta(to, message) : send(from, to, message));
+        }
 
         /**
-         * <p>Callback method invoked every time a meta message is outgoing.</p>
-         *
-         * @param to      the session the message is sent to, or null for a publish.
-         * @param message the outgoing meta message
-         * @return true if message processing should continue, false if it should stop
+         * <p>Blocking version of {@link #outgoing(ServerSession, ServerSession, ServerMessage.Mutable, Promise)}
+         * for non-meta messages.</p>
          */
-        boolean sendMeta(ServerSession to, ServerMessage.Mutable message);
+        default boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
+            return true;
+        }
+
+        /**
+         * <p>Blocking version of {@link #outgoing(ServerSession, ServerSession, ServerMessage.Mutable, Promise)}
+         * for meta messages.</p>
+         */
+        default boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
+            return true;
+        }
 
         /**
          * Empty implementation of {@link Extension}.
+         * @deprecated Use {@link Extension} instead
          */
+        @Deprecated
         public static class Adapter implements Extension {
-            @Override
-            public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
-                return true;
-            }
-
-            @Override
-            public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
-                return true;
-            }
-
-            @Override
-            public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
-                return true;
-            }
-
-            @Override
-            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
-                return true;
-            }
         }
     }
 }

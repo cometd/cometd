@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
 
 /**
@@ -92,9 +93,18 @@ public interface ServerSession extends Session {
      *
      * @param sender  the session delivering the message
      * @param message the message to deliver
-     * @see #deliver(Session, String, Object)
+     * @param promise the promise to notify with the result of the deliver
+     * @see #deliver(Session, String, Object, Promise)
      */
-    public void deliver(Session sender, ServerMessage.Mutable message);
+    public void deliver(Session sender, ServerMessage.Mutable message, Promise<Boolean> promise);
+
+    /**
+     * @deprecated use {@link #deliver(Session, ServerMessage.Mutable, Promise)} instead
+     */
+    @Deprecated
+    public default void deliver(Session sender, ServerMessage.Mutable message) {
+        deliver(sender, message, null);
+    }
 
     /**
      * <p>Delivers the given information to this session.</p>
@@ -102,9 +112,18 @@ public interface ServerSession extends Session {
      * @param sender  the session delivering the message
      * @param channel the channel of the message
      * @param data    the data of the message
-     * @see #deliver(Session, ServerMessage.Mutable)
+     * @param promise the promise to notify with the result of the deliver
+     * @see #deliver(Session, ServerMessage.Mutable, Promise)
      */
-    public void deliver(Session sender, String channel, Object data);
+    public void deliver(Session sender, String channel, Object data, Promise<Boolean> promise);
+
+    /**
+     * @deprecated use {@link #deliver(Session, String, Object, Promise)} instead
+     */
+    @Deprecated
+    public default void deliver(Session sender, String channel, Object data) {
+        deliver(sender, channel, data, Promise.noop());
+    }
 
     /**
      * @return the set of channels to which this session is subscribed to
@@ -169,16 +188,25 @@ public interface ServerSession extends Session {
     public interface MessageListener extends ServerSessionListener {
         /**
          * <p>Callback invoked when a message is sent.</p>
-         * <p>Implementers can decide to return false to signal that the message should not
-         * be further processed, meaning that other session listeners will not be notified
-         * and that the message will be discarded for this session.</p>
+         * <p>Implementers can decide to notify the promise with false to signal that the
+         * message should not be further processed, meaning that other session listeners
+         * will not be notified and that the message will be discarded for this session.</p>
          *
          * @param session the session that will receive the message
          * @param sender  the session that sent the message
          * @param message the message sent
-         * @return whether the processing of the message should continue
+         * @param promise the promise to notify whether the processing of the message should continue
          */
-        public boolean onMessage(ServerSession session, ServerSession sender, ServerMessage message);
+        public default void onMessage(ServerSession session, ServerSession sender, ServerMessage message, Promise<Boolean> promise) {
+            promise.succeed(onMessage(session, sender, message));
+        }
+
+        /**
+         * <p>Blocking version of {@link #onMessage(ServerSession, ServerSession, ServerMessage, Promise)}.</p>
+         */
+        public default boolean onMessage(ServerSession session, ServerSession sender, ServerMessage message) {
+            return true;
+        }
     }
 
     /**
@@ -248,64 +276,76 @@ public interface ServerSession extends Session {
      */
     public interface Extension {
         /**
-         * <p>Callback method invoked every time a normal message is incoming.</p>
+         * <p>Callback method invoked every time a message is incoming.</p>
          *
          * @param session the session that sent the message
          * @param message the incoming message
-         * @return true if message processing should continue, false if it should stop
+         * @param promise the promise to notify whether message processing should continue
          */
-        public boolean rcv(ServerSession session, ServerMessage.Mutable message);
+        default void incoming(ServerSession session, ServerMessage.Mutable message, Promise<Boolean> promise) {
+            promise.succeed(message.isMeta() ? rcvMeta(session, message) : rcv(session, message));
+        }
 
         /**
-         * <p>Callback method invoked every time a meta message is incoming.</p>
-         *
-         * @param session the session that is sent the message
-         * @param message the incoming meta message
-         * @return true if message processing should continue, false if it should stop
+         * <p>Blocking version of {@link #incoming(ServerSession, ServerMessage.Mutable, Promise)}
+         * for non-meta messages.</p>
          */
-        public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message);
+        default boolean rcv(ServerSession session, ServerMessage.Mutable message) {
+            return true;
+        }
 
         /**
-         * <p>Callback method invoked every time a normal message is outgoing.</p>
+         * <p>Blocking version of {@link #incoming(ServerSession, ServerMessage.Mutable, Promise)}
+         * for meta messages.</p>
+         */
+        default boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
+            return true;
+        }
+
+        /**
+         * <p>Callback method invoked every time a message is outgoing.</p>
          *
          * @param session the session receiving the message
          * @param message the outgoing message
-         * @return The message to send or null to not send the message
+         * @param promise the promise to notify with the message to send or null to not send the message
          */
-        public ServerMessage send(ServerSession session, ServerMessage message);
+        default void outgoing(ServerSession session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
+            if (message.isMeta()) {
+                promise.succeed(sendMeta(session, message) ? message : null);
+            } else {
+                ServerMessage result = send(session, message);
+                if (result instanceof ServerMessage.Mutable) {
+                    promise.succeed((ServerMessage.Mutable)result);
+                } else if (result == null) {
+                    promise.succeed(null);
+                } else {
+                    promise.fail(new IllegalArgumentException());
+                }
+            }
+        }
 
         /**
-         * <p>Callback method invoked every time a meta message is outgoing.</p>
-         *
-         * @param session the session receiving the message
-         * @param message the outgoing meta message
-         * @return true if message processing should continue, false if it should stop
+         * <p>Blocking version of {@link #outgoing(ServerSession, ServerMessage.Mutable, Promise)}
+         * for non-meta messages.</p>
          */
-        public boolean sendMeta(ServerSession session, ServerMessage.Mutable message);
+        default ServerMessage send(ServerSession session, ServerMessage message) {
+            return message;
+        }
+
+        /**
+         * <p>Blocking version of {@link #outgoing(ServerSession, ServerMessage.Mutable, Promise)}
+         * for meta messages.</p>
+         */
+        default boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
+            return true;
+        }
 
         /**
          * Empty implementation of {@link Extension}.
+         * @deprecated
          */
+        @Deprecated
         public static class Adapter implements Extension {
-            @Override
-            public boolean rcv(ServerSession session, ServerMessage.Mutable message) {
-                return true;
-            }
-
-            @Override
-            public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
-                return true;
-            }
-
-            @Override
-            public ServerMessage send(ServerSession session, ServerMessage message) {
-                return message;
-            }
-
-            @Override
-            public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
-                return true;
-            }
         }
     }
 }

@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.ChannelId;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -295,7 +296,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
     }
 
     @Override
-    public void publish(Session from, ServerMessage.Mutable mutable) {
+    public void publish(Session from, ServerMessage.Mutable mutable, Promise<Boolean> promise) {
         if (isWild()) {
             throw new IllegalStateException("Wild publish");
         }
@@ -313,10 +314,10 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
     }
 
     @Override
-    public void publish(Session from, Object data) {
+    public void publish(Session from, Object data, Promise<Boolean> promise) {
         ServerMessage.Mutable mutable = _bayeux.newMessage();
         mutable.setData(data);
-        publish(from, mutable);
+        publish(from, mutable, promise);
     }
 
     protected void sweep() {

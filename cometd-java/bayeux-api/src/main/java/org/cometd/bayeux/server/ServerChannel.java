@@ -17,6 +17,7 @@ package org.cometd.bayeux.server;
 
 import java.util.Set;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.client.ClientSessionChannel;
 
@@ -69,18 +70,34 @@ public interface ServerChannel extends ConfigurableServerChannel {
      *
      * @param from    the session from which the message originates
      * @param message the message to publish
-     * @see #publish(Session, Object)
+     * @see #publish(Session, Object, Promise)
      */
-    public void publish(Session from, ServerMessage.Mutable message);
+    public void publish(Session from, ServerMessage.Mutable message, Promise<Boolean> promise);
+
+    /**
+     * @deprecated use {@link #publish(Session, ServerMessage.Mutable, Promise)} instead
+     */
+    @Deprecated
+    default void publish(Session from, ServerMessage.Mutable message) {
+        publish(from, message, null);
+    }
 
     /**
      * <p>Publishes the given information to this channel.</p>
      *
      * @param from the session from which the message originates
      * @param data the data of the message
-     * @see #publish(Session, ServerMessage.Mutable)
+     * @see #publish(Session, ServerMessage.Mutable, Promise)
      */
-    public void publish(Session from, Object data);
+    public void publish(Session from, Object data, Promise<Boolean> promise);
+
+    /**
+     * @deprecated use {@link #publish(Session, Object, Promise)} instead
+     */
+    @Deprecated
+    default void publish(Session from, Object data) {
+        publish(from, data, null);
+    }
 
     /**
      * <p>Removes this channel, and all the children channels.</p>
@@ -98,15 +115,24 @@ public interface ServerChannel extends ConfigurableServerChannel {
     public interface MessageListener extends ServerChannelListener {
         /**
          * <p>Callback invoked when a message is being published.</p>
-         * <p>Implementers can decide to return false to signal that the message should not be
-         * published.</p>
+         * <p>Implementers can notify the promise with false to signal
+         * that the message should not be published.</p>
          *
-         * @param from    the session that publishes the message
+         * @param sender  the session that publishes the message
          * @param channel the channel the message is published to
          * @param message the message to be published
-         * @return whether the message should be published or not
+         * @param promise the promise to notify
          */
-        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message);
+        public default void onMessage(ServerSession sender, ServerChannel channel, ServerMessage.Mutable message, Promise<Boolean> promise) {
+            promise.succeed(onMessage(sender, channel, message));
+        }
+
+        /**
+         * <p>Blocking version of {@link #onMessage(ServerSession, ServerChannel, ServerMessage.Mutable, Promise)}.</p>
+         */
+        public default boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+            return true;
+        }
     }
 
     /**

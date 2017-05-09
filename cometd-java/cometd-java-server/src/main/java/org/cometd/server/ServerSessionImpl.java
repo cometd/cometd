@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
@@ -217,7 +218,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     @Override
-    public void deliver(Session sender, ServerMessage.Mutable message) {
+    public void deliver(Session sender, ServerMessage.Mutable message, Promise<Boolean> promise) {
         ServerSession session = null;
         if (sender instanceof ServerSession) {
             session = (ServerSession)sender;
@@ -231,11 +232,11 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     @Override
-    public void deliver(Session sender, String channelId, Object data) {
+    public void deliver(Session sender, String channelId, Object data, Promise<Boolean> promise) {
         ServerMessage.Mutable message = _bayeux.newMessage();
         message.setChannel(channelId);
         message.setData(data);
-        deliver(sender, message);
+        deliver(sender, message, promise);
     }
 
     protected void doDeliver(ServerSession sender, ServerMessage.Mutable mutable) {

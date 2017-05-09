@@ -15,7 +15,7 @@
  */
 package org.cometd.bayeux.server;
 
-import org.cometd.bayeux.Session;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 
 /**
@@ -44,10 +44,19 @@ public interface SecurityPolicy {
      * @param server  the {@link BayeuxServer} object
      * @param session the session (not yet added to the BayeuxServer)
      * @param message the handshake message
-     * @return true if the handshake message should be accepted and the {@link ServerSession} instance
-     * associated to the {@link BayeuxServer} object
+     * @param promise the promise to notify whether the handshake message should be accepted and the
+     *                {@link ServerSession} instance associated to the {@link BayeuxServer} object
      */
-    boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message);
+    default void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
+        promise.succeed(canHandshake(server, session, message));
+    }
+
+    /**
+     * <p>Blocking version of {@link #canHandshake(BayeuxServer, ServerSession, ServerMessage, Promise)}.</p>
+     */
+    default boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+        return false;
+    }
 
     /**
      * <p>Checks if a message should be allowed to create a new channel.</p>
@@ -62,9 +71,18 @@ public interface SecurityPolicy {
      * @param session   the client sending the message
      * @param channelId the channel to be created
      * @param message   the message trying to create the channel
-     * @return true if the channel should be created
+     * @param promise   the promise to notify whether the channel should be created
      */
-    boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message);
+    default void canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message, Promise<Boolean> promise) {
+        promise.succeed(canCreate(server, session, channelId, message));
+    }
+
+    /**
+     * <p>Blocking version of {@link #canCreate(BayeuxServer, ServerSession, String, ServerMessage, Promise)}.</p>
+     */
+    default boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message) {
+        return false;
+    }
 
     /**
      * <p>Checks if a subscribe message from a client is allowed to subscribe to a channel.</p>
@@ -76,21 +94,39 @@ public interface SecurityPolicy {
      * @param session the client sending the message
      * @param channel the channel to subscribe to
      * @param message the subscribe message
-     * @return true if the client can subscribe to the channel
+     * @param promise the promise to notify whether the client can subscribe to the channel
      */
-    boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message);
+    default void canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message, Promise<Boolean> promise) {
+        promise.succeed(canSubscribe(server, session, channel, message));
+    }
+
+    /**
+     * <p>Blocking version of {@link #canSubscribe(BayeuxServer, ServerSession, ServerChannel, ServerMessage, Promise)}.</p>
+     */
+    default boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
+        return false;
+    }
 
     /**
      * <p>Checks if a client can publish a message to a channel.</p>
      * <p>Both remote and local sessions are subject to this check when performing publishes via
      * {@link ClientSessionChannel#publish(Object)}.</p>
-     * <p>{@link ServerChannel#publish(Session, Object)} is not subject to this check.</p>
+     * <p>Server-side publishes are not subject to this check.</p>
      *
      * @param server  the {@link BayeuxServer} object
      * @param session the client sending the message
      * @param channel the channel to publish to
      * @param message the message to being published
-     * @return true if the client can publish to the channel
+     * @param promise the promise to notify whether the client can publish to the channel
      */
-    boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message);
+    default void canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message, Promise<Boolean> promise) {
+        promise.succeed(canPublish(server, session, channel, message));
+    }
+
+    /**
+     * <p>Blocking version of {@link #canPublish(BayeuxServer, ServerSession, ServerChannel, ServerMessage, Promise)}.</p>
+     */
+    default boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
+        return false;
+    }
 }
