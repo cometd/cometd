@@ -552,8 +552,14 @@
             return _supportsCrossDomain || !crossDomain;
         };
 
+        _self.newXMLHttpRequest = function() {
+            return new window.XMLHttpRequest();
+        };
+
         _self.xhrSend = function(packet) {
-            var xhr = new window.XMLHttpRequest();
+            var xhr = _self.newXMLHttpRequest();
+            // Copy external context, to be used in other environments.
+            xhr.context = _self.context;
             xhr.withCredentials = true;
             xhr.open('POST', packet.url, packet.sync !== true);
             var headers = packet.headers;
