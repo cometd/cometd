@@ -263,7 +263,21 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         }
 
         private void processMessages(S wsSession, ServerMessage.Mutable[] messages) throws IOException {
+            if (messages.length == 0) {
+                throw new IOException();
+            }
+
             ServerSessionImpl session = _session;
+            if (session == null) {
+                ServerMessage.Mutable message = messages[0];
+                if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
+                    session = getBayeux().newServerSession();
+                } else if (!_requireHandshakePerConnection) {
+                    _session = session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
+                }
+            } else if (session.isDisconnected()) {
+                _session = session = null;
+            }
 
             boolean sendQueue = false;
             boolean sendReplies = false;
@@ -272,16 +286,6 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             for (ServerMessage.Mutable message : messages) {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Processing {}", message);
-                }
-
-                if (session == null) {
-                    if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
-                        session = getBayeux().newServerSession();
-                    } else if (!_requireHandshakePerConnection) {
-                        _session = session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
-                    }
-                } else if (!session.getId().equals(message.getClientId()) || session.isDisconnected()) {
-                    _session = session = null;
                 }
 
                 switch (message.getChannel()) {
