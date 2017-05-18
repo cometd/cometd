@@ -75,4 +75,64 @@ public class SessionHijackingTest extends AbstractClientServerTest {
         disconnectBayeuxClient(client1);
         disconnectBayeuxClient(client2);
     }
+
+    @Test
+    public void testSessionHijackingByBatchedSecondMessage() throws Exception {
+        startServer(serverOptions());
+
+        final BayeuxClient client1 = newBayeuxClient();
+        client1.handshake();
+        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        final BayeuxClient client2 = newBayeuxClient();
+        client2.handshake();
+        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        final String channelName = "/hijack";
+
+        // Client1 tries to impersonate Client2.
+        client1.addExtension(new ClientSession.Extension.Adapter() {
+            @Override
+            public boolean send(ClientSession session, Message.Mutable message) {
+                if (channelName.equals(message.getChannel())) {
+                    message.setClientId(client2.getId());
+                }
+                return true;
+            }
+        });
+
+        final AtomicReference<Message> messageRef = new AtomicReference<>();
+        final CountDownLatch latch = new CountDownLatch(1);
+        client1.batch(new Runnable() {
+            @Override
+            public void run() {
+                ClientSessionChannel channel = client1.getChannel(channelName);
+                channel.subscribe(new ClientSessionChannel.MessageListener() {
+                    @Override
+                    public void onMessage(ClientSessionChannel channel, Message message) {
+                        // Must not arrive here.
+                    }
+                });
+                channel.publish("data", new ClientSessionChannel.MessageListener() {
+                    @Override
+                    public void onMessage(ClientSessionChannel channel, Message message) {
+                        messageRef.set(message);
+                        latch.countDown();
+                    }
+                });
+            }
+        });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Message publishReply = messageRef.get();
+        Assert.assertNotNull(publishReply);
+        Assert.assertFalse(publishReply.isSuccessful());
+        Assert.assertTrue(((String)publishReply.get(Message.ERROR_FIELD)).startsWith("402"));
+
+        // Client2 should be connected.
+        Assert.assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
+
+        disconnectBayeuxClient(client1);
+        disconnectBayeuxClient(client2);
+    }
 }

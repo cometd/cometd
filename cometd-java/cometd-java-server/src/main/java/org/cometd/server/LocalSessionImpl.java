@@ -39,7 +39,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     private final BayeuxServerImpl _bayeux;
     private final String _idHint;
     private ServerSessionImpl _session;
-    private String _sessionId;
 
     protected LocalSessionImpl(BayeuxServerImpl bayeux, String idHint) {
         _bayeux = bayeux;
@@ -98,7 +97,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         }
 
         ServerSessionImpl session = new ServerSessionImpl(_bayeux, this, _idHint);
-
         ServerMessage.Mutable message = newMessage();
         if (template != null) {
             message.putAll(template);
@@ -107,24 +105,18 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         message.setId(messageId);
         message.setChannel(Channel.META_HANDSHAKE);
         registerCallback(messageId, callback);
-
         doSend(session, message);
 
         ServerMessage reply = message.getAssociated();
         if (reply != null && reply.isSuccessful()) {
+            _session = session;
+
             message = newMessage();
             message.setId(newMessageId());
             message.setChannel(Channel.META_CONNECT);
             message.getAdvice(true).put(Message.INTERVAL_FIELD, -1L);
             message.setClientId(session.getId());
-
             doSend(session, message);
-
-            reply = message.getAssociated();
-            if (reply != null && reply.isSuccessful()) {
-                _session = session;
-                _sessionId = session.getId();
-            }
         }
     }
 
@@ -151,10 +143,10 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
     @Override
     public String getId() {
-        if (_sessionId == null) {
+        if (_session == null) {
             throw new IllegalStateException("Method handshake() not invoked for local session " + this);
         }
-        return _sessionId;
+        return _session.getId();
     }
 
     @Override
@@ -169,7 +161,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
     @Override
     public String toString() {
-        return "L:" + (_sessionId == null ? _idHint + "_<disconnected>" : _sessionId);
+        return "L:" + (_session == null ? _idHint + "_<disconnected>" : _session.getId());
     }
 
     @Override
@@ -207,7 +199,9 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
      */
     protected void doSend(ServerSessionImpl from, ServerMessage.Mutable message) {
         String messageId = message.getId();
-        message.setClientId(_sessionId);
+        if (_session != null) {
+            message.setClientId(_session.getId());
+        }
 
         if (!extendSend(message)) {
             return;
