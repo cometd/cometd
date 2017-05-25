@@ -362,6 +362,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         boolean connected = _bayeux.removeServerSession(this, false);
         if (connected) {
             ServerMessage.Mutable message = _bayeux.newMessage();
+            message.setSuccessful(true);
             message.setChannel(Channel.META_DISCONNECT);
             deliver(this, message);
             flush();
