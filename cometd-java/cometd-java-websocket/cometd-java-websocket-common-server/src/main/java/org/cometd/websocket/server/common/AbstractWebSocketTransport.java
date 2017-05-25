@@ -530,8 +530,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 long delay = now - _connectExpiration;
                 if (_logger.isDebugEnabled()) {
-                    if (delay > 5000) // TODO: make the max delay a parameter ?
-                    {
+                    // TODO: make the max delay a parameter ?
+                    if (delay > 5000) {
                         _logger.debug("/meta/connect {} expired {} ms too late", _connectReply, delay);
                     }
                 }
