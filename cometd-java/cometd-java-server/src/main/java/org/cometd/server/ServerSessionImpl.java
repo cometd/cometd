@@ -21,14 +21,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
@@ -40,6 +38,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
+import org.cometd.common.AsyncFoldLeft;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.AbstractServerTransport.Scheduler;
 import org.cometd.server.transport.AbstractHttpTransport;
@@ -60,13 +59,11 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     private final Queue<ServerMessage> _queue = new ArrayDeque<>();
     private final LocalSessionImpl _localSession;
     private final AttributesMap _attributes = new AttributesMap();
-    private final AtomicBoolean _connected = new AtomicBoolean();
-    private final AtomicBoolean _disconnected = new AtomicBoolean();
-    private final AtomicBoolean _handshook = new AtomicBoolean();
-    private final Map<ServerChannelImpl, Boolean> _subscribedTo = new ConcurrentHashMap<>();
+    private final Set<ServerChannelImpl> subscriptions = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final LazyTask _lazyTask = new LazyTask();
     private AbstractServerTransport.Scheduler _scheduler;
     private ServerTransport _advisedTransport;
+    private State _state = State.NEW;
     private int _maxQueue = -1;
     private long _transientTimeout = -1;
     private long _transientInterval = -1;
@@ -189,7 +186,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     @Override
     public Set<ServerChannel> getSubscriptions() {
-        return Collections.<ServerChannel>unmodifiableSet(_subscribedTo.keySet());
+        return Collections.unmodifiableSet(subscriptions);
     }
 
     @Override
@@ -226,9 +223,14 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             session = ((LocalSession)sender).getServerSession();
         }
 
-        if (_bayeux.extendSend(session, this, message)) {
-            doDeliver(session, message);
-        }
+        ServerSession serverSession = session;
+        _bayeux.extendOutgoing(session, this, message, Promise.from(b -> {
+            if (b) {
+                deliver1(serverSession, message, promise);
+            } else {
+                promise.succeed(false);
+            }
+        }, promise::fail));
     }
 
     @Override
@@ -239,37 +241,46 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         deliver(sender, message, promise);
     }
 
-    protected void doDeliver(ServerSession sender, ServerMessage.Mutable mutable) {
+    protected void deliver1(ServerSession sender, ServerMessage.Mutable mutable, Promise<Boolean> promise) {
         if (sender == this && !isBroadcastToPublisher()) {
-            return;
-        }
-
-        ServerMessage.Mutable message = extendSend(mutable);
-        if (message == null) {
-            return;
-        }
-
-        _bayeux.freeze(message);
-
-        for (ServerSessionListener listener : _listeners) {
-            if (listener instanceof MessageListener) {
-                if (!notifyOnMessage((MessageListener)listener, sender, message)) {
-                    return;
+            promise.succeed(false);
+        } else {
+            extendOutgoing(mutable, Promise.from(message -> {
+                if (message == null) {
+                    promise.succeed(false);
+                } else {
+                    _bayeux.freeze(message);
+                    AsyncFoldLeft.run(_listeners, true, (result, listener, loop) -> {
+                        if (listener instanceof MessageListener) {
+                            notifyOnMessage((MessageListener)listener, sender, message, _bayeux.resolveLoop(loop));
+                        } else {
+                            loop.proceed(result);
+                        }
+                    }, Promise.from(b -> {
+                        if (b) {
+                            deliver2(sender, mutable, promise);
+                        } else {
+                            promise.succeed(false);
+                        }
+                    }, promise::fail));
                 }
-            }
+            }, promise::fail));
         }
+    }
 
+    private void deliver2(ServerSession sender, ServerMessage.Mutable message, Promise<Boolean> promise) {
         Boolean wakeup = enqueueMessage(sender, message);
         if (wakeup == null) {
-            return;
-        }
-
-        if (wakeup) {
-            if (message.isLazy()) {
-                flushLazy(message);
-            } else {
-                flush();
+            promise.succeed(false);
+        } else {
+            if (wakeup) {
+                if (message.isLazy()) {
+                    flushLazy(message);
+                } else {
+                    flush();
+                }
             }
+            promise.succeed(true);
         }
     }
 
@@ -295,25 +306,26 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    protected ServerMessage.Mutable extendSend(ServerMessage.Mutable mutable) {
-        ListIterator<Extension> i = _extensions.listIterator();
-        while (i.hasNext()) {
-            i.next();
-        }
-        while (i.hasPrevious()) {
-            Extension extension = i.previous();
-            if (mutable.isMeta()) {
-                if (!notifySendMeta(extension, mutable)) {
-                    return null;
-                }
-            } else {
-                mutable = notifySend(extension, mutable);
-                if (mutable == null) {
-                    return null;
-                }
+    protected void extendOutgoing(ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
+        List<Extension> extensions = new ArrayList<>(_extensions);
+        Collections.reverse(extensions);
+        AsyncFoldLeft.run(extensions, message, (result, extension, loop) -> {
+            try {
+                extension.outgoing(this, message, Promise.from(m -> {
+                    if (m != null) {
+                        loop.proceed(m);
+                    } else {
+                        loop.leave(null);
+                    }
+                }, failure -> {
+                    _logger.info("Exception reported by extension " + extension, failure);
+                    loop.proceed(message);
+                }));
+            } catch (Exception x) {
+                _logger.info("Exception thrown by extension " + extension, x);
+                loop.proceed(message);
             }
-        }
-        return mutable;
+        }, promise);
     }
 
     private boolean notifyQueueMaxed(MaxQueueListener listener, ServerSession session, Queue<ServerMessage> queue, ServerSession sender, ServerMessage message) {
@@ -325,12 +337,15 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    private boolean notifyOnMessage(MessageListener listener, ServerSession from, ServerMessage message) {
+    private void notifyOnMessage(MessageListener listener, ServerSession sender, ServerMessage message, Promise<Boolean> promise) {
         try {
-            return listener.onMessage(this, from, message);
+            listener.onMessage(this, sender, message, Promise.from(promise::succeed, failure -> {
+                _logger.info("Exception reported by listener " + listener, failure);
+                promise.succeed(true);
+            }));
         } catch (Throwable x) {
-            _logger.info("Exception while invoking listener " + listener, x);
-            return true;
+            _logger.info("Exception thrown by listener " + listener, x);
+            promise.succeed(true);
         }
     }
 
@@ -342,9 +357,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    protected void handshake() {
-        _handshook.set(true);
-
+    protected boolean handshake() {
         AbstractServerTransport transport = (AbstractServerTransport)_bayeux.getCurrentTransport();
         if (transport != null) {
             _maxQueue = transport.getOption(AbstractServerTransport.MAX_QUEUE_OPTION, -1);
@@ -352,10 +365,24 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             _maxProcessing = transport.getOption(AbstractServerTransport.MAX_PROCESSING_OPTION, -1);
             _maxLazy = transport.getMaxLazyTimeout();
         }
+
+        synchronized (getLock()) {
+            if (_state == State.NEW) {
+                _state = State.HANDSHAKEN;
+                return true;
+            }
+            return false;
+        }
     }
 
-    protected void connected() {
-        _connected.set(true);
+    protected boolean connected() {
+        synchronized (getLock()) {
+            if (_state == State.HANDSHAKEN || _state == State.CONNECTED) {
+                _state = State.CONNECTED;
+                return true;
+            }
+            return false;
+        }
     }
 
     @Override
@@ -364,8 +391,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         if (connected) {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(Channel.META_DISCONNECT);
-            deliver(this, message);
-            flush();
+            deliver(this, message, new Promise<Boolean>() {
+                @Override
+                public void succeed(Boolean result) {
+                    flush();
+                }
+            });
         }
     }
 
@@ -534,7 +565,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         // do local delivery
         if (_localSession != null && hasNonLazyMessages()) {
             for (ServerMessage msg : takeQueue()) {
-                _localSession.receive(new HashMapMessage(msg));
+                // TODO: verify that promise here is not necessary.
+                _localSession.receive(new HashMapMessage(msg), Promise.noop());
             }
         }
     }
@@ -630,69 +662,46 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     @Override
     public boolean isHandshook() {
-        return _handshook.get();
+        synchronized (getLock()) {
+            return _state == State.HANDSHAKEN || _state == State.CONNECTED;
+        }
     }
 
     @Override
     public boolean isConnected() {
-        return _connected.get();
+        synchronized (getLock()) {
+            return _state == State.CONNECTED;
+        }
     }
 
     public boolean isDisconnected() {
-        return _disconnected.get();
-    }
-
-    protected boolean extendRecv(ServerMessage.Mutable message) {
-        for (Extension extension : _extensions) {
-            boolean proceed = message.isMeta() ?
-                    notifyRcvMeta(extension, message) :
-                    notifyRcv(extension, message);
-            if (!proceed) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean notifyRcvMeta(Extension extension, ServerMessage.Mutable message) {
-        try {
-            return extension.rcvMeta(this, message);
-        } catch (Throwable x) {
-            _logger.info("Exception while invoking extension " + extension, x);
-            return true;
+        synchronized (getLock()) {
+            return _state == State.DISCONNECTED;
         }
     }
 
-    private boolean notifyRcv(Extension extension, ServerMessage.Mutable message) {
-        try {
-            return extension.rcv(this, message);
-        } catch (Throwable x) {
-            _logger.info("Exception while invoking extension " + extension, x);
-            return true;
+    private boolean isTerminated() {
+        synchronized (getLock()) {
+            return _state == State.DISCONNECTED || _state == State.EXPIRED;
         }
     }
 
-    private boolean notifySendMeta(Extension extension, ServerMessage.Mutable message) {
-        try {
-            return extension.sendMeta(this, message);
-        } catch (Throwable x) {
-            _logger.info("Exception while invoking extension " + extension, x);
-            return true;
-        }
-    }
-
-    private ServerMessage.Mutable notifySend(Extension extension, ServerMessage.Mutable message) {
-        try {
-            ServerMessage result = extension.send(this, message);
-            if (result instanceof ServerMessage.Mutable) {
-                return (ServerMessage.Mutable)result;
+    protected void extendIncoming(ServerMessage.Mutable message, Promise<Boolean> promise) {
+        AsyncFoldLeft.run(_extensions, true, (result, extension, loop) -> {
+            if (result) {
+                try {
+                    extension.incoming(this, message, Promise.from(loop::proceed, failure -> {
+                        _logger.info("Exception reported by extension " + extension, failure);
+                        loop.proceed(true);
+                    }));
+                } catch (Throwable x) {
+                    _logger.info("Exception thrown by extension " + extension, x);
+                    loop.proceed(true);
+                }
             } else {
-                return result == null ? null : _bayeux.newMessage(result);
+                loop.leave(result);
             }
-        } catch (Throwable x) {
-            _logger.info("Exception while invoking extension " + extension, x);
-            return message;
-        }
+        }, promise);
     }
 
     public void reAdvise() {
@@ -762,13 +771,13 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
      * @return True if the session was connected.
      */
     protected boolean removed(boolean timedOut) {
-        if (!timedOut) {
-            _disconnected.set(true);
+        boolean result;
+        synchronized (this) {
+            result = isHandshook();
+            _state = timedOut ? State.EXPIRED : State.DISCONNECTED;
         }
-        boolean connected = _connected.getAndSet(false);
-        boolean handshook = _handshook.getAndSet(false);
-        if (connected || handshook) {
-            for (ServerChannelImpl channel : _subscribedTo.keySet()) {
+        if (result) {
+            for (ServerChannelImpl channel : subscriptions) {
                 channel.unsubscribe(this);
             }
 
@@ -778,7 +787,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                 }
             }
         }
-        return connected;
+        return result;
     }
 
     private void notifyRemoved(RemoveListener listener, ServerSession serverSession, boolean timedout) {
@@ -805,12 +814,19 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         _allowMessageDeliveryDuringHandshake = allow;
     }
 
-    protected void subscribedTo(ServerChannelImpl channel) {
-        _subscribedTo.put(channel, Boolean.TRUE);
+    protected boolean subscribe(ServerChannelImpl channel) {
+        synchronized (getLock()) {
+            if (isTerminated()) {
+                return false;
+            } else {
+                subscriptions.add(channel);
+                return true;
+            }
+        }
     }
 
     protected void unsubscribedFrom(ServerChannelImpl channel) {
-        _subscribedTo.remove(channel);
+        subscriptions.remove(channel);
     }
 
     public long calculateTimeout(long defaultTimeout) {
@@ -932,4 +948,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             return false;
         }
     }
+
+    private enum State {
+        NEW, HANDSHAKEN, CONNECTED, DISCONNECTED, EXPIRED
+    }
+
 }

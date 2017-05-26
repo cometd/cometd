@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
@@ -39,7 +40,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     private final BayeuxServerImpl _bayeux;
     private final String _idHint;
     private ServerSessionImpl _session;
-    private String _sessionId;
 
     protected LocalSessionImpl(BayeuxServerImpl bayeux, String idHint) {
         _bayeux = bayeux;
@@ -47,11 +47,13 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     }
 
     @Override
-    public void receive(Message.Mutable message) {
-        super.receive(message);
-        if (Channel.META_DISCONNECT.equals(message.getChannel()) && message.isSuccessful()) {
-            _session = null;
-        }
+    public void receive(Message.Mutable message, Promise<Void> promise) {
+        super.receive(message, Promise.from(y -> {
+            if (Channel.META_DISCONNECT.equals(message.getChannel()) && message.isSuccessful()) {
+                _session = null;
+            }
+            promise.succeed(null);
+        }, promise::fail));
     }
 
     @Override
@@ -69,7 +71,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         int size = _queue.size();
         while (size-- > 0) {
             ServerMessage.Mutable message = _queue.poll();
-            doSend(_session, message);
+            doSend(_session, message, Promise.noop());
         }
     }
 
@@ -99,17 +101,39 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
         ServerSessionImpl session = new ServerSessionImpl(_bayeux, this, _idHint);
 
-        ServerMessage.Mutable message = newMessage();
+        ServerMessage.Mutable hsMessage = newMessage();
         if (template != null) {
-            message.putAll(template);
+            hsMessage.putAll(template);
         }
         String messageId = newMessageId();
-        message.setId(messageId);
-        message.setChannel(Channel.META_HANDSHAKE);
+        hsMessage.setId(messageId);
+        hsMessage.setChannel(Channel.META_HANDSHAKE);
         registerCallback(messageId, callback);
 
-        doSend(session, message);
+        doSend(session, hsMessage, new Promise<ServerMessage.Mutable>() {
+            @Override
+            public void succeed(ServerMessage.Mutable hsReply) {
+                if (hsReply != null && hsReply.isSuccessful()) {
+                    ServerMessage.Mutable cnMessage = newMessage();
+                    cnMessage.setId(newMessageId());
+                    cnMessage.setChannel(Channel.META_CONNECT);
+                    cnMessage.getAdvice(true).put(Message.INTERVAL_FIELD, -1L);
+                    cnMessage.setClientId(session.getId());
 
+                    doSend(session, cnMessage, Promise.from(cnReply -> {
+                        if (cnReply != null && cnReply.isSuccessful()) {
+                            _session = session;
+                        }
+                    }, this::fail));
+                }
+            }
+
+            @Override
+            public void fail(Throwable failure) {
+                // TODO
+            }
+        });
+/*
         ServerMessage reply = message.getAssociated();
         if (reply != null && reply.isSuccessful()) {
             message = newMessage();
@@ -126,6 +150,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
                 _sessionId = session.getId();
             }
         }
+*/
     }
 
     @Override
@@ -151,10 +176,10 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
     @Override
     public String getId() {
-        if (_sessionId == null) {
+        if (_session == null) {
             throw new IllegalStateException("Method handshake() not invoked for local session " + this);
         }
-        return _sessionId;
+        return _session.getId();
     }
 
     @Override
@@ -169,7 +194,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
     @Override
     public String toString() {
-        return "L:" + (_sessionId == null ? _idHint + "_<disconnected>" : _sessionId);
+        return "L:" + (_session == null ? _idHint + "_<disconnected>" : _session.getId());
     }
 
     @Override
@@ -186,7 +211,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     /**
      * <p>Enqueues or sends a message to the server.</p>
      * <p>This method will either enqueue the message, if this session {@link #isBatching() is batching},
-     * or perform the actual send by calling {@link #doSend(ServerSessionImpl, ServerMessage.Mutable)}.</p>
+     * or perform the send immediately.</p>
      *
      * @param session The ServerSession to send as. This normally the current server session, but during handshake it is a proposed server session.
      * @param message The message to send.
@@ -195,32 +220,32 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         if (isBatching()) {
             _queue.add(message);
         } else {
-            doSend(session, message);
+            doSend(session, message, Promise.noop());
         }
     }
 
-    /**
-     * <p>Sends a message to the server.</p>
-     *
-     * @param from    The ServerSession to send as. This normally the current server session, but during handshake it is a proposed server session.
-     * @param message The message to send.
-     */
-    protected void doSend(ServerSessionImpl from, ServerMessage.Mutable message) {
+    private void doSend(ServerSessionImpl session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
         String messageId = message.getId();
-        message.setClientId(_sessionId);
-
-        if (!extendSend(message)) {
-            return;
-        }
-
-        // Extensions may have changed the messageId.
-        message.setId(messageId);
-
-        ServerMessage.Mutable reply = _bayeux.handle(from, message);
-        reply = _bayeux.extendReply(from, _session, reply);
-        if (reply != null) {
-            receive(reply);
-        }
+        message.setClientId(session.getId());
+        extendOutgoing(message, Promise.from(result -> {
+            // Extensions may have changed the messageId.
+            message.setId(messageId);
+            if (result) {
+                _bayeux.handle(session, message, Promise.from(r ->
+                        _bayeux.extendReply(session, _session, r, Promise.from(reply -> {
+                            if (reply != null) {
+                                receive(reply, Promise.from(y -> promise.succeed(reply), promise::fail));
+                            } else {
+                                promise.succeed(null);
+                            }
+                        }, promise::fail)), promise::fail));
+            } else {
+                ServerMessage.Mutable reply = _bayeux.createReply(message);
+                _bayeux.error(reply, "404::message_deleted");
+                receive(reply, Promise.from(y -> promise.succeed(reply), promise::fail));
+                promise.succeed(reply);
+            }
+        }, promise::fail));
     }
 
     @Override

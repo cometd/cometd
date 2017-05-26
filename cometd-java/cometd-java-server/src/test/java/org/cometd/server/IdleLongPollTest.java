@@ -19,12 +19,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JSONContext;
@@ -48,8 +46,8 @@ public class IdleLongPollTest extends AbstractBayeuxClientServerTest {
         final long sleep = 500;
         JSONTransport transport = new JSONTransport(bayeux) {
             @Override
-            protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
-                return new DispatchingLongPollScheduler(request, response, asyncContext, session, reply, timeout) {
+            protected HttpScheduler newHttpScheduler(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+                return new DispatchingLongPollScheduler(context, promise, message, timeout) {
                     private final AtomicInteger decrements = new AtomicInteger();
 
                     @Override
@@ -57,17 +55,14 @@ public class IdleLongPollTest extends AbstractBayeuxClientServerTest {
                         if (decrements.incrementAndGet() == 1) {
                             // Simulate that onComplete() is delayed without blocking
                             // this thread, to cause a race condition
-                            new Thread() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        Thread.sleep(sleep);
-                                        superOnComplete(asyncEvent);
-                                    } catch (Exception x) {
-                                        x.printStackTrace();
-                                    }
+                            new Thread(() -> {
+                                try {
+                                    Thread.sleep(sleep);
+                                    superOnComplete(asyncEvent);
+                                } catch (Exception x) {
+                                    x.printStackTrace();
                                 }
-                            }.start();
+                            }).start();
                         } else {
                             superOnComplete(asyncEvent);
                         }

@@ -33,6 +33,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.eclipse.jetty.util.AttributesMap;
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * <p>It handles extensions and batching, and provides utility methods to be used by subclasses.</p>
  */
 public abstract class AbstractClientSession implements ClientSession, Dumpable {
-    private static final Logger logger = LoggerFactory.getLogger(ClientSession.class);
+    private static final Logger _logger = LoggerFactory.getLogger(ClientSession.class);
     private static final AtomicLong _idGen = new AtomicLong(0);
 
     private final List<Extension> _extensions = new CopyOnWriteArrayList<>();
@@ -79,6 +80,27 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         return Collections.unmodifiableList(_extensions);
     }
 
+    protected void extendOutgoing(Message.Mutable message, Promise<Boolean> promise) {
+        List<Extension> extensions = new ArrayList<>(_extensions);
+        Collections.reverse(extensions);
+        AsyncFoldLeft.run(extensions, true, (result, extension, loop) -> {
+            if (result) {
+                try {
+                    extension.outgoing(this, message, Promise.from(loop::proceed, failure -> {
+                        _logger.info("Exception reported by extension " + extension, failure);
+                        loop.proceed(true);
+                    }));
+                } catch (Throwable x) {
+                    _logger.info("Exception thrown by extension " + extension, x);
+                    loop.proceed(true);
+                }
+            } else {
+                loop.leave(false);
+            }
+        }, promise);
+    }
+
+    // TODO: remove, but needs modifications to BayeuxClient.
     protected boolean extendSend(Message.Mutable message) {
         ListIterator<Extension> i = _extensions.listIterator();
         while (i.hasNext()) {
@@ -96,6 +118,25 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         return true;
     }
 
+    protected void extendIncoming(Message.Mutable message, Promise<Boolean> promise) {
+        AsyncFoldLeft.run(_extensions, true, (result, extension, loop) -> {
+            if (result) {
+                try {
+                    extension.incoming(this, message, Promise.from(loop::proceed, failure -> {
+                        _logger.info("Exception reported by extension " + extension, failure);
+                        loop.proceed(true);
+                    }));
+                } catch (Throwable x) {
+                    _logger.info("Exception thrown by extension " + extension, x);
+                    loop.proceed(true);
+                }
+            } else {
+                loop.leave(false);
+            }
+        }, promise);
+    }
+
+    // TODO: remove, but needs modifications to BayeuxClient.
     protected boolean extendRcv(Message.Mutable message) {
         for (Extension extension : _extensions) {
             boolean proceed = message.isMeta() ?
@@ -225,8 +266,9 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
      * and the channel {@link ClientSessionChannel.ClientSessionChannelListener listeners}.</p>
      *
      * @param message the message received.
+     * @param promise
      */
-    public void receive(final Message.Mutable message) {
+    public void receive(final Message.Mutable message, Promise<Void> promise) {
         String channelName = message.getChannel();
         if (channelName == null) {
             throw new IllegalArgumentException("Bayeux messages must have a channel, " + message);
@@ -246,15 +288,14 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
             }
         }
 
-        if (!extendRcv(message)) {
-            return;
-        }
-
-        if (handleRemoteCall(message)) {
-            return;
-        }
-
-        notifyListeners(message);
+        extendIncoming(message, Promise.from(pass -> {
+            if (pass) {
+                if (!handleRemoteCall(message)) {
+                    notifyListeners(message);
+                }
+            }
+            promise.succeed(null);
+        }, promise::fail));
     }
 
     private boolean handleRemoteCall(Message.Mutable message) {
@@ -273,7 +314,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         try {
             listener.onMessage(message);
         } catch (Throwable x) {
-            logger.info("Exception while invoking listener " + listener, x);
+            _logger.info("Exception while invoking listener " + listener, x);
         }
     }
 
@@ -593,7 +634,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
             try {
                 listener.onMessage(this, message);
             } catch (Throwable x) {
-                logger.info("Exception while invoking listener " + listener, x);
+                _logger.info("Exception while invoking listener " + listener, x);
             }
         }
 

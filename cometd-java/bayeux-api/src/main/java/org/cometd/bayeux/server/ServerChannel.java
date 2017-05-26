@@ -79,7 +79,7 @@ public interface ServerChannel extends ConfigurableServerChannel {
      */
     @Deprecated
     default void publish(Session from, ServerMessage.Mutable message) {
-        publish(from, message, null);
+        publish(from, message, Promise.noop());
     }
 
     /**
@@ -96,7 +96,7 @@ public interface ServerChannel extends ConfigurableServerChannel {
      */
     @Deprecated
     default void publish(Session from, Object data) {
-        publish(from, data, null);
+        publish(from, data, Promise.noop());
     }
 
     /**

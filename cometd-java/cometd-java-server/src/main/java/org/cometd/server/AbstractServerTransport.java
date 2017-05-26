@@ -21,6 +21,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.UnsupportedCharsetException;
 import java.text.ParseException;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AbstractTransport;
@@ -244,11 +245,10 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     protected void sweep() {
     }
 
-    protected ServerMessage.Mutable processReply(ServerSessionImpl session, ServerMessage.Mutable reply) {
-        if (reply != null) {
-            reply = getBayeux().extendReply(session, session, reply);
-        }
-        return reply;
+    // TODO: verify that processing of the reply is performed all the times.
+    // TODO: the call to extendReply can/should be moved to BayeuxServerImpl.handle()
+    protected void processReply(ServerSessionImpl session, ServerMessage.Mutable reply, Promise<ServerMessage.Mutable> promise) {
+        getBayeux().extendReply(session, session, reply, promise);
     }
 
     protected byte[] toJSONBytes(ServerMessage message, String encoding) {

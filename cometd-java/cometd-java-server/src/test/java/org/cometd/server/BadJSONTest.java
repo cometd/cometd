@@ -20,6 +20,9 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.cometd.bayeux.Message;
+import org.cometd.common.JSONContext;
+import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -101,7 +104,11 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send();
-        Assert.assertEquals(500, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
+        Message.Mutable[] replies = jsonContext.parse(response.getContentAsString());
+        Message.Mutable reply = replies[0];
+        Assert.assertFalse(reply.isSuccessful());
 
         Request subscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/subscribe\"," +
@@ -109,7 +116,10 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
                 "\"subscription\": \"/bar<script>\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(500, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
+        replies = jsonContext.parse(response.getContentAsString());
+        reply = replies[0];
+        Assert.assertFalse(reply.isSuccessful());
 
         Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"/foo<>\"," +
@@ -117,7 +127,10 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
                 "\"data\": \"{}\"" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(500, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
+        replies = jsonContext.parse(response.getContentAsString());
+        reply = replies[0];
+        Assert.assertFalse(reply.isSuccessful());
 
         Request unsubscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/unsubscribe\"," +
@@ -125,6 +138,9 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
                 "\"subscription\": \"/bar<script>\"" +
                 "}]");
         response = unsubscribe.send();
-        Assert.assertEquals(500, response.getStatus());
+        Assert.assertEquals(200, response.getStatus());
+        replies = jsonContext.parse(response.getContentAsString());
+        reply = replies[0];
+        Assert.assertFalse(reply.isSuccessful());
     }
 }

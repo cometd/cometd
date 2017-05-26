@@ -97,36 +97,34 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
     }
 
     protected boolean subscribe(ServerSessionImpl session, ServerMessage message) {
-        if (!session.isHandshook()) {
-            return false;
-        }
-
-        // Maintain backward compatibility by allowing subscriptions
-        // to service channels to be a no-operation, but succeed
         if (isService()) {
+            // Subscription to service channels is a no operation.
             return true;
         }
+
         if (isMeta()) {
             return false;
         }
 
         resetSweeperPasses();
 
-        if (_subscribers.add(session)) {
-            session.subscribedTo(this);
-            for (ServerChannelListener listener : _listeners) {
-                if (listener instanceof SubscriptionListener) {
-                    notifySubscribed((SubscriptionListener)listener, session, this, message);
+        if (session.subscribe(this)) {
+            if (_subscribers.add(session)) {
+                for (ServerChannelListener listener : _listeners) {
+                    if (listener instanceof SubscriptionListener) {
+                        notifySubscribed((SubscriptionListener)listener, session, this, message);
+                    }
+                }
+                for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners()) {
+                    if (listener instanceof BayeuxServer.SubscriptionListener) {
+                        notifySubscribed((BayeuxServer.SubscriptionListener)listener, session, this, message);
+                    }
                 }
             }
-            for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners()) {
-                if (listener instanceof BayeuxServer.SubscriptionListener) {
-                    notifySubscribed((BayeuxServer.SubscriptionListener)listener, session, this, message);
-                }
-            }
+            return true;
+        } else {
+            return false;
         }
-
-        return true;
     }
 
     private void notifySubscribed(SubscriptionListener listener, ServerSession session, ServerChannel channel, ServerMessage message) {
@@ -310,7 +308,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
             session = (ServerSessionImpl)((LocalSession)from).getServerSession();
         }
 
-        _bayeux.doPublish(session, this, mutable, false);
+        _bayeux.publish(session, this, mutable, false, promise);
     }
 
     @Override
@@ -329,7 +327,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
             }
         }
 
-        if (isPersistent()) {
+        if (isMeta() || isPersistent()) {
             return;
         }
 

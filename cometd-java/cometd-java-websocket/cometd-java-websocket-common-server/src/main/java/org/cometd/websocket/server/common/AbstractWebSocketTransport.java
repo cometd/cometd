@@ -32,9 +32,11 @@ import java.util.concurrent.TimeoutException;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.common.AsyncFoldLeft;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
@@ -150,13 +152,14 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     protected abstract class AbstractWebSocketScheduler implements AbstractServerTransport.Scheduler {
         protected final Logger _logger = LoggerFactory.getLogger(getClass());
         private final Flusher flusher = new Flusher();
-        private final BayeuxContext _context;
-        private volatile ServerSessionImpl _session;
+        private final BayeuxContext _bayeuxContext;
+        private Context _context;
+        private ServerSessionImpl _session;
         private ServerMessage.Mutable _connectReply;
         private ScheduledFuture<?> _connectTask;
 
         protected AbstractWebSocketScheduler(BayeuxContext context) {
-            _context = context;
+            _bayeuxContext = context;
         }
 
         protected void send(S wsSession, List<? extends ServerMessage> messages, int batchSize, Callback callback) {
@@ -240,7 +243,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         }
 
         public void onMessage(S wsSession, String data) {
-            _bayeuxContext.set(_context);
+            AbstractWebSocketTransport.this._bayeuxContext.set(_bayeuxContext);
             getBayeux().setCurrentTransport(AbstractWebSocketTransport.this);
             try {
                 ServerMessage.Mutable[] messages = parseMessages(data);
@@ -248,7 +251,10 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     _logger.debug("Parsed {} messages", messages == null ? -1 : messages.length);
                 }
                 if (messages != null) {
-                    processMessages(wsSession, messages);
+                    Promise.Completable<Void> promise = new Promise.Completable<>();
+                    processMessages(wsSession, messages, promise);
+                    // Cannot return from this method until the processing is finished.
+                    promise.get();
                 }
             } catch (ParseException x) {
                 close(1011, x.toString());
@@ -257,119 +263,130 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 close(1011, x.toString());
                 handleException(wsSession, _session, x);
             } finally {
-                _bayeuxContext.set(null);
+                AbstractWebSocketTransport.this._bayeuxContext.set(null);
                 getBayeux().setCurrentTransport(null);
             }
         }
 
-        private void processMessages(S wsSession, ServerMessage.Mutable[] messages) throws IOException {
-            ServerSessionImpl session = _session;
-
-            boolean sendQueue = false;
-            boolean sendReplies = false;
-            boolean scheduleExpiration = false;
-            List<ServerMessage.Mutable> replies = new ArrayList<>(messages.length);
-            for (ServerMessage.Mutable message : messages) {
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Processing {}", message);
-                }
-
+        private void processMessages(S wsSession, ServerMessage.Mutable[] messages, Promise.Completable<Void> promise) throws IOException {
+            if (messages.length == 0) {
+                promise.fail(new IOException("protocol violation"));
+            } else {
+                ServerSessionImpl session = _session;
                 if (session == null) {
+                    ServerMessage.Mutable message = messages[0];
                     if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
                         session = getBayeux().newServerSession();
                     } else if (!_requireHandshakePerConnection) {
                         _session = session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
                     }
-                } else if (!session.getId().equals(message.getClientId()) || session.isDisconnected()) {
-                    _session = session = null;
                 }
 
-                switch (message.getChannel()) {
-                    case Channel.META_HANDSHAKE: {
-                        if (messages.length > 1) {
-                            throw new IOException();
-                        }
-                        ServerMessage.Mutable reply = processMetaHandshake(session, message);
-                        if (reply.isSuccessful()) {
-                            _session = session;
-                        }
-                        reply = processReply(session, reply);
-                        if (reply != null) {
-                            replies.add(reply);
-                        }
-                        sendQueue = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
-                        sendReplies = reply != null;
-                        scheduleExpiration = true;
-                        break;
+                _context = new Context(messages, session);
+                AsyncFoldLeft.run(messages, null, (result, message, loop) ->
+                        processMessage(message, Promise.from(loop::proceed, loop::fail)), Promise.from(y -> {
+                    if (_context.sendQueue || _context.sendReplies) {
+                        send(wsSession, _context);
                     }
-                    case Channel.META_CONNECT: {
-                        ServerMessage.Mutable reply = processMetaConnect(session, message);
-                        reply = processReply(session, reply);
-                        if (reply != null) {
-                            replies.add(reply);
-                        }
-                        boolean deliver = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
-                        sendQueue = deliver && reply != null;
-                        sendReplies = reply != null;
-                        scheduleExpiration = true;
-                        break;
-                    }
-                    default: {
-                        ServerMessage.Mutable reply = getBayeux().handle(session, message);
-                        reply = processReply(session, reply);
-                        if (reply != null) {
-                            replies.add(reply);
-                        }
-                        // Leave sendQueue unchanged.
-                        if (reply != null) {
-                            sendReplies = true;
-                        }
-                        // Leave scheduleExpiration unchanged.
-                        break;
-                    }
-                }
-            }
-
-            if (sendQueue || sendReplies) {
-                send(wsSession, session, sendQueue, scheduleExpiration, replies);
+                }, promise::fail));
             }
         }
 
-        private ServerMessage.Mutable processMetaHandshake(ServerSessionImpl session, ServerMessage.Mutable message) {
-            ServerMessage.Mutable reply = getBayeux().handle(session, message);
-            if (reply.isSuccessful()) {
-                session.setScheduler(this);
+        private void processMessage(ServerMessage.Mutable message, Promise<Object> promise) {
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Processing {}", message);
             }
-            return reply;
+
+            switch (message.getChannel()) {
+                case Channel.META_HANDSHAKE: {
+                    if (_context.messages.length > 1) {
+                        promise.fail(new IOException("protocol violation"));
+                    } else {
+                        ServerSessionImpl session = _context.session;
+                        processMetaHandshake(session, message, Promise.from(y ->
+                                processReply(session, message.getAssociated(), Promise.from(reply -> {
+                                    if (reply != null) {
+                                        _context.replies.add(reply);
+                                        if (reply.isSuccessful()) {
+                                            _session = session;
+                                        }
+                                    }
+                                    _context.sendQueue = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
+                                    _context.sendReplies = reply != null;
+                                    _context.scheduleExpiration = true;
+                                }, promise::fail)), promise::fail));
+                    }
+                    break;
+                }
+                case Channel.META_CONNECT: {
+                    ServerSessionImpl session = _context.session;
+                    processMetaConnect(session, message, Promise.from(y ->
+                            processReply(session, message.getAssociated(), Promise.from(reply -> {
+                                if (reply != null) {
+                                    _context.replies.add(reply);
+                                }
+                                boolean deliver = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
+                                _context.sendQueue = deliver && reply != null;
+                                _context.sendReplies = reply != null;
+                                _context.scheduleExpiration = true;
+                            }, promise::fail)), promise::fail));
+                    break;
+                }
+                default: {
+                    ServerSessionImpl session = _context.session;
+                    getBayeux().handle(session, message, Promise.from(y ->
+                            processReply(session, message.getAssociated(), Promise.from(reply -> {
+                                if (reply != null) {
+                                    _context.replies.add(reply);
+                                }
+                                // Leave sendQueue unchanged.
+                                if (reply != null) {
+                                    _context.sendReplies = true;
+                                }
+                                // Leave scheduleExpiration unchanged.
+                            }, promise::fail)), promise::fail));
+                    break;
+                }
+            }
         }
 
-        private ServerMessage.Mutable processMetaConnect(ServerSessionImpl session, ServerMessage.Mutable message) {
+        private void processMetaHandshake(ServerSessionImpl session, ServerMessage.Mutable message, Promise<Void> promise) {
+            getBayeux().handle(session, message, Promise.from(reply -> {
+                if (reply.isSuccessful()) {
+                    session.setScheduler(this);
+                }
+                promise.succeed(null);
+            }, promise::fail));
+        }
+
+        private void processMetaConnect(ServerSessionImpl session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
             // Remember the connected status before handling the message.
             boolean wasConnected = session != null && session.isConnected();
-            ServerMessage.Mutable reply = getBayeux().handle(session, message);
-            if (session != null) {
-                if (reply.isSuccessful() && session.isConnected()) {
-                    // We need to set the scheduler again, in case the connection
-                    // has temporarily broken and we have created a new scheduler.
-                    session.setScheduler(this);
+            getBayeux().handle(session, message, Promise.from(reply -> {
+                if (session != null) {
+                    if (reply.isSuccessful() && session.isConnected()) {
+                        // We need to set the scheduler again, in case the connection
+                        // has temporarily broken and we have created a new scheduler.
+                        session.setScheduler(this);
 
-                    // If we deliver only via meta connect and we have messages, then reply.
-                    boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
-                    boolean hasMessages = session.hasNonLazyMessages();
-                    boolean replyToMetaConnect = hasMessages && metaConnectDelivery;
-                    if (!replyToMetaConnect) {
-                        long timeout = session.calculateTimeout(getTimeout());
-                        boolean holdMetaConnect = timeout > 0 && wasConnected;
-                        if (holdMetaConnect) {
-                            reply = shouldHoldMetaConnect(session, reply, timeout);
+                        // If we deliver only via meta connect and we have messages, then reply.
+                        boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
+                        boolean hasMessages = session.hasNonLazyMessages();
+                        boolean replyToMetaConnect = hasMessages && metaConnectDelivery;
+                        if (!replyToMetaConnect) {
+                            long timeout = session.calculateTimeout(getTimeout());
+                            boolean holdMetaConnect = timeout > 0 && wasConnected;
+                            if (holdMetaConnect) {
+                                reply = shouldHoldMetaConnect(session, reply, timeout);
+                            }
                         }
                     }
+                    if (reply != null && session.isDisconnected()) {
+                        reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                    }
                 }
-                if (reply != null && session.isDisconnected()) {
-                    reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                }
-            }
-            return reply;
+                promise.succeed(reply);
+            }, promise::fail));
         }
 
         private ServerMessage.Mutable shouldHoldMetaConnect(ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
@@ -387,7 +404,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
                     // Delay the connect reply until timeout.
                     long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + timeout;
-                    _connectTask = getScheduler().schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
+                    _connectTask = getScheduler().schedule(new MetaConnectReplyTask(expiration), timeout, TimeUnit.MILLISECONDS);
                     if (_logger.isDebugEnabled()) {
                         _logger.debug("Scheduled meta connect {}", _connectTask);
                     }
@@ -397,15 +414,16 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
         }
 
-        protected void send(S wsSession, ServerSessionImpl session, boolean sendQueue, boolean scheduleExpiration, List<ServerMessage.Mutable> replies) {
+        protected void send(S wsSession, Context context) {
             List<ServerMessage> queue = Collections.emptyList();
-            if (sendQueue && session != null) {
+            ServerSessionImpl session = context.session;
+            if (context.sendQueue && session != null) {
                 queue = session.takeQueue();
             }
             if (_logger.isDebugEnabled()) {
-                _logger.debug("Sending {}, replies={}, messages={}", session, replies, queue);
+                _logger.debug("Sending {}, replies={}, messages={}", session, context.replies, queue);
             }
-            boolean queued = flusher.queue(new Entry<>(wsSession, session, scheduleExpiration, queue, replies));
+            boolean queued = flusher.queue(new Entry<>(wsSession, context, queue));
             if (queued) {
                 flusher.iterate();
             }
@@ -487,37 +505,31 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                     }
                 }
 
-                send(wsSession, session, reply, connectReply);
+                if (reply) {
+                    if (session.isDisconnected()) {
+                        connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                    }
+                    processReply(session, connectReply, Promise.from(cnReply -> {
+                        if (cnReply != null) {
+                            _context.replies.add(cnReply);
+                        }
+                        if (_logger.isDebugEnabled()) {
+                            _logger.debug("Sending {} metaConnectReply={}", session, connectReply);
+                        }
+                    }, null/*TODO*/));
+                }
+//            send(wsSession, session, true, reply, replies);
+//                send(wsSession, context);
             } catch (Throwable x) {
                 close(1011, x.toString());
                 handleException(wsSession, session, x);
             }
         }
 
-        private void send(S wsSession, ServerSessionImpl session, boolean reply, ServerMessage.Mutable connectReply) {
-            List<ServerMessage.Mutable> replies = Collections.emptyList();
-            if (reply) {
-                if (session.isDisconnected() && connectReply != null) {
-                    connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                }
-                connectReply = processReply(session, connectReply);
-                if (connectReply != null) {
-                    replies = new ArrayList<>(1);
-                    replies.add(connectReply);
-                }
-            }
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("Sending {} metaConnectReply={}", session, connectReply);
-            }
-            send(wsSession, session, true, reply, replies);
-        }
-
         private class MetaConnectReplyTask implements Runnable {
-            private final ServerMessage.Mutable _connectReply;
             private final long _connectExpiration;
 
-            private MetaConnectReplyTask(ServerMessage.Mutable connectReply, long connectExpiration) {
-                this._connectReply = connectReply;
+            private MetaConnectReplyTask(long connectExpiration) {
                 this._connectExpiration = connectExpiration;
             }
 
@@ -572,7 +584,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
                 S wsSession = entry._wsSession;
 
-                List<ServerMessage.Mutable> replies = entry._replies;
+                List<ServerMessage.Mutable> replies = entry._context.replies;
                 List<ServerMessage> queue = entry._queue;
                 if (replies.size() > 0) {
                     ServerMessage.Mutable reply = replies.get(0);
@@ -633,23 +645,20 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
         private class Entry<W> {
             private final W _wsSession;
-            private final ServerSessionImpl _session;
-            private final boolean _scheduleExpiration;
+            private final Context _context;
             private final List<ServerMessage> _queue;
-            private final List<ServerMessage.Mutable> _replies;
 
-            private Entry(W wsSession, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> queue, List<ServerMessage.Mutable> replies) {
+            private Entry(W wsSession, Context context, List<ServerMessage> queue) {
                 this._wsSession = wsSession;
-                this._session = session;
-                this._scheduleExpiration = scheduleExpiration;
+                this._context = context;
                 this._queue = queue;
-                this._replies = replies;
             }
 
             private void scheduleExpiration() {
-                if (_scheduleExpiration) {
-                    if (_session != null) {
-                        _session.scheduleExpiration(getInterval());
+                if (_context.scheduleExpiration) {
+                    ServerSessionImpl session = _context.session;
+                    if (session != null) {
+                        session.scheduleExpiration(getInterval());
                     }
                 }
             }
@@ -660,8 +669,22 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         getClass().getSimpleName(),
                         hashCode(),
                         _queue.size(),
-                        _replies.size());
+                        _context.replies.size());
             }
+        }
+    }
+
+    protected static class Context {
+        private final List<ServerMessage.Mutable> replies = new ArrayList<>();
+        private final ServerMessage.Mutable[] messages;
+        private final ServerSessionImpl session;
+        private boolean sendQueue;
+        private boolean sendReplies;
+        private boolean scheduleExpiration;
+
+        private Context(ServerMessage.Mutable[] messages, ServerSessionImpl session) {
+            this.messages = messages;
+            this.session = session;
         }
     }
 }

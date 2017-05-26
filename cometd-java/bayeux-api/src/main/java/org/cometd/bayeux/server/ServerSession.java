@@ -103,7 +103,7 @@ public interface ServerSession extends Session {
      */
     @Deprecated
     public default void deliver(Session sender, ServerMessage.Mutable message) {
-        deliver(sender, message, null);
+        deliver(sender, message, Promise.noop());
     }
 
     /**

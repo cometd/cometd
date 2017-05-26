@@ -77,7 +77,7 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
     }
 
     protected void configureBayeuxRequest(Request request, String requestBody, String encoding) throws UnsupportedEncodingException {
-        request.timeout(5, TimeUnit.SECONDS);
+        request.timeout(555, TimeUnit.SECONDS);
         request.method(HttpMethod.POST);
         request.content(new StringContentProvider("application/json;charset=" + encoding, requestBody, Charset.forName(encoding)));
     }

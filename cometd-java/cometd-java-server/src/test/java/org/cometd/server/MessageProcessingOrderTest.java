@@ -22,6 +22,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -119,10 +120,9 @@ public class MessageProcessingOrderTest {
         // This is how services are typically implemented
         channel.addListener(new ServerChannel.MessageListener() {
             @Override
-            public boolean onMessage(ServerSession session, ServerChannel channel, ServerMessage.Mutable message) {
+            public void onMessage(ServerSession session, ServerChannel channel, ServerMessage.Mutable message, Promise<Boolean> promise) {
                 events.offer("svc.chn.lst");
-                session.deliver(service, channelName, message.getData());
-                return true;
+                session.deliver(service, channelName, message.getData(), promise);
             }
         });
         client.getServerSession().addListener(new ServerSessionListener(events, "0"));
@@ -179,10 +179,9 @@ public class MessageProcessingOrderTest {
         // Services are typically implemented with a ServerChannel.MessageListener.
         channel.addListener(new ServerChannel.MessageListener() {
             @Override
-            public boolean onMessage(ServerSession session, ServerChannel channel, ServerMessage.Mutable message) {
+            public void onMessage(ServerSession sender, ServerChannel channel, ServerMessage.Mutable message, Promise<Boolean> promise) {
                 events.offer("svc.chn.lst");
-                _bayeux.createChannelIfAbsent(broadcastChannel).getReference().publish(service, message.getData());
-                return true;
+                _bayeux.createChannelIfAbsent(broadcastChannel).getReference().publish(service, message.getData(), promise);
             }
         });
         session0.getServerSession().addListener(new ServerSessionListener(events, "0"));
@@ -233,7 +232,7 @@ public class MessageProcessingOrderTest {
         }
     }
 
-    private static class ClientExtension extends ClientSession.Extension.Adapter {
+    private static class ClientExtension implements ClientSession.Extension {
         private final Queue<String> events;
         private final String id;
 
@@ -276,7 +275,7 @@ public class MessageProcessingOrderTest {
         }
     }
 
-    private static class ServerExtension extends BayeuxServer.Extension.Adapter {
+    private static class ServerExtension implements BayeuxServer.Extension {
         private final Queue<String> events;
 
         private ServerExtension(Queue<String> events) {
@@ -300,7 +299,7 @@ public class MessageProcessingOrderTest {
         }
     }
 
-    private static class ServerSessionExtension extends ServerSession.Extension.Adapter {
+    private static class ServerSessionExtension implements ServerSession.Extension {
         private final Queue<String> events;
         private final String id;
 

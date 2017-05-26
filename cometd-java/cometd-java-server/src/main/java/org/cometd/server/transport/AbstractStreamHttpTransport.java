@@ -20,6 +20,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
@@ -28,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
@@ -36,7 +38,7 @@ import org.cometd.server.ServerSessionImpl;
  * <p>The base class for HTTP transports that use blocking stream I/O.</p>
  */
 public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport {
-    private static final String SCHEDULER_ATTRIBUTE = "org.cometd.scheduler";
+    private static final String CONTEXT_ATTRIBUTE = "org.cometd.transport.context";
 
     protected AbstractStreamHttpTransport(BayeuxServerImpl bayeux, String name) {
         super(bayeux, name);
@@ -44,47 +46,87 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        getBayeux().setCurrentTransport(this);
-        setCurrentRequest(request);
-        try {
-            process(request, response);
-        } finally {
-            setCurrentRequest(null);
-            getBayeux().setCurrentTransport(null);
+        // API calls could be async, so we must be async in the request processing too.
+        AsyncContext asyncContext = request.startAsync();
+        // Explicitly disable the timeout, to prevent
+        // that the timeout fires in case of slow reads.
+        asyncContext.setTimeout(0);
+
+        Promise<Void> promise = new Promise<Void>() {
+            @Override
+            public void succeed(Void result) {
+                reset();
+                asyncContext.complete();
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Handling successful");
+                }
+            }
+
+            @Override
+            public void fail(Throwable failure) {
+                reset();
+                int code = failure instanceof TimeoutException ?
+                        HttpServletResponse.SC_REQUEST_TIMEOUT :
+                        HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+                sendError(request, response, code, failure);
+                asyncContext.complete();
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Handling failed", failure);
+                }
+            }
+
+            private void reset() {
+                setCurrentRequest(null);
+                getBayeux().setCurrentTransport(null);
+            }
+        };
+
+        Context context = (Context)request.getAttribute(CONTEXT_ATTRIBUTE);
+        if (context == null) {
+            getBayeux().setCurrentTransport(this);
+            setCurrentRequest(request);
+            process(new Context(request, response), promise);
+        } else {
+            resume(context, context.scheduler.getMessage(), Promise.from(y -> flush(context, promise), promise::fail));
         }
     }
 
-    protected void process(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        LongPollScheduler scheduler = (LongPollScheduler)request.getAttribute(SCHEDULER_ATTRIBUTE);
-        if (scheduler == null) {
-            // Not a resumed /meta/connect, process messages.
+    protected void process(Context context, Promise<Void> promise) {
+        HttpServletRequest request = context.request;
+        try {
             try {
                 ServerMessage.Mutable[] messages = parseMessages(request);
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Parsed {} messages", messages == null ? -1 : messages.length);
                 }
                 if (messages != null) {
-                    processMessages(request, response, messages);
+                    processMessages(context, messages, promise);
+                } else {
+                    promise.succeed(null);
                 }
             } catch (ParseException x) {
-                handleJSONParseException(request, response, x.getMessage(), x.getCause());
+                handleJSONParseException(request, context.response, x.getMessage(), x.getCause());
+                promise.succeed(null);
             }
-        } else {
-            resume(request, response, null, scheduler.getServerSession(), scheduler.getMetaConnectReply());
+        } catch (Throwable x) {
+            promise.fail(x);
         }
     }
 
     @Override
-    protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
-        AsyncContext asyncContext = request.startAsync(request, response);
-        asyncContext.setTimeout(0);
-        HttpScheduler scheduler = newHttpScheduler(request, response, asyncContext, session, reply, timeout);
-        request.setAttribute(SCHEDULER_ATTRIBUTE, scheduler);
-        return scheduler;
+    protected HttpScheduler suspend(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+        HttpServletRequest request = context.request;
+        context.scheduler = newHttpScheduler(context, promise, message, timeout);
+        request.setAttribute(CONTEXT_ATTRIBUTE, context);
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("Suspended {}", message);
+        }
+        // TODO: session.notifySuspendedListener()
+        return context.scheduler;
     }
 
-    protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
-        return new DispatchingLongPollScheduler(request, response, asyncContext, session, reply, timeout);
+    protected HttpScheduler newHttpScheduler(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+        return new DispatchingLongPollScheduler(context, promise, message, timeout);
     }
 
     protected abstract ServerMessage.Mutable[] parseMessages(HttpServletRequest request) throws IOException, ParseException;
@@ -112,9 +154,12 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
     }
 
     @Override
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies) {
+    protected void write(Context context, List<ServerMessage> messages, Promise<Void> promise) {
+        HttpServletRequest request = context.request;
+        HttpServletResponse response = context.response;
         try {
+            ServerSessionImpl session = context.session;
+            List<ServerMessage.Mutable> replies = context.replies;
             int replyIndex = 0;
             boolean needsComma = false;
             ServletOutputStream output;
@@ -122,8 +167,8 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                 output = beginWrite(request, response);
 
                 // First message is always the handshake reply, if any.
-                if (replies.length > 0) {
-                    ServerMessage.Mutable reply = replies[0];
+                if (replies.size() > 0) {
+                    ServerMessage.Mutable reply = replies.get(0);
                     if (Channel.META_HANDSHAKE.equals(reply.getChannel())) {
                         if (allowMessageDeliveryDuringHandshake(session) && !messages.isEmpty()) {
                             reply.put("x-messages", messages.size());
@@ -136,8 +181,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                 }
 
                 // Write the messages.
-                for (int i = 0; i < messages.size(); ++i) {
-                    ServerMessage message = messages.get(i);
+                for (ServerMessage message : messages) {
                     if (needsComma) {
                         output.write(',');
                     }
@@ -148,14 +192,14 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                 // Start the interval timeout after writing the messages
                 // since they may take time to be written, even in case
                 // of exceptions to make sure the session can be swept.
-                if (scheduleExpiration && session != null && (session.isHandshook() || session.isConnected())) {
+                if (context.scheduleExpiration && session != null && (session.isHandshook() || session.isConnected())) {
                     session.scheduleExpiration(getInterval());
                 }
             }
 
             // Write the replies, if any.
-            while (replyIndex < replies.length) {
-                ServerMessage.Mutable reply = replies[replyIndex];
+            while (replyIndex < replies.size()) {
+                ServerMessage.Mutable reply = replies.get(replyIndex);
                 if (reply != null) {
                     if (needsComma) {
                         output.write(',');
@@ -168,15 +212,13 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             }
 
             endWrite(response, output);
-        } catch (Exception x) {
+
+            promise.succeed(null);
+        } catch (Throwable x) {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Failure writing messages", x);
             }
-            AsyncContext asyncContext = null;
-            if (request.isAsyncStarted()) {
-                asyncContext = request.getAsyncContext();
-            }
-            error(request, response, asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            promise.fail(x);
         }
     }
 
@@ -189,8 +231,8 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
     protected abstract void endWrite(HttpServletResponse response, ServletOutputStream output) throws IOException;
 
     protected class DispatchingLongPollScheduler extends LongPollScheduler {
-        public DispatchingLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
-            super(request, response, asyncContext, session, reply, timeout);
+        public DispatchingLongPollScheduler(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+            super(context, promise, message, timeout);
         }
 
         @Override
@@ -203,7 +245,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             // Only with Servlet 3.1 and standard asynchronous I/O we would be able to do write() + complete()
             // without blocking, and it will be much more efficient because there is no thread dispatching and
             // there will be more mechanical sympathy.
-            getAsyncContext().dispatch();
+            getContext().request.getAsyncContext().dispatch();
         }
     }
 }

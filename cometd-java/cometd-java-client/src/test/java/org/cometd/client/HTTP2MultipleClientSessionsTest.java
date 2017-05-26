@@ -29,10 +29,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.cometd.server.transport.AsyncJSONTransport;
 import org.eclipse.jetty.http.HttpVersion;
@@ -59,11 +59,11 @@ public class HTTP2MultipleClientSessionsTest extends ClientServerTest {
             }
 
             @Override
-            protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies) {
+            protected void write(Context context, List<ServerMessage> messages, Promise<Void> promise) {
                 // Just before writing the response, fake back that the request is HTTP/1.1,
                 // otherwise the HTTP/1.1 generator does not generate the correct response.
-                ((Request)request).setHttpVersion(HttpVersion.HTTP_1_1);
-                super.write(request, response, session, scheduleExpiration, messages, replies);
+                ((Request)context.request).setHttpVersion(HttpVersion.HTTP_1_1);
+                super.write(context, messages, promise);
             }
         };
         transport.init();

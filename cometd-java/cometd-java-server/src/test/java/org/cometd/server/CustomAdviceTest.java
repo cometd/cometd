@@ -57,18 +57,13 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
 
         String channelName = "/connect";
         final long newTimeout = timeout / 2;
-        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+        bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> channel.addListener(new ServerChannel.MessageListener() {
             @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.addListener(new ServerChannel.MessageListener() {
-                    @Override
-                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                        from.setTimeout(newTimeout);
-                        return true;
-                    }
-                });
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+                from.setTimeout(newTimeout);
+                return true;
             }
-        });
+        }));
 
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -133,18 +128,13 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
 
         String channelName = "/interval";
         final long newInterval = 1000;
-        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+        bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> channel.addListener(new ServerChannel.MessageListener() {
             @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.addListener(new ServerChannel.MessageListener() {
-                    @Override
-                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                        from.setInterval(newInterval);
-                        return true;
-                    }
-                });
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+                from.setInterval(newInterval);
+                return true;
             }
-        });
+        }));
 
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +

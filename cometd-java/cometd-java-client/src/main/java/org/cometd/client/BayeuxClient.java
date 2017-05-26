@@ -42,6 +42,7 @@ import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.ClientTransport;
@@ -593,6 +594,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 }
             }
         });
+    }
+
+    // TODO: remove this and use version with Promise.
+    private void receive(Message.Mutable message) {
+        receive(message, Promise.noop());
     }
 
     private void processMessages(List<Message.Mutable> messages) {

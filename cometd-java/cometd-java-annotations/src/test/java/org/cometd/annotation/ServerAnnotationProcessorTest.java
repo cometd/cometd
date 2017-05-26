@@ -32,6 +32,7 @@ import javax.inject.Inject;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
@@ -324,7 +325,7 @@ public class ServerAnnotationProcessorTest {
         remote.handshake();
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel(channel.getId());
-        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+        process(remote, message);
 
         assertNotNull(sessionRef.get());
         assertSame(sessionRef.get(), remote.getServerSession());
@@ -338,7 +339,7 @@ public class ServerAnnotationProcessorTest {
         messageRef.set(null);
         message = bayeuxServer.newMessage();
         message.setChannel(channel.getId());
-        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+        process(remote, message);
 
         assertNull(sessionRef.get());
         assertNull(messageRef.get());
@@ -382,7 +383,7 @@ public class ServerAnnotationProcessorTest {
         remote.handshake();
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo/bar");
-        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+        process(remote, message);
 
         assertEquals(1, counter.get());
     }
@@ -428,7 +429,7 @@ public class ServerAnnotationProcessorTest {
         remote.handshake();
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo/bar");
-        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+        process(remote, message);
 
         assertEquals(2, counter.get());
     }
@@ -470,7 +471,7 @@ public class ServerAnnotationProcessorTest {
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo/bar/baz");
         message.setData(new HashMap<>());
-        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+        process(remote, message);
 
         assertNotNull(messageRef.get());
 
@@ -482,7 +483,7 @@ public class ServerAnnotationProcessorTest {
         message = bayeuxServer.newMessage();
         message.setChannel("/foo/bar/baz");
         message.setData(new HashMap<>());
-        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+        process(remote, message);
 
         assertNull(messageRef.get());
     }
@@ -789,7 +790,7 @@ public class ServerAnnotationProcessorTest {
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo");
         message.setData(new HashMap());
-        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+        process(remote, message);
 
         assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
     }
@@ -822,7 +823,7 @@ public class ServerAnnotationProcessorTest {
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo");
         message.setData(new HashMap());
-        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+        process(remote, message);
 
         assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
     }
@@ -1434,7 +1435,7 @@ public class ServerAnnotationProcessorTest {
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel(parentChannel + "/" + value);
         message.setData(new HashMap());
-        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+        process(remote, message);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -1490,7 +1491,7 @@ public class ServerAnnotationProcessorTest {
         // Wrong channel (does not bind to the template), the message must not be delivered.
         message.setChannel(grandParentChannel + "/test");
         message.setData(new HashMap());
-        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+        process(remote, message);
 
         assertFalse(latch.await(1, TimeUnit.SECONDS));
     }
@@ -1585,7 +1586,7 @@ public class ServerAnnotationProcessorTest {
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel(parentChannel + "/" + value);
         message.setData(new HashMap());
-        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+        process(remote, message);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -1620,5 +1621,11 @@ public class ServerAnnotationProcessorTest {
         @Subscription("/a/{b}/{c}")
         public void service(Message message, @Param("c") String c, @Param("b") String b) {
         }
+    }
+
+    private void process(LocalSession remote, ServerMessage.Mutable message) throws Exception {
+        Promise.Completable<ServerMessage.Mutable> completable = new Promise.Completable<>();
+        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message, completable);
+        completable.get();
     }
 }

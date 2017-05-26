@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -41,11 +40,12 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
-import org.cometd.bayeux.server.ConfigurableServerChannel.ServerChannelListener;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
@@ -54,6 +54,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
+import org.cometd.common.AsyncFoldLeft;
 import org.cometd.common.JSONContext;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.cometd.server.transport.AsyncJSONTransport;
@@ -176,11 +177,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     protected void initializeMetaChannels() {
-        createChannelIfAbsent(Channel.META_HANDSHAKE).getReference().addListener(new HandshakeHandler());
-        createChannelIfAbsent(Channel.META_CONNECT).getReference().addListener(new ConnectHandler());
-        createChannelIfAbsent(Channel.META_SUBSCRIBE).getReference().addListener(new SubscribeHandler());
-        createChannelIfAbsent(Channel.META_UNSUBSCRIBE).getReference().addListener(new UnsubscribeHandler());
-        createChannelIfAbsent(Channel.META_DISCONNECT).getReference().addListener(new DisconnectHandler());
+        createChannelIfAbsent(Channel.META_HANDSHAKE);
+        createChannelIfAbsent(Channel.META_CONNECT);
+        createChannelIfAbsent(Channel.META_SUBSCRIBE);
+        createChannelIfAbsent(Channel.META_UNSUBSCRIBE);
+        createChannelIfAbsent(Channel.META_DISCONNECT);
     }
 
     protected void initializeJSONContext() throws Exception {
@@ -454,7 +455,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
         // Another thread may add this channel concurrently, so wait until it is initialized
         channel.waitForInitialized();
-        return new MarkedReference<ServerChannel>(channel, initialized);
+        return new MarkedReference<>(channel, initialized);
     }
 
     private void notifyConfigureChannel(Initializer listener, ServerChannel channel) {
@@ -485,10 +486,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
     @Override
     public ServerSession getSession(String clientId) {
-        if (clientId == null) {
-            return null;
-        }
-        return _sessions.get(clientId);
+        return clientId == null ? null : _sessions.get(clientId);
     }
 
     protected void addServerSession(ServerSessionImpl session, ServerMessage message) {
@@ -628,82 +626,100 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         _listeners.remove(listener);
     }
 
-    public ServerMessage.Mutable handle(ServerSessionImpl session, ServerMessage.Mutable message) {
+    public void handle(ServerSessionImpl session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
+        Mutable reply = createReply(message);
+        if (_validation) {
+            String error = validateMessage(message);
+            if (error != null) {
+                error(reply, error);
+                promise.succeed(reply);
+                return;
+            }
+        }
+        extendIncoming(session, message, Promise.from(extPass -> {
+            if (extPass) {
+                if (session != null) {
+                    session.extendIncoming(message, Promise.from(sessExtPass -> {
+                        if (sessExtPass) {
+                            handle2(session, message, promise);
+                        } else {
+                            error(reply, "404::message_deleted");
+                            promise.succeed(reply);
+                        }
+                    }, promise::fail));
+                } else {
+                    handle2(null, message, promise);
+                }
+            } else {
+                error(reply, "404::message_deleted");
+                promise.succeed(reply);
+            }
+        }, promise::fail));
+    }
+
+    private void handle2(ServerSessionImpl session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
         if (_logger.isDebugEnabled()) {
             _logger.debug(">  {} {}", message, session);
         }
 
-        if (_validation) {
-            validateMessage(message);
-        }
-
-        Mutable reply = createReply(message);
-        if (!extendRecv(session, message) || session != null && !session.extendRecv(message)) {
-            error(reply, "404::message deleted");
-        } else {
-            if (_logger.isDebugEnabled()) {
-                _logger.debug(">> {}", message);
-            }
-
-            handle(session, message, reply);
-        }
-
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("<< {}", reply);
-        }
-        return reply;
-    }
-
-    private void handle(ServerSessionImpl session, Mutable message, Mutable reply) {
-        String channelName = message.getChannel();
-
+        ServerMessage.Mutable reply = message.getAssociated();
         if (session == null || session.isDisconnected()) {
             unknownSession(reply);
-            return;
-        }
-
-        session.cancelExpiration(Channel.META_CONNECT.equals(channelName));
-
-        if (channelName == null) {
-            error(reply, "400::channel missing");
+            promise.succeed(reply);
         } else {
-            ServerChannelImpl channel = getServerChannel(channelName);
-            if (channel == null) {
-                Authorizer.Result creationResult = isCreationAuthorized(session, message, channelName);
-                if (creationResult instanceof Authorizer.Result.Denied) {
-                    String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
-                    error(reply, "403:" + denyReason + ":create denied");
-                } else {
-                    channel = (ServerChannelImpl)createChannelIfAbsent(channelName).getReference();
-                }
-            }
+            String channelName = message.getChannel();
+            session.cancelExpiration(Channel.META_CONNECT.equals(channelName));
 
-            if (channel != null) {
-                if (channel.isMeta()) {
-                    doPublish(session, channel, message, true);
+            if (channelName == null) {
+                error(reply, "400::channel_missing");
+                promise.succeed(reply);
+            } else {
+                ServerChannelImpl channel = getServerChannel(channelName);
+                if (channel == null) {
+                    isCreationAuthorized(session, message, channelName, Promise.from(result -> {
+                        if (result instanceof Authorizer.Result.Denied) {
+                            String denyReason = ((Authorizer.Result.Denied)result).getReason();
+                            error(reply, "403:" + denyReason + ":channel_create_denied");
+                            promise.succeed(reply);
+                        } else {
+                            handle3(session, message, (ServerChannelImpl)createChannelIfAbsent(channelName).getReference(), promise);
+                        }
+                    }, promise::fail));
                 } else {
-                    Authorizer.Result publishResult = isPublishAuthorized(channel, session, message);
-                    if (publishResult instanceof Authorizer.Result.Denied) {
-                        String denyReason = ((Authorizer.Result.Denied)publishResult).getReason();
-                        error(reply, "403:" + denyReason + ":publish denied");
-                    } else {
-                        doPublish(session, channel, message, true);
-                        reply.setSuccessful(true);
-                    }
+                    handle3(session, message, channel, promise);
                 }
             }
         }
     }
 
-    protected void validateMessage(Mutable message) {
+    private void handle3(ServerSessionImpl session, ServerMessage.Mutable message, ServerChannelImpl channel, Promise<ServerMessage.Mutable> promise) {
+        ServerMessage.Mutable reply = message.getAssociated();
+        if (channel.isMeta()) {
+            publish(session, channel, message, true, Promise.from(published -> promise.succeed(reply), promise::fail));
+        } else {
+            isPublishAuthorized(channel, session, message, Promise.from(result -> {
+                if (result instanceof Authorizer.Result.Denied) {
+                    String denyReason = ((Authorizer.Result.Denied)result).getReason();
+                    error(reply, "403:" + denyReason + ":publish denied");
+                    promise.succeed(reply);
+                } else {
+                    reply.setSuccessful(true);
+                    publish(session, channel, message, true, Promise.from(published -> promise.succeed(reply), promise::fail));
+                }
+            }, promise::fail));
+        }
+    }
+
+    protected String validateMessage(Mutable message) {
         String channel = message.getChannel();
         if (!validate(channel)) {
-            throw new IllegalArgumentException("Invalid message channel: " + channel);
+            return "405::invalid_channel";
         }
         String id = message.getId();
         if (id != null && !validate(id)) {
-            throw new IllegalArgumentException("Invalid message id: " + id);
+            return "405::invalid_id";
         }
+        return null;
     }
 
     private boolean validate(String value) {
@@ -716,196 +732,268 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         return true;
     }
 
-    private Authorizer.Result isPublishAuthorized(ServerChannel channel, ServerSession session, ServerMessage message) {
-        if (_policy != null && !_policy.canPublish(this, session, channel, message)) {
-            _logger.warn("{} denied Publish@{} by {}", session, channel.getId(), _policy);
-            return Authorizer.Result.deny("denied_by_security_policy");
-        }
-        return isOperationAuthorized(Authorizer.Operation.PUBLISH, session, message, channel.getChannelId());
-    }
-
-    private Authorizer.Result isSubscribeAuthorized(ServerChannel channel, ServerSession session, ServerMessage message) {
-        if (_policy != null && !_policy.canSubscribe(this, session, channel, message)) {
-            _logger.warn("{} denied Subscribe@{} by {}", session, channel, _policy);
-            return Authorizer.Result.deny("denied_by_security_policy");
-        }
-        return isOperationAuthorized(Authorizer.Operation.SUBSCRIBE, session, message, channel.getChannelId());
-    }
-
-    private Authorizer.Result isCreationAuthorized(ServerSession session, ServerMessage message, String channel) {
-        if (_policy != null && !_policy.canCreate(BayeuxServerImpl.this, session, channel, message)) {
-            _logger.warn("{} denied Create@{} by {}", session, message.getChannel(), _policy);
-            return Authorizer.Result.deny("denied_by_security_policy");
-        }
-        return isOperationAuthorized(Authorizer.Operation.CREATE, session, message, new ChannelId(channel));
-    }
-
-    private Authorizer.Result isOperationAuthorized(Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId) {
-        Authorizer.Result result = isChannelOperationAuthorized(operation, session, message, channelId);
-
-        if (result == null) {
-            result = Authorizer.Result.grant();
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("No authorizers, {} for channel {} {}", operation, channelId, result);
-            }
+    private void isPublishAuthorized(ServerChannel channel, ServerSession session, ServerMessage message, Promise<Authorizer.Result> promise) {
+        if (_policy != null) {
+            _policy.canPublish(this, session, channel, message, Promise.from(can -> {
+                if (can == null || can) {
+                    isOperationAuthorized(Authorizer.Operation.PUBLISH, session, message, channel.getChannelId(), promise);
+                } else {
+                    _logger.info("{} denied publish on channel {} by {}", session, channel.getId(), _policy);
+                    promise.succeed(Authorizer.Result.deny("denied_by_security_policy"));
+                }
+            }, promise::fail));
         } else {
-            if (result.isGranted()) {
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("No authorizer denied {} for channel {}, authorization {}", operation, channelId, result);
-                }
-            } else if (!result.isDenied()) {
-                result = Authorizer.Result.deny("denied_by_not_granting");
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("No authorizer granted {} for channel {}, authorization {}", operation, channelId, result);
-                }
-            }
+            isOperationAuthorized(Authorizer.Operation.PUBLISH, session, message, channel.getChannelId(), promise);
         }
-
-        // We need to make sure that this method returns a boolean result (granted or denied)
-        // but if it's denied, we need to return the object in order to access the deny reason
-        assert !(result instanceof Authorizer.Result.Ignored);
-        return result;
     }
 
-    private Authorizer.Result isChannelOperationAuthorized(Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId) {
-        Authorizer.Result result = null;
-        List<String> wilds = channelId.getWilds();
-        for (int i = 0, size = wilds.size(); i <= size; ++i) {
-            String channelName = i < size ? wilds.get(i) : channelId.getId();
+    private void isSubscribeAuthorized(ServerChannel channel, ServerSession session, ServerMessage message, Promise<Authorizer.Result> promise) {
+        if (_policy != null) {
+            _policy.canSubscribe(this, session, channel, message, Promise.from(can -> {
+                if (can == null || can) {
+                    isOperationAuthorized(Authorizer.Operation.SUBSCRIBE, session, message, channel.getChannelId(), promise);
+                } else {
+                    _logger.info("{} denied Subscribe@{} by {}", session, channel, _policy);
+                    promise.succeed(Authorizer.Result.deny("denied_by_security_policy"));
+                }
+            }, promise::fail));
+        } else {
+            isOperationAuthorized(Authorizer.Operation.SUBSCRIBE, session, message, channel.getChannelId(), promise);
+        }
+    }
+
+    private void isCreationAuthorized(ServerSession session, ServerMessage message, String channel, Promise<Authorizer.Result> promise) {
+        if (_policy != null) {
+            _policy.canCreate(BayeuxServerImpl.this, session, channel, message, Promise.from(can -> {
+                if (can == null || can) {
+                    isOperationAuthorized(Authorizer.Operation.CREATE, session, message, new ChannelId(channel), promise);
+                } else {
+                    _logger.info("{} denied creation of channel {} by {}", session, channel, _policy);
+                    promise.succeed(Authorizer.Result.deny("denied_by_security_policy"));
+                }
+            }, promise::fail));
+        } else {
+            isOperationAuthorized(Authorizer.Operation.CREATE, session, message, new ChannelId(channel), promise);
+        }
+    }
+
+    private void isOperationAuthorized(Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId, Promise<Authorizer.Result> promise) {
+        isChannelOperationAuthorized(operation, session, message, channelId, Promise.from(result -> {
+            if (result == null) {
+                result = Authorizer.Result.grant();
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("No authorizers, {} for channel {} {}", operation, channelId, result);
+                }
+            } else {
+                if (result.isGranted()) {
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("No authorizer denied {} for channel {}, authorization {}", operation, channelId, result);
+                    }
+                } else if (!result.isDenied()) {
+                    result = Authorizer.Result.deny("denied_by_not_granting");
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("No authorizer granted {} for channel {}, authorization {}", operation, channelId, result);
+                    }
+                }
+            }
+            promise.succeed(result);
+        }, promise::fail));
+    }
+
+    private void isChannelOperationAuthorized(Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId, Promise<Authorizer.Result> promise) {
+        List<String> channels = new ArrayList<>(channelId.getWilds());
+        channels.add(channelId.getId());
+        AsyncFoldLeft.run(channels, null, (result, channelName, loop) -> {
             ServerChannelImpl channel = _channels.get(channelName);
             if (channel != null) {
-                Authorizer.Result authz = isChannelOperationAuthorized(channel, operation, session, message, channelId);
-                if (authz != null) {
-                    if (result == null || authz.isDenied() || authz.isGranted()) {
-                        result = authz;
+                isChannelOperationAuthorized(channel, operation, session, message, channelId, Promise.from(authz -> {
+                    if (authz != null) {
+                        if (authz.isDenied()) {
+                            loop.leave(authz);
+                        } else if (result == null || authz.isGranted()) {
+                            loop.proceed(authz);
+                        } else {
+                            loop.proceed(result);
+                        }
+                    } else {
+                        loop.proceed(result);
                     }
-                    if (authz.isDenied()) {
-                        break;
-                    }
-                }
+                }, promise::fail));
+            } else {
+                loop.proceed(result);
             }
-        }
-        return result;
+        }, promise);
     }
 
-    private Authorizer.Result isChannelOperationAuthorized(ServerChannelImpl channel, Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId) {
+    private void isChannelOperationAuthorized(ServerChannelImpl channel, Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId, Promise<Authorizer.Result> promise) {
         List<Authorizer> authorizers = channel.authorizers();
         if (authorizers.isEmpty()) {
-            return null;
+            promise.succeed(null);
+        } else {
+            AsyncFoldLeft.run(authorizers, Authorizer.Result.ignore(), (result, authorizer, loop) ->
+                    authorizer.authorize(operation, channelId, session, message, Promise.from(authorization -> {
+                        if (_logger.isDebugEnabled()) {
+                            _logger.debug("Authorizer {} on channel {} {} {} for channel {}", authorizer, channel, authorization, operation, channelId);
+                        }
+                        if (authorization.isDenied()) {
+                            loop.leave(authorization);
+                        } else if (authorization.isGranted()) {
+                            loop.proceed(authorization);
+                        } else {
+                            loop.proceed(result);
+                        }
+                    }, promise::fail)), promise);
         }
-
-        Authorizer.Result result = Authorizer.Result.ignore();
-        for (Authorizer authorizer : authorizers) {
-            Authorizer.Result authorization = authorizer.authorize(operation, channelId, session, message);
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("Authorizer {} on channel {} {} {} for channel {}", authorizer, channel, authorization, operation, channelId);
-            }
-            if (authorization.isDenied()) {
-                result = authorization;
-                break;
-            } else if (authorization.isGranted()) {
-                result = authorization;
-            }
-        }
-        return result;
     }
 
-    protected void doPublish(ServerSessionImpl from, ServerChannelImpl to, final ServerMessage.Mutable mutable, boolean receiving) {
-        boolean broadcast = to.isBroadcast();
-        if (broadcast) {
+    protected void publish(ServerSessionImpl session, ServerChannelImpl channel, ServerMessage.Mutable message, boolean receiving, Promise<Boolean> promise) {
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("<  {} {}", message, session);
+        }
+        if (channel.isBroadcast()) {
             // Do not leak the clientId to other subscribers
             // as we are now "sending" this message.
-            mutable.setClientId(null);
+            message.setClientId(null);
             // Reset the messageId to avoid clashes with message-based transports such
             // as websocket whose clients may rely on the messageId to match request/responses.
-            mutable.setId(null);
+            message.setId(null);
         }
 
-        List<String> wildChannels = to.getChannelId().getWilds();
-
-        // First notify the channel listeners.
-        if (!notifyListeners(from, to, mutable, wildChannels)) {
-            return;
-        }
-
-        if (broadcast || !receiving) {
-            if (!extendSend(from, null, mutable)) {
-                return;
+        notifyListeners(session, channel, message, Promise.from(proceed -> {
+            if (proceed) {
+                publish2(session, channel, message, receiving, promise);
+            } else {
+                promise.succeed(false);
             }
-            // Exactly at this point, we convert the message to JSON and therefore
-            // any further modification will be lost.
-            // This is an optimization so that if the message is sent to a million
-            // subscribers, we generate the JSON only once.
-            // From now on, user code is passed a ServerMessage reference (and not
-            // ServerMessage.Mutable), and we attempt to return immutable data
-            // structures, even if it is not possible to guard against all cases.
-            // For example, it is impossible to prevent things like
-            // ((CustomObject)serverMessage.getData()).change() or
-            // ((Map)serverMessage.getExt().get("map")).put().
-            freeze(mutable);
-        }
+        }, promise::fail));
+    }
 
-        // Call the wild subscribers, which can only get broadcast messages.
-        // We need a special treatment in case of subscription to /**, otherwise
-        // we will deliver meta messages and service messages as if it could be
-        // possible to subscribe to meta channels and service channels.
-        if (broadcast) {
-            Set<String> wildSubscribers = null;
-            for (String wildName : wildChannels) {
-                ServerChannelImpl wildChannel = _channels.get(wildName);
-                if (wildChannel == null) {
-                    continue;
+    private void publish2(ServerSessionImpl session, ServerChannelImpl channel, ServerMessage.Mutable message, boolean receiving, Promise<Boolean> promise) {
+        if (channel.isBroadcast() || !receiving) {
+            extendOutgoing(session, null, message, Promise.from(result -> {
+                if (result) {
+                    // Exactly at this point, we convert the message to JSON and therefore
+                    // any further modification will be lost.
+                    // This is an optimization so that if the message is sent to a million
+                    // subscribers, we generate the JSON only once.
+                    // From now on, user code is passed a ServerMessage reference (and not
+                    // ServerMessage.Mutable), and we attempt to return immutable data
+                    // structures, even if it is not possible to guard against all cases.
+                    // For example, it is impossible to prevent things like
+                    // ((CustomObject)serverMessage.getData()).change() or
+                    // ((Map)serverMessage.getExt().get("map")).put().
+                    freeze(message);
+                    publish3(session, channel, message, promise);
+                } else {
+                    promise.succeed(false);
                 }
-                Set<ServerSession> subscribers = wildChannel.subscribers();
-                for (ServerSession session : subscribers) {
-                    if (wildSubscribers == null) {
-                        wildSubscribers = new HashSet<>();
-                    }
-                    if (wildSubscribers.add(session.getId())) {
-                        ((ServerSessionImpl)session).doDeliver(from, mutable);
-                    }
-                }
-            }
-
-            // Call the leaf subscribers
-            Set<ServerSession> subscribers = to.subscribers();
-            for (ServerSession session : subscribers) {
-                if (wildSubscribers == null || !wildSubscribers.contains(session.getId())) {
-                    ((ServerSessionImpl)session).doDeliver(from, mutable);
-                }
-            }
-        } else if (to.isMeta()) {
-            notifyHandlerListeners(from, to, mutable);
+            }, promise::fail));
+        } else {
+            publish3(session, channel, message, promise);
         }
     }
 
-    private boolean notifyListeners(ServerSessionImpl from, ServerChannelImpl to, Mutable mutable, List<String> wildChannels) {
-        for (int i = 0, size = wildChannels.size(); i <= size; ++i) {
-            ServerChannelImpl channel = i == size ? to : _channels.get(wildChannels.get(i));
-            if (channel == null) {
-                continue;
-            }
-            if (channel.isLazy()) {
-                mutable.setLazy(true);
-            }
-            List<ServerChannelListener> listeners = channel.listeners();
-            for (ServerChannelListener listener : listeners) {
-                if (listener instanceof MessageListener) {
-                    if (!notifyOnMessage((MessageListener)listener, from, to, mutable)) {
-                        return false;
-                    }
-                }
-            }
+    private void publish3(ServerSessionImpl session, ServerChannelImpl channel, ServerMessage.Mutable message, Promise<Boolean> promise) {
+        if (channel.isMeta()) {
+            notifyMetaHandlers(session, channel, message, promise);
+        } else if (channel.isBroadcast()) {
+            notifySubscribers(session, channel, message, promise);
+        } else {
+            promise.succeed(true);
         }
-        return true;
     }
 
-    private void notifyHandlerListeners(ServerSessionImpl from, ServerChannelImpl to, Mutable mutable) {
-        List<ServerChannelListener> listeners = to.listeners();
-        for (ServerChannelListener listener : listeners) {
-            if (listener instanceof HandlerListener) {
-                ((HandlerListener)listener).onMessage(from, mutable);
+    private void notifySubscribers(ServerSessionImpl session, ServerChannelImpl channel, Mutable message, Promise<Boolean> promise) {
+        Set<String> wildSubscribers = new HashSet<>();
+        AsyncFoldLeft.run(channel.getChannelId().getWilds(), true, (result, wildName, wildLoop) -> {
+                    ServerChannelImpl wildChannel = _channels.get(wildName);
+                    if (wildChannel == null) {
+                        wildLoop.proceed(result);
+                    } else {
+                        Set<ServerSession> subscribers = wildChannel.subscribers();
+                        if (_logger.isDebugEnabled()) {
+                            _logger.debug("Notifying {} subscribers on {}", subscribers.size(), wildChannel);
+                        }
+                        AsyncFoldLeft.run(new ArrayList<>(subscribers), true, (r, subscriber, loop) -> {
+                            if (wildSubscribers.add(subscriber.getId())) {
+                                ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(b -> loop.proceed(true), loop::fail));
+                            } else {
+                                loop.proceed(r);
+                            }
+                        }, Promise.from(y -> wildLoop.proceed(true), wildLoop::fail));
+                    }
+                }, Promise.from(b -> {
+                    Set<ServerSession> subscribers = channel.subscribers();
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("Notifying {} subscribers on {}", subscribers.size(), channel);
+                    }
+                    AsyncFoldLeft.run(new ArrayList<>(subscribers), true, (result, subscriber, loop) -> {
+                        if (!wildSubscribers.contains(subscriber.getId())) {
+                            ((ServerSessionImpl)subscriber).deliver1(subscriber, message, Promise.from(y -> loop.proceed(true), loop::fail));
+                        } else {
+                            loop.proceed(true);
+                        }
+                    }, promise);
+                }, promise::fail)
+        );
+    }
+
+    private void notifyListeners(ServerSessionImpl session, ServerChannelImpl channel, Mutable message, Promise<Boolean> promise) {
+        List<String> channels = new ArrayList<>(channel.getChannelId().getWilds());
+        channels.add(channel.getId());
+        AsyncFoldLeft.run(channels, true, (channelResult, channelName, channelLoop) -> {
+            ServerChannelImpl target = _channels.get(channelName);
+            if (target == null) {
+                channelLoop.proceed(channelResult);
+            } else {
+                if (target.isLazy()) {
+                    message.setLazy(true);
+                }
+                List<ConfigurableServerChannel.ServerChannelListener> listeners = target.listeners();
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Notifying {} listeners on {}", listeners.size(), target);
+                }
+                AsyncFoldLeft.run(listeners, true, (result, listener, loop) -> {
+                    if (listener instanceof MessageListener) {
+                        notifyOnMessage((MessageListener)listener, session, target, message, resolveLoop(loop));
+                    } else {
+                        loop.proceed(true);
+                    }
+                }, resolveLoop(channelLoop));
             }
+        }, promise);
+    }
+
+    protected Promise<Boolean> resolveLoop(AsyncFoldLeft.Loop<Boolean> loop) {
+        return Promise.from(result -> {
+            if (result) {
+                loop.proceed(true);
+            } else {
+                loop.leave(false);
+            }
+        }, loop::fail);
+    }
+
+    private void notifyMetaHandlers(ServerSessionImpl session, ServerChannelImpl channel, Mutable message, Promise<Boolean> promise) {
+        switch (channel.getId()) {
+            case Channel.META_HANDSHAKE:
+                handleMetaHandshake(session, message, promise);
+                break;
+            case Channel.META_CONNECT:
+                handleMetaConnect(session, message, promise);
+                break;
+            case Channel.META_SUBSCRIBE:
+                handleMetaSubscribe(session, message, promise);
+                break;
+            case Channel.META_UNSUBSCRIBE:
+                handleMetaUnsubscribe(session, message, promise);
+                break;
+            case Channel.META_DISCONNECT:
+                handleMetaDisconnect(session, message, promise);
+                break;
+            default:
+                promise.fail(new IllegalStateException("Invalid channel " + channel));
+                break;
         }
     }
 
@@ -920,97 +1008,71 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
     }
 
-    private boolean notifyOnMessage(MessageListener listener, ServerSession from, ServerChannel to, Mutable mutable) {
+    private void notifyOnMessage(MessageListener listener, ServerSession from, ServerChannel to, Mutable mutable, Promise<Boolean> promise) {
         try {
-            return listener.onMessage(from, to, mutable);
+            listener.onMessage(from, to, mutable, Promise.from(r -> promise.succeed(r == null ? true : r), failure -> {
+                _logger.info("Exception reported by listener " + listener, failure);
+                promise.succeed(true);
+            }));
         } catch (Throwable x) {
-            _logger.info("Exception while invoking listener " + listener, x);
-            return true;
+            _logger.info("Exception thrown by listener " + listener, x);
+            promise.succeed(true);
         }
     }
 
-    public ServerMessage.Mutable extendReply(ServerSessionImpl from, ServerSessionImpl to, ServerMessage.Mutable reply) {
-        if (!extendSend(from, to, reply)) {
-            return null;
-        }
-
-        if (to != null) {
-            reply = to.extendSend(reply);
-        }
-
-        return reply;
-    }
-
-    protected boolean extendRecv(ServerSession from, ServerMessage.Mutable message) {
-        for (Extension extension : _extensions) {
-            boolean proceed = message.isMeta() ?
-                    notifyRcvMeta(extension, from, message) :
-                    notifyRcv(extension, from, message);
-            if (!proceed) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean notifyRcvMeta(Extension extension, ServerSession from, Mutable message) {
-        try {
-            return extension.rcvMeta(from, message);
-        } catch (Throwable x) {
-            _logger.info("Exception while invoking extension " + extension, x);
-            return true;
-        }
-    }
-
-    private boolean notifyRcv(Extension extension, ServerSession from, Mutable message) {
-        try {
-            return extension.rcv(from, message);
-        } catch (Throwable x) {
-            _logger.info("Exception while invoking extension " + extension, x);
-            return true;
-        }
-    }
-
-    protected boolean extendSend(ServerSession from, ServerSession to, Mutable message) {
-        // Cannot use listIterator(int): it is not thread safe
-        ListIterator<Extension> i = _extensions.listIterator();
-        while (i.hasNext()) {
-            i.next();
-        }
-        while (i.hasPrevious()) {
-            final Extension extension = i.previous();
-            boolean proceed = message.isMeta() ?
-                    notifySendMeta(extension, to, message) :
-                    notifySend(extension, from, to, message);
-            if (!proceed) {
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Extension {} interrupted message processing for {}", extension, message);
+    private void extendIncoming(ServerSessionImpl session, ServerMessage.Mutable message, Promise<Boolean> promise) {
+        AsyncFoldLeft.run(_extensions, true, (result, extension, loop) -> {
+            if (result) {
+                try {
+                    extension.incoming(session, message, Promise.from(r -> loop.proceed(r == null ? true : r), failure -> {
+                        _logger.info("Exception reported by extension " + extension, failure);
+                        loop.proceed(true);
+                    }));
+                } catch (Throwable x) {
+                    _logger.info("Exception thrown by extension " + extension, x);
+                    loop.proceed(true);
                 }
-                return false;
+            } else {
+                loop.leave(false);
             }
-        }
+        }, promise);
+    }
+
+    protected void extendOutgoing(ServerSession sender, ServerSession session, Mutable message, Promise<Boolean> promise) {
+        List<Extension> extensions = new ArrayList<>(_extensions);
+        Collections.reverse(extensions);
+        AsyncFoldLeft.run(extensions, true, (result, extension, loop) -> {
+            if (result) {
+                try {
+                    extension.outgoing(sender, session, message, Promise.from(r -> loop.proceed(r == null ? true : r), failure -> {
+                        _logger.info("Exception reported by extension " + extension, failure);
+                        loop.proceed(true);
+                    }));
+                } catch (Exception x) {
+                    _logger.info("Exception thrown by extension " + extension, x);
+                    loop.proceed(true);
+                }
+            } else {
+                loop.leave(false);
+            }
+        }, promise);
+    }
+
+    public void extendReply(ServerSessionImpl sender, ServerSessionImpl session, ServerMessage.Mutable reply, Promise<ServerMessage.Mutable> promise) {
         if (_logger.isDebugEnabled()) {
-            _logger.debug("<  {}", message);
+            _logger.debug("<< {} {}", reply, sender);
         }
-        return true;
-    }
-
-    private boolean notifySendMeta(Extension extension, ServerSession to, Mutable message) {
-        try {
-            return extension.sendMeta(to, message);
-        } catch (Throwable x) {
-            _logger.info("Exception while invoking extension " + extension, x);
-            return true;
-        }
-    }
-
-    private boolean notifySend(Extension extension, ServerSession from, ServerSession to, Mutable message) {
-        try {
-            return extension.send(from, to, message);
-        } catch (Throwable x) {
-            _logger.info("Exception while invoking extension " + extension, x);
-            return true;
-        }
+        extendOutgoing(sender, session, reply, Promise.from(b -> {
+            if (b) {
+                if (session != null) {
+                    session.extendOutgoing(reply, promise);
+                } else {
+                    promise.succeed(reply);
+                }
+            } else {
+                promise.succeed(null);
+            }
+        }, promise::fail));
     }
 
     protected boolean removeServerChannel(ServerChannelImpl channel) {
@@ -1146,14 +1208,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         return reply;
     }
 
-    private void validateSubscriptions(List<String> subscriptions) {
+    private boolean validateSubscriptions(List<String> subscriptions) {
         if (_validation) {
             for (String subscription : subscriptions) {
                 if (!validate(subscription)) {
-                    throw new IllegalArgumentException("Invalid message subscription: " + subscription);
+                    return false;
                 }
             }
         }
+        return true;
     }
 
     @ManagedOperation(value = "Sweeps channels and sessions of this BayeuxServer", impact = "ACTION")
@@ -1245,7 +1308,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
             @Override
             public void dump(Appendable out, String indent) throws IOException {
-                List<ServerSession> sessions = new ArrayList<ServerSession>(_sessions.values());
+                List<ServerSession> sessions = new ArrayList<>(_sessions.values());
                 ContainerLifeCycle.dumpObject(out, "sessions: " + sessions.size());
                 if (isDetailedDump()) {
                     List<ServerSession> locals = new ArrayList<>();
@@ -1264,60 +1327,35 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         ContainerLifeCycle.dump(out, indent, children);
     }
 
-    abstract class HandlerListener implements ServerChannel.ServerChannelListener {
-        protected boolean isSessionUnknown(ServerSession session) {
-            return session == null || getSession(session.getId()) == null;
+    private void handleMetaHandshake(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
+        BayeuxContext context = getContext();
+        if (context != null) {
+            session.setUserAgent(context.getHeader("User-Agent"));
         }
 
-        protected List<String> toChannelList(Object channels) {
-            if (channels instanceof String) {
-                return Collections.singletonList((String)channels);
-            }
-
-            if (channels instanceof Object[]) {
-                Object[] array = (Object[])channels;
-                List<String> channelList = new ArrayList<>();
-                for (Object o : array) {
-                    channelList.add(String.valueOf(o));
+        if (_policy != null) {
+            _policy.canHandshake(this, session, message, Promise.from(can -> {
+                if (can) {
+                    handleMetaHandshake2(session, message, promise);
+                } else {
+                    ServerMessage.Mutable reply = message.getAssociated();
+                    error(reply, "403::handshake_denied");
+                    // The user's SecurityPolicy may have customized the response's advice
+                    Map<String, Object> advice = reply.getAdvice(true);
+                    if (!advice.containsKey(Message.RECONNECT_FIELD)) {
+                        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                    }
+                    promise.succeed(false);
                 }
-                return channelList;
-            }
-
-            if (channels instanceof List) {
-                List<?> list = (List<?>)channels;
-                List<String> channelList = new ArrayList<>();
-                for (Object o : list) {
-                    channelList.add(String.valueOf(o));
-                }
-                return channelList;
-            }
-
-            return null;
+            }, promise::fail));
+        } else {
+            handleMetaHandshake2(session, message, promise);
         }
-
-        public abstract void onMessage(final ServerSessionImpl from, final ServerMessage.Mutable message);
     }
 
-    private class HandshakeHandler extends HandlerListener {
-        @Override
-        public void onMessage(ServerSessionImpl session, final Mutable message) {
-            BayeuxContext context = getContext();
-            if (context != null) {
-                session.setUserAgent(context.getHeader("User-Agent"));
-            }
-
-            ServerMessage.Mutable reply = message.getAssociated();
-            if (_policy != null && !_policy.canHandshake(BayeuxServerImpl.this, session, message)) {
-                error(reply, "403::Handshake denied");
-                // The user's SecurityPolicy may have customized the response's advice
-                Map<String, Object> advice = reply.getAdvice(true);
-                if (!advice.containsKey(Message.RECONNECT_FIELD)) {
-                    advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                }
-                return;
-            }
-
-            session.handshake();
+    private void handleMetaHandshake2(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
+        ServerMessage.Mutable reply = message.getAssociated();
+        if (session.handshake()) {
             addServerSession(session, message);
 
             reply.setSuccessful(true);
@@ -1328,22 +1366,19 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
             Map<String, Object> adviceOut = session.takeAdvice(getCurrentTransport());
             reply.put(Message.ADVICE_FIELD, adviceOut);
+
+            promise.succeed(true);
+        } else {
+            error(reply, "403::handshake_failed");
+            promise.succeed(false);
         }
     }
 
-    private class ConnectHandler extends HandlerListener {
-        @Override
-        public void onMessage(final ServerSessionImpl session, final Mutable message) {
-            ServerMessage.Mutable reply = message.getAssociated();
+    private void handleMetaConnect(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
+        ServerMessage.Mutable reply = message.getAssociated();
+        if (session.connected()) {
+            reply.setSuccessful(true);
 
-            if (isSessionUnknown(session)) {
-                unknownSession(reply);
-                return;
-            }
-
-            session.connected();
-
-            // Handle incoming advice
             Map<String, Object> adviceIn = message.getAdvice();
             if (adviceIn != null) {
                 Number timeout = (Number)adviceIn.get("timeout");
@@ -1357,136 +1392,144 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                 session.updateTransientTimeout(-1);
                 session.updateTransientInterval(-1);
             }
-
-            // Send advice
             Map<String, Object> adviceOut = session.takeAdvice(getCurrentTransport());
             if (adviceOut != null) {
                 reply.put(Message.ADVICE_FIELD, adviceOut);
             }
 
-            reply.setSuccessful(true);
+            promise.succeed(true);
+        } else {
+            error(reply, "403::connect_failed");
+            promise.succeed(false);
         }
     }
 
-    private class SubscribeHandler extends HandlerListener {
-        @Override
-        public void onMessage(final ServerSessionImpl from, final Mutable message) {
-            ServerMessage.Mutable reply = message.getAssociated();
-            if (isSessionUnknown(from)) {
-                unknownSession(reply);
-                return;
-            }
-
-            Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
-            if (subscriptionField == null) {
-                error(reply, "403::subscription_missing");
-                return;
-            }
-
+    private void handleMetaSubscribe(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
+        ServerMessage.Mutable reply = message.getAssociated();
+        Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
+        if (subscriptionField == null) {
+            error(reply, "403::subscription_missing");
+            promise.succeed(false);
+        } else {
             List<String> subscriptions = toChannelList(subscriptionField);
             if (subscriptions == null) {
                 error(reply, "403::subscription_invalid");
-                return;
-            }
-
-            validateSubscriptions(subscriptions);
-            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
-
-            for (String subscription : subscriptions) {
-                ServerChannelImpl channel = getServerChannel(subscription);
-                if (channel == null) {
-                    Authorizer.Result creationResult = isCreationAuthorized(from, message, subscription);
-                    if (creationResult instanceof Authorizer.Result.Denied) {
-                        String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
-                        error(reply, "403:" + denyReason + ":create_denied");
-                        break;
-                    } else {
-                        channel = (ServerChannelImpl)createChannelIfAbsent(subscription).getReference();
-                    }
-                }
-
-                if (channel != null) {
-                    Authorizer.Result subscribeResult = isSubscribeAuthorized(channel, from, message);
-                    if (subscribeResult instanceof Authorizer.Result.Denied) {
-                        String denyReason = ((Authorizer.Result.Denied)subscribeResult).getReason();
-                        error(reply, "403:" + denyReason + ":subscribe_denied");
-                        break;
-                    } else {
-                        // Reduces the window of time where a server-side expiration
-                        // or a concurrent disconnect causes the invalid client to be
-                        // registered as subscriber and hence being kept alive by the
-                        // fact that the channel references it.
-                        if (!isSessionUnknown(from)) {
-                            if (channel.subscribe(from, message)) {
-                                reply.setSuccessful(true);
-                            } else {
-                                error(reply, "403::subscribe_failed");
-                                break;
-                            }
-                        } else {
-                            unknownSession(reply);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private class UnsubscribeHandler extends HandlerListener {
-        @Override
-        public void onMessage(final ServerSessionImpl from, final Mutable message) {
-            ServerMessage.Mutable reply = message.getAssociated();
-            if (isSessionUnknown(from)) {
-                unknownSession(reply);
-                return;
-            }
-
-            Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
-            if (subscriptionField == null) {
-                error(reply, "403::subscription_missing");
-                return;
-            }
-
-            List<String> subscriptions = toChannelList(subscriptionField);
-            if (subscriptions == null) {
-                error(reply, "403::subscription_invalid");
-                return;
-            }
-
-            validateSubscriptions(subscriptions);
-            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
-
-            for (String subscription : subscriptions) {
-                ServerChannelImpl channel = getServerChannel(subscription);
-                if (channel == null) {
-                    error(reply, "400::channel_missing");
-                    break;
+                promise.succeed(false);
+            } else {
+                if (!validateSubscriptions(subscriptions)) {
+                    error(reply, "403::subscription_invalid");
+                    promise.succeed(false);
                 } else {
-                    if (channel.unsubscribe(from, message)) {
-                        reply.setSuccessful(true);
-                    } else {
-                        error(reply, "403::unsubscribe_failed");
-                        break;
-                    }
+                    reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
+                    AsyncFoldLeft.run(subscriptions, true, (result, subscription, loop) -> {
+                        ServerChannelImpl channel = getServerChannel(subscription);
+                        if (channel == null) {
+                            isCreationAuthorized(session, message, subscription, Promise.from(creationResult -> {
+                                if (creationResult instanceof Authorizer.Result.Denied) {
+                                    String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
+                                    error(reply, "403:" + denyReason + ":create_denied");
+                                    loop.leave(false);
+                                } else {
+                                    handleMetaSubscribe2(session, message, (ServerChannelImpl)createChannelIfAbsent(subscription).getReference(), resolveLoop(loop));
+                                }
+                            }, promise::fail));
+                        } else {
+                            handleMetaSubscribe2(session, message, channel, resolveLoop(loop));
+                        }
+                    }, promise);
                 }
             }
         }
     }
 
-    private class DisconnectHandler extends HandlerListener {
-        @Override
-        public void onMessage(final ServerSessionImpl session, final Mutable message) {
-            ServerMessage.Mutable reply = message.getAssociated();
-            if (isSessionUnknown(session)) {
-                unknownSession(reply);
-                return;
+    private void handleMetaSubscribe2(ServerSessionImpl session, Mutable message, ServerChannelImpl channel, Promise<Boolean> promise) {
+        ServerMessage.Mutable reply = message.getAssociated();
+        isSubscribeAuthorized(channel, session, message, Promise.from(subscribeResult -> {
+            if (subscribeResult instanceof Authorizer.Result.Denied) {
+                String denyReason = ((Authorizer.Result.Denied)subscribeResult).getReason();
+                error(reply, "403:" + denyReason + ":subscribe_denied");
+                promise.succeed(false);
+            } else {
+                if (channel.subscribe(session, message)) {
+                    reply.setSuccessful(true);
+                    promise.succeed(true);
+                } else {
+                    error(reply, "403::subscribe_failed");
+                    promise.succeed(false);
+                }
             }
+        }, promise::fail));
+    }
 
-            reply.setSuccessful(true);
-            removeServerSession(session, false);
-            // Wake up the possibly pending /meta/connect
-            session.flush();
+    private void handleMetaUnsubscribe(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
+        ServerMessage.Mutable reply = message.getAssociated();
+        Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
+        if (subscriptionField == null) {
+            error(reply, "403::subscription_missing");
+            promise.succeed(false);
+        } else {
+            List<String> subscriptions = toChannelList(subscriptionField);
+            if (subscriptions == null) {
+                error(reply, "403::subscription_invalid");
+                promise.succeed(false);
+            } else {
+                if (!validateSubscriptions(subscriptions)) {
+                    error(reply, "403::subscription_invalid");
+                    promise.succeed(false);
+                } else {
+                    reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
+                    AsyncFoldLeft.run(subscriptions, true, (result, subscription, loop) -> {
+                        ServerChannelImpl channel = getServerChannel(subscription);
+                        if (channel == null) {
+                            error(reply, "400::channel_missing");
+                            loop.leave(false);
+                        } else {
+                            if (channel.unsubscribe(session, message)) {
+                                reply.setSuccessful(true);
+                                loop.proceed(true);
+                            } else {
+                                error(reply, "403::unsubscribe_failed");
+                                loop.leave(false);
+                            }
+                        }
+                    }, promise);
+                }
+            }
         }
+    }
+
+    private void handleMetaDisconnect(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
+        ServerMessage.Mutable reply = message.getAssociated();
+        reply.setSuccessful(true);
+        removeServerSession(session, false);
+        // Wake up the possibly pending /meta/connect
+        session.flush();
+        promise.succeed(true);
+    }
+
+    private static List<String> toChannelList(Object channels) {
+        if (channels instanceof String) {
+            return Collections.singletonList((String)channels);
+        }
+
+        if (channels instanceof Object[]) {
+            Object[] array = (Object[])channels;
+            List<String> channelList = new ArrayList<>();
+            for (Object o : array) {
+                channelList.add(String.valueOf(o));
+            }
+            return channelList;
+        }
+
+        if (channels instanceof List) {
+            List<?> list = (List<?>)channels;
+            List<String> channelList = new ArrayList<>();
+            for (Object o : list) {
+                channelList.add(String.valueOf(o));
+            }
+            return channelList;
+        }
+
+        return null;
     }
 }

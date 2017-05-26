@@ -16,9 +16,24 @@
 package org.cometd.bayeux;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 public interface Promise<C>
 {
+    /**
+     * <p>Shared instance whose methods are implemented empty,</p>
+     * <p>use {@link #noop()} to ease type inference.</p>
+     */
+    static final Promise<?> NOOP = new Promise<Object>() {
+        @Override
+        public void succeed(Object result) {
+        }
+
+        @Override
+        public void fail(Throwable failure) {
+        }
+    };
+
     /**
      * <p>Callback to invoke when the operation succeeds.</p>
      *
@@ -32,21 +47,40 @@ public interface Promise<C>
     /**
      * <p>Callback to invoke when the operation fails.</p>
      *
-     * @param x the operation failure
+     * @param failure the operation failure
      */
-    default void fail(Throwable x)
+    default void fail(Throwable failure)
     {
     }
 
+    /**
+     * @return a Promise whose methods are implemented empty.
+     */
     static <T> Promise<T> noop() {
+        return (Promise<T>)NOOP;
+    }
+
+    /**
+     * @param succeed the Consumer to call in case of successful completion
+     * @param fail the Consumer to call in case of failed completion
+     * @return a Promise from the given consumers
+     */
+    static <T> Promise<T> from(Consumer<T> succeed, Consumer<Throwable> fail) {
         return new Promise<T>() {
+            @Override
+            public void succeed(T result) {
+                succeed.accept(result);
+            }
+
+            @Override
+            public void fail(Throwable failure) {
+                fail.accept(failure);
+            }
         };
     }
 
     /**
      * <p>A CompletableFuture that is also a Promise.</p>
-     *
-     * @param <S> the type of the result
      */
     class Completable<S> extends CompletableFuture<S> implements Promise<S>
     {
@@ -57,9 +91,9 @@ public interface Promise<C>
         }
 
         @Override
-        public void fail(Throwable x)
+        public void fail(Throwable failure)
         {
-            completeExceptionally(x);
+            completeExceptionally(failure);
         }
     }
 }

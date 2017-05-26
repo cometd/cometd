@@ -18,6 +18,7 @@ package org.cometd.server.transport;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,12 +29,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -43,9 +45,11 @@ import javax.servlet.http.HttpSession;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.common.AsyncFoldLeft;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
@@ -121,79 +125,81 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     public abstract void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
 
-    protected abstract HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout);
+    protected abstract HttpScheduler suspend(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout);
 
-    protected abstract void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies);
+    protected abstract void write(Context context, List<ServerMessage> messages, Promise<Void> promise);
 
-    protected void processMessages(HttpServletRequest request, HttpServletResponse response, ServerMessage.Mutable[] messages) throws IOException {
+    protected void processMessages(Context context, ServerMessage.Mutable[] messages, Promise<Void> promise) {
         if (messages.length == 0) {
-            throw new IOException();
-        }
+            promise.fail(new IOException("protocol violation"));
+        } else {
+            Collection<ServerSessionImpl> sessions = findCurrentSessions(context.request);
+            ServerMessage.Mutable message = messages[0];
+            ServerSessionImpl session = findSession(sessions, message);
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Processing {} messages for session {}", messages.length, session);
+            }
+            boolean batch = session != null && !Channel.META_CONNECT.equals(message.getChannel());
+            if (batch) {
+                session.startBatch();
+            }
 
-        Collection<ServerSessionImpl> sessions = findCurrentSessions(request);
-        ServerMessage.Mutable message = messages[0];
-        ServerSessionImpl session = findSession(sessions, message);
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Processing {} messages for session {}", messages.length, session);
-        }
-        boolean batch = session != null && !Channel.META_CONNECT.equals(message.getChannel());
-        if (batch) {
-            session.startBatch();
-        }
-
-        boolean sendQueue = false;
-        boolean sendReplies = false;
-        boolean scheduleExpiration = false;
-        try {
-            for (int i = 0; i < messages.length; ++i) {
-                message = messages[i];
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Processing {}", message);
+            context.messages = messages;
+            context.session = session;
+            AsyncFoldLeft.run(messages, null, (result, item, loop) -> processMessage(context, item, Promise.from(loop::proceed, loop::fail)), Promise.from(y -> {
+                flush(context, promise);
+                if (batch) {
+                    session.endBatch();
                 }
+            }, promise::fail));
+        }
+    }
 
-                switch (message.getChannel()) {
-                    case Channel.META_HANDSHAKE: {
-                        if (messages.length > 1) {
-                            throw new IOException();
-                        }
-                        ServerMessage.Mutable reply = processMetaHandshake(request, response, session, message);
-                        messages[i] = reply = processReply(session, reply);
-                        sendQueue = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
-                        sendReplies = reply != null;
-                        scheduleExpiration = true;
-                        break;
-                    }
-                    case Channel.META_CONNECT: {
-                        boolean canSuspend = messages.length == 1;
-                        ServerMessage.Mutable reply = processMetaConnect(request, response, session, message, canSuspend);
-                        messages[i] = reply = processReply(session, reply);
-                        sendQueue = !canSuspend || reply != null;
-                        sendReplies = sendQueue;
-                        scheduleExpiration = true;
-                        break;
-                    }
-                    default: {
-                        ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-                        messages[i] = reply = processReply(session, reply);
+    private void processMessage(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("Processing {}", message);
+        }
+
+        switch (message.getChannel()) {
+            case Channel.META_HANDSHAKE: {
+                if (context.messages.length > 1) {
+                    promise.fail(new IOException("protocol violation"));
+                } else {
+                    processMetaHandshake(context, message, Promise.from(y -> {
+                        ServerSessionImpl session = context.session;
+                        processReply(session, message.getAssociated(), Promise.from(reply -> {
+                            context.replies.add(reply);
+                            context.sendQueue = reply != null && reply.isSuccessful() && allowMessageDeliveryDuringHandshake(session);
+                            context.sendReplies = reply != null;
+                            context.scheduleExpiration = true;
+                            promise.succeed(null);
+                        }, promise::fail));
+                    }, promise::fail));
+                }
+                break;
+            }
+            case Channel.META_CONNECT: {
+                boolean canSuspend = context.messages.length == 1;
+                processMetaConnect(context, message, canSuspend, Promise.from(y -> resume(context, message, promise), promise::fail));
+                break;
+            }
+            default: {
+                handleMessage(context, message, Promise.from(y -> {
+                    ServerSessionImpl session = context.session;
+                    processReply(session, message.getAssociated(), Promise.from(reply -> {
+                        context.replies.add(reply);
                         boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
                         if (!metaConnectDelivery) {
-                            sendQueue = true;
+                            context.sendQueue = true;
                         }
                         if (reply != null) {
-                            sendReplies = true;
+                            context.sendReplies = true;
                         }
                         // Leave scheduleExpiration unchanged.
-                        break;
-                    }
-                }
-            }
-
-            if (sendQueue || sendReplies) {
-                flush(request, response, session, sendQueue, scheduleExpiration, messages);
-            }
-        } finally {
-            if (batch) {
-                session.endBatch();
+                        promise.succeed(null);
+                    }, promise::fail));
+                }, promise::fail));
+                break;
             }
         }
     }
@@ -236,29 +242,27 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return null;
     }
 
-    protected ServerMessage.Mutable processMetaHandshake(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message) {
-        ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-        if (reply.isSuccessful()) {
-            String id = findBrowserId(request);
-            if (id == null) {
-                id = setBrowserId(request, response);
-            }
-            final String browserId = id;
-            session.setBrowserId(browserId);
-            synchronized (_sessions) {
-                Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
-                if (sessions == null) {
+    protected void processMetaHandshake(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
+        handleMessage(context, message, Promise.from(reply -> {
+            if (reply.isSuccessful()) {
+                ServerSessionImpl session = context.session;
+                HttpServletRequest request = context.request;
+
+                String id = findBrowserId(request);
+                if (id == null) {
+                    id = setBrowserId(request, context.response);
+                }
+                final String browserId = id;
+
+                session.setBrowserId(browserId);
+                synchronized (_sessions) {
                     // The list is modified inside sync blocks, but
                     // iterated outside, so it must be concurrent.
-                    sessions = new CopyOnWriteArrayList<>();
-                    _sessions.put(browserId, sessions);
+                    Collection<ServerSessionImpl> sessions = _sessions.computeIfAbsent(browserId, k -> new CopyOnWriteArrayList<>());
+                    sessions.add(session);
                 }
-                sessions.add(session);
-            }
 
-            session.addListener(new ServerSession.RemoveListener() {
-                @Override
-                public void removed(ServerSession session, boolean timeout) {
+                session.addListener((ServerSession.RemoveListener)(s, timeout) -> {
                     synchronized (_sessions) {
                         Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
                         sessions.remove(session);
@@ -266,13 +270,14 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                             _sessions.remove(browserId);
                         }
                     }
-                }
-            });
-        }
-        return reply;
+                });
+            }
+            promise.succeed(null);
+        }, promise::fail));
     }
 
-    protected ServerMessage.Mutable processMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message, boolean canSuspend) {
+    protected void processMetaConnect(Context context, ServerMessage.Mutable message, boolean canSuspend, Promise<Void> promise) {
+        ServerSessionImpl session = context.session;
         if (session != null) {
             // Cancel the previous scheduler to cancel any prior waiting long poll.
             // This should also decrement the browser ID.
@@ -280,79 +285,106 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         boolean wasConnected = session != null && session.isConnected();
-        ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-        if (session != null) {
-            boolean maySuspend = !session.shouldSchedule();
-            if (canSuspend && maySuspend && reply.isSuccessful()) {
-                // Detect if we have multiple sessions from the same browser.
-                boolean allowSuspendConnect = incBrowserId(session, isHTTP2(request));
-                if (allowSuspendConnect) {
-                    long timeout = session.calculateTimeout(getTimeout());
+        handleMessage(context, message, Promise.from(reply -> {
+            boolean proceed = true;
+            if (session != null) {
+                boolean maySuspend = !session.shouldSchedule();
+                if (canSuspend && maySuspend && reply.isSuccessful()) {
+                    HttpServletRequest request = context.request;
+                    // Detect if we have multiple sessions from the same browser.
+                    boolean allowSuspendConnect = incBrowserId(session, isHTTP2(request));
+                    if (allowSuspendConnect) {
+                        long timeout = session.calculateTimeout(getTimeout());
 
-                    // Support old clients that do not send advice:{timeout:0} on the first connect
-                    if (timeout > 0 && wasConnected && session.isConnected()) {
-                        // Between the last time we checked for messages in the queue
-                        // (which was false, otherwise we would not be in this branch)
-                        // and now, messages may have been added to the queue.
-                        // We will suspend anyway, but setting the scheduler on the
-                        // session will decide atomically if we need to resume or not.
+                        // Support old clients that do not send advice:{timeout:0} on the first connect
+                        if (timeout > 0 && wasConnected && session.isConnected()) {
+                            // Between the last time we checked for messages in the queue
+                            // (which was false, otherwise we would not be in this branch)
+                            // and now, messages may have been added to the queue.
+                            // We will suspend anyway, but setting the scheduler on the
+                            // session will decide atomically if we need to resume or not.
 
-                        HttpScheduler scheduler = suspend(request, response, session, reply, timeout);
-                        metaConnectSuspended(request, response, scheduler.getAsyncContext(), session);
-                        // Setting the scheduler may resume the /meta/connect
-                        session.setScheduler(scheduler);
-                        reply = null;
+                            HttpScheduler scheduler = suspend(context, promise, message, timeout);
+                            // Setting the scheduler may resume the /meta/connect
+                            session.setScheduler(scheduler);
+                            proceed = false;
+                        } else {
+                            decBrowserId(session, isHTTP2(request));
+                        }
                     } else {
-                        decBrowserId(session, isHTTP2(request));
-                    }
-                } else {
-                    // There are multiple sessions from the same browser
-                    Map<String, Object> advice = reply.getAdvice(true);
-                    advice.put("multiple-clients", true);
+                        // There are multiple sessions from the same browser
+                        Map<String, Object> advice = reply.getAdvice(true);
+                        advice.put("multiple-clients", true);
 
-                    long multiSessionInterval = getMultiSessionInterval();
-                    if (multiSessionInterval > 0) {
-                        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
-                        advice.put(Message.INTERVAL_FIELD, multiSessionInterval);
-                    } else {
-                        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                        reply.setSuccessful(false);
+                        long multiSessionInterval = getMultiSessionInterval();
+                        if (multiSessionInterval > 0) {
+                            advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
+                            advice.put(Message.INTERVAL_FIELD, multiSessionInterval);
+                        } else {
+                            advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                            reply.setSuccessful(false);
+                        }
+                        session.reAdvise();
                     }
-                    session.reAdvise();
+                }
+                if (proceed && session.isDisconnected()) {
+                    reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                 }
             }
-
-            if (reply != null && session.isDisconnected()) {
-                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+            if (proceed) {
+                promise.succeed(null);
             }
-        }
-
-        return reply;
+        }, promise::fail));
     }
 
     protected boolean isHTTP2(HttpServletRequest request) {
         return "HTTP/2.0".equals(request.getProtocol());
     }
 
-    protected void flush(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean sendQueue, boolean scheduleExpiration, ServerMessage.Mutable... replies) {
+    protected void flush(Context context, Promise<Void> promise) {
         List<ServerMessage> messages = Collections.emptyList();
-        if (sendQueue && session != null) {
+        ServerSessionImpl session = context.session;
+        if (context.sendQueue && session != null) {
             messages = session.takeQueue();
         }
-        write(request, response, session, scheduleExpiration, messages, replies);
+        write(context, messages, promise);
     }
 
-    protected void resume(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply) {
-        metaConnectResumed(request, response, asyncContext, session);
-        Map<String, Object> advice = session.takeAdvice(this);
-        if (advice != null) {
-            reply.put(Message.ADVICE_FIELD, advice);
-        }
-        if (session.isDisconnected()) {
-            reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+    protected void resume(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("Resumed {}", message);
         }
 
-        flush(request, response, session, true, true, processReply(session, reply));
+        ServerMessage.Mutable reply = message.getAssociated();
+        ServerSessionImpl session = context.session;
+        if (session != null) {
+            Map<String, Object> advice = session.takeAdvice(this);
+            if (advice != null) {
+                reply.put(Message.ADVICE_FIELD, advice);
+            }
+            if (session.isDisconnected()) {
+                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+            }
+        }
+
+        processReply(session, reply, Promise.from(r -> {
+            context.replies.add(r);
+            context.sendQueue = true;
+            context.sendReplies = true;
+            context.scheduleExpiration = true;
+            promise.succeed(null);
+        }, promise::fail));
+    }
+
+    protected void sendError(HttpServletRequest request, HttpServletResponse response, int code, Throwable failure) {
+        try {
+            request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, failure);
+            response.sendError(code);
+        } catch (Throwable x) {
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("", x);
+            }
+        }
     }
 
     @Override
@@ -402,7 +434,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
      * @param http2   whether the HTTP protocol is HTTP/2
      * @return true if the count is below the max sessions per browser value.
      * If false is returned, the count is not incremented.
-     *
      * @see #decBrowserId(ServerSessionImpl, boolean)
      */
     protected boolean incBrowserId(ServerSessionImpl session, boolean http2) {
@@ -438,7 +469,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         if (_logger.isDebugEnabled()) {
-            _logger.debug("> client {} {} sessions from {}", browserId, sessions, session);
+            _logger.debug("client {} {} sessions for {}", browserId, sessions, session);
         }
 
         return result;
@@ -462,45 +493,17 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         if (_logger.isDebugEnabled()) {
-            _logger.debug("< client {} {} sessions for {}", browserId, sessions, session);
+            _logger.debug("client {} {} sessions for {}", browserId, sessions, session);
         }
     }
 
-    protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws IOException {
-        _logger.warn("Could not parse JSON: " + json, exception);
-        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+    protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable failure) throws IOException {
+        _logger.warn("Could not parse JSON: " + json, failure);
+        sendError(request, response, HttpServletResponse.SC_BAD_REQUEST, failure);
     }
 
-    protected void error(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, int responseCode) {
-        try {
-            response.setStatus(responseCode);
-        } catch (Exception x) {
-            _logger.trace("Could not send " + responseCode + " response", x);
-        } finally {
-            try {
-                if (asyncContext != null) {
-                    asyncContext.complete();
-                }
-            } catch (Exception x) {
-                _logger.trace("Could not complete " + responseCode + " response", x);
-            }
-        }
-    }
-
-    protected ServerMessage.Mutable bayeuxServerHandle(ServerSessionImpl session, ServerMessage.Mutable message) {
-        return getBayeux().handle(session, message);
-    }
-
-    protected void metaConnectSuspended(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session) {
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Suspended request {}", request);
-        }
-    }
-
-    protected void metaConnectResumed(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session) {
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Resumed request {}", request);
-        }
+    protected void handleMessage(Context context, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
+        getBayeux().handle(context.session, message, promise);
     }
 
     /**
@@ -673,54 +676,36 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     }
 
     public interface HttpScheduler extends Scheduler {
-        public HttpServletRequest getRequest();
-
-        public HttpServletResponse getResponse();
-
-        public AsyncContext getAsyncContext();
+        public ServerMessage.Mutable getMessage();
     }
 
     protected abstract class LongPollScheduler implements Runnable, HttpScheduler, AsyncListener {
-        private final HttpServletRequest request;
-        private final HttpServletResponse response;
-        private final AsyncContext asyncContext;
-        private final ServerSessionImpl session;
-        private final ServerMessage.Mutable reply;
+        private final Context context;
+        private final Promise<Void> promise;
+        private final ServerMessage.Mutable message;
         private final org.eclipse.jetty.util.thread.Scheduler.Task task;
         private final AtomicBoolean cancel;
 
-        protected LongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
-            this.request = request;
-            this.response = response;
-            this.asyncContext = asyncContext;
-            this.session = session;
-            this.reply = reply;
-            asyncContext.addListener(this);
+        protected LongPollScheduler(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+            this.context = context;
+            this.promise = promise;
+            this.message = message;
             this.task = getBayeux().schedule(this, timeout);
             this.cancel = new AtomicBoolean();
+            context.request.getAsyncContext().addListener(this);
+        }
+
+        public Context getContext() {
+            return context;
+        }
+
+        public Promise<Void> getPromise() {
+            return promise;
         }
 
         @Override
-        public HttpServletRequest getRequest() {
-            return request;
-        }
-
-        @Override
-        public HttpServletResponse getResponse() {
-            return response;
-        }
-
-        @Override
-        public AsyncContext getAsyncContext() {
-            return asyncContext;
-        }
-
-        public ServerSessionImpl getServerSession() {
-            return session;
-        }
-
-        public ServerMessage.Mutable getMetaConnectReply() {
-            return reply;
+        public ServerMessage.Mutable getMessage() {
+            return message;
         }
 
         @Override
@@ -737,9 +722,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         public void cancel() {
             if (cancelTimeout()) {
                 if (_logger.isDebugEnabled()) {
-                    _logger.debug("Duplicate /meta/connect, cancelling {}", reply);
+                    _logger.debug("Cancelling {}", message);
                 }
-                error(HttpServletResponse.SC_REQUEST_TIMEOUT);
+                error(new TimeoutException());
             }
         }
 
@@ -755,7 +740,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         @Override
         public void run() {
             if (cancelTimeout()) {
-                session.setScheduler(null);
+                context.session.setScheduler(null);
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Resuming /meta/connect after timeout");
                 }
@@ -764,7 +749,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         private void resume() {
-            decBrowserId(session, isHTTP2(request));
+            decBrowserId(context.session, isHTTP2(context.request));
             dispatch();
         }
 
@@ -782,14 +767,32 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
         @Override
         public void onError(AsyncEvent event) throws IOException {
-            error(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            error(event.getThrowable());
         }
 
         protected abstract void dispatch();
 
-        protected void error(int code) {
-            decBrowserId(session, isHTTP2(request));
-            AbstractHttpTransport.this.error(getRequest(), getResponse(), getAsyncContext(), code);
+        private void error(Throwable failure) {
+            HttpServletRequest request = context.request;
+            decBrowserId(context.session, isHTTP2(request));
+            promise.fail(failure);
+        }
+    }
+
+    protected static class Context {
+        protected final List<ServerMessage.Mutable> replies = new ArrayList<>();
+        public final HttpServletRequest request;
+        public final HttpServletResponse response;
+        protected ServerMessage.Mutable[] messages;
+        protected ServerSessionImpl session;
+        protected boolean sendQueue;
+        protected boolean sendReplies;
+        protected boolean scheduleExpiration;
+        protected HttpScheduler scheduler;
+
+        protected Context(HttpServletRequest request, HttpServletResponse response) {
+            this.request = request;
+            this.response = response;
         }
     }
 }
