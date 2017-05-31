@@ -24,29 +24,19 @@ import java.util.Map;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
-import javax.websocket.CloseReason;
 import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
-import javax.websocket.MessageHandler;
-import javax.websocket.SendHandler;
-import javax.websocket.SendResult;
-import javax.websocket.Session;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.AbstractServerTransport;
+import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.websocket.server.common.AbstractBayeuxContext;
 import org.cometd.websocket.server.common.AbstractWebSocketTransport;
-import org.eclipse.jetty.util.Callback;
 
-public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
+public class WebSocketTransport extends AbstractWebSocketTransport {
     public WebSocketTransport(BayeuxServerImpl bayeux) {
         super(bayeux);
     }
@@ -86,7 +76,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
         Configurator configurator = new Configurator(context);
 
         for (String mapping : normalizeURLMapping(cometdURLMapping)) {
-            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(WebSocketScheduler.class, mapping)
+            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(WebSocketEndPoint.class, mapping)
                     .subprotocols(protocols)
                     .configurator(configurator)
                     .build();
@@ -105,91 +95,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
     protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response) {
     }
 
-    @Override
-    protected void send(final Session wsSession, final ServerSession session, String data, final Callback callback) {
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Sending {}", data);
-        }
-
-        // Async write.
-        wsSession.getAsyncRemote().sendText(data, new SendHandler() {
-            @Override
-            public void onResult(SendResult result) {
-                Throwable failure = result.getException();
-                if (failure == null) {
-                    callback.succeeded();
-                } else {
-                    handleException(wsSession, session, failure);
-                    callback.failed(failure);
-                }
-            }
-        });
-    }
-
-    private class WebSocketScheduler extends Endpoint implements AbstractServerTransport.Scheduler, MessageHandler.Whole<String> {
-        private final AbstractWebSocketScheduler delegate;
-        private volatile Session _wsSession;
-
-        private WebSocketScheduler(WebSocketContext context) {
-            delegate = new AbstractWebSocketScheduler(context) {
-                @Override
-                protected void close(final int code, String reason) {
-                    try {
-                        // Limits of the WebSocket APIs, otherwise an exception is thrown.
-                        reason = reason.substring(0, Math.min(reason.length(), 30));
-                        if (_logger.isDebugEnabled()) {
-                            _logger.debug("Closing {}/{}", code, reason);
-                        }
-                        _wsSession.close(new CloseReason(CloseReason.CloseCodes.getCloseCode(code), reason));
-                    } catch (Throwable x) {
-                        _logger.trace("Could not close WebSocket session " + _wsSession, x);
-                    }
-                }
-
-                @Override
-                protected void schedule(boolean timeout, ServerMessage.Mutable expiredConnectReply) {
-                    schedule(_wsSession, timeout, expiredConnectReply);
-                }
-            };
-        }
-
-        @Override
-        public void onOpen(Session wsSession, EndpointConfig config) {
-            _wsSession = wsSession;
-            wsSession.addMessageHandler(this);
-        }
-
-        @Override
-        public void onClose(Session wsSession, CloseReason closeReason) {
-            delegate.onClose(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());
-        }
-
-        @Override
-        public void onError(Session wsSession, Throwable failure) {
-            delegate.onError(failure);
-        }
-
-        @Override
-        public void cancel() {
-            delegate.cancel();
-        }
-
-        @Override
-        public void schedule() {
-            delegate.schedule();
-        }
-
-        @Override
-        public void onMessage(String data) {
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("WebSocket Text message on {}@{}/{}@{}",
-                        WebSocketTransport.this.getClass().getSimpleName(),
-                        Integer.toHexString(WebSocketTransport.this.hashCode()),
-                        getClass().getSimpleName(),
-                        Integer.toHexString(hashCode()));
-            }
-            delegate.onMessage(_wsSession, data);
-        }
+    protected Object newWebSocketEndPoint(BayeuxContext bayeuxContext) {
+        return new WebSocketEndPoint(this, bayeuxContext);
     }
 
     private class WebSocketContext extends AbstractBayeuxContext {
@@ -221,7 +128,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
 
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response) {
-            ContextHolder context = provideContext();
+            BayeuxContextHolder context = provideContext();
             context.bayeuxContext = new WebSocketContext(servletContext, request, sec.getUserProperties());
             WebSocketTransport.this.modifyHandshake(request, response);
         }
@@ -233,7 +140,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
 
         @Override
         public String getNegotiatedSubprotocol(List<String> supported, List<String> requested) {
-            ContextHolder context = provideContext();
+            BayeuxContextHolder context = provideContext();
             context.protocolMatches = checkProtocol(supported, requested);
             if (context.protocolMatches) {
                 return super.getNegotiatedSubprotocol(supported, requested);
@@ -258,36 +165,49 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
         @Override
         @SuppressWarnings("unchecked")
         public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException {
-            ContextHolder context = provideContext();
+            BayeuxContextHolder holder = provideContext();
             if (!getBayeux().getAllowedTransports().contains(getName())) {
                 throw new InstantiationException("Transport not allowed");
             }
-            if (!context.protocolMatches) {
+            if (!holder.protocolMatches) {
                 throw new InstantiationException("Could not negotiate WebSocket SubProtocols");
             }
-            T instance = (T)new WebSocketScheduler(context.bayeuxContext);
-            context.clear();
+            T instance = (T)newWebSocketEndPoint(holder.bayeuxContext);
+            holder.clear();
             return instance;
         }
 
-        private ContextHolder provideContext() {
-            ContextHolder result = ContextHolder.holder.get();
-            if (result == null) {
-                result = new ContextHolder();
-                result.clear();
-                ContextHolder.holder.set(result);
+        private boolean checkProtocol(List<String> serverProtocols, List<String> clientProtocols) {
+            if (serverProtocols.isEmpty()) {
+                return true;
             }
-            return result;
+
+            for (String clientProtocol : clientProtocols) {
+                if (serverProtocols.contains(clientProtocol)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private BayeuxContextHolder provideContext() {
+            BayeuxContextHolder holder = BayeuxContextHolder.holder.get();
+            if (holder == null) {
+                holder = new BayeuxContextHolder();
+                holder.clear();
+                BayeuxContextHolder.holder.set(holder);
+            }
+            return holder;
         }
     }
 
-    private static class ContextHolder {
-        private static final ThreadLocal<ContextHolder> holder = new ThreadLocal<>();
+    private static class BayeuxContextHolder {
+        private static final ThreadLocal<BayeuxContextHolder> holder = new ThreadLocal<>();
         private WebSocketContext bayeuxContext;
         private boolean protocolMatches;
 
         public void clear() {
-            ContextHolder.holder.set(null);
+            BayeuxContextHolder.holder.set(null);
             bayeuxContext = null;
             // Use a sensible default in case getNegotiatedSubprotocol() is not invoked.
             protocolMatches = true;
