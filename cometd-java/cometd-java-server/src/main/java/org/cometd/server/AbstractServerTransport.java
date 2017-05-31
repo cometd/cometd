@@ -52,7 +52,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     public static final String ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE = "allowMessageDeliveryDuringHandshake";
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
 
-    protected final Logger _logger = LoggerFactory.getLogger(getClass().getName());
+    protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private final BayeuxServerImpl _bayeux;
     private long _interval = 0;
     private long _maxInterval = 10000;
@@ -178,7 +178,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         }
     }
 
-    protected ServerMessage.Mutable[] parseMessages(String json) throws ParseException {
+    public ServerMessage.Mutable[] parseMessages(String json) throws ParseException {
         return _jsonContext.parse(json);
     }
 
@@ -247,7 +247,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
 
     // TODO: verify that processing of the reply is performed all the times.
     // TODO: the call to extendReply can/should be moved to BayeuxServerImpl.handle()
-    protected void processReply(ServerSessionImpl session, ServerMessage.Mutable reply, Promise<ServerMessage.Mutable> promise) {
+    public void processReply(ServerSessionImpl session, ServerMessage.Mutable reply, Promise<ServerMessage.Mutable> promise) {
         getBayeux().extendReply(session, session, reply, promise);
     }
 
@@ -266,7 +266,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         }
     }
 
-    protected boolean allowMessageDeliveryDuringHandshake(ServerSessionImpl session) {
+    public boolean allowMessageDeliveryDuringHandshake(ServerSessionImpl session) {
         return (session != null && session.isAllowMessageDeliveryDuringHandshake()) ||
                 isAllowMessageDeliveryDuringHandshake();
     }
@@ -287,8 +287,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     public interface Scheduler {
-        void cancel();
-
         void schedule();
+        void cancel();
     }
 }

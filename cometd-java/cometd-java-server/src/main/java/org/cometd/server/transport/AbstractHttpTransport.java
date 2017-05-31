@@ -53,8 +53,6 @@ import org.cometd.common.AsyncFoldLeft;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>HTTP ServerTransport base class, used by ServerTransports that use
@@ -74,7 +72,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String MULTI_SESSION_INTERVAL_OPTION = "multiSessionInterval";
     public final static String TRUST_CLIENT_SESSION = "trustClientSession";
 
-    protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<>();
     private final Map<String, Collection<ServerSessionImpl>> _sessions = new HashMap<>();
     private final ConcurrentMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<>();
@@ -163,14 +160,13 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         switch (message.getChannel()) {
             case Channel.META_HANDSHAKE: {
                 if (context.messages.length > 1) {
-                    promise.fail(new IOException("protocol violation"));
+                    promise.fail(new IOException("bayeux protocol violation"));
                 } else {
                     processMetaHandshake(context, message, Promise.from(y -> {
                         ServerSessionImpl session = context.session;
                         processReply(session, message.getAssociated(), Promise.from(reply -> {
                             context.replies.add(reply);
                             context.sendQueue = reply != null && reply.isSuccessful() && allowMessageDeliveryDuringHandshake(session);
-                            context.sendReplies = reply != null;
                             context.scheduleExpiration = true;
                             promise.succeed(null);
                         }, promise::fail));
@@ -191,9 +187,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                         boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
                         if (!metaConnectDelivery) {
                             context.sendQueue = true;
-                        }
-                        if (reply != null) {
-                            context.sendReplies = true;
                         }
                         // Leave scheduleExpiration unchanged.
                         promise.succeed(null);
@@ -370,7 +363,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         processReply(session, reply, Promise.from(r -> {
             context.replies.add(r);
             context.sendQueue = true;
-            context.sendReplies = true;
             context.scheduleExpiration = true;
             promise.succeed(null);
         }, promise::fail));
@@ -786,7 +778,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         protected ServerMessage.Mutable[] messages;
         protected ServerSessionImpl session;
         protected boolean sendQueue;
-        protected boolean sendReplies;
         protected boolean scheduleExpiration;
         protected HttpScheduler scheduler;
 
