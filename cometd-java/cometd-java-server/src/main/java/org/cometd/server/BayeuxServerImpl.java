@@ -663,7 +663,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
 
         ServerMessage.Mutable reply = message.getAssociated();
-        if (session == null || session.isDisconnected()) {
+        if (session == null || session.isDisconnected() ||
+                (!session.getId().equals(message.getClientId()) && !Channel.META_HANDSHAKE.equals(message.getChannel()))) {
             unknownSession(reply);
             promise.succeed(reply);
         } else {

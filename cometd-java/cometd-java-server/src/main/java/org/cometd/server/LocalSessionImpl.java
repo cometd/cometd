@@ -114,17 +114,15 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             @Override
             public void succeed(ServerMessage.Mutable hsReply) {
                 if (hsReply != null && hsReply.isSuccessful()) {
+                    _session = session;
+
                     ServerMessage.Mutable cnMessage = newMessage();
                     cnMessage.setId(newMessageId());
                     cnMessage.setChannel(Channel.META_CONNECT);
                     cnMessage.getAdvice(true).put(Message.INTERVAL_FIELD, -1L);
                     cnMessage.setClientId(session.getId());
 
-                    doSend(session, cnMessage, Promise.from(cnReply -> {
-                        if (cnReply != null && cnReply.isSuccessful()) {
-                            _session = session;
-                        }
-                    }, this::fail));
+                    doSend(session, cnMessage, Promise.from(cnReply -> {}, this::fail));
                 }
             }
 
@@ -133,24 +131,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
                 // TODO
             }
         });
-/*
-        ServerMessage reply = message.getAssociated();
-        if (reply != null && reply.isSuccessful()) {
-            message = newMessage();
-            message.setId(newMessageId());
-            message.setChannel(Channel.META_CONNECT);
-            message.getAdvice(true).put(Message.INTERVAL_FIELD, -1L);
-            message.setClientId(session.getId());
-
-            doSend(session, message);
-
-            reply = message.getAssociated();
-            if (reply != null && reply.isSuccessful()) {
-                _session = session;
-                _sessionId = session.getId();
-            }
-        }
-*/
     }
 
     @Override

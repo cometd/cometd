@@ -145,6 +145,8 @@ public abstract class AbstractWebSocketEndPoint {
                 } else if (!_transport.isRequireHandshakePerConnection()) {
                     _session = session = (ServerSessionImpl)_transport.getBayeux().getSession(message.getClientId());
                 }
+            } else if (session.isDisconnected()) {
+                _session = session = null;
             }
 
             Context context = new Context(session);

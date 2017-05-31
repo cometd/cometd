@@ -322,8 +322,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
                     long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                     long delay = now - expiration;
                     if (logger.isDebugEnabled()) {
-                        if (delay > 5000) // TODO: make the max delay a parameter ?
-                        {
+                        // TODO: make the max delay a parameter ?
+                        if (delay > 5000) {
                             logger.debug("Message {} expired {} ms too late", message, delay);
                         }
                         logger.debug("Expiring message {}", message);

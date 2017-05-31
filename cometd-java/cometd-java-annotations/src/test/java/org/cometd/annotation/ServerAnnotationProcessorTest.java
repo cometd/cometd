@@ -325,6 +325,7 @@ public class ServerAnnotationProcessorTest {
         remote.handshake();
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel(channel.getId());
+        message.setClientId(remote.getId());
         process(remote, message);
 
         assertNotNull(sessionRef.get());
@@ -339,6 +340,7 @@ public class ServerAnnotationProcessorTest {
         messageRef.set(null);
         message = bayeuxServer.newMessage();
         message.setChannel(channel.getId());
+        message.setClientId(remote.getId());
         process(remote, message);
 
         assertNull(sessionRef.get());
@@ -383,6 +385,7 @@ public class ServerAnnotationProcessorTest {
         remote.handshake();
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo/bar");
+        message.setClientId(remote.getId());
         process(remote, message);
 
         assertEquals(1, counter.get());
@@ -429,6 +432,7 @@ public class ServerAnnotationProcessorTest {
         remote.handshake();
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo/bar");
+        message.setClientId(remote.getId());
         process(remote, message);
 
         assertEquals(2, counter.get());
@@ -471,6 +475,7 @@ public class ServerAnnotationProcessorTest {
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo/bar/baz");
         message.setData(new HashMap<>());
+        message.setClientId(remote.getId());
         process(remote, message);
 
         assertNotNull(messageRef.get());
@@ -483,6 +488,7 @@ public class ServerAnnotationProcessorTest {
         message = bayeuxServer.newMessage();
         message.setChannel("/foo/bar/baz");
         message.setData(new HashMap<>());
+        message.setClientId(remote.getId());
         process(remote, message);
 
         assertNull(messageRef.get());
@@ -790,6 +796,7 @@ public class ServerAnnotationProcessorTest {
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo");
         message.setData(new HashMap());
+        message.setClientId(remote.getId());
         process(remote, message);
 
         assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
@@ -823,6 +830,7 @@ public class ServerAnnotationProcessorTest {
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo");
         message.setData(new HashMap());
+        message.setClientId(remote.getId());
         process(remote, message);
 
         assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
@@ -1435,6 +1443,7 @@ public class ServerAnnotationProcessorTest {
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel(parentChannel + "/" + value);
         message.setData(new HashMap());
+        message.setClientId(remote.getId());
         process(remote, message);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -1491,6 +1500,7 @@ public class ServerAnnotationProcessorTest {
         // Wrong channel (does not bind to the template), the message must not be delivered.
         message.setChannel(grandParentChannel + "/test");
         message.setData(new HashMap());
+        message.setClientId(remote.getId());
         process(remote, message);
 
         assertFalse(latch.await(1, TimeUnit.SECONDS));
@@ -1586,6 +1596,7 @@ public class ServerAnnotationProcessorTest {
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel(parentChannel + "/" + value);
         message.setData(new HashMap());
+        message.setClientId(remote.getId());
         process(remote, message);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
