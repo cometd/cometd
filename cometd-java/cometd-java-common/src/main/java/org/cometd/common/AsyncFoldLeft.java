@@ -22,13 +22,21 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Promise;
 
 public class AsyncFoldLeft {
-    public static <T, R> void run(T[] list, R zero, Operation<T, R> operation, Promise<R> promise) {
-        run(Arrays.asList(list), zero, operation, promise);
+    public static <T, R> void run(T[] array, R zero, Operation<T, R> operation, Promise<R> promise) {
+        if (array.length == 0) {
+            promise.succeed(zero);
+        } else {
+            run(Arrays.asList(array), zero, operation, promise);
+        }
     }
 
     public static <T, R> void run(List<T> list, R zero, Operation<T, R> operation, Promise<R> promise) {
-        LoopImpl<T, R> control = new LoopImpl<>(list, zero, operation, promise);
-        control.run();
+        if (list.isEmpty()) {
+            promise.succeed(zero);
+        } else {
+            LoopImpl<T, R> loop = new LoopImpl<>(list, zero, operation, promise);
+            loop.run();
+        }
     }
 
     public interface Operation<T, R> {
