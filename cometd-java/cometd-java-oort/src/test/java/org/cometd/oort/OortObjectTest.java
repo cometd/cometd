@@ -369,7 +369,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
                     try {
                         barrier.await();
                         for (int j = 0; j < iterations; ++j) {
-                            String value = String.valueOf(index * iterations + j);
+                            String value = "data_" + (index * iterations + j);
                             oortObject1.setAndShare(value, null);
                         }
                     } catch (Throwable x) {
@@ -391,7 +391,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         String object1 = oortObject1.getInfo(oort1.getURL()).getObject();
 
         while (true) {
-            String object2 = values.take();
+            String object2 = values.poll(10, TimeUnit.SECONDS);
             if (object2.equals(object1)) {
                 // Make sure there are no more values.
                 Assert.assertNull(values.poll(1, TimeUnit.SECONDS));
