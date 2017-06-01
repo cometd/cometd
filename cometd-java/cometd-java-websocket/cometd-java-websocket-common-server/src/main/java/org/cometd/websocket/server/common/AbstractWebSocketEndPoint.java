@@ -113,7 +113,6 @@ public abstract class AbstractWebSocketEndPoint {
             // There is no need to call BayeuxServerImpl.removeServerSession(),
             // because the connection may have been closed for a reload, so
             // just null out the current session to have it retrieved again.
-            // TODO: verify if nulling out the session is needed... we should now create another object.
             _session = null;
             session.setScheduler(null);
             session.scheduleExpiration(_transport.getInterval());
@@ -145,7 +144,7 @@ public abstract class AbstractWebSocketEndPoint {
                 } else if (!_transport.isRequireHandshakePerConnection()) {
                     _session = session = (ServerSessionImpl)_transport.getBayeux().getSession(message.getClientId());
                 }
-            } else if (session.isDisconnected()) {
+            } else if (session.isTerminated()) {
                 _session = session = null;
             }
 
@@ -217,10 +216,6 @@ public abstract class AbstractWebSocketEndPoint {
 
     private void processMetaHandshake(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
         _transport.getBayeux().handle(context.session, message, Promise.from(reply -> {
-            // TODO: why we set the scheduler here ?
-//                if (reply.isSuccessful()) {
-//                    session.setScheduler(this);
-//                }
             promise.succeed(null);
         }, promise::fail));
     }
@@ -255,7 +250,7 @@ public abstract class AbstractWebSocketEndPoint {
             _logger.debug("Suspended {}", message);
         }
         // TODO: notify suspend listener.
-        return new WebSocketScheduler(context, message.getAssociated(), timeout);
+        return new WebSocketScheduler(context, message, timeout);
     }
 
     private void resume(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
@@ -264,9 +259,7 @@ public abstract class AbstractWebSocketEndPoint {
             if (reply != null) {
                 context.replies.add(reply);
             }
-            // TODO: don't think this is needed: when we succeed this callback we always want to deliver the queue.
-            boolean deliver = _transport.isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
-            context.sendQueue = deliver && reply != null;
+            context.sendQueue = true;
             context.scheduleExpiration = true;
             promise.succeed(null);
         }, promise::fail));
@@ -362,7 +355,6 @@ public abstract class AbstractWebSocketEndPoint {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Resumed {}", message);
                 }
-                // TODO: must null out the scheduler in the session ?
                 resume(context, message, this);
             }
         }

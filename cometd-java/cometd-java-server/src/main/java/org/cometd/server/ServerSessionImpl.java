@@ -681,7 +681,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    private boolean isTerminated() {
+    public boolean isTerminated() {
         synchronized (getLock()) {
             return _state == State.DISCONNECTED || _state == State.EXPIRED;
         }
