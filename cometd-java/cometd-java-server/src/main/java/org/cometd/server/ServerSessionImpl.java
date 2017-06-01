@@ -258,7 +258,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                         }
                     }, Promise.from(b -> {
                         if (b) {
-                            deliver2(sender, mutable, promise);
+                            deliver2(sender, message, promise);
                         } else {
                             promise.succeed(false);
                         }
@@ -311,7 +311,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         Collections.reverse(extensions);
         AsyncFoldLeft.run(extensions, message, (result, extension, loop) -> {
             try {
-                extension.outgoing(this, message, Promise.from(m -> {
+                extension.outgoing(this, result, Promise.from(m -> {
                     if (m != null) {
                         loop.proceed(m);
                     } else {
@@ -319,11 +319,11 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                     }
                 }, failure -> {
                     _logger.info("Exception reported by extension " + extension, failure);
-                    loop.proceed(message);
+                    loop.proceed(result);
                 }));
             } catch (Exception x) {
                 _logger.info("Exception thrown by extension " + extension, x);
-                loop.proceed(message);
+                loop.proceed(result);
             }
         }, promise);
     }
