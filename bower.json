@@ -1,0 +1,40 @@
+{
+  "name": "cometd-jquery",
+   "main":[
+       "./cometd-javascript/common/src/main/js/org/cometd/cometd-namespace.js",
+       "./cometd-javascript/common/src/main/js/org/cometd/cometd-amd.js",
+       "./cometd-javascript/common/src/main/js/org/cometd/cometd-header.js",
+       "./cometd-javascript/common/src/main/js/org/cometd/CometD.js", 
+       "./cometd-javascript/common/src/main/js/org/cometd/Utils.js",
+       "./cometd-javascript/common/src/main/js/org/cometd/Transport.js",
+       "./cometd-javascript/common/src/main/js/org/cometd/CallbackPollingTransport.js",
+       "./cometd-javascript/common/src/main/js/org/cometd/cometd-json.js",
+       "./cometd-javascript/common/src/main/js/org/cometd/LongPollingTransport.js",
+       "./cometd-javascript/common/src/main/js/org/cometd/RequestTransport.js",
+       "./cometd-javascript/common/src/main/js/org/cometd/TransportRegistry.js",
+       "./cometd-javascript/common/src/main/js/org/cometd/WebSocketTransport.js",       
+       "./cometd-javascript/common/src/main/webapp/org/cometd/AckExtension.js",
+       "./cometd-javascript/common/src/main/webapp/org/cometd/ReloadExtension.js",
+       "./cometd-javascript/common/src/main/webapp/org/cometd/TimeStampExtension.js",
+       "./cometd-javascript/common/src/main/webapp/org/cometd/TimeSyncExtension.js",
+       "./cometd-javascript/jquery/src/main/webapp/jquery/jquery.cometd.js",
+       "./cometd-javascript/jquery/src/main/webapp/jquery/jquery.cometd-ack.js",
+       "./cometd-javascript/jquery/src/main/webapp/jquery/jquery.cometd-reload.js",
+       "./cometd-javascript/jquery/src/main/webapp/jquery/jquery.cometd-timestamp.js",
+       "./cometd-javascript/jquery/src/main/webapp/jquery/jquery.cometd-timesync.js"
+   ],
+    "dependencies": {
+        "jquery": ">= 1.10.2"
+    },
+    "ignore": [
+        "cometd-archetypes",
+        "cometd-demo",
+        "**/common-test",
+         "**/dojo",
+        "**/pom.xml",
+        "cometd-distribution",
+        "cometd-java",
+        "pom.xml",
+        "README.md"
+    ]
+}
