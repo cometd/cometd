@@ -317,7 +317,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                             advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                             reply.setSuccessful(false);
                         }
-                        session.reAdvise();
                     }
                 }
                 if (proceed && session.isDisconnected()) {
