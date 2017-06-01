@@ -120,7 +120,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private final List<String> _allowedTransports = new ArrayList<>();
     private final ThreadLocal<ServerTransport> _currentTransport = new ThreadLocal<>();
     private final Map<String, Object> _options = new TreeMap<>();
-    private final Scheduler _scheduler = new ScheduledExecutorScheduler("BayeuxServer" + hashCode() + " Scheduler", false);
+    private final Scheduler _scheduler = new ScheduledExecutorScheduler("BayeuxServer@" + Integer.toHexString(hashCode()) + "-Scheduler", false);
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
     private JSONContext.Server _jsonContext;
     private boolean _validation;
@@ -930,7 +930,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                     }
                     AsyncFoldLeft.run(new ArrayList<>(subscribers), true, (result, subscriber, loop) -> {
                         if (!wildSubscribers.contains(subscriber.getId())) {
-                            ((ServerSessionImpl)subscriber).deliver1(subscriber, message, Promise.from(y -> loop.proceed(true), loop::fail));
+                            ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(y -> loop.proceed(true), loop::fail));
                         } else {
                             loop.proceed(true);
                         }
@@ -956,7 +956,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                 }
                 AsyncFoldLeft.run(listeners, true, (result, listener, loop) -> {
                     if (listener instanceof MessageListener) {
-                        notifyOnMessage((MessageListener)listener, session, target, message, resolveLoop(loop));
+                        notifyOnMessage((MessageListener)listener, session, channel, message, resolveLoop(loop));
                     } else {
                         loop.proceed(true);
                     }
@@ -1400,7 +1400,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
             promise.succeed(true);
         } else {
-            error(reply, "403::connect_failed");
+            unknownSession(reply);
             promise.succeed(false);
         }
     }
