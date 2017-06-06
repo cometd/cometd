@@ -44,6 +44,7 @@ to enable the server to interpret the Bayeux protocol.
 It is normally mapped to `+/cometd/*+`, but you can change the `url-pattern` mapping
 if you prefer, or even have multiple mappings.
 
+[[_java_server_configuration_bayeux]]
 ==== Configuring `BayeuxServer`
 
 Here is the list of configuration init parameters that the `BayeuxServer` implementation accepts:
@@ -55,33 +56,38 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
 | Default Value
 | Parameter Description
 
-| transports
-| ""
-| A comma-separated list of `ServerTransport` implementation class names
-  (that take a `org.cometd.server.BayeuxServerImpl` as only constructor
-  parameter) that define the server transports.
-
 | allowedTransports
 | ""
 | A comma-separated list of `ServerTransport` names allowed.
   If not specified, the default server transports are allowed.
-
-| jsonContext
-| `org.cometd.server.JettyJSONContextServer`
-| The full qualified name of a class implementing `org.cometd.common.JSONContext.Server`.
-  The class is loaded and instantiated using the default constructor.
-
-| validateMessageFields
-| true
-| Whether message fields such as `channel`, `id` and `subscription` should be
-  validated to contain legal characters as defined in
-  <<_bayeux_protocol_elements,the Bayeux specification>>
 
 | broadcastToPublisher
 | true
 | When a publisher is also subscribed to the channel it publishes a message to,
   this parameter controls whether `BayeuxServer` should broadcast the message
   to all subscribers (including the publisher), or only to the other subscribers.
+
+| jsonContext
+| `org.cometd.server.JettyJSONContextServer`
+| The full qualified name of a class implementing `org.cometd.common.JSONContext.Server`.
+  The class is loaded and instantiated using the default constructor.
+
+| transports
+| ""
+| A comma-separated list of `ServerTransport` implementation class names
+  (that take a `org.cometd.server.BayeuxServerImpl` as only constructor
+  parameter) that define the server transports.
+
+| validateMessageFields
+| true
+| Whether message fields such as `channel`, `id` and `subscription` should be
+  validated to contain legal characters as defined in
+  <<_bayeux_protocol_elements,the Bayeux specification>>.
+
+| sweepPeriod
+| 997
+| The period, in milliseconds, of the sweeping activity performed by the server.
+
 |===
 
 ===== Configuring Server Transports
@@ -395,8 +401,10 @@ the same server channel may be created concurrently by two remote clients
 publishing to that channel at the same time).
 
 To avoid that these transient server channels grow indefinitely and occupy a
-lot of memory, the CometD server aggressively sweeps server channels, by default
-every second, removing all channels that are not in use by the application anymore.
+lot of memory, the CometD server aggressively sweeps server channels
+removing all channels that are not in use by the application anymore.
+The sweep period can be controlled by the `sweepPeriod` parameter, see
+<<_java_server_configuration_bayeux>>.
 
 Given the above, you need to solve two problems:
 
