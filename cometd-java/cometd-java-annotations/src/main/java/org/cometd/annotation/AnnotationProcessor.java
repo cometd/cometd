@@ -189,18 +189,16 @@ class AnnotationProcessor {
 
     protected static Object invokePublic(Object target, Method method, Object... arguments) {
         try {
-            return method.invoke(target, arguments);
-        } catch (InvocationTargetException x) {
-            Throwable cause = x.getCause();
-            if (cause instanceof RuntimeException) {
-                throw (RuntimeException)cause;
+            try {
+                return method.invoke(target, arguments);
+            } catch (InvocationTargetException x) {
+                throw x.getCause();
             }
-            if (cause instanceof Error) {
-                throw (Error)cause;
-            }
-            throw new RuntimeException(cause);
-        } catch (IllegalAccessException x) {
-            throw new RuntimeException(x);
+        } catch (Throwable x) {
+            Class<?> klass = target.getClass();
+            Logger logger = LoggerFactory.getLogger(klass);
+            logger.info("Exception while invoking " + klass + "#" + method.getName() + "()", x);
+            return null;
         }
     }
 
