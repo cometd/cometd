@@ -38,7 +38,7 @@ node {
 
     stage('Build JDK 8 - Jetty 9.3.x') {
         withEnv(mvnEnv8) {
-            sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.3.19.v20170502"
+            sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.3.20.v20170531"
             // Report failures in the jenkins UI
             step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
         }
@@ -46,7 +46,7 @@ node {
 
     stage('Build JDK 8 - Jetty 9.4.x') {
         withEnv(mvnEnv8) {
-            sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.4.5.v20170502"
+            sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.4.6.v20170531"
             // Report failures in the jenkins UI
             step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
         }
