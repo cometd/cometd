@@ -44,6 +44,8 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Processes annotations in server-side service objects.</p>
@@ -617,7 +619,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             for (int i = 0; i < paramNames.size(); ++i) {
                 args[2 + i] = matches.get(paramNames.get(i));
             }
-            return !Boolean.FALSE.equals(invokePublic(target, method, args));
+            return !Boolean.FALSE.equals(callPublic(target, method, args));
         }
     }
 
@@ -651,7 +653,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             for (int i = 0; i < paramNames.size(); ++i) {
                 args[1 + i] = matches.get(paramNames.get(i));
             }
-            invokePublic(target, method, args);
+            callPublic(target, method, args);
         }
     }
 
@@ -701,7 +703,10 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
                 failure.put("class", x.getClass().getName());
                 failure.put("message", x.getMessage());
                 caller.failure(failure);
-                throw x;
+                Class<?> klass = target.getClass();
+                Logger logger = LoggerFactory.getLogger(klass);
+                logger.info("Exception while invoking " + klass + "#" + method.getName() + "()", x);
+                return true;
             }
         }
     }

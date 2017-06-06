@@ -187,13 +187,17 @@ class AnnotationProcessor {
         }
     }
 
-    protected static Object invokePublic(Object target, Method method, Object... arguments) {
+    protected static Object invokePublic(Object target, Method method, Object[] arguments) throws Throwable {
         try {
-            try {
-                return method.invoke(target, arguments);
-            } catch (InvocationTargetException x) {
-                throw x.getCause();
-            }
+            return method.invoke(target, arguments);
+        } catch (InvocationTargetException x) {
+            throw x.getCause();
+        }
+    }
+
+    protected static Object callPublic(Object target, Method method, Object... arguments) {
+        try {
+            return invokePublic(target, method, arguments);
         } catch (Throwable x) {
             Class<?> klass = target.getClass();
             Logger logger = LoggerFactory.getLogger(klass);
