@@ -13,29 +13,35 @@ node {
 
     stage('Build JDK 8') {
         withEnv(mvnEnv8) {
-            sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
-            // Report failures in the jenkins UI.
-            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
-            // Collect the JaCoCo execution results.
-            step([$class: 'JacocoPublisher',
-                  exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
-                  execPattern: '**/target/jacoco.exec',
-                  classPattern: '**/target/classes',
-                  sourcePattern: '**/src/main/java'])
+            timeout(time: 1, unit: 'HOURS') {
+                sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
+                // Report failures in the jenkins UI.
+                step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+                // Collect the JaCoCo execution results.
+                step([$class: 'JacocoPublisher',
+                      exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
+                      execPattern: '**/target/jacoco.exec',
+                      classPattern: '**/target/classes',
+                      sourcePattern: '**/src/main/java'])
+            }
         }
     }
 
 //    stage('Build JDK 8 - Jetty 10.0.x') {
 //        withEnv(mvnEnv8) {
-//            sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=10.0.0-SNAPSHOT"
-//            // Report failures in the jenkins UI
-//            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+//            timeout(time: 1, unit: 'HOURS') {
+//                sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=10.0.0-SNAPSHOT"
+//                // Report failures in the jenkins UI
+//                step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+//            }
 //        }
 //    }
 
     stage('Javadoc') {
         withEnv(mvnEnv8) {
-            sh "mvn -B javadoc:javadoc"
+            timeout(time: 5, unit: 'MINUTES') {
+                sh "mvn -B javadoc:javadoc"
+            }
         }
     }
 }
