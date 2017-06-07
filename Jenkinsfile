@@ -16,55 +16,55 @@ node {
 
     stage('Build JDK 7') {
         withEnv(mvnEnv7) {
-            sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
-            // Report failures in the jenkins UI
-            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+            timeout(time: 1, unit: 'HOURS') {
+                sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
+                // Report failures in the jenkins UI
+                step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+            }
         }
     }
 
     stage('Build JDK 8') {
         withEnv(mvnEnv8) {
-            sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
-            // Report failures in the jenkins UI.
-            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
-            // Collect the JaCoCo execution results.
-            step([$class: 'JacocoPublisher',
-                  exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
-                  execPattern: '**/target/jacoco.exec',
-                  classPattern: '**/target/classes',
-                  sourcePattern: '**/src/main/java'])
+            timeout(time: 1, unit: 'HOURS') {
+                sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
+                // Report failures in the jenkins UI.
+                step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+                // Collect the JaCoCo execution results.
+                step([$class: 'JacocoPublisher',
+                      exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
+                      execPattern: '**/target/jacoco.exec',
+                      classPattern: '**/target/classes',
+                      sourcePattern: '**/src/main/java'])
+            }
         }
     }
 
     stage('Build JDK 8 - Jetty 9.3.x') {
         withEnv(mvnEnv8) {
-            sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.3.20.v20170531"
-            // Report failures in the jenkins UI
-            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+            timeout(time: 1, unit: 'HOURS') {
+                sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.3.20.v20170531"
+                // Report failures in the jenkins UI
+                step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+            }
         }
     }
 
     stage('Build JDK 8 - Jetty 9.4.x') {
         withEnv(mvnEnv8) {
-            sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.4.6.v20170531"
-            // Report failures in the jenkins UI
-            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+            timeout(time: 1, unit: 'HOURS') {
+                sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.4.6.v20170531"
+                // Report failures in the jenkins UI
+                step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+            }
         }
     }
 
     stage('Javadoc') {
         withEnv(mvnEnv8) {
-            sh "mvn -B javadoc:javadoc"
-        }
-    }
-
-    /*
-    stage('Documentation') {
-        dir("cometd-documentation") {
-            withEnv(mvnEnv8) {
-                sh "mvn clean install"
+            timeout(time: 5, unit: 'MINUTES') {
+                sh "mvn -B javadoc:javadoc"
             }
         }
     }
-    */
 }
