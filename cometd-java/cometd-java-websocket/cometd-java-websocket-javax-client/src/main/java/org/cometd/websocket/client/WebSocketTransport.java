@@ -248,11 +248,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
         private final WebSocketContainer container = ContainerProvider.getWebSocketContainer();
 
-        public Factory() {
-            // The WebSocketContainer is already started, so we must explicitly manage it.
-            addBean(container, true);
-        }
-
         @Override
         public ClientTransport newClientTransport(String url, Map<String, Object> options) {
             ScheduledExecutorService scheduler = (ScheduledExecutorService)options.get(ClientTransport.SCHEDULER_OPTION);
