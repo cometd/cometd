@@ -319,11 +319,17 @@ public class CometDLoadClient implements MeasureConverter {
         LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(transport), null, false);
         statsClient.handshake();
 
+        int clients = this.clients;
+        int batches = this.batches;
+        int batchSize = this.batchSize;
+        long batchPause = this.batchPause;
+        int messageSize = this.messageSize;
+        boolean randomize = this.randomize;
+
         while (true) {
             System.err.println();
             System.err.println("-----");
 
-            int clients = this.clients;
             if (interactive) {
                 System.err.printf("clients [%d]: ", clients);
                 String value = console.readLine();
@@ -395,7 +401,6 @@ public class CometDLoadClient implements MeasureConverter {
 
             reset();
 
-            int batches = this.batches;
             if (interactive) {
                 System.err.printf("batch count [%d]: ", batches);
                 String value = console.readLine().trim();
@@ -405,7 +410,6 @@ public class CometDLoadClient implements MeasureConverter {
                 batches = Integer.parseInt(value);
             }
 
-            int batchSize = this.batchSize;
             if (interactive) {
                 System.err.printf("batch size [%d]: ", batchSize);
                 String value = console.readLine().trim();
@@ -415,7 +419,6 @@ public class CometDLoadClient implements MeasureConverter {
                 batchSize = Integer.parseInt(value);
             }
 
-            long batchPause = this.batchPause;
             if (interactive) {
                 System.err.printf("batch pause (\u00B5s) [%d]: ", batchPause);
                 String value = console.readLine().trim();
@@ -425,7 +428,6 @@ public class CometDLoadClient implements MeasureConverter {
                 batchPause = Long.parseLong(value);
             }
 
-            int messageSize = this.messageSize;
             if (interactive) {
                 System.err.printf("message size [%d]: ", messageSize);
                 String value = console.readLine().trim();
@@ -438,7 +440,6 @@ public class CometDLoadClient implements MeasureConverter {
             Arrays.fill(chars, 'x');
             String chat = new String(chars);
 
-            boolean randomize = this.randomize;
             if (interactive) {
                 System.err.printf("randomize sends [%b]: ", randomize);
                 String value = console.readLine().trim();

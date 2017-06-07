@@ -235,6 +235,13 @@ The callback method can return `false` to indicate that the processing of
 subsequent listeners should not be performed and that the message should
 not be published.
 
+[NOTE]
+====
+If an exception is thrown by the callback method, it is caught by the CometD
+implementation and logged at `INFO` level on a logger category corresponding
+to the class name of the service, and no further action is taken by CometD.
+====
+
 The channel specified by the `@Listener` annotation may be a
 <<_concepts_channels_parameters,template channel>>.
 In this case, you must add the corresponding number of parameters (of type

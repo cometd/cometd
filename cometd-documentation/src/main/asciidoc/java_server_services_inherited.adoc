@@ -123,6 +123,13 @@ by the server in the same way a remote client (that also creates a
 The `LocalSession` and `ServerSession` are accessible via the `AbstractService`
 methods `getLocalSession()` and `getServerSession()` respectively.
 
+[NOTE]
+====
+If an exception is thrown by a service method, it is caught by the CometD
+implementation and logged at `INFO` level on a logger category corresponding
+to the class name of the service, and no further action is taken by CometD.
+====
+
 Once you have written your Bayeux services it is time to set them up in your
 web application, see either <<_java_server_services_integration,the services integration section>>
 or <<_java_server_services_integration_spring,the Spring Framework services integration section>>.

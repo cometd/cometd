@@ -101,7 +101,7 @@ public class SweepTest {
     @Test
     public void testLocalSessionIsNotSwept() throws Exception {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
-        bayeuxServer.setOption("sweepIntervalMs", -1);
+        bayeuxServer.setOption(BayeuxServerImpl.SWEEP_PERIOD_OPTION, -1);
         long maxInterval = 1000;
         bayeuxServer.setOption("maxInterval", maxInterval);
         bayeuxServer.setOption("maxProcessing", maxInterval);

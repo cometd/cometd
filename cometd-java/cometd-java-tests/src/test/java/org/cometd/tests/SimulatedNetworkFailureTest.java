@@ -28,6 +28,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
+import org.cometd.server.BayeuxServerImpl;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,7 +38,7 @@ import static org.junit.Assert.assertTrue;
 public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
     private long timeout = 10000;
     private long maxInterval = 8000;
-    private long sweepInterval = 1000;
+    private long sweepPeriod = 1000;
 
     public SimulatedNetworkFailureTest(Transport transport) {
         super(transport);
@@ -48,7 +49,7 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
         Map<String, String> options = serverOptions();
         options.put("timeout", String.valueOf(timeout));
         options.put("maxInterval", String.valueOf(maxInterval));
-        options.put("sweepIntervalMs", String.valueOf(sweepInterval));
+        options.put(BayeuxServerImpl.SWEEP_PERIOD_OPTION, String.valueOf(sweepPeriod));
         startServer(options);
     }
 
@@ -184,8 +185,8 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
         // Wait for a second connect to be issued
         Thread.sleep(1000);
 
-        // Add some margin since the session is swept every 'sweepIntervalMs'
-        long networkDown = maxInterval + 3 * sweepInterval;
+        // Add some margin since the session is swept every 'sweepPeriod'
+        long networkDown = maxInterval + 3 * sweepPeriod;
         client.setNetworkDown(networkDown);
 
         // Publish, it must succeed

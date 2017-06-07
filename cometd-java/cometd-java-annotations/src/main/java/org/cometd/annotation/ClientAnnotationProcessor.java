@@ -386,7 +386,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
             for (int i = 0; i < paramNames.size(); ++i) {
                 args[1 + i] = matches.get(paramNames.get(i));
             }
-            invokePublic(target, method, args);
+            callPublic(target, method, args);
         }
     }
 
@@ -420,7 +420,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
             for (int i = 0; i < paramNames.size(); ++i) {
                 args[1 + i] = matches.get(paramNames.get(i));
             }
-            invokePublic(target, method, args);
+            callPublic(target, method, args);
         }
 
         private void subscribe() {

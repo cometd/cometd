@@ -53,6 +53,7 @@ import org.cometd.server.transport.AsyncJSONTransport;
 import org.cometd.server.transport.JSONTransport;
 import org.cometd.websocket.server.JettyWebSocketTransport;
 import org.cometd.websocket.server.WebSocketTransport;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -493,7 +494,9 @@ public class CometDLoadServer {
             } finally {
                 long end = System.nanoTime();
                 if (currentEnabled.get()) {
-                    updateLatencies(begin, end);
+                    if (!request.getHttpFields().contains(HttpHeader.UPGRADE)) {
+                        updateLatencies(begin, end);
+                    }
                 } else {
                     currentEnabled.set(true);
                 }
@@ -514,7 +517,9 @@ public class CometDLoadServer {
         }
 
         private void print() {
-            System.err.println(new HistogramSnapshot(histogram.copy(), 20, "Requests - Latency", "\u00B5s", this));
+            if (histogram.getTotalCount() > 0) {
+                System.err.println(new HistogramSnapshot(histogram.copy(), 20, "Requests - Latency", "\u00B5s", this));
+            }
         }
 
         public void doNotTrackCurrentRequest() {
