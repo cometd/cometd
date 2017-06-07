@@ -517,7 +517,9 @@ public class CometDLoadServer {
         }
 
         private void print() {
-            System.err.println(new HistogramSnapshot(histogram.copy(), 20, "Requests - Latency", "\u00B5s", this));
+            if (histogram.getTotalCount() > 0) {
+                System.err.println(new HistogramSnapshot(histogram.copy(), 20, "Requests - Latency", "\u00B5s", this));
+            }
         }
 
         public void doNotTrackCurrentRequest() {
