@@ -19,12 +19,10 @@
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
-            <version>1</version>
         </dependency>
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>jsr250-api</artifactId>
-            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>
@@ -44,7 +42,6 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j-version}</version>
         </dependency>
 
         <dependency>
@@ -54,8 +51,6 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j-version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>
@@ -98,7 +93,6 @@
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
-            <version>4.1.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
