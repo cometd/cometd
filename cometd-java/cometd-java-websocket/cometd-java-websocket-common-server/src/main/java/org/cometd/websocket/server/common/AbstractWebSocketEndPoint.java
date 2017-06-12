@@ -254,10 +254,14 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     private void resume(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
+        ServerMessage.Mutable reply = message.getAssociated();
         ServerSessionImpl session = context.session;
-        _transport.processReply(session, message.getAssociated(), Promise.from(reply -> {
-            if (reply != null) {
-                context.replies.add(reply);
+        if (session != null && session.isTerminated()) {
+            reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+        }
+        _transport.processReply(session, reply, Promise.from(r -> {
+            if (r != null) {
+                context.replies.add(r);
             }
             context.sendQueue = true;
             context.scheduleExpiration = true;
@@ -329,13 +333,14 @@ public abstract class AbstractWebSocketEndPoint {
 
         @Override
         public void schedule() {
-            boolean metaConnectDelivery = _transport.isMetaConnectDeliveryOnly() || context.session.isMetaConnectDeliveryOnly();
-            if (metaConnectDelivery) {
+            ServerSessionImpl session = context.session;
+            boolean metaConnectDelivery = _transport.isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
+            if (metaConnectDelivery || session.isTerminated()) {
                 if (cancelTimeout()) {
                     resume(context, message, this);
                 }
             } else {
-                Context context = new Context(this.context.session);
+                Context context = new Context(session);
                 context.sendQueue = true;
                 flush(context, Promise.from(y -> {}, this::fail));
             }
