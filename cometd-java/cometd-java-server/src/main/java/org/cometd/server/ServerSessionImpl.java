@@ -914,12 +914,14 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     public String toString() {
         long last;
         long expire;
+        State state;
         long now = System.currentTimeMillis();
         synchronized (getLock()) {
             last = now - _messageTime;
             expire = _expireTime == 0 ? 0 : _expireTime - now;
+            state = _state;
         }
-        return String.format("%s,last=%d,expire=%d", _id, last, expire);
+        return String.format("%s,%s,last=%d,expire=%d", _id, state, last, expire);
     }
 
     private class LazyTask implements Runnable {
