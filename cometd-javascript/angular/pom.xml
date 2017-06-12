@@ -16,7 +16,6 @@
         <plugins>
             <plugin>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>2.6</version>
                 <configuration>
                     <overlays>
                         <overlay />
