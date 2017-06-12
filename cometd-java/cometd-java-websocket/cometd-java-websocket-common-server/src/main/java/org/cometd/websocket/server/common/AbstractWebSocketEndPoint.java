@@ -249,7 +249,7 @@ public abstract class AbstractWebSocketEndPoint {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Suspended {}", message);
         }
-        // TODO: notify suspend listener.
+        context.session.notifySuspended(message, timeout);
         return new WebSocketScheduler(context, message, timeout);
     }
 
@@ -337,6 +337,7 @@ public abstract class AbstractWebSocketEndPoint {
             boolean metaConnectDelivery = _transport.isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
             if (metaConnectDelivery || session.isTerminated()) {
                 if (cancelTimeout()) {
+                    session.notifyResumed(message, false);
                     resume(context, message, this);
                 }
             } else {
@@ -360,6 +361,7 @@ public abstract class AbstractWebSocketEndPoint {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Resumed {}", message);
                 }
+                context.session.notifyResumed(message, true);
                 resume(context, message, this);
             }
         }

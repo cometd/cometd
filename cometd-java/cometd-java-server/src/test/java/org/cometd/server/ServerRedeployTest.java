@@ -15,8 +15,11 @@
  */
 package org.cometd.server;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;
@@ -48,6 +51,15 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest {
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
+        ServerSession session = bayeux.getSession(clientId);
+
+        CountDownLatch connectLatch = new CountDownLatch(1);
+        session.addListener(new ServerSession.HeartBeatListener() {
+            @Override
+            public void onSuspended(ServerSession session, ServerMessage message, long timeout) {
+                connectLatch.countDown();
+            }
+        });
 
         Request connect = newBayeuxRequest("" +
                 "[{" +
@@ -68,8 +80,7 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest {
         FutureResponseListener futureResponse = new FutureResponseListener(connect);
         connect.send(futureResponse);
 
-        // Wait for the connect to arrive to the server
-        Thread.sleep(1000);
+        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         // Stop the context; this is the first half of a redeploy
         context.stop();

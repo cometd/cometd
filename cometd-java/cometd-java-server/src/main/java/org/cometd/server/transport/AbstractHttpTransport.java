@@ -705,7 +705,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Resuming /meta/connect after schedule");
                 }
-                resume();
+                resume(false);
             }
         }
 
@@ -735,13 +735,13 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Resuming /meta/connect after timeout");
                 }
-                resume();
+                resume(true);
             }
         }
 
-        private void resume() {
+        private void resume(boolean timeout) {
             decBrowserId(context.session, isHTTP2(context.request));
-            dispatch();
+            dispatch(timeout);
         }
 
         @Override
@@ -761,7 +761,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             error(event.getThrowable());
         }
 
-        protected abstract void dispatch();
+        protected abstract void dispatch(boolean timeout);
 
         private void error(Throwable failure) {
             HttpServletRequest request = context.request;

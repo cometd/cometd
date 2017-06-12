@@ -39,6 +39,7 @@ import org.cometd.server.ServerSessionImpl;
  */
 public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport {
     private static final String CONTEXT_ATTRIBUTE = "org.cometd.transport.context";
+    private static final String HEARTBEAT_TIMEOUT_ATTRIBUTE = "org.cometd.transport.heartbeat.timeout";
 
     protected AbstractStreamHttpTransport(BayeuxServerImpl bayeux, String name) {
         super(bayeux, name);
@@ -87,7 +88,9 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             setCurrentRequest(request);
             process(new Context(request, response), promise);
         } else {
-            resume(context, context.scheduler.getMessage(), Promise.from(y -> flush(context, promise), promise::fail));
+            ServerMessage.Mutable message = context.scheduler.getMessage();
+            context.session.notifyResumed(message, (Boolean)request.getAttribute(HEARTBEAT_TIMEOUT_ATTRIBUTE));
+            resume(context, message, Promise.from(y -> flush(context, promise), promise::fail));
         }
     }
 
@@ -121,7 +124,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
         if (_logger.isDebugEnabled()) {
             _logger.debug("Suspended {}", message);
         }
-        // TODO: session.notifySuspendedListener()
+        context.session.notifySuspended(message, timeout);
         return context.scheduler;
     }
 
@@ -236,7 +239,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
         }
 
         @Override
-        protected void dispatch() {
+        protected void dispatch(boolean timeout) {
             // We dispatch() when either we are suspended or timed out, instead of doing a write() + complete().
             // If we have to write a message to 10 clients, and the first client write() blocks, then we would
             // be delaying the other 9 clients.
@@ -245,7 +248,9 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             // Only with Servlet 3.1 and standard asynchronous I/O we would be able to do write() + complete()
             // without blocking, and it will be much more efficient because there is no thread dispatching and
             // there will be more mechanical sympathy.
-            getContext().request.getAsyncContext().dispatch();
+            HttpServletRequest request = getContext().request;
+            request.setAttribute(HEARTBEAT_TIMEOUT_ATTRIBUTE, timeout);
+            request.getAsyncContext().dispatch();
         }
     }
 }

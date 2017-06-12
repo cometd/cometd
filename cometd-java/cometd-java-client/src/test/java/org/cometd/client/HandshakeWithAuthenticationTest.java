@@ -20,8 +20,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -70,6 +76,7 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
 
         connector.setPort(port);
         server.start();
+        bayeux = (BayeuxServerImpl)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
 
         LongPollingTransport transport = new LongPollingTransport(null, httpClient) {
             @Override
@@ -81,12 +88,20 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
         };
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
 
-        client.handshake();
+        CountDownLatch connectLatch = new CountDownLatch(1);
+        client.handshake((channel, message) -> {
+            if (message.isSuccessful()) {
+                ServerSession session = bayeux.getSession(message.getClientId());
+                session.addListener(new ServerSession.HeartBeatListener() {
+                    @Override
+                    public void onSuspended(ServerSession session, ServerMessage message, long timeout) {
+                        connectLatch.countDown();
+                    }
+                });
+            }
+        });
 
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
-
-        // Allow long poll to establish
-        Thread.sleep(1000);
+        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

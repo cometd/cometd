@@ -494,6 +494,22 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
+    public void notifySuspended(ServerMessage message, long timeout) {
+        for (ServerSessionListener listener : _listeners) {
+            if (listener instanceof ServerSession.HeartBeatListener) {
+                ((HeartBeatListener)listener).onSuspended(this, message, timeout);
+            }
+        }
+    }
+
+    public void notifyResumed(ServerMessage message, boolean timeout) {
+        for (ServerSessionListener listener : _listeners) {
+            if (listener instanceof ServerSession.HeartBeatListener) {
+                ((HeartBeatListener)listener).onResumed(this, message, timeout);
+            }
+        }
+    }
+
     @Override
     public void removeListener(ServerSessionListener listener) {
         _listeners.remove(listener);

@@ -263,6 +263,32 @@ public interface ServerSession extends Session {
     }
 
     /**
+     * <p>Listeners objects that implement this interface will be notified when a {@code /meta/connect}
+     * message is suspended by the server, and when it is subsequently resumed.</p>
+     */
+    public interface HeartBeatListener extends ServerSessionListener {
+        /**
+         * <p>Callback invoked to notify that a {@code /meta/connect} message has been suspended.</p>
+         *
+         * @param session the session that received the {@code /meta/connect} message
+         * @param message the {@code /meta/connect} message
+         * @param timeout the time, in milliseconds, the server will hold the message if not otherwise resumed
+         */
+        public default void onSuspended(ServerSession session, ServerMessage message, long timeout) {
+        }
+
+        /**
+         * <p>Callback invoked to notify that a {@code /meta/connect} message has been resumed.</p>
+         *
+         * @param session the session that received the {@code /meta/connect} message
+         * @param message the {@code /meta/connect} message
+         * @param timeout whether the {@code /meta/connect} message was resumed after the whole timeout
+         */
+        public default void onResumed(ServerSession session, ServerMessage message, boolean timeout) {
+        }
+    }
+
+    /**
      * <p>Extension API for {@link ServerSession}.</p>
      * <p>Implementations of this interface allow to modify incoming and outgoing messages
      * for a particular session, before any other processing performed by the implementation
@@ -342,6 +368,7 @@ public interface ServerSession extends Session {
 
         /**
          * Empty implementation of {@link Extension}.
+         *
          * @deprecated
          */
         @Deprecated

@@ -490,6 +490,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     protected void addServerSession(ServerSessionImpl session, ServerMessage message) {
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("Adding session {}", session);
+        }
         _sessions.put(session.getId(), session);
         for (BayeuxServerListener listener : _listeners) {
             if (listener instanceof BayeuxServer.SessionListener) {

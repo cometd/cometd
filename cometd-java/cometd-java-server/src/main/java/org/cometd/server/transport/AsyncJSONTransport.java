@@ -135,7 +135,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
             _logger.debug("Suspended {}", message);
         }
         context.scheduler = newHttpScheduler(context, promise, message, timeout);
-        // TODO: session.notifySuspendedListener()
+        context.session.notifySuspended(message, timeout);
         return context.scheduler;
     }
 
@@ -460,9 +460,10 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         }
 
         @Override
-        protected void dispatch() {
+        protected void dispatch(boolean timeout) {
             // Directly succeeding the callback to write messages and replies.
             // Since the write is async, we will never block and thus never delay other sessions.
+            getContext().session.notifyResumed(getMessage(), timeout);
             getPromise().succeed(null);
         }
     }
