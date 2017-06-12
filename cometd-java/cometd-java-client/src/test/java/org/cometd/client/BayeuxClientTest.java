@@ -560,6 +560,8 @@ public class BayeuxClientTest extends ClientServerTest {
 
         // Wait for connect
         Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
+        // Wait for /meta/connect to be held.
+        Thread.sleep(1000);
 
         client.getChannel(channelName).publish(new HashMap<String, Object>());
         Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
