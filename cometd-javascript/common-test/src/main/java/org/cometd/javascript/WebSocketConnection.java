@@ -18,36 +18,31 @@ package org.cometd.javascript;
 import java.io.IOException;
 import java.net.URI;
 
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
-import org.mozilla.javascript.Undefined;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebSocketConnection extends ScriptableObject implements WebSocketListener {
+public class WebSocketConnection implements WebSocketListener {
     private final Logger logger = LoggerFactory.getLogger(getClass().getName());
-    private ThreadModel threads;
-    private Scriptable thiz;
+    private JavaScript javaScript;
+    private ScriptObjectMirror thiz;
     private WebSocketClient wsClient;
     private Session session;
 
-    public WebSocketConnection() {
-    }
-
-    public void jsConstructor(Object threadModel, Scriptable thiz, Object connector, String url, Object protocol) {
-        this.threads = (ThreadModel)threadModel;
+    public WebSocketConnection(JavaScript javaScript, ScriptObjectMirror thiz, Object connector, String url, String protocol) {
+        this.javaScript = javaScript;
         this.thiz = thiz;
         this.wsClient = ((WebSocketConnector)connector).getWebSocketClient();
         try {
             URI uri = new URI(url);
 
             ClientUpgradeRequest request = new ClientUpgradeRequest();
-            if (protocol != null && protocol != Undefined.instance) {
-                request.setSubProtocols(protocol.toString());
+            if (protocol != null) {
+                request.setSubProtocols(protocol);
             }
 
             if (logger.isDebugEnabled()) {
@@ -56,21 +51,11 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
             wsClient.connect(this, uri, request);
         } catch (final Throwable x) {
             // This method is invoked from JavaScript, so we must fail asynchronously
-            wsClient.getExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    onWebSocketError(x);
-                }
-            });
+            wsClient.getExecutor().execute(() -> onWebSocketError(x));
         }
     }
 
-    @Override
-    public String getClassName() {
-        return "WebSocketConnection";
-    }
-
-    public void jsFunction_send(String data) throws IOException {
+    public void send(String data) throws IOException {
         try {
             Session session = this.session;
             if (session != null) {
@@ -81,16 +66,11 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
             }
         } catch (final Throwable x) {
             // This method is invoked from JavaScript, so we must fail asynchronously
-            wsClient.getExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    onWebSocketError(x);
-                }
-            });
+            wsClient.getExecutor().execute(() -> onWebSocketError(x));
         }
     }
 
-    public void jsFunction_close(int code, String reason) throws IOException {
+    public void close(int code, String reason) throws IOException {
         Session session = this.session;
         if (session != null) {
             session.close(code, reason);
@@ -104,7 +84,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
         if (logger.isDebugEnabled()) {
             logger.debug("WebSocket opened session {}", session);
         }
-        threads.invoke(false, thiz, thiz, "onopen");
+        javaScript.invoke(false, thiz, "onopen");
     }
 
     @Override
@@ -117,8 +97,8 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
             logger.debug("WebSocket message data {}", data);
         }
         // Use single quotes so they do not mess up with quotes in the data string
-        Object event = threads.evaluate("event", "({data:'" + data + "'})");
-        threads.invoke(false, thiz, thiz, "onmessage", event);
+        Object event = javaScript.evaluate("event", "({data:'" + data + "'})");
+        javaScript.invoke(false, thiz, "onmessage", event);
     }
 
     @Override
@@ -127,8 +107,8 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
             logger.debug("WebSocket closed with code {}/{}", closeCode, reason);
         }
         // Use single quotes so they do not mess up with quotes in the reason string
-        Object event = threads.evaluate("event", "({code:" + closeCode + ",reason:'" + reason + "'})");
-        threads.invoke(false, thiz, thiz, "onclose", event);
+        Object event = javaScript.evaluate("event", "({code:" + closeCode + ",reason:'" + reason + "'})");
+        javaScript.invoke(false, thiz, "onclose", event);
     }
 
     @Override
@@ -136,6 +116,6 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
         if (logger.isDebugEnabled()) {
             logger.debug("WebSocket exception", x);
         }
-        threads.invoke(false, thiz, thiz, "onerror");
+        javaScript.invoke(false, thiz, "onerror");
     }
 }

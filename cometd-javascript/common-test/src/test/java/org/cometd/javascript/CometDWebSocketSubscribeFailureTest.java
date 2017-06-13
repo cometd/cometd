@@ -27,10 +27,9 @@ public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocket
     public void testSubscribeFailure() throws Exception {
         bayeuxServer.addExtension(new DeleteMetaSubscribeExtension());
 
-        defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(readyLatch.await(5000));
 
@@ -38,12 +37,12 @@ public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocket
         Thread.sleep(1000);
 
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
         evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = get("failureLatch");
-        evaluateScript("cometd.addListener('/meta/subscribe', subscribeLatch, subscribeLatch.countDown);");
-        evaluateScript("cometd.addListener('/meta/unsuccessful', failureLatch, failureLatch.countDown);");
-        evaluateScript("cometd.subscribe('/echo', subscribeLatch, subscribeLatch.countDown);");
+        Latch failureLatch = javaScript.get("failureLatch");
+        evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
+        evaluateScript("cometd.addListener('/meta/unsuccessful', function() { failureLatch.countDown(); });");
+        evaluateScript("cometd.subscribe('/echo', function() { subscribeLatch.countDown(); });");
         Assert.assertTrue(subscribeLatch.await(5000));
         Assert.assertTrue(failureLatch.await(5000));
 

@@ -43,8 +43,6 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
             }
         });
 
-        defineClass(Latch.class);
-
         evaluateScript("" +
                 "cometd.configure({" +
                 "    url: '" + cometdURL + "', " +
@@ -64,15 +62,14 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
                 "        failureHandler(failureInfo);" +
                 "        /* Reinstall the original function */" +
                 "        cometd.onTransportFailure = oTF;" +
-                "    }" +
-                "    else {" +
+                "    } else {" +
                 "        oTF.call(this, message, failureInfo, failureHandler);" +
                 "    }" +
                 "};");
 
         // The second connect fails, the third connect should succeed on the new URL.
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("" +
                 "var url = null;" +
                 "var connects = 0;" +
@@ -86,7 +83,7 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
                 "cometd.handshake();");
 
         Assert.assertTrue(latch.await(5000));
-        Assert.assertEquals(newURL, get("url"));
+        Assert.assertEquals(newURL, javaScript.get("url"));
 
         connector2.stop();
     }
@@ -99,8 +96,6 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
                 return count != 2;
             }
         });
-
-        defineClass(Latch.class);
 
         evaluateScript("" +
                 "cometd.configure({" +
@@ -123,14 +118,13 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
                 "        failureHandler(failureInfo);" +
                 "        /* Reinstall the original function */" +
                 "        cometd.onTransportFailure = oTF;" +
-                "    }" +
-                "    else {" +
+                "    } else {" +
                 "        oTF.call(this, message, failureInfo, failureHandler);" +
                 "    }" +
                 "};");
 
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("" +
                 "var transport = null;" +
                 "var connects = 0;" +
@@ -144,7 +138,7 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
                 "cometd.handshake();");
 
         Assert.assertTrue(latch.await(5000));
-        Assert.assertEquals("websocket", get("transport"));
+        Assert.assertEquals("websocket", javaScript.get("transport"));
     }
 
     private abstract class ConnectFailureExtension extends BayeuxServer.Extension.Adapter {

@@ -21,7 +21,6 @@ import org.junit.Test;
 public class CometDTransportTest extends AbstractCometDTest {
     @Test
     public void testTransport() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("cometd.unregisterTransports();");
@@ -36,18 +35,15 @@ public class CometDTransportTest extends AbstractCometDTest {
                         "" +
                         "    that.getSends = function() { return _sends; };" +
                         "" +
-                        "    that.accept = function(version, crossDomain)" +
-                        "    {" +
+                        "    that.accept = function(version, crossDomain) {" +
                         "        return true;" +
                         "    };" +
                         "" +
-                        "    that.transportSend = function(envelope, request)" +
-                        "    {" +
+                        "    that.transportSend = function(envelope, request) {" +
                         "        ++_sends;" +
                         "        var response;" +
                         "        var timeout;" +
-                        "        switch (_sends)" +
-                        "        {" +
+                        "        switch (_sends) {" +
                         "            case 1:" +
                         "                response = '[{" +
                         "                    \"successful\":true," +
@@ -94,8 +90,7 @@ public class CometDTransportTest extends AbstractCometDTest {
                         "" +
                         "        /* Respond asynchronously */" +
                         "        var self = this;" +
-                        "        setTimeout(function()" +
-                        "        {" +
+                        "        setTimeout(function() {" +
                         "            self.transportSuccess(envelope, request, self.convertToMessages(response));" +
                         "        }, timeout);" +
                         "    };" +
@@ -107,9 +102,9 @@ public class CometDTransportTest extends AbstractCometDTest {
 
         evaluateScript("var localTransport = new LocalTransport();");
         // The server does not support a 'local' transport, so use 'long-polling'
-        Assert.assertTrue((Boolean)evaluateScript("cometd.registerTransport('long-polling', localTransport);"));
+        Assert.assertTrue(evaluateScript("cometd.registerTransport('long-polling', localTransport);"));
 
-        Latch readyLatch = get("readyLatch");
+        Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
 
@@ -117,7 +112,7 @@ public class CometDTransportTest extends AbstractCometDTest {
         Assert.assertEquals("connected", evaluateScript("cometd.getStatus();"));
 
         readyLatch.reset(1);
-        evaluateScript("cometd.addListener('/meta/disconnect', readyLatch, 'countDown');");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
         Assert.assertTrue(readyLatch.await(5000));
 

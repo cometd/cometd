@@ -31,23 +31,20 @@ public class CometDFalsyMessageTest extends AbstractCometDTest {
     }
 
     private void testFalsyMessage(Object content) throws Exception {
-        defineClass(Latch.class);
         String channelName = "/foo";
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var messageLatch = new Latch(1);");
-        Latch messageLatch = get("messageLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', function(h)" +
-                "{" +
-                "    if (h.successful)" +
-                "    {" +
-                "        cometd.subscribe('" + channelName + "', messageLatch, 'countDown');" +
+        Latch messageLatch = javaScript.get("messageLatch");
+        evaluateScript("cometd.addListener('/meta/handshake', function(m) {" +
+                "    if (m.successful) {" +
+                "        cometd.subscribe('" + channelName + "', function() { messageLatch.countDown(); });" +
                 "    }" +
                 "});");
 
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
-        evaluateScript("cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
+        evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
 
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(subscribeLatch.await(5000));

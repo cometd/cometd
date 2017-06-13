@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -27,7 +28,6 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mozilla.javascript.ScriptableObject;
 
 public class CometDAdviceTest extends AbstractCometDTest {
     @Test
@@ -43,14 +43,13 @@ public class CometDAdviceTest extends AbstractCometDTest {
             }
         });
 
-        defineClass(HandshakeListener.class);
+        evaluateScript("var HandshakeListener = Java.type('" + HandshakeListener.class.getName() + "')");
         evaluateScript("var handshakeListener = new HandshakeListener();");
-        HandshakeListener handshakeListener = get("handshakeListener");
+        HandshakeListener handshakeListener = javaScript.get("handshakeListener");
         handshakeListener.server = bayeuxServer;
 
-        defineClass(Latch.class);
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
 
         evaluateScript("cometd.configure({" +
                 "url: '" + cometdURL + "', " +
@@ -67,19 +66,13 @@ public class CometDAdviceTest extends AbstractCometDTest {
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class HandshakeListener extends ScriptableObject {
+    public static class HandshakeListener {
         private final CountDownLatch latch = new CountDownLatch(1);
         private BayeuxServerImpl server;
         private int handshakes;
 
-        @Override
-        public String getClassName() {
-            return "HandshakeListener";
-        }
-
-        public void jsFunction_handle(Object jsMessage) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> message = (Map<String, Object>)Utils.jsToJava(jsMessage);
+        public void handle(Object jsMessage) {
+            Map<String, Object> message = (ScriptObjectMirror)jsMessage;
             if ((Boolean)message.get("successful")) {
                 ++handshakes;
                 if (handshakes == 1) {

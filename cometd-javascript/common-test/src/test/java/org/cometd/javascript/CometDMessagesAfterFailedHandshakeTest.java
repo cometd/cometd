@@ -31,25 +31,19 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest {
 
     @Test
     public void testSubscribeAfterFailedHandshake() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = get("handshakeLatch");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
         evaluateScript("" +
-                "cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
-                "    if (!message.successful)" +
-                "    {" +
-                "        cometd.subscribe('/foo', function(m) {});" +
+                "cometd.addListener('/meta/handshake', function(message) {" +
+                "    if (!message.successful) {" +
+                "        cometd.subscribe('/foo', function() {});" +
                 "        handshakeLatch.countDown();" +
                 "    }" +
                 "});" +
-                "cometd.addListener('/meta/subscribe', function(message)" +
-                "{" +
-                "    if (!message.successful)" +
-                "    {" +
+                "cometd.addListener('/meta/subscribe', function(message) {" +
+                "    if (!message.successful) {" +
                 "        subscribeLatch.countDown();" +
                 "    }" +
                 "});" +
@@ -63,25 +57,19 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest {
 
     @Test
     public void testPublishAfterFailedHandshake() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = get("handshakeLatch");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         evaluateScript("var publishLatch = new Latch(1);");
-        Latch publishLatch = get("publishLatch");
+        Latch publishLatch = javaScript.get("publishLatch");
         evaluateScript("" +
-                "cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
-                "    if (!message.successful)" +
-                "    {" +
+                "cometd.addListener('/meta/handshake', function(message) {" +
+                "    if (!message.successful) {" +
                 "        cometd.publish('/foo', {});" +
                 "        handshakeLatch.countDown();" +
                 "    }" +
                 "});" +
-                "cometd.addListener('/meta/publish', function(message)" +
-                "{" +
-                "    if (!message.successful)" +
-                "    {" +
+                "cometd.addListener('/meta/publish', function(message) {" +
+                "    if (!message.successful) {" +
                 "        publishLatch.countDown();" +
                 "    }" +
                 "});" +

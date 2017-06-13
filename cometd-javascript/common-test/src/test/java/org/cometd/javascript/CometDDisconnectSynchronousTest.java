@@ -23,22 +23,20 @@ import org.junit.Test;
 public class CometDDisconnectSynchronousTest extends AbstractCometDTest {
     @Test
     public void testDisconnectSynchronous() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
+        Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });" +
+                "cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });" +
                 "" +
                 "cometd.handshake();");
 
         Assert.assertTrue(readyLatch.await(5000));
-        Assume.assumeThat((String)evaluateScript("cometd.getTransport().getType()"), CoreMatchers.equalTo("long-polling"));
+        Assume.assumeThat(evaluateScript("cometd.getTransport().getType()"), CoreMatchers.equalTo("long-polling"));
 
         evaluateScript("" +
                 "var disconnected = false;" +
-                "cometd.addListener('/meta/disconnect', function(message) { disconnected = true; });" +
+                "cometd.addListener('/meta/disconnect', function() { disconnected = true; });" +
                 "cometd.disconnect(true);" +
                 "window.assert(disconnected === true);" +
                 "");

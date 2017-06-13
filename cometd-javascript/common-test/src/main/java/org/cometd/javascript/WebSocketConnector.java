@@ -18,23 +18,14 @@ package org.cometd.javascript;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
-import org.mozilla.javascript.ScriptableObject;
 
-public class WebSocketConnector extends ScriptableObject {
-    private org.eclipse.jetty.websocket.client.WebSocketClient wsClient;
+public class WebSocketConnector {
+    private final JavaScriptCookieStore cookieStore;
+    private WebSocketClient wsClient;
     private QueuedThreadPool threadPool;
-    private JavaScriptCookieStore cookieStore;
 
-    public WebSocketConnector() {
-    }
-
-    public void jsConstructor(JavaScriptCookieStore cookieStore) {
+    public WebSocketConnector(JavaScriptCookieStore cookieStore) {
         this.cookieStore = cookieStore;
-    }
-
-    @Override
-    public String getClassName() {
-        return "WebSocketConnector";
     }
 
     public void start() throws Exception {

@@ -28,18 +28,13 @@ public class CometDWebSocketClientProtocolTest extends AbstractCometDWebSocketTe
                 "logLevel: '" + getLogLevel() + "'" +
                 "});");
 
-        defineClass(Latch.class);
-
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         String channelName = "/bar";
-        evaluateScript("cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
-                "   if (message.successful)" +
-                "   {" +
-                "       cometd.batch(function()" +
-                "       {" +
-                "           cometd.subscribe('" + channelName + "', latch, 'countDown');" +
+        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
+                "   if (message.successful) {" +
+                "       cometd.batch(function() {" +
+                "           cometd.subscribe('" + channelName + "', function() { latch.countDown(); });" +
                 "           cometd.publish('" + channelName + "', {});" +
                 "       });" +
                 "   }" +
@@ -49,8 +44,8 @@ public class CometDWebSocketClientProtocolTest extends AbstractCometDWebSocketTe
         Assert.assertTrue(latch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
         Assert.assertTrue(disconnectLatch.await(5000));
     }
@@ -63,18 +58,13 @@ public class CometDWebSocketClientProtocolTest extends AbstractCometDWebSocketTe
                 "logLevel: '" + getLogLevel() + "'" +
                 "});");
 
-        defineClass(Latch.class);
-
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         String channelName = "/bar";
-        evaluateScript("cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
-                "   if (message.successful)" +
-                "   {" +
-                "       cometd.batch(function()" +
-                "       {" +
-                "           cometd.subscribe('" + channelName + "', latch, 'countDown');" +
+        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
+                "   if (message.successful) {" +
+                "       cometd.batch(function() {" +
+                "           cometd.subscribe('" + channelName + "', function() { latch.countDown(); });" +
                 "           cometd.publish('" + channelName + "', {});" +
                 "       });" +
                 "   }" +
@@ -86,8 +76,8 @@ public class CometDWebSocketClientProtocolTest extends AbstractCometDWebSocketTe
         Assert.assertTrue(latch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
         Assert.assertTrue(disconnectLatch.await(5000));
     }

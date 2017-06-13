@@ -23,22 +23,19 @@ import org.junit.Test;
 public class CometDExtensionExceptionCallbackTest extends AbstractCometDTest {
     @Test
     public void testOutgoingExtensionExceptionCallback() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = (Latch)get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/connect', function(message) { connectLatch.countDown(); });" +
+                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
                 "cometd.registerExtension('testext', {" +
                 "   outgoing: function(message) { throw 'test'; }" +
                 "});" +
                 "" +
-                "cometd.onExtensionException = function(exception, extensionName, outgoing, message) " +
-                "{" +
-                "   if (exception === 'test' && extensionName === 'testext' && outgoing === true)" +
-                "   {" +
+                "cometd.onExtensionException = function(exception, extensionName, outgoing, message) {" +
+                "   if (exception === 'test' && extensionName === 'testext' && outgoing === true) {" +
                 "       this.unregisterExtension(extensionName);" +
                 "       latch.countDown();" +
                 "   }" +
@@ -54,22 +51,19 @@ public class CometDExtensionExceptionCallbackTest extends AbstractCometDTest {
 
     @Test
     public void testIncomingExtensionExceptionCallback() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = (Latch)get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/connect', function(message) { connectLatch.countDown(); });" +
+                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
                 "cometd.registerExtension('testext', {" +
                 "   incoming: function(message) { throw 'test'; }" +
                 "});" +
                 "" +
-                "cometd.onExtensionException = function(exception, extensionName, outgoing, message) " +
-                "{" +
-                "   if (exception === 'test' && extensionName === 'testext' && outgoing === false)" +
-                "   {" +
+                "cometd.onExtensionException = function(exception, extensionName, outgoing, message) {" +
+                "   if (exception === 'test' && extensionName === 'testext' && outgoing === false) {" +
                 "       this.unregisterExtension(extensionName);" +
                 "       latch.countDown();" +
                 "   }" +

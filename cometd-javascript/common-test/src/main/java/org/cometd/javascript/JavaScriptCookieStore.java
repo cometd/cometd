@@ -15,6 +15,7 @@
  */
 package org.cometd.javascript;
 
+import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.text.SimpleDateFormat;
@@ -23,30 +24,22 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.HttpCookieStore;
-import org.mozilla.javascript.ScriptableObject;
+/**
+ * <p>Representation of the cookies in the JavaScript environment.</p>
+ * <p>The actual store must survive page reloads.</p>
+ */
+public class JavaScriptCookieStore {
+    private CookieStore store;
 
-public class JavaScriptCookieStore extends ScriptableObject {
-    private Store store;
-
-    @Override
-    public String getClassName() {
-        return "JavaScriptCookieStore";
-    }
-
-    public Store getStore() {
+    public CookieStore getStore() {
         return store;
     }
 
-    public void setStore(Store store) {
+    public void setStore(CookieStore store) {
         this.store = store;
     }
 
-    public void clear() {
-        store.clear();
-    }
-
-    public String jsFunction_get(String scheme, String host, String path) {
+    public String get(String scheme, String host, String path) {
         try {
             URI uri = URI.create(scheme + "://" + host + path);
             List<HttpCookie> uriCookies = store.get(uri);
@@ -69,7 +62,7 @@ public class JavaScriptCookieStore extends ScriptableObject {
         }
     }
 
-    public void jsFunction_set(String scheme, String host, String uriPath, String cookies) throws Exception {
+    public void set(String scheme, String host, String uriPath, String cookies) throws Exception {
         try {
             String name = null;
             String value = null;
@@ -138,17 +131,6 @@ public class JavaScriptCookieStore extends ScriptableObject {
         } catch (Exception x) {
             x.printStackTrace();
             throw x;
-        }
-    }
-
-    public static class Store extends HttpCookieStore {
-        @Override
-        public boolean removeAll() {
-            return false;
-        }
-
-        public void clear() {
-            super.removeAll();
         }
     }
 }

@@ -47,9 +47,8 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
 
     @Test
     public void testMaxNetworkDelay() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var latch = new Latch(6);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("cometd.configure({" +
                 "url: '" + cometdURL + "', " +
                 "maxNetworkDelay: " + maxNetworkDelay + ", " +
@@ -57,18 +56,18 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
                 "});");
         evaluateScript("var connects = 0;");
         evaluateScript("var failure;");
-        evaluateScript("cometd.addListener('/meta/connect', function(message)" +
-                "{" +
+        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
                 "    ++connects;" +
                 "    if (connects === 1 && message.successful ||" +
                 "        connects === 2 && !message.successful ||" +
                 "        connects === 3 && message.successful ||" +
                 "        connects === 4 && !message.successful ||" +
                 "        connects === 5 && message.successful ||" +
-                "        connects === 6 && message.successful)" +
+                "        connects === 6 && message.successful) {" +
                 "        latch.countDown();" +
-                "    else if (!failure)" +
+                "    } else if (!failure) {" +
                 "        failure = 'Failure at connect #' + connects;" +
+                "    }" +
                 "});");
 
         evaluateScript("cometd.handshake();");

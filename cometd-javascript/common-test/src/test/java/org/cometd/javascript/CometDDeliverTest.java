@@ -29,23 +29,21 @@ public class CometDDeliverTest extends AbstractCometDTest {
     public void testDeliver() throws Exception {
         new DeliverService(bayeuxServer);
 
-        defineClass(Latch.class);
-
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var pushLatch = new Latch(1);");
-        Latch pushLatch = get("pushLatch");
+        Latch pushLatch = javaScript.get("pushLatch");
         evaluateScript("var _data;");
         evaluateScript("cometd.addListener('/service/deliver', function(message) { _data = message.data; pushLatch.countDown(); });");
 
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
+        Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("var listener = cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
         evaluateScript("cometd.publish('/service/deliver', { deliver: false });");
         Assert.assertTrue(latch.await(5000));

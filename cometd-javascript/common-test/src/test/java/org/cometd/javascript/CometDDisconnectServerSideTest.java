@@ -34,20 +34,19 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest {
         final CountDownLatch connectRequestLatch = new CountDownLatch(1);
         ServerSideDisconnectService service = new ServerSideDisconnectService(bayeuxServer, connectRequestLatch);
 
-        defineClass(Latch.class);
         evaluateScript("var connectLatch = new Latch(2);");
-        Latch connectResponseLatch = get("connectLatch");
+        Latch connectResponseLatch = javaScript.get("connectLatch");
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/connect', connectLatch, 'countDown');" +
-                "cometd.addListener('/meta/disconnect', disconnectLatch, 'countDown');" +
+                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
+                "cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });" +
                 "cometd.handshake();" +
                 "");
         Assert.assertTrue(connectRequestLatch.await(5, TimeUnit.SECONDS));
 
-        service.disconnect((String)evaluateScript("cometd.getClientId()"));
+        service.disconnect(evaluateScript("cometd.getClientId()"));
 
         Assert.assertTrue(disconnectLatch.await(5000));
         Assert.assertTrue(connectResponseLatch.await(5000));
@@ -59,24 +58,23 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest {
         final CountDownLatch connectLatch = new CountDownLatch(1);
         DeliverAndServerSideDisconnectService service = new DeliverAndServerSideDisconnectService(bayeuxServer, channelName, connectLatch);
 
-        defineClass(Latch.class);
         evaluateScript("var deliverLatch = new Latch(1);");
-        Latch deliverLatch = get("deliverLatch");
+        Latch deliverLatch = javaScript.get("deliverLatch");
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/disconnect', disconnectLatch, 'countDown');" +
-                "cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
-                "    if (message.successful)" +
-                "        cometd.addListener('" + channelName + "', deliverLatch, 'countDown');" +
+                "cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });" +
+                "cometd.addListener('/meta/handshake', function(message) {" +
+                "    if (message.successful) {" +
+                "        cometd.addListener('" + channelName + "', function() { deliverLatch.countDown(); });" +
+                "    }" +
                 "});" +
                 "cometd.handshake();" +
                 "");
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
-        service.kick((String)evaluateScript("cometd.getClientId()"));
+        service.kick(evaluateScript("cometd.getClientId()"));
 
         Assert.assertTrue(deliverLatch.await(5000));
         Assert.assertTrue(disconnectLatch.await(5000));
@@ -132,12 +130,9 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest {
             // We need to batch otherwise the deliver() will wake up the long poll
             // and the disconnect may not be delivered, since the client won't issue
             // a new long poll, and the disconnect will remain in the queue
-            session.batch(new Runnable() {
-                @Override
-                public void run() {
-                    session.deliver(getServerSession(), kickMessage);
-                    session.disconnect();
-                }
+            session.batch(() -> {
+                session.deliver(getServerSession(), kickMessage);
+                session.disconnect();
             });
         }
     }

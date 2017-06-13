@@ -43,28 +43,27 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
         FilterHolder filterHolder = new FilterHolder(filter);
         context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
 
-        defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
         evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = get("failureLatch");
-        String script = "cometd.addListener('/meta/subscribe', subscribeLatch, subscribeLatch.countDown);";
-        script += "cometd.addListener('/meta/unsuccessful', failureLatch, failureLatch.countDown);";
+        Latch failureLatch = javaScript.get("failureLatch");
+        String script = "cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });";
+        script += "cometd.addListener('/meta/unsuccessful', function() { failureLatch.countDown(); });";
         evaluateScript(script);
 
-        evaluateScript("cometd.subscribe('/echo', subscribeLatch, subscribeLatch.countDown);");
+        evaluateScript("cometd.subscribe('/echo', function() { subscribeLatch.countDown(); });");
         Assert.assertTrue(subscribeLatch.await(5000));
         Assert.assertTrue(failureLatch.await(5000));
 
         // Be sure there is no backoff
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
-        int backoff = ((Number)get("backoff")).intValue();
+        int backoff = ((Number)javaScript.get("backoff")).intValue();
         Assert.assertEquals(0, backoff);
 
         disconnect();
@@ -87,21 +86,24 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
             }
         });
 
-        defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'," +
                 "maxNetworkDelay: " + maxNetworkDelay + "})");
         Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
         evaluateScript("var messageLatch = new Latch(1);");
-        Latch messageLatch = get("messageLatch");
+        Latch messageLatch = javaScript.get("messageLatch");
         String channelName = "/echo";
-        evaluateScript("cometd.subscribe('" + channelName + "', function(message) { messageLatch.countDown(); }, " +
-                "function(reply) { if (reply.successful === false) subscribeLatch.countDown(); });");
+        evaluateScript("cometd.subscribe('" + channelName + "', function() { messageLatch.countDown(); }, " +
+                "function(reply) {" +
+                "   if (reply.successful === false) {" +
+                "       subscribeLatch.countDown();" +
+                "   }" +
+                "});");
         Assert.assertTrue(subscribeLatch.await(5000));
 
         // Wait for the subscription to happen on server.

@@ -24,20 +24,18 @@ import org.junit.Test;
 public class CometDPublishTest extends AbstractCometDTest {
     @Test
     public void testPublish() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var echoLatch = new Latch(1);");
-        Latch echoLatch = get("echoLatch");
-        evaluateScript("var subscription = cometd.subscribe('/echo', echoLatch, echoLatch.countDown);");
+        Latch echoLatch = javaScript.get("echoLatch");
+        evaluateScript("var subscription = cometd.subscribe('/echo', function() { echoLatch.countDown(); });");
         evaluateScript("var publishLatch = new Latch(1);");
-        Latch publishLatch = get("publishLatch");
-        evaluateScript("cometd.addListener('/meta/publish', publishLatch, publishLatch.countDown);");
+        Latch publishLatch = javaScript.get("publishLatch");
+        evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
 
         evaluateScript("cometd.publish('/echo', 'test');");
         Assert.assertTrue(echoLatch.await(5000));
@@ -48,29 +46,24 @@ public class CometDPublishTest extends AbstractCometDTest {
 
     @Test
     public void testPublishSuccessfulInvokesCallback() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(2);");
-        Latch publishLatch = get("publishLatch");
-        evaluateScript("cometd.addListener('/meta/publish', publishLatch, publishLatch.countDown);");
+        Latch publishLatch = javaScript.get("publishLatch");
+        evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
 
-        evaluateScript("cometd.publish('/echo', 'test1', function(message)" +
-                "{" +
-                "    publishLatch.countDown();" +
-                "});");
+        evaluateScript("cometd.publish('/echo', 'test1', function() { publishLatch.countDown(); });");
         Assert.assertTrue(publishLatch.await(5000));
 
         // Be sure that another publish without callback does not trigger the previous callback
         publishLatch.reset(2);
         evaluateScript("cometd.publish('/echo', 'test2');");
         Assert.assertFalse(publishLatch.await(1000));
-        Assert.assertEquals(1, publishLatch.jsGet_count());
+        Assert.assertEquals(1, publishLatch.getCount());
 
         disconnect();
     }
@@ -84,22 +77,20 @@ public class CometDPublishTest extends AbstractCometDTest {
             }
         });
 
-        defineClass(Latch.class);
-
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(2);");
-        Latch publishLatch = get("publishLatch");
-        evaluateScript("cometd.addListener('/meta/publish', publishLatch, publishLatch.countDown);");
+        Latch publishLatch = javaScript.get("publishLatch");
+        evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
 
-        evaluateScript("cometd.publish('/echo', 'test1', function(message)" +
-                "{" +
-                "    if (!message.successful)" +
+        evaluateScript("cometd.publish('/echo', 'test1', function(message) {" +
+                "    if (!message.successful) {" +
                 "        publishLatch.countDown();" +
+                "    }" +
                 "});");
         Assert.assertTrue(publishLatch.await(5000));
 
@@ -107,31 +98,29 @@ public class CometDPublishTest extends AbstractCometDTest {
         publishLatch.reset(2);
         evaluateScript("cometd.publish('/echo', 'test2');");
         Assert.assertFalse(publishLatch.await(1000));
-        Assert.assertEquals(1, publishLatch.jsGet_count());
+        Assert.assertEquals(1, publishLatch.getCount());
 
         disconnect();
     }
 
     @Test
     public void testPublishWithServerDownInvokesCallback() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("var publishLatch = new Latch(2);");
-        Latch publishLatch = get("publishLatch");
-        evaluateScript("cometd.addListener('/meta/publish', publishLatch, publishLatch.countDown);");
+        Latch publishLatch = javaScript.get("publishLatch");
+        evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(readyLatch.await(5000));
 
         server.stop();
         Thread.sleep(1000);
 
-        evaluateScript("cometd.publish('/echo', 'test2', function(message)" +
-                "{" +
-                "    if (!message.successful)" +
+        evaluateScript("cometd.publish('/echo', 'test2', function(message) {" +
+                "    if (!message.successful) {" +
                 "        publishLatch.countDown();" +
+                "    }" +
                 "});");
         Assert.assertTrue(publishLatch.await(5000));
 

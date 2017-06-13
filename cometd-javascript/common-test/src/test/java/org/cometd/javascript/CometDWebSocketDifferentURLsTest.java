@@ -29,14 +29,10 @@ public class CometDWebSocketDifferentURLsTest extends AbstractCometDWebSocketTes
                 "logLevel: '" + getLogLevel() + "'" +
                 "});");
 
-        defineClass(Latch.class);
-
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
-                "   if (message.successful)" +
-                "   {" +
+        Latch latch = javaScript.get("latch");
+        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
+                "   if (message.successful) {" +
                 "       latch.countDown();" +
                 "   }" +
                 "});");
@@ -45,8 +41,8 @@ public class CometDWebSocketDifferentURLsTest extends AbstractCometDWebSocketTes
         Assert.assertTrue(latch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
         Assert.assertTrue(disconnectLatch.await(5000));
     }

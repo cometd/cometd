@@ -30,10 +30,9 @@ import org.junit.Test;
 public class CometDInitDisconnectTest extends AbstractCometDTest {
     @Test
     public void testInitDisconnect() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var latch = new Latch(2);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         String script = "cometd.addListener('/**', function(message) { window.console.info(message.channel); latch.countDown(); });" +
                 // Expect 2 messages: handshake and connect
                 "cometd.handshake();";
@@ -72,12 +71,7 @@ public class CometDInitDisconnectTest extends AbstractCometDTest {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
-                    to.addListener(new ServerSession.RemoveListener() {
-                        @Override
-                        public void removed(ServerSession session, boolean timeout) {
-                            removeLatch.countDown();
-                        }
-                    });
+                    to.addListener((ServerSession.RemoveListener)(session, timeout) -> removeLatch.countDown());
                 }
                 return true;
             }
@@ -91,17 +85,16 @@ public class CometDInitDisconnectTest extends AbstractCometDTest {
         // will not work, since the disconnect will need to pass to the server
         // a clientId, which is not known since the handshake has not returned yet
 
-        defineClass(Latch.class);
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
-                "    if (message.successful)" +
+                "cometd.addListener('/meta/handshake', function(message) {" +
+                "    if (message.successful) {" +
                 "        cometd.disconnect();" +
+                "    }" +
                 "});" +
-                "cometd.addListener('/meta/disconnect', disconnectLatch, 'countDown');" +
+                "cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });" +
                 "cometd.handshake();");
         Assert.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(disconnectLatch.await(5000));

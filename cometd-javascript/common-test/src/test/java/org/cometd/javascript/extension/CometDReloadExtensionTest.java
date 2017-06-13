@@ -27,9 +27,8 @@ import org.junit.Test;
 public class CometDReloadExtensionTest extends AbstractCometDTest {
     @Test
     public void testReloadWithConfiguration() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
+        Latch readyLatch = javaScript.get("readyLatch");
         String attributeName = "reload.test";
         provideReloadExtension();
         evaluateScript("" +
@@ -69,15 +68,15 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
             }
         });
 
-        defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
+        Latch readyLatch = javaScript.get("readyLatch");
         provideReloadExtension();
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/connect', function(message) " +
-                "{ " +
-                "   if (message.successful) readyLatch.countDown(); " +
+                "cometd.addListener('/meta/connect', function(message) {" +
+                "   if (message.successful) {" +
+                "       readyLatch.countDown();" +
+                "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
@@ -91,21 +90,21 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         destroyPage();
         initPage();
 
-        defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
-        readyLatch = get("readyLatch");
+        readyLatch = javaScript.get("readyLatch");
         provideReloadExtension();
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "var ext = undefined;" +
-                "cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
-                "   if (message.successful)" +
+                "cometd.addListener('/meta/handshake', function(message) {" +
+                "   if (message.successful) {" +
                 "      ext = message.ext;" +
+                "   }" +
                 "});" +
-                "cometd.addListener('/meta/connect', function(message) " +
-                "{ " +
-                "   if (message.successful) readyLatch.countDown(); " +
+                "cometd.addListener('/meta/connect', function(message) {" +
+                "   if (message.successful) {" +
+                "       readyLatch.countDown();" +
+                "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
@@ -120,15 +119,15 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
 
     @Test
     public void testReloadDoesNotExpire() throws Exception {
-        defineClass(Latch.class);
         provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
+        Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("" +
-                "cometd.addListener('/meta/connect', function(message) " +
-                "{ " +
-                "   if (message.successful) readyLatch.countDown(); " +
+                "cometd.addListener('/meta/connect', function(message) {" +
+                "   if (message.successful) {" +
+                "       readyLatch.countDown();" +
+                "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
@@ -146,20 +145,19 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         destroyPage();
         initPage();
 
-        defineClass(Latch.class);
         provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
-        readyLatch = get("readyLatch");
+        readyLatch = javaScript.get("readyLatch");
         evaluateScript("var expireLatch = new Latch(1);");
-        Latch expireLatch = get("expireLatch");
+        Latch expireLatch = javaScript.get("expireLatch");
         evaluateScript("" +
-                "cometd.addListener('/meta/connect', function(message) " +
-                "{" +
-                "   if (message.successful) " +
+                "cometd.addListener('/meta/connect', function(message) {" +
+                "   if (message.successful) {" +
                 "       readyLatch.countDown();" +
-                "   else" +
+                "   } else {" +
                 "       expireLatch.countDown();" +
+                "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
@@ -191,19 +189,18 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
     }
 
     private void testReloadWithTransport(String url, String transportName) throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("cometd.unregisterTransports();");
         evaluateScript("cometd.registerTransport('" + transportName + "', originalTransports['" + transportName + "']);");
 
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
+        Latch readyLatch = javaScript.get("readyLatch");
         provideReloadExtension();
         evaluateScript("" +
-                "cometd.addListener('/meta/connect', function(message) " +
-                "{ " +
-                "   if (message.successful) readyLatch.countDown(); " +
+                "cometd.addListener('/meta/connect', function(message) {" +
+                "   if (message.successful) {" +
+                "       readyLatch.countDown();" +
+                "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
@@ -218,18 +215,18 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         destroyPage();
         initPage();
 
-        defineClass(Latch.class);
         provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
         // Leave the default transports so that we can test if the previous transport is the one used on reload
         evaluateScript("cometd.registerTransport('" + transportName + "', originalTransports['" + transportName + "']);");
 
         evaluateScript("var readyLatch = new Latch(1);");
-        readyLatch = get("readyLatch");
+        readyLatch = javaScript.get("readyLatch");
         evaluateScript("" +
-                "cometd.addListener('/meta/connect', function(message) " +
-                "{" +
-                "   if (message.successful) readyLatch.countDown(); " +
+                "cometd.addListener('/meta/connect', function(message) {" +
+                "   if (message.successful) {" +
+                "       readyLatch.countDown();" +
+                "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
@@ -250,22 +247,20 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
 
     @Test
     public void testReloadAcrossServerRestart() throws Exception {
-        defineClass(Latch.class);
-
         provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
+        Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("var stopLatch = new Latch(1);");
-        Latch stopLatch = get("stopLatch");
+        Latch stopLatch = javaScript.get("stopLatch");
         evaluateScript("" +
-                "cometd.addListener('/meta/connect', function(message) " +
-                "{ " +
-                "    if (message.successful) " +
+                "cometd.addListener('/meta/connect', function(message) {" +
+                "    if (message.successful) {" +
                 "        readyLatch.countDown();" +
-                "    else" +
+                "    } else {" +
                 "        stopLatch.countDown();" +
+                "    }" +
                 "});");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
@@ -287,35 +282,32 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         destroyPage();
         initPage();
 
-        defineClass(Latch.class);
-
         provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var readyLatch = new Latch(1);");
-        readyLatch = get("readyLatch");
+        readyLatch = javaScript.get("readyLatch");
         evaluateScript("" +
                 "var failures = 0;" +
-                "cometd.addListener('/meta/connect', function(message) " +
-                "{ " +
-                "    if (message.successful) " +
+                "cometd.addListener('/meta/connect', function(message) {" +
+                "    if (message.successful) {" +
                 "        readyLatch.countDown();" +
-                "    else" +
+                "    } else {" +
                 "        ++failures;" +
+                "    }" +
                 "});");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
         // Must not have failed with a 402::Unknown Client error
-        Assert.assertEquals(0, ((Number)get("failures")).intValue());
+        Assert.assertEquals(0, ((Number)javaScript.get("failures")).intValue());
 
         disconnect();
     }
 
     @Test
     public void testReloadWithSubscriptionAndPublish() throws Exception {
-        defineClass(Latch.class);
         evaluateApplication();
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         Assert.assertTrue(latch.await(5000));
 
         // Calling reload() results in the state being saved.
@@ -325,9 +317,8 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         destroyPage();
         initPage();
 
-        defineClass(Latch.class);
         evaluateApplication();
-        latch = get("latch");
+        latch = javaScript.get("latch");
         Assert.assertTrue(latch.await(5000));
 
         // Check that handshake was faked
@@ -351,14 +342,14 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
                 "var extSubscribe = null;" +
                 "var extPublish = null;" +
                 "cometd.registerExtension('test', {" +
-                "   outgoing: function(message) " +
-                "   {" +
-                "       if (message.channel === '/meta/handshake')" +
+                "   outgoing: function(message) {" +
+                "       if (message.channel === '/meta/handshake') {" +
                 "           extHandshake = message;" +
-                "       else if (message.channel === '/meta/subscribe')" +
+                "       } else if (message.channel === '/meta/subscribe') {" +
                 "           extSubscribe = message;" +
-                "       else if (!/^\\/meta\\//.test(message.channel))" +
+                "       } else if (!/^\\/meta\\//.test(message.channel)) {" +
                 "           extPublish = message;" +
+                "       }" +
                 "   }" +
                 "});");
         provideReloadExtension();
@@ -367,26 +358,23 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
                 "var rcvHandshake = null;" +
                 "var rcvSubscribe = null;" +
                 "var _receive = cometd.receive;" +
-                "cometd.receive = function(message)" +
-                "{" +
+                "cometd.receive = function(message) {" +
                 "   cometd._debug('Received message', JSON.stringify(message));" +
                 "   _receive(message);" +
-                "   if (message.channel === '/meta/handshake')" +
+                "   if (message.channel === '/meta/handshake') {" +
                 "       rcvHandshake = message;" +
-                "   else if (message.channel === '/meta/subscribe')" +
+                "   } else if (message.channel === '/meta/subscribe') {" +
                 "       rcvSubscribe = message;" +
+                "   }" +
                 "};" +
                 "" +
                 "var _connected = false;" +
-                "function _init(message)" +
-                "{" +
+                "function _init(message) {" +
                 "   var wasConnected = _connected;" +
                 "   _connected = message.successful;" +
-                "   if (!wasConnected && _connected)" +
-                "   {" +
-                "       cometd.batch(function()" +
-                "       {" +
-                "           cometd.subscribe('/foo', function(message) { latch.countDown(); });" +
+                "   if (!wasConnected && _connected) {" +
+                "       cometd.batch(function() {" +
+                "           cometd.subscribe('/foo', function() { latch.countDown(); });" +
                 "           cometd.publish('/foo', {});" +
                 "       });" +
                 "   }" +
@@ -398,15 +386,12 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
 
     @Test
     public void testReloadWithHandshakeCallback() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
+        Latch readyLatch = javaScript.get("readyLatch");
 
         provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("cometd.handshake(function(message)" +
-                "{" +
+        evaluateScript("cometd.handshake(function(message) {" +
                 "    if (message.successful) {" +
                 "        readyLatch.countDown();" +
                 "    }" +
@@ -421,14 +406,12 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         destroyPage();
         initPage();
 
-        defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
-        readyLatch = get("readyLatch");
+        readyLatch = javaScript.get("readyLatch");
 
         provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("cometd.handshake(function(message)" +
-                "{" +
+        evaluateScript("cometd.handshake(function(message) {" +
                 "    if (message.successful) {" +
                 "        readyLatch.countDown();" +
                 "    }" +

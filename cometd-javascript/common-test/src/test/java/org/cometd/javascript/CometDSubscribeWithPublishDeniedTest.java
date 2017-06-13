@@ -28,39 +28,37 @@ public class CometDSubscribeWithPublishDeniedTest extends AbstractCometDTest {
     public void testSubscribeWithPublishDenied() throws Exception {
         bayeuxServer.setSecurityPolicy(new Policy());
 
-        defineClass(Latch.class);
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
         evaluateScript("var publishLatch = new Latch(1);");
-        Latch publishLatch = get("publishLatch");
+        Latch publishLatch = javaScript.get("publishLatch");
         evaluateScript("" +
                 "var subscribeFailed = false;" +
                 "var publishFailed = false;" +
                 "" +
                 "var channelName = '/foo';" +
-                "cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
-                "    cometd.subscribe(channelName, function(message) {});" +
+                "cometd.addListener('/meta/handshake', function() {" +
+                "    cometd.subscribe(channelName, function() {});" +
                 "});" +
                 "" +
-                "cometd.addListener('/meta/subscribe', function(message)" +
-                "{" +
-                "    if (!message.successful)" +
+                "cometd.addListener('/meta/subscribe', function(message) {" +
+                "    if (!message.successful) {" +
                 "        subscribeFailed = true;" +
+                "    }" +
                 "    subscribeLatch.countDown();" +
                 "});" +
                 "" +
-                "cometd.addListener('/meta/publish', function(message)" +
-                "{" +
-                "    if (!message.successful)" +
+                "cometd.addListener('/meta/publish', function(message) {" +
+                "    if (!message.successful) {" +
                 "        publishFailed = true;" +
+                "    }" +
                 "    publishLatch.countDown();" +
                 "});" +
                 "" +
                 "cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });" +
                 "");
         Assert.assertTrue(subscribeLatch.await(5000));
-        boolean subscribeFailed = (Boolean)get("subscribeFailed");
+        boolean subscribeFailed = javaScript.get("subscribeFailed");
         Assert.assertFalse(subscribeFailed);
 
         evaluateScript("" +
@@ -68,7 +66,7 @@ public class CometDSubscribeWithPublishDeniedTest extends AbstractCometDTest {
                 "");
 
         Assert.assertTrue(publishLatch.await(5000));
-        boolean publishFailed = (Boolean)get("publishFailed");
+        boolean publishFailed = javaScript.get("publishFailed");
         // Denied by policy
         Assert.assertTrue(publishFailed);
 

@@ -42,18 +42,14 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTest {
                 "cometd.unregisterTransports();" +
                         "cometd.registerTransport('long-polling', originalTransports['long-polling']);");
 
-        defineClass(Latch.class);
         evaluateScript("var failureLatch = new Latch(2);");
-        Latch failureLatch = get("failureLatch");
-        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport)" +
-                "{" +
+        Latch failureLatch = javaScript.get("failureLatch");
+        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport) {" +
                 "    failureLatch.countDown();" +
                 "}");
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("cometd.handshake(function(message) " +
-                "{ " +
-                "    if (message.successful === false) " +
-                "    { " +
+        evaluateScript("cometd.handshake(function(message) {" +
+                "    if (message.successful === false) { " +
                 "        failureLatch.countDown(); " +
                 "    }" +
                 "});");
@@ -71,18 +67,14 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTest {
                 "cometd.unregisterTransports();" +
                         "cometd.registerTransport('long-polling', originalTransports['long-polling']);");
 
-        defineClass(Latch.class);
         evaluateScript("var failureLatch = new Latch(2);");
-        Latch failureLatch = get("failureLatch");
-        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport)" +
-                "{" +
+        Latch failureLatch = javaScript.get("failureLatch");
+        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport) {" +
                 "    failureLatch.countDown();" +
                 "}");
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("cometd.handshake(function(message) " +
-                "{ " +
-                "    if (message.successful === false) " +
-                "    { " +
+        evaluateScript("cometd.handshake(function(message) {" +
+                "    if (message.successful === false) { " +
                 "        failureLatch.countDown(); " +
                 "    }" +
                 "});");
@@ -100,23 +92,19 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTest {
                 "cometd.unregisterTransports();" +
                         "cometd.registerTransport('websocket', originalTransports['websocket']);");
 
-        defineClass(Latch.class);
         evaluateScript("var failureLatch = new Latch(2);");
-        Latch failureLatch = get("failureLatch");
-        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport)" +
-                "{" +
+        Latch failureLatch = javaScript.get("failureLatch");
+        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport) {" +
                 "    failureLatch.countDown();" +
                 "}");
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("cometd.handshake(function(message) " +
-                "{ " +
-                "    if (message.successful === false) " +
-                "    { " +
+        evaluateScript("cometd.handshake(function(message) {" +
+                "    if (message.successful === false) {" +
                 "        failureLatch.countDown(); " +
                 "    }" +
                 "});");
 
         Assert.assertTrue(failureLatch.await(5000));
-        Assert.assertTrue((Boolean)evaluateScript("cometd.isDisconnected();"));
+        Assert.assertTrue(evaluateScript("cometd.isDisconnected();"));
     }
 }

@@ -90,8 +90,6 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTest
             }
         });
 
-        defineClass(Latch.class);
-
         evaluateScript("" +
                 "cometd.configure({" +
                 "    url: '" + cometdURL + "', " +
@@ -99,7 +97,7 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTest
                 "});");
 
         evaluateScript("var clientMessagesLatch = new Latch(1);");
-        Latch clientMessagesLatch = get("clientMessagesLatch");
+        Latch clientMessagesLatch = javaScript.get("clientMessagesLatch");
         evaluateScript("" +
                 "var messages = [];" +
                 "var listener = function(message) {" +

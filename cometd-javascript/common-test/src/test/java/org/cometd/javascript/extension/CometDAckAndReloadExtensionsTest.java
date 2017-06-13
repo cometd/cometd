@@ -37,18 +37,17 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest {
         AckService ackService = new AckService(bayeuxServer);
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
 
         // Send a message so that the ack counter is initialized
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("" +
-                "cometd.subscribe('/test', function(message) { latch.countDown(); });" +
+                "cometd.subscribe('/test', function() { latch.countDown(); });" +
                 "cometd.publish('/test', 'message1');");
         Assert.assertTrue(latch.await(5000));
 
@@ -65,18 +64,16 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest {
         initExtensions();
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        defineClass(Latch.class);
+
         evaluateScript("var readyLatch = new Latch(1);");
-        readyLatch = get("readyLatch");
+        readyLatch = javaScript.get("readyLatch");
         // Expect 2 messages: one sent in the middle of reload, one after reload
         evaluateScript("var latch = new Latch(2);");
-        latch = get("latch");
+        latch = javaScript.get("latch");
         evaluateScript("" +
                 "var testMessage = [];" +
-                "cometd.addListener('/meta/handshake', function(message) " +
-                "{" +
-                "   cometd.batch(function() " +
-                "   {" +
+                "cometd.addListener('/meta/handshake', function(message) {" +
+                "   cometd.batch(function() {" +
                 "       cometd.subscribe('/test', function(message) { testMessage.push(message); latch.countDown(); });" +
                 "       cometd.subscribe('/echo', function(message) { readyLatch.countDown(); });" +
                 "       cometd.publish('/echo', {});" +

@@ -44,14 +44,13 @@ public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest {
 
     @Test
     public void testEmptyResponse() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = get("handshakeLatch");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = get("failureLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', handshakeLatch, 'countDown');");
-        evaluateScript("cometd.addListener('/meta/unsuccessful', failureLatch, 'countDown');");
+        Latch failureLatch = javaScript.get("failureLatch");
+        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
+        evaluateScript("cometd.addListener('/meta/unsuccessful', function() { failureLatch.countDown(); });");
 
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(handshakeLatch.await(5000));

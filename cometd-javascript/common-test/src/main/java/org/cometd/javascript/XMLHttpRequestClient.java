@@ -16,25 +16,16 @@
 package org.cometd.javascript;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.mozilla.javascript.ScriptableObject;
 
 /**
  * Implementation of the XMLHttpRequest functionality using Jetty's HttpClient.
  */
-public class XMLHttpRequestClient extends ScriptableObject {
+public class XMLHttpRequestClient {
+    private final JavaScriptCookieStore cookieStore;
     private HttpClient httpClient;
-    private JavaScriptCookieStore cookieStore;
 
-    public XMLHttpRequestClient() {
-    }
-
-    public void jsConstructor(JavaScriptCookieStore cookieStore) throws Exception {
+    public XMLHttpRequestClient(JavaScriptCookieStore cookieStore) throws Exception {
         this.cookieStore = cookieStore;
-    }
-
-    @Override
-    public String getClassName() {
-        return "XMLHttpRequestClient";
     }
 
     public void start() throws Exception {

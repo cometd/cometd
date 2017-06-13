@@ -21,10 +21,9 @@ import org.junit.Test;
 public class CometDMultipleHandshakesTest extends AbstractCometDTest {
     @Test
     public void testMultipleHandshakes() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = get("handshakeLatch");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         evaluateScript("cometd.addListener('/meta/handshake', function(m) { handshakeLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(handshakeLatch.await(5000));
