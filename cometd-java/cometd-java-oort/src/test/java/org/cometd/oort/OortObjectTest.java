@@ -90,7 +90,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         Assert.assertTrue(oortObject2.getInfo(oort2.getURL()).getObject().isEmpty());
         Assert.assertEquals(object1, oortObject2.getInfo(oort1.getURL()).getObject());
 
-        Map<String, Object> objectAtOort2 = oortObject2.merge(OortObjectMergers.<String, Object>mapUnion());
+        Map<String, Object> objectAtOort2 = oortObject2.merge(OortObjectMergers.mapUnion());
         Assert.assertEquals(object1, objectAtOort2);
     }
 
@@ -194,7 +194,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         stopOort(oort1);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        Map<String, Object> objectAtOort2 = oortObject2.merge(OortObjectMergers.<String, Object>mapUnion());
+        Map<String, Object> objectAtOort2 = oortObject2.merge(OortObjectMergers.mapUnion());
         Assert.assertEquals(object2, objectAtOort2);
     }
 

@@ -151,7 +151,7 @@ public class OortStringMapDisconnectTest extends OortTest {
 
         Assert.assertTrue(removedLatch.await(await, TimeUnit.MILLISECONDS));
         for (OortStringMap<String> oortStringMap : oortStringMaps) {
-            ConcurrentMap<String, String> merge = oortStringMap.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+            ConcurrentMap<String, String> merge = oortStringMap.merge(OortObjectMergers.concurrentMapUnion());
             Assert.assertThat(merge.toString(), merge.size(), Matchers.equalTo(0));
         }
 

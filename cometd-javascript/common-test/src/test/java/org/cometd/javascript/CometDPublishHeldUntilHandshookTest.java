@@ -63,7 +63,7 @@ public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTest {
         Object jsChannels = get("savedChannels");
         Object[] channels = (Object[])Utils.jsToJava(jsChannels);
         Assert.assertNotNull(channels);
-        List<Object> expectedChannels = Arrays.<Object>asList("/meta/handshake", "/bar", "/meta/subscribe", "/foo", "/meta/connect");
+        List<Object> expectedChannels = Arrays.asList("/meta/handshake", "/bar", "/meta/subscribe", "/foo", "/meta/connect");
         Assert.assertEquals(expectedChannels, Arrays.asList(channels));
 
         evaluateScript("cometd.disconnect(true);");

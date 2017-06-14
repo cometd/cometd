@@ -474,7 +474,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
 
         @Override
         public void onUpdated(Info<ConcurrentMap<K, V>> oldInfo, Info<ConcurrentMap<K, V>> newInfo) {
-            Map<K, V> oldMap = oldInfo == null ? Collections.<K, V>emptyMap() : oldInfo.getObject();
+            Map<K, V> oldMap = oldInfo == null ? Collections.emptyMap() : oldInfo.getObject();
             Map<K, V> newMap = new HashMap<>(newInfo.getObject());
             for (Map.Entry<K, V> oldEntry : oldMap.entrySet()) {
                 K key = oldEntry.getKey();

@@ -307,7 +307,7 @@ public class OortList<E> extends OortContainer<List<E>> {
 
         @Override
         public void onUpdated(Info<List<E>> oldInfo, Info<List<E>> newInfo) {
-            List<E> oldList = oldInfo == null ? Collections.<E>emptyList() : oldInfo.getObject();
+            List<E> oldList = oldInfo == null ? Collections.emptyList() : oldInfo.getObject();
             List<E> newList = newInfo.getObject();
 
             List<E> added = new ArrayList<>(newList);

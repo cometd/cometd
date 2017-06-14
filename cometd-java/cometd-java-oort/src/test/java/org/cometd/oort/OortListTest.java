@@ -264,9 +264,9 @@ public class OortListTest extends AbstractOortObjectTest {
         Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
 
-        List<String> list1 = oortList1.merge(OortObjectMergers.<String>listUnion());
+        List<String> list1 = oortList1.merge(OortObjectMergers.listUnion());
         Collections.sort(list1);
-        List<String> list2 = oortList2.merge(OortObjectMergers.<String>listUnion());
+        List<String> list2 = oortList2.merge(OortObjectMergers.listUnion());
         Collections.sort(list2);
         Assert.assertEquals(list1, list2);
     }

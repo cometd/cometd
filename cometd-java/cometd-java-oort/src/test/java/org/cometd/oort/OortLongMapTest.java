@@ -80,7 +80,7 @@ public class OortLongMapTest extends AbstractOortObjectTest {
         Assert.assertTrue(oortMap2.getInfo(oort2.getURL()).getObject().isEmpty());
         Assert.assertEquals(object1, oortMap2.getInfo(oort1.getURL()).getObject());
 
-        ConcurrentMap<Long, Object> objectAtOort2 = oortMap2.merge(OortObjectMergers.<Long, Object>concurrentMapUnion());
+        ConcurrentMap<Long, Object> objectAtOort2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion());
         Assert.assertEquals(object1, objectAtOort2);
     }
 

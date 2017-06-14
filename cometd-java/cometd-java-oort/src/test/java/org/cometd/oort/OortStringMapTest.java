@@ -286,8 +286,8 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         Assert.assertTrue(latch1.await(15, TimeUnit.SECONDS));
         Assert.assertTrue(latch2.await(15, TimeUnit.SECONDS));
 
-        ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion());
-        ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.concurrentMapUnion());
+        ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion());
         Assert.assertEquals(map1, map2);
     }
 
@@ -331,8 +331,8 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
         Assert.assertTrue(objectLatch.await(5, TimeUnit.SECONDS));
 
-        ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion());
-        ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.concurrentMapUnion());
+        ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion());
         Assert.assertEquals(map1, map2);
 
         final AtomicReference<CountDownLatch> putLatch = new AtomicReference<>(new CountDownLatch(1));
@@ -348,8 +348,8 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
         Assert.assertTrue(putLatch.get().await(5, TimeUnit.SECONDS));
 
-        map1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion());
-        map2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        map1 = oortMap1.merge(OortObjectMergers.concurrentMapUnion());
+        map2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion());
         Assert.assertEquals(map1, map2);
 
         // And again.
@@ -358,8 +358,8 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
         Assert.assertTrue(putLatch.get().await(5, TimeUnit.SECONDS));
 
-        map1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion());
-        map2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        map1 = oortMap1.merge(OortObjectMergers.concurrentMapUnion());
+        map2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion());
         Assert.assertEquals(map1, map2);
     }
 
@@ -425,8 +425,8 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         // Make sure that the maps are in sync.
-        ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion());
-        ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion());
+        ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.concurrentMapUnion());
+        ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion());
         Assert.assertEquals(map1, map2);
     }
 
@@ -462,9 +462,9 @@ public class OortStringMapTest extends AbstractOortObjectTest {
             oortMap1.putAndShare(String.valueOf(i), i + "_abcdefghijklmnopqrstuvwxyz0123456789", null);
         }
 
-        int size1 = oortMap1.merge(OortObjectMergers.<String, String>concurrentMapUnion()).size();
+        int size1 = oortMap1.merge(OortObjectMergers.concurrentMapUnion()).size();
         Assert.assertEquals(size, size1);
-        int size2 = oortMap2.merge(OortObjectMergers.<String, String>concurrentMapUnion()).size();
+        int size2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion()).size();
         Assert.assertEquals(0, size2);
 
         final CountDownLatch syncLatch = new CountDownLatch(1);
