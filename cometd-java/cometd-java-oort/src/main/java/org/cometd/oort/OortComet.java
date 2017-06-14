@@ -124,45 +124,42 @@ public class OortComet extends BayeuxClient {
                 return;
             }
 
-            batch(new Runnable() {
-                @Override
-                public void run() {
-                    // Subscribe to cloud notifications
-                    getChannel(Oort.OORT_CLOUD_CHANNEL).subscribe(new ClientSessionChannel.MessageListener() {
-                        @Override
-                        public void onMessage(ClientSessionChannel channel, Message message) {
-                            if (message.isSuccessful()) {
-                                _oort.joinComets(message);
-                            }
+            batch(() -> {
+                // Subscribe to cloud notifications
+                getChannel(Oort.OORT_CLOUD_CHANNEL).subscribe(new ClientSessionChannel.MessageListener() {
+                    @Override
+                    public void onMessage(ClientSessionChannel channel1, Message message1) {
+                        if (message1.isSuccessful()) {
+                            _oort.joinComets(message1);
                         }
-                    });
-
-                    // It is possible that a call to Oort.observeChannel() (which triggers
-                    // the call to subscribe()) is performed concurrently with the handshake
-                    // of this OortComet with a remote comet.
-                    // For example, Seti calls Oort.observeChannel() on startup and this may
-                    // be called while the Oort cloud is connecting all the comets together.
-                    // In this case, below we will clear existing subscriptions, but we will
-                    // subscribe them again just afterwards, ensuring only one subscriber
-                    // (and not multiple ones) is subscribed.
-                    clearSubscriptions();
-                    _subscriptionsAllowed = true;
-
-                    Set<String> channels = _oort.getObservedChannels();
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Handshake completed, observing channels {}", channels);
                     }
-                    subscribe(channels);
+                });
 
-                    // Advertise the remote node that we have joined
-                    Map<String, Object> data = new HashMap<>(2);
-                    data.put(Oort.EXT_OORT_ID_FIELD, _oort.getId());
-                    data.put(Oort.EXT_OORT_URL_FIELD, _oort.getURL());
-                    getChannel(Oort.OORT_SERVICE_CHANNEL).publish(data);
+                // It is possible that a call to Oort.observeChannel() (which triggers
+                // the call to subscribe()) is performed concurrently with the handshake
+                // of this OortComet with a remote comet.
+                // For example, Seti calls Oort.observeChannel() on startup and this may
+                // be called while the Oort cloud is connecting all the comets together.
+                // In this case, below we will clear existing subscriptions, but we will
+                // subscribe them again just afterwards, ensuring only one subscriber
+                // (and not multiple ones) is subscribed.
+                clearSubscriptions();
+                _subscriptionsAllowed = true;
 
-                    // Advertise our own network
-                    getChannel(Oort.OORT_CLOUD_CHANNEL).publish(new ArrayList<>(_oort.getKnownComets()));
+                Set<String> channels = _oort.getObservedChannels();
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Handshake completed, observing channels {}", channels);
                 }
+                subscribe(channels);
+
+                // Advertise the remote node that we have joined
+                Map<String, Object> data = new HashMap<>(2);
+                data.put(Oort.EXT_OORT_ID_FIELD, _oort.getId());
+                data.put(Oort.EXT_OORT_URL_FIELD, _oort.getURL());
+                getChannel(Oort.OORT_SERVICE_CHANNEL).publish(data);
+
+                // Advertise our own network
+                getChannel(Oort.OORT_CLOUD_CHANNEL).publish(new ArrayList<>(_oort.getKnownComets()));
             });
         }
     }

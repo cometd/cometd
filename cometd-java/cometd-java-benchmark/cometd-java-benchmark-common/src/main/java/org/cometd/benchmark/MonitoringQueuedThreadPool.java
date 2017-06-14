@@ -42,23 +42,20 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool {
     @Override
     public void execute(final Runnable job) {
         final long begin = System.nanoTime();
-        super.execute(new Runnable() {
-            @Override
-            public void run() {
-                long queueLatency = System.nanoTime() - begin;
-                tasks.incrementAndGet();
-                Atomics.updateMax(maxQueueLatency, queueLatency);
-                totalQueueLatency.addAndGet(queueLatency);
-                Atomics.updateMax(maxThreads, threads.incrementAndGet());
-                long start = System.nanoTime();
-                try {
-                    job.run();
-                } finally {
-                    long taskLatency = System.nanoTime() - start;
-                    threads.decrementAndGet();
-                    Atomics.updateMax(maxTaskLatency, taskLatency);
-                    totalTaskLatency.addAndGet(taskLatency);
-                }
+        super.execute(() -> {
+            long queueLatency = System.nanoTime() - begin;
+            tasks.incrementAndGet();
+            Atomics.updateMax(maxQueueLatency, queueLatency);
+            totalQueueLatency.addAndGet(queueLatency);
+            Atomics.updateMax(maxThreads, threads.incrementAndGet());
+            long start = System.nanoTime();
+            try {
+                job.run();
+            } finally {
+                long taskLatency = System.nanoTime() - start;
+                threads.decrementAndGet();
+                Atomics.updateMax(maxTaskLatency, taskLatency);
+                totalTaskLatency.addAndGet(taskLatency);
             }
         });
     }

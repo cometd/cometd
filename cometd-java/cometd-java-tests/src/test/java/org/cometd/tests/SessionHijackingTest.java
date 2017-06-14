@@ -103,24 +103,21 @@ public class SessionHijackingTest extends AbstractClientServerTest {
 
         final AtomicReference<Message> messageRef = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
-        client1.batch(new Runnable() {
-            @Override
-            public void run() {
-                ClientSessionChannel channel = client1.getChannel(channelName);
-                channel.subscribe(new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        // Must not arrive here.
-                    }
-                });
-                channel.publish("data", new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        messageRef.set(message);
-                        latch.countDown();
-                    }
-                });
-            }
+        client1.batch(() -> {
+            ClientSessionChannel channel = client1.getChannel(channelName);
+            channel.subscribe(new ClientSessionChannel.MessageListener() {
+                @Override
+                public void onMessage(ClientSessionChannel channel, Message message) {
+                    // Must not arrive here.
+                }
+            });
+            channel.publish("data", new ClientSessionChannel.MessageListener() {
+                @Override
+                public void onMessage(ClientSessionChannel channel, Message message) {
+                    messageRef.set(message);
+                    latch.countDown();
+                }
+            });
         });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));

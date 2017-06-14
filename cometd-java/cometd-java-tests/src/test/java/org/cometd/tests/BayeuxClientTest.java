@@ -74,20 +74,17 @@ public class BayeuxClientTest extends AbstractClientServerTest {
 
         final String channelName = "/foo/bar";
         final BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
-        client.batch(new Runnable() {
-            @Override
-            public void run() {
-                // Subscribe and publish must be batched so that they are sent in order,
-                // otherwise it's possible that the subscribe arrives to the server after the publish
-                client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        messages.add(channel.getId());
-                        messages.add(message.getData().toString());
-                    }
-                });
-                client.getChannel(channelName).publish("hello");
-            }
+        client.batch(() -> {
+            // Subscribe and publish must be batched so that they are sent in order,
+            // otherwise it's possible that the subscribe arrives to the server after the publish
+            client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+                @Override
+                public void onMessage(ClientSessionChannel channel, Message message) {
+                    messages.add(channel.getId());
+                    messages.add(message.getData().toString());
+                }
+            });
+            client.getChannel(channelName).publish("hello");
         });
 
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));

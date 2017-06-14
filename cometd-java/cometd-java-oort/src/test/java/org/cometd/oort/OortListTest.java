@@ -240,20 +240,17 @@ public class OortListTest extends AbstractOortObjectTest {
 
         for (int i = 0; i < threads; ++i) {
             final int index = i;
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        barrier.await();
-                        for (int j = 0; j < iterations; ++j) {
-                            String element = String.valueOf(index * iterations + j);
-                            oortList1.addAndShare((OortObject.Result<Boolean>)null, element);
-                        }
-                    } catch (Throwable x) {
-                        x.printStackTrace();
-                    } finally {
-                        latch1.countDown();
+            new Thread(() -> {
+                try {
+                    barrier.await();
+                    for (int j = 0; j < iterations; ++j) {
+                        String element = String.valueOf(index * iterations + j);
+                        oortList1.addAndShare((OortObject.Result<Boolean>)null, element);
                     }
+                } catch (Throwable x) {
+                    x.printStackTrace();
+                } finally {
+                    latch1.countDown();
                 }
             }).start();
         }

@@ -61,12 +61,7 @@ public class ActivityExtensionTest extends ClientServerTest {
         long maxInactivityPeriod = 4000;
         bayeux.addExtension(new ActivityExtension(ActivityExtension.Activity.CLIENT, maxInactivityPeriod));
 
-        scheduler.scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                bayeux.getChannel(channelName).publish(null, "test");
-            }
-        }, 0, timeout / 4, TimeUnit.MILLISECONDS);
+        scheduler.scheduleWithFixedDelay(() -> bayeux.getChannel(channelName).publish(null, "test"), 0, timeout / 4, TimeUnit.MILLISECONDS);
 
         final BayeuxClient client = newBayeuxClient();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {

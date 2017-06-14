@@ -108,20 +108,17 @@ public class ExtensionProcessingTest extends ClientServerTest {
         client.handshake(new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
-                client.batch(new Runnable() {
-                    @Override
-                    public void run() {
-                        ClientSessionChannel c = client.getChannel(channelName);
-                        c.subscribe(new ClientSessionChannel.MessageListener() {
-                            @Override
-                            public void onMessage(ClientSessionChannel channel, Message message) {
-                                if (data.equals(message.getData())) {
-                                    latch.countDown();
-                                }
+                client.batch(() -> {
+                    ClientSessionChannel c = client.getChannel(channelName);
+                    c.subscribe(new ClientSessionChannel.MessageListener() {
+                        @Override
+                        public void onMessage(ClientSessionChannel channel1, Message message1) {
+                            if (data.equals(message1.getData())) {
+                                latch.countDown();
                             }
-                        });
-                        c.publish(data);
-                    }
+                        }
+                    });
+                    c.publish(data);
                 });
             }
         });

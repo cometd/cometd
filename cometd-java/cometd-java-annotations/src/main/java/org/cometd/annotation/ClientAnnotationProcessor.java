@@ -440,12 +440,9 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
             if (message.isSuccessful()) {
                 final List<SubscriptionCallback> subscriptions = subscribers.get(bean);
                 if (subscriptions != null) {
-                    clientSession.batch(new Runnable() {
-                        @Override
-                        public void run() {
-                            for (SubscriptionCallback subscription : subscriptions) {
-                                subscription.subscribe();
-                            }
+                    clientSession.batch(() -> {
+                        for (SubscriptionCallback subscription : subscriptions) {
+                            subscription.subscribe();
                         }
                     });
                 }

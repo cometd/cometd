@@ -774,19 +774,16 @@ public class CometDLoadClient implements MeasureConverter {
                     client.setAttribute(SESSION_ID_ATTRIBUTE, client.getId());
                     bayeuxClients.add(client);
 
-                    client.batch(new Runnable() {
-                        @Override
-                        public void run() {
-                            List<Integer> roomsSubscribedTo = new ArrayList<>();
-                            for (int j = 0; j < roomsPerClient; ++j) {
-                                // Avoid to subscribe the same client twice to the same room
-                                int room = nextRandom(rooms);
-                                while (roomsSubscribedTo.contains(room)) {
-                                    room = nextRandom(rooms);
-                                }
-                                roomsSubscribedTo.add(room);
-                                client.init(HandshakeListener.this.channel, room);
+                    client.batch(() -> {
+                        List<Integer> roomsSubscribedTo = new ArrayList<>();
+                        for (int j = 0; j < roomsPerClient; ++j) {
+                            // Avoid to subscribe the same client twice to the same room
+                            int room = nextRandom(rooms);
+                            while (roomsSubscribedTo.contains(room)) {
+                                room = nextRandom(rooms);
                             }
+                            roomsSubscribedTo.add(room);
+                            client.init(HandshakeListener.this.channel, room);
                         }
                     });
                 } else {

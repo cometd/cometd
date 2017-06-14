@@ -165,18 +165,15 @@ public class WebAppTest {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
-                    client.batch(new Runnable() {
-                        @Override
-                        public void run() {
-                            ClientSessionChannel broadcast = client.getChannel("/foo");
-                            broadcast.subscribe(new ClientSessionChannel.MessageListener() {
-                                @Override
-                                public void onMessage(ClientSessionChannel channel, Message message) {
-                                    latch.countDown();
-                                }
-                            });
-                            broadcast.publish("data");
-                        }
+                    client.batch(() -> {
+                        ClientSessionChannel broadcast = client.getChannel("/foo");
+                        broadcast.subscribe(new ClientSessionChannel.MessageListener() {
+                            @Override
+                            public void onMessage(ClientSessionChannel channel1, Message message1) {
+                                latch.countDown();
+                            }
+                        });
+                        broadcast.publish("data");
                     });
                 }
             }

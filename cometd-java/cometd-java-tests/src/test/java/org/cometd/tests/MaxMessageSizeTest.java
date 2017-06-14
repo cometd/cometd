@@ -52,25 +52,22 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
         client.handshake(new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel metaHandshake, Message message) {
-                client.batch(new Runnable() {
-                    @Override
-                    public void run() {
-                        ClientSessionChannel channel = client.getChannel(channelName);
-                        channel.subscribe(new ClientSessionChannel.MessageListener() {
-                            @Override
-                            public void onMessage(ClientSessionChannel channel, Message message) {
-                                messageLatch.countDown();
+                client.batch(() -> {
+                    ClientSessionChannel channel = client.getChannel(channelName);
+                    channel.subscribe(new ClientSessionChannel.MessageListener() {
+                        @Override
+                        public void onMessage(ClientSessionChannel channel, Message message1) {
+                            messageLatch.countDown();
+                        }
+                    });
+                    channel.publish(data, new ClientSessionChannel.MessageListener() {
+                        @Override
+                        public void onMessage(ClientSessionChannel channel, Message message1) {
+                            if (!message1.isSuccessful()) {
+                                replyLatch.countDown();
                             }
-                        });
-                        channel.publish(data, new ClientSessionChannel.MessageListener() {
-                            @Override
-                            public void onMessage(ClientSessionChannel channel, Message message) {
-                                if (!message.isSuccessful()) {
-                                    replyLatch.countDown();
-                                }
-                            }
-                        });
-                    }
+                        }
+                    });
                 });
             }
         });

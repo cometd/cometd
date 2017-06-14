@@ -1172,29 +1172,26 @@ public class SetiTest extends OortTest {
 
         for (int i = 0; i < threads; ++i) {
             final int index = i;
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Map<String, ServerSession> sessions = new HashMap<>();
+            new Thread(() -> {
+                try {
+                    Map<String, ServerSession> sessions = new HashMap<>();
 
-                        barrier.await();
-                        for (int j = 0; j < iterations; ++j) {
-                            String key = String.valueOf(index * iterations + j);
-                            LocalSession localSession = oort1.getBayeuxServer().newLocalSession(key);
-                            localSession.handshake();
-                            ServerSession session = localSession.getServerSession();
-                            sessions.put(key, session);
-                            seti1.associate(key, session);
-                        }
-
-                        barrier.await();
-                        for (Map.Entry<String, ServerSession> entry : sessions.entrySet()) {
-                            seti1.disassociate(entry.getKey(), entry.getValue());
-                        }
-                    } catch (Throwable x) {
-                        x.printStackTrace();
+                    barrier.await();
+                    for (int j = 0; j < iterations; ++j) {
+                        String key = String.valueOf(index * iterations + j);
+                        LocalSession localSession = oort1.getBayeuxServer().newLocalSession(key);
+                        localSession.handshake();
+                        ServerSession session = localSession.getServerSession();
+                        sessions.put(key, session);
+                        seti1.associate(key, session);
                     }
+
+                    barrier.await();
+                    for (Map.Entry<String, ServerSession> entry : sessions.entrySet()) {
+                        seti1.disassociate(entry.getKey(), entry.getValue());
+                    }
+                } catch (Throwable x) {
+                    x.printStackTrace();
                 }
             }).start();
         }

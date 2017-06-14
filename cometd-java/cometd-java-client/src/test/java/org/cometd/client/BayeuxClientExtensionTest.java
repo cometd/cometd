@@ -127,12 +127,9 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
             public void onMessage(ClientSessionChannel channel, Message message) {
             }
         };
-        client.batch(new Runnable() {
-            @Override
-            public void run() {
-                channel.subscribe(listener);
-                channel.unsubscribe(listener);
-            }
+        client.batch(() -> {
+            channel.subscribe(listener);
+            channel.unsubscribe(listener);
         });
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -154,16 +151,13 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final ClientSessionChannel channel = client.getChannel(channelName);
-        client.batch(new Runnable() {
-            @Override
-            public void run() {
-                channel.subscribe(new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                    }
-                });
-                channel.publish(new HashMap<>());
-            }
+        client.batch(() -> {
+            channel.subscribe(new ClientSessionChannel.MessageListener() {
+                @Override
+                public void onMessage(ClientSessionChannel channel1, Message message) {
+                }
+            });
+            channel.publish(new HashMap<>());
         });
 
         // Wait for the message to arrive, along with the publish response

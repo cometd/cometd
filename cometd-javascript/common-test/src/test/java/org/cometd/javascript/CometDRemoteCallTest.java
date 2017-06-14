@@ -164,15 +164,12 @@ public class CometDRemoteCallTest extends AbstractCometDTest {
 
         @RemoteCall(CHANNEL)
         public void service(final RemoteCall.Caller caller, Object data) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Thread.sleep(2 * timeout);
-                        caller.result(new HashMap());
-                    } catch (InterruptedException x) {
-                        caller.failure(x);
-                    }
+            new Thread(() -> {
+                try {
+                    Thread.sleep(2 * timeout);
+                    caller.result(new HashMap());
+                } catch (InterruptedException x) {
+                    caller.failure(x);
                 }
             }).start();
         }

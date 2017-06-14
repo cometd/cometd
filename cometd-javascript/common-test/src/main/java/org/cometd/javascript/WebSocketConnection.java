@@ -56,12 +56,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
             wsClient.connect(this, uri, request);
         } catch (final Throwable x) {
             // This method is invoked from JavaScript, so we must fail asynchronously
-            wsClient.getExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    onWebSocketError(x);
-                }
-            });
+            wsClient.getExecutor().execute(() -> onWebSocketError(x));
         }
     }
 
@@ -81,12 +76,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
             }
         } catch (final Throwable x) {
             // This method is invoked from JavaScript, so we must fail asynchronously
-            wsClient.getExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    onWebSocketError(x);
-                }
-            });
+            wsClient.getExecutor().execute(() -> onWebSocketError(x));
         }
     }
 

@@ -89,17 +89,14 @@ public class ChannelReleaseTest extends ClientServerTest {
         final CountDownLatch latch = new CountDownLatch(1);
         String channelName = "/foo";
         final ClientSessionChannel channel = client.getChannel(channelName);
-        client.batch(new Runnable() {
-            @Override
-            public void run() {
-                channel.subscribe(new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        latch.countDown();
-                    }
-                });
-                channel.publish("");
-            }
+        client.batch(() -> {
+            channel.subscribe(new ClientSessionChannel.MessageListener() {
+                @Override
+                public void onMessage(ClientSessionChannel channel1, Message message) {
+                    latch.countDown();
+                }
+            });
+            channel.publish("");
         });
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         boolean released = channel.release();
@@ -162,12 +159,9 @@ public class ChannelReleaseTest extends ClientServerTest {
                 latch.countDown();
             }
         };
-        client.batch(new Runnable() {
-            @Override
-            public void run() {
-                channel.subscribe(listener);
-                channel.publish("");
-            }
+        client.batch(() -> {
+            channel.subscribe(listener);
+            channel.publish("");
         });
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         boolean released = channel.release();

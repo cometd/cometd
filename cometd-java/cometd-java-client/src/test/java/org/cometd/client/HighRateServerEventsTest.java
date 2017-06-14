@@ -49,19 +49,16 @@ public class HighRateServerEventsTest extends ClientServerTest {
 
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         final AtomicInteger messages = new AtomicInteger();
-        client.batch(new Runnable() {
-            @Override
-            public void run() {
-                ClientSessionChannel channel = client.getChannel(channelName);
-                channel.subscribe(new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        messages.incrementAndGet();
-                        latch.get().countDown();
-                    }
-                });
-                channel.publish(new HashMap<String, Object>());
-            }
+        client.batch(() -> {
+            ClientSessionChannel channel = client.getChannel(channelName);
+            channel.subscribe(new ClientSessionChannel.MessageListener() {
+                @Override
+                public void onMessage(ClientSessionChannel channel, Message message) {
+                    messages.incrementAndGet();
+                    latch.get().countDown();
+                }
+            });
+            channel.publish(new HashMap<String, Object>());
         });
 
         // Wait until subscription is acknowledged

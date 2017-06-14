@@ -306,12 +306,7 @@ public abstract class AbstractService {
         if (threadPool == null) {
             doInvoke(method, fromClient, msg);
         } else {
-            threadPool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    doInvoke(method, fromClient, msg);
-                }
-            });
+            threadPool.execute(() -> doInvoke(method, fromClient, msg));
         }
     }
 

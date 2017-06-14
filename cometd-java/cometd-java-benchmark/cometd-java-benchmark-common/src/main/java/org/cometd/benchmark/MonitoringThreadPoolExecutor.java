@@ -85,23 +85,20 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor {
     @Override
     public void execute(final Runnable task) {
         final long begin = System.nanoTime();
-        super.execute(new Runnable() {
-            @Override
-            public void run() {
-                long latency = System.nanoTime() - begin;
-                tasks.incrementAndGet();
-                Atomics.updateMax(maxQueueLatency, latency);
-                totalQueueLatency.addAndGet(latency);
-                Atomics.updateMax(maxThreads, threads.incrementAndGet());
-                long start = System.nanoTime();
-                try {
-                    task.run();
-                } finally {
-                    long taskLatency = System.nanoTime() - start;
-                    threads.decrementAndGet();
-                    Atomics.updateMax(maxTaskLatency, taskLatency);
-                    totalTaskLatency.addAndGet(taskLatency);
-                }
+        super.execute(() -> {
+            long latency = System.nanoTime() - begin;
+            tasks.incrementAndGet();
+            Atomics.updateMax(maxQueueLatency, latency);
+            totalQueueLatency.addAndGet(latency);
+            Atomics.updateMax(maxThreads, threads.incrementAndGet());
+            long start = System.nanoTime();
+            try {
+                task.run();
+            } finally {
+                long taskLatency = System.nanoTime() - start;
+                threads.decrementAndGet();
+                Atomics.updateMax(maxTaskLatency, taskLatency);
+                totalTaskLatency.addAndGet(taskLatency);
             }
         });
     }

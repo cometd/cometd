@@ -99,12 +99,7 @@ public class RemoteCallTest {
                 return;
             }
 
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    caller.result(calleeData);
-                }
-            }).start();
+            new Thread(() -> caller.result(calleeData)).start();
         }
     }
 

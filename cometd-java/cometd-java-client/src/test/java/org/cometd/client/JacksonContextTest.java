@@ -68,30 +68,27 @@ public class JacksonContextTest extends ClientServerTest {
 
         final ClientSessionChannel channel = client.getChannel(channelName);
         final CountDownLatch clientLatch = new CountDownLatch(3);
-        client.batch(new Runnable() {
-            @Override
-            public void run() {
-                channel.subscribe(new ClientSessionChannel.MessageListener() {
-                    private boolean republishSeen;
-                    private boolean deliverSeen;
+        client.batch(() -> {
+            channel.subscribe(new ClientSessionChannel.MessageListener() {
+                private boolean republishSeen;
+                private boolean deliverSeen;
 
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        System.err.println("message = " + message);
-                        Map<String, Object> data = message.getDataAsMap();
-                        Assert.assertTrue(data.containsKey("publish"));
-                        republishSeen |= data.containsKey("republish");
-                        deliverSeen |= data.containsKey("deliver");
-                        if (clientLatch.getCount() == 1 && !republishSeen && !deliverSeen) {
-                            Assert.fail();
-                        }
-                        clientLatch.countDown();
+                @Override
+                public void onMessage(ClientSessionChannel channel1, Message message) {
+                    System.err.println("message = " + message);
+                    Map<String, Object> data = message.getDataAsMap();
+                    Assert.assertTrue(data.containsKey("publish"));
+                    republishSeen |= data.containsKey("republish");
+                    deliverSeen |= data.containsKey("deliver");
+                    if (clientLatch.getCount() == 1 && !republishSeen && !deliverSeen) {
+                        Assert.fail();
                     }
-                });
-                Map<String, Object> data = new HashMap<>();
-                data.put("publish", true);
-                channel.publish(data);
-            }
+                    clientLatch.countDown();
+                }
+            });
+            Map<String, Object> data = new HashMap<>();
+            data.put("publish", true);
+            channel.publish(data);
         });
 
         Assert.assertTrue(localLatch.await(5, TimeUnit.SECONDS));

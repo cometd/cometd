@@ -583,12 +583,9 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Assert.assertNotNull(chatChannel);
 
         final int count = 5;
-        client.batch(new Runnable() {
-            @Override
-            public void run() {
-                for (int i = 0; i < count; ++i) {
-                    client.getChannel(channelName).publish("hello_" + i);
-                }
+        client.batch(() -> {
+            for (int i = 0; i < count; ++i) {
+                client.getChannel(channelName).publish("hello_" + i);
             }
         });
 
@@ -623,12 +620,9 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         }
 
         // Send messages while client is online
-        client.batch(new Runnable() {
-            @Override
-            public void run() {
-                for (int i = 2 * count; i < 3 * count; ++i) {
-                    client.getChannel(channelName).publish("hello_" + i);
-                }
+        client.batch(() -> {
+            for (int i = 2 * count; i < 3 * count; ++i) {
+                client.getChannel(channelName).publish("hello_" + i);
             }
         });
 

@@ -316,12 +316,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         // The first client will be held by the server.
         final BayeuxClient client1 = newBayeuxClient();
         // The connect operation is blocking, so we must use another thread.
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                client1.handshake();
-            }
-        }).start();
+        new Thread(client1::handshake).start();
 
         // Wait for the first client to arrive at the concurrency point.
         switch (wsTransportType) {

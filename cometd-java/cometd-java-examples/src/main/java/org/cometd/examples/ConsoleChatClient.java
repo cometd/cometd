@@ -96,21 +96,18 @@ public class ConsoleChatClient {
     }
 
     private void initialize() {
-        client.batch(new Runnable() {
-            @Override
-            public void run() {
-                ClientSessionChannel chatChannel = client.getChannel("/chat/demo");
-                chatChannel.subscribe(chatListener);
+        client.batch(() -> {
+            ClientSessionChannel chatChannel = client.getChannel("/chat/demo");
+            chatChannel.subscribe(chatListener);
 
-                ClientSessionChannel membersChannel = client.getChannel("/members/demo");
-                membersChannel.subscribe(membersListener);
+            ClientSessionChannel membersChannel = client.getChannel("/members/demo");
+            membersChannel.subscribe(membersListener);
 
-                Map<String, Object> data = new HashMap<>();
-                data.put("user", nickname);
-                data.put("membership", "join");
-                data.put("chat", nickname + " has joined");
-                chatChannel.publish(data);
-            }
+            Map<String, Object> data = new HashMap<>();
+            data.put("user", nickname);
+            data.put("membership", "join");
+            data.put("chat", nickname + " has joined");
+            chatChannel.publish(data);
         });
     }
 

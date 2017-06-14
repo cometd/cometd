@@ -197,14 +197,11 @@ public class BayeuxServerTest {
         Assert.assertEquals("hello", events.poll());
         foostar0.unsubscribe(listener);
 
-        session1.batch(new Runnable() {
-            @Override
-            public void run() {
-                ClientSessionChannel foobar1 = session1.getChannel("/foo/bar");
-                foobar1.publish("part1");
-                Assert.assertEquals(null, events.poll());
-                foobar1.publish("part2");
-            }
+        session1.batch(() -> {
+            ClientSessionChannel foobar1 = session1.getChannel("/foo/bar");
+            foobar1.publish("part1");
+            Assert.assertEquals(null, events.poll());
+            foobar1.publish("part2");
         });
 
         Assert.assertEquals(session1.getId(), events.poll());
