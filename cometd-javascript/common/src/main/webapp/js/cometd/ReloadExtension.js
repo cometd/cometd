@@ -65,7 +65,7 @@
             // We just check the URL for now, but in future
             // further checks may involve the transport type
             // and other configuration parameters.
-            return _state.url == oldState.url;
+            return _state.url === oldState.url;
         }
 
         function _configure(config) {

@@ -29,10 +29,6 @@
      * representation suitable for JSON, using the Z85 algorithm.
      */
     return cometdModule.BinaryExtension = function() {
-        this.registered = function(name, cometd) {
-            _cometd = cometd;
-        };
-
         this.incoming = function(message) {
             if (!/^\/meta\//.test(message.channel)) {
                 var ext = message.ext;

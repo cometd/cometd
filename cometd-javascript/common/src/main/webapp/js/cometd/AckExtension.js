@@ -87,7 +87,7 @@
             } else if (!/^\/meta\//.test(channel)) {
                 if (_size > 0) {
                     --_size;
-                    if (_size == 0) {
+                    if (_size === 0) {
                         _batch = _transientBatch;
                         _transientBatch = 0;
                     }
@@ -101,13 +101,13 @@
             if (!message.ext) {
                 message.ext = {};
             }
-            if (channel == '/meta/handshake') {
+            if (channel === '/meta/handshake') {
                 message.ext.ack = _cometd && _cometd.ackEnabled !== false;
                 _serverSupportsAcks = false;
                 _transientBatch = 0;
                 _batch = 0;
                 _size = 0;
-            } else if (channel == '/meta/connect') {
+            } else if (channel === '/meta/connect') {
                 if (_serverSupportsAcks) {
                     message.ext.ack = _batch;
                     _debug('AckExtension: client sending batch', _batch);
