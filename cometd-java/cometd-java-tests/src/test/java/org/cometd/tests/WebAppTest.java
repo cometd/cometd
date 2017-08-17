@@ -59,9 +59,14 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 public class WebAppTest {
+    @Rule
+    public TestName testname = new TestName();
+
     private Path baseDir;
     private Server server;
     private ServerConnector connector;
@@ -76,7 +81,7 @@ public class WebAppTest {
     }
 
     private void start(Path webXML) throws Exception {
-        Path contextDir = baseDir.resolve("target/test-webapp");
+        Path contextDir = baseDir.resolve("target/test-webapp/" + testname.getMethodName());
         Path webINF = contextDir.resolve("WEB-INF");
         Path lib = webINF.resolve("lib");
 
