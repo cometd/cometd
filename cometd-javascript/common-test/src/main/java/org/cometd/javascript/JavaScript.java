@@ -24,24 +24,30 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 
+import javax.script.Bindings;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
+import jdk.nashorn.api.scripting.URLReader;
 import org.eclipse.jetty.util.IO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JavaScript implements Runnable {
+    private static final ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final BlockingQueue<FutureTask<?>> queue = new LinkedBlockingQueue<>();
     private final Thread thread = new Thread(this);
-    private final ScriptEngine engine;
+    private final Bindings bindings;
     private volatile boolean running;
 
-    public JavaScript(ScriptEngine engine) {
-        this.engine = engine;
+    public JavaScript() {
+        this.bindings = engine.createBindings();
+        bindings.put("javaScript", this);
     }
 
     public void init() throws Exception {
@@ -57,7 +63,7 @@ public class JavaScript implements Runnable {
         }
         thread.interrupt();
         thread.join();
-        engine.getBindings(ScriptContext.ENGINE_SCOPE).clear();
+        bindings.clear();
     }
 
     @Override
@@ -110,30 +116,42 @@ public class JavaScript implements Runnable {
     }
 
     public <T> T evaluate(URL url) {
-        try {
-            return evaluate(url.toExternalForm(), IO.toString(url.openStream()));
-        } catch (IOException x) {
-            throw new UncheckedIOException(x);
-        }
+        FutureTask<T> task = new FutureTask<>(() -> {
+            try(URLReader r = new URLReader(url)) {
+                return (T)engine.eval(r, bindings);
+            } catch (ScriptException x) {
+                throw new JavaScriptException(x);
+            }
+        });
+        return submitTask(task);
     }
 
     public <T> T evaluate(String name, String code) {
         String script = name == null ? code : String.format("//# sourceURL=%s%n%s", name, code);
         FutureTask<T> task = new FutureTask<>(() -> {
             try {
-                return (T)engine.eval(script);
+                bindings.put(ScriptEngine.FILENAME, name);
+                return (T)engine.eval(script, bindings);
             } catch (ScriptException x) {
                 throw new JavaScriptException(x);
             }
         });
+        return submitTask(task);
+    }
+
+    private <T> T submitTask(FutureTask<T> task) {
         submit(task);
         return result(task);
     }
 
     public <T> T get(String key) {
-        FutureTask<T> task = new FutureTask<>(() -> (T)engine.get(key));
+        FutureTask<T> task = new FutureTask<>(() -> getAsync(key));
         submit(task);
         return result(task);
+    }
+
+    public <T> T getAsync(String key) {
+        return (T)bindings.get(key);
     }
 
     private void submit(FutureTask<?> task) {

@@ -22,11 +22,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.script.Bindings;
-import javax.script.ScriptContext;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-
 import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
@@ -179,20 +174,17 @@ public abstract class AbstractCometDTest {
     }
 
     protected void initJavaScript() throws Exception {
-        ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-        Bindings bindings = engine.getBindings(ScriptContext.ENGINE_SCOPE);
-        javaScript = new JavaScript(engine);
-        bindings.put("javaScript", javaScript);
+        javaScript = new JavaScript();
         javaScript.init();
         javaScript.evaluate(new URL(contextURL + "/browser.js"));
         javaScript.evaluate("window_location", "window.location = '" + contextURL + "'");
-        JavaScriptCookieStore cookies = (JavaScriptCookieStore)engine.get("cookies");
+        JavaScriptCookieStore cookies = javaScript.getAsync("cookies");
         cookies.setStore(cookieStore);
-        xhrClient = (XMLHttpRequestClient)engine.get("xhrClient");
+        xhrClient = javaScript.getAsync("xhrClient");
         xhrClient.start();
-        wsConnector = (WebSocketConnector)engine.get("wsConnector");
+        wsConnector = javaScript.getAsync("wsConnector");
         wsConnector.start();
-        SessionStorage sessionStorage = (SessionStorage)engine.get("sessionStorage");
+        SessionStorage sessionStorage = javaScript.getAsync("sessionStorage");
         sessionStorage.setStore(sessionStore);
     }
 
@@ -233,6 +225,7 @@ public abstract class AbstractCometDTest {
         }
         if (javaScript != null) {
             javaScript.destroy();
+            javaScript = null;
         }
     }
 
