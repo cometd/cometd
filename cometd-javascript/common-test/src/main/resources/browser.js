@@ -157,7 +157,6 @@ var Latch = Java.type('org.cometd.javascript.Latch');
 
 
     // Timers
-    var _scheduler = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
     window.setTimeout = function(fn, delay) {
         delay = delay || 0;
         return _scheduler.schedule(new java.lang.Runnable({

@@ -21,6 +21,10 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import jdk.nashorn.api.scripting.JSObject;
 
 import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.cometd.server.BayeuxServerImpl;
@@ -77,6 +81,7 @@ public abstract class AbstractCometDTest {
     protected JavaScript javaScript;
     private XMLHttpRequestClient xhrClient;
     private WebSocketConnector wsConnector;
+    private ScheduledExecutorService executor;
 
     @Before
     public void initCometDServer() throws Exception {
@@ -176,8 +181,12 @@ public abstract class AbstractCometDTest {
     protected void initJavaScript() throws Exception {
         javaScript = new JavaScript();
         javaScript.init();
-        javaScript.evaluate(new URL(contextURL + "/browser.js"));
-        javaScript.evaluate("window_location", "window.location = '" + contextURL + "'");
+        executor = Executors.unconfigurableScheduledExecutorService(
+                Executors.newScheduledThreadPool(1, 
+                        Executors.privilegedThreadFactory()));
+        javaScript.putAsync("_scheduler", executor);
+        javaScript.evaluate(getClass().getResource("/browser.js"));
+        ((JSObject)javaScript.getAsync("window")).setMember("location", contextURL);
         JavaScriptCookieStore cookies = javaScript.getAsync("cookies");
         cookies.setStore(cookieStore);
         xhrClient = javaScript.getAsync("xhrClient");
@@ -226,6 +235,10 @@ public abstract class AbstractCometDTest {
         if (javaScript != null) {
             javaScript.destroy();
             javaScript = null;
+        }
+        if (executor != null) {
+            executor.shutdown();
+            executor = null;
         }
     }
 
