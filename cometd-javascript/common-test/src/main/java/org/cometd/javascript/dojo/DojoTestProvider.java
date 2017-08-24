@@ -15,8 +15,6 @@
  */
 package org.cometd.javascript.dojo;
 
-import java.net.URL;
-
 import org.cometd.javascript.JavaScript;
 import org.cometd.javascript.TestProvider;
 
@@ -24,7 +22,7 @@ public class DojoTestProvider implements TestProvider {
     @Override
     public void provideCometD(JavaScript javaScript, String fullContextURL) throws Exception {
         String dojoBaseURL = "/js/dojo";
-        javaScript.evaluate(new URL(fullContextURL + dojoBaseURL + "/dojo.js.uncompressed.js"));
+        javaScript.evaluate(getClass().getResource(dojoBaseURL + "/dojo.js.uncompressed.js"));
         javaScript.evaluate("cometd", "" +
                 "var cometdModule;" +
                 "var cometd;" +

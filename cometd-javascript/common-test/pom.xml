@@ -29,14 +29,14 @@
                                     <artifactId>cometd-javascript-dojo</artifactId>
                                     <version>${project.version}</version>
                                     <type>war</type>
-                                    <outputDirectory>${project.build.directory}/scripts</outputDirectory>
+                                    <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.cometd.javascript</groupId>
                                     <artifactId>cometd-javascript-jquery</artifactId>
                                     <version>${project.version}</version>
                                     <type>war</type>
-                                    <outputDirectory>${project.build.directory}/scripts</outputDirectory>
+                                    <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>

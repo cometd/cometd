@@ -26,7 +26,7 @@ public class CometDDojoHitchTest extends AbstractCometDTest {
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
         Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', handshakeLatch, 'countDown');");
+        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(handshakeLatch.await(5000));
 

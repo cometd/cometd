@@ -15,17 +15,15 @@
  */
 package org.cometd.javascript.jquery;
 
-import java.net.URL;
-
 import org.cometd.javascript.JavaScript;
 import org.cometd.javascript.TestProvider;
 
 public class JQueryTestProvider implements TestProvider {
     @Override
     public void provideCometD(JavaScript javaScript, String contextURL) throws Exception {
-        javaScript.evaluate(new URL(contextURL + "/jquery-3.2.1.js"));
-        javaScript.evaluate(new URL(contextURL + "/js/cometd/cometd.js"));
-        javaScript.evaluate(new URL(contextURL + "/js/jquery/jquery.cometd.js"));
+        javaScript.evaluate(getClass().getResource("/js/jquery/jquery-3.2.1.js"));
+        javaScript.evaluate(getClass().getResource("/js/cometd/cometd.js"));
+        javaScript.evaluate(getClass().getResource("/js/jquery/jquery.cometd.js"));
         javaScript.evaluate("cometdModule", "var cometdModule = org.cometd;");
         javaScript.evaluate("cometd", "var cometd = $.cometd;");
         javaScript.evaluate("original_transports", "" +
@@ -44,31 +42,31 @@ public class JQueryTestProvider implements TestProvider {
 
     @Override
     public void provideMessageAcknowledgeExtension(JavaScript javaScript, String contextURL) throws Exception {
-        javaScript.evaluate(new URL(contextURL + "/js/cometd/AckExtension.js"));
-        javaScript.evaluate(new URL(contextURL + "/js/jquery/jquery.cometd-ack.js"));
+        javaScript.evaluate(getClass().getResource("/js/cometd/AckExtension.js"));
+        javaScript.evaluate(getClass().getResource("/js/jquery/jquery.cometd-ack.js"));
     }
 
     @Override
     public void provideReloadExtension(JavaScript javaScript, String contextURL) throws Exception {
-        javaScript.evaluate(new URL(contextURL + "/js/cometd/ReloadExtension.js"));
-        javaScript.evaluate(new URL(contextURL + "/js/jquery/jquery.cometd-reload.js"));
+        javaScript.evaluate(getClass().getResource("/js/cometd/ReloadExtension.js"));
+        javaScript.evaluate(getClass().getResource("/js/jquery/jquery.cometd-reload.js"));
     }
 
     @Override
     public void provideTimestampExtension(JavaScript javaScript, String contextURL) throws Exception {
-        javaScript.evaluate(new URL(contextURL + "/js/cometd/TimeStampExtension.js"));
-        javaScript.evaluate(new URL(contextURL + "/js/jquery/jquery.cometd-timestamp.js"));
+        javaScript.evaluate(getClass().getResource("/js/cometd/TimeStampExtension.js"));
+        javaScript.evaluate(getClass().getResource("/js/jquery/jquery.cometd-timestamp.js"));
     }
 
     @Override
     public void provideTimesyncExtension(JavaScript javaScript, String contextURL) throws Exception {
-        javaScript.evaluate(new URL(contextURL + "/js/cometd/TimeSyncExtension.js"));
-        javaScript.evaluate(new URL(contextURL + "/js/jquery/jquery.cometd-timesync.js"));
+        javaScript.evaluate(getClass().getResource("/js/cometd/TimeSyncExtension.js"));
+        javaScript.evaluate(getClass().getResource("/js/jquery/jquery.cometd-timesync.js"));
     }
 
     @Override
     public void provideBinaryExtension(JavaScript javaScript, String contextURL) throws Exception {
-        javaScript.evaluate(new URL(contextURL + "/js/cometd/BinaryExtension.js"));
-        javaScript.evaluate(new URL(contextURL + "/js/jquery/jquery.cometd-binary.js"));
+        javaScript.evaluate(getClass().getResource("/js/cometd/BinaryExtension.js"));
+        javaScript.evaluate(getClass().getResource("/js/jquery/jquery.cometd-binary.js"));
     }
 }

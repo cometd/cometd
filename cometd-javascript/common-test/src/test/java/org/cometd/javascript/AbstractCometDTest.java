@@ -160,15 +160,14 @@ public abstract class AbstractCometDTest {
 
     protected void customizeContext(ServletContextHandler context) throws Exception {
         File baseDirectory = new File(System.getProperty("basedir", "."));
-        File overlaidScriptDirectory = new File(baseDirectory, "target/scripts");
+        File overlaidScriptDirectory = new File(baseDirectory, "target/test-classes");
         File mainResourcesDirectory = new File(baseDirectory, "src/main/resources");
         File testResourcesDirectory = new File(baseDirectory, "src/test/resources");
-        context.setBaseResource(new ResourceCollection(new String[]
-                {
-                        overlaidScriptDirectory.getCanonicalPath(),
-                        mainResourcesDirectory.getCanonicalPath(),
-                        testResourcesDirectory.getCanonicalPath()
-                }));
+        context.setBaseResource(new ResourceCollection(new String[]{
+                overlaidScriptDirectory.getCanonicalPath(),
+                mainResourcesDirectory.getCanonicalPath(),
+                testResourcesDirectory.getCanonicalPath()
+        }));
     }
 
     protected void initPage() throws Exception {
