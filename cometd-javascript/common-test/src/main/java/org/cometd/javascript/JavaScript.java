@@ -154,6 +154,10 @@ public class JavaScript implements Runnable {
         return (T)bindings.get(key);
     }
 
+    public void putAsync(String key, Object value) {
+        bindings.put(key, value);
+    }
+
     private void submit(FutureTask<?> task) {
         if (Thread.currentThread() == thread) {
             task.run();
