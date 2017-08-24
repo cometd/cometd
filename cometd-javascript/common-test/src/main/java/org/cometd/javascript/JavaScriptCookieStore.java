@@ -29,14 +29,14 @@ import java.util.concurrent.TimeUnit;
  * <p>The actual store must survive page reloads.</p>
  */
 public class JavaScriptCookieStore {
-    private CookieStore store;
+    private final CookieStore store;
+
+    public JavaScriptCookieStore(CookieStore store) {
+        this.store = store;
+    }
 
     public CookieStore getStore() {
         return store;
-    }
-
-    public void setStore(CookieStore store) {
-        this.store = store;
     }
 
     public String get(String scheme, String host, String path) {

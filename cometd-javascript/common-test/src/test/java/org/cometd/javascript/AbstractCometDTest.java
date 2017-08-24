@@ -17,15 +17,13 @@ package org.cometd.javascript;
 
 import java.io.File;
 import java.net.CookieStore;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import jdk.nashorn.api.scripting.JSObject;
 
+import jdk.nashorn.api.scripting.JSObject;
 import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
@@ -181,20 +179,26 @@ public abstract class AbstractCometDTest {
     protected void initJavaScript() throws Exception {
         javaScript = new JavaScript();
         javaScript.init();
-        executor = Executors.unconfigurableScheduledExecutorService(
-                Executors.newScheduledThreadPool(1, 
-                        Executors.privilegedThreadFactory()));
-        javaScript.putAsync("_scheduler", executor);
+
+        executor = Executors.newScheduledThreadPool(1, Executors.privilegedThreadFactory());
+        javaScript.putAsync("scheduler", executor);
+
         javaScript.evaluate(getClass().getResource("/browser.js"));
         ((JSObject)javaScript.getAsync("window")).setMember("location", contextURL);
-        JavaScriptCookieStore cookies = javaScript.getAsync("cookies");
-        cookies.setStore(cookieStore);
-        xhrClient = javaScript.getAsync("xhrClient");
+
+        JavaScriptCookieStore cookies = new JavaScriptCookieStore(cookieStore);
+        javaScript.putAsync("cookies", cookies);
+
+        xhrClient = new XMLHttpRequestClient(cookies);
         xhrClient.start();
-        wsConnector = javaScript.getAsync("wsConnector");
+        javaScript.putAsync("xhrClient", xhrClient);
+
+        wsConnector = new WebSocketConnector(cookies);
         wsConnector.start();
-        SessionStorage sessionStorage = javaScript.getAsync("sessionStorage");
-        sessionStorage.setStore(sessionStore);
+        javaScript.putAsync("wsConnector", wsConnector);
+
+        SessionStorage sessionStorage = new SessionStorage(sessionStore);
+        javaScript.putAsync("sessionStorage", sessionStorage);
     }
 
     protected void initCometD() throws Exception {

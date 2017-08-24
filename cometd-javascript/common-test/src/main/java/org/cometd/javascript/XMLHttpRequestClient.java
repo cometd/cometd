@@ -15,7 +15,11 @@
  */
 package org.cometd.javascript;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * Implementation of the XMLHttpRequest functionality using Jetty's HttpClient.
@@ -33,6 +37,7 @@ public class XMLHttpRequestClient {
         httpClient.setMaxConnectionsPerDestination(2);
         httpClient.setIdleTimeout(300000);
         httpClient.setCookieStore(cookieStore.getStore());
+        httpClient.setExecutor(new PrivilegedExecutor());
         httpClient.start();
     }
 
@@ -42,5 +47,18 @@ public class XMLHttpRequestClient {
 
     public void stop() throws Exception {
         httpClient.stop();
+    }
+
+    private class PrivilegedExecutor extends QueuedThreadPool {
+        private final ThreadFactory factory = Executors.privilegedThreadFactory();
+
+        public PrivilegedExecutor() {
+            setName("httpclient");
+        }
+
+        @Override
+        protected Thread newThread(Runnable runnable) {
+            return factory.newThread(runnable);
+        }
     }
 }

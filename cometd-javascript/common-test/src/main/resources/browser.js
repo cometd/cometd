@@ -7,12 +7,12 @@
 var window = this;
 
 // Objects used also on the Java side.
-var cookies = new org.cometd.javascript.JavaScriptCookieStore();
-var xhrClient = new org.cometd.javascript.XMLHttpRequestClient(cookies);
-var wsConnector = new org.cometd.javascript.WebSocketConnector(cookies);
-var sessionStorage = new org.cometd.javascript.SessionStorage();
+var scheduler;
+var cookies;
+var xhrClient;
+var wsConnector;
+var sessionStorage;
 
-// TODO: to be removed ?
 var Latch = Java.type('org.cometd.javascript.Latch');
 
 (function() {
@@ -159,7 +159,7 @@ var Latch = Java.type('org.cometd.javascript.Latch');
     // Timers
     window.setTimeout = function(fn, delay) {
         delay = delay || 0;
-        return _scheduler.schedule(new java.lang.Runnable({
+        return scheduler.schedule(new java.lang.Runnable({
             run: function() {
                 javaScript.invoke(true, window, fn);
             }
@@ -171,7 +171,7 @@ var Latch = Java.type('org.cometd.javascript.Latch');
         }
     };
     window.setInterval = function(fn, period) {
-        return _scheduler.scheduleWithFixedDelay(new java.lang.Runnable({
+        return scheduler.scheduleWithFixedDelay(new java.lang.Runnable({
             run: function() {
                 javaScript.invoke(true, window, fn);
             }

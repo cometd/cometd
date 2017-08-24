@@ -22,9 +22,9 @@ import java.util.Map;
  * <p>The actual store must survive page reloads.</p>
  */
 public class SessionStorage {
-    private Map<String, String> store;
+    private final Map<String, String> store;
 
-    public void setStore(Map<String, String> store) {
+    public SessionStorage(Map<String, String> store) {
         this.store = store;
     }
 

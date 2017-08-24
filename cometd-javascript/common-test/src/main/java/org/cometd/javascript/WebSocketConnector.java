@@ -15,34 +15,45 @@
  */
 package org.cometd.javascript;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 
 public class WebSocketConnector {
     private final JavaScriptCookieStore cookieStore;
     private WebSocketClient wsClient;
-    private QueuedThreadPool threadPool;
 
     public WebSocketConnector(JavaScriptCookieStore cookieStore) {
         this.cookieStore = cookieStore;
     }
 
     public void start() throws Exception {
-        threadPool = new QueuedThreadPool();
         wsClient = new WebSocketClient();
-        wsClient.setExecutor(threadPool);
-        wsClient.setMasker(new ZeroMasker());
+        wsClient.setExecutor(new PrivilegedExecutor());
         wsClient.setCookieStore(cookieStore.getStore());
         wsClient.start();
     }
 
     public void stop() throws Exception {
         wsClient.stop();
-        threadPool.stop();
     }
 
     public WebSocketClient getWebSocketClient() {
         return wsClient;
+    }
+
+    private class PrivilegedExecutor extends QueuedThreadPool {
+        private final ThreadFactory factory = Executors.privilegedThreadFactory();
+
+        public PrivilegedExecutor() {
+            setName("wsclient");
+        }
+
+        @Override
+        protected Thread newThread(Runnable runnable) {
+            return factory.newThread(runnable);
+        }
     }
 }
