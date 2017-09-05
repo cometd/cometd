@@ -21,21 +21,17 @@ import org.junit.Test;
 public class CometDBatchPublishTest extends AbstractCometDTest {
     @Test
     public void testBatchPublish() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
 
         evaluateScript("" +
                 "var _connected = false;" +
-                "cometd.addListener('/meta/connect', function(message)" +
-                "{" +
+                "cometd.addListener('/meta/connect', function(message) {" +
                 "    var wasConnected = _connected;" +
                 "    _connected = message.successful;" +
-                "    if (!wasConnected && _connected)" +
-                "    {" +
+                "    if (!wasConnected && _connected) {" +
                 "        cometd.startBatch();" +
-                "        cometd.subscribe('/echo', latch, 'countDown');" +
+                "        cometd.subscribe('/echo', function() { latch.countDown(); });" +
                 "        cometd.publish('/echo', 'test');" +
                 "        cometd.endBatch();" +
                 "    }" +

@@ -104,16 +104,15 @@ public class CometDBinaryExtensionTest extends AbstractCometDTest {
     public void testBinaryExtension() throws Exception {
         new BinaryService(bayeuxServer);
 
-        defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
+        Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var binaryLatch = new Latch(1);");
-        Latch binaryLatch = get("binaryLatch");
+        Latch binaryLatch = javaScript.get("binaryLatch");
         evaluateScript("" +
                 "var buffer = new ArrayBuffer(16);" +
                 "var view1 = new DataView(buffer);" +

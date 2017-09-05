@@ -43,14 +43,12 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
         context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
         context.start();
 
-        defineClass(Latch.class);
-
         evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = get("failureLatch");
+        Latch failureLatch = javaScript.get("failureLatch");
         evaluateScript("var wsLatch = new Latch(1);");
-        Latch wsLatch = get("wsLatch");
+        Latch wsLatch = javaScript.get("wsLatch");
         evaluateScript("var lpLatch = new Latch(1);");
-        Latch lpLatch = get("lpLatch");
+        Latch lpLatch = javaScript.get("lpLatch");
 
         // Need long-polling as a fallback after websocket fails
         evaluateScript("cometd.registerTransport('long-polling', originalTransports['long-polling']);");
@@ -60,19 +58,14 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
                 "connectTimeout: " + timeout + ", " +
                 "logLevel: '" + getLogLevel() + "'" +
                 "});");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
-                "   if (cometd.getTransport().getType() === 'websocket' && !message.successful)" +
-                "   {" +
+        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
+                "   if (cometd.getTransport().getType() === 'websocket' && !message.successful) {" +
                 "       wsLatch.countDown();" +
-                "   }" +
-                "   else if (cometd.getTransport().getType() === 'long-polling' && message.successful)" +
-                "   {" +
+                "   } else if (cometd.getTransport().getType() === 'long-polling' && message.successful) {" +
                 "       lpLatch.countDown();" +
                 "   }" +
                 "});");
-        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport)" +
-                "{" +
+        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport) {" +
                 "    failureLatch.countDown();" +
                 "};");
 
@@ -82,37 +75,31 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
         Assert.assertTrue(lpLatch.await(2 * timeout));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
         Assert.assertTrue(disconnectLatch.await(5000));
     }
 
     @Test
     public void testConnectTimeoutIsCanceledOnSuccessfulConnect() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = get("handshakeLatch");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
 
         evaluateScript("cometd.configure({" +
                 "url: '" + cometdURL + "', " +
                 "connectTimeout: " + timeout + ", " +
                 "logLevel: '" + getLogLevel() + "'" +
                 "});");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
-                "   if (cometd.getTransport().getType() === 'websocket' && message.successful)" +
-                "   {" +
+        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
+                "   if (cometd.getTransport().getType() === 'websocket' && message.successful) {" +
                 "       handshakeLatch.countDown();" +
                 "   }" +
                 "});");
-        evaluateScript("cometd.addListener('/meta/connect', function(message)" +
-                "{" +
-                "   if (!message.successful)" +
-                "   {" +
+        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
+                "   if (!message.successful) {" +
                 "       connectLatch.countDown();" +
                 "   }" +
                 "});");
@@ -124,8 +111,8 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
         Assert.assertFalse(connectLatch.await(2 * timeout));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
         Assert.assertTrue(disconnectLatch.await(5000));
     }
@@ -152,5 +139,4 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
         public void destroy() {
         }
     }
-
 }

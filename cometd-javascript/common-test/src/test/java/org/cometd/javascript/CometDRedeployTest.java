@@ -21,22 +21,20 @@ import org.junit.Test;
 public class CometDRedeployTest extends AbstractCometDTest {
     @Test
     public void testRedeploy() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = get("handshakeLatch");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = get("failureLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', handshakeLatch, handshakeLatch.countDown);");
-        evaluateScript("cometd.addListener('/meta/connect', function(message)" +
-                "{" +
-                "   if (message.successful) " +
+        Latch failureLatch = javaScript.get("failureLatch");
+        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
+        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
+                "   if (message.successful) {" +
                 "       connectLatch.countDown();" +
-                "   else" +
+                "   } else {" +
                 "       failureLatch.countDown();" +
+                "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(handshakeLatch.await(5000));
@@ -61,8 +59,8 @@ public class CometDRedeployTest extends AbstractCometDTest {
         Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
         Assert.assertTrue(disconnectLatch.await(5000));
     }

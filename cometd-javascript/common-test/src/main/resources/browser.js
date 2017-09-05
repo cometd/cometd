@@ -1,33 +1,21 @@
 /*
- * Simulated browser environment for Rhino
+ * Simulated browser environment for Nashorn
  * Based on the work by by John Resig <http://ejohn.org/> under the MIT License.
  */
 
-// The window object
+// The window global object.
 var window = this;
 
+// Objects used also on the Java side.
+var scheduler;
+var cookies;
+var xhrClient;
+var wsConnector;
+var sessionStorage;
+
+var Latch = Java.type('org.cometd.javascript.Latch');
+
 (function() {
-    // New JavaScript methods not defined by Rhino, but required by toolkits.
-    if (!Object.defineProperty) {
-        Object.defineProperty = function(obj, prop, desc) {
-            if (desc.value !== undefined) {
-                obj[prop] = desc.value;
-            }
-            if (desc.get !== undefined) {
-                obj.__defineGetter__(prop, desc.get);
-            }
-            if (desc.set !== undefined) {
-                obj.__defineSetter__(prop, desc.set);
-            }
-        };
-    }
-
-    if (!Array.isArray) {
-        Array.isArray = function(obj) {
-            return Object.prototype.toString.call(obj) === '[object Array]';
-        };
-    }
-
     // Browser Navigator
     window.navigator = {
         get appVersion() {
@@ -44,21 +32,23 @@ var window = this;
 
     // Setup location properties
     var _location;
-    window.__defineSetter__("location", function(url) {
-        var urlParts = /(^https?:)\/\/(([^:\/\?#]+)(:(\d+))?)([^\?#]*)?(\?[^#]*)?(#.*)?/.exec(url);
-        _location = {
-            href: url,
-            protocol: urlParts[1],
-            host: urlParts[2],
-            hostname: urlParts[3],
-            port: urlParts[4] ? urlParts[5] : '',
-            pathname: urlParts[6] || '',
-            search: urlParts[7] || '',
-            hash: urlParts[8] || ''
-        };
-    });
-    window.__defineGetter__("location", function() {
-        return _location;
+    Object.defineProperty(window, 'location', {
+        set: function(url) {
+            var urlParts = /(^https?:)\/\/(([^:\/\?#]+)(:(\d+))?)([^\?#]*)?(\?[^#]*)?(#.*)?/.exec(url);
+            _location = {
+                href: url,
+                protocol: urlParts[1],
+                host: urlParts[2],
+                hostname: urlParts[3],
+                port: urlParts[4] ? urlParts[5] : '',
+                pathname: urlParts[6] || '',
+                search: urlParts[7] || '',
+                hash: urlParts[8] || ''
+            };
+        },
+        get: function() {
+            return _location;
+        }
     });
 
 
@@ -66,7 +56,7 @@ var window = this;
     window.console = function() {
         // Converts JavaScript objects to JSON.
         // We cannot use Crockford's JSON because it cannot handle
-        // Rhino's and Java's objects properly, so we redo it here.
+        // cyclic data structures properly, so we redo it here.
         function _toJSON(object, ids) {
             switch (typeof object) {
                 case 'string':
@@ -80,10 +70,11 @@ var window = this;
                 case 'object':
                     if (!object) {
                         return 'null';
-                    } else if (object instanceof Array) {
+                    } else if (Array.isArray(object)) {
                         for (var aid = 0; aid < ids.length; ++aid) {
-                            if (ids[aid] === object)
+                            if (ids[aid] === object) {
                                 return undefined;
+                            }
                         }
                         ids.push(object);
 
@@ -91,25 +82,28 @@ var window = this;
                         for (var i = 0; i < object.length; ++i) {
                             var arrayValue = _toJSON(object[i], ids);
                             if (arrayValue !== undefined) {
-                                if (i > 0)
+                                if (i > 0) {
                                     arrayResult += ',';
+                                }
                                 arrayResult += arrayValue;
                             }
                         }
                         arrayResult += ']';
                         return arrayResult;
-                    } else if (Packages.org.cometd.javascript.Utils.isJavaScriptObject(object)) {
+                    } else {
                         for (var oid = 0; oid < ids.length; ++oid) {
-                            if (ids[oid] === object)
+                            if (ids[oid] === object) {
                                 return undefined;
+                            }
                         }
                         ids.push(object);
 
                         var objectResult = '{';
                         for (var name in object) {
-                            if (Object.hasOwnProperty.call(object, name)) {
-                                if (objectResult.length > 1)
+                            if (object.hasOwnProperty(name)) {
+                                if (objectResult.length > 1) {
                                     objectResult += ',';
+                                }
                                 objectResult += '"' + name + '":';
                                 var objectValue = _toJSON(object[name], ids);
                                 if (objectValue !== undefined) {
@@ -119,8 +113,6 @@ var window = this;
                         }
                         objectResult += '}';
                         return objectResult;
-                    } else {
-                        return '' + object;
                     }
                 case 'function':
                     return object.name ? object.name + '()' : 'anonymous()';
@@ -130,60 +122,60 @@ var window = this;
         }
 
         function _log(level, args) {
-            var text = level;
+            var formatter = new java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss.SSS');
+            var log = formatter.format(new java.util.Date());
+            log += ' ' + java.lang.Thread.currentThread().getName();
+            log += ' [' + level + '][browser.js]';
             for (var i = 0; i < args.length; ++i) {
                 var element = args[i];
-                if (typeof element === 'object')
+                if (typeof element === 'object') {
                     element = _toJSON(element, []);
-                text += ' ' + element;
+                }
+                log += ' ' + element;
             }
-            var formatter = new Packages.java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss.SSS');
-            var log = formatter.format(new Packages.java.util.Date());
-            log += ' ' + Packages.java.lang.Thread.currentThread().getName();
-            log += ' ' + text;
-            Packages.java.lang.System.err.println(log);
+            java.lang.System.err.println(log);
         }
 
         return {
             error: function() {
-                _log('ERROR:', arguments);
+                _log('ERROR', arguments);
             },
             warn: function() {
-                _log('WARN:', arguments);
+                _log('WARN', arguments);
             },
             info: function() {
-                _log('INFO:', arguments);
+                _log('INFO', arguments);
             },
             debug: function() {
-                _log('DEBUG:', arguments);
+                _log('DEBUG', arguments);
             },
             log: function() {
-                _log('', arguments);
+                _log('LOG', arguments);
             }
         };
     }();
 
 
     // Timers
-    var _scheduler = new Packages.java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
     window.setTimeout = function(fn, delay) {
         delay = delay || 0;
-        return _scheduler.schedule(new Packages.java.lang.Runnable({
+        return scheduler.schedule(new java.lang.Runnable({
             run: function() {
-                threadModel.invoke(window, window, fn);
+                javaScript.invoke(true, window, fn);
             }
-        }), delay, Packages.java.util.concurrent.TimeUnit.MILLISECONDS);
+        }), delay, java.util.concurrent.TimeUnit.MILLISECONDS);
     };
     window.clearTimeout = function(handle) {
-        if (handle)
+        if (handle) {
             handle.cancel(true);
+        }
     };
     window.setInterval = function(fn, period) {
-        return _scheduler.scheduleWithFixedDelay(new Packages.java.lang.Runnable({
+        return scheduler.scheduleWithFixedDelay(new java.lang.Runnable({
             run: function() {
-                threadModel.invoke(window, window, fn);
+                javaScript.invoke(true, window, fn);
             }
-        }), period, period, Packages.java.util.concurrent.TimeUnit.MILLISECONDS);
+        }), period, period, java.util.concurrent.TimeUnit.MILLISECONDS);
     };
     window.clearInterval = function(handle) {
         handle.cancel(true);
@@ -193,29 +185,32 @@ var window = this;
     // Window Events
     var _events = [{}];
     window.addEventListener = function(type, fn) {
-        if (!this.uuid || this == window) {
+        if (!this.uuid || this === window) {
             this.uuid = _events.length;
             _events[this.uuid] = {};
         }
 
-        if (!_events[this.uuid][type])
+        if (!_events[this.uuid][type]) {
             _events[this.uuid][type] = [];
+        }
 
-        if (_events[this.uuid][type].indexOf(fn) < 0)
+        if (_events[this.uuid][type].indexOf(fn) < 0) {
             _events[this.uuid][type].push(fn);
+        }
     };
     window.removeEventListener = function(type, fn) {
-        if (!this.uuid || this == window) {
+        if (!this.uuid || this === window) {
             this.uuid = _events.length;
             _events[this.uuid] = {};
         }
 
-        if (!_events[this.uuid][type])
+        if (!_events[this.uuid][type]) {
             _events[this.uuid][type] = [];
+        }
 
         _events[this.uuid][type] =
             _events[this.uuid][type].filter(function(f) {
-                return f != fn;
+                return f !== fn;
             });
     };
     window.dispatchEvent = function(event) {
@@ -228,8 +223,9 @@ var window = this;
                 });
             }
 
-            if (this["on" + event.type])
+            if (this["on" + event.type]) {
                 this["on" + event.type].call(self, event);
+            }
         }
     };
 
@@ -242,7 +238,7 @@ var window = this;
      */
     function makeScriptRequest(script) {
         if (script.src) {
-            var xhr = new XMLHttpRequest();
+            var xhr = new window.XMLHttpRequest();
             xhr.open("GET", script.src, true);
             xhr.onload = function() {
                 eval(this.responseText);
@@ -261,7 +257,7 @@ var window = this;
         }
     }
 
-    var _domNodes = new Packages.java.util.HashMap();
+    var _domNodes = new java.util.HashMap();
 
     /**
      * Helper method for generating the right javascript DOM objects based upon the node type.
@@ -269,18 +265,21 @@ var window = this;
      * @param javaNode the java node to convert to javascript node
      */
     function makeNode(javaNode) {
-        if (!javaNode) return null;
-        if (_domNodes.containsKey(javaNode))
+        if (!javaNode) {
+            return null;
+        }
+        if (_domNodes.containsKey(javaNode)) {
             return _domNodes.get(javaNode);
-        var isElement = javaNode.getNodeType() == Packages.org.w3c.dom.Node.ELEMENT_NODE;
-        var jsNode = isElement ? new DOMElement(javaNode) : new DOMNode(javaNode);
+        }
+        var isElement = javaNode.getNodeType() === org.w3c.dom.Node.ELEMENT_NODE;
+        var jsNode = isElement ? new window.DOMElement(javaNode) : new window.DOMNode(javaNode);
         _domNodes.put(javaNode, jsNode);
         return jsNode;
     }
 
     function makeHTMLDocument(html) {
         var bytes = (new Packages.java.lang.String(html)).getBytes("UTF8");
-        return new DOMDocument(new Packages.java.io.ByteArrayInputStream(bytes));
+        return new window.DOMDocument(new Packages.java.io.ByteArrayInputStream(bytes));
     }
 
 
@@ -303,7 +302,7 @@ var window = this;
             return makeNode(this._dom.getParentNode());
         },
         get childNodes() {
-            return new DOMNodeList(this._dom.getChildNodes());
+            return new window.DOMNodeList(this._dom.getChildNodes());
         },
         get firstChild() {
             return makeNode(this._dom.getFirstChild());
@@ -396,17 +395,19 @@ var window = this;
     };
 
     // DOM Document
+    var ScriptInjectionEventListener = Java.type('org.cometd.javascript.ScriptInjectionEventListener');
     window.DOMDocument = function(stream) {
         this._file = stream;
-        this._dom = Packages.javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(stream);
+        this._dom = javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(stream);
 
-        if (!_domNodes.containsKey(this._dom))
+        if (!_domNodes.containsKey(this._dom)) {
             _domNodes.put(this._dom, this);
+        }
 
-        var listener = new Packages.org.cometd.javascript.ScriptInjectionEventListener(threadModel, window, makeScriptRequest, _domNodes);
+        var listener = new ScriptInjectionEventListener(javaScript, window, makeScriptRequest, _domNodes);
         this._dom.addEventListener('DOMNodeInserted', listener, false);
 
-        this._impl = new DOMImplementation();
+        this._impl = new window.DOMImplementation();
     };
     window.DOMDocument.prototype = extend(new DOMNode(), {
         // START OFFICIAL DOM
@@ -434,7 +435,7 @@ var window = this;
 //        createAttribute
 //        createEntityReference
         getElementsByTagName: function(name) {
-            return new DOMNodeList(this._dom.getElementsByTagName(
+            return new window.DOMNodeList(this._dom.getElementsByTagName(
                 name.toLowerCase()));
         },
         importNode: function(node, deep) {
@@ -448,8 +449,9 @@ var window = this;
 
             for (var i = 0; i < elems.length; i++) {
                 var elem = elems.item(i);
-                if (elem.getAttribute("id") == id)
+                if (elem.getAttribute("id") === id) {
                     return makeNode(elem);
+                }
             }
 
             return null;
@@ -466,7 +468,7 @@ var window = this;
             return "#document";
         },
         toString: function() {
-            return "Document" + (typeof this._file == "string" ?
+            return "Document" + (typeof this._file === "string" ?
                 ": " + this._file : "");
         },
         get innerHTML() {
@@ -482,8 +484,9 @@ var window = this;
                             });
                             var val = elem.style[prop];
 
-                            if (prop == "opacity" && val == "")
+                            if (prop === "opacity" && val === "") {
                                 val = "1";
+                            }
 
                             return val;
                         }
@@ -552,8 +555,9 @@ var window = this;
 
         for (var i = 0; i < styles.length; i++) {
             var style = styles[i].split(/\s*:\s*/);
-            if (style.length == 2)
+            if (style.length === 2) {
                 this.style[style[0]] = style[1];
+            }
         }
     };
     window.DOMElement.prototype = extend(new DOMNode(), {
@@ -562,7 +566,7 @@ var window = this;
             return this._dom.getTagName();
         },
         getAttribute: function(name) {
-            return this._dom.hasAttribute(name) ? new String(this._dom.getAttribute(name)) : null;
+            return this._dom.hasAttribute(name) ? this._dom.getAttribute(name) : null;
         },
         setAttribute: function(name, value) {
             this._dom.setAttribute(name, value);
@@ -596,10 +600,12 @@ var window = this;
             var ret = "<" + this.tagName, attr = this.attributes;
 
             for (var i in attr) {
-                ret += " " + i + "='" + attr[i] + "'";
+                if (attr.hasOwnProperty(i)) {
+                    ret += " " + i + "='" + attr[i] + "'";
+                }
             }
 
-            if (this.childNodes.length || this.nodeName == "SCRIPT") {
+            if (this.childNodes.length || this.nodeName === "SCRIPT") {
                 ret += ">" + this.childNodes.outerHTML +
                     "</" + this.tagName + ">";
             } else {
@@ -617,8 +623,8 @@ var window = this;
             });
 
             var nodes = this.ownerDocument.importNode(
-                new DOMDocument(new Packages.java.io.ByteArrayInputStream(
-                    (new Packages.java.lang.String("<wrap>" + html + "</wrap>"))
+                new window.DOMDocument(new java.io.ByteArrayInputStream(
+                    (new java.lang.String("<wrap>" + html + "</wrap>"))
                         .getBytes("UTF8"))).documentElement, true).childNodes;
 
             while (this.firstChild) {
@@ -635,9 +641,9 @@ var window = this;
             function nav(nodes) {
                 var str = "";
                 for (var i = 0; i < nodes.length; i++) {
-                    if (nodes[i].nodeType == 3) {
+                    if (nodes[i].nodeType === 3) {
                         str += nodes[i].nodeValue;
-                    } else if (nodes[i].nodeType == 1) {
+                    } else if (nodes[i].nodeType === 1) {
                         str += nav(nodes[i].childNodes);
                     }
                 }
@@ -657,14 +663,14 @@ var window = this;
         offsetWidth: 0,
         get disabled() {
             var val = this.getAttribute("disabled");
-            return val != "false" && !!val;
+            return val !== "false" && !!val;
         },
         set disabled(val) {
             return this.setAttribute("disabled", val);
         },
         get checked() {
             var val = this.getAttribute("checked");
-            return val != "false" && !!val;
+            return val !== "false" && !!val;
         },
         set checked(val) {
             return this.setAttribute("checked", val);
@@ -673,10 +679,10 @@ var window = this;
             if (!this._selectDone) {
                 this._selectDone = true;
 
-                if (this.nodeName == "OPTION" && !this.parentNode.getAttribute("multiple")) {
+                if (this.nodeName === "OPTION" && !this.parentNode.getAttribute("multiple")) {
                     var opt = this.parentNode.getElementsByTagName("option");
 
-                    if (this == opt[0]) {
+                    if (this === opt[0]) {
                         var select = true;
 
                         for (var i = 1; i < opt.length; i++) {
@@ -686,13 +692,14 @@ var window = this;
                             }
                         }
 
-                        if (select)
+                        if (select) {
                             this.selected = true;
+                        }
                     }
                 }
             }
             var val = this.getAttribute("selected");
-            return val != "false" && !!val;
+            return val !== "false" && !!val;
         },
         set selected(val) {
             return this.setAttribute("selected", val);
@@ -751,18 +758,19 @@ var window = this;
             return this.getElementsByTagName("*");
         },
         get contentWindow() {
-            return this.nodeName == "IFRAME" ? {
+            return this.nodeName === "IFRAME" ? {
                 document: this.contentDocument
             } : null;
         },
         get contentDocument() {
-            if (this.nodeName == "IFRAME") {
+            if (this.nodeName === "IFRAME") {
                 if (!this._doc) {
                     this._doc = makeHTMLDocument("<html><head></head><body></body></html>");
                 }
                 return this._doc;
-            } else
+            } else {
                 return null;
+            }
         }
     });
 
@@ -775,15 +783,29 @@ var window = this;
     // Helper method for extending one object with another
     function extend(a, b) {
         for (var i in b) {
-            var g = b.__lookupGetter__(i), s = b.__lookupSetter__(i);
+            if (b.hasOwnProperty(i)) {
+                var g = Object.getOwnPropertyDescriptor(b, i).get;
+                var s = Object.getOwnPropertyDescriptor(b, i).set;
 
-            if (g || s) {
-                if (g)
-                    a.__defineGetter__(i, g);
-                if (s)
-                    a.__defineSetter__(i, s);
-            } else
-                a[i] = b[i];
+                if (g || s) {
+                    if (g && s) {
+                        Object.defineProperty(a, i, {
+                            get: g,
+                            set: s
+                        });
+                    } else if (g) {
+                        Object.defineProperty(a, i, {
+                            get: g
+                        });
+                    } else {
+                        Object.defineProperty(a, i, {
+                            set: s
+                        });
+                    }
+                } else {
+                    a[i] = b[i];
+                }
+            }
         }
         return a;
     }
@@ -792,7 +814,9 @@ var window = this;
     window.innerWidth = 0;
 
     window.assert = function(condition, text) {
-        if (!condition) throw 'ASSERTION FAILED' + (text ? ': ' + text : '');
+        if (!condition) {
+            throw 'ASSERTION FAILED' + (text ? ': ' + text : '');
+        }
     };
 
     // Using an implementation of XMLHttpRequest that uses java.net.URL is asking for troubles
@@ -801,6 +825,7 @@ var window = this;
     // When using java.net.URL it happens that a long poll can be closed at any time,
     // just to be reissued using another socket.
     // Therefore we use helper classes that are based on Jetty's HttpClient, which offers full control.
+    var XMLHttpRequestExchange = Java.type('org.cometd.javascript.XMLHttpRequestExchange');
     window.XMLHttpRequest = function() {
     };
     window.XMLHttpRequest.UNSENT = 0;
@@ -817,7 +842,7 @@ var window = this;
                 return this._exchange.responseText;
             },
             get responseXML() {
-                return null; // TODO
+                return null;
             },
             get status() {
                 return this._exchange.responseStatus;
@@ -835,36 +860,52 @@ var window = this;
             },
             onabort: function() {
             },
-            open: function(method, url, async, user, password) {
+            open: function(method, url, async) {
                 // Abort previous exchange
                 this.abort();
 
                 var absolute = /^https?:\/\//.test(url);
                 var absoluteURL = absolute ? url : window.location.href + url;
-                this._exchange = new XMLHttpRequestExchange(xhrClient, threadModel, this, method, absoluteURL, async);
+                this._exchange = new XMLHttpRequestExchange(xhrClient, javaScript, this, method, absoluteURL, async);
             },
             setRequestHeader: function(header, value) {
-                if (this.readyState !== XMLHttpRequest.OPENED) throw 'INVALID_STATE_ERR: ' + this.readyState;
-                if (!header) throw 'SYNTAX_ERR';
-                if (value) this._exchange.addRequestHeader(header, value);
+                if (this.readyState !== XMLHttpRequest.OPENED) {
+                    throw 'INVALID_STATE_ERR: ' + this.readyState;
+                }
+                if (!header) {
+                    throw 'SYNTAX_ERR';
+                }
+                if (value) {
+                    this._exchange.addRequestHeader(header, value);
+                }
             },
             send: function(data) {
-                if (this.readyState !== XMLHttpRequest.OPENED) throw 'INVALID_STATE_ERR';
-                if (this._exchange.method == 'GET') data = null;
-                if (data) this._exchange.setRequestContent(data);
+                if (this.readyState !== XMLHttpRequest.OPENED) {
+                    throw 'INVALID_STATE_ERR';
+                }
+                if (this._exchange.method === 'GET') {
+                    data = null;
+                }
+                if (data) {
+                    this._exchange.setRequestContent(data);
+                }
                 this._exchange.send();
             },
             abort: function() {
-                if (this._exchange) this._exchange.abort();
+                if (this._exchange) {
+                    this._exchange.abort();
+                }
             },
             getAllResponseHeaders: function() {
-                if (this.readyState === XMLHttpRequest.UNSENT || this.readyState === XMLHttpRequest.OPENED)
+                if (this.readyState === XMLHttpRequest.UNSENT || this.readyState === XMLHttpRequest.OPENED) {
                     throw 'INVALID_STATE_ERR';
+                }
                 return this._exchange.getAllResponseHeaders();
             },
             getResponseHeader: function(header) {
-                if (this.readyState === XMLHttpRequest.UNSENT || this.readyState === XMLHttpRequest.OPENED)
+                if (this.readyState === XMLHttpRequest.UNSENT || this.readyState === XMLHttpRequest.OPENED) {
                     throw 'INVALID_STATE_ERR';
+                }
                 return this._exchange.getResponseHeader(header);
             },
             get withCredentials() {
@@ -876,11 +917,12 @@ var window = this;
         };
     }();
 
+    var WebSocketConnection = Java.type('org.cometd.javascript.WebSocketConnection');
     var wsIds = 0;
     window.WebSocket = function(url, protocol) {
         this._id = ++wsIds;
         this._url = url;
-        this._ws = new WebSocketConnection(threadModel, this, wsConnector, url, protocol);
+        this._ws = new WebSocketConnection(javaScript, this, wsConnector, url, protocol ? protocol : null);
     };
     window.WebSocket.CONNECTING = 0;
     window.WebSocket.OPEN = 1;
@@ -891,16 +933,16 @@ var window = this;
             get url() {
                 return this._url;
             },
-            onopen: function(event) {
+            onopen: function() {
                 window.assert(false, "onopen not assigned");
             },
-            onerror: function(event) {
+            onerror: function() {
                 window.assert(false, "onerror not assigned");
             },
-            onclose: function(event) {
+            onclose: function() {
                 window.assert(false, "onclose not assigned");
             },
-            onmessage: function(event) {
+            onmessage: function() {
                 window.assert(false, "onmessage not assigned");
             },
             send: function(data) {

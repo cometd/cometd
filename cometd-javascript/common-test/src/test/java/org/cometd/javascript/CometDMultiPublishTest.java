@@ -34,11 +34,11 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mozilla.javascript.ScriptableObject;
 
 public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
     @Override
@@ -51,30 +51,29 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
 
     @Test
     public void testMultiPublish() throws Throwable {
-        defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
-        evaluateScript("cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
+        evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
-        evaluateScript("cometd.subscribe('/echo', latch, latch.countDown);");
+        Latch latch = javaScript.get("latch");
+        evaluateScript("cometd.subscribe('/echo', function() { latch.countDown(); });");
         Assert.assertTrue(subscribeLatch.await(5000));
 
-        defineClass(Handler.class);
+        evaluateScript("var Handler = Java.type('" + Handler.class.getName() + "')");
         evaluateScript("var handler = new Handler();");
-        Handler handler = get("handler");
-        evaluateScript("cometd.addListener('/meta/publish', handler, 'handle');");
+        Handler handler = javaScript.get("handler");
+        evaluateScript("cometd.addListener('/meta/publish', function(m) { handler.handle(m); });");
         evaluateScript("var disconnect = new Latch(1);");
-        Latch disconnect = get("disconnect");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnect, disconnect.countDown);");
+        Latch disconnect = javaScript.get("disconnect");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnect.countDown(); });");
 
-        AtomicReference<List<Throwable>> failures = new AtomicReference<List<Throwable>>(new ArrayList<Throwable>());
+        AtomicReference<List<Throwable>> failures = new AtomicReference<>(new ArrayList<Throwable>());
         handler.expect(failures, 4);
         disconnect.reset(1);
 
@@ -93,18 +92,13 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
         Assert.assertTrue(disconnect.await(5000));
     }
 
-    public static class Handler extends ScriptableObject {
+    public static class Handler {
         private int id;
         private AtomicReference<List<Throwable>> failures;
         private CountDownLatch latch;
 
-        @Override
-        public String getClassName() {
-            return "Handler";
-        }
-
-        public void jsFunction_handle(Object jsMessage) {
-            Map message = (Map)Utils.jsToJava(jsMessage);
+        public void handle(Object jsMessage) {
+            Map<String, Object> message = (ScriptObjectMirror)jsMessage;
             Boolean successful = (Boolean)message.get("successful");
             ++id;
             if (id == 1) {

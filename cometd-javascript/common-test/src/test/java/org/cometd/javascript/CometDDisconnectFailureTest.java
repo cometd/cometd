@@ -47,17 +47,15 @@ public class CometDDisconnectFailureTest extends AbstractCometDTest {
 
     @Test
     public void testDisconnectFailure() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
 
         evaluateScript("cometd.disconnect();");
         Assert.assertTrue(disconnectLatch.await(5000));

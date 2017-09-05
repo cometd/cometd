@@ -22,12 +22,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mozilla.javascript.ScriptableObject;
 
 public class CometDMaxNetworkDelayTest extends AbstractCometDTest {
     private final long maxNetworkDelay = 2000;
@@ -36,11 +36,10 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest {
     public void testMaxNetworkDelay() throws Exception {
         bayeuxServer.addExtension(new DelayingExtension());
 
-        defineClass(Latch.class);
-        defineClass(Listener.class);
+        evaluateScript("var Listener = Java.type('" + Listener.class.getName() + "');");
         evaluateScript("var publishListener = new Listener();");
-        Listener publishListener = get("publishListener");
-        evaluateScript("cometd.addListener('/meta/publish', publishListener, publishListener.handle);");
+        Listener publishListener = javaScript.get("publishListener");
+        evaluateScript("cometd.addListener('/meta/publish', function(m) { publishListener.handle(m); });");
         evaluateScript("cometd.configure({" +
                 "url: '" + cometdURL + "', " +
                 "maxNetworkDelay: " + maxNetworkDelay + ", " +
@@ -52,7 +51,7 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest {
         // Allow long poll to establish
         Thread.sleep(1000);
 
-        AtomicReference<List<Throwable>> failures = new AtomicReference<List<Throwable>>(new ArrayList<Throwable>());
+        AtomicReference<List<Throwable>> failures = new AtomicReference<>(new ArrayList<Throwable>());
         publishListener.expect(failures, 1);
         evaluateScript("cometd.publish('/test', {});");
 
@@ -64,8 +63,8 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest {
         Assert.assertTrue(failures.get().toString(), failures.get().isEmpty());
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
         Assert.assertTrue(disconnectLatch.await(5000));
 
@@ -73,18 +72,12 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest {
         Thread.sleep(maxNetworkDelay);
     }
 
-    public static class Listener extends ScriptableObject {
+    public static class Listener {
         private AtomicReference<List<Throwable>> failures;
         private CountDownLatch latch;
 
-        @Override
-        public String getClassName() {
-            return "Listener";
-        }
-
-        public void jsFunction_handle(Object jsMessage) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> message = (Map<String, Object>)Utils.jsToJava(jsMessage);
+        public void handle(Object jsMessage) {
+            Map<String, Object> message = (ScriptObjectMirror)jsMessage;
             if ((Boolean)message.get("successful")) {
                 failures.get().add(new AssertionError("Publish"));
             }

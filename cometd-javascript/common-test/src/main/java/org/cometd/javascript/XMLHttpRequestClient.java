@@ -15,26 +15,21 @@
  */
 package org.cometd.javascript;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
 import org.eclipse.jetty.client.HttpClient;
-import org.mozilla.javascript.ScriptableObject;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * Implementation of the XMLHttpRequest functionality using Jetty's HttpClient.
  */
-public class XMLHttpRequestClient extends ScriptableObject {
+public class XMLHttpRequestClient {
+    private final JavaScriptCookieStore cookieStore;
     private HttpClient httpClient;
-    private JavaScriptCookieStore cookieStore;
 
-    public XMLHttpRequestClient() {
-    }
-
-    public void jsConstructor(JavaScriptCookieStore cookieStore) throws Exception {
+    public XMLHttpRequestClient(JavaScriptCookieStore cookieStore) throws Exception {
         this.cookieStore = cookieStore;
-    }
-
-    @Override
-    public String getClassName() {
-        return "XMLHttpRequestClient";
     }
 
     public void start() throws Exception {
@@ -42,6 +37,7 @@ public class XMLHttpRequestClient extends ScriptableObject {
         httpClient.setMaxConnectionsPerDestination(2);
         httpClient.setIdleTimeout(300000);
         httpClient.setCookieStore(cookieStore.getStore());
+        httpClient.setExecutor(new PrivilegedExecutor());
         httpClient.start();
     }
 
@@ -51,5 +47,18 @@ public class XMLHttpRequestClient extends ScriptableObject {
 
     public void stop() throws Exception {
         httpClient.stop();
+    }
+
+    private class PrivilegedExecutor extends QueuedThreadPool {
+        private final ThreadFactory factory = Executors.privilegedThreadFactory();
+
+        public PrivilegedExecutor() {
+            setName("httpclient");
+        }
+
+        @Override
+        protected Thread newThread(Runnable runnable) {
+            return factory.newThread(runnable);
+        }
     }
 }

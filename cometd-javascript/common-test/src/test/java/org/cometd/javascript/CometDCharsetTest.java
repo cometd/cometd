@@ -29,10 +29,9 @@ public class CometDCharsetTest extends AbstractCometDTest {
         String hiragana = "\u3068"; // to
         String chinese = "\u2ee2"; // cjk's horse
 
-        defineClass(Latch.class);
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = (Latch)get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("var data = undefined;");
         evaluateScript("cometd.subscribe('/echo', function(message) { data = message.data; latch.countDown(); });");
         evaluateScript("cometd.publish('/echo', {" +

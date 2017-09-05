@@ -17,34 +17,28 @@ package org.cometd.javascript;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.mozilla.javascript.ScriptableObject;
+public class Latch {
+    private final AtomicReference<CountDownLatch> latch = new AtomicReference<>();
 
-public class Latch extends ScriptableObject {
-    private volatile CountDownLatch latch;
-
-    @Override
-    public String getClassName() {
-        return "Latch";
-    }
-
-    public void jsConstructor(int count) {
+    public Latch(int count) {
         reset(count);
     }
 
     public void reset(int count) {
-        latch = new CountDownLatch(count);
+        latch.set(new CountDownLatch(count));
     }
 
     public boolean await(long timeout) throws InterruptedException {
-        return latch.await(timeout, TimeUnit.MILLISECONDS);
+        return latch.get().await(timeout, TimeUnit.MILLISECONDS);
     }
 
-    public void jsFunction_countDown() {
-        latch.countDown();
+    public void countDown() {
+        latch.get().countDown();
     }
 
-    public long jsGet_count() {
-        return latch.getCount();
+    public long getCount() {
+        return latch.get().getCount();
     }
 }

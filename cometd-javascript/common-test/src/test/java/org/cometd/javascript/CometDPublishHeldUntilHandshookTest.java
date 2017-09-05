@@ -24,46 +24,39 @@ import org.junit.Test;
 public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTest {
     @Test
     public void testPublishHeldUntilHandshook() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "var latch = new Latch(2);" +
                 "var savedChannels;" +
                 "var channels = [];" +
                 "cometd.registerExtension('test', {" +
-                "    outgoing: function(message) " +
-                "    {" +
+                "    outgoing: function(message) {" +
                 "        channels.push(message.channel);" +
                 "    }" +
                 "});" +
-                "cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
+                "cometd.addListener('/meta/handshake', function(message) {" +
                 "    cometd.publish('/bar', {});" +
-                "    cometd.batch(function()" +
-                "    {" +
-                "        cometd.subscribe('/foo', function(msg) { latch.countDown(); });" +
+                "    cometd.batch(function() {" +
+                "        cometd.subscribe('/foo', function() { latch.countDown(); });" +
                 "        cometd.publish('/foo', {});" +
                 "    });" +
                 "});" +
-                "cometd.addListener('/meta/connect', function(message)" +
-                "{" +
+                "cometd.addListener('/meta/connect', function(message) {" +
                 "   /* Copy the array so that from now on it is not modified anymore */" +
-                "   if (!savedChannels)" +
-                "   {" +
+                "   if (!savedChannels) {" +
                 "       savedChannels = channels.slice(0);" +
                 "       latch.countDown();" +
                 "   }" +
                 "});" +
                 "");
-        Latch latch = (Latch)get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("cometd.handshake();");
 
         Assert.assertTrue(latch.await(5000));
 
-        Object jsChannels = get("savedChannels");
-        Object[] channels = (Object[])Utils.jsToJava(jsChannels);
+        String[] channels = javaScript.evaluate(null, "Java.to(savedChannels, 'java.lang.String[]')");
         Assert.assertNotNull(channels);
-        List<Object> expectedChannels = Arrays.asList("/meta/handshake", "/bar", "/meta/subscribe", "/foo", "/meta/connect");
+        List<String> expectedChannels = Arrays.asList("/meta/handshake", "/bar", "/meta/subscribe", "/foo", "/meta/connect");
         Assert.assertEquals(expectedChannels, Arrays.asList(channels));
 
         evaluateScript("cometd.disconnect(true);");

@@ -29,18 +29,17 @@ import org.junit.Test;
 public class CometDSubscribeTest extends AbstractCometDTest {
     @Test
     public void testSubscriptionsUnsubscriptionsForSameChannelOnlySentOnce() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
-        evaluateScript("cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
+        evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
         evaluateScript("var unsubscribeLatch = new Latch(1);");
-        Latch unsubscribeLatch = get("unsubscribeLatch");
-        evaluateScript("cometd.addListener('/meta/unsubscribe', unsubscribeLatch, 'countDown');");
+        Latch unsubscribeLatch = javaScript.get("unsubscribeLatch");
+        evaluateScript("cometd.addListener('/meta/unsubscribe', function() { unsubscribeLatch.countDown(); });");
 
         evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
         Thread.sleep(1000); // Wait for long poll
 
-        evaluateScript("var subscription = cometd.subscribe('/foo', function(message) {});");
+        evaluateScript("var subscription = cometd.subscribe('/foo', function() {});");
         Assert.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("cometd.unsubscribe(subscription);");
@@ -48,8 +47,8 @@ public class CometDSubscribeTest extends AbstractCometDTest {
 
         // Two subscriptions to the same channel also generate only one message to the server
         subscribeLatch.reset(2);
-        evaluateScript("var subscription1 = cometd.subscribe('/foo', function(message) {});");
-        evaluateScript("var subscription2 = cometd.subscribe('/foo', function(message) {});");
+        evaluateScript("var subscription1 = cometd.subscribe('/foo', function() {});");
+        evaluateScript("var subscription2 = cometd.subscribe('/foo', function() {});");
         Assert.assertFalse(subscribeLatch.await(1000));
 
         // No message if there are subscriptions
@@ -69,10 +68,9 @@ public class CometDSubscribeTest extends AbstractCometDTest {
     public void testSubscriptionsRemovedOnReHandshake() throws Exception {
         // Listeners are not removed in case of re-handshake
         // since they are not dependent on the clientId
-        defineClass(Latch.class);
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
-        evaluateScript("cometd.addListener('/meta/publish', latch, 'countDown');");
+        Latch latch = javaScript.get("latch");
+        evaluateScript("cometd.addListener('/meta/publish', function() { latch.countDown(); });");
 
         evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
         Thread.sleep(1000); // Wait for long poll
@@ -89,8 +87,8 @@ public class CometDSubscribeTest extends AbstractCometDTest {
         Assert.assertTrue(latch.await(5000));
 
         evaluateScript("var subscriber = new Latch(1);");
-        Latch subscriber = get("subscriber");
-        evaluateScript("cometd.subscribe('/test', subscriber, 'countDown');");
+        Latch subscriber = javaScript.get("subscriber");
+        evaluateScript("cometd.subscribe('/test', function() { subscriber.countDown(); });");
         // Wait for the message on the subscriber and on the listener
         latch.reset(1);
         evaluateScript("cometd.publish('/test', {});");
@@ -107,7 +105,7 @@ public class CometDSubscribeTest extends AbstractCometDTest {
 
         // Now the previous subscriber must be gone, but not the listener
         // Subscribe again: if the previous listener is not gone, I get 2 notifications
-        evaluateScript("cometd.subscribe('/test', subscriber, 'countDown');");
+        evaluateScript("cometd.subscribe('/test', function() { subscriber.countDown(); });");
         latch.reset(1);
         subscriber.reset(2);
         evaluateScript("cometd.publish('/test', {});");
@@ -119,22 +117,19 @@ public class CometDSubscribeTest extends AbstractCometDTest {
 
     @Test
     public void testDynamicResubscription() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("" +
                 "cometd.configure({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });" +
                 "" +
                 "var _subscription;" +
-                "cometd.addListener('/meta/handshake', function(m)" +
-                "{" +
-                "    if (m.successful)" +
-                "    {" +
-                "        cometd.batch(function()" +
-                "        {" +
-                "            cometd.subscribe('/static', latch, 'countDown');" +
-                "            if (_subscription)" +
+                "cometd.addListener('/meta/handshake', function(m) {" +
+                "    if (m.successful) {" +
+                "        cometd.batch(function() {" +
+                "            cometd.subscribe('/static', function() { latch.countDown(); });" +
+                "            if (_subscription) {" +
                 "                _subscription = cometd.resubscribe(_subscription);" +
+                "            }" +
                 "        });" +
                 "    }" +
                 "});" +
@@ -151,9 +146,8 @@ public class CometDSubscribeTest extends AbstractCometDTest {
         latch.reset(2);
 
         evaluateScript("" +
-                "cometd.batch(function()" +
-                "{" +
-                "    _subscription = cometd.subscribe('/dynamic', latch, 'countDown');" +
+                "cometd.batch(function() {" +
+                "    _subscription = cometd.subscribe('/dynamic', function() { latch.countDown(); });" +
                 "    cometd.publish('/static', {});" +
                 "    cometd.publish('/dynamic', {});" +
                 "});" +
@@ -166,23 +160,22 @@ public class CometDSubscribeTest extends AbstractCometDTest {
 
         evaluateScript("" +
                 "var connectLatch = new Latch(1);" +
-                "cometd.addListener('/meta/connect', function(m)" +
-                "{" +
-                "    if (m.successful)" +
+                "cometd.addListener('/meta/connect', function(m) {" +
+                "    if (m.successful) {" +
                 "        connectLatch.countDown();" +
+                "    }" +
                 "});" +
                 "");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
 
         // Restart the server to trigger a re-handshake
-        prepareAndStartServer(new HashMap<String, String>());
+        prepareAndStartServer(new HashMap<>());
 
         // Wait until we are fully reconnected
         Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("" +
-                "cometd.batch(function()" +
-                "{" +
+                "cometd.batch(function() {" +
                 "    cometd.publish('/static', {});" +
                 "    cometd.publish('/dynamic', {});" +
                 "});" +
@@ -202,17 +195,16 @@ public class CometDSubscribeTest extends AbstractCometDTest {
             }
         });
 
-        defineClass(Latch.class);
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
         evaluateScript("" +
                 "cometd.configure({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });" +
                 "" +
-                "cometd.addListener('/meta/subscribe', function(m)" +
-                "{" +
+                "cometd.addListener('/meta/subscribe', function(m) {" +
                 "    /* Either both false or both true should count down the latch */" +
-                "    if (subscriptionAllowed ^ !m.successful)" +
+                "    if (subscriptionAllowed ^ !m.successful) {" +
                 "        subscribeLatch.countDown();" +
+                "    }" +
                 "});" +
                 "" +
                 "cometd.handshake();" +
@@ -225,8 +217,8 @@ public class CometDSubscribeTest extends AbstractCometDTest {
 
         final String channelName = "/test";
         evaluateScript("var messageLatch = new Latch(1);");
-        Latch messageLatch = get("messageLatch");
-        evaluateScript("cometd.subscribe('" + channelName + "', messageLatch, 'countDown');");
+        Latch messageLatch = javaScript.get("messageLatch");
+        evaluateScript("cometd.subscribe('" + channelName + "', function() { messageLatch.countDown(); });");
         Assert.assertTrue(subscribeLatch.await(5000));
 
         // Verify that messages are not received
@@ -238,7 +230,7 @@ public class CometDSubscribeTest extends AbstractCometDTest {
         messageLatch.reset(1);
         subscriptionAllowed.set(true);
         evaluateScript("subscriptionAllowed = true");
-        evaluateScript("cometd.subscribe('" + channelName + "', messageLatch, 'countDown');");
+        evaluateScript("cometd.subscribe('" + channelName + "', function() { messageLatch.countDown(); });");
         Assert.assertTrue(subscribeLatch.await(5000));
 
         // Verify that messages are received
@@ -248,21 +240,17 @@ public class CometDSubscribeTest extends AbstractCometDTest {
 
     @Test
     public void testSubscriptionSuccessfulInvokesCallback() throws Exception {
-        defineClass(Latch.class);
 
         final String channelName = "/foo";
 
         evaluateScript("var latch = new Latch(2);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
 
         evaluateScript("cometd.configure({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
-        evaluateScript("cometd.addListener('/meta/handshake', function()" +
-                "{" +
-                "    var subscription = cometd.subscribe('" + channelName + "', function(){}, function(message)" +
-                "    {" +
+        evaluateScript("cometd.addListener('/meta/handshake', function() {" +
+                "    var subscription = cometd.subscribe('" + channelName + "', function() {}, function(message) {" +
                 "        latch.countDown();" +
-                "        cometd.unsubscribe(subscription, function(message)" +
-                "        {" +
+                "        cometd.unsubscribe(subscription, function(message) {" +
                 "            latch.countDown();" +
                 "        });" +
                 "    });" +
@@ -276,7 +264,6 @@ public class CometDSubscribeTest extends AbstractCometDTest {
 
     @Test
     public void testSubscriptionDeniedInvokesCallback() throws Exception {
-        defineClass(Latch.class);
 
         final String channelName = "/foo";
         bayeuxServer.setSecurityPolicy(new DefaultSecurityPolicy() {
@@ -290,13 +277,11 @@ public class CometDSubscribeTest extends AbstractCometDTest {
         });
 
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
 
         evaluateScript("cometd.configure({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
-        evaluateScript("cometd.handshake(function()" +
-                "{" +
-                "    cometd.subscribe('" + channelName + "', function(){}, {}, function(message)" +
-                "    {" +
+        evaluateScript("cometd.handshake(function() {" +
+                "    cometd.subscribe('" + channelName + "', function() {}, {}, function(message) {" +
                 "        subscribeLatch.countDown();" +
                 "    });" +
                 "});");
@@ -304,8 +289,8 @@ public class CometDSubscribeTest extends AbstractCometDTest {
         Assert.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.disconnect(function(message){ disconnectLatch.countDown(); });");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.disconnect(function(){ disconnectLatch.countDown(); });");
 
         Assert.assertTrue(disconnectLatch.await(5000));
     }

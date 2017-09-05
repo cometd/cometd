@@ -27,25 +27,19 @@ public class CometDWebSocketExceptionTest extends AbstractCometDWebSocketTest {
         // Replace the WebSocket constructor to throw an exception
         evaluateScript("window.WebSocket = function() { throw 'WebSocketException'; };");
 
-        defineClass(Latch.class);
-
         evaluateScript("cometd.configure({" +
                 "url: '" + cometdURL + "', " +
                 "logLevel: '" + getLogLevel() + "'" +
                 "});");
 
         evaluateScript("var wsLatch = new Latch(1);");
-        Latch wsLatch = get("wsLatch");
+        Latch wsLatch = javaScript.get("wsLatch");
         evaluateScript("var lpLatch = new Latch(1);");
-        Latch lpLatch = get("lpLatch");
-        evaluateScript("cometd.handshake(function(message) " +
-                "{ " +
-                "   if (cometd.getTransport().getType() === 'websocket' && !message.successful)" +
-                "   {" +
+        Latch lpLatch = javaScript.get("lpLatch");
+        evaluateScript("cometd.handshake(function(message) {" +
+                "   if (cometd.getTransport().getType() === 'websocket' && !message.successful) {" +
                 "       wsLatch.countDown();" +
-                "   }" +
-                "   else if (cometd.getTransport().getType() === 'long-polling' && message.successful)" +
-                "   {" +
+                "   } else if (cometd.getTransport().getType() === 'long-polling' && message.successful) {" +
                 "       lpLatch.countDown();" +
                 "   }" +
                 "});");

@@ -23,12 +23,10 @@ import org.junit.Test;
 public class CometDTwoInstancesTest extends AbstractCometDTest {
     @Test
     public void testTwoInstances() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var handshakeLatch = new Latch(1);");
         evaluateScript("var handshakeLatch2 = new Latch(1);");
-        Latch handshakeLatch = get("handshakeLatch");
-        Latch handshakeLatch2 = get("handshakeLatch2");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
+        Latch handshakeLatch2 = javaScript.get("handshakeLatch2");
 
         evaluateScript("" +
                 "var cometd2 = new dojox.CometD('dojo');" +
@@ -37,8 +35,8 @@ public class CometDTwoInstancesTest extends AbstractCometDTest {
                 "/* Check that the other cometd object has not been influenced */" +
                 "window.assert(cometd.findTransport('long-polling') != null);" +
                 "" +
-                "cometd.addListener('/meta/handshake', handshakeLatch, 'countDown');" +
-                "cometd2.addListener('/meta/handshake', handshakeLatch2, 'countDown');" +
+                "cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });" +
+                "cometd2.addListener('/meta/handshake', function() { handshakeLatch2.countDown(); });" +
                 "" +
                 "cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "");
@@ -55,17 +53,17 @@ public class CometDTwoInstancesTest extends AbstractCometDTest {
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         evaluateScript("var subscribeLatch2 = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
-        Latch subscribeLatch2 = get("subscribeLatch2");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
+        Latch subscribeLatch2 = javaScript.get("subscribeLatch2");
         evaluateScript("var publishLatch = new Latch(2);");
         evaluateScript("var publishLatch2 = new Latch(2);");
-        Latch publishLatch = get("publishLatch");
-        Latch publishLatch2 = get("publishLatch2");
+        Latch publishLatch = javaScript.get("publishLatch");
+        Latch publishLatch2 = javaScript.get("publishLatch2");
         evaluateScript("" +
-                "cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');" +
-                "cometd2.addListener('/meta/subscribe', subscribeLatch2, 'countDown');" +
-                "cometd.subscribe('" + channelName + "', publishLatch, 'countDown');" +
-                "cometd2.subscribe('" + channelName + "', publishLatch2, 'countDown');" +
+                "cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });" +
+                "cometd2.addListener('/meta/subscribe', function() { subscribeLatch2.countDown(); });" +
+                "cometd.subscribe('" + channelName + "', function() { publishLatch.countDown(); });" +
+                "cometd2.subscribe('" + channelName + "', function() { publishLatch2.countDown(); });" +
                 "");
         Assert.assertTrue(subscribeLatch.await(5000));
         Assert.assertTrue(subscribeLatch2.await(5000));

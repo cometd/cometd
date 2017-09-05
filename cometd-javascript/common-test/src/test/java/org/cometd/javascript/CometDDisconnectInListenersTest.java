@@ -28,25 +28,20 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTest {
         // handlers, so the disconnect listener is not invoked.
         Assume.assumeTrue(System.getProperty("toolkitTestProvider").equalsIgnoreCase(JQueryTestProvider.class.getName()));
 
-        defineClass(Latch.class);
-
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
 
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
+                "cometd.addListener('/meta/handshake', function() {" +
                 "   cometd.disconnect();" +
                 "});" +
-                "cometd.addListener('/meta/connect', function(message)" +
-                "{" +
+                "cometd.addListener('/meta/connect', function() {" +
                 "   connectLatch.countDown();" +
                 "});" +
-                "cometd.addListener('/meta/disconnect', function(message)" +
-                "{" +
+                "cometd.addListener('/meta/disconnect', function() {" +
                 "   disconnectLatch.countDown();" +
                 "});" +
                 "" +
@@ -61,23 +56,20 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTest {
 
     @Test
     public void testDisconnectInConnectListener() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var connectLatch = new Latch(2);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
 
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/connect', function(message)" +
-                "{" +
-                "   if (connectLatch.count == 2) " +
+                "cometd.addListener('/meta/connect', function() {" +
+                "   if (connectLatch.count == 2) {" +
                 "       cometd.disconnect();" +
+                "   }" +
                 "   connectLatch.countDown();" +
                 "});" +
-                "cometd.addListener('/meta/disconnect', function(message)" +
-                "{" +
+                "cometd.addListener('/meta/disconnect', function() {" +
                 "   disconnectLatch.countDown();" +
                 "});" +
                 "" +
@@ -86,7 +78,7 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTest {
 
         // Connect must be called only once
         Assert.assertFalse(connectLatch.await(1000));
-        Assert.assertEquals(1L, connectLatch.jsGet_count());
+        Assert.assertEquals(1L, connectLatch.getCount());
 
         Assert.assertTrue(disconnectLatch.await(5000));
     }

@@ -35,17 +35,14 @@ public class CometDAckExtensionTest extends AbstractCometDTest {
 
     @Test
     public void testClientSupportsAckExtension() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var cometd = cometd;");
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         // Check that during handshake the ack extension capability is sent to server
         evaluateScript("var clientSupportsAck = false;");
         evaluateScript("cometd.registerExtension('test', {" +
-                "outgoing: function(message)" +
-                "{" +
-                "   if (message.channel == '/meta/handshake')" +
-                "   {" +
+                "outgoing: function(message) {" +
+                "   if (message.channel == '/meta/handshake') {" +
                 "       clientSupportsAck = message.ext && message.ext.ack;" +
                 "   }" +
                 "   return message;" +
@@ -54,13 +51,13 @@ public class CometDAckExtensionTest extends AbstractCometDTest {
         provideMessageAcknowledgeExtension();
 
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/handshake', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
 
         Assert.assertTrue(readyLatch.await(5000));
 
-        Boolean clientSupportsAck = get("clientSupportsAck");
+        Boolean clientSupportsAck = javaScript.get("clientSupportsAck");
         Assert.assertTrue(clientSupportsAck);
         evaluateScript("cometd.unregisterExtension('test');");
 
@@ -69,24 +66,19 @@ public class CometDAckExtensionTest extends AbstractCometDTest {
 
     @Test
     public void testAcknowledgement() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var inAckId = undefined;");
         evaluateScript("var outAckId = undefined;");
         evaluateScript("cometd.registerExtension('test', {" +
-                "incoming: function(message)" +
-                "{" +
-                "   if (message.channel == '/meta/connect')" +
-                "   {" +
+                "incoming: function(message) {" +
+                "   if (message.channel == '/meta/connect') {" +
                 "       inAckId = message.ext && message.ext.ack;" +
                 "   }" +
                 "   return message;" +
                 "}," +
-                "outgoing: function(message)" +
-                "{" +
-                "   if (message.channel == '/meta/connect')" +
-                "   {" +
+                "outgoing: function(message) {" +
+                "   if (message.channel == '/meta/connect') {" +
                 "       outAckId = message.ext && message.ext.ack;" +
                 "   }" +
                 "   return message;" +
@@ -95,34 +87,34 @@ public class CometDAckExtensionTest extends AbstractCometDTest {
         provideMessageAcknowledgeExtension();
 
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
 
         Assert.assertTrue(readyLatch.await(5000));
 
-        Number inAckId = get("inAckId");
+        Number inAckId = javaScript.get("inAckId");
         // The server should have returned a non-negative value during the first connect call
         Assert.assertTrue(inAckId.intValue() >= 0);
 
         // Subscribe to receive server events
         evaluateScript("var msgCount = 0;");
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
         evaluateScript("var publishLatch = new Latch(1);");
-        Latch publishLatch = get("publishLatch");
-        evaluateScript("cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');");
-        evaluateScript("cometd.subscribe('/echo', function(message) { ++msgCount; publishLatch.countDown(); });");
+        Latch publishLatch = javaScript.get("publishLatch");
+        evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
+        evaluateScript("cometd.subscribe('/echo', function() { ++msgCount; publishLatch.countDown(); });");
         Assert.assertTrue(subscribeLatch.await(5000));
 
         // The server receives an event and sends it to the client via the long poll
         ackService.emit("test acknowledgement");
         Assert.assertTrue(publishLatch.await(5000));
 
-        inAckId = get("inAckId");
-        Number outAckId = get("outAckId");
+        inAckId = javaScript.get("inAckId");
+        Number outAckId = javaScript.get("outAckId");
         Assert.assertTrue(inAckId.intValue() >= outAckId.intValue());
-        Number msgCount = get("msgCount");
+        Number msgCount = javaScript.get("msgCount");
         Assert.assertEquals(1, msgCount.intValue());
 
         evaluateScript("cometd.unregisterExtension('test');");

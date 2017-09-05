@@ -23,29 +23,20 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
-import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class XMLHttpRequestExchange extends ScriptableObject {
-    private CometDExchange exchange;
+public class XMLHttpRequestExchange {
+    private final CometDExchange exchange;
 
-    public XMLHttpRequestExchange() {
-    }
-
-    public void jsConstructor(Object client, Object threadModel, Scriptable thiz, String method, String url, boolean async) {
-        exchange = new CometDExchange((XMLHttpRequestClient)client, (ThreadModel)threadModel, thiz, method, url, async);
-    }
-
-    @Override
-    public String getClassName() {
-        return "XMLHttpRequestExchange";
+    public XMLHttpRequestExchange(Object client, JavaScript javaScript, ScriptObjectMirror thiz, String method, String url, boolean async) {
+        exchange = new CometDExchange((XMLHttpRequestClient)client, javaScript, thiz, method, url, async);
     }
 
     public boolean isAsynchronous() {
@@ -57,47 +48,47 @@ public class XMLHttpRequestExchange extends ScriptableObject {
         exchange.notifyReadyStateChange(false);
     }
 
-    public void jsFunction_addRequestHeader(String name, String value) {
+    public void addRequestHeader(String name, String value) {
         exchange.getRequest().header(name, value);
     }
 
-    public String jsGet_method() {
+    public String getMethod() {
         return exchange.getRequest().getMethod();
     }
 
-    public void jsFunction_setRequestContent(String data) throws UnsupportedEncodingException {
+    public void setRequestContent(String data) throws UnsupportedEncodingException {
         exchange.setRequestContent(data);
     }
 
-    public int jsGet_readyState() {
+    public int getReadyState() {
         return exchange.getReadyState();
     }
 
-    public String jsGet_responseText() {
+    public String getResponseText() {
         return exchange.getResponseText();
     }
 
-    public int jsGet_responseStatus() {
+    public int getResponseStatus() {
         return exchange.getResponseStatus();
     }
 
-    public String jsGet_responseStatusText() {
+    public String getResponseStatusText() {
         return exchange.getResponseStatusText();
     }
 
-    public void jsFunction_abort() {
+    public void abort() {
         exchange.abort();
     }
 
-    public String jsFunction_getAllResponseHeaders() {
+    public String getAllResponseHeaders() {
         return exchange.getAllResponseHeaders();
     }
 
-    public String jsFunction_getResponseHeader(String name) {
+    public String getResponseHeader(String name) {
         return exchange.getResponseHeader(name);
     }
 
-    public void jsFunction_send() throws Exception {
+    public void send() throws Exception {
         exchange.send();
         try {
             if (!isAsynchronous()) {
@@ -121,8 +112,8 @@ public class XMLHttpRequestExchange extends ScriptableObject {
         }
 
         private final Logger logger = LoggerFactory.getLogger(getClass().getName());
-        private final ThreadModel threads;
-        private final Scriptable thiz;
+        private final JavaScript javaScript;
+        private final ScriptObjectMirror thiz;
         private final boolean async;
         private volatile boolean aborted;
         private volatile ReadyState readyState = ReadyState.UNSENT;
@@ -131,10 +122,10 @@ public class XMLHttpRequestExchange extends ScriptableObject {
         private volatile int responseStatus;
         private volatile String responseStatusText;
 
-        public CometDExchange(XMLHttpRequestClient client, ThreadModel threads, Scriptable thiz, String method, String url, boolean async) {
+        public CometDExchange(XMLHttpRequestClient client, JavaScript javaScript, ScriptObjectMirror thiz, String method, String url, boolean async) {
             super(client.getHttpClient().newRequest(url));
             getRequest().method(HttpMethod.fromString(method));
-            this.threads = threads;
+            this.javaScript = javaScript;
             this.thiz = thiz;
             this.async = async;
             aborted = false;
@@ -158,15 +149,18 @@ public class XMLHttpRequestExchange extends ScriptableObject {
          * @param sync whether the call should be synchronous
          */
         private void notifyReadyStateChange(boolean sync) {
-            threads.invoke(sync, thiz, thiz, "onreadystatechange");
+            if (logger.isDebugEnabled()) {
+                logger.debug("Notifying onreadystatechange ({}) {}", readyState, getRequest().getURI());
+            }
+            javaScript.invoke(sync, thiz, "onreadystatechange");
         }
 
         private void notifyLoad() {
-            threads.invoke(false, thiz, thiz, "onload");
+            javaScript.invoke(false, thiz, "onload");
         }
 
         private void notifyError() {
-            threads.invoke(false, thiz, thiz, "onerror");
+            javaScript.invoke(false, thiz, "onerror");
         }
 
         public void send() throws Exception {

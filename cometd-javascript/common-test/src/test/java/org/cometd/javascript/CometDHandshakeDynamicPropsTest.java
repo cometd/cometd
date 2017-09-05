@@ -47,17 +47,14 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
 
     @Test
     public void testHandshakeDynamicProps() throws Exception {
-        defineClass(Latch.class);
         StringBuilder script = new StringBuilder();
         script.append("cometd.configure({url: '").append(cometdURL);
         script.append("', logLevel: '").append(getLogLevel()).append("'});");
         script.append("var outHandshake = undefined;");
         script.append("var outLatch = new Latch(1);");
         script.append("cometd.registerExtension('test', {");
-        script.append("    outgoing: function(message)");
-        script.append("    {");
-        script.append("        if ('/meta/handshake' == message.channel)");
-        script.append("        {");
+        script.append("    outgoing: function(message) {");
+        script.append("        if ('/meta/handshake' == message.channel) {");
         script.append("            outHandshake = message;");
         script.append("            outLatch.countDown();");
         script.append("        }");
@@ -65,14 +62,13 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         script.append("});");
         script.append("var inHandshake = undefined;");
         script.append("var inLatch = new Latch(1);");
-        script.append("cometd.addListener('/meta/handshake', function(message)");
-        script.append("{");
+        script.append("cometd.addListener('/meta/handshake', function(message) {");
         script.append("    inHandshake = message;");
         script.append("    inLatch.countDown();");
         script.append("});");
         evaluateScript(script.toString());
         script.setLength(0);
-        Latch outLatch = get("outLatch");
+        Latch outLatch = javaScript.get("outLatch");
         script.append("var handshakeProps = { ext: { token: 1 } };");
         script.append("cometd.handshake(handshakeProps)");
         evaluateScript(script.toString());
@@ -84,14 +80,14 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         int token = ((Number)evaluateScript("outHandshake.ext.token")).intValue();
         Assert.assertEquals(1, token);
 
-        Latch inLatch = get("inLatch");
+        Latch inLatch = javaScript.get("inLatch");
         Assert.assertTrue(inLatch.await(5000));
 
         String clientId = evaluateScript("inHandshake.clientId");
         evaluateScript("outHandshake = undefined;");
         evaluateScript("handshakeProps.ext.token = 2;");
         evaluateScript("outLatch = new Latch(1);");
-        outLatch = get("outLatch");
+        outLatch = javaScript.get("outLatch");
 
         // This triggers a re-handshake
         filter.setClientId(clientId);

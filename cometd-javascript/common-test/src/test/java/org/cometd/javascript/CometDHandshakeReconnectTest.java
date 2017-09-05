@@ -37,11 +37,13 @@ public class CometDHandshakeReconnectTest extends AbstractCometDTest {
 
     @Test
     public void testReconnectUsingHandshake() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(m) { if (m.successful) connectLatch.countDown(); });");
+        Latch connectLatch = javaScript.get("connectLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function(m) {" +
+                "   if (m.successful) {" +
+                "       connectLatch.countDown();" +
+                "   }" +
+                "});");
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("cometd.handshake();");
@@ -56,8 +58,12 @@ public class CometDHandshakeReconnectTest extends AbstractCometDTest {
 
         // Add a /meta/handshake listener to be sure we reconnect using handshake.
         evaluateScript("var handshakeReconnect = new Latch(1);");
-        Latch handshakeReconnect = get("handshakeReconnect");
-        evaluateScript("cometd.addListener('/meta/handshake', function(m) { if (!m.successful) handshakeReconnect.countDown(); });");
+        Latch handshakeReconnect = javaScript.get("handshakeReconnect");
+        evaluateScript("cometd.addListener('/meta/handshake', function(m) {" +
+                "   if (!m.successful) {" +
+                "       handshakeReconnect.countDown();" +
+                "   }" +
+                "});");
 
         // Wait for the session to be swept (timeout + maxInterval).
         final CountDownLatch sessionRemoved = new CountDownLatch(1);

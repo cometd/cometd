@@ -21,10 +21,9 @@ import org.junit.Test;
 public class CometDAutoBatchTest extends AbstractCometDLongPollingTest {
     @Test
     public void testAutoBatch() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', autoBatch: true, logLevel: '" + getLogLevel() + "'});");
         Assert.assertTrue(readyLatch.await(5000));
 
@@ -33,10 +32,8 @@ public class CometDAutoBatchTest extends AbstractCometDLongPollingTest {
                 "var autobatch = [];" +
                 "var transport = cometd.getTransport();" +
                 "var _super = transport.transportSend;" +
-                "transport.transportSend = function(envelope, request)" +
-                "{" +
-                "   if (envelope.messages[0].channel == channel)" +
-                "   {" +
+                "transport.transportSend = function(envelope, request) {" +
+                "   if (envelope.messages[0].channel == channel) {" +
                 "       autobatch.push(envelope.messages.length);" +
                 "   }" +
                 "   _super.apply(this, arguments);" +
@@ -45,11 +42,8 @@ public class CometDAutoBatchTest extends AbstractCometDLongPollingTest {
 
         readyLatch.reset(1);
         evaluateScript("" +
-                "cometd.addListener('/meta/subscribe', readyLatch, 'countDown');" +
-                "cometd.subscribe(channel, function(message)" +
-                "{" +
-                "   readyLatch.countDown();" +
-                "});");
+                "cometd.addListener('/meta/subscribe', function() { readyLatch.countDown(); });" +
+                "cometd.subscribe(channel, function() { readyLatch.countDown(); });");
         Assert.assertTrue(readyLatch.await(5000));
 
         // Publish multiple times without batching explicitly
@@ -57,8 +51,9 @@ public class CometDAutoBatchTest extends AbstractCometDLongPollingTest {
         int count = 5;
         readyLatch.reset(count);
         evaluateScript("" +
-                "for (var i = 0; i < " + count + "; ++i)" +
-                "   cometd.publish(channel, {id: i});");
+                "for (var i = 0; i < " + count + "; ++i) {" +
+                "   cometd.publish(channel, {id: i});" +
+                "}");
         Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("autobatch_assertion", "window.assert([1,4] == autobatch.join(), autobatch);");

@@ -27,11 +27,10 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTest {
         provideTimestampExtension();
         provideReloadExtension();
 
-        defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
 
@@ -49,14 +48,14 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTest {
         provideTimestampExtension();
         provideReloadExtension();
 
-        defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
-        readyLatch = get("readyLatch");
+        readyLatch = javaScript.get("readyLatch");
         evaluateScript("" +
-                "cometd.addListener('/meta/connect', function(message) " +
-                "{ " +
-                "   if (message.successful) readyLatch.countDown(); " +
+                "cometd.addListener('/meta/connect', function(message) { " +
+                "   if (message.successful) {" +
+                "       readyLatch.countDown();" +
+                "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));

@@ -19,34 +19,32 @@ import org.cometd.javascript.AbstractCometDTest;
 import org.cometd.javascript.Latch;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mozilla.javascript.ScriptableObject;
 
 public class CometDExtensionsTest extends AbstractCometDTest {
     @Test
     public void testRegisterUnregister() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var inCount = 0;");
         evaluateScript("var outCount = 0;");
         evaluateScript("cometd.registerExtension('testin', {" +
-                "incoming: function(message) { ++inCount; return message;}" +
+                "incoming: function(message) { ++inCount; return message; }" +
                 "});");
         evaluateScript("cometd.registerExtension('testout', {" +
-                "outgoing: function(message) { ++outCount; return message;}" +
+                "outgoing: function(message) { ++outCount; return message; }" +
                 "});");
         evaluateScript("cometd.registerExtension('testempty', {});");
 
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
 
         // Wait for the long poll to be established
         Thread.sleep(1000);
 
-        Number inCount = get("inCount");
-        Number outCount = get("outCount");
+        Number inCount = javaScript.get("inCount");
+        Number outCount = javaScript.get("outCount");
         Assert.assertEquals(2, inCount.intValue()); // handshake, connect1
         Assert.assertEquals(3, outCount.intValue()); // handshake, connect1, connect2
 
@@ -56,13 +54,13 @@ public class CometDExtensionsTest extends AbstractCometDTest {
         Assert.assertTrue(unregistered);
 
         evaluateScript("var publishLatch = new Latch(1);");
-        Latch publishLatch = get("publishLatch");
-        evaluateScript("cometd.addListener('/meta/publish', function(message) { publishLatch.countDown(); });");
+        Latch publishLatch = javaScript.get("publishLatch");
+        evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
         evaluateScript("cometd.publish('/echo', 'ping');");
         Assert.assertTrue(publishLatch.await(5000));
 
-        inCount = get("inCount");
-        outCount = get("outCount");
+        inCount = javaScript.get("inCount");
+        outCount = javaScript.get("outCount");
         Assert.assertEquals(2, inCount.intValue());
         Assert.assertEquals(3, outCount.intValue());
 
@@ -71,21 +69,20 @@ public class CometDExtensionsTest extends AbstractCometDTest {
 
     @Test
     public void testExtensions() throws Exception {
-        defineClass(Latch.class);
-        defineClass(Listener.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("" +
+                "var Listener = Java.type('" + Listener.class.getName() + "');" +
                 "var listener = new Listener();" +
                 "cometd.registerExtension('testext', {" +
                 "incoming: function(message) { listener.incoming(message); return message;}," +
                 "outgoing: function(message) { listener.outgoing(message); return message;}" +
                 "});");
-        Listener listener = get("listener");
+        Listener listener = javaScript.get("listener");
 
         evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
 
@@ -98,19 +95,19 @@ public class CometDExtensionsTest extends AbstractCometDTest {
 
         listener.reset();
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
-        evaluateScript("cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
+        evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
         evaluateScript("var messageLatch = new Latch(1);");
-        Latch messageLatch = get("messageLatch");
-        evaluateScript("var subscription = cometd.subscribe('/echo', messageLatch, 'countDown');");
+        Latch messageLatch = javaScript.get("messageLatch");
+        evaluateScript("var subscription = cometd.subscribe('/echo', function() { messageLatch.countDown(); });");
         Assert.assertTrue(subscribeLatch.await(5000));
         Assert.assertEquals(1, listener.getOutgoingMessageCount()); // subscribe
         Assert.assertEquals(1, listener.getIncomingMessageCount()); // subscribe
 
         listener.reset();
         evaluateScript("var publishLatch = new Latch(1);");
-        Latch publishLatch = get("publishLatch");
-        evaluateScript("cometd.addListener('/meta/publish', publishLatch, 'countDown');");
+        Latch publishLatch = javaScript.get("publishLatch");
+        evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
         evaluateScript("cometd.publish('/echo', 'test');");
         Assert.assertTrue(publishLatch.await(5000));
         Assert.assertTrue(messageLatch.await(5000));
@@ -119,8 +116,8 @@ public class CometDExtensionsTest extends AbstractCometDTest {
 
         listener.reset();
         evaluateScript("var unsubscribeLatch = new Latch(1);");
-        Latch unsubscribeLatch = get("unsubscribeLatch");
-        evaluateScript("cometd.addListener('/meta/unsubscribe', unsubscribeLatch, 'countDown');");
+        Latch unsubscribeLatch = javaScript.get("unsubscribeLatch");
+        evaluateScript("cometd.addListener('/meta/unsubscribe', function() { unsubscribeLatch.countDown(); });");
         evaluateScript("cometd.unsubscribe(subscription);");
         Assert.assertTrue(unsubscribeLatch.await(5000));
         Assert.assertEquals(1, listener.getOutgoingMessageCount()); // unsubscribe
@@ -140,8 +137,6 @@ public class CometDExtensionsTest extends AbstractCometDTest {
 
     @Test
     public void testExtensionOrder() throws Exception {
-        defineClass(Latch.class);
-
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         String channelName = "/ext_order";
@@ -174,7 +169,7 @@ public class CometDExtensionsTest extends AbstractCometDTest {
                 "});");
 
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("cometd.handshake(function(handshakeReply) {" +
                 "cometd.batch(function() {" +
                 "    cometd.subscribe('" + channelName + "', function(m) {" +
@@ -199,44 +194,37 @@ public class CometDExtensionsTest extends AbstractCometDTest {
         evaluateScript("var n;");
         evaluateScript("var c;");
         evaluateScript("cometd.registerExtension('ext1', {" +
-                "registered: function(name, cometd) " +
-                "{" +
+                "registered: function(name, cometd) {" +
                 "    n = name;" +
                 "    c = cometd;" +
                 "}," +
-                "unregistered: function()" +
-                "{" +
+                "unregistered: function() {" +
                 "    n = null;" +
                 "    c = null;" +
                 "}" +
                 "});");
-        Object extName = get("n");
+        Object extName = javaScript.get("n");
         Assert.assertNotNull(extName);
-        Object extCometD = get("c");
+        Object extCometD = javaScript.get("c");
         Assert.assertNotNull(extCometD);
 
         evaluateScript("cometd.unregisterExtension('ext1');");
-        extName = get("n");
+        extName = javaScript.get("n");
         Assert.assertNull(extName);
-        extCometD = get("c");
+        extCometD = javaScript.get("c");
         Assert.assertNull(extCometD);
     }
 
-    public static class Listener extends ScriptableObject {
+    public static class Listener {
         private int outgoing;
         private int incoming;
 
-        public void jsFunction_outgoing(Object message) {
+        public void outgoing(Object message) {
             ++outgoing;
         }
 
-        public void jsFunction_incoming(Object message) {
+        public void incoming(Object message) {
             ++incoming;
-        }
-
-        @Override
-        public String getClassName() {
-            return "Listener";
         }
 
         public int getOutgoingMessageCount() {

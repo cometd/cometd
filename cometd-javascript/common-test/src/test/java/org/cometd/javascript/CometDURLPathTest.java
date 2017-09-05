@@ -35,9 +35,8 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
 
     @Test
     public void testURLPath() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("var handshake = undefined;");
         evaluateScript("var connect = undefined;");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
@@ -56,7 +55,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
         Assert.assertTrue(connectURI.endsWith("/connect"));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("var disconnect = undefined;");
         evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
@@ -70,9 +69,8 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
 
     @Test
     public void testURLPathWithFile() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("var handshake = undefined;");
         evaluateScript("var connect = undefined;");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
@@ -91,7 +89,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
         Assert.assertFalse(connectURI.endsWith("/connect"));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("var disconnect = undefined;");
         evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
@@ -105,9 +103,8 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
 
     @Test
     public void testURLPathWithParameters() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("var handshake = undefined;");
         evaluateScript("var connect = undefined;");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
@@ -126,7 +123,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
         Assert.assertFalse(connectURI.endsWith("/connect"));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("var disconnect = undefined;");
         evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
@@ -140,9 +137,8 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
 
     @Test
     public void testURLPathDisabled() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("var handshake = undefined;");
         evaluateScript("var connect = undefined;");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
@@ -161,7 +157,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
         Assert.assertFalse(connectURI.endsWith("/connect"));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("var disconnect = undefined;");
         evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");

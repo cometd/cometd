@@ -21,20 +21,17 @@ import org.junit.Test;
 public class CometDListenerExceptionCallbackTest extends AbstractCometDTest {
     @Test
     public void testListenerExceptionCallback() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "var handshakeSubscription = cometd.addListener('/meta/handshake', function(message) { throw 'test'; });" +
-                "cometd.addListener('/meta/connect', function(message) { connectLatch.countDown(); });" +
+                "var handshakeSubscription = cometd.addListener('/meta/handshake', function() { throw 'test'; });" +
+                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
                 "" +
-                "cometd.onListenerException = function(exception, subscriptionHandle, isListener, message) " +
-                "{" +
-                "   if (exception === 'test' && handshakeSubscription === subscriptionHandle && isListener === true)" +
-                "   {" +
+                "cometd.onListenerException = function(exception, subscriptionHandle, isListener, message) {" +
+                "   if (exception === 'test' && handshakeSubscription === subscriptionHandle && isListener === true) {" +
                 "       this.removeListener(subscriptionHandle);" +
                 "       latch.countDown();" +
                 "   }" +
@@ -50,23 +47,20 @@ public class CometDListenerExceptionCallbackTest extends AbstractCometDTest {
 
     @Test
     public void testSubscriberExceptionCallback() throws Exception {
-        defineClass(Latch.class);
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
+        Latch latch = javaScript.get("latch");
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "var channelSubscription = undefined;" +
-                "cometd.onListenerException = function(exception, subscriptionHandle, isListener, message) " +
-                "{" +
-                "   if (exception === 'test' && channelSubscription === subscriptionHandle && isListener === false)" +
-                "   {" +
+                "cometd.onListenerException = function(exception, subscriptionHandle, isListener, message) {" +
+                "   if (exception === 'test' && channelSubscription === subscriptionHandle && isListener === false) {" +
                 "       this.unsubscribe(subscriptionHandle);" +
                 "   }" +
                 "};" +
                 "" +
-                "cometd.addListener('/meta/unsubscribe', latch, 'countDown');" +
+                "cometd.addListener('/meta/unsubscribe', function() { latch.countDown(); });" +
                 "cometd.handshake();" +
-                "channelSubscription = cometd.subscribe('/test', function(message) { throw 'test'; });" +
+                "channelSubscription = cometd.subscribe('/test', function() { throw 'test'; });" +
                 "cometd.publish('/test', {});");
         Assert.assertTrue(latch.await(5000));
 

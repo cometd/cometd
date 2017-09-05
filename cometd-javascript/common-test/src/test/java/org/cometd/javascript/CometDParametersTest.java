@@ -17,7 +17,6 @@ package org.cometd.javascript;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.mozilla.javascript.JavaScriptException;
 
 public class CometDParametersTest extends AbstractCometDTest {
     @Test

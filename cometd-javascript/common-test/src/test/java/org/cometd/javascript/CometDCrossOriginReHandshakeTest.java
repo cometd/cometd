@@ -51,7 +51,6 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
     public void testCrossOriginReHandshakeDoesNotChangeTransportType() throws Exception {
         bayeuxServer.addExtension(new ReHandshakeExtension());
 
-        defineClass(Latch.class);
         String crossOriginCometDURL = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({" +
                 "url: '" + crossOriginCometDURL + "', " +
@@ -60,10 +59,10 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
                 "});");
         evaluateScript("var handshakeLatch = new Latch(2);");
         evaluateScript("var connectLatch = new Latch(2);");
-        Latch handshakeLatch = get("handshakeLatch");
-        Latch connectLatch = get("connectLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', handshakeLatch, 'countDown');");
-        evaluateScript("cometd.addListener('/meta/connect', connectLatch, 'countDown');");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
+        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
+        evaluateScript("cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
 
         Assert.assertTrue(connectLatch.await(metaConnectPeriod + 5000));

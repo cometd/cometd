@@ -27,40 +27,39 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest {
     public void testConnectTemporaryFailure() throws Exception {
         bayeuxServer.addExtension(new DeleteMetaConnectExtension());
 
-        defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = get("handshakeLatch");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = get("failureLatch");
+        Latch failureLatch = javaScript.get("failureLatch");
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', handshakeLatch, 'countDown');");
+        Latch connectLatch = javaScript.get("connectLatch");
+        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
         evaluateScript("" +
                 "var wasConnected = false;" +
                 "var connected = false;" +
-                "cometd.addListener('/meta/connect', function(message)" +
-                "{" +
+                "cometd.addListener('/meta/connect', function(message) {" +
                 "   window.console.debug('metaConnect: was', wasConnected, 'is', connected, 'message', message.successful);" +
                 "   wasConnected = connected;" +
                 "   connected = message.successful === true;" +
-                "   if (!wasConnected && connected)" +
+                "   if (!wasConnected && connected) {" +
                 "       connectLatch.countDown();" +
-                "   else if (wasConnected && !connected)" +
+                "   } else if (wasConnected && !connected) {" +
                 "       failureLatch.countDown();" +
+                "   }" +
                 "});");
 
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(handshakeLatch.await(5000));
         Assert.assertTrue(connectLatch.await(5000));
-        Assert.assertEquals(1L, failureLatch.jsGet_count());
+        Assert.assertEquals(1L, failureLatch.getCount());
 
         handshakeLatch.reset(1);
         connectLatch.reset(1);
         // Wait for the connect to temporarily fail
         Assert.assertTrue(failureLatch.await(metaConnectPeriod * 2));
-        Assert.assertEquals(1L, handshakeLatch.jsGet_count());
-        Assert.assertEquals(1L, connectLatch.jsGet_count());
+        Assert.assertEquals(1L, handshakeLatch.getCount());
+        Assert.assertEquals(1L, connectLatch.getCount());
 
         // Implementation will backoff the connect attempt
         long backoff = ((Number)evaluateScript("cometd.getBackoffIncrement();")).longValue();
@@ -69,8 +68,8 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest {
         failureLatch.reset(1);
         // Reconnection will trigger /meta/connect
         Assert.assertTrue(connectLatch.await(5000));
-        Assert.assertEquals(1L, handshakeLatch.jsGet_count());
-        Assert.assertEquals(1L, failureLatch.jsGet_count());
+        Assert.assertEquals(1L, handshakeLatch.getCount());
+        Assert.assertEquals(1L, failureLatch.getCount());
 
         evaluateScript("cometd.disconnect(true);");
     }

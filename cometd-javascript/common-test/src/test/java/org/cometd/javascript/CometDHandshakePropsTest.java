@@ -33,14 +33,13 @@ public class CometDHandshakePropsTest extends AbstractCometDTest {
     public void testHandshakeProps() throws Exception {
         bayeuxServer.setSecurityPolicy(new TokenSecurityPolicy());
 
-        defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = get("handshakeLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', handshakeLatch, handshakeLatch.countDown);");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
+        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
 
         // Start without the token; this makes the handshake fail
         evaluateScript("cometd.handshake({})");

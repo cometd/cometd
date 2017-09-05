@@ -15,16 +15,8 @@
  */
 package org.cometd.javascript;
 
-public interface TestProvider {
-    public void provideCometD(JavaScript javaScript, String contextURL) throws Exception;
-
-    public void provideMessageAcknowledgeExtension(JavaScript javaScript, String contextURL) throws Exception;
-
-    public void provideReloadExtension(JavaScript javaScript, String contextURL) throws Exception;
-
-    public void provideTimestampExtension(JavaScript javaScript, String contextURL) throws Exception;
-
-    public void provideTimesyncExtension(JavaScript javaScript, String contextURL) throws Exception;
-
-    public void provideBinaryExtension(JavaScript javaScript, String contextURL) throws Exception;
+public class JavaScriptException extends RuntimeException {
+    public JavaScriptException(Throwable cause) {
+        super(cause);
+    }
 }

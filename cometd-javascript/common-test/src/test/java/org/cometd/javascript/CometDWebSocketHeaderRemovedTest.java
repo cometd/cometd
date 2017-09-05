@@ -64,8 +64,6 @@ public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTes
             }
         }), cometdServletPath, EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
-        defineClass(Latch.class);
-
         // Need long-polling as a fallback after websocket fails
         evaluateScript("cometd.registerTransport('long-polling', originalTransports['long-polling']);");
 
@@ -75,11 +73,9 @@ public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTes
                 "});");
 
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message)" +
-                "{" +
-                "   if (cometd.getTransport().getType() === 'long-polling' && message.successful)" +
-                "   {" +
+        Latch latch = javaScript.get("latch");
+        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
+                "   if (cometd.getTransport().getType() === 'long-polling' && message.successful) {" +
                 "       latch.countDown();" +
                 "   }" +
                 "});");
@@ -88,8 +84,8 @@ public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTes
         Assert.assertTrue(latch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
         Assert.assertTrue(disconnectLatch.await(5000));
     }

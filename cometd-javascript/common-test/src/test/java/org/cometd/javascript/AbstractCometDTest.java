@@ -16,11 +16,14 @@
 package org.cometd.javascript;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
+import java.net.CookieStore;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
+import jdk.nashorn.api.scripting.JSObject;
 import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
@@ -30,6 +33,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
@@ -39,8 +43,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
 
 public abstract class AbstractCometDTest {
     @Rule
@@ -55,7 +57,12 @@ public abstract class AbstractCometDTest {
                     providerClass.substring(providerClass.lastIndexOf('.') + 1));
         }
     };
-    private final JavaScriptCookieStore.Store cookieStore = new JavaScriptCookieStore.Store();
+    private final CookieStore cookieStore = new HttpCookieStore() {
+        @Override
+        public boolean removeAll() {
+            return false;
+        }
+    };
     private final Map<String, String> sessionStore = new HashMap<>();
     protected TestProvider provider;
     protected Server server;
@@ -69,9 +76,10 @@ public abstract class AbstractCometDTest {
     protected String cometdURL;
     protected BayeuxServerImpl bayeuxServer;
     protected int expirationPeriod = 2500;
-    protected ThreadModel threadModel;
+    protected JavaScript javaScript;
     private XMLHttpRequestClient xhrClient;
     private WebSocketConnector wsConnector;
+    private ScheduledExecutorService executor;
 
     @Before
     public void initCometDServer() throws Exception {
@@ -133,7 +141,7 @@ public abstract class AbstractCometDTest {
     public void destroyCometDServer() throws Exception {
         destroyPage();
         stopServer();
-        cookieStore.clear();
+        cookieStore.removeAll();
     }
 
     protected void stopServer() throws Exception {
@@ -152,15 +160,14 @@ public abstract class AbstractCometDTest {
 
     protected void customizeContext(ServletContextHandler context) throws Exception {
         File baseDirectory = new File(System.getProperty("basedir", "."));
-        File overlaidScriptDirectory = new File(baseDirectory, "target/scripts");
+        File overlaidScriptDirectory = new File(baseDirectory, "target/test-classes");
         File mainResourcesDirectory = new File(baseDirectory, "src/main/resources");
         File testResourcesDirectory = new File(baseDirectory, "src/test/resources");
-        context.setBaseResource(new ResourceCollection(new String[]
-                {
-                        overlaidScriptDirectory.getCanonicalPath(),
-                        mainResourcesDirectory.getCanonicalPath(),
-                        testResourcesDirectory.getCanonicalPath()
-                }));
+        context.setBaseResource(new ResourceCollection(new String[]{
+                overlaidScriptDirectory.getCanonicalPath(),
+                mainResourcesDirectory.getCanonicalPath(),
+                testResourcesDirectory.getCanonicalPath()
+        }));
     }
 
     protected void initPage() throws Exception {
@@ -168,65 +175,53 @@ public abstract class AbstractCometDTest {
         initCometD();
     }
 
-    protected void initCometD() throws Exception {
-        provider.provideCometD(threadModel, contextURL);
+    protected void initJavaScript() throws Exception {
+        javaScript = new JavaScript();
+        javaScript.init();
+
+        executor = Executors.newScheduledThreadPool(1, Executors.privilegedThreadFactory());
+        javaScript.putAsync("scheduler", executor);
+
+        javaScript.evaluate(getClass().getResource("/browser.js"));
+        ((JSObject)javaScript.getAsync("window")).setMember("location", contextURL);
+
+        JavaScriptCookieStore cookies = new JavaScriptCookieStore(cookieStore);
+        javaScript.putAsync("cookies", cookies);
+
+        xhrClient = new XMLHttpRequestClient(cookies);
+        xhrClient.start();
+        javaScript.putAsync("xhrClient", xhrClient);
+
+        wsConnector = new WebSocketConnector(cookies);
+        wsConnector.start();
+        javaScript.putAsync("wsConnector", wsConnector);
+
+        SessionStorage sessionStorage = new SessionStorage(sessionStore);
+        javaScript.putAsync("sessionStorage", sessionStorage);
     }
 
-    protected void initJavaScript() throws Exception {
-        // Initializes the thread model
-        org.mozilla.javascript.Context jsContext = org.mozilla.javascript.Context.enter();
-        try {
-            ScriptableObject rootScope = jsContext.initStandardObjects();
-
-            ScriptableObject.defineClass(rootScope, JavaScriptCookieStore.class);
-            jsContext.evaluateString(rootScope, "var cookies = new JavaScriptCookieStore();", "cookies", 1, null);
-            JavaScriptCookieStore cookies = (JavaScriptCookieStore)rootScope.get("cookies", rootScope);
-            cookies.setStore(cookieStore);
-
-            ScriptableObject.defineClass(rootScope, JavaScriptThreadModel.class);
-            jsContext.evaluateString(rootScope, "var threadModel = new JavaScriptThreadModel(this);", "threadModel", 1, null);
-            threadModel = (ThreadModel)rootScope.get("threadModel", rootScope);
-            threadModel.init();
-
-            ScriptableObject.defineClass(rootScope, XMLHttpRequestClient.class);
-            ScriptableObject.defineClass(rootScope, XMLHttpRequestExchange.class);
-            jsContext.evaluateString(rootScope, "var xhrClient = new XMLHttpRequestClient(cookies);", "xhrClient", 1, null);
-            xhrClient = (XMLHttpRequestClient)rootScope.get("xhrClient", rootScope);
-            xhrClient.start();
-
-            ScriptableObject.defineClass(rootScope, WebSocketConnector.class);
-            ScriptableObject.defineClass(rootScope, WebSocketConnection.class);
-            jsContext.evaluateString(rootScope, "var wsConnector = new WebSocketConnector(cookies);", "wsConnector", 1, null);
-            wsConnector = (WebSocketConnector)rootScope.get("wsConnector", rootScope);
-            wsConnector.start();
-
-            ScriptableObject.defineClass(rootScope, SessionStorage.class);
-            jsContext.evaluateString(rootScope, "var sessionStorage = new SessionStorage();", "sessionStorage", 1, null);
-            SessionStorage sessionStorage = (SessionStorage)rootScope.get("sessionStorage", rootScope);
-            sessionStorage.setStore(sessionStore);
-        } finally {
-            org.mozilla.javascript.Context.exit();
-        }
+    protected void initCometD() throws Exception {
+        provider.provideCometD(javaScript, contextURL);
     }
 
     protected void provideTimestampExtension() throws Exception {
-        provider.provideTimestampExtension(threadModel, contextURL);
+        provider.provideTimestampExtension(javaScript, contextURL);
     }
 
     protected void provideTimesyncExtension() throws Exception {
-        provider.provideTimesyncExtension(threadModel, contextURL);
+        provider.provideTimesyncExtension(javaScript, contextURL);
     }
 
     protected void provideMessageAcknowledgeExtension() throws Exception {
-        provider.provideMessageAcknowledgeExtension(threadModel, contextURL);
+        provider.provideMessageAcknowledgeExtension(javaScript, contextURL);
     }
 
     protected void provideReloadExtension() throws Exception {
-        provider.provideReloadExtension(threadModel, contextURL);
+        provider.provideReloadExtension(javaScript, contextURL);
     }
 
     protected void provideBinaryExtension() throws Exception {
-        provider.provideBinaryExtension(threadModel, contextURL);
+        provider.provideBinaryExtension(javaScript, contextURL);
     }
 
     protected void destroyPage() throws Exception {
@@ -240,8 +235,13 @@ public abstract class AbstractCometDTest {
         if (xhrClient != null) {
             xhrClient.stop();
         }
-        if (threadModel != null) {
-            threadModel.destroy();
+        if (javaScript != null) {
+            javaScript.destroy();
+            javaScript = null;
+        }
+        if (executor != null) {
+            executor.shutdown();
+            executor = null;
         }
     }
 
@@ -252,16 +252,7 @@ public abstract class AbstractCometDTest {
 
     @SuppressWarnings("unchecked")
     protected <T> T evaluateScript(String scriptName, String script) {
-        return (T)threadModel.evaluate(scriptName, script);
-    }
-
-    protected void defineClass(Class<? extends Scriptable> clazz) throws InvocationTargetException, InstantiationException, IllegalAccessException {
-        threadModel.define(clazz);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected <T> T get(String name) {
-        return (T)threadModel.get(name);
+        return (T)javaScript.evaluate(scriptName, script);
     }
 
     protected void sleep(long time) {
@@ -275,8 +266,8 @@ public abstract class AbstractCometDTest {
 
     protected void disconnect() throws InterruptedException {
         evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
         Assert.assertTrue(disconnectLatch.await(5000));
         String status = evaluateScript("cometd.getStatus();");

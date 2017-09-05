@@ -21,8 +21,6 @@ import org.junit.Test;
 public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest {
     @Test
     public void testCallbackPolling() throws Exception {
-        defineClass(Latch.class);
-
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
@@ -30,10 +28,10 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
         evaluateScript("" +
                 "var handshakeLatch = new Latch(1);" +
                 "var connectLatch = new Latch(1);" +
-                "cometd.addListener('/meta/handshake', function(m) { handshakeLatch.countDown(); });" +
-                "cometd.addListener('/meta/connect', function(m) { connectLatch.countDown(); });");
-        Latch handshakeLatch = get("handshakeLatch");
-        Latch connectLatch = get("connectLatch");
+                "cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });" +
+                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
 
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(handshakeLatch.await(5000));
@@ -42,57 +40,56 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
         evaluateScript("" +
                 "var subscribeLatch = new Latch(1);" +
                 "var messageLatch = new Latch(1);" +
-                "cometd.addListener('/meta/subscribe', function(m) { subscribeLatch.countDown(); });" +
-                "var subscription = cometd.subscribe('/test', function(message) { messageLatch.countDown(); });");
-        Latch subscribeLatch = get("subscribeLatch");
+                "cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });" +
+                "var subscription = cometd.subscribe('/test', function() { messageLatch.countDown(); });");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
         Assert.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("cometd.publish('/test', {});");
-        Latch messageLatch = get("messageLatch");
+        Latch messageLatch = javaScript.get("messageLatch");
         Assert.assertTrue(messageLatch.await(5000));
 
         evaluateScript("" +
                 "var unsubscribeLatch = new Latch(1);" +
-                "cometd.addListener('/meta/unsubscribe', function(m) { unsubscribeLatch.countDown(); });" +
+                "cometd.addListener('/meta/unsubscribe', function() { unsubscribeLatch.countDown(); });" +
                 "cometd.unsubscribe(subscription);");
-        Latch unsubscribeLatch = get("unsubscribeLatch");
+        Latch unsubscribeLatch = javaScript.get("unsubscribeLatch");
         Assert.assertTrue(unsubscribeLatch.await(5000));
 
         evaluateScript("" +
                 "var disconnectLatch = new Latch(1);" +
-                "cometd.addListener('/meta/disconnect', function(m) { disconnectLatch.countDown(); });" +
+                "cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });" +
                 "cometd.disconnect();");
-        Latch disconnectLatch = get("disconnectLatch");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         Assert.assertTrue(disconnectLatch.await(5000));
     }
 
     @Test
     public void testURLMaxLengthOneTooBigMessage() throws Exception {
-        defineClass(Latch.class);
-
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
 
         evaluateScript("" +
-                "cometd.addListener('/meta/connect', connectLatch, 'countDown');" +
+                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
                 "cometd.handshake();");
         Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(1);");
-        Latch publishLatch = get("publishLatch");
+        Latch publishLatch = javaScript.get("publishLatch");
 
         evaluateScript("" +
                 "var data = '';" +
-                "for (var i = 0; i < 2000; ++i)" +
+                "for (var i = 0; i < 2000; ++i) {" +
                 "    data += 'x';" +
-                "cometd.addListener('/meta/publish', function(message)" +
-                "{" +
-                "    if (!message.successful)" +
+                "}" +
+                "cometd.addListener('/meta/publish', function(message) {" +
+                "    if (!message.successful) {" +
                 "        publishLatch.countDown();" +
+                "    }" +
                 "});" +
                 "cometd.publish('/foo', data);" +
                 "");
@@ -103,34 +100,32 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
 
     @Test
     public void testURLMaxLengthThreeMessagesBatchedOneTooBigFailsWholeBatch() throws Exception {
-        defineClass(Latch.class);
-
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
 
         evaluateScript("" +
-                "cometd.addListener('/meta/connect', connectLatch, 'countDown');" +
+                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
                 "cometd.handshake();");
         Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(3);");
-        Latch publishLatch = get("publishLatch");
+        Latch publishLatch = javaScript.get("publishLatch");
 
         evaluateScript("" +
                 "var data = '';" +
-                "for (var i = 0; i < 500; ++i)" +
+                "for (var i = 0; i < 500; ++i) {" +
                 "    data += 'x';" +
-                "cometd.addListener('/meta/publish', function(message)" +
-                "{" +
-                "    if (!message.successful)" +
+                "}" +
+                "cometd.addListener('/meta/publish', function(message) {" +
+                "    if (!message.successful) {" +
                 "        publishLatch.countDown();" +
+                "    }" +
                 "});" +
-                "cometd.batch(function()" +
-                "{" +
+                "cometd.batch(function() {" +
                 "    cometd.publish('/foo', data);" +
                 "    cometd.publish('/foo', data);" +
                 "    cometd.publish('/foo', data + data + data + data);" +
@@ -143,34 +138,32 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
 
     @Test
     public void testURLMaxLengthThreeMessagesBatchedAreSplit() throws Exception {
-        defineClass(Latch.class);
-
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
 
         evaluateScript("" +
-                "cometd.addListener('/meta/connect', connectLatch, 'countDown');" +
+                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
                 "cometd.handshake();");
         Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(3);");
-        Latch publishLatch = get("publishLatch");
+        Latch publishLatch = javaScript.get("publishLatch");
 
         evaluateScript("" +
                 "var data = '';" +
-                "for (var i = 0; i < 500; ++i)" +
+                "for (var i = 0; i < 500; ++i) {" +
                 "    data += 'x';" +
-                "cometd.addListener('/meta/publish', function(message)" +
-                "{" +
-                "    if (message.successful)" +
+                "}" +
+                "cometd.addListener('/meta/publish', function(message) {" +
+                "    if (message.successful) {" +
                 "        publishLatch.countDown();" +
+                "    }" +
                 "});" +
-                "cometd.batch(function()" +
-                "{" +
+                "cometd.batch(function() {" +
                 "    cometd.publish('/foo', data);" +
                 "    cometd.publish('/foo', data);" +
                 "    cometd.publish('/foo', data + data);" +
@@ -183,31 +176,28 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
 
     @Test
     public void testURLMaxLengthThreeMessagesBatchedAreSplitOrderIsKept() throws Exception {
-        defineClass(Latch.class);
-
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
+        Latch connectLatch = javaScript.get("connectLatch");
 
         evaluateScript("" +
-                "cometd.addListener('/meta/connect', connectLatch, 'countDown');" +
+                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
                 "cometd.handshake();");
         Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
         evaluateScript("var publishLatch = new Latch(12);");
-        Latch publishLatch = get("publishLatch");
+        Latch publishLatch = javaScript.get("publishLatch");
 
         evaluateScript("" +
                 "var channel = '/foo';" +
                 "var orders = [];" +
-                "cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');" +
-                "cometd.subscribe(channel, function(message)" +
-                "{" +
+                "cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });" +
+                "cometd.subscribe(channel, function(message) {" +
                 "    orders.push(message.order);" +
                 "    publishLatch.countDown();" +
                 "});");
@@ -215,15 +205,15 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
 
         evaluateScript("" +
                 "var data = '';" +
-                "for (var i = 0; i < 500; ++i)" +
+                "for (var i = 0; i < 500; ++i) {" +
                 "    data += 'x';" +
-                "cometd.addListener('/meta/publish', function(message)" +
-                "{" +
-                "    if (message.successful)" +
+                "}" +
+                "cometd.addListener('/meta/publish', function(message) {" +
+                "    if (message.successful) {" +
                 "        publishLatch.countDown();" +
+                "    }" +
                 "});" +
-                "cometd.batch(function()" +
-                "{" +
+                "cometd.batch(function() {" +
                 "    cometd.publish(channel, data, {order:1});" +
                 "    cometd.publish(channel, data, {order:2});" +
                 "    cometd.publish(channel, data + data + data, {order:3});" +

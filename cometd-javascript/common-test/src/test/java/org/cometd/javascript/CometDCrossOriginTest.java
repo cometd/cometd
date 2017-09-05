@@ -36,7 +36,6 @@ public class CometDCrossOriginTest extends AbstractCometDTest {
 
     @Test
     public void testCrossOriginSupported() throws Exception {
-        defineClass(Latch.class);
         String crossOriginCometDURL = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({" +
                 "url: '" + crossOriginCometDURL + "', " +
@@ -44,8 +43,12 @@ public class CometDCrossOriginTest extends AbstractCometDTest {
                 "logLevel: '" + getLogLevel() + "'" +
                 "});");
         evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = get("connectLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { if (message.successful) connectLatch.countDown(); });");
+        Latch connectLatch = javaScript.get("connectLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
+                "   if (message.successful) {" +
+                "       connectLatch.countDown(); " +
+                "   }" +
+                "});");
         evaluateScript("cometd.handshake();");
 
         Assert.assertTrue(connectLatch.await(5000));
