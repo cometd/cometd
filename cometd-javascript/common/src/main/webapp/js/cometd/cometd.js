@@ -685,7 +685,7 @@
             var url = packet.url;
             url += url.indexOf('?') < 0 ? '?' : '&';
             url += 'jsonp=' + callbackName;
-            url += '&message=' + packet.body;
+            url += '&message=' + encodeURIComponent(packet.body);
             script.src = url;
             script.async = packet.sync !== true;
             script.type = 'application/javascript';
