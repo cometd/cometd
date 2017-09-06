@@ -23,7 +23,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDTransportNegotiationFailureTest extends AbstractCometDTest {
+public class CometDTransportNegotiationFailureTest extends AbstractCometDTransportsTest {
     @Test
     public void testTransportNegotiationFailureForClientLongPollingServerCallbackPolling() throws Exception {
         // Only callback-polling on server (via extension), only long-polling on client.

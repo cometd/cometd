@@ -18,7 +18,7 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDTransportTest extends AbstractCometDTest {
+public class CometDTransportTest extends AbstractCometDTransportsTest {
     @Test
     public void testTransport() throws Exception {
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");

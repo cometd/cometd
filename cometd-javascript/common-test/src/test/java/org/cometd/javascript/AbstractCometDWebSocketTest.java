@@ -16,8 +16,8 @@
 package org.cometd.javascript;
 
 /**
- * A base test class to be extended for tests that
- * can only pass using the websocket transport
+ * A base test class to be extended for tests
+ * valid only for the websocket transport.
  */
 public class AbstractCometDWebSocketTest extends AbstractCometDTest {
     @Override

@@ -18,7 +18,7 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDBatchPublishTest extends AbstractCometDTest {
+public class CometDBatchPublishTest extends AbstractCometDTransportsTest {
     @Test
     public void testBatchPublish() throws Exception {
         evaluateScript("var latch = new Latch(1);");

@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDRemoteCallTest extends AbstractCometDTest {
+public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
     @Test
     public void testRemoteCallWithResult() throws Exception {
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeux());
@@ -250,7 +250,6 @@ public class CometDRemoteCallTest extends AbstractCometDTest {
         provideBinaryExtension();
 
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeuxServer);
-        String response = "response";
         processor.process(new RemoteCallBinaryService());
 
         evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");

@@ -18,7 +18,7 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDListenerExceptionCallbackTest extends AbstractCometDTest {
+public class CometDListenerExceptionCallbackTest extends AbstractCometDTransportsTest {
     @Test
     public void testListenerExceptionCallback() throws Exception {
         evaluateScript("var latch = new Latch(1);");

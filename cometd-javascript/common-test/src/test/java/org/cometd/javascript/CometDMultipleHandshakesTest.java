@@ -18,7 +18,7 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDMultipleHandshakesTest extends AbstractCometDTest {
+public class CometDMultipleHandshakesTest extends AbstractCometDTransportsTest {
     @Test
     public void testMultipleHandshakes() throws Exception {
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");

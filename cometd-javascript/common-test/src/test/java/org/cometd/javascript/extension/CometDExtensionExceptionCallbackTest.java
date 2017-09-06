@@ -15,12 +15,12 @@
  */
 package org.cometd.javascript.extension;
 
-import org.cometd.javascript.AbstractCometDTest;
+import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDExtensionExceptionCallbackTest extends AbstractCometDTest {
+public class CometDExtensionExceptionCallbackTest extends AbstractCometDTransportsTest {
     @Test
     public void testOutgoingExtensionExceptionCallback() throws Exception {
         evaluateScript("var latch = new Latch(1);");

@@ -15,12 +15,12 @@
  */
 package org.cometd.javascript.extension;
 
-import org.cometd.javascript.AbstractCometDTest;
+import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTest {
+public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTransportsTest {
     @Test
     public void testReloadWithTimestamp() throws Exception {
         evaluateScript("cometd.setLogLevel('debug');");

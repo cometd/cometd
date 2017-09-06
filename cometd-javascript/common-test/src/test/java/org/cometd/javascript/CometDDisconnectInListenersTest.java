@@ -15,19 +15,12 @@
  */
 package org.cometd.javascript;
 
-import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
-public class CometDDisconnectInListenersTest extends AbstractCometDTest {
+public class CometDDisconnectInListenersTest extends AbstractCometDTransportsTest {
     @Test
     public void testDisconnectInHandshakeListener() throws Exception {
-        // Dojo has a bug where aborting an XHR from the
-        // handshake listener does not notify the XHR error
-        // handlers, so the disconnect listener is not invoked.
-        Assume.assumeTrue(System.getProperty("toolkitTestProvider").equalsIgnoreCase(JQueryTestProvider.class.getName()));
-
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("var disconnectLatch = new Latch(1);");

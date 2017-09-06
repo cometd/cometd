@@ -19,12 +19,12 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.javascript.AbstractCometDTest;
+import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDReloadExtensionTest extends AbstractCometDTest {
+public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
     @Test
     public void testReloadWithConfiguration() throws Exception {
         evaluateScript("var readyLatch = new Latch(1);");

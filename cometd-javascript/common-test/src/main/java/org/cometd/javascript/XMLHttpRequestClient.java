@@ -19,6 +19,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
@@ -33,7 +34,7 @@ public class XMLHttpRequestClient {
     }
 
     public void start() throws Exception {
-        httpClient = new HttpClient();
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP(1), null);
         httpClient.setMaxConnectionsPerDestination(2);
         httpClient.setIdleTimeout(300000);
         httpClient.setCookieStore(cookieStore.getStore());

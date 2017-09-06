@@ -22,7 +22,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDConnectTemporaryFailureTest extends AbstractCometDTest {
+public class CometDConnectTemporaryFailureTest extends AbstractCometDTransportsTest {
     @Test
     public void testConnectTemporaryFailure() throws Exception {
         bayeuxServer.addExtension(new DeleteMetaConnectExtension());

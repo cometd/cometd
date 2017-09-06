@@ -26,7 +26,7 @@ import org.cometd.server.AbstractServerTransport;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDHandshakeReconnectTest extends AbstractCometDTest {
+public class CometDHandshakeReconnectTest extends AbstractCometDTransportsTest {
     @Override
     protected void initCometDServer(Map<String, String> options) throws Exception {
         options.put(AbstractServerTransport.HANDSHAKE_RECONNECT_OPTION, String.valueOf(true));

@@ -15,12 +15,11 @@
  */
 package org.cometd.javascript.dojo;
 
-import org.cometd.javascript.AbstractCometDTest;
 import org.cometd.javascript.Latch;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDTwoInstancesTest extends AbstractCometDTest {
+public class CometDDojoTwoInstancesTest extends AbstractCometDDojoTest {
     @Test
     public void testTwoInstances() throws Exception {
         evaluateScript("var handshakeLatch = new Latch(1);");
@@ -30,10 +29,10 @@ public class CometDTwoInstancesTest extends AbstractCometDTest {
 
         evaluateScript("" +
                 "var cometd2 = new dojox.CometD('dojo');" +
-                "var jsonpTransport = cometd2.unregisterTransport('long-polling');" +
+                "cometd2.unregisterTransport('websocket');" +
                 "" +
                 "/* Check that the other cometd object has not been influenced */" +
-                "window.assert(cometd.findTransport('long-polling') != null);" +
+                "window.assert(cometd.findTransport('websocket') !== null);" +
                 "" +
                 "cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });" +
                 "cometd2.addListener('/meta/handshake', function() { handshakeLatch2.countDown(); });" +
@@ -76,8 +75,8 @@ public class CometDTwoInstancesTest extends AbstractCometDTest {
         Assert.assertTrue(publishLatch2.await(5000));
 
         evaluateScript("" +
-                "cometd.disconnect(true);" +
-                "cometd2.disconnect(true);" +
+                "cometd.disconnect();" +
+                "cometd2.disconnect();" +
                 "");
     }
 }

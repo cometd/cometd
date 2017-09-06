@@ -29,7 +29,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDMaxNetworkDelayTest extends AbstractCometDTest {
+public class CometDMaxNetworkDelayTest extends AbstractCometDTransportsTest {
     private final long maxNetworkDelay = 2000;
 
     @Test

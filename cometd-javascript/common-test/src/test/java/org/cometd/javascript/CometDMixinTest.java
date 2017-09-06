@@ -17,7 +17,7 @@ package org.cometd.javascript;
 
 import org.junit.Test;
 
-public class CometDMixinTest extends AbstractCometDTest {
+public class CometDMixinTest extends AbstractCometDTransportsTest {
     @Test
     public void testShallowMixin() throws Exception {
         evaluateScript("" +

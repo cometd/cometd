@@ -21,7 +21,7 @@ import org.cometd.bayeux.BinaryData;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.javascript.AbstractCometDTest;
+import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
 import org.cometd.server.AbstractService;
 import org.cometd.server.ext.BinaryExtension;
@@ -29,7 +29,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CometDBinaryExtensionTest extends AbstractCometDTest {
+public class CometDBinaryExtensionTest extends AbstractCometDTransportsTest {
     @Before
     public void initExtension() throws Exception {
         bayeuxServer.addExtension(new BinaryExtension());

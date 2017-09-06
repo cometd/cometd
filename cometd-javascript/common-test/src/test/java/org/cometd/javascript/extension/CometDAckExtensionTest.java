@@ -15,7 +15,7 @@
  */
 package org.cometd.javascript.extension;
 
-import org.cometd.javascript.AbstractCometDTest;
+import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
@@ -24,7 +24,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CometDAckExtensionTest extends AbstractCometDTest {
+public class CometDAckExtensionTest extends AbstractCometDTransportsTest {
     private AckService ackService;
 
     @Before

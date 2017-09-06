@@ -25,7 +25,7 @@ import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDCrossOriginTest extends AbstractCometDTest {
+public class CometDCrossOriginTest extends AbstractCometDTransportsTest {
     @Override
     protected void customizeContext(ServletContextHandler context) throws Exception {
         super.customizeContext(context);

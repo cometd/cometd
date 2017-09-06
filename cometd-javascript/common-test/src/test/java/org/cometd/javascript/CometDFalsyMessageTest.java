@@ -19,7 +19,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDFalsyMessageTest extends AbstractCometDTest {
+public class CometDFalsyMessageTest extends AbstractCometDTransportsTest {
     @Test
     public void testEmptyStringMessage() throws Exception {
         testFalsyMessage("");

@@ -18,7 +18,7 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDParametersTest extends AbstractCometDTest {
+public class CometDParametersTest extends AbstractCometDTransportsTest {
     @Test
     public void testConfigureInitMissingURL() throws Exception {
         try {

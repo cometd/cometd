@@ -25,7 +25,7 @@ import org.junit.Test;
 /**
  * Tests that handshake failures will backoff correctly
  */
-public class CometDHandshakeFailureTest extends AbstractCometDTest {
+public class CometDHandshakeFailureTest extends AbstractCometDTransportsTest {
     @Test
     public void testHandshakeFailure() throws Exception {
         bayeuxServer.addExtension(new DeleteMetaHandshakeExtension());

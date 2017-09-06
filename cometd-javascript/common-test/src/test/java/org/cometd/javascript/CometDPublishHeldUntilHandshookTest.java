@@ -21,7 +21,7 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTest {
+public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTransportsTest {
     @Test
     public void testPublishHeldUntilHandshook() throws Exception {
         evaluateScript("" +

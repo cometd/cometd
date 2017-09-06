@@ -16,12 +16,10 @@
 package org.cometd.javascript;
 
 import java.io.EOFException;
-import java.io.InterruptedIOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.eclipse.jetty.client.api.Response;
@@ -37,15 +35,6 @@ public class XMLHttpRequestExchange {
 
     public XMLHttpRequestExchange(Object client, JavaScript javaScript, ScriptObjectMirror thiz, String method, String url, boolean async) {
         exchange = new CometDExchange((XMLHttpRequestClient)client, javaScript, thiz, method, url, async);
-    }
-
-    public boolean isAsynchronous() {
-        return exchange.isAsynchronous();
-    }
-
-    public void await() throws InterruptedException, ExecutionException, TimeoutException {
-        exchange.get(60, TimeUnit.SECONDS);
-        exchange.notifyReadyStateChange(false);
     }
 
     public void addRequestHeader(String name, String value) {
@@ -91,11 +80,9 @@ public class XMLHttpRequestExchange {
     public void send() throws Exception {
         exchange.send();
         try {
-            if (!isAsynchronous()) {
-                await();
+            if (!exchange.isAsynchronous()) {
+                exchange.get(60, TimeUnit.SECONDS);
             }
-        } catch (InterruptedException x) {
-            throw new InterruptedIOException();
         } catch (ExecutionException x) {
             Throwable cause = x.getCause();
             if (cause instanceof Exception) {
@@ -128,9 +115,9 @@ public class XMLHttpRequestExchange {
             this.javaScript = javaScript;
             this.thiz = thiz;
             this.async = async;
-            aborted = false;
-            readyState = ReadyState.OPENED;
-            responseStatusText = null;
+            this.aborted = false;
+            this.readyState = ReadyState.OPENED;
+            this.responseStatusText = null;
             if (async) {
                 notifyReadyStateChange(false);
             }
@@ -156,11 +143,11 @@ public class XMLHttpRequestExchange {
         }
 
         private void notifyLoad() {
-            javaScript.invoke(false, thiz, "onload");
+            javaScript.invoke(true, thiz, "onload");
         }
 
-        private void notifyError() {
-            javaScript.invoke(false, thiz, "onerror");
+        private void notifyError(boolean sync) {
+            javaScript.invoke(sync, thiz, "onerror");
         }
 
         public void send() throws Exception {
@@ -178,12 +165,15 @@ public class XMLHttpRequestExchange {
             aborted = true;
             responseText = null;
             getRequest().getHeaders().clear();
-            if (async && (readyState == ReadyState.HEADERS_RECEIVED || readyState == ReadyState.LOADING)) {
+            if (readyState == ReadyState.HEADERS_RECEIVED || readyState == ReadyState.LOADING) {
                 readyState = ReadyState.DONE;
-                notifyReadyStateChange(true);
-                notifyError();
+                if (isAsynchronous()) {
+                    notifyReadyStateChange(false);
+                    notifyError(false);
+                }
+            } else {
+                readyState = ReadyState.UNSENT;
             }
-            readyState = ReadyState.UNSENT;
         }
 
         public int getReadyState() {
@@ -212,7 +202,7 @@ public class XMLHttpRequestExchange {
         }
 
         public String getResponseHeader(String name) {
-            return getRequest().getHeaders().getStringField(name);
+            return getRequest().getHeaders().get(name);
         }
 
         @Override
@@ -225,19 +215,23 @@ public class XMLHttpRequestExchange {
         @Override
         public void onHeaders(Response response) {
             super.onHeaders(response);
-            if (!aborted && async) {
+            if (!aborted) {
                 readyState = ReadyState.HEADERS_RECEIVED;
-                notifyReadyStateChange(true);
+                if (isAsynchronous()) {
+                    notifyReadyStateChange(true);
+                }
             }
         }
 
         @Override
         public void onContent(Response response, ByteBuffer content) {
             super.onContent(response, content);
-            if (!aborted && async) {
+            if (!aborted) {
                 if (readyState != ReadyState.LOADING) {
                     readyState = ReadyState.LOADING;
-                    notifyReadyStateChange(true);
+                    if (isAsynchronous()) {
+                        notifyReadyStateChange(true);
+                    }
                 }
             }
         }
@@ -252,7 +246,7 @@ public class XMLHttpRequestExchange {
                 if (!aborted) {
                     responseText = getContentAsString();
                     readyState = ReadyState.DONE;
-                    if (async) {
+                    if (isAsynchronous()) {
                         notifyReadyStateChange(true);
                         notifyLoad();
                     }
@@ -264,10 +258,10 @@ public class XMLHttpRequestExchange {
                         logger.debug("Failed " + this, failure);
                     }
                 }
-                if (async) {
-                    readyState = ReadyState.DONE;
+                readyState = ReadyState.DONE;
+                if (isAsynchronous()) {
                     notifyReadyStateChange(true);
-                    notifyError();
+                    notifyError(true);
                 }
             }
             super.onComplete(result);

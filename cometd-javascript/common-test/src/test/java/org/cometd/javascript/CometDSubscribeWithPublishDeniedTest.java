@@ -23,7 +23,7 @@ import org.cometd.server.DefaultSecurityPolicy;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDSubscribeWithPublishDeniedTest extends AbstractCometDTest {
+public class CometDSubscribeWithPublishDeniedTest extends AbstractCometDTransportsTest {
     @Test
     public void testSubscribeWithPublishDenied() throws Exception {
         bayeuxServer.setSecurityPolicy(new Policy());

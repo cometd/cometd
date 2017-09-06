@@ -26,7 +26,7 @@ import org.cometd.server.DefaultSecurityPolicy;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDSubscribeTest extends AbstractCometDTest {
+public class CometDSubscribeTest extends AbstractCometDTransportsTest {
     @Test
     public void testSubscriptionsUnsubscriptionsForSameChannelOnlySentOnce() throws Exception {
         evaluateScript("var subscribeLatch = new Latch(1);");

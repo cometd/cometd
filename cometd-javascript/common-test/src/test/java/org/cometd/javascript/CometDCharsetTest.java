@@ -19,7 +19,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
-public class CometDCharsetTest extends AbstractCometDTest {
+public class CometDCharsetTest extends AbstractCometDTransportsTest {
     @Test
     public void testCharset() throws Exception {
         String cyrillic = "\u0436"; // zhe

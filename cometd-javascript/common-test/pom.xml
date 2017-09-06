@@ -43,45 +43,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <useFile>false</useFile>
-                    <skipTests>true</skipTests>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>jquery</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <configuration>
-                            <skipTests>${skipTests}</skipTests>
-                            <systemPropertyVariables>
-                                <toolkitTestProvider>org.cometd.javascript.jquery.JQueryTestProvider</toolkitTestProvider>
-                            </systemPropertyVariables>
-                            <excludes>
-                                <exclude>**/dojo/**</exclude>
-                            </excludes>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>dojo</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <configuration>
-                            <skipTests>${skipTests}</skipTests>
-                            <systemPropertyVariables>
-                                <toolkitTestProvider>org.cometd.javascript.dojo.DojoTestProvider</toolkitTestProvider>
-                            </systemPropertyVariables>
-                            <excludes>
-                                <exclude>**/jquery/**</exclude>
-                            </excludes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 

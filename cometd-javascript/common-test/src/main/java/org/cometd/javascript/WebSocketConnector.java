@@ -22,15 +22,17 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 public class WebSocketConnector {
+    private final XMLHttpRequestClient xhrClient;
     private final JavaScriptCookieStore cookieStore;
     private WebSocketClient wsClient;
 
-    public WebSocketConnector(JavaScriptCookieStore cookieStore) {
+    public WebSocketConnector(XMLHttpRequestClient xhrClient, JavaScriptCookieStore cookieStore) {
+        this.xhrClient = xhrClient;
         this.cookieStore = cookieStore;
     }
 
     public void start() throws Exception {
-        wsClient = new WebSocketClient();
+        wsClient = new WebSocketClient(xhrClient.getHttpClient());
         wsClient.setExecutor(new PrivilegedExecutor());
         wsClient.setCookieStore(cookieStore.getStore());
         wsClient.start();

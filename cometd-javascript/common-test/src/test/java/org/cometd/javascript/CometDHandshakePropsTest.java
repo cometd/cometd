@@ -28,7 +28,7 @@ import org.junit.Test;
 /**
  * Tests that handshake properties are passed correctly during handshake
  */
-public class CometDHandshakePropsTest extends AbstractCometDTest {
+public class CometDHandshakePropsTest extends AbstractCometDTransportsTest {
     @Test
     public void testHandshakeProps() throws Exception {
         bayeuxServer.setSecurityPolicy(new TokenSecurityPolicy());

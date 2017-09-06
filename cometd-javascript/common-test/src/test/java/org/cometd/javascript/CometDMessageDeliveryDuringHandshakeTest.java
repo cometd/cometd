@@ -31,7 +31,7 @@ import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTest {
+public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTransportsTest {
     @Override
     public void initCometDServer() throws Exception {
     }

@@ -37,7 +37,7 @@ public class JavaScript implements Runnable {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final BlockingQueue<FutureTask<?>> queue = new LinkedBlockingQueue<>();
-    private final Thread thread = new Thread(this);
+    private final Thread thread = new Thread(this, "javascript");
     private final Bindings bindings;
     private volatile boolean running;
 

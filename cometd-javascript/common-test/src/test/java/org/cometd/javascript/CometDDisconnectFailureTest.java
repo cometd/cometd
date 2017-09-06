@@ -36,7 +36,7 @@ import org.junit.Test;
 /**
  * Tests that failing the disconnect, the comet communication is aborted anyway
  */
-public class CometDDisconnectFailureTest extends AbstractCometDTest {
+public class CometDDisconnectFailureTest extends AbstractCometDTransportsTest {
     @Override
     protected void customizeContext(ServletContextHandler context) throws Exception {
         super.customizeContext(context);

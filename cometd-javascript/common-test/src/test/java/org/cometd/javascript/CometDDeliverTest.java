@@ -24,7 +24,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDDeliverTest extends AbstractCometDTest {
+public class CometDDeliverTest extends AbstractCometDTransportsTest {
     @Test
     public void testDeliver() throws Exception {
         new DeliverService(bayeuxServer);

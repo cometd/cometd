@@ -29,7 +29,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDAdviceTest extends AbstractCometDTest {
+public class CometDAdviceTest extends AbstractCometDTransportsTest {
     @Test
     public void testNoHandshakeAdviceAfterSessionExpired() throws Exception {
         // Removed handshake advices to make sure the client behaves well without them.

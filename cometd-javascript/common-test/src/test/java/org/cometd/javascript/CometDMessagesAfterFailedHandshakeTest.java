@@ -23,7 +23,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest {
+public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTransportsTest {
     @Before
     public void init() {
         bayeuxServer.setSecurityPolicy(new Policy());

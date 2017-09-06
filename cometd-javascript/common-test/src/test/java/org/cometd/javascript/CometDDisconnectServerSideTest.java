@@ -28,7 +28,7 @@ import org.cometd.server.AbstractService;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDDisconnectServerSideTest extends AbstractCometDTest {
+public class CometDDisconnectServerSideTest extends AbstractCometDTransportsTest {
     @Test
     public void testServerSideDisconnect() throws Exception {
         final CountDownLatch connectRequestLatch = new CountDownLatch(1);

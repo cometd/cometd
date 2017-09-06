@@ -15,12 +15,12 @@
  */
 package org.cometd.javascript.extension;
 
-import org.cometd.javascript.AbstractCometDTest;
+import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDExtensionsTest extends AbstractCometDTest {
+public class CometDExtensionsTest extends AbstractCometDTransportsTest {
     @Test
     public void testRegisterUnregister() throws Exception {
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");

@@ -21,7 +21,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDPublishTest extends AbstractCometDTest {
+public class CometDPublishTest extends AbstractCometDTransportsTest {
     @Test
     public void testPublish() throws Exception {
         evaluateScript("var readyLatch = new Latch(1);");
