@@ -95,7 +95,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
                 "");
         Assert.assertTrue(publishLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test
@@ -133,7 +133,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
                 "");
         Assert.assertTrue(publishLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test
@@ -171,7 +171,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
                 "");
         Assert.assertTrue(publishLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test
@@ -227,6 +227,6 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
 
         evaluateScript("window.assert([1,2,3,4,5,6].join(',') === orders.join(','), 'Order not respected ' + orders.join(','));");
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 }

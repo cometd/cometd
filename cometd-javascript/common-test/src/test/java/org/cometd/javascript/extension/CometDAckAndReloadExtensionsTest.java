@@ -89,7 +89,7 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest {
         evaluateScript("window.assert(testMessage[0].data == 'message2', 'message2');");
         evaluateScript("window.assert(testMessage[1].data == 'message3', 'message3');");
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     public static class AckService extends AbstractService {

@@ -64,7 +64,7 @@ public class CometDExtensionsTest extends AbstractCometDTest {
         Assert.assertEquals(2, inCount.intValue());
         Assert.assertEquals(3, outCount.intValue());
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test
@@ -125,7 +125,7 @@ public class CometDExtensionsTest extends AbstractCometDTest {
 
         readyLatch.reset(1);
         listener.reset();
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
         Assert.assertTrue(readyLatch.await(5000));
 
         // Wait for the connect to return
@@ -185,7 +185,7 @@ public class CometDExtensionsTest extends AbstractCometDTest {
 
         Assert.assertTrue(latch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test

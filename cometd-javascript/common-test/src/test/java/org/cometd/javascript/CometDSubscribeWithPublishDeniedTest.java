@@ -70,7 +70,7 @@ public class CometDSubscribeWithPublishDeniedTest extends AbstractCometDTest {
         // Denied by policy
         Assert.assertTrue(publishFailed);
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     private class Policy extends DefaultSecurityPolicy {

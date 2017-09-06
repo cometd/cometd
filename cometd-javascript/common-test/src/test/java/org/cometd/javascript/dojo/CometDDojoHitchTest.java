@@ -42,6 +42,6 @@ public class CometDDojoHitchTest extends AbstractCometDTest {
         Assert.assertTrue(latch1.await(5000));
         Assert.assertTrue(latch2.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 }

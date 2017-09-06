@@ -61,7 +61,7 @@ public class CometDSubscribeTest extends AbstractCometDTest {
         evaluateScript("cometd.unsubscribe(subscription1);");
         Assert.assertTrue(unsubscribeLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test
@@ -74,7 +74,7 @@ public class CometDSubscribeTest extends AbstractCometDTest {
 
         evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
         Thread.sleep(1000); // Wait for long poll
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
         // Wait for the connect to return
         Thread.sleep(1000);
 
@@ -95,7 +95,7 @@ public class CometDSubscribeTest extends AbstractCometDTest {
         Assert.assertTrue(latch.await(5000));
         Assert.assertTrue(subscriber.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
         // Wait for the connect to return
         Thread.sleep(1000);
 
@@ -112,7 +112,7 @@ public class CometDSubscribeTest extends AbstractCometDTest {
         Assert.assertTrue(latch.await(5000));
         Assert.assertFalse(subscriber.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test
@@ -259,7 +259,7 @@ public class CometDSubscribeTest extends AbstractCometDTest {
 
         Assert.assertTrue(latch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test

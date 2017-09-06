@@ -51,6 +51,6 @@ public class CometDCharsetTest extends AbstractCometDTest {
         evaluateScript("window.assert(data.hiragana === '" + hiragana + "', 'bad hiragana');");
         evaluateScript("window.assert(data.chinese === '" + chinese + "', 'bad chinese');");
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 }

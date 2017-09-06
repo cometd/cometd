@@ -63,6 +63,6 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTest {
         String newClientId = evaluateScript("cometd.getClientId();");
         Assert.assertEquals(clientId, newClientId);
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 }

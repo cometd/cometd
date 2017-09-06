@@ -59,6 +59,6 @@ public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTest {
         List<String> expectedChannels = Arrays.asList("/meta/handshake", "/bar", "/meta/subscribe", "/foo", "/meta/connect");
         Assert.assertEquals(expectedChannels, Arrays.asList(channels));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 }

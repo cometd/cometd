@@ -53,6 +53,6 @@ public class CometDCrossOriginTest extends AbstractCometDTest {
 
         Assert.assertTrue(connectLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 }

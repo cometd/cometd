@@ -56,7 +56,7 @@ public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest {
         Assert.assertTrue(handshakeLatch.await(5000));
         Assert.assertTrue(failureLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     public static class EmptyResponseFilter implements Filter {

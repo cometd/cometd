@@ -78,7 +78,7 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         Assert.assertTrue(latch.await(3 * metaConnectPeriod + 3 * maxNetworkDelay));
         evaluateScript("window.assert(failure === undefined, failure);");
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     private class DelayingExtension extends BayeuxServer.Extension.Adapter {

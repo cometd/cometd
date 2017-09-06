@@ -42,7 +42,7 @@ public class CometDListenerExceptionCallbackTest extends AbstractCometDTest {
 
         Assert.assertTrue(connectLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test
@@ -64,6 +64,6 @@ public class CometDListenerExceptionCallbackTest extends AbstractCometDTest {
                 "cometd.publish('/test', {});");
         Assert.assertTrue(latch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 }

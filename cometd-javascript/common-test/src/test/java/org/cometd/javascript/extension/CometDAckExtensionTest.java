@@ -61,7 +61,7 @@ public class CometDAckExtensionTest extends AbstractCometDTest {
         Assert.assertTrue(clientSupportsAck);
         evaluateScript("cometd.unregisterExtension('test');");
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test
@@ -119,7 +119,7 @@ public class CometDAckExtensionTest extends AbstractCometDTest {
 
         evaluateScript("cometd.unregisterExtension('test');");
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     public static class AckService extends AbstractService {

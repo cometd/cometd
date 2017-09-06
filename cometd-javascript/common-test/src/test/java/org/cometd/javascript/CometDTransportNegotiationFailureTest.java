@@ -56,7 +56,7 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTest {
 
         Assert.assertTrue(failureLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test
@@ -81,7 +81,7 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTest {
 
         Assert.assertTrue(failureLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test

@@ -71,7 +71,7 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest {
         Assert.assertEquals(1L, handshakeLatch.getCount());
         Assert.assertEquals(1L, failureLatch.getCount());
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     private static class DeleteMetaConnectExtension extends BayeuxServer.Extension.Adapter {

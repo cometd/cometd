@@ -47,6 +47,6 @@ public class CometDWebSocketExceptionTest extends AbstractCometDWebSocketTest {
         Assert.assertTrue(wsLatch.await(5000));
         Assert.assertTrue(lpLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(1000)");
+        disconnect();
     }
 }

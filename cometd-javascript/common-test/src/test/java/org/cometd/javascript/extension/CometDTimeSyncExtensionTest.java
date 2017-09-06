@@ -70,6 +70,6 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTest {
         int networkLag = ((Number)javaScript.get("networkLag")).intValue();
         Assert.assertTrue(String.valueOf(networkLag), networkLag >= 0);
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 }

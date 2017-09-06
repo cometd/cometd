@@ -40,6 +40,6 @@ public class CometDBatchPublishTest extends AbstractCometDTest {
                 "cometd.handshake();");
         Assert.assertTrue(latch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 }

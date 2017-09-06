@@ -100,7 +100,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         token = ((Number)evaluateScript("outHandshake.ext.token")).intValue();
         Assert.assertEquals(2, token);
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     public class BayeuxFilter implements Filter {

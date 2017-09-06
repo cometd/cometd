@@ -91,6 +91,6 @@ public class CometDHandshakeReconnectTest extends AbstractCometDTest {
 
         Assert.assertTrue(connectLatch.await(20000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 }

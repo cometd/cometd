@@ -53,7 +53,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         String reloadState = evaluateScript("window.sessionStorage.getItem('" + attributeName + "');");
         Assert.assertNotNull(reloadState);
 
-        evaluateScript("cometd.disconnect(true)");
+        disconnect();
     }
 
     @Test
@@ -114,7 +114,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
                 "window.assert(ext.reload === true, 'ext.reload must be true: ' + JSON.stringify(ext));" +
                 "window.assert(ext.foo === true, 'ext.foo must be true: ' + JSON.stringify(ext));");
 
-        evaluateScript("cometd.disconnect(true)");
+        disconnect();
     }
 
     @Test
@@ -168,7 +168,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         // Make sure that reloading will not expire the client on the server
         Assert.assertFalse(expireLatch.await(expirationPeriod + metaConnectPeriod));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test
@@ -330,7 +330,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         // Check that publish went out
         evaluateScript("window.assert(extPublish !== null, 'extPublish');");
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     private void evaluateApplication() throws Exception {

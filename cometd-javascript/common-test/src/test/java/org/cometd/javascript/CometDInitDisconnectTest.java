@@ -48,7 +48,7 @@ public class CometDInitDisconnectTest extends AbstractCometDTest {
 
         // Expect disconnect and connect
         latch.reset(2);
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
         Assert.assertTrue(latch.await(5000));
 
         status = evaluateScript("cometd.getStatus();");

@@ -74,7 +74,7 @@ public class CometDLongPollingUnsubscribeFailureTest extends AbstractCometDLongP
         int backoff = ((Number)javaScript.get("backoff")).intValue();
         Assert.assertEquals(0, backoff);
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     public static class UnsubscribeThrowingFilter implements Filter {

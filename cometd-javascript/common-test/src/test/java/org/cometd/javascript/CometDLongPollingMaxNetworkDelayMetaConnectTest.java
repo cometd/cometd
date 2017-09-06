@@ -91,7 +91,7 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
         Assert.assertTrue(latch.await(2 * metaConnectPeriod + 3 * maxNetworkDelay));
         evaluateScript("window.assert(failure === undefined, failure);");
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     private class DelayingFilter implements Filter {

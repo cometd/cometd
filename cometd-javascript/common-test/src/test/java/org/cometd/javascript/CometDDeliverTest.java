@@ -60,7 +60,7 @@ public class CometDDeliverTest extends AbstractCometDTest {
         Assert.assertTrue(pushLatch.await(5000));
         evaluateScript("window.assert(_data !== undefined);");
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     public static class DeliverService extends AbstractService {

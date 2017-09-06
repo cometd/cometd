@@ -46,7 +46,7 @@ public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocket
         Assert.assertTrue(subscribeLatch.await(5000));
         Assert.assertTrue(failureLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     private static class DeleteMetaSubscribeExtension extends BayeuxServer.Extension.Adapter {

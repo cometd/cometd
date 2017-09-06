@@ -58,6 +58,6 @@ public class CometDAutoBatchTest extends AbstractCometDLongPollingTest {
 
         evaluateScript("autobatch_assertion", "window.assert([1,4] == autobatch.join(), autobatch);");
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 }

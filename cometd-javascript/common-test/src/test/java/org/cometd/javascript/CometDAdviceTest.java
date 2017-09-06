@@ -63,7 +63,7 @@ public class CometDAdviceTest extends AbstractCometDTest {
         Assert.assertTrue(handshakeListener.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(connectLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     public static class HandshakeListener {

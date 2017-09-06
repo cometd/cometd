@@ -69,7 +69,7 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
         Assert.assertTrue(handshakeLatch.await(5000));
         Assert.assertEquals("long-polling", evaluateScript("cometd.getTransport().getType()"));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     private class ReHandshakeExtension extends BayeuxServer.Extension.Adapter {

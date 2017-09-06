@@ -52,7 +52,7 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest {
         Assert.assertTrue(handshakeLatch.await(5000));
         Assert.assertTrue(subscribeLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     @Test
@@ -78,7 +78,7 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest {
         Assert.assertTrue(handshakeLatch.await(5000));
         Assert.assertTrue(publishLatch.await(5000));
 
-        evaluateScript("cometd.disconnect(true);");
+        disconnect();
     }
 
     private class Policy extends DefaultSecurityPolicy {
