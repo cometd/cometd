@@ -21,6 +21,7 @@ import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.EventObject;
@@ -29,6 +30,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -460,7 +462,7 @@ public class Oort extends ContainerLifeCycle {
             comet = _pendingComets.remove(cometURL);
             if (comet != null) {
                 if (_logger.isDebugEnabled()) {
-                    _logger.debug("Disconnecting pending comet {}", cometURL);
+                    _logger.debug("Disconnecting pending comet {} with {}", cometURL, comet);
                 }
             } else {
                 Iterator<ClientCometInfo> cometInfos = _clientComets.values().iterator();
@@ -468,7 +470,7 @@ public class Oort extends ContainerLifeCycle {
                     ClientCometInfo cometInfo = cometInfos.next();
                     if (cometInfo.matchesURL(cometURL)) {
                         if (_logger.isDebugEnabled()) {
-                            _logger.debug("Disconnecting comet {}", cometURL);
+                            _logger.debug("Disconnecting comet {}", cometInfo);
                         }
                         comet = cometInfo.getOortComet();
                         cometInfos.remove();
@@ -665,18 +667,18 @@ public class Oort extends ContainerLifeCycle {
      */
     protected boolean incomingCometHandshake(Map<String, Object> oortExt, ServerSession session) {
         String remoteOortURL = (String)oortExt.get(EXT_OORT_URL_FIELD);
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Incoming comet handshake from comet {} with {}", remoteOortURL, session);
-        }
-
         String remoteOortId = (String)oortExt.get(EXT_OORT_ID_FIELD);
         ServerCometInfo serverCometInfo = new ServerCometInfo(remoteOortId, remoteOortURL, session);
         ServerCometInfo existing = _serverComets.putIfAbsent(remoteOortId, serverCometInfo);
         if (existing != null) {
             if (_logger.isDebugEnabled()) {
-                _logger.debug("Comet {} is already known with {}", remoteOortURL, existing.getServerSession());
+                _logger.debug("Comet already known {}", existing);
             }
             return false;
+        } else {
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Incoming comet handshake {}", serverCometInfo);
+            }
         }
 
         // Be notified when the remote comet stops
@@ -775,34 +777,13 @@ public class Oort extends ContainerLifeCycle {
         super.dump(out, indent);
 
         List<Dumpable> children = new ArrayList<>();
-
-        children.add(new Dumpable() {
-            @Override
-            public String dump() {
-                return null;
-            }
-
-            @Override
-            public void dump(Appendable out, String indent) throws IOException {
-                Set<String> knownComets = getKnownComets();
-                ContainerLifeCycle.dumpObject(out, "connected comets: " + knownComets.size());
-                ContainerLifeCycle.dump(out, indent, knownComets);
-            }
-        });
-
-        children.add(new Dumpable() {
-            @Override
-            public String dump() {
-                return null;
-            }
-
-            @Override
-            public void dump(Appendable out, String indent) throws IOException {
-                Set<String> observedChannels = getObservedChannels();
-                ContainerLifeCycle.dumpObject(out, "observed channels: " + observedChannels.size());
-                ContainerLifeCycle.dump(out, indent, observedChannels);
-            }
-        });
+        Set<String> observedChannels = getObservedChannels();
+        children.add(new DumpableCollection("observed channels: " + observedChannels.size(), observedChannels));
+        List<ClientCometInfo> clientInfos;
+        synchronized (_lock) {
+            clientInfos = new ArrayList<>(_clientComets.values());
+        }
+        children.add(new DumpableCollection("connected comets: " + clientInfos.size(), clientInfos));
 
         ContainerLifeCycle.dump(out, indent, children);
     }
@@ -1030,7 +1011,7 @@ public class Oort extends ContainerLifeCycle {
                     String remoteOortId = serverCometInfo.getOortId();
                     String remoteOortURL = serverCometInfo.getOortURL();
                     if (_logger.isDebugEnabled()) {
-                        _logger.debug("Disconnected from comet {} with server session {}", remoteOortURL, session);
+                        _logger.debug("Disconnected from {}", serverCometInfo);
                     }
                     cometInfos.remove();
 
@@ -1148,6 +1129,11 @@ public class Oort extends ContainerLifeCycle {
         protected String getOortURL() {
             return oortURL;
         }
+
+        @Override
+        public String toString() {
+            return String.format("%s@%x[%s|%s]", getClass().getSimpleName(), hashCode(), oortId, oortURL);
+        }
     }
 
     private static class ServerCometInfo extends CometInfo {
@@ -1160,6 +1146,11 @@ public class Oort extends ContainerLifeCycle {
 
         private ServerSession getServerSession() {
             return session;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s[%s]", super.toString(), session);
         }
     }
 
@@ -1192,6 +1183,32 @@ public class Oort extends ContainerLifeCycle {
 
             synchronized (this) {
                 return urls != null && urls.contains(url);
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s[%s]%s", super.toString(), oortComet, Objects.toString(urls, ""));
+        }
+    }
+
+    private static class DumpableCollection implements Dumpable {
+        private final String name;
+        private final Collection<?> collection;
+
+        private DumpableCollection(String name, Collection<?> collection) {
+            this.name = name;
+            this.collection = collection;
+        }
+
+        public String dump() {
+            return ContainerLifeCycle.dump(this);
+        }
+
+        public void dump(Appendable out, String indent) throws IOException {
+            out.append(name).append(System.lineSeparator());
+            if (collection != null) {
+                ContainerLifeCycle.dump(out, indent, collection);
             }
         }
     }
