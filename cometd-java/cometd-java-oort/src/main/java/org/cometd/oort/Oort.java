@@ -1016,14 +1016,19 @@ public class Oort extends ContainerLifeCycle {
                     cometInfos.remove();
 
                     if (!timeout) {
-                        ClientCometInfo clientCometInfo;
+                        OortComet oortComet;
                         synchronized (_lock) {
-                            clientCometInfo = _clientComets.remove(remoteOortId);
+                            oortComet = _pendingComets.remove(remoteOortURL);
+                            if (oortComet == null) {
+                                ClientCometInfo clientCometInfo = _clientComets.remove(remoteOortId);
+                                if (clientCometInfo != null) {
+                                    oortComet = clientCometInfo.getOortComet();
+                                }
+                            }
                         }
-                        if (clientCometInfo != null) {
-                            OortComet oortComet = clientCometInfo.getOortComet();
+                        if (oortComet != null) {
                             if (_logger.isDebugEnabled()) {
-                                _logger.debug("Disconnecting from comet {} with client session {}", remoteOortURL, oortComet);
+                                _logger.debug("Disconnecting from comet {} with {}", remoteOortURL, oortComet);
                             }
                             oortComet.disconnect();
                         }
