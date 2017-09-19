@@ -759,6 +759,14 @@ public class Oort extends ContainerLifeCycle {
         return new HashSet<>(_channels.keySet());
     }
 
+    List<String> knownOortIds() {
+        List<String> result = new ArrayList<>();
+        synchronized (_lock) {
+            result.addAll(_clientComets.keySet());
+        }
+        return result;
+    }
+
     /**
      * @return the oortSession
      */
@@ -1084,30 +1092,46 @@ public class Oort extends ContainerLifeCycle {
 
             @SuppressWarnings("unchecked")
             Map<String, Object> oortExt = (Map<String, Object>)oortExtObject;
+            String oortId = (String)oortExt.get(Oort.EXT_OORT_ID_FIELD);
             String oortURL = (String)oortExt.get(Oort.EXT_OORT_URL_FIELD);
 
             ClientCometInfo cometInfo;
             synchronized (_lock) {
                 _pendingComets.remove(cometURL);
 
-                String oortId = (String)oortExt.get(Oort.EXT_OORT_ID_FIELD);
+                Iterator<ClientCometInfo> iterator = _clientComets.values().iterator();
+                while (iterator.hasNext()) {
+                    cometInfo = iterator.next();
+                    if (!cometInfo.getOortId().equals(oortId)) {
+                        if (cometInfo.matchesURL(cometURL) || cometInfo.matchesURL(oortURL)) {
+                            iterator.remove();
+                            if (_logger.isDebugEnabled()) {
+                                _logger.debug("Unregistered client comet {}", cometInfo);
+                            }
+                        }
+                    }
+                }
+
                 cometInfo = _clientComets.get(oortId);
                 if (cometInfo == null) {
                     cometInfo = new ClientCometInfo(oortId, oortURL, oortComet);
                     _clientComets.put(oortId, cometInfo);
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("Registered client comet {}", cometInfo);
+                    }
                 }
             }
 
             if (!cometURL.equals(oortURL)) {
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Adding alias to {}: {}", oortURL, cometURL);
-                }
                 cometInfo.addAliasURL(cometURL);
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Added comet alias {}", cometInfo);
+                }
             }
 
             if (message.isSuccessful()) {
                 if (_logger.isDebugEnabled()) {
-                    _logger.debug("Connected to comet {} as {} with {}/{}", oortURL, cometURL, message.getClientId(), oortComet.getTransport());
+                    _logger.debug("Connected to comet {}", cometInfo);
                 }
             } else {
                 if (_logger.isDebugEnabled()) {

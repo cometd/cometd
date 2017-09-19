@@ -18,6 +18,7 @@ package org.cometd.oort;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -540,6 +541,10 @@ public class OortObserveCometTest extends OortTest {
         Assert.assertTrue(leftLatch2.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(joinedLatch2.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(joinedLatch1.await(5, TimeUnit.SECONDS));
+
+        List<String> oortIds = oort2.knownOortIds();
+        Assert.assertEquals(1, oortIds.size());
+        Assert.assertEquals(newOortId1, oortIds.get(0));
 
         // Avoid assertions while stopping the test.
         oort2.removeCometListener(cometListener);
