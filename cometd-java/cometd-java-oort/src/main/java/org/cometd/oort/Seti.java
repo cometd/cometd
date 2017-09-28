@@ -235,7 +235,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         String oortURL = location._oortURL;
         if (associated && !_oort.isCometConnected(oortURL)) {
             if (_logger.isDebugEnabled()) {
-                _logger.debug("Disassociating {} since comet {} just disconnected", userId, oortURL);
+                _logger.debug("Disassociating {} since comet {} is not connected", userId, oortURL);
             }
             disassociate(userId, location);
             return false;
