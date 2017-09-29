@@ -94,6 +94,11 @@ public abstract class AbstractOortObjectTest extends OortTest {
         logger.info("oort_object_2 -> {}", oortObject2.getOort().getURL());
     }
 
+    protected void startOortObject(OortObject<?> oortObject) throws Exception {
+        oortObject.start();
+        oortObjects.add(oortObject);
+    }
+
     /**
      * A {@link BayeuxServer.SubscriptionListener} that is used to detect
      * whether nodeA is subscribed on nodeB on the given channel.

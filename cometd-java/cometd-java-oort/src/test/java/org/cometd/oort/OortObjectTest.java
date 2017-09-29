@@ -31,6 +31,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -455,5 +456,91 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
         Assert.assertTrue(updatedLatch.await(5, TimeUnit.SECONDS));
         Assert.assertNotNull(result.get(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testNodeCrashWhileOtherNodeStarts() throws Exception {
+        stop();
+
+        String name = "crash";
+        OortObject.Factory<String> factory = OortObjectFactories.forString("");
+
+        Server server1 = startServer(0);
+        ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
+        int port1 = connector1.getLocalPort();
+        oort1 = startOort(server1);
+        OortObject<String> oortObject1 = new OortObject<>(oort1, name, factory);
+        oortObject1.start();
+        OortObject.Result.Deferred<String> result1 = new OortObject.Result.Deferred<>();
+        oortObject1.setAndShare("data1", result1);
+        result1.get(5, TimeUnit.SECONDS);
+
+        // Simulate that node2 is starting but not yet ready to accept connections.
+        Server server2 = startServer(0);
+        ServerConnector connector2 = (ServerConnector)server2.getConnectors()[0];
+        int port2 = connector2.getLocalPort();
+        connector2.stop();
+        oort2 = startOort(server2);
+        OortObject<String> oortObject2 = new OortObject<>(oort2, name, factory);
+        startOortObject(oortObject2);
+        OortObject.Result.Deferred<String> result2 = new OortObject.Result.Deferred<>();
+        oortObject2.setAndShare("data2", result2);
+        result2.get(5, TimeUnit.SECONDS);
+
+        CountDownLatch joinedLatch = new CountDownLatch(1);
+        final CountDownLatch updateLatch2 = new CountDownLatch(1);
+        oort1.addCometListener(new CometJoinedListener(joinedLatch));
+        oortObject2.addListener(new OortObject.Listener.Adapter<String>() {
+            @Override
+            public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
+                updateLatch2.countDown();
+            }
+        });
+
+        OortComet oortComet21 = oort2.observeComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Assert.assertFalse(joinedLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(updateLatch2.await(1, TimeUnit.SECONDS));
+
+        // Simulate node1 crash.
+        oortObject1.stop();
+        stopOort(oort1);
+        stopServer(server1);
+
+        // Verify that node2 has no data from node1.
+        OortObject.Info<String> info = oortObject2.getInfo(oort1.getURL());
+        Assert.assertNull(info);
+
+        // Restart node1.
+        server1 = startServer(port1);
+        connector1 = (ServerConnector)server1.getConnectors()[0];
+        connector1.stop();
+        oort1 = startOort(server1);
+        joinedLatch = new CountDownLatch(2);
+        oort1.addCometListener(new CometJoinedListener(joinedLatch));
+        oort2.addCometListener(new CometJoinedListener(joinedLatch));
+        oortObject1 = new OortObject<>(oort1, name, factory);
+        startOortObject(oortObject1);
+        OortObject.Result.Deferred<String> result3 = new OortObject.Result.Deferred<>();
+        oortObject1.setAndShare("data3", result3);
+        result3.get(5, TimeUnit.SECONDS);
+        final CountDownLatch updateLatch1 = new CountDownLatch(1);
+        oortObject1.addListener(new OortObject.Listener.Adapter<String>() {
+            @Override
+            public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
+                updateLatch1.countDown();
+            }
+        });
+
+        // Restore communication.
+        connector1.setPort(port1);
+        connector1.start();
+        connector2.setPort(port2);
+        connector2.start();
+
+        Assert.assertTrue(joinedLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(updateLatch1.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(updateLatch2.await(5, TimeUnit.SECONDS));
     }
 }
