@@ -62,7 +62,7 @@ The Developer Certificate of Origin (from https://developercertificate.org/):
 ====
 [source,text]
 ----
-include::https://developercertificate.org/[lines=14..50]
+include::{resources}/developercertificate.txt[lines=14..50]
 ----
 ====
 

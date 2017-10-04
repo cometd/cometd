@@ -20,7 +20,7 @@ The current Jetty version CometD depends on by default is:
 
 [source,xml,indent=0]
 ----
-include::{github}/pom.xml[tags=jetty-version]
+include::{resources}/pom.xml[tags=jetty-version]
 ----
 
 It is possible to use a different Jetty version, starting from Jetty
@@ -195,7 +195,7 @@ HTTPS and WebSocket transports:
 
 [source,java,indent=0]
 ----
-include::{github}/cometd-demo/src/test/java/org/cometd/demo/Demo.java[tags=embedded-cometd]
+include::{resources}/Demo.java[tags=embedded-cometd]
 ----
 
 [NOTE]

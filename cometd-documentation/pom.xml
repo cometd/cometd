@@ -12,7 +12,9 @@
     <packaging>pom</packaging>
 
     <properties>
-        <html.directory>${project.build.directory}/html/reference</html.directory>
+        <html-directory>${project.build.directory}/html/reference</html-directory>
+        <resources-directory>${project.build.directory}/resources</resources-directory>
+        <github>https://raw.github.com/cometd/cometd/4.0.x</github>
     </properties>
 
     <build>
@@ -36,12 +38,32 @@
                                     </includes>
                                 </resource>
                             </resources>
-                            <outputDirectory>${html.directory}</outputDirectory>
+                            <outputDirectory>${html-directory}</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>download-resources</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${resources-directory}" />
+                                <get src="https://developercertificate.org/" dest="${resources-directory}/developercertificate.txt" />
+                                <get src="${github}/pom.xml" dest="${resources-directory}/pom.xml" />
+                                <get src="${github}/cometd-demo/src/test/java/org/cometd/demo/Demo.java" dest="${resources-directory}/Demo.java" />
+                                <get src="${github}/cometd-archetypes/dojo-jetty9/src/main/resources/archetype-resources/src/main/webapp/application.js" dest="${resources-directory}/application.js" />
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.asciidoctor</groupId>
                 <artifactId>asciidoctor-maven-plugin</artifactId>
@@ -57,13 +79,12 @@
                             <doctype>book</doctype>
                             <sourceDocumentName>index.adoc</sourceDocumentName>
                             <imagesDir>images</imagesDir>
-                            <outputDirectory>${html.directory}</outputDirectory>
+                            <outputDirectory>${html-directory}</outputDirectory>
                             <sourceHighlighter>coderay</sourceHighlighter>
                             <attributes>
                                 <version>${project.version}</version>
-                                <github>https://raw.github.com/cometd/cometd/master</github>
+                                <resources>${resources-directory}</resources>
                                 <linkcss>true</linkcss>
-                                <allow-uri-read>true</allow-uri-read>
                             </attributes>
                         </configuration>
                     </execution>

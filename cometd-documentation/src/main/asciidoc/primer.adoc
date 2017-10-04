@@ -282,7 +282,7 @@ The archetypes provide:
 ====
 [source,javascript]
 ----
-include::{github}/cometd-archetypes/dojo-jetty9/src/main/resources/archetype-resources/src/main/webapp/application.js[]
+include::{resources}/application.js[]
 ----
 ====
 
