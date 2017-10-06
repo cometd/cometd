@@ -2,10 +2,13 @@ node {
     // System Dependent Locations
     def mvnTool = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
     def jdk8 = tool name: 'jdk8', type: 'hudson.model.JDK'
+    def jdk9 = tool name: 'jdk9', type: 'hudson.model.JDK'
 
     // Environment
     List mvnEnv8 = ["PATH+MVN=${mvnTool}/bin", "PATH+JDK=${jdk8}/bin", "JAVA_HOME=${jdk8}/", "MAVEN_HOME=${mvnTool}"]
     mvnEnv8.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
+    List mvnEnv9 = ["PATH+MVN=${mvnTool}/bin", "PATH+JDK=${jdk9}/bin", "JAVA_HOME=${jdk9}/", "MAVEN_HOME=${mvnTool}"]
+    mvnEnv9.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
 
     stage('Checkout') {
         checkout scm
@@ -27,15 +30,15 @@ node {
         }
     }
 
-//    stage('Build JDK 8 - Jetty 10.0.x') {
-//        withEnv(mvnEnv8) {
-//            timeout(time: 1, unit: 'HOURS') {
-//                sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=10.0.0-SNAPSHOT"
-//                // Report failures in the jenkins UI
-//                step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
-//            }
-//        }
-//    }
+    stage('Build JDK 9') {
+        withEnv(mvnEnv9) {
+            timeout(time: 1, unit: 'HOURS') {
+                sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
+                // Report failures in the jenkins UI
+                step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+            }
+        }
+    }
 
     stage('Javadoc') {
         withEnv(mvnEnv8) {
