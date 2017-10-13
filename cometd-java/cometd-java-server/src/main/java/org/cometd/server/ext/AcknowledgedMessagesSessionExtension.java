@@ -121,25 +121,13 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
             BayeuxServerImpl bayeuxServer = _session.getBayeuxServer();
             ServerTransport transport = bayeuxServer.getCurrentTransport();
             if (allowMessageDeliveryDuringHandshake(_session, transport)) {
-                long batch;
-                long size;
-                synchronized (_session.getLock()) {
-                    batch = closeBatch();
-                    size = _queue.batchSize(batch);
-                }
-
-                if (size == 0) {
-                    // No messages to send.
-                    ext.put("ack", Boolean.TRUE);
-                } else {
-                    Map<String, Object> ack = new HashMap<>(3);
-                    ack.put("enabled", true);
-                    ack.put("batch", batch);
-                    ack.put("size", size);
-                    ext.put("ack", ack);
-                    if (_logger.isDebugEnabled()) {
-                        _logger.debug("Sending batch {} for {}", batch, _session);
-                    }
+                long batch = closeBatch();
+                Map<String, Object> ack = new HashMap<>(3);
+                ack.put("enabled", true);
+                ack.put("batch", batch);
+                ext.put("ack", ack);
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Sending batch {} for {}", batch, _session);
                 }
             } else {
                 ext.put("ack", Boolean.TRUE);

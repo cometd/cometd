@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -67,8 +68,8 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 // Send messages during the handshake processing.
-                session.deliver(null, channelName, "data1");
-                session.deliver(null, channelName, "data2");
+                session.deliver(null, channelName, "data1", Promise.noop());
+                session.deliver(null, channelName, "data2", Promise.noop());
             }
 
             @Override
@@ -102,7 +103,7 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
                 "var messages = [];" +
                 "var listener = function(message) {" +
                 "    messages.push(message);" +
-                "    if (messages.length == 4) {" +
+                "    if (messages.length === 4) {" +
                 "        clientMessagesLatch.countDown();" +
                 "    }" +
                 "};");
@@ -116,9 +117,75 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
         Assert.assertTrue(serverMessagesLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(clientMessagesLatch.await(5000));
 
-        evaluateScript("window.assert(messages[0].channel === '/meta/handshake', 'not handshake' + JSON.stringify(messages));");
-        evaluateScript("window.assert(messages[1].channel === '" + channelName + "', 'not message' + JSON.stringify(messages));");
-        evaluateScript("window.assert(messages[2].channel === '" + channelName + "', 'not message' + JSON.stringify(messages));");
-        evaluateScript("window.assert(messages[3].channel === '/meta/connect', 'not connect: ' + JSON.stringify(messages));");
+        evaluateScript("window.assert(messages[0].channel === '/meta/handshake', 'not handshake' + JSON.stringify(messages[0]));");
+        evaluateScript("window.assert(messages[1].channel === '" + channelName + "', 'not message' + JSON.stringify(messages[1]));");
+        evaluateScript("window.assert(messages[2].channel === '" + channelName + "', 'not message' + JSON.stringify(messages[2]));");
+        evaluateScript("window.assert(messages[3].channel === '/meta/connect', 'not connect: ' + JSON.stringify(messages[3]));");
+    }
+
+    @Test
+    public void testMessagesSentInHandshakeResponseWithAckExtensionWithDeQueueListener() throws Exception {
+        Map<String, String> options = new HashMap<>();
+        options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
+        initCometDServer(options);
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
+            @Override
+            public void sessionAdded(ServerSession session, ServerMessage message) {
+                session.addListener((ServerSession.DeQueueListener)(s, queue) -> {
+                    while (queue.size() > 1) {
+                        queue.poll();
+                    }
+                });
+            }
+
+            @Override
+            public void sessionRemoved(ServerSession session, boolean timedout) {
+            }
+        });
+        provideMessageAcknowledgeExtension();
+
+        final String channelName = "/test";
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
+            @Override
+            public void sessionAdded(ServerSession session, ServerMessage message) {
+                // Send messages during the handshake processing.
+                session.deliver(null, channelName, "data1", Promise.noop());
+                session.deliver(null, channelName, "data2", Promise.noop());
+            }
+
+            @Override
+            public void sessionRemoved(ServerSession session, boolean timedout) {
+            }
+        });
+
+        evaluateScript("" +
+                "cometd.configure({" +
+                "    url: '" + cometdURL + "', " +
+                "    logLevel: '" + getLogLevel() + "'" +
+                "});");
+
+        evaluateScript("var clientMessagesLatch = new Latch(1);");
+        Latch clientMessagesLatch = javaScript.get("clientMessagesLatch");
+        evaluateScript("" +
+                "var messages = [];" +
+                "var listener = function(message) {" +
+                "    messages.push(message);" +
+                "    if (messages.length === 3) {" +
+                "        clientMessagesLatch.countDown();" +
+                "    }" +
+                "};");
+        evaluateScript("" +
+                "cometd.addListener('/meta/handshake', listener);" +
+                "cometd.addListener('" + channelName + "', listener);" +
+                "cometd.addListener('/meta/connect', listener);");
+        evaluateScript("" +
+                "cometd.handshake();");
+
+        Assert.assertTrue(clientMessagesLatch.await(5000));
+
+        evaluateScript("window.assert(messages[0].channel === '/meta/handshake', 'not handshake' + JSON.stringify(messages[0]));");
+        evaluateScript("window.assert(messages[1].channel === '" + channelName + "', 'not message' + JSON.stringify(messages[1]));");
+        evaluateScript("window.assert(messages[2].channel === '/meta/connect', 'not connect: ' + JSON.stringify(messages[2]));");
     }
 }
