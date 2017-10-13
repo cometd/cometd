@@ -40,8 +40,6 @@
     return cometdModule.AckExtension = function() {
         var _cometd;
         var _serverSupportsAcks = false;
-        var _transientBatch;
-        var _size;
         var _batch;
 
         function _debug(text, args) {
@@ -68,10 +66,8 @@
                         // New format.
                         _serverSupportsAcks = ackField.enabled === true;
                         var batch = ackField.batch;
-                        var size = ackField.size;
-                        if (typeof batch === 'number' && typeof size === 'number') {
-                            _transientBatch = batch;
-                            _size = size;
+                        if (typeof batch === 'number') {
+                            _batch = batch;
                         }
                     } else {
                         // Old format.
@@ -83,14 +79,6 @@
                 if (ext && typeof ext.ack === 'number') {
                     _batch = ext.ack;
                     _debug('AckExtension: server sent batch', _batch);
-                }
-            } else if (!/^\/meta\//.test(channel)) {
-                if (_size > 0) {
-                    --_size;
-                    if (_size === 0) {
-                        _batch = _transientBatch;
-                        _transientBatch = 0;
-                    }
                 }
             }
             return message;
@@ -104,9 +92,7 @@
             if (channel === '/meta/handshake') {
                 message.ext.ack = _cometd && _cometd.ackEnabled !== false;
                 _serverSupportsAcks = false;
-                _transientBatch = 0;
                 _batch = 0;
-                _size = 0;
             } else if (channel === '/meta/connect') {
                 if (_serverSupportsAcks) {
                     message.ext.ack = _batch;

@@ -40,8 +40,6 @@ public class AckExtension extends Extension.Adapter {
     public static final String ACK_FIELD = "ack";
 
     private boolean _serverSupportsAcks;
-    private long _transientBatch;
-    private int _size;
     private long _batch;
 
     @Override
@@ -55,13 +53,9 @@ public class AckExtension extends Extension.Adapter {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> ack = (Map<String, Object>)field;
                     _serverSupportsAcks = Boolean.TRUE.equals(ack.get("enabled"));
-
-                    // Check if there are messages.
                     Object batch = ack.get("batch");
-                    Object size = ack.get("size");
-                    if (batch instanceof Number && size instanceof Number) {
-                        _transientBatch = ((Number)batch).longValue();
-                        _size = ((Number)size).intValue();
+                    if (batch instanceof Number) {
+                        _batch = ((Number)batch).longValue();
                     }
                 } else {
                     // Old format.
@@ -81,24 +75,10 @@ public class AckExtension extends Extension.Adapter {
     }
 
     @Override
-    public boolean rcv(ClientSession session, Mutable message) {
-        if (_size > 0) {
-            --_size;
-            if (_size == 0) {
-                _batch = _transientBatch;
-                _transientBatch = 0;
-            }
-        }
-        return true;
-    }
-
-    @Override
     public boolean sendMeta(ClientSession session, Mutable message) {
         if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
             _serverSupportsAcks = false;
-            _transientBatch = 0;
             _batch = 0;
-            _size = 0;
             message.getExt(true).put(ACK_FIELD, Boolean.TRUE);
         } else if (Channel.META_CONNECT.equals(message.getChannel())) {
             if (_serverSupportsAcks) {
