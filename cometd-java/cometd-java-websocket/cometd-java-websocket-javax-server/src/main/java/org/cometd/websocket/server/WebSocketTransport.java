@@ -106,7 +106,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
                     // Hopefully these will become a standard, for now they are Jetty specific.
                     (InetSocketAddress)userProperties.get("javax.websocket.endpoint.localAddress"),
                     (InetSocketAddress)userProperties.get("javax.websocket.endpoint.remoteAddress"),
-                    retrieveLocales(userProperties));
+                    retrieveLocales(userProperties), "HTTP/1.1",
+                    request.getRequestURI().getScheme().equalsIgnoreCase("https"));
         }
     }
 

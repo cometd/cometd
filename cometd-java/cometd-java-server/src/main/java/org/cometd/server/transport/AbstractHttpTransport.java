@@ -651,6 +651,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         @Override
+        public String getContextPath() {
+            return _request.getContextPath();
+        }
+
+        @Override
         public String getURL() {
             StringBuffer url = _request.getRequestURL();
             String query = _request.getQueryString();
@@ -663,6 +668,16 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         @Override
         public List<Locale> getLocales() {
             return Collections.list(_request.getLocales());
+        }
+
+        @Override
+        public String getProtocol() {
+            return _request.getProtocol();
+        }
+
+        @Override
+        public boolean isSecure() {
+            return _request.isSecure();
         }
     }
 

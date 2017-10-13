@@ -123,7 +123,8 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
         private WebSocketContext(ServletContext context, ServletUpgradeRequest request) {
             super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
                     request.getParameterMap(), request.getUserPrincipal(), request.getSession(),
-                    request.getLocalSocketAddress(), request.getRemoteSocketAddress(), Collections.list(request.getLocales()));
+                    request.getLocalSocketAddress(), request.getRemoteSocketAddress(),
+                    Collections.list(request.getLocales()), "HTTP/1.1", request.isSecure());
             this.attributes = request.getServletAttributes();
         }
 

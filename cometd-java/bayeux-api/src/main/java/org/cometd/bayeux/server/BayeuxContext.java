@@ -154,6 +154,11 @@ public interface BayeuxContext {
     String getContextInitParameter(String name);
 
     /**
+     * @return the application context path
+     */
+    String getContextPath();
+
+    /**
      * @return the full request URI complete with query string if present.
      */
     String getURL();
@@ -163,4 +168,14 @@ public interface BayeuxContext {
      * server Locale if the request Locales are missing.
      */
     List<Locale> getLocales();
+
+    /**
+     * @return a string containing the protocol name and version number
+     */
+    String getProtocol();
+
+    /**
+     * @return whether the request was made over a secure channel
+     */
+    boolean isSecure();
 }

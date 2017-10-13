@@ -43,8 +43,10 @@ public abstract class AbstractBayeuxContext implements BayeuxContext {
     private final InetSocketAddress localAddress;
     private final InetSocketAddress remoteAddress;
     private final List<Locale> locales;
+    private final String protocol;
+    private final boolean secure;
 
-    public AbstractBayeuxContext(ServletContext context, String uri, String query, Map<String, List<String>> headers, Map<String, List<String>> parameters, Principal principal, HttpSession session, InetSocketAddress local, InetSocketAddress remote, List<Locale> locales) {
+    public AbstractBayeuxContext(ServletContext context, String uri, String query, Map<String, List<String>> headers, Map<String, List<String>> parameters, Principal principal, HttpSession session, InetSocketAddress local, InetSocketAddress remote, List<Locale> locales, String protocol, boolean secure) {
         this.context = context;
         this.url = uri + (query == null ? "" : "?" + query);
         this.headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -55,6 +57,8 @@ public abstract class AbstractBayeuxContext implements BayeuxContext {
         this.localAddress = local;
         this.remoteAddress = remote;
         this.locales = locales;
+        this.protocol = protocol;
+        this.secure = secure;
     }
 
     @Override
@@ -166,5 +170,20 @@ public abstract class AbstractBayeuxContext implements BayeuxContext {
     @Override
     public String getContextInitParameter(String name) {
         return context.getInitParameter(name);
+    }
+
+    @Override
+    public String getContextPath() {
+        return context.getContextPath();
+    }
+
+    @Override
+    public String getProtocol() {
+        return protocol;
+    }
+
+    @Override
+    public boolean isSecure() {
+        return secure;
     }
 }
