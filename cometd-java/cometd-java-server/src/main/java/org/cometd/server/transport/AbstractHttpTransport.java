@@ -200,7 +200,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     protected ServerSessionImpl findSession(Collection<ServerSessionImpl> sessions, ServerMessage.Mutable message) {
         if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
-            return getBayeux().newServerSession();
+            ServerSessionImpl session = getBayeux().newServerSession();
+            session.setAllowMessageDeliveryDuringHandshake(isAllowMessageDeliveryDuringHandshake());
+            return session;
         }
 
         // Is there an existing, trusted, session ?

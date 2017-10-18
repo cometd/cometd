@@ -311,26 +311,6 @@ public class BatchArrayQueue<T> implements Queue<T> {
         }
     }
 
-    public int batchSize(long value) {
-        synchronized (lock) {
-            int result = 0;
-            int cursor = head;
-            while (cursor != tail) {
-                long batch = batches[cursor];
-                if (batch == value) {
-                    ++result;
-                } else if (batch > value) {
-                    break;
-                }
-                ++cursor;
-                if (cursor == batches.length) {
-                    cursor = 0;
-                }
-            }
-            return result;
-        }
-    }
-
     // Used only in tests.
     long batchOf(int index) {
         synchronized (lock) {

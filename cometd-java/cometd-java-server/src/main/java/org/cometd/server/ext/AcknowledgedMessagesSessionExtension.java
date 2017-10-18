@@ -25,9 +25,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerSession.Extension;
-import org.cometd.bayeux.server.ServerTransport;
-import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,9 +115,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         String channel = message.getChannel();
         Map<String, Object> ext = message.getExt(true);
         if (channel.equals(Channel.META_HANDSHAKE)) {
-            BayeuxServerImpl bayeuxServer = _session.getBayeuxServer();
-            ServerTransport transport = bayeuxServer.getCurrentTransport();
-            if (allowMessageDeliveryDuringHandshake(_session, transport)) {
+            if (_session.isAllowMessageDeliveryDuringHandshake()) {
                 long batch = closeBatch();
                 Map<String, Object> ack = new HashMap<>(3);
                 ack.put("enabled", true);
@@ -172,15 +167,5 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     // Used only in tests.
     BatchArrayQueue<ServerMessage> getBatchArrayQueue() {
         return _queue;
-    }
-
-    private boolean allowMessageDeliveryDuringHandshake(ServerSessionImpl session, ServerTransport transport) {
-        if (session.isAllowMessageDeliveryDuringHandshake()) {
-            return true;
-        }
-        if (transport instanceof AbstractServerTransport) {
-            return ((AbstractServerTransport)transport).isAllowMessageDeliveryDuringHandshake();
-        }
-        return false;
     }
 }

@@ -272,6 +272,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 ServerMessage.Mutable message = messages[0];
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
                     session = getBayeux().newServerSession();
+                    session.setAllowMessageDeliveryDuringHandshake(isAllowMessageDeliveryDuringHandshake());
                 } else if (!_requireHandshakePerConnection) {
                     _session = session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
                 }
