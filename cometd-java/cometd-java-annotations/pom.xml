@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.cometd.java</groupId>
         <artifactId>cometd-java</artifactId>
-        <version>3.1.4-SNAPSHOT</version>
+        <version>3.1.3-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
