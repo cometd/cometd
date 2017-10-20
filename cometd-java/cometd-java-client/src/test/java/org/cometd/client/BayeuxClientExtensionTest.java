@@ -245,6 +245,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
                 return true;
             }
         });
+        final CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.handshake(new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
@@ -252,10 +253,18 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
                     @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                     }
+                }, new ClientSessionChannel.MessageListener() {
+                    @Override
+                    public void onMessage(ClientSessionChannel channel, Message message) {
+                        if (message.isSuccessful()) {
+                            subscribeLatch.countDown();
+                        }
+                    }
                 });
             }
         });
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // This message will be delivered via /meta/connect.
         bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data1");
