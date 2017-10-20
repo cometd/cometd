@@ -77,12 +77,7 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest {
         Thread.sleep(1000);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        serverSession.addListener(new ServerSession.RemoveListener() {
-            @Override
-            public void removed(ServerSession session, boolean timeout) {
-                latch.countDown();
-            }
-        });
+        serverSession.addListener((ServerSession.RemoveListener)(session, timeout) -> latch.countDown());
 
         Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +

@@ -88,12 +88,7 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
         final CountDownLatch messageLatch = new CountDownLatch(1);
         client.batch(() -> {
             ClientSessionChannel channel = client.getChannel(channelName);
-            channel.subscribe(new ClientSessionChannel.MessageListener() {
-                @Override
-                public void onMessage(ClientSessionChannel channel, Message message) {
-                    messageLatch.countDown();
-                }
-            });
+            channel.subscribe((c, m) -> messageLatch.countDown());
             channel.publish("data");
         });
 

@@ -116,15 +116,12 @@ public class OortChatService {
         final Set<String> members = getMemberList(room);
         synchronized (members) {
             members.add(userName);
-            client.addListener(new ServerSession.RemoveListener() {
-                @Override
-                public void removed(ServerSession session, boolean timeout) {
-                    if (!_oort.isOort(client)) {
-                        _seti.disassociate(userName, session);
-                    }
-                    members.remove(userName);
-                    broadcastMembers(room, members);
+            client.addListener((ServerSession.RemoveListener)(session, timeout) -> {
+                if (!_oort.isOort(client)) {
+                    _seti.disassociate(userName, session);
                 }
+                members.remove(userName);
+                broadcastMembers(room, members);
             });
 
             if (!_oort.isOort(client)) {

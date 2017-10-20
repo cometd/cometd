@@ -18,7 +18,6 @@ package org.cometd.client;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -57,13 +56,10 @@ public class MessageFlowControlTest extends ClientServerTest {
         bayeux.addExtension(new TimestampExtension("yyyyMMddHHmmss"));
 
         final String channelName = "/test";
-        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setPersistent(true);
-                if (lazyChannel) {
-                    channel.setLazy(true);
-                }
+        bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> {
+            channel.setPersistent(true);
+            if (lazyChannel) {
+                channel.setLazy(true);
             }
         });
 
@@ -74,24 +70,21 @@ public class MessageFlowControlTest extends ClientServerTest {
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                session.addListener(new ServerSession.DeQueueListener() {
-                    @Override
-                    public void deQueue(ServerSession session, Queue<ServerMessage> queue) {
-                        long lastTimeStamp = 0;
-                        for (Iterator<ServerMessage> iterator = queue.iterator(); iterator.hasNext(); ) {
-                            ServerMessage message = iterator.next();
-                            if (channelName.equals(message.getChannel())) {
-                                long timeStamp = Long.parseLong(message.get(Message.TIMESTAMP_FIELD).toString());
-                                if (timeStamp <= lastTimeStamp + toleranceSeconds) {
-                                    System.err.println("removed " + message);
-                                    iterator.remove();
-                                } else {
-                                    System.err.println("kept " + message);
-                                    keptMessages.incrementAndGet();
-                                    lastTimeStamp = timeStamp;
-                                }
-                                queuedMessages.countDown();
+                session.addListener((ServerSession.DeQueueListener)(s, queue) -> {
+                    long lastTimeStamp = 0;
+                    for (Iterator<ServerMessage> iterator = queue.iterator(); iterator.hasNext(); ) {
+                        ServerMessage message1 = iterator.next();
+                        if (channelName.equals(message1.getChannel())) {
+                            long timeStamp = Long.parseLong(message1.get(Message.TIMESTAMP_FIELD).toString());
+                            if (timeStamp <= lastTimeStamp + toleranceSeconds) {
+                                System.err.println("removed " + message1);
+                                iterator.remove();
+                            } else {
+                                System.err.println("kept " + message1);
+                                keptMessages.incrementAndGet();
+                                lastTimeStamp = timeStamp;
                             }
+                            queuedMessages.countDown();
                         }
                     }
                 });
@@ -110,19 +103,11 @@ public class MessageFlowControlTest extends ClientServerTest {
         Thread.sleep(1000);
 
         final CountDownLatch subscribed = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribed.countDown();
-            }
-        });
+        client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribed.countDown());
         final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
-        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                System.err.println("message = " + message);
-                messages.offer(message);
-            }
+        client.getChannel(channelName).subscribe((channel, message) -> {
+            System.err.println("message = " + message);
+            messages.offer(message);
         });
         Assert.assertTrue(subscribed.await(5, TimeUnit.SECONDS));
 

@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -40,12 +39,7 @@ public class DeliverWithTimeStampExtensionTest extends ClientServerTest {
         BayeuxClient client = newBayeuxClient();
         final CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
-        channel.addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        });
+        channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> messageLatch.countDown());
 
         new DeliverService(bayeux, channelName);
 

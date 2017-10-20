@@ -61,12 +61,7 @@ public class CometDDemoServlet extends HttpServlet {
 
         // Deny unless granted
 
-        bayeux.createChannelIfAbsent("/**", new ServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_NONE);
-            }
-        });
+        bayeux.createChannelIfAbsent("/**", (ServerChannel.Initializer)channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_NONE));
 
         // Allow anybody to handshake
         bayeux.getChannel(ServerChannel.META_HANDSHAKE).addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);

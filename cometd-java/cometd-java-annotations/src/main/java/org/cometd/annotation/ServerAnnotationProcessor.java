@@ -39,7 +39,6 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
@@ -143,30 +142,27 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
         for (final Method method : methods) {
             Configure configure = method.getAnnotation(Configure.class);
             String[] channels = configure.value();
-            for (String channel : channels) {
-                final Initializer init = new Initializer() {
-                    @Override
-                    public void configureChannel(ConfigurableServerChannel channel) {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
-                        }
-                        invokePrivate(bean, method, channel);
+            for (String channelName : channels) {
+                final Initializer init = channel -> {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
                     }
+                    invokePrivate(bean, method, channel);
                 };
 
-                MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel, init);
+                MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channelName, init);
 
                 if (!initializedChannel.isMarked()) {
                     if (configure.configureIfExists()) {
                         if (logger.isDebugEnabled()) {
-                            logger.debug("Configure again channel {} with method {} on bean {}", channel, method, bean);
+                            logger.debug("Configure again channel {} with method {} on bean {}", channelName, method, bean);
                         }
                         init.configureChannel(initializedChannel.getReference());
                     } else if (configure.errorIfExists()) {
-                        throw new IllegalStateException("Channel already configured: " + channel);
+                        throw new IllegalStateException("Channel already configured: " + channelName);
                     } else {
                         if (logger.isDebugEnabled()) {
-                            logger.debug("Channel {} already initialized. Not called method {} on bean {}", channel, method, bean);
+                            logger.debug("Channel {} already initialized. Not called method {} on bean {}", channelName, method, bean);
                         }
                     }
                 }

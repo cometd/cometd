@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
@@ -86,12 +84,7 @@ public class BroadcastToPublisherTest extends ClientServerTest {
 
         String channelName = "/test";
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        session.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        });
+        session.getChannel(channelName).subscribe((channel, message) -> messageLatch.countDown());
 
         session.getChannel(channelName).publish("test");
 

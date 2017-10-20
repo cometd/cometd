@@ -90,19 +90,13 @@ public class ServerChannelTest {
     public void testCreateChildChannelAfterParent() throws Exception {
         final CountDownLatch latch = new CountDownLatch(2);
         String channelName = "/root";
-        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setPersistent(true);
-                latch.countDown();
-            }
+        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> {
+            channel.setPersistent(true);
+            latch.countDown();
         }).isMarked());
-        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName + "/1", new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setPersistent(true);
-                latch.countDown();
-            }
+        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName + "/1", (ConfigurableServerChannel.Initializer)channel -> {
+            channel.setPersistent(true);
+            latch.countDown();
         }).isMarked());
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
@@ -406,12 +400,7 @@ public class ServerChannelTest {
                 return true;
             }
         };
-        ConfigurableServerChannel.Initializer initializer = new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
-            }
-        };
+        ConfigurableServerChannel.Initializer initializer = channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
 
         String channelName1 = "/a/b/c";
         ServerChannel channel1 = _bayeux.createChannelIfAbsent(channelName1).getReference();
@@ -463,12 +452,9 @@ public class ServerChannelTest {
 
         final ServerChannel.ServerChannelListener listener = new L();
         final String channelName = "/weak";
-        _bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.addListener(listener);
-                channel.addListener(new W());
-            }
+        _bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> {
+            channel.addListener(listener);
+            channel.addListener(new W());
         });
 
         sweep();

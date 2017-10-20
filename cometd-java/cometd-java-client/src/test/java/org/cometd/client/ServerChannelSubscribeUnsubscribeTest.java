@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -58,12 +57,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest {
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
         client.startBatch();
-        testChannel.subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.get().countDown();
-            }
-        });
+        testChannel.subscribe((channel, message) -> messageLatch.get().countDown());
         testChannel.publish(new HashMap<String, Object>());
         client.endBatch();
         Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
@@ -104,22 +98,14 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    subscribeLatch.countDown();
-                }
+        client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (message.isSuccessful()) {
+                subscribeLatch.countDown();
             }
         });
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
-        testChannel.subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.get().countDown();
-            }
-        });
+        testChannel.subscribe((channel, message) -> messageLatch.get().countDown());
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Publish, must receive it
@@ -163,12 +149,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest {
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
         client.startBatch();
-        testChannel.subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.get().countDown();
-            }
-        });
+        testChannel.subscribe((channel, message) -> messageLatch.get().countDown());
         testChannel.publish(new HashMap<String, Object>());
         client.endBatch();
         Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));

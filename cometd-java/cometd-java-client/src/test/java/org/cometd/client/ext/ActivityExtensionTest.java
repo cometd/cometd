@@ -65,35 +65,21 @@ public class ActivityExtensionTest extends ClientServerTest {
         scheduler.scheduleWithFixedDelay(() -> bayeux.getChannel(channelName).publish(null, "test", Promise.noop()), 0, timeout / 4, TimeUnit.MILLISECONDS);
 
         final BayeuxClient client = newBayeuxClient();
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-                        @Override
-                        public void onMessage(ClientSessionChannel channel, Message message) {
-                        }
-                    });
-                }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (message.isSuccessful()) {
+                client.getChannel(channelName).subscribe((c, m) -> {
+                });
             }
         });
 
         final CountDownLatch latch = new CountDownLatch(2);
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                Map<String, Object> advice = message.getAdvice();
-                if (advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD))) {
-                    latch.countDown();
-                }
-            }
-        });
-        client.getChannel(Channel.META_DISCONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            Map<String, Object> advice = message.getAdvice();
+            if (advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD))) {
                 latch.countDown();
             }
         });
+        client.getChannel(Channel.META_DISCONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> latch.countDown());
 
         client.handshake();
 
@@ -106,35 +92,21 @@ public class ActivityExtensionTest extends ClientServerTest {
         bayeux.addExtension(new ActivityExtension(ActivityExtension.Activity.CLIENT_SERVER, maxInactivityPeriod));
 
         final BayeuxClient client = newBayeuxClient();
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-                        @Override
-                        public void onMessage(ClientSessionChannel channel, Message message) {
-                        }
-                    });
-                }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (message.isSuccessful()) {
+                client.getChannel(channelName).subscribe((c, m) -> {
+                });
             }
         });
 
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(2));
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                Map<String, Object> advice = message.getAdvice();
-                if (advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD))) {
-                    latch.get().countDown();
-                }
-            }
-        });
-        client.getChannel(Channel.META_DISCONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            Map<String, Object> advice = message.getAdvice();
+            if (advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD))) {
                 latch.get().countDown();
             }
         });
+        client.getChannel(Channel.META_DISCONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> latch.get().countDown());
 
         client.handshake();
         Assert.assertTrue(latch.get().await(2 * maxInactivityPeriod, TimeUnit.MILLISECONDS));

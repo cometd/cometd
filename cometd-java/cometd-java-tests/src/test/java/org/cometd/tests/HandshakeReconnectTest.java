@@ -20,7 +20,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -58,13 +57,10 @@ public class HandshakeReconnectTest extends AbstractClientServerTest {
 
         // Add a /meta/handshake listener to be sure we reconnect using handshake.
         final CountDownLatch handshakeReconnect = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                // Reconnecting using handshake, first failure.
-                if (!message.isSuccessful()) {
-                    handshakeReconnect.countDown();
-                }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            // Reconnecting using handshake, first failure.
+            if (!message.isSuccessful()) {
+                handshakeReconnect.countDown();
             }
         });
 

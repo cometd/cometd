@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
@@ -43,13 +41,10 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.remoteCall(RemoteCallWithResultService.TARGET, "request", new ClientSession.MessageListener() {
-            @Override
-            public void onMessage(Message message) {
-                Assert.assertTrue(message.isSuccessful());
-                Assert.assertEquals(response, message.getData());
-                latch.countDown();
-            }
+        client.remoteCall(RemoteCallWithResultService.TARGET, "request", message -> {
+            Assert.assertTrue(message.isSuccessful());
+            Assert.assertEquals(response, message.getData());
+            latch.countDown();
         });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -85,12 +80,9 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.remoteCall(RemoteCallWithTimeoutService.TARGET, "", new ClientSession.MessageListener() {
-            @Override
-            public void onMessage(Message message) {
-                Assert.assertFalse(message.isSuccessful());
-                latch.countDown();
-            }
+        client.remoteCall(RemoteCallWithTimeoutService.TARGET, "", message -> {
+            Assert.assertFalse(message.isSuccessful());
+            latch.countDown();
         });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -129,13 +121,10 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.remoteCall(RemoteCallWithFailureService.TARGET, "request", new ClientSession.MessageListener() {
-            @Override
-            public void onMessage(Message message) {
-                Assert.assertFalse(message.isSuccessful());
-                Assert.assertEquals(failure, message.getData());
-                latch.countDown();
-            }
+        client.remoteCall(RemoteCallWithFailureService.TARGET, "request", message -> {
+            Assert.assertFalse(message.isSuccessful());
+            Assert.assertEquals(failure, message.getData());
+            latch.countDown();
         });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -179,14 +168,11 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.remoteCall(RemoteCallWithCustomDataService.TARGET, new Custom(request), new ClientSession.MessageListener() {
-            @Override
-            public void onMessage(Message message) {
-                Assert.assertTrue(message.isSuccessful());
-                Custom data = (Custom)message.getData();
-                Assert.assertEquals(response, data.payload);
-                latch.countDown();
-            }
+        client.remoteCall(RemoteCallWithCustomDataService.TARGET, new Custom(request), message -> {
+            Assert.assertTrue(message.isSuccessful());
+            Custom data = (Custom)message.getData();
+            Assert.assertEquals(response, data.payload);
+            latch.countDown();
         });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));

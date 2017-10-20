@@ -79,12 +79,9 @@ public class ChatService {
         final Map<String, String> members = roomMembers;
         String userName = (String)data.get("user");
         members.put(userName, client.getId());
-        client.addListener(new ServerSession.RemoveListener() {
-            @Override
-            public void removed(ServerSession session, boolean timeout) {
-                members.values().remove(session.getId());
-                broadcastMembers(room, members.keySet());
-            }
+        client.addListener((ServerSession.RemoveListener)(session, timeout) -> {
+            members.values().remove(session.getId());
+            broadcastMembers(room, members.keySet());
         });
 
         broadcastMembers(room, members.keySet());

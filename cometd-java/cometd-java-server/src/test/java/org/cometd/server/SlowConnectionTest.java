@@ -254,12 +254,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(clientId);
-        session.addListener(new ServerSession.RemoveListener() {
-            @Override
-            public void removed(ServerSession session, boolean timeout) {
-                removeLatch.countDown();
-            }
-        });
+        session.addListener((ServerSession.RemoveListener)(s, t) -> removeLatch.countDown());
 
         // Wait for messages to be written, but close the connection instead
         Assert.assertTrue(sendLatch.await(5, TimeUnit.SECONDS));
@@ -335,12 +330,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(clientId);
-        session.addListener(new ServerSession.RemoveListener() {
-            @Override
-            public void removed(ServerSession session, boolean timeout) {
-                removeLatch.countDown();
-            }
-        });
+        session.addListener((ServerSession.RemoveListener)(s, t) -> removeLatch.countDown());
 
         // Do not read, the server should idle timeout and close the connection.
 

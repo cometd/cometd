@@ -27,6 +27,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -64,16 +65,13 @@ public class RemoteCallTest {
         remote.handshake();
         ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + RemoteCallWithResultService.CHANNEL);
         final CountDownLatch latch = new CountDownLatch(1);
-        channel.addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isPublishReply()) {
-                    return;
-                }
-                assertTrue(message.isSuccessful());
-                assertEquals(calleeData, message.getData());
-                latch.countDown();
+        channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> {
+            if (m.isPublishReply()) {
+                return;
             }
+            assertTrue(m.isSuccessful());
+            Assert.assertEquals(calleeData, m.getData());
+            latch.countDown();
         });
         channel.publish(callerData);
 
@@ -115,15 +113,12 @@ public class RemoteCallTest {
         final String parameter = "param1";
         ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + "/test/" + parameter);
         final CountDownLatch latch = new CountDownLatch(1);
-        channel.addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isPublishReply()) {
-                    return;
-                }
-                assertEquals(parameter, message.getData());
-                latch.countDown();
+        channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> {
+            if (m.isPublishReply()) {
+                return;
             }
+            Assert.assertEquals(parameter, m.getData());
+            latch.countDown();
         });
         channel.publish(new HashMap());
 
@@ -154,27 +149,21 @@ public class RemoteCallTest {
         final List<Message> responses = new ArrayList<>();
 
         ClientSessionChannel channel1 = remote1.getChannel(Channel.SERVICE + TwoRemoteCallsWithResultService.CHANNEL);
-        channel1.addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isPublishReply()) {
-                    return;
-                }
-                responses.add(message);
-                latch.countDown();
+        channel1.addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (message.isPublishReply()) {
+                return;
             }
+            responses.add(message);
+            latch.countDown();
         });
 
         ClientSessionChannel channel2 = remote2.getChannel(Channel.SERVICE + TwoRemoteCallsWithResultService.CHANNEL);
-        channel2.addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isPublishReply()) {
-                    return;
-                }
-                responses.add(message);
-                latch.countDown();
+        channel2.addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (message.isPublishReply()) {
+                return;
             }
+            responses.add(message);
+            latch.countDown();
         });
 
         channel1.publish("1");
@@ -211,16 +200,13 @@ public class RemoteCallTest {
         remote.handshake();
         ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + RemoteCallWithFailureService.CHANNEL);
         final CountDownLatch latch = new CountDownLatch(1);
-        channel.addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isPublishReply()) {
-                    return;
-                }
-                assertFalse(message.isSuccessful());
-                assertEquals(failure, message.getData());
-                latch.countDown();
+        channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> {
+            if (m.isPublishReply()) {
+                return;
             }
+            assertFalse(m.isSuccessful());
+            Assert.assertEquals(failure, m.getData());
+            latch.countDown();
         });
         channel.publish(failure);
 
@@ -247,16 +233,13 @@ public class RemoteCallTest {
         remote.handshake();
         ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + RemoteCallWithUncaughtExceptionService.CHANNEL);
         final CountDownLatch latch = new CountDownLatch(1);
-        channel.addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isPublishReply()) {
-                    return;
-                }
-                assertFalse(message.isSuccessful());
-                assertNotNull(message.getData());
-                latch.countDown();
+        channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> {
+            if (m.isPublishReply()) {
+                return;
             }
+            assertFalse(m.isSuccessful());
+            assertNotNull(m.getData());
+            latch.countDown();
         });
         channel.publish("throw");
 

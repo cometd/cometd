@@ -78,12 +78,9 @@ public class MaxNetworkDelayTest extends ClientServerTest {
                 }
             }
         };
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    latch.countDown();
-                }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (!message.isSuccessful()) {
+                latch.countDown();
             }
         });
 

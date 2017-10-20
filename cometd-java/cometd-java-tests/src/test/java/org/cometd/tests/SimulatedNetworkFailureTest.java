@@ -67,27 +67,21 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
                 return result;
             }
         };
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                boolean wasConnected = connected.get();
-                connected.set(message.isSuccessful());
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            boolean wasConnected = connected.get();
+            connected.set(message.isSuccessful());
 
-                if (!wasConnected && connected.get()) {
-                    System.err.printf("BayeuxClient connected %s%n", message);
-                } else if (wasConnected && !connected.get()) {
-                    System.err.printf("BayeuxClient unconnected %s%n", message);
-                }
+            if (!wasConnected && connected.get()) {
+                System.err.printf("BayeuxClient connected %s%n", message);
+            } else if (wasConnected && !connected.get()) {
+                System.err.printf("BayeuxClient unconnected %s%n", message);
             }
         });
         String channelName = "/test";
         ClientSessionChannel channel = client.getChannel(channelName);
-        channel.addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    publishLatch.get().countDown();
-                }
+        channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> {
+            if (!m.isSuccessful()) {
+                publishLatch.get().countDown();
             }
         });
 
@@ -148,35 +142,26 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
                 return result;
             }
         };
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    handshakeLatch.countDown();
-                }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (message.isSuccessful()) {
+                handshakeLatch.countDown();
             }
         });
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                boolean wasConnected = connected.get();
-                connected.set(message.isSuccessful());
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            boolean wasConnected = connected.get();
+            connected.set(message.isSuccessful());
 
-                if (!wasConnected && connected.get()) {
-                    System.err.println("BayeuxClient connected");
-                } else if (wasConnected && !connected.get()) {
-                    System.err.println("BayeuxClient unconnected");
-                }
+            if (!wasConnected && connected.get()) {
+                System.err.println("BayeuxClient connected");
+            } else if (wasConnected && !connected.get()) {
+                System.err.println("BayeuxClient unconnected");
             }
         });
         String channelName = "/test";
         ClientSessionChannel channel = client.getChannel(channelName);
-        channel.addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    publishLatch.get().countDown();
-                }
+        channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> {
+            if (!m.isSuccessful()) {
+                publishLatch.get().countDown();
             }
         });
         client.handshake();

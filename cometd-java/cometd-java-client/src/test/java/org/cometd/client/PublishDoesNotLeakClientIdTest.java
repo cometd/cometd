@@ -49,20 +49,12 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest {
 
                 String channel = "/test";
                 final CountDownLatch subscribe = new CountDownLatch(1);
-                client1.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        subscribe.countDown();
-                    }
-                });
+                client1.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> subscribe.countDown());
                 final CountDownLatch latch = new CountDownLatch(1);
                 final AtomicReference<Message> messageRef = new AtomicReference<>();
-                client1.getChannel(channel).subscribe(new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        messageRef.set(message);
-                        latch.countDown();
-                    }
+                client1.getChannel(channel).subscribe((c, m) -> {
+                    messageRef.set(m);
+                    latch.countDown();
                 });
                 Assert.assertTrue(subscribe.await(5, TimeUnit.SECONDS));
 

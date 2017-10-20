@@ -57,17 +57,14 @@ public class JettyCustomSerializationTest extends ClientServerTest {
 
         final LocalSession service = bayeux.newLocalSession("custom_serialization");
         service.handshake();
-        service.getChannel(broadcastChannelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                Data data = (Data)message.getData();
-                Assert.assertEquals(content, data.content);
-                Map<String, Object> ext = message.getExt();
-                Assert.assertNotNull(ext);
-                Extra extra = (Extra)ext.get("extra");
-                Assert.assertEquals(content, extra.content);
-                broadcastLatch.countDown();
-            }
+        service.getChannel(broadcastChannelName).subscribe((channel, message) -> {
+            Data data = (Data)message.getData();
+            Assert.assertEquals(content, data.content);
+            Map<String, Object> ext = message.getExt();
+            Assert.assertNotNull(ext);
+            Extra extra = (Extra)ext.get("extra");
+            Assert.assertEquals(content, extra.content);
+            broadcastLatch.countDown();
         });
 
         bayeux.createChannelIfAbsent(serviceChannelName).getReference().addListener(new ServerChannel.MessageListener() {
@@ -93,18 +90,15 @@ public class JettyCustomSerializationTest extends ClientServerTest {
 
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientOptions, httpClient));
         client.addExtension(new ExtraExtension(content));
-        client.getChannel(serviceChannelName).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isPublishReply()) {
-                    Data data = (Data)message.getData();
-                    Assert.assertEquals(content, data.content);
-                    Map<String, Object> ext = message.getExt();
-                    Assert.assertNotNull(ext);
-                    Extra extra = (Extra)ext.get("extra");
-                    Assert.assertEquals(content, extra.content);
-                    serviceLatch.countDown();
-                }
+        client.getChannel(serviceChannelName).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (!message.isPublishReply()) {
+                Data data = (Data)message.getData();
+                Assert.assertEquals(content, data.content);
+                Map<String, Object> ext = message.getExt();
+                Assert.assertNotNull(ext);
+                Extra extra = (Extra)ext.get("extra");
+                Assert.assertEquals(content, extra.content);
+                serviceLatch.countDown();
             }
         });
 

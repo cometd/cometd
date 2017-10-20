@@ -19,7 +19,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.junit.Assert;
 import org.junit.Test;
@@ -90,12 +89,7 @@ public class ChannelReleaseTest extends ClientServerTest {
         String channelName = "/foo";
         final ClientSessionChannel channel = client.getChannel(channelName);
         client.batch(() -> {
-            channel.subscribe(new ClientSessionChannel.MessageListener() {
-                @Override
-                public void onMessage(ClientSessionChannel channel1, Message message) {
-                    latch.countDown();
-                }
-            });
+            channel.subscribe((c, m) -> latch.countDown());
             channel.publish("");
         });
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -153,12 +147,7 @@ public class ChannelReleaseTest extends ClientServerTest {
         final CountDownLatch latch = new CountDownLatch(1);
         String channelName = "/foo";
         final ClientSessionChannel channel = client.getChannel(channelName);
-        final ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                latch.countDown();
-            }
-        };
+        final ClientSessionChannel.MessageListener listener = (c, m) -> latch.countDown();
         client.batch(() -> {
             channel.subscribe(listener);
             channel.publish("");
@@ -169,12 +158,7 @@ public class ChannelReleaseTest extends ClientServerTest {
         Assert.assertFalse(released);
 
         final CountDownLatch unsubscribe = new CountDownLatch(1);
-        client.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                unsubscribe.countDown();
-            }
-        });
+        client.getChannel(Channel.META_UNSUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> unsubscribe.countDown());
         channel.unsubscribe(listener);
         Assert.assertTrue(unsubscribe.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(channel.getSubscribers().isEmpty());
@@ -233,10 +217,7 @@ public class ChannelReleaseTest extends ClientServerTest {
         } catch (IllegalStateException expected) {
         }
 
-        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-            }
+        ClientSessionChannel.MessageListener listener = (c, m) -> {
         };
         try {
             channel.subscribe(listener);

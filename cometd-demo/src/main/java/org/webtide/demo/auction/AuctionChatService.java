@@ -60,18 +60,8 @@ public class AuctionChatService extends AbstractService {
                     "is " + SetiServlet.class.getSimpleName() + " declared in web.xml ?");
         }
 
-        getBayeux().createChannelIfAbsent("/auction/chat/**", new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
-            }
-        });
-        getBayeux().createChannelIfAbsent("/service/auction/chat", new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
-            }
-        });
+        getBayeux().createChannelIfAbsent("/auction/chat/**", (ConfigurableServerChannel.Initializer)channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_ALL));
+        getBayeux().createChannelIfAbsent("/service/auction/chat", (ConfigurableServerChannel.Initializer)channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_ALL));
         addService("/auction/chat/**", "trackMembers");
         addService("/service/auction/chat", "privateChat");
     }
@@ -119,20 +109,17 @@ public class AuctionChatService extends AbstractService {
                     _seti.associate(userName, joiner);
                 }
 
-                joiner.addListener(new ServerSession.RemoveListener() {
-                    @Override
-                    public void removed(ServerSession session, boolean timeout) {
-                        if (!_oort.isOort(joiner)) {
-                            _seti.disassociate(userName, session);
-                        }
-                        if (timeout) {
-                            ServerChannel channel = getBayeux().getChannel(channelName);
-                            if (channel != null) {
-                                Map<String, Object> leave = new HashMap<>();
-                                leave.put("leave", Boolean.TRUE);
-                                leave.put("user", userName);
-                                channel.publish(null, leave, Promise.noop());
-                            }
+                joiner.addListener((ServerSession.RemoveListener)(session, timeout) -> {
+                    if (!_oort.isOort(joiner)) {
+                        _seti.disassociate(userName, session);
+                    }
+                    if (timeout) {
+                        ServerChannel channel = getBayeux().getChannel(channelName);
+                        if (channel != null) {
+                            Map<String, Object> leave = new HashMap<>();
+                            leave.put("leave", Boolean.TRUE);
+                            leave.put("user", userName);
+                            channel.publish(null, leave, Promise.noop());
                         }
                     }
                 });

@@ -24,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.BinaryData;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
@@ -53,32 +52,26 @@ public class BinaryExtensionTest extends ClientServerTest {
         final LocalSession service = bayeux.newLocalSession("bin");
         service.addExtension(new BinaryExtension());
         service.handshake();
-        service.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                BinaryData data = (BinaryData)message.getData();
-                byte[] payload = data.asBytes();
-                if (Arrays.equals(payload, bytes)) {
-                    Map<String, Object> meta = data.getMetaData();
-                    ServerSession remote = bayeux.getSession((String)meta.get("peer"));
-                    remote.deliver(service, channelName, new BinaryData(data.asByteBuffer(), data.isLast(), null), Promise.noop());
-                }
+        service.getChannel(channelName).subscribe((channel, message) -> {
+            BinaryData data = (BinaryData)message.getData();
+            byte[] payload = data.asBytes();
+            if (Arrays.equals(payload, bytes)) {
+                Map<String, Object> meta = data.getMetaData();
+                ServerSession remote = bayeux.getSession((String)meta.get("peer"));
+                remote.deliver(service, channelName, new BinaryData(data.asByteBuffer(), data.isLast(), null), Promise.noop());
             }
         });
 
         final CountDownLatch messageLatch = new CountDownLatch(1);
         final BayeuxClient client = newBayeuxClient();
         client.addExtension(new BinaryExtension());
-        client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isPublishReply()) {
-                    BinaryData data = (BinaryData)message.getData();
-                    byte[] payload = data.asBytes();
-                    if (Arrays.equals(payload, bytes)) {
-                        if (data.isLast()) {
-                            messageLatch.countDown();
-                        }
+        client.getChannel(channelName).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (!message.isPublishReply()) {
+                BinaryData data = (BinaryData)message.getData();
+                byte[] payload = data.asBytes();
+                if (Arrays.equals(payload, bytes)) {
+                    if (data.isLast()) {
+                        messageLatch.countDown();
                     }
                 }
             }

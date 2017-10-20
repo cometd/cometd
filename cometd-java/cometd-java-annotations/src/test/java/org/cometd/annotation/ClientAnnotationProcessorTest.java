@@ -186,12 +186,7 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
         assertTrue(processed);
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.countDown());
 
         bayeuxClient.handshake();
         assertTrue(bayeuxClient.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -201,12 +196,7 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
         assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
-        bayeuxClient.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                unsubscribeLatch.countDown();
-            }
-        });
+        bayeuxClient.getChannel(Channel.META_UNSUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> unsubscribeLatch.countDown());
 
         processor.deprocessCallbacks(s);
         assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
@@ -245,12 +235,7 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
         assertFalse(s.connected);
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.countDown());
 
         bayeuxClient.handshake();
         assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
@@ -336,12 +321,7 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
         assertTrue(processed);
 
         final AtomicReference<CountDownLatch> subscribeLatch = new AtomicReference<>(new CountDownLatch(1));
-        bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.get().countDown();
-            }
-        });
+        bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.get().countDown());
 
         bayeuxClient.handshake();
         assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));

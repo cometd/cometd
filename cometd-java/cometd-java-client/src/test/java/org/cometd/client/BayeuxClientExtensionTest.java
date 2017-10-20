@@ -86,16 +86,8 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                latch.countDown();
-            }
-        });
-        client.getChannel("/foo").subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-            }
+        client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> latch.countDown());
+        client.getChannel("/foo").subscribe((channel, message) -> {
         });
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -116,17 +108,9 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                latch.countDown();
-            }
-        });
+        client.getChannel(Channel.META_UNSUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> latch.countDown());
         final ClientSessionChannel channel = client.getChannel("/foo");
-        final ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-            }
+        final ClientSessionChannel.MessageListener listener = (c, m) -> {
         };
         client.batch(() -> {
             channel.subscribe(listener);
@@ -153,10 +137,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
 
         final ClientSessionChannel channel = client.getChannel(channelName);
         client.batch(() -> {
-            channel.subscribe(new ClientSessionChannel.MessageListener() {
-                @Override
-                public void onMessage(ClientSessionChannel channel1, Message message) {
-                }
+            channel.subscribe((c, m) -> {
             });
             channel.publish(new HashMap<>());
         });

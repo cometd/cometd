@@ -24,10 +24,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
-import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
@@ -895,12 +893,7 @@ public class OortObserveCometTest extends OortTest {
         Assert.assertTrue(clientB.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
-        clientB.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.get().countDown();
-            }
-        });
+        clientB.getChannel(channelName).subscribe((channel, message) -> messageLatch.get().countDown());
 
         // Wait a while to be sure to be subscribed
         Thread.sleep(1000);

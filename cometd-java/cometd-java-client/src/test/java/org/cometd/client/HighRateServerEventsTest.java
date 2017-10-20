@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.junit.Assert;
@@ -51,12 +50,9 @@ public class HighRateServerEventsTest extends ClientServerTest {
         final AtomicInteger messages = new AtomicInteger();
         client.batch(() -> {
             ClientSessionChannel channel = client.getChannel(channelName);
-            channel.subscribe(new ClientSessionChannel.MessageListener() {
-                @Override
-                public void onMessage(ClientSessionChannel channel, Message message) {
-                    messages.incrementAndGet();
-                    latch.get().countDown();
-                }
+            channel.subscribe((c, m) -> {
+                messages.incrementAndGet();
+                latch.get().countDown();
             });
             channel.publish(new HashMap<String, Object>());
         });

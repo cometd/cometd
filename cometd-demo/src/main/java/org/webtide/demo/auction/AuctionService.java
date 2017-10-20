@@ -71,18 +71,8 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         getBayeux().addListener(this);
         setSeeOwnPublishes(false);
 
-        getBayeux().createChannelIfAbsent("/service" + AUCTION_ROOT + "*", new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
-            }
-        });
-        getBayeux().createChannelIfAbsent(AUCTION_ROOT + "*", new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
-            }
-        });
+        getBayeux().createChannelIfAbsent("/service" + AUCTION_ROOT + "*", (ConfigurableServerChannel.Initializer)channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_ALL));
+        getBayeux().createChannelIfAbsent(AUCTION_ROOT + "*", (ConfigurableServerChannel.Initializer)channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_ALL));
 
         addService(AUCTION_ROOT + "*", "bids");
         addService("/service" + AUCTION_ROOT + "bid", "bid");

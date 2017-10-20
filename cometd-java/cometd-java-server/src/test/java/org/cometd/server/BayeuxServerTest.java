@@ -18,7 +18,6 @@ package org.cometd.server;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
@@ -148,12 +147,9 @@ public class BayeuxServerTest {
 
         final Queue<String> events = new ConcurrentLinkedQueue<>();
 
-        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                events.add(channel.getSession().getId());
-                events.add(message.getData().toString());
-            }
+        ClientSessionChannel.MessageListener listener = (channel, message) -> {
+            events.add(channel.getSession().getId());
+            events.add(message.getData().toString());
         };
 
         session0.getChannel("/foo/bar").subscribe(listener);

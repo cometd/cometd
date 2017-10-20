@@ -20,7 +20,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Assert;
 import org.junit.Before;
@@ -67,12 +66,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest {
                 "}]");
         // In some cross domain configuration (for example IE9 using XDomainRequest),
         // the Content-Type header is not sent, and we must behave well even if it's missing
-        publish.onResponseBegin(new Response.BeginListener() {
-            @Override
-            public void onBegin(Response response) {
-                publish.header(HttpHeader.CONTENT_TYPE, null);
-            }
-        });
+        publish.onResponseBegin(r -> publish.header(HttpHeader.CONTENT_TYPE, null));
         response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 

@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
-import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
@@ -54,17 +53,14 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
 
         LocalSession service = bayeux.newLocalSession("custom_serialization");
         service.handshake();
-        service.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                Data data = (Data)message.getData();
-                Assert.assertEquals(dataContent, data.content);
-                Map<String, Object> ext = message.getExt();
-                Assert.assertNotNull(ext);
-                Extra extra = (Extra)ext.get("extra");
-                Assert.assertEquals(extraContent, extra.content);
-                latch.countDown();
-            }
+        service.getChannel(channelName).subscribe((channel, message) -> {
+            Data data = (Data)message.getData();
+            Assert.assertEquals(dataContent, data.content);
+            Map<String, Object> ext = message.getExt();
+            Assert.assertNotNull(ext);
+            Extra extra = (Extra)ext.get("extra");
+            Assert.assertEquals(extraContent, extra.content);
+            latch.countDown();
         });
 
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientOptions, httpClient));

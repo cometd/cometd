@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.MarkedReference;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
@@ -57,26 +56,17 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
         final BayeuxClient client = newBayeuxClient();
 
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-                        @Override
-                        public void onMessage(ClientSessionChannel channel, Message message) {
-                        }
-                    });
-                    handshakeLatch.countDown();
-                }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (!message.isSuccessful()) {
+                client.getChannel(channelName).subscribe((c, m) -> {
+                });
+                handshakeLatch.countDown();
             }
         });
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    subscribeLatch.countDown();
-                }
+        client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (!message.isSuccessful()) {
+                subscribeLatch.countDown();
             }
         });
         client.handshake();
@@ -104,22 +94,16 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
         final BayeuxClient client = newBayeuxClient();
 
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    client.getChannel(channelName).publish(new HashMap<String, Object>());
-                    handshakeLatch.countDown();
-                }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(c, m) -> {
+            if (!m.isSuccessful()) {
+                client.getChannel(channelName).publish(new HashMap<String, Object>());
+                handshakeLatch.countDown();
             }
         });
         final CountDownLatch publishLatch = new CountDownLatch(1);
-        client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    publishLatch.countDown();
-                }
+        client.getChannel(channelName).addListener((ClientSessionChannel.MessageListener)(c, m) -> {
+            if (!m.isSuccessful()) {
+                publishLatch.countDown();
             }
         });
         client.handshake();

@@ -19,7 +19,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,12 +60,7 @@ public class SubscriptionTest extends ClientServerTest {
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         final CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
-        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        };
+        ClientSessionChannel.MessageListener listener = (c, m) -> messageLatch.countDown();
         channel.subscribe(listener, message -> {
             Assert.assertTrue(message.isSuccessful());
             subscribeLatch.countDown();

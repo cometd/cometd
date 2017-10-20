@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -58,18 +57,8 @@ public class BayeuxClientTest extends AbstractClientServerTest {
     public void testBatchingAfterHandshake() throws Exception {
         final BayeuxClient client = newBayeuxClient();
         final AtomicBoolean connected = new AtomicBoolean();
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                connected.set(message.isSuccessful());
-            }
-        });
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                connected.set(false);
-            }
-        });
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connected.set(message.isSuccessful()));
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connected.set(false));
         client.handshake();
 
         final String channelName = "/foo/bar";
@@ -77,12 +66,9 @@ public class BayeuxClientTest extends AbstractClientServerTest {
         client.batch(() -> {
             // Subscribe and publish must be batched so that they are sent in order,
             // otherwise it's possible that the subscribe arrives to the server after the publish
-            client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-                @Override
-                public void onMessage(ClientSessionChannel channel, Message message) {
-                    messages.add(channel.getId());
-                    messages.add(message.getData().toString());
-                }
+            client.getChannel(channelName).subscribe((channel, message) -> {
+                messages.add(channel.getId());
+                messages.add(message.getData().toString());
             });
             client.getChannel(channelName).publish("hello");
         });
@@ -115,30 +101,19 @@ public class BayeuxClientTest extends AbstractClientServerTest {
             final String room = "/channel/" + (i % rooms);
             clients[i] = client;
 
-            client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-                @Override
-                public void onMessage(ClientSessionChannel channel, Message message) {
-                    if (connected.getAndSet(false)) {
-                        connections.decrementAndGet();
-                    }
+            client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+                if (connected.getAndSet(false)) {
+                    connections.decrementAndGet();
+                }
 
-                    if (message.isSuccessful()) {
-                        client.getChannel(room).subscribe(new ClientSessionChannel.MessageListener() {
-                            @Override
-                            public void onMessage(ClientSessionChannel channel, Message message) {
-                                received.incrementAndGet();
-                            }
-                        });
-                    }
+                if (message.isSuccessful()) {
+                    client.getChannel(room).subscribe((c, m) -> received.incrementAndGet());
                 }
             });
 
-            client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-                @Override
-                public void onMessage(ClientSessionChannel channel, Message message) {
-                    if (!connected.getAndSet(message.isSuccessful())) {
-                        connections.incrementAndGet();
-                    }
+            client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+                if (!connected.getAndSet(message.isSuccessful())) {
+                    connections.incrementAndGet();
                 }
             });
 

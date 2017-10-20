@@ -61,12 +61,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        };
+        ClientSessionChannel.MessageListener messageCallback = (channel, message) -> messageLatch.countDown();
         final CountDownLatch subscriptionLatch = new CountDownLatch(1);
         ClientSession.MessageListener subscriptionCallback = message -> {
             if (!message.isSuccessful()) {
@@ -93,24 +88,14 @@ public class SubscriptionFailureTest extends ClientServerTest {
         startServer(null);
 
         String channelName = "/echo";
-        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
-            }
-        });
+        bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH));
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        };
+        ClientSessionChannel.MessageListener messageCallback = (channel, message) -> messageLatch.countDown();
         final CountDownLatch subscriptionLatch = new CountDownLatch(1);
         ClientSession.MessageListener subscriptionCallback = message -> {
             if (!message.isSuccessful()) {
@@ -162,12 +147,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         });
 
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        };
+        ClientSessionChannel.MessageListener messageCallback = (channel, message) -> messageLatch.countDown();
         final CountDownLatch failedSubscription = new CountDownLatch(1);
         ClientSession.MessageListener subscriptionCallback = message -> {
             if (!message.isSuccessful()) {

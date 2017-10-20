@@ -44,12 +44,9 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         }});
 
         String channelName = "/testLazy";
-        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setPersistent(true);
-                channel.setLazy(true);
-            }
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)c -> {
+            c.setPersistent(true);
+            c.setLazy(true);
         });
 
         BayeuxClient client = newBayeuxClient();
@@ -57,25 +54,17 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> subscribeLatch.countDown());
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicLong begin = new AtomicLong();
-        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.getDataAsMap() == null) {
-                    return;
-                }
-                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
-                long accuracy = globalLazyTimeout / 10;
-                Assert.assertTrue("Expected " + elapsed + " >= " + globalLazyTimeout, elapsed >= globalLazyTimeout - accuracy);
-                latch.countDown();
+        client.getChannel(channelName).subscribe((c, m) -> {
+            if (m.getDataAsMap() == null) {
+                return;
             }
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
+            long accuracy = globalLazyTimeout / 10;
+            Assert.assertTrue("Expected " + elapsed + " >= " + globalLazyTimeout, elapsed >= globalLazyTimeout - accuracy);
+            latch.countDown();
         });
         // Make sure we are subscribed so that there are no
         // pending responses that may return the lazy message
@@ -103,12 +92,9 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         }});
 
         String channelName = "/testLazy";
-        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setLazyTimeout(channelLazyTimeout);
-                channel.setPersistent(true);
-            }
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)c -> {
+            c.setLazyTimeout(channelLazyTimeout);
+            c.setPersistent(true);
         });
 
         BayeuxClient client = newBayeuxClient();
@@ -116,26 +102,18 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> subscribeLatch.countDown());
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicLong begin = new AtomicLong();
-        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.getDataAsMap() == null) {
-                    return;
-                }
-                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
-                Assert.assertTrue(elapsed < globalLazyTimeout / 2);
-                long accuracy = channelLazyTimeout / 10;
-                Assert.assertTrue("Expected " + elapsed + " >= " + channelLazyTimeout, elapsed >= channelLazyTimeout - accuracy);
-                latch.countDown();
+        client.getChannel(channelName).subscribe((c, m) -> {
+            if (m.getDataAsMap() == null) {
+                return;
             }
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
+            Assert.assertTrue(elapsed < globalLazyTimeout / 2);
+            long accuracy = channelLazyTimeout / 10;
+            Assert.assertTrue("Expected " + elapsed + " >= " + channelLazyTimeout, elapsed >= channelLazyTimeout - accuracy);
+            latch.countDown();
         });
         // Make sure we are subscribed so that there are no
         // pending responses that may return the lazy message
@@ -163,21 +141,15 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         }});
 
         String shortLazyChannelName = "/shortLazy";
-        MarkedReference<ServerChannel> shortLazyChannel = bayeux.createChannelIfAbsent(shortLazyChannelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setLazyTimeout(channelLazyTimeout);
-                channel.setPersistent(true);
-            }
+        MarkedReference<ServerChannel> shortLazyChannel = bayeux.createChannelIfAbsent(shortLazyChannelName, (ConfigurableServerChannel.Initializer)channel -> {
+            channel.setLazyTimeout(channelLazyTimeout);
+            channel.setPersistent(true);
         });
 
         String longLazyChannelName = "/longLazy";
-        MarkedReference<ServerChannel> longLazyChannel = bayeux.createChannelIfAbsent(longLazyChannelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setLazyTimeout(globalLazyTimeout);
-                channel.setPersistent(true);
-            }
+        MarkedReference<ServerChannel> longLazyChannel = bayeux.createChannelIfAbsent(longLazyChannelName, (ConfigurableServerChannel.Initializer)channel -> {
+            channel.setLazyTimeout(globalLazyTimeout);
+            channel.setPersistent(true);
         });
 
         BayeuxClient client = newBayeuxClient();
@@ -185,26 +157,18 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
         final CountDownLatch subscribeLatch = new CountDownLatch(2);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.countDown());
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicLong begin = new AtomicLong();
-        ClientSessionChannel.MessageListener messageListener = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.getDataAsMap() == null) {
-                    return;
-                }
-                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
-                Assert.assertTrue(elapsed < globalLazyTimeout / 2);
-                long accuracy = channelLazyTimeout / 10;
-                Assert.assertTrue("Expected " + elapsed + " >= " + channelLazyTimeout, elapsed >= channelLazyTimeout - accuracy);
-                latch.countDown();
+        ClientSessionChannel.MessageListener messageListener = (channel, message) -> {
+            if (message.getDataAsMap() == null) {
+                return;
             }
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
+            Assert.assertTrue(elapsed < globalLazyTimeout / 2);
+            long accuracy = channelLazyTimeout / 10;
+            Assert.assertTrue("Expected " + elapsed + " >= " + channelLazyTimeout, elapsed >= channelLazyTimeout - accuracy);
+            latch.countDown();
         };
         client.getChannel(shortLazyChannelName).subscribe(messageListener);
         client.getChannel(longLazyChannelName).subscribe(messageListener);
@@ -240,20 +204,17 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         }});
 
         String channelName = "/lazyDeliverData";
-        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setPersistent(true);
-                channel.addListener(new ServerChannel.MessageListener() {
-                    @Override
-                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                        for (ServerSession subscriber : channel.getSubscribers()) {
-                            subscriber.deliver(from, message.getChannel(), message.getData(), Promise.noop());
-                        }
-                        return false;
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)c -> {
+            c.setPersistent(true);
+            c.addListener(new ServerChannel.MessageListener() {
+                @Override
+                public boolean onMessage(ServerSession from, ServerChannel channel1, ServerMessage.Mutable message) {
+                    for (ServerSession subscriber : channel1.getSubscribers()) {
+                        subscriber.deliver(from, message.getChannel(), message.getData(), Promise.noop());
                     }
-                });
-            }
+                    return false;
+                }
+            });
         });
 
         BayeuxClient client = newBayeuxClient();
@@ -261,25 +222,17 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> subscribeLatch.countDown());
         final AtomicLong begin = new AtomicLong();
         final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.getDataAsMap() == null) {
-                    return;
-                }
-                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
-                // Must be delivered immediately
-                Assert.assertThat(elapsed, Matchers.lessThan(globalLazyTimeout / 2));
-                latch.countDown();
+        client.getChannel(channelName).subscribe((c, m) -> {
+            if (m.getDataAsMap() == null) {
+                return;
             }
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
+            // Must be delivered immediately
+            Assert.assertThat(elapsed, Matchers.lessThan(globalLazyTimeout / 2));
+            latch.countDown();
         });
         // Make sure we are subscribed so that there are no
         // pending responses that may return the lazy message
@@ -308,25 +261,22 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         }});
 
         String channelName = "/lazyDeliverMessage";
-        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setPersistent(true);
-                channel.addListener(new ServerChannel.MessageListener() {
-                    @Override
-                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                        ServerMessage.Mutable newMessage = bayeux.newMessage();
-                        newMessage.setChannel(message.getChannel());
-                        newMessage.setData(message.getData());
-                        // Mark the message as lazy
-                        newMessage.setLazy(true);
-                        for (ServerSession subscriber : channel.getSubscribers()) {
-                            subscriber.deliver(from, newMessage, Promise.noop());
-                        }
-                        return false;
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)c -> {
+            c.setPersistent(true);
+            c.addListener(new ServerChannel.MessageListener() {
+                @Override
+                public boolean onMessage(ServerSession from, ServerChannel channel1, ServerMessage.Mutable message) {
+                    ServerMessage.Mutable newMessage = bayeux.newMessage();
+                    newMessage.setChannel(message.getChannel());
+                    newMessage.setData(message.getData());
+                    // Mark the message as lazy
+                    newMessage.setLazy(true);
+                    for (ServerSession subscriber : channel1.getSubscribers()) {
+                        subscriber.deliver(from, newMessage, Promise.noop());
                     }
-                });
-            }
+                    return false;
+                }
+            });
         });
 
         BayeuxClient client = newBayeuxClient();
@@ -334,26 +284,18 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> subscribeLatch.countDown());
         final AtomicLong begin = new AtomicLong();
         final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.getDataAsMap() == null) {
-                    return;
-                }
-                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
-                // Must be delivered lazily
-                long accuracy = globalLazyTimeout / 10;
-                Assert.assertThat(elapsed, Matchers.greaterThan(globalLazyTimeout - accuracy));
-                latch.countDown();
+        client.getChannel(channelName).subscribe((c, m) -> {
+            if (m.getDataAsMap() == null) {
+                return;
             }
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
+            // Must be delivered lazily
+            long accuracy = globalLazyTimeout / 10;
+            Assert.assertThat(elapsed, Matchers.greaterThan(globalLazyTimeout - accuracy));
+            latch.countDown();
         });
         // Make sure we are subscribed so that there are no
         // pending responses that may return the lazy message
@@ -382,35 +324,24 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         }});
 
         final String channelName = "/testQueueLazy";
-        final MarkedReference<ServerChannel> serverChannel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setLazy(true);
-                channel.setPersistent(true);
-            }
+        final MarkedReference<ServerChannel> serverChannel = bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> {
+            channel.setLazy(true);
+            channel.setPersistent(true);
         });
 
         final BayeuxClient client = newBayeuxClient();
         final AtomicLong begin = new AtomicLong();
         final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        if (message.getDataAsMap() == null) {
-                            return;
-                        }
-                        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
-                        // Must be delivered lazily
-                        long accuracy = globalLazyTimeout / 10;
-                        Assert.assertThat(elapsed, Matchers.greaterThan(globalLazyTimeout - accuracy));
-                        latch.countDown();
-                    }
-                });
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> client.getChannel(channelName).subscribe((c, m) -> {
+            if (m.getDataAsMap() == null) {
+                return;
             }
-        });
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
+            // Must be delivered lazily
+            long accuracy = globalLazyTimeout / 10;
+            Assert.assertThat(elapsed, Matchers.greaterThan(globalLazyTimeout - accuracy));
+            latch.countDown();
+        }));
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             private final AtomicInteger connects = new AtomicInteger();
 
@@ -425,12 +356,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
             }
         });
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.countDown());
 
         client.handshake();
         client.waitFor(5000, BayeuxClient.State.CONNECTED);
@@ -451,28 +377,22 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         String parentChannelName = "/foo";
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeux.createChannelIfAbsent(parentChannelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setPersistent(true);
-                channel.setLazy(true);
-            }
+        bayeux.createChannelIfAbsent(parentChannelName, (ConfigurableServerChannel.Initializer)channel -> {
+            channel.setPersistent(true);
+            channel.setLazy(true);
         });
 
         String childChannelName = parentChannelName + "/bar";
-        MarkedReference<ServerChannel> childChannel = bayeux.createChannelIfAbsent(childChannelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setPersistent(true);
-                channel.addListener(new ServerChannel.MessageListener() {
-                    @Override
-                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                        Assert.assertFalse(message.isLazy());
-                        latch.countDown();
-                        return true;
-                    }
-                });
-            }
+        MarkedReference<ServerChannel> childChannel = bayeux.createChannelIfAbsent(childChannelName, (ConfigurableServerChannel.Initializer)channel -> {
+            channel.setPersistent(true);
+            channel.addListener(new ServerChannel.MessageListener() {
+                @Override
+                public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+                    Assert.assertFalse(message.isLazy());
+                    latch.countDown();
+                    return true;
+                }
+            });
         });
         childChannel.getReference().publish(null, "data", Promise.noop());
 
@@ -489,28 +409,22 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         String parentChannelName = "/foo";
         String wildChannelName = parentChannelName + "/*";
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeux.createChannelIfAbsent(wildChannelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setPersistent(true);
-                channel.setLazy(true);
-            }
+        bayeux.createChannelIfAbsent(wildChannelName, (ConfigurableServerChannel.Initializer)channel -> {
+            channel.setPersistent(true);
+            channel.setLazy(true);
         });
 
         String childChannelName = parentChannelName + "/bar";
-        MarkedReference<ServerChannel> childChannel = bayeux.createChannelIfAbsent(childChannelName, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.setPersistent(true);
-                channel.addListener(new ServerChannel.MessageListener() {
-                    @Override
-                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                        Assert.assertTrue(message.isLazy());
-                        latch.countDown();
-                        return true;
-                    }
-                });
-            }
+        MarkedReference<ServerChannel> childChannel = bayeux.createChannelIfAbsent(childChannelName, (ConfigurableServerChannel.Initializer)channel -> {
+            channel.setPersistent(true);
+            channel.addListener(new ServerChannel.MessageListener() {
+                @Override
+                public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+                    Assert.assertTrue(message.isLazy());
+                    latch.countDown();
+                    return true;
+                }
+            });
         });
         childChannel.getReference().publish(null, "data", Promise.noop());
 

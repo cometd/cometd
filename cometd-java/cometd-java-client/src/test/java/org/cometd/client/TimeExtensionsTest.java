@@ -44,12 +44,7 @@ public class TimeExtensionsTest extends ClientServerTest {
         client.addExtension(new TimestampClientExtension());
 
         final Queue<Message> messages = new ConcurrentLinkedQueue<>();
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messages.add(message);
-            }
-        });
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> messages.add(message));
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -78,12 +73,7 @@ public class TimeExtensionsTest extends ClientServerTest {
         client.addExtension(new TimesyncClientExtension());
 
         final Queue<Message> messages = new ConcurrentLinkedQueue<>();
-        client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messages.add(message);
-            }
-        });
+        client.getChannel("/meta/*").addListener((ClientSessionChannel.MessageListener)(channel, message) -> messages.add(message));
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));

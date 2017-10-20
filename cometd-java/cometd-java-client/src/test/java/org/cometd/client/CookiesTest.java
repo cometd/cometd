@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -46,12 +45,7 @@ public class CookiesTest extends ClientServerTest {
     public void testCookieSentOnHandshakeResponse() throws Exception {
         final AtomicReference<HttpCookie> browserCookie = new AtomicReference<>();
         final BayeuxClient client = newBayeuxClient();
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                browserCookie.set(client.getCookie("BAYEUX_BROWSER"));
-            }
-        });
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> browserCookie.set(client.getCookie("BAYEUX_BROWSER")));
         client.handshake();
         assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         assertNotNull(browserCookie.get());
@@ -111,10 +105,7 @@ public class CookiesTest extends ClientServerTest {
         assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         ClientSessionChannel channel = client.getChannel(channelName);
-        channel.subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-            }
+        channel.subscribe((c, m) -> {
         });
         assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 

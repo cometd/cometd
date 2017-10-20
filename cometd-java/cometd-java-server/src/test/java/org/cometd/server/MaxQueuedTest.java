@@ -17,11 +17,8 @@ package org.cometd.server;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
 
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
-import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -64,14 +61,11 @@ public class MaxQueuedTest extends AbstractBayeuxClientServerTest {
         ServerSession serverSession = bayeux.getSession(clientId);
         Assert.assertNotNull(serverSession);
 
-        serverSession.addListener(new ServerSession.MaxQueueListener() {
-            @Override
-            public boolean queueMaxed(ServerSession session, Queue<ServerMessage> queue, ServerSession sender, Message message) {
-                // Cannot use session.disconnect(), because it will queue the
-                // disconnect message and invoke this method again, causing a loop.
-                bayeux.removeSession(session);
-                return false;
-            }
+        serverSession.addListener((ServerSession.MaxQueueListener)(session, queue, sender, message) -> {
+            // Cannot use session.disconnect(), because it will queue the
+            // disconnect message and invoke this method again, causing a loop.
+            bayeux.removeSession(session);
+            return false;
         });
 
         // Overflow the message queue.
