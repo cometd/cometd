@@ -24,7 +24,6 @@ import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
-import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -84,17 +83,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     }
 
     @Override
-    public void handshake() {
-        handshake(null);
-    }
-
-    @Override
-    public void handshake(Map<String, Object> template) {
-        handshake(template, null);
-    }
-
-    @Override
-    public void handshake(Map<String, Object> template, ClientSessionChannel.MessageListener callback) {
+    public void handshake(Map<String, Object> template, ClientSession.MessageListener callback) {
         if (_session != null) {
             throw new IllegalStateException();
         }
@@ -134,12 +123,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     }
 
     @Override
-    public void disconnect() {
-        disconnect(null);
-    }
-
-    @Override
-    public void disconnect(ClientSessionChannel.MessageListener callback) {
+    public void disconnect(ClientSession.MessageListener callback) {
         if (_session != null) {
             ServerMessage.Mutable message = newMessage();
             String messageId = newMessageId();

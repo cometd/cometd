@@ -20,8 +20,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
+import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
@@ -102,32 +102,23 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
 
         final CountDownLatch messageLatch1 = new CountDownLatch(1);
         final CountDownLatch messageLatch2 = new CountDownLatch(1);
-        final ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (messageLatch1.getCount() == 0) {
-                    messageLatch2.countDown();
-                }
-                messageLatch1.countDown();
+        final ClientSessionChannel.MessageListener messageCallback = (channel, message) -> {
+            if (messageLatch1.getCount() == 0) {
+                messageLatch2.countDown();
             }
+            messageLatch1.countDown();
         };
 
         final CountDownLatch clientSubscribeLatch = new CountDownLatch(1);
-        final ClientSessionChannel.MessageListener subscribeCallback = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    clientSubscribeLatch.countDown();
-                }
+        final ClientSession.MessageListener subscribeCallback = message -> {
+            if (message.isSuccessful()) {
+                clientSubscribeLatch.countDown();
             }
         };
 
-        client.handshake(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    client.getChannel(channelName).subscribe(messageCallback, subscribeCallback);
-                }
+        client.handshake(message -> {
+            if (message.isSuccessful()) {
+                client.getChannel(channelName).subscribe(messageCallback, subscribeCallback);
             }
         });
 

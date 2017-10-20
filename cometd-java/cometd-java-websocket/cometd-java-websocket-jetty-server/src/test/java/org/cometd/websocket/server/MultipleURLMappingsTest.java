@@ -22,8 +22,6 @@ import java.util.concurrent.TimeUnit;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.CometDServlet;
@@ -148,28 +146,8 @@ public class MultipleURLMappingsTest {
         String channelName = "/foobarbaz";
         final CountDownLatch messageLatch = new CountDownLatch(4);
         final CountDownLatch subscribeLatch = new CountDownLatch(2);
-        client1.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        }, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
-        client2.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        }, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        client1.getChannel(channelName).subscribe((channel, message) -> messageLatch.countDown(), message -> subscribeLatch.countDown());
+        client2.getChannel(channelName).subscribe((channel, message) -> messageLatch.countDown(), message -> subscribeLatch.countDown());
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         client1.getChannel(channelName).publish("1");

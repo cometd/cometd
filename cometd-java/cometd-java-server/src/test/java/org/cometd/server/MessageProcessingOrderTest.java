@@ -258,7 +258,7 @@ public class MessageProcessingOrderTest {
         }
     }
 
-    private static class ClientCallback implements ClientSessionChannel.MessageListener {
+    private static class ClientCallback implements ClientSession.MessageListener {
         private final Queue<String> events;
         private final String id;
 
@@ -268,7 +268,7 @@ public class MessageProcessingOrderTest {
         }
 
         @Override
-        public void onMessage(ClientSessionChannel channel, Message message) {
+        public void onMessage(Message message) {
             if (message.isMeta() || message.isPublishReply()) {
                 events.offer(id + ".cln.cbk");
             }

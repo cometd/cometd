@@ -24,8 +24,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.BinaryData;
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.ext.BinaryExtension;
@@ -251,30 +249,17 @@ public class OortObserveChannelTest extends OortTest {
         // Subscribe client1.
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        client1.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                BinaryData data = (BinaryData)message.getData();
-                byte[] payload = data.asBytes();
-                if (Arrays.equals(payload, bytes))
-                    messageLatch.countDown();
-            }
-        }, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        client1.getChannel(channelName).subscribe((channel, message) -> {
+            BinaryData data = (BinaryData)message.getData();
+            byte[] payload = data.asBytes();
+            if (Arrays.equals(payload, bytes))
+                messageLatch.countDown();
+        }, message -> subscribeLatch.countDown());
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Sending a message to Oort2, must be received by client1.
         final CountDownLatch publishLatch = new CountDownLatch(1);
-        client2.getChannel(channelName).publish(new BinaryData(buffer, true, null), new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                publishLatch.countDown();
-            }
-        });
+        client2.getChannel(channelName).publish(new BinaryData(buffer, true, null), message -> publishLatch.countDown());
 
         Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));

@@ -116,10 +116,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     private long maxBackoff;
 
     /**
-     * <p>Creates a {@link BayeuxClient} that will connect to the Bayeux server at the given URL
+     * <p>Creates a BayeuxClient that will connect to the Bayeux server at the given URL
      * and with the given transport(s).</p>
      * <p>This constructor allocates a new {@link ScheduledExecutorService scheduler}; it is recommended that
-     * when creating a large number of {@link BayeuxClient}s a shared scheduler is used.</p>
+     * when creating a large number of BayeuxClients a shared scheduler is used.</p>
      *
      * @param url        the Bayeux server URL to connect to
      * @param transport  the default (mandatory) transport to use
@@ -131,7 +131,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     /**
-     * <p>Creates a {@link BayeuxClient} that will connect to the Bayeux server at the given URL,
+     * <p>Creates a BayeuxClient that will connect to the Bayeux server at the given URL,
      * with the given scheduler and with the given transport(s).</p>
      *
      * @param url        the Bayeux server URL to connect to
@@ -242,7 +242,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     /**
-     * @return whether this {@link BayeuxClient} is disconnecting or disconnected
+     * @return whether this BayeuxClient is disconnecting or disconnected
      */
     public boolean isDisconnected() {
         State state = getState();
@@ -250,28 +250,26 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     /**
-     * @return the current state of this {@link BayeuxClient}
+     * @return the current state of this BayeuxClient
      */
     protected State getState() {
         return sessionState.getState();
     }
 
-    @Override
-    public void handshake() {
-        handshake(null, null);
-    }
-
-    @Override
-    public void handshake(final Map<String, Object> handshakeFields) {
-        handshake(handshakeFields, null);
-    }
-
+    /**
+     * @deprecated use {@link #handshake(MessageListener)} instead
+     */
+    @Deprecated
     public void handshake(ClientSessionChannel.MessageListener callback) {
+        handshake(null, message -> callback.onMessage(getChannel(Channel.META_HANDSHAKE), message));
+    }
+
+    public void handshake(MessageListener callback) {
         handshake(null, callback);
     }
 
     @Override
-    public void handshake(final Map<String, Object> fields, final ClientSessionChannel.MessageListener callback) {
+    public void handshake(Map<String, Object> fields, MessageListener callback) {
         if (sessionState.update(State.HANDSHAKING)) {
             sessionState.submit(() -> sessionState.handshaking(fields, callback));
         } else {
@@ -286,7 +284,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
      * completed or not.</p>
      *
      * @param waitMs the time to wait for the handshake to complete
-     * @return the state of this {@link BayeuxClient}
+     * @return the state of this BayeuxClient
      * @see #handshake(Map, long)
      */
     public State handshake(long waitMs) {
@@ -301,7 +299,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
      *
      * @param template the template object to be merged with the handshake message
      * @param waitMs   the time to wait for the handshake to complete
-     * @return the state of this {@link BayeuxClient}
+     * @return the state of this BayeuxClient
      * @see #handshake(long)
      */
     public State handshake(Map<String, Object> template, long waitMs) {
@@ -340,7 +338,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     /**
-     * <p>Waits for this {@link BayeuxClient} to reach the given state(s) within the given time.</p>
+     * <p>Waits for this BayeuxClient to reach the given state(s) within the given time.</p>
      *
      * @param waitMs the time to wait to reach the given state(s)
      * @param state  the state to reach
@@ -487,16 +485,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         return messages;
     }
 
-    /**
-     * @see #disconnect(long)
-     */
     @Override
-    public void disconnect() {
-        disconnect(null);
-    }
-
-    @Override
-    public void disconnect(final ClientSessionChannel.MessageListener callback) {
+    public void disconnect(final ClientSession.MessageListener callback) {
         sessionState.submit(() -> {
             if (sessionState.disconnecting()) {
                 Message.Mutable message = newMessage();
@@ -534,14 +524,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         final CountDownLatch latch = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener lastConnectListener = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                final Map<String, Object> advice = message.getAdvice();
-                if (!message.isSuccessful() ||
-                        advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD))) {
-                    latch.countDown();
-                }
+        ClientSessionChannel.MessageListener lastConnectListener = (channel, message) -> {
+            final Map<String, Object> advice = message.getAdvice();
+            if (!message.isSuccessful() ||
+                    advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD))) {
+                latch.countDown();
             }
         };
         getChannel(Channel.META_CONNECT).addListener(lastConnectListener);
@@ -912,7 +899,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     /**
-     * @return the options that configure with {@link BayeuxClient}
+     * @return the options that configure with BayeuxClient
      */
     public Map<String, Object> getOptions() {
         return Collections.unmodifiableMap(options);
@@ -1171,7 +1158,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         private State state = State.DISCONNECTED;
         private ClientTransport transport;
         private Map<String, Object> handshakeFields;
-        private ClientSessionChannel.MessageListener handshakeCallback;
+        private ClientSession.MessageListener handshakeCallback;
         private Map<String, Object> advice;
         private String sessionId;
         private long backOff;
@@ -1211,7 +1198,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             }
         }
 
-        private ClientSessionChannel.MessageListener getHandshakeCallback() {
+        private ClientSession.MessageListener getHandshakeCallback() {
             synchronized (this) {
                 return handshakeCallback;
             }
@@ -1295,7 +1282,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             }
         }
 
-        private boolean handshaking(Map<String, Object> fields, ClientSessionChannel.MessageListener callback) {
+        private boolean handshaking(Map<String, Object> fields, ClientSession.MessageListener callback) {
             initialize();
 
             List<String> allowedTransports = getAllowedTransports();

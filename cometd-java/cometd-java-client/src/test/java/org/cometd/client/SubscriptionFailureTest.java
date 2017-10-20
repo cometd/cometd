@@ -68,12 +68,9 @@ public class SubscriptionFailureTest extends ClientServerTest {
             }
         };
         final CountDownLatch subscriptionLatch = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    subscriptionLatch.countDown();
-                }
+        ClientSession.MessageListener subscriptionCallback = message -> {
+            if (!message.isSuccessful()) {
+                subscriptionLatch.countDown();
             }
         };
         String channelName = "/echo";
@@ -115,12 +112,9 @@ public class SubscriptionFailureTest extends ClientServerTest {
             }
         };
         final CountDownLatch subscriptionLatch = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    subscriptionLatch.countDown();
-                }
+        ClientSession.MessageListener subscriptionCallback = message -> {
+            if (!message.isSuccessful()) {
+                subscriptionLatch.countDown();
             }
         };
         client.getChannel(channelName).subscribe(messageCallback, subscriptionCallback);
@@ -175,12 +169,9 @@ public class SubscriptionFailureTest extends ClientServerTest {
             }
         };
         final CountDownLatch failedSubscription = new CountDownLatch(1);
-        ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    failedSubscription.countDown();
-                }
+        ClientSession.MessageListener subscriptionCallback = message -> {
+            if (!message.isSuccessful()) {
+                failedSubscription.countDown();
             }
         };
         // First subscription fails, the subscription count should be
@@ -194,12 +185,9 @@ public class SubscriptionFailureTest extends ClientServerTest {
         // Now allow the subscription, we should be able to subscribe to the same channel.
         allowed.set(true);
         final CountDownLatch succeededSubscription = new CountDownLatch(1);
-        subscriptionCallback = new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    succeededSubscription.countDown();
-                }
+        subscriptionCallback = message -> {
+            if (message.isSuccessful()) {
+                succeededSubscription.countDown();
             }
         };
         client.getChannel(channelName).subscribe(messageCallback, subscriptionCallback);

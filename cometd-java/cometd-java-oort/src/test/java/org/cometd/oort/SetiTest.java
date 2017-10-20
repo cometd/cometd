@@ -122,12 +122,7 @@ public class SetiTest extends OortTest {
 
         String channel = "/service/forward";
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        client2.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        });
+        client2.getChannel(channel).addListener((ClientSessionChannel.MessageListener)(c, m) -> messageLatch.countDown());
         Map<String, Object> data1 = new HashMap<>();
         data1.put("peer", "user2");
         client1.getChannel(channel).publish(data1);
@@ -188,12 +183,7 @@ public class SetiTest extends OortTest {
 
         String channel = "/service/forward";
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        client2.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        });
+        client2.getChannel(channel).addListener((ClientSessionChannel.MessageListener)(c, m) -> messageLatch.countDown());
         Map<String, Object> data1 = new HashMap<>();
         data1.put("peer", "user2");
         client1.getChannel(channel).publish(data1);
@@ -264,12 +254,7 @@ public class SetiTest extends OortTest {
 
         // Wait for the server to expire client2 and for Seti to disassociate it
         final CountDownLatch removedLatch = new CountDownLatch(1);
-        oort2.getBayeuxServer().getSession(session2.get()).addListener(new ServerSession.RemoveListener() {
-            @Override
-            public void removed(ServerSession session, boolean timeout) {
-                removedLatch.countDown();
-            }
-        });
+        oort2.getBayeuxServer().getSession(session2.get()).addListener((ServerSession.RemoveListener)(session, timeout) -> removedLatch.countDown());
         long maxTimeout = ((ServerTransport)oort2.getBayeuxServer().getTransport("websocket")).getMaxInterval();
         Assert.assertTrue(removedLatch.await(maxTimeout + 5000, TimeUnit.MILLISECONDS));
 
@@ -371,26 +356,17 @@ public class SetiTest extends OortTest {
         String channel = "/service/forward";
         final LatchListener messageLatch = new LatchListener(3);
         final AtomicInteger counter = new AtomicInteger();
-        client1A.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                counter.incrementAndGet();
-                messageLatch.countDown();
-            }
+        client1A.getChannel(channel).addListener((ClientSessionChannel.MessageListener)(c, m) -> {
+            counter.incrementAndGet();
+            messageLatch.countDown();
         });
-        client1B.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                counter.incrementAndGet();
-                messageLatch.countDown();
-            }
+        client1B.getChannel(channel).addListener((ClientSessionChannel.MessageListener)(c, m) -> {
+            counter.incrementAndGet();
+            messageLatch.countDown();
         });
-        client1C.getChannel(channel).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                counter.incrementAndGet();
-                messageLatch.countDown();
-            }
+        client1C.getChannel(channel).addListener((ClientSessionChannel.MessageListener)(c, m) -> {
+            counter.incrementAndGet();
+            messageLatch.countDown();
         });
         Map<String, Object> data = new HashMap<>();
         data.put("peer", "user1");
@@ -513,12 +489,7 @@ public class SetiTest extends OortTest {
         login1.put("user", userId);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
         final CountDownLatch publishLatch = new CountDownLatch(1);
-        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                publishLatch.countDown();
-            }
-        });
+        loginChannel1.publish(login1, message -> publishLatch.countDown());
         Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         // Now user1 is associated on node1, start node2
@@ -610,12 +581,7 @@ public class SetiTest extends OortTest {
         String userId1 = "user1";
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
-        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                loginLatch1.countDown();
-            }
-        });
+        loginChannel1.publish(login1, message -> loginLatch1.countDown());
         Assert.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(remotePresenceOnLatch.await(5, TimeUnit.SECONDS));
 
@@ -625,12 +591,7 @@ public class SetiTest extends OortTest {
         String userId2 = "user2";
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
-        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                loginLatch2.countDown();
-            }
-        });
+        loginChannel2.publish(login2, message -> loginLatch2.countDown());
         Assert.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(localPresenceOnLatch.await(5, TimeUnit.SECONDS));
 
@@ -639,12 +600,7 @@ public class SetiTest extends OortTest {
         Map<String, Object> logout2 = new HashMap<>();
         logout2.put("user", userId2);
         ClientSessionChannel logoutChannel2 = client2.getChannel("/service/logout");
-        logoutChannel2.publish(logout2, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                logoutLatch2.countDown();
-            }
-        });
+        logoutChannel2.publish(logout2, message -> logoutLatch2.countDown());
         Assert.assertTrue(logoutLatch2.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(localPresenceOffLatch.await(5, TimeUnit.SECONDS));
 
@@ -653,12 +609,7 @@ public class SetiTest extends OortTest {
         Map<String, Object> logout1 = new HashMap<>();
         logout1.put("user", userId1);
         ClientSessionChannel logoutChannel1 = client1.getChannel("/service/logout");
-        logoutChannel1.publish(logout1, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                logoutLatch1.countDown();
-            }
-        });
+        logoutChannel1.publish(logout1, message -> logoutLatch1.countDown());
         Assert.assertTrue(logoutLatch1.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(remotePresenceOffLatch.await(5, TimeUnit.SECONDS));
 
@@ -701,12 +652,7 @@ public class SetiTest extends OortTest {
         String userId1 = "user1";
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
-        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                loginLatch1.countDown();
-            }
-        });
+        loginChannel1.publish(login1, message -> loginLatch1.countDown());
         Assert.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
 
         // Login user2
@@ -715,12 +661,7 @@ public class SetiTest extends OortTest {
         String userId2 = "user2";
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
-        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                loginLatch2.countDown();
-            }
-        });
+        loginChannel2.publish(login2, message -> loginLatch2.countDown());
         Assert.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
 
         // Make sure all Setis see all users
@@ -779,12 +720,7 @@ public class SetiTest extends OortTest {
         String userId1 = "user1";
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
-        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                loginLatch1.countDown();
-            }
-        });
+        loginChannel1.publish(login1, message -> loginLatch1.countDown());
         Assert.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
 
         // Login user2
@@ -793,12 +729,7 @@ public class SetiTest extends OortTest {
         String userId2 = "user2";
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
-        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                loginLatch2.countDown();
-            }
-        });
+        loginChannel2.publish(login2, message -> loginLatch2.countDown());
         Assert.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
 
         // Make sure all Setis see all users
@@ -888,12 +819,7 @@ public class SetiTest extends OortTest {
         String userId1 = "user1";
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
-        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                loginLatch1.countDown();
-            }
-        });
+        loginChannel1.publish(login1, message -> loginLatch1.countDown());
         Assert.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
 
@@ -917,12 +843,7 @@ public class SetiTest extends OortTest {
             client1 = startClient(oort2, null);
             final CountDownLatch loginLatch2 = new CountDownLatch(1);
             loginChannel1 = client1.getChannel("/service/login");
-            loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
-                @Override
-                public void onMessage(ClientSessionChannel channel, Message message) {
-                    loginLatch2.countDown();
-                }
-            });
+            loginChannel1.publish(login1, message -> loginLatch2.countDown());
             Assert.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
 
             // Bring node1 back online
@@ -966,12 +887,7 @@ public class SetiTest extends OortTest {
             client1 = startClient(oort1, null);
             final CountDownLatch loginLatch3 = new CountDownLatch(1);
             loginChannel1 = client1.getChannel("/service/login");
-            loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
-                @Override
-                public void onMessage(ClientSessionChannel channel, Message message) {
-                    loginLatch3.countDown();
-                }
-            });
+            loginChannel1.publish(login1, message -> loginLatch3.countDown());
             Assert.assertTrue(loginLatch3.await(5, TimeUnit.SECONDS));
 
             // Bring node2 back online
@@ -1040,30 +956,20 @@ public class SetiTest extends OortTest {
 
         // Login user1
         final CountDownLatch loginLatch1 = new CountDownLatch(1);
-        Map<String, Object> login1 = new HashMap<String, Object>();
+        Map<String, Object> login1 = new HashMap<>();
         String userId1 = "user1";
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
-        loginChannel1.publish(login1, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                loginLatch1.countDown();
-            }
-        });
+        loginChannel1.publish(login1, message -> loginLatch1.countDown());
         Assert.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
 
         // Login user2
         final CountDownLatch loginLatch2 = new CountDownLatch(1);
-        Map<String, Object> login2 = new HashMap<String, Object>();
+        Map<String, Object> login2 = new HashMap<>();
         String userId2 = "user2";
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
-        loginChannel2.publish(login2, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                loginLatch2.countDown();
-            }
-        });
+        loginChannel2.publish(login2, message -> loginLatch2.countDown());
         Assert.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
 
         // Make sure all Setis see all users
@@ -1086,12 +992,7 @@ public class SetiTest extends OortTest {
         LatchListener subscribeListener = new LatchListener(1);
         final CountDownLatch messageLatch = new CountDownLatch(1);
         client2.getChannel(Channel.META_SUBSCRIBE).addListener(subscribeListener);
-        client2.getChannel(broadcastChannel).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        });
+        client2.getChannel(broadcastChannel).subscribe((channel, message) -> messageLatch.countDown());
         Assert.assertTrue(subscribeListener.await(5, TimeUnit.SECONDS));
 
         client1.getChannel(serviceChannel).publish("data1");

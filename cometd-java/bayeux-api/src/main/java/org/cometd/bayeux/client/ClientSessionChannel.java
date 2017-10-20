@@ -76,9 +76,19 @@ public interface ClientSessionChannel extends Channel {
      * infrastructure responsible of the JSON conversion.</p>
      *
      * @param data the data to publish
-     * @see #publish(Object, MessageListener)
+     * @see #publish(Object, ClientSession.MessageListener)
      */
-    public void publish(Object data);
+    public default void publish(Object data) {
+        publish(data, ClientSession.MessageListener.NOOP);
+    }
+
+    /**
+     * @deprecated use {@link #publish(Object, ClientSession.MessageListener)} instead
+     */
+    @Deprecated
+    public default void publish(Object data, MessageListener callback) {
+        publish(data, message -> callback.onMessage(this, message));
+    }
 
     /**
      * <p>Publishes the given {@code data} onto this channel, notifying the given
@@ -89,7 +99,15 @@ public interface ClientSessionChannel extends Channel {
      * @see #publish(Object)
      * @see #publish(Message.Mutable, MessageListener)
      */
-    public void publish(Object data, MessageListener callback);
+    public void publish(Object data, ClientSession.MessageListener callback);
+
+    /**
+     * @deprecated use {@link #publish(Message.Mutable, ClientSession.MessageListener)} instead
+     */
+    @Deprecated
+    public default void publish(Message.Mutable message, MessageListener callback) {
+        publish(message, m -> callback.onMessage(this, m));
+    }
 
     /**
      * <p>Publishes the given {@code message} onto this channel, notifying the
@@ -97,17 +115,27 @@ public interface ClientSessionChannel extends Channel {
      *
      * @param message  the message to publish
      * @param callback the message callback to notify of the publish result
-     * @see #publish(Object, MessageListener)
+     * @see #publish(Object, ClientSession.MessageListener)
      */
-    public void publish(Message.Mutable message, MessageListener callback);
+    public void publish(Message.Mutable message, ClientSession.MessageListener callback);
 
     /**
-     * <p>Equivalent to {@link #subscribe(ClientSessionChannel.MessageListener, ClientSessionChannel.MessageListener)
+     * <p>Equivalent to {@link #subscribe(ClientSessionChannel.MessageListener, ClientSession.MessageListener)
      * subscribe(listener, null)}.</p>
      *
      * @param listener the listener to register and invoke when a message arrives on this channel.
      */
-    public void subscribe(MessageListener listener);
+    public default void subscribe(MessageListener listener) {
+        subscribe(listener, ClientSession.MessageListener.NOOP);
+    }
+
+    /**
+     * @deprecated use {@link #subscribe(MessageListener, ClientSession.MessageListener)} instead
+     */
+    @Deprecated
+    public default void subscribe(MessageListener listener, MessageListener callback) {
+        subscribe(listener, message -> callback.onMessage(this, message));
+    }
 
     /**
      * <p>Subscribes the given {@code listener} to receive messages sent to this channel.</p>
@@ -122,7 +150,7 @@ public interface ClientSessionChannel extends Channel {
      * @see #unsubscribe(MessageListener)
      * @see #addListener(ClientSessionChannelListener)
      */
-    public void subscribe(MessageListener listener, MessageListener callback);
+    public void subscribe(MessageListener listener, ClientSession.MessageListener callback);
 
     /**
      * <p>Equivalent to {@link #unsubscribe(ClientSessionChannel.MessageListener, ClientSessionChannel.MessageListener)
@@ -130,7 +158,17 @@ public interface ClientSessionChannel extends Channel {
      *
      * @param listener the listener to unsubscribe
      */
-    public void unsubscribe(MessageListener listener);
+    public default void unsubscribe(MessageListener listener) {
+        unsubscribe(listener, ClientSession.MessageListener.NOOP);
+    }
+
+    /**
+     * @deprecated use {@link #unsubscribe(MessageListener, ClientSession.MessageListener)} instead
+     */
+    @Deprecated
+    public default void unsubscribe(MessageListener listener, MessageListener callback) {
+        unsubscribe(listener, message -> callback.onMessage(this, message));
+    }
 
     /**
      * <p>Unsubscribes the given {@code listener} from receiving messages sent to this channel.</p>
@@ -144,7 +182,7 @@ public interface ClientSessionChannel extends Channel {
      * @see #subscribe(MessageListener)
      * @see #unsubscribe()
      */
-    public void unsubscribe(MessageListener listener, MessageListener callback);
+    public void unsubscribe(MessageListener listener, ClientSession.MessageListener callback);
 
     /**
      * <p>Unsubscribes all subscribers registered on this channel.</p>

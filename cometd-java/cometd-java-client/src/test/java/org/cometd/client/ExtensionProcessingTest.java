@@ -105,23 +105,15 @@ public class ExtensionProcessingTest extends ClientServerTest {
         });
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.handshake(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                client.batch(() -> {
-                    ClientSessionChannel c = client.getChannel(channelName);
-                    c.subscribe(new ClientSessionChannel.MessageListener() {
-                        @Override
-                        public void onMessage(ClientSessionChannel channel1, Message message1) {
-                            if (data.equals(message1.getData())) {
-                                latch.countDown();
-                            }
-                        }
-                    });
-                    c.publish(data);
-                });
-            }
-        });
+        client.handshake(message -> client.batch(() -> {
+            ClientSessionChannel channel = client.getChannel(channelName);
+            channel.subscribe((c, m) -> {
+                if (data.equals(m.getData())) {
+                    latch.countDown();
+                }
+            });
+            channel.publish(data);
+        }));
 
         Assert.assertTrue(latch.await(555, TimeUnit.SECONDS));
 

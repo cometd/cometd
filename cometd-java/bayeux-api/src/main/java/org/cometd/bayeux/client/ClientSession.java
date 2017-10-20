@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Bayeux;
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
@@ -55,14 +56,26 @@ public interface ClientSession extends Session {
     /**
      * <p>Equivalent to {@link #handshake(Map) handshake(null)}.</p>
      */
-    void handshake();
+    default void handshake() {
+        handshake(null);
+    }
 
     /**
-     * <p>Equivalent to {@link #handshake(Map, ClientSessionChannel.MessageListener) handshake(template, null)}.</p>
+     * <p>Equivalent to {@link #handshake(Map, ClientSession.MessageListener) handshake(template, null)}.</p>
      *
      * @param template additional fields to add to the handshake message.
      */
-    void handshake(Map<String, Object> template);
+    default void handshake(Map<String, Object> template) {
+        handshake(template, MessageListener.NOOP);
+    }
+
+    /**
+     * @deprecated use {@link #handshake(Map, MessageListener)} instead
+     */
+    @Deprecated
+    default void handshake(Map<String, Object> template, ClientSessionChannel.MessageListener callback) {
+        handshake(template, message -> callback.onMessage(getChannel(Channel.META_HANDSHAKE), message));
+    }
 
     /**
      * <p>Initiates the bayeux protocol handshake with the server(s).</p>
@@ -72,14 +85,27 @@ public interface ClientSession extends Session {
      * @param template additional fields to add to the handshake message.
      * @param callback the message listener to notify of the handshake result
      */
-    void handshake(Map<String, Object> template, ClientSessionChannel.MessageListener callback);
+    void handshake(Map<String, Object> template, MessageListener callback);
+
+    @Override
+    default void disconnect() {
+        disconnect(MessageListener.NOOP);
+    }
+
+    /**
+     * @deprecated use {@link #disconnect(MessageListener)} instead
+     */
+    @Deprecated
+    default void disconnect(ClientSessionChannel.MessageListener callback) {
+        disconnect(message -> callback.onMessage(getChannel(Channel.META_DISCONNECT), message));
+    }
 
     /**
      * <p>Disconnects this session, ending the link between the client and the server peers.</p>
      *
      * @param callback the message listener to notify of the disconnect result
      */
-    void disconnect(ClientSessionChannel.MessageListener callback);
+    void disconnect(MessageListener callback);
 
     /**
      * <p>Returns a client side channel scoped by this session.</p>
@@ -138,6 +164,9 @@ public interface ClientSession extends Session {
      * @see #remoteCall(String, Object, MessageListener)
      */
     public interface MessageListener extends Bayeux.BayeuxListener {
+        public static final MessageListener NOOP = message -> {
+        };
+
         /**
          * Callback invoked when a remote call response is received.
          *
@@ -224,6 +253,7 @@ public interface ClientSession extends Session {
 
         /**
          * Empty implementation of {@link Extension}.
+         *
          * @deprecated Use {@link Extension} instead
          */
         @Deprecated

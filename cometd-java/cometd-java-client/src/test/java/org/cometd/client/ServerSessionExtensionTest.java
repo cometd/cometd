@@ -18,9 +18,7 @@ package org.cometd.client;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
-import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
@@ -41,17 +39,7 @@ public class ServerSessionExtensionTest extends ClientServerTest {
         final String channelName = "/delete";
         final CountDownLatch messageLatch = new CountDownLatch(1);
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        }, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        client.getChannel(channelName).subscribe((channel, message) -> messageLatch.countDown(), message -> subscribeLatch.countDown());
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         ServerSession session = bayeux.getSession(client.getId());

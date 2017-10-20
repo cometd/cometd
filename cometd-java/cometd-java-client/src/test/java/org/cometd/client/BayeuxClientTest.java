@@ -87,12 +87,9 @@ public class BayeuxClientTest extends ClientServerTest {
         };
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                Assert.assertFalse(message.isSuccessful());
-                latch.get().countDown();
-            }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            Assert.assertFalse(message.isSuccessful());
+            latch.get().countDown();
         });
         client.handshake();
         Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
@@ -119,12 +116,9 @@ public class BayeuxClientTest extends ClientServerTest {
         };
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                Assert.assertFalse(message.isSuccessful());
-                latch.get().countDown();
-            }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            Assert.assertFalse(message.isSuccessful());
+            latch.get().countDown();
         });
         client.handshake();
         Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
@@ -150,12 +144,9 @@ public class BayeuxClientTest extends ClientServerTest {
             }
         });
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                Assert.assertFalse(message.isSuccessful());
-                latch.get().countDown();
-            }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            Assert.assertFalse(message.isSuccessful());
+            latch.get().countDown();
         });
         client.handshake();
         Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
@@ -189,12 +180,9 @@ public class BayeuxClientTest extends ClientServerTest {
                 return result;
             }
         };
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                handshake.set(message);
-                handshakeLatch.countDown();
-            }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            handshake.set(message);
+            handshakeLatch.countDown();
         });
         client.handshake();
         Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
@@ -227,32 +215,23 @@ public class BayeuxClientTest extends ClientServerTest {
             }
         };
 
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                connected.set(message.isSuccessful());
-                if (message.isSuccessful()) {
-                    queue.offer(message);
-                }
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            connected.set(message.isSuccessful());
+            if (message.isSuccessful()) {
+                queue.offer(message);
             }
         });
 
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                connected.set(false);
-                if (message.isSuccessful()) {
-                    queue.offer(message);
-                }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            connected.set(false);
+            if (message.isSuccessful()) {
+                queue.offer(message);
             }
         });
 
-        client.getChannel("/**").addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel session, Message message) {
-                if (!message.isMeta() && !message.isPublishReply() || Channel.META_SUBSCRIBE.equals(message.getChannel()) || Channel.META_DISCONNECT.equals(message.getChannel())) {
-                    queue.offer(message);
-                }
+        client.getChannel("/**").addListener((ClientSessionChannel.MessageListener)(session, message) -> {
+            if (!message.isMeta() && !message.isPublishReply() || Channel.META_SUBSCRIBE.equals(message.getChannel()) || Channel.META_DISCONNECT.equals(message.getChannel())) {
+                queue.offer(message);
             }
         });
 
@@ -315,12 +294,9 @@ public class BayeuxClientTest extends ClientServerTest {
             }
         };
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(1));
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    connectLatch.get().countDown();
-                }
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (!message.isSuccessful()) {
+                connectLatch.get().countDown();
             }
         });
         client.handshake();
@@ -401,12 +377,9 @@ public class BayeuxClientTest extends ClientServerTest {
     public void testWaitForImpliedState() throws Exception {
         final BayeuxClient client = newBayeuxClient();
         final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful() && client.isHandshook()) {
-                    latch.countDown();
-                }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (message.isSuccessful() && client.isHandshook()) {
+                latch.countDown();
             }
         });
 
@@ -430,25 +403,22 @@ public class BayeuxClientTest extends ClientServerTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         BayeuxClient client = new BayeuxClient("http://localhost/cometd", new LongPollingTransport(null, httpClient));
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                Assert.assertFalse(message.isSuccessful());
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            Assert.assertFalse(message.isSuccessful());
 
-                // If port 80 is listening, it's probably some other HTTP server
-                // and a bayeux request will result in a 404, which is converted
-                // to a TransportException; if not listening, it will be a ConnectException
-                @SuppressWarnings("unchecked")
-                Map<String, Object> failure = (Map<String, Object>)message.get("failure");
-                Assert.assertNotNull(failure);
-                Object exception = failure.get("exception");
-                if (listening.get()) {
-                    Assert.assertTrue(exception instanceof TransportException);
-                } else {
-                    Assert.assertTrue(exception instanceof ConnectException);
-                }
-                latch.countDown();
+            // If port 80 is listening, it's probably some other HTTP server
+            // and a bayeux request will result in a 404, which is converted
+            // to a TransportException; if not listening, it will be a ConnectException
+            @SuppressWarnings("unchecked")
+            Map<String, Object> failure = (Map<String, Object>)message.get("failure");
+            Assert.assertNotNull(failure);
+            Object exception = failure.get("exception");
+            if (listening.get()) {
+                Assert.assertTrue(exception instanceof TransportException);
+            } else {
+                Assert.assertTrue(exception instanceof ConnectException);
             }
+            latch.countDown();
         });
         client.handshake();
         Assert.assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
@@ -461,13 +431,10 @@ public class BayeuxClientTest extends ClientServerTest {
         BayeuxClient client = newBayeuxClient();
 
         final CountDownLatch connectLatch = new CountDownLatch(2);
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (connectLatch.getCount() > 1 && message.isSuccessful() ||
-                        connectLatch.getCount() == 1 && !message.isSuccessful()) {
-                    connectLatch.countDown();
-                }
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (connectLatch.getCount() > 1 && message.isSuccessful() ||
+                    connectLatch.getCount() == 1 && !message.isSuccessful()) {
+                connectLatch.countDown();
             }
         });
 
@@ -541,20 +508,14 @@ public class BayeuxClientTest extends ClientServerTest {
                 return result;
             }
         };
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    connectLatch.get().countDown();
-                }
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (message.isSuccessful()) {
+                connectLatch.get().countDown();
             }
         });
-        client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    failureLatch.countDown();
-                }
+        client.getChannel(channelName).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (!message.isSuccessful()) {
+                failureLatch.countDown();
             }
         });
         client.handshake();
@@ -596,12 +557,9 @@ public class BayeuxClientTest extends ClientServerTest {
                 return super.sendMessages(messages);
             }
         };
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    connectLatch.get().countDown();
-                }
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (message.isSuccessful()) {
+                connectLatch.get().countDown();
             }
         });
         client.handshake();
@@ -611,12 +569,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
         ClientSessionChannel channel = client.getChannel(channelName);
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
-        channel.subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.get().countDown();
-            }
-        });
+        channel.subscribe((c, m) -> messageLatch.get().countDown());
 
         abort.set(true);
         channel.publish(new HashMap<String, Object>());
@@ -639,14 +592,11 @@ public class BayeuxClientTest extends ClientServerTest {
 
         final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<>(new CountDownLatch(1));
         final AtomicReference<CountDownLatch> unconnectedLatch = new AtomicReference<>(new CountDownLatch(2));
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    connectedLatch.get().countDown();
-                } else {
-                    unconnectedLatch.get().countDown();
-                }
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (message.isSuccessful()) {
+                connectedLatch.get().countDown();
+            } else {
+                unconnectedLatch.get().countDown();
             }
         });
         client.handshake();
@@ -748,48 +698,34 @@ public class BayeuxClientTest extends ClientServerTest {
         Thread.sleep(1000);
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    subscribeLatch.countDown();
-                }
+        client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (message.isSuccessful()) {
+                subscribeLatch.countDown();
             }
         });
 
         String channelName = "/**";
         final CountDownLatch publishLatch = new CountDownLatch(1);
-        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                publishLatch.countDown();
-            }
-        });
+        client.getChannel(channelName).subscribe((channel, message) -> publishLatch.countDown());
 
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Register a listener to a service channel, to be sure that
         // they are not broadcasted due to the subscription to /**
         final CountDownLatch serviceLatch = new CountDownLatch(1);
-        client.getChannel("/service/foo").addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                // Ignore publish reply, only care about message with data
-                if (message.containsKey(Message.DATA_FIELD)) {
-                    serviceLatch.countDown();
-                }
+        client.getChannel("/service/foo").addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            // Ignore publish reply, only care about message with data
+            if (message.containsKey(Message.DATA_FIELD)) {
+                serviceLatch.countDown();
             }
         });
 
         // Register a listener to /meta/connect, to be sure that /meta/connect messages
         // sent by the client are not broadcasted back due to the subscription to /**
         final CountDownLatch metaLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    metaLatch.countDown();
-                }
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (!message.isSuccessful()) {
+                metaLatch.countDown();
             }
         });
 
@@ -826,20 +762,12 @@ public class BayeuxClientTest extends ClientServerTest {
 
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
 
-        client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                results.offer(message);
-            }
-        });
+        client.getChannel("/meta/*").addListener((ClientSessionChannel.MessageListener)(channel, message) -> results.offer(message));
 
         client.handshake();
 
         // Subscribe without waiting
-        client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-            }
+        client.getChannel("/foo/bar").subscribe((channel, message) -> {
         });
 
         // First handshake fails
@@ -868,10 +796,7 @@ public class BayeuxClientTest extends ClientServerTest {
         Assert.assertTrue(connect);
 
         // Subscribe again
-        client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-            }
+        client.getChannel("/foo/bar").subscribe((c, m) -> {
         });
 
         // No second subscribe sent, be sure to wait less than the timeout
@@ -901,10 +826,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
         results.clear();
         // Subscribe again
-        client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-            }
+        client.getChannel("/foo/bar").subscribe((c, m) -> {
         });
 
         // Subscribe is sent, skip the connect message if present
@@ -929,10 +851,7 @@ public class BayeuxClientTest extends ClientServerTest {
         results.clear();
 
         // Subscribe again
-        client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-            }
+        client.getChannel("/foo/bar").subscribe((c, m) -> {
         });
 
         // Subscribe is sent, skip the connect message if present
@@ -950,27 +869,24 @@ public class BayeuxClientTest extends ClientServerTest {
     public void testHandshakeOverHTTPReportsHTTPFailure() throws Exception {
         startServer(null);
         // No transports on server, to make the client fail
-        ((BayeuxServerImpl)bayeux).setAllowedTransports();
+        bayeux.setAllowedTransports();
 
         BayeuxClient client = newBayeuxClient();
         final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                // Verify the failure object is there
-                @SuppressWarnings("unchecked")
-                Map<String, Object> failure = (Map<String, Object>)message.get("failure");
-                Assert.assertNotNull(failure);
-                // Verify that the transport is there
-                Assert.assertEquals("long-polling", failure.get(Message.CONNECTION_TYPE_FIELD));
-                // Verify the original message is there
-                Assert.assertNotNull(failure.get("message"));
-                // Verify the HTTP status code is there
-                Assert.assertEquals(400, failure.get("httpCode"));
-                // Verify the exception string is there
-                Assert.assertNotNull(failure.get("exception"));
-                latch.countDown();
-            }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            // Verify the failure object is there
+            @SuppressWarnings("unchecked")
+            Map<String, Object> failure = (Map<String, Object>)message.get("failure");
+            Assert.assertNotNull(failure);
+            // Verify that the transport is there
+            Assert.assertEquals("long-polling", failure.get(Message.CONNECTION_TYPE_FIELD));
+            // Verify the original message is there
+            Assert.assertNotNull(failure.get("message"));
+            // Verify the HTTP status code is there
+            Assert.assertEquals(400, failure.get("httpCode"));
+            // Verify the exception string is there
+            Assert.assertNotNull(failure.get("exception"));
+            latch.countDown();
         });
         client.handshake();
 
@@ -1002,12 +918,9 @@ public class BayeuxClientTest extends ClientServerTest {
         final String channelName = "/service/deliver";
         ClientSessionChannel channel = client.getChannel(channelName);
         final CountDownLatch latch = new CountDownLatch(1);
-        channel.addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isPublishReply()) {
-                    latch.countDown();
-                }
+        channel.addListener((ClientSessionChannel.MessageListener)(c, message) -> {
+            if (!message.isPublishReply()) {
+                latch.countDown();
             }
         });
         client.handshake();
@@ -1040,12 +953,9 @@ public class BayeuxClientTest extends ClientServerTest {
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(options, httpClient));
 
         final CountDownLatch metaConnectLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    metaConnectLatch.countDown();
-                }
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            if (!message.isSuccessful()) {
+                metaConnectLatch.countDown();
             }
         });
 
@@ -1055,17 +965,7 @@ public class BayeuxClientTest extends ClientServerTest {
         String channelName = "/max_message_size";
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        }, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        client.getChannel(channelName).subscribe((channel, message) -> messageLatch.countDown(), message -> subscribeLatch.countDown());
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Publish a large message from server to client;
@@ -1098,17 +998,7 @@ public class BayeuxClientTest extends ClientServerTest {
         String channelName = "/max_message_size";
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageLatch.countDown();
-            }
-        }, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                subscribeLatch.countDown();
-            }
-        });
+        client.getChannel(channelName).subscribe((channel, message) -> messageLatch.countDown(), message -> subscribeLatch.countDown());
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Publish a large message that will be echoed back.
@@ -1118,12 +1008,9 @@ public class BayeuxClientTest extends ClientServerTest {
         Arrays.fill(chars, '0');
         String data = new String(chars);
         final CountDownLatch callbackLatch = new CountDownLatch(1);
-        client.getChannel(channelName).publish(data, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (!message.isSuccessful()) {
-                    callbackLatch.countDown();
-                }
+        client.getChannel(channelName).publish(data, message -> {
+            if (!message.isSuccessful()) {
+                callbackLatch.countDown();
             }
         });
 

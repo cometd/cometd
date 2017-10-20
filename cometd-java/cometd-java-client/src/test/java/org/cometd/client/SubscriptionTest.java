@@ -36,16 +36,10 @@ public class SubscriptionTest extends ClientServerTest {
         final CountDownLatch latch = new CountDownLatch(1);
         String channelName = Channel.META_CONNECT;
         ClientSessionChannel channel = client.getChannel(channelName);
-        channel.subscribe(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-            }
-        }, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                Assert.assertFalse(message.isSuccessful());
-                latch.countDown();
-            }
+        channel.subscribe((c, m) -> {
+        }, message -> {
+            Assert.assertFalse(message.isSuccessful());
+            latch.countDown();
         });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -73,12 +67,9 @@ public class SubscriptionTest extends ClientServerTest {
                 messageLatch.countDown();
             }
         };
-        channel.subscribe(listener, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                Assert.assertTrue(message.isSuccessful());
-                subscribeLatch.countDown();
-            }
+        channel.subscribe(listener, message -> {
+            Assert.assertTrue(message.isSuccessful());
+            subscribeLatch.countDown();
         });
 
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
@@ -90,12 +81,9 @@ public class SubscriptionTest extends ClientServerTest {
         Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
-        channel.unsubscribe(listener, new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                Assert.assertTrue(message.isSuccessful());
-                unsubscribeLatch.countDown();
-            }
+        channel.unsubscribe(listener, message -> {
+            Assert.assertTrue(message.isSuccessful());
+            unsubscribeLatch.countDown();
         });
 
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));

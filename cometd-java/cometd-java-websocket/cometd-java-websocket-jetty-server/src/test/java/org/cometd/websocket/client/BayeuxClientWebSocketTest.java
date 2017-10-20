@@ -1032,16 +1032,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
                 return true;
             }
         });
-        client.handshake(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                    }
-                });
-            }
-        });
+        client.handshake(message -> client.getChannel(channelName).subscribe((c, m) -> {
+        }));
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // This message will be delivered via /meta/connect.

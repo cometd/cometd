@@ -53,7 +53,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     private final List<Extension> _extensions = new CopyOnWriteArrayList<>();
     private final AttributesMap _attributes = new AttributesMap();
     private final ConcurrentMap<String, AbstractSessionChannel> _channels = new ConcurrentHashMap<>();
-    private final Map<String, ClientSessionChannel.MessageListener> _callbacks = new ConcurrentHashMap<>();
+    private final Map<String, ClientSession.MessageListener> _callbacks = new ConcurrentHashMap<>();
     private final Map<String, ClientSessionChannel.MessageListener> _subscribers = new ConcurrentHashMap<>();
     private final Map<String, MessageListener> _remoteCalls = new ConcurrentHashMap<>();
     private final AtomicInteger _batch = new AtomicInteger();
@@ -266,7 +266,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
      * and the channel {@link ClientSessionChannel.ClientSessionChannelListener listeners}.</p>
      *
      * @param message the message received.
-     * @param promise
+     * @param promise the promise notified of the receive processing
      */
     public void receive(final Message.Mutable message, Promise<Void> promise) {
         String channelName = message.getChannel();
@@ -321,9 +321,9 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     protected void notifyListeners(Message.Mutable message) {
         if (message.isMeta() || message.isPublishReply()) {
             String messageId = message.getId();
-            ClientSessionChannel.MessageListener callback = unregisterCallback(messageId);
+            ClientSession.MessageListener callback = unregisterCallback(messageId);
             if (callback != null) {
-                notifyListener(callback, message);
+                notifyCallback(callback, message);
             }
         }
 
@@ -345,12 +345,11 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         }
     }
 
-    protected void notifyListener(ClientSessionChannel.MessageListener listener, Message.Mutable message) {
-        MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(message.getChannel());
-        AbstractSessionChannel channel = channelRef.getReference();
-        channel.notifyOnMessage(listener, message);
-        if (channelRef.isMarked()) {
-            channel.release();
+    protected void notifyCallback(ClientSession.MessageListener callback, Message.Mutable message) {
+        try {
+            callback.onMessage(message);
+        } catch (Throwable x) {
+            _logger.info("Exception while invoking callback " + callback, x);
         }
     }
 
@@ -365,13 +364,13 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         return new MarkedReference<>(newChannel(newChannelId(id)), true);
     }
 
-    protected void registerCallback(String messageId, ClientSessionChannel.MessageListener callback) {
+    protected void registerCallback(String messageId, ClientSession.MessageListener callback) {
         if (callback != null) {
             _callbacks.put(messageId, callback);
         }
     }
 
-    protected ClientSessionChannel.MessageListener unregisterCallback(String messageId) {
+    protected ClientSession.MessageListener unregisterCallback(String messageId) {
         if (messageId == null) {
             return null;
         }
@@ -457,12 +456,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         }
 
         @Override
-        public void publish(Object data) {
-            publish(data, null);
-        }
-
-        @Override
-        public void publish(Object data, MessageListener callback) {
+        public void publish(Object data, ClientSession.MessageListener callback) {
             if (data instanceof Message.Mutable) {
                 publish((Message.Mutable)data, callback);
             } else {
@@ -473,7 +467,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         }
 
         @Override
-        public void publish(Message.Mutable message, MessageListener callback) {
+        public void publish(Message.Mutable message, ClientSession.MessageListener callback) {
             throwIfReleased();
             String messageId = newMessageId();
             message.setId(messageId);
@@ -483,12 +477,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         }
 
         @Override
-        public void subscribe(MessageListener listener) {
-            subscribe(listener, null);
-        }
-
-        @Override
-        public void subscribe(MessageListener listener, MessageListener callback) {
+        public void subscribe(MessageListener listener, ClientSession.MessageListener callback) {
             throwIfReleased();
             boolean added = _subscriptions.add(listener);
             if (added) {
@@ -499,7 +488,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
             }
         }
 
-        protected void sendSubscribe(MessageListener listener, MessageListener callback) {
+        protected void sendSubscribe(MessageListener listener, ClientSession.MessageListener callback) {
             Message.Mutable message = newMessage();
             String messageId = newMessageId();
             message.setId(messageId);
@@ -511,12 +500,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         }
 
         @Override
-        public void unsubscribe(MessageListener listener) {
-            unsubscribe(listener, null);
-        }
-
-        @Override
-        public void unsubscribe(MessageListener listener, MessageListener callback) {
+        public void unsubscribe(MessageListener listener, ClientSession.MessageListener callback) {
             boolean removedLast = removeSubscription(listener);
             if (removedLast) {
                 sendUnSubscribe(callback);
@@ -532,7 +516,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
             return false;
         }
 
-        protected void sendUnSubscribe(MessageListener callback) {
+        protected void sendUnSubscribe(ClientSession.MessageListener callback) {
             Message.Mutable message = newMessage();
             String messageId = newMessageId();
             message.setId(messageId);

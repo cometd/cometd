@@ -892,12 +892,7 @@ public class CometDLoadClient implements MeasureConverter {
         private void notifyServer(String channelName) throws InterruptedException {
             final CountDownLatch latch = new CountDownLatch(1);
             ClientSessionChannel channel = getChannel(channelName);
-            channel.publish(new HashMap<String, Object>(1), new ClientSessionChannel.MessageListener() {
-                @Override
-                public void onMessage(ClientSessionChannel channel, Message message) {
-                    latch.countDown();
-                }
-            });
+            channel.publish(new HashMap<String, Object>(1), message -> latch.countDown());
             latch.await();
         }
 
@@ -912,7 +907,7 @@ public class CometDLoadClient implements MeasureConverter {
                     String id = (String)data.get(ID_FIELD);
                     sendTimes.put(id, new AtomicStampedReference<>(now, clientsInRoom));
                     // There is no write-cheap concurrent list in JDK, so let's use a synchronized wrapper
-                    arrivalTimes.put(id, new AtomicStampedReference<>(Collections.synchronizedList(new LinkedList<Long>()), clientsInRoom));
+                    arrivalTimes.put(id, new AtomicStampedReference<>(Collections.synchronizedList(new LinkedList<>()), clientsInRoom));
                 }
             }
         }

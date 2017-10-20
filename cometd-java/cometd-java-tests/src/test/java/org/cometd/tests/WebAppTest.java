@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
@@ -166,21 +165,13 @@ public class WebAppTest {
 
     private void test(final BayeuxClient client) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
-        client.handshake(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    client.batch(() -> {
-                        ClientSessionChannel broadcast = client.getChannel("/foo");
-                        broadcast.subscribe(new ClientSessionChannel.MessageListener() {
-                            @Override
-                            public void onMessage(ClientSessionChannel channel1, Message message1) {
-                                latch.countDown();
-                            }
-                        });
-                        broadcast.publish("data");
-                    });
-                }
+        client.handshake(message -> {
+            if (message.isSuccessful()) {
+                client.batch(() -> {
+                    ClientSessionChannel broadcast = client.getChannel("/foo");
+                    broadcast.subscribe((c, m) -> latch.countDown());
+                    broadcast.publish("data");
+                });
             }
         });
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));

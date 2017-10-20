@@ -51,23 +51,11 @@ public class BroadcastToPublisherTest extends ClientServerTest {
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         final CountDownLatch messageLatch = new CountDownLatch(1);
         final BayeuxClient client = newBayeuxClient();
-        client.handshake(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                if (message.isSuccessful()) {
-                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-                        @Override
-                        public void onMessage(ClientSessionChannel channel, Message message) {
-                            System.err.println("message = " + message);
-                            messageLatch.countDown();
-                        }
-                    }, new ClientSessionChannel.MessageListener() {
-                        @Override
-                        public void onMessage(ClientSessionChannel channel, Message message) {
-                            subscribeLatch.countDown();
-                        }
-                    });
-                }
+        client.handshake(message -> {
+            if (message.isSuccessful()) {
+                client.getChannel(channelName).subscribe((c, m) -> {
+                    messageLatch.countDown();
+                }, m -> subscribeLatch.countDown());
             }
         });
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));

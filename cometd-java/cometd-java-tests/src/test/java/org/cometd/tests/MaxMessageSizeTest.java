@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
@@ -50,28 +49,15 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
         final CountDownLatch messageLatch = new CountDownLatch(1);
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final BayeuxClient client = newBayeuxClient();
-        client.handshake(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel metaHandshake, Message message) {
-                client.batch(() -> {
-                    ClientSessionChannel channel = client.getChannel(channelName);
-                    channel.subscribe(new ClientSessionChannel.MessageListener() {
-                        @Override
-                        public void onMessage(ClientSessionChannel channel, Message message1) {
-                            messageLatch.countDown();
-                        }
-                    });
-                    channel.publish(data, new ClientSessionChannel.MessageListener() {
-                        @Override
-                        public void onMessage(ClientSessionChannel channel, Message message1) {
-                            if (!message1.isSuccessful()) {
-                                replyLatch.countDown();
-                            }
-                        }
-                    });
-                });
-            }
-        });
+        client.handshake(message -> client.batch(() -> {
+            ClientSessionChannel channel = client.getChannel(channelName);
+            channel.subscribe((c, m) -> messageLatch.countDown());
+            channel.publish(data, m -> {
+                if (!m.isSuccessful()) {
+                    replyLatch.countDown();
+                }
+            });
+        }));
 
         Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
@@ -93,22 +79,9 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
         Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put(ClientTransport.MAX_MESSAGE_SIZE_OPTION, maxMessageSize);
         final BayeuxClient client = new BayeuxClient(cometdURL, newClientTransport(clientOptions));
-        client.handshake(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel metaHandshake, Message message) {
-                ClientSessionChannel channel = client.getChannel(channelName);
-                channel.subscribe(new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        messageLatch.countDown();
-                    }
-                }, new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        bayeux.getChannel(channelName).publish(null, data, Promise.noop());
-                    }
-                });
-            }
+        client.handshake(message -> {
+            ClientSessionChannel channel = client.getChannel(channelName);
+            channel.subscribe((c, m) -> messageLatch.countDown(), m -> bayeux.getChannel(channelName).publish(null, data, Promise.noop()));
         });
 
         Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));

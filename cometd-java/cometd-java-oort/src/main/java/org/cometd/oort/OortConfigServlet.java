@@ -23,8 +23,6 @@ import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.JSONContext;
@@ -173,19 +171,16 @@ public abstract class OortConfigServlet extends HttpServlet {
                 LOG.debug("Connecting to self: {}", oort);
             }
             Map<String, Object> fields = oort.newOortHandshakeFields(oort.getURL(), null);
-            oortComet.handshake(fields, new ClientSessionChannel.MessageListener() {
-                @Override
-                public void onMessage(ClientSessionChannel channel, Message message) {
-                    // If the handshake fails but has an advice field, it means it
-                    // reached the server but was denied e.g. by a SecurityPolicy.
-                    Map<String, Object> advice = message.getAdvice();
-                    if (message.isSuccessful() || advice != null) {
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("Connected to self: {}", oort);
-                        }
-                        oortComet.disconnect();
-                        joinCloud();
+            oortComet.handshake(fields, message -> {
+                // If the handshake fails but has an advice field, it means it
+                // reached the server but was denied e.g. by a SecurityPolicy.
+                Map<String, Object> advice = message.getAdvice();
+                if (message.isSuccessful() || advice != null) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Connected to self: {}", oort);
                     }
+                    oortComet.disconnect();
+                    joinCloud();
                 }
             });
         }

@@ -89,7 +89,7 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
 
         CountDownLatch connectLatch = new CountDownLatch(1);
-        client.handshake((channel, message) -> {
+        client.handshake(message -> {
             if (message.isSuccessful()) {
                 ServerSession session = bayeux.getSession(message.getClientId());
                 session.addListener(new ServerSession.HeartBeatListener() {

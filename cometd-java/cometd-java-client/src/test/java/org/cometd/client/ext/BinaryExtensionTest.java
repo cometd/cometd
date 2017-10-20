@@ -83,13 +83,10 @@ public class BinaryExtensionTest extends ClientServerTest {
                 }
             }
         });
-        client.handshake(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                Map<String, Object> meta = new HashMap<>();
-                meta.put("peer", channel.getSession().getId());
-                client.getChannel(channelName).publish(new BinaryData(buffer, true, meta));
-            }
+        client.handshake(message -> {
+            Map<String, Object> meta = new HashMap<>();
+            meta.put("peer", client.getId());
+            client.getChannel(channelName).publish(new BinaryData(buffer, true, meta));
         });
 
         Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
@@ -109,28 +106,15 @@ public class BinaryExtensionTest extends ClientServerTest {
         final CountDownLatch messageLatch = new CountDownLatch(1);
         final BayeuxClient client = newBayeuxClient();
         client.addExtension(new BinaryExtension());
-        client.handshake(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        BinaryData data = (BinaryData)message.getData();
-                        byte[] payload = data.asBytes();
-                        if (Arrays.equals(payload, bytes)) {
-                            if (data.isLast()) {
-                                messageLatch.countDown();
-                            }
-                        }
-                    }
-                }, new ClientSessionChannel.MessageListener() {
-                    @Override
-                    public void onMessage(ClientSessionChannel channel, Message message) {
-                        subscribeLatch.countDown();
-                    }
-                });
+        client.handshake(message -> client.getChannel(channelName).subscribe((c, m) -> {
+            BinaryData data = (BinaryData)m.getData();
+            byte[] payload = data.asBytes();
+            if (Arrays.equals(payload, bytes)) {
+                if (data.isLast()) {
+                    messageLatch.countDown();
+                }
             }
-        });
+        }, m -> subscribeLatch.countDown()));
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
