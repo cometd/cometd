@@ -825,7 +825,7 @@ public class Oort extends ContainerLifeCycle {
      *
      * @see Oort#incomingCometHandshake(Map, ServerSession)
      */
-    protected class OortExtension extends Extension.Adapter {
+    protected class OortExtension implements Extension {
         @Override
         public boolean sendMeta(ServerSession session, Mutable reply) {
             if (!Channel.META_HANDSHAKE.equals(reply.getChannel())) {

@@ -82,11 +82,6 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _bayeux = bayeux;
     }
 
-    @Override
-    public Object getAdvice() {
-        return null;
-    }
-
     /**
      * @return the interval in milliseconds
      */

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
@@ -86,7 +87,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         begin.set(System.nanoTime());
         // Cannot publish from the client, as there will always be the "meta"
         // publish response to send, so the lazy message will be sent with it.
-        channel.getReference().publish(null, new HashMap<>());
+        channel.getReference().publish(null, new HashMap<>(), Promise.noop());
 
         Assert.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
@@ -146,7 +147,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         begin.set(System.nanoTime());
         // Cannot publish from the client, as there will always be the "meta"
         // publish response to send, so the lazy message will be sent with it.
-        channel.getReference().publish(null, new HashMap<>());
+        channel.getReference().publish(null, new HashMap<>(), Promise.noop());
 
         Assert.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
@@ -219,8 +220,8 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         // publish response to send, so the lazy message will be sent with it.
         // Send first the long lazy and then the short lazy, to verify that
         // timeouts are properly respected.
-        longLazyChannel.getReference().publish(null, new HashMap<>());
-        shortLazyChannel.getReference().publish(null, new HashMap<>());
+        longLazyChannel.getReference().publish(null, new HashMap<>(), Promise.noop());
+        shortLazyChannel.getReference().publish(null, new HashMap<>(), Promise.noop());
 
         Assert.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
@@ -247,7 +248,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
                     @Override
                     public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                         for (ServerSession subscriber : channel.getSubscribers()) {
-                            subscriber.deliver(from, message.getChannel(), message.getData());
+                            subscriber.deliver(from, message.getChannel(), message.getData(), Promise.noop());
                         }
                         return false;
                     }
@@ -292,7 +293,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         // Send first the long lazy and then the short lazy, to verify that
         // timeouts are properly respected.
         begin.set(System.nanoTime());
-        channel.getReference().publish(null, new HashMap<>());
+        channel.getReference().publish(null, new HashMap<>(), Promise.noop());
 
         Assert.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
 
@@ -320,7 +321,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
                         // Mark the message as lazy
                         newMessage.setLazy(true);
                         for (ServerSession subscriber : channel.getSubscribers()) {
-                            subscriber.deliver(from, newMessage);
+                            subscriber.deliver(from, newMessage, Promise.noop());
                         }
                         return false;
                     }
@@ -366,7 +367,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         // Send first the long lazy and then the short lazy, to verify that
         // timeouts are properly respected.
         begin.set(System.nanoTime());
-        channel.getReference().publish(null, new HashMap<>());
+        channel.getReference().publish(null, new HashMap<>(), Promise.noop());
 
         Assert.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
 
@@ -419,7 +420,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
                 if (connects == 1) {
                     // Add a lazy message on the queue while the /meta/connect is on the client
                     begin.set(System.nanoTime());
-                    serverChannel.getReference().publish(null, new HashMap<>());
+                    serverChannel.getReference().publish(null, new HashMap<>(), Promise.noop());
                 }
             }
         });
@@ -473,7 +474,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
                 });
             }
         });
-        childChannel.getReference().publish(null, "data");
+        childChannel.getReference().publish(null, "data", Promise.noop());
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -511,7 +512,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
                 });
             }
         });
-        childChannel.getReference().publish(null, "data");
+        childChannel.getReference().publish(null, "data", Promise.noop());
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

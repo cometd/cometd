@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -832,7 +833,7 @@ public class OortObserveCometTest extends OortTest {
         oortA.addCometListener(new Oort.CometListener.Adapter() {
             @Override
             public void cometJoined(Event event) {
-                bayeuxServerA.createChannelIfAbsent(channelName).getReference().publish(serviceA, data);
+                bayeuxServerA.createChannelIfAbsent(channelName).getReference().publish(serviceA, data, Promise.noop());
                 joinedLatch.countDown();
             }
         });

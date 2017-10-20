@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.client.BayeuxClient;
@@ -61,7 +62,7 @@ public class ActivityExtensionTest extends ClientServerTest {
         long maxInactivityPeriod = 4000;
         bayeux.addExtension(new ActivityExtension(ActivityExtension.Activity.CLIENT, maxInactivityPeriod));
 
-        scheduler.scheduleWithFixedDelay(() -> bayeux.getChannel(channelName).publish(null, "test"), 0, timeout / 4, TimeUnit.MILLISECONDS);
+        scheduler.scheduleWithFixedDelay(() -> bayeux.getChannel(channelName).publish(null, "test", Promise.noop()), 0, timeout / 4, TimeUnit.MILLISECONDS);
 
         final BayeuxClient client = newBayeuxClient();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
@@ -154,7 +155,7 @@ public class ActivityExtensionTest extends ClientServerTest {
         Assert.assertFalse(latch.get().await(maxInactivityPeriod / 2, TimeUnit.MILLISECONDS));
 
         // Do some server activity
-        bayeux.getChannel(channelName).publish(null, "test");
+        bayeux.getChannel(channelName).publish(null, "test", Promise.noop());
 
         // Sleep for a while, we must still be connected
         Assert.assertFalse(latch.get().await(maxInactivityPeriod * 3 / 4, TimeUnit.MILLISECONDS));

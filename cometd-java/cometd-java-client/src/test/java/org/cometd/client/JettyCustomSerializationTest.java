@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
@@ -84,7 +85,7 @@ public class JettyCustomSerializationTest extends ClientServerTest {
                 mutable.setChannel(serviceChannelName);
                 mutable.setData(new Data(content));
                 mutable.getExt(true).put("extra", new Extra(content));
-                from.deliver(service, message);
+                from.deliver(service, message, Promise.noop());
 
                 return true;
             }
@@ -136,7 +137,7 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         Assert.assertEquals(extra1.content, extra2.content);
     }
 
-    private static class ExtraExtension extends ClientSession.Extension.Adapter {
+    private static class ExtraExtension implements ClientSession.Extension {
         private final String content;
 
         public ExtraExtension(String content) {

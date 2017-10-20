@@ -72,7 +72,7 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
         disconnect();
     }
 
-    private class ReHandshakeExtension extends BayeuxServer.Extension.Adapter {
+    private class ReHandshakeExtension implements BayeuxServer.Extension {
         private final AtomicInteger connects = new AtomicInteger();
 
         @Override

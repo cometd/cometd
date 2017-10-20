@@ -68,7 +68,6 @@ import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.toolchain.perf.PlatformTimer;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 
 public class CometDLoadClient implements MeasureConverter {
     private static final String ID_FIELD = "ID";
@@ -306,7 +305,6 @@ public class CometDLoadClient implements MeasureConverter {
         mbeanContainer.beanAdded(null, webSocketContainer);
 
         webSocketClient.setExecutor(threadPool);
-        webSocketClient.setMasker(new ZeroMasker());
         webSocketClient.getPolicy().setInputBufferSize(8 * 1024);
         webSocketClient.addBean(mbeanContainer);
         webSocketClient.start();

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * {@link AcknowledgedMessagesSessionExtension} on the {@link ServerSession}
  * instances created during successful handshakes.</p>
  */
-public class AcknowledgedMessagesExtension extends Extension.Adapter {
+public class AcknowledgedMessagesExtension implements Extension {
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName());
 
     @Override

@@ -44,7 +44,7 @@ public class SessionHijackingTest extends AbstractClientServerTest {
         Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Client1 tries to impersonate Client2.
-        client1.addExtension(new ClientSession.Extension.Adapter() {
+        client1.addExtension(new ClientSession.Extension() {
             @Override
             public boolean send(ClientSession session, Message.Mutable message) {
                 message.setClientId(client2.getId());
@@ -91,7 +91,7 @@ public class SessionHijackingTest extends AbstractClientServerTest {
         final String channelName = "/hijack";
 
         // Client1 tries to impersonate Client2.
-        client1.addExtension(new ClientSession.Extension.Adapter() {
+        client1.addExtension(new ClientSession.Extension() {
             @Override
             public boolean send(ClientSession session, Message.Mutable message) {
                 if (channelName.equals(message.getChannel())) {

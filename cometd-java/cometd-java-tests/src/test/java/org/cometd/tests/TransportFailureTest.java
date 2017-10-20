@@ -168,7 +168,7 @@ public class TransportFailureTest {
         startServer(null);
         // Only callback-polling on server (via extension), only long-polling on client.
         bayeux.setAllowedTransports("long-polling", "callback-polling");
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeux.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
@@ -344,7 +344,7 @@ public class TransportFailureTest {
         client.disconnect(1000);
     }
 
-    private abstract class MetaConnectFailureExtension extends BayeuxServer.Extension.Adapter {
+    private abstract class MetaConnectFailureExtension implements BayeuxServer.Extension {
         private final AtomicInteger metaConnects = new AtomicInteger();
 
         @Override

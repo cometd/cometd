@@ -19,6 +19,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -54,7 +55,7 @@ public class ServerSessionExtensionTest extends ClientServerTest {
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         ServerSession session = bayeux.getSession(client.getId());
-        session.addExtension(new ServerSession.Extension.Adapter() {
+        session.addExtension(new ServerSession.Extension() {
             @Override
             public ServerMessage send(ServerSession session, ServerMessage message) {
                 if (message.getChannel().equals(channelName)) {
@@ -64,7 +65,7 @@ public class ServerSessionExtensionTest extends ClientServerTest {
             }
         });
 
-        bayeux.getChannel(channelName).publish(null, "data");
+        bayeux.getChannel(channelName).publish(null, "data", Promise.noop());
 
         Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 

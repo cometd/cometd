@@ -36,6 +36,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
@@ -750,7 +751,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
                 message.setSuccessful(successful);
                 message.setChannel(channel);
                 message.setData(data);
-                session.deliver(sender, message);
+                session.deliver(sender, message, Promise.noop());
             }
             return completed;
         }

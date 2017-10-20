@@ -70,7 +70,7 @@ public class CometDPublishTest extends AbstractCometDTransportsTest {
 
     @Test
     public void testPublishFailedInvokesCallback() throws Exception {
-        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
                 return !"/echo".equals(message.getChannel());

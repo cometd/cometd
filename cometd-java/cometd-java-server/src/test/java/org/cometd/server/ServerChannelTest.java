@@ -19,6 +19,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.MarkedReference;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
@@ -257,24 +258,24 @@ public class ServerChannelTest {
         ServerMessage.Mutable msg = _bayeux.newMessage();
         msg.setData("Hello World");
 
-        foobar.publish(session0, msg);
+        foobar.publish(session0, msg, Promise.noop());
         Assert.assertEquals(1, session0.getQueue().size());
         Assert.assertEquals(1, session1.getQueue().size());
         Assert.assertEquals(1, session2.getQueue().size());
 
-        foobob.publish(session0, _bayeux.newMessage(msg));
+        foobob.publish(session0, _bayeux.newMessage(msg), Promise.noop());
         Assert.assertEquals(1, session0.getQueue().size());
         Assert.assertEquals(2, session1.getQueue().size());
         Assert.assertEquals(2, session2.getQueue().size());
 
-        wibble.publish(session0, _bayeux.newMessage(msg));
+        wibble.publish(session0, _bayeux.newMessage(msg), Promise.noop());
         Assert.assertEquals(1, session0.getQueue().size());
         Assert.assertEquals(2, session1.getQueue().size());
         Assert.assertEquals(3, session2.getQueue().size());
 
         msg = _bayeux.newMessage();
         msg.setData("ignore");
-        foobar.publish(session0, msg);
+        foobar.publish(session0, msg, Promise.noop());
         Assert.assertEquals(1, session0.getQueue().size());
         Assert.assertEquals(2, session1.getQueue().size());
         Assert.assertEquals(3, session2.getQueue().size());
@@ -283,7 +284,7 @@ public class ServerChannelTest {
         msg.setChannel("/lazy");
         msg.setData("foostar");
         msg.setLazy(true);
-        foobar.publish(session0, msg);
+        foobar.publish(session0, msg, Promise.noop());
         Assert.assertEquals(2, session0.getQueue().size());
         Assert.assertEquals(3, session1.getQueue().size());
         Assert.assertEquals(4, session2.getQueue().size());
@@ -292,7 +293,7 @@ public class ServerChannelTest {
         msg.setChannel("/lazy");
         msg.setData("starstar");
         msg.setLazy(true);
-        foobar.publish(session0, msg);
+        foobar.publish(session0, msg, Promise.noop());
         Assert.assertEquals(3, session0.getQueue().size());
         Assert.assertEquals(4, session1.getQueue().size());
         Assert.assertEquals(5, session2.getQueue().size());
@@ -320,7 +321,7 @@ public class ServerChannelTest {
         ServerSessionImpl session0 = newServerSession();
         ServerMessage.Mutable message = _bayeux.newMessage();
         message.setData("test");
-        fooBar.publish(session0, message);
+        fooBar.publish(session0, message, Promise.noop());
 
         Assert.assertEquals(1, session1.getQueue().size());
     }

@@ -49,7 +49,7 @@ public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocket
         disconnect();
     }
 
-    private static class DeleteMetaSubscribeExtension extends BayeuxServer.Extension.Adapter {
+    private static class DeleteMetaSubscribeExtension implements BayeuxServer.Extension {
         @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             return !Channel.META_SUBSCRIBE.equals(message.getChannel());

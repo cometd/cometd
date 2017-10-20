@@ -35,6 +35,7 @@ import org.cometd.annotation.Configure;
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
@@ -167,7 +168,7 @@ public class OortChatService {
         String toChannel = (String)data.get("room");
         data.put("scope", "private");
         data.put("user", data.get("user") + "->" + toUid);
-        client.deliver(client, toChannel, data);
+        client.deliver(client, toChannel, data, Promise.noop());
         _seti.sendMessage(toUid, toChannel, data);
     }
 

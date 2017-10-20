@@ -18,6 +18,7 @@ package org.cometd.javascript;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -222,7 +223,7 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
         Assert.assertTrue(subscribeLatch.await(5000));
 
         // Verify that messages are not received
-        bayeuxServer.getSession(sessionId).deliver(null, channelName, "data");
+        bayeuxServer.getSession(sessionId).deliver(null, channelName, "data", Promise.noop());
         Assert.assertFalse(messageLatch.await(1000));
 
         // Reset and allow subscriptions
@@ -234,7 +235,7 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
         Assert.assertTrue(subscribeLatch.await(5000));
 
         // Verify that messages are received
-        bayeuxServer.getChannel(channelName).publish(null, "data");
+        bayeuxServer.getChannel(channelName).publish(null, "data", Promise.noop());
         Assert.assertTrue(messageLatch.await(1000));
     }
 

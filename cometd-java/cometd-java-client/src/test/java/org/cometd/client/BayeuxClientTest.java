@@ -42,6 +42,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
@@ -1018,7 +1019,7 @@ public class BayeuxClientTest extends ClientServerTest {
         bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession session, ServerChannel channel, Mutable message) {
-                session.deliver(null, channelName, message.getData());
+                session.deliver(null, channelName, message.getData(), Promise.noop());
                 return true;
             }
         });
@@ -1074,7 +1075,7 @@ public class BayeuxClientTest extends ClientServerTest {
         char[] chars = new char[maxMessageSize];
         Arrays.fill(chars, '0');
         String data = new String(chars);
-        bayeux.getChannel(channelName).publish(null, data);
+        bayeux.getChannel(channelName).publish(null, data, Promise.noop());
 
         Assert.assertTrue(metaConnectLatch.await(5, TimeUnit.SECONDS));
         Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));

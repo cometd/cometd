@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -238,7 +239,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest {
         }
 
         public void processServiceMessage(ServerSession session, ServerMessage.Mutable message) {
-            session.deliver(getServerSession(), message);
+            session.deliver(getServerSession(), message, Promise.noop());
         }
     }
 

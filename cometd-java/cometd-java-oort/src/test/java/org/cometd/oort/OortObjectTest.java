@@ -25,6 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -300,7 +301,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         final long delay = 1000;
         final long value2 = 2;
         final long value3 = 3;
-        oort2.getBayeuxServer().addExtension(new BayeuxServer.Extension.Adapter() {
+        oort2.getBayeuxServer().addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean rcv(ServerSession from, final ServerMessage.Mutable message) {
                 if (oortObject1.getChannelName().equals(message.getChannel())) {
@@ -313,7 +314,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
                                     try {
                                         sleep(delay);
                                         ServerChannel channel = oort2.getBayeuxServer().getChannel(message.getChannel());
-                                        channel.publish(oort2.getOortSession(), message);
+                                        channel.publish(oort2.getOortSession(), message, Promise.noop());
                                     } catch (InterruptedException ignored) {
                                     }
                                 }

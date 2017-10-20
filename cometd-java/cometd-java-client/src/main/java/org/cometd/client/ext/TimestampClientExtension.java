@@ -23,7 +23,7 @@ import java.util.TimeZone;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 
-public class TimestampClientExtension extends ClientSession.Extension.Adapter {
+public class TimestampClientExtension implements ClientSession.Extension {
     @Override
     public boolean send(ClientSession session, Message.Mutable message) {
         addTimestamp(message);

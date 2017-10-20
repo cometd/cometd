@@ -29,7 +29,7 @@ import org.cometd.common.Z85;
  * object using the {@link Z85} format for outgoing messages, and decodes {@link BinaryData}
  * objects back into {@code byte[]} or {@link ByteBuffer} for incoming messages.</p>
  */
-public class BinaryExtension extends ClientSession.Extension.Adapter {
+public class BinaryExtension implements ClientSession.Extension {
     private final boolean decodeToByteBuffer;
 
     public BinaryExtension() {

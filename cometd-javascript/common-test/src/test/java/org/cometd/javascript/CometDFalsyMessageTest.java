@@ -15,6 +15,7 @@
  */
 package org.cometd.javascript;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
@@ -51,7 +52,7 @@ public class CometDFalsyMessageTest extends AbstractCometDTransportsTest {
 
         String sessionId = evaluateScript("cometd.getClientId();");
         ServerSession session = bayeuxServer.getSession(sessionId);
-        session.deliver(null, channelName, content);
+        session.deliver(null, channelName, content, Promise.noop());
 
         Assert.assertTrue(messageLatch.await(5000));
     }

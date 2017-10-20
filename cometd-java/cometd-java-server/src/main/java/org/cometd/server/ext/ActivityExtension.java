@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * <p>When the inactivity exceeds a configurable {@link #getMaxInactivityPeriod() inactive period},
  * the {@code ServerSession} is {@link ServerSession#disconnect() disconnected}.</p>
  */
-public class ActivityExtension extends BayeuxServer.Extension.Adapter {
+public class ActivityExtension implements BayeuxServer.Extension {
     private final Activity activity;
     private final long maxInactivityPeriod;
 

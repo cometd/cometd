@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -34,6 +35,7 @@ import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -52,6 +54,7 @@ public class WebSocketTransportFailureTest {
     private Server server;
     private ServerConnector connector;
     private ServletContextHandler context;
+    private HttpClient httpClient;
     private WebSocketClient client;
     private BayeuxServerImpl bayeux;
 
@@ -59,6 +62,9 @@ public class WebSocketTransportFailureTest {
     public void dispose() throws Exception {
         if (client != null) {
             client.stop();
+        }
+        if (httpClient != null) {
+            httpClient.stop();
         }
         if (server != null) {
             server.stop();
@@ -96,7 +102,10 @@ public class WebSocketTransportFailureTest {
     private void startClient() throws Exception {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new WebSocketClient(clientThreads);
+        httpClient = new HttpClient();
+        httpClient.setExecutor(clientThreads);
+        httpClient.start();
+        client = new WebSocketClient(httpClient);
         client.start();
     }
 
@@ -145,8 +154,8 @@ public class WebSocketTransportFailureTest {
                 disconnect(session);
                 // Add messages for the client; the first message is written to
                 // buffers, but the second message throws while trying to write it.
-                from.deliver(null, "/foo", "bar1");
-                from.deliver(null, "/foo", "bar2");
+                from.deliver(null, "/foo", "bar1", Promise.noop());
+                from.deliver(null, "/foo", "bar2", Promise.noop());
                 return true;
             }
         });

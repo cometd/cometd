@@ -58,7 +58,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
     public void testServerSessionExtensionProcessing() throws Exception {
         startServer(null);
         bayeux.addExtension(new org.cometd.server.ext.BinaryExtension());
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeux.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
@@ -67,7 +67,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
                 return true;
             }
         });
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeux.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
@@ -76,7 +76,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
                 return true;
             }
         });
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeux.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
@@ -164,7 +164,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
         return result.toString();
     }
 
-    private static class GZIPClientExtension extends ClientSession.Extension.Adapter {
+    private static class GZIPClientExtension implements ClientSession.Extension {
         @Override
         public boolean rcv(ClientSession session, Message.Mutable message) {
             try {
@@ -188,7 +188,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
         }
     }
 
-    private static class ScrambleClientExtension extends ClientSession.Extension.Adapter {
+    private static class ScrambleClientExtension implements ClientSession.Extension {
         @Override
         public boolean rcv(ClientSession session, Message.Mutable message) {
             if (!message.isPublishReply()) {
@@ -204,7 +204,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
         }
     }
 
-    private static class GZIPServerExtension extends BayeuxServer.Extension.Adapter {
+    private static class GZIPServerExtension implements BayeuxServer.Extension {
         @Override
         public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
             try {
@@ -229,7 +229,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
         }
     }
 
-    private static class GZIPServerSessionExtension extends ServerSession.Extension.Adapter {
+    private static class GZIPServerSessionExtension implements ServerSession.Extension {
         private final BayeuxServer bayeux;
 
         private GZIPServerSessionExtension(BayeuxServer bayeux) {
@@ -263,7 +263,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
         }
     }
 
-    private static class ScrambleServerSessionExtension extends ServerSession.Extension.Adapter {
+    private static class ScrambleServerSessionExtension implements ServerSession.Extension {
         private final BayeuxServer bayeux;
 
         private ScrambleServerSessionExtension(BayeuxServer bayeux) {

@@ -81,7 +81,7 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         disconnect();
     }
 
-    private class DelayingExtension extends BayeuxServer.Extension.Adapter {
+    private class DelayingExtension implements BayeuxServer.Extension {
         private final AtomicInteger connects = new AtomicInteger();
         private final long delay;
 

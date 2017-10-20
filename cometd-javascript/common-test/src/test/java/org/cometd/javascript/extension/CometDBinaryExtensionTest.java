@@ -18,6 +18,7 @@ package org.cometd.javascript.extension;
 import java.nio.ByteBuffer;
 
 import org.cometd.bayeux.BinaryData;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -140,7 +141,7 @@ public class CometDBinaryExtensionTest extends AbstractCometDTransportsTest {
         public void binary(ServerSession session, ServerMessage message) {
             BinaryData data = (BinaryData)message.getData();
             Assert.assertTrue(data.get("data") instanceof ByteBuffer);
-            session.deliver(getServerSession(), message.getChannel(), data);
+            session.deliver(getServerSession(), message.getChannel(), data, Promise.noop());
         }
     }
 }

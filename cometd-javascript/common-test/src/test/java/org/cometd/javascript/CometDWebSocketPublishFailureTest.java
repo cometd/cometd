@@ -60,7 +60,7 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
         Assert.assertEquals("disconnected", status);
     }
 
-    private static class DeletePublishExtension extends BayeuxServer.Extension.Adapter {
+    private static class DeletePublishExtension implements BayeuxServer.Extension {
         @Override
         public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
             // The publish will arrive here, just delete it

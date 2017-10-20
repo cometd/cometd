@@ -65,7 +65,7 @@ import org.cometd.bayeux.server.ServerSession;
  * lag. But the current client does not do this.
  * </p>
  */
-public class TimesyncExtension extends Extension.Adapter {
+public class TimesyncExtension implements Extension {
     public static final String LAG_ATTRIBUTE = "lag";
 
     private int _accuracyTarget = 25;

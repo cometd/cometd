@@ -74,7 +74,7 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTransportsT
         disconnect();
     }
 
-    private static class DeleteMetaConnectExtension extends BayeuxServer.Extension.Adapter {
+    private static class DeleteMetaConnectExtension implements BayeuxServer.Extension {
         private int connects;
 
         @Override

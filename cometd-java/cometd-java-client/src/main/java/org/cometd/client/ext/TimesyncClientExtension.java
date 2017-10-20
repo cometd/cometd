@@ -22,7 +22,7 @@ import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSession.Extension;
 
-public class TimesyncClientExtension extends Extension.Adapter {
+public class TimesyncClientExtension implements Extension {
     private volatile int _lag;
     private volatile int _offset;
 

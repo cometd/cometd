@@ -106,7 +106,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
         Assert.assertEquals(extra1.content, extra2.content);
     }
 
-    private static class ExtraExtension extends ClientSession.Extension.Adapter {
+    private static class ExtraExtension implements ClientSession.Extension {
         private final long content;
 
         public ExtraExtension(long content) {

@@ -33,7 +33,7 @@ public class CometDAdviceTest extends AbstractCometDTransportsTest {
     @Test
     public void testNoHandshakeAdviceAfterSessionExpired() throws Exception {
         // Removed handshake advices to make sure the client behaves well without them.
-        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {

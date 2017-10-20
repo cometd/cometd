@@ -169,7 +169,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
         Assert.assertFalse(disconnectURI.endsWith("/disconnect"));
     }
 
-    public static class BayeuxURLExtension extends Extension.Adapter {
+    public static class BayeuxURLExtension implements Extension {
         private final BayeuxServerImpl bayeux;
 
         public BayeuxURLExtension(BayeuxServerImpl bayeux) {

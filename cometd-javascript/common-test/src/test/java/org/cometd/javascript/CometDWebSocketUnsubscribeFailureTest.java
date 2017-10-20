@@ -55,7 +55,7 @@ public class CometDWebSocketUnsubscribeFailureTest extends AbstractCometDWebSock
         disconnect();
     }
 
-    public static class DeleteMetaUnsubscribeExtension extends BayeuxServer.Extension.Adapter {
+    public static class DeleteMetaUnsubscribeExtension implements BayeuxServer.Extension {
         @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             return !Channel.META_UNSUBSCRIBE.equals(message.getChannel());

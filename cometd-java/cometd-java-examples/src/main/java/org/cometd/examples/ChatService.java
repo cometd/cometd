@@ -31,6 +31,7 @@ import org.cometd.annotation.Configure;
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
@@ -146,10 +147,10 @@ public class ChatService {
 
             for (ServerSession peer : peers) {
                 if (peer != client) {
-                    peer.deliver(_session, forward);
+                    peer.deliver(_session, forward, Promise.noop());
                 }
             }
-            client.deliver(_session, forward);
+            client.deliver(_session, forward, Promise.noop());
         }
     }
 

@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
@@ -133,7 +134,7 @@ public class MessageFlowControlTest extends ClientServerTest {
         // discard publish3 to publishN). We take this in account when asserting below.
 
         for (int i = 0; i < totalMessages; ++i) {
-            bayeux.getChannel(channelName).publish(null, "msg_" + i);
+            bayeux.getChannel(channelName).publish(null, "msg_" + i, Promise.noop());
         }
         // Wait for all the message to be processed on server side,
         // to avoids a race to access variable keptMessages

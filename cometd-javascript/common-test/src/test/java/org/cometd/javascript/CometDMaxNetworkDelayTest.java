@@ -94,7 +94,7 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTransportsTest {
         }
     }
 
-    private class DelayingExtension extends BayeuxServer.Extension.Adapter {
+    private class DelayingExtension implements BayeuxServer.Extension {
         @Override
         public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
             // We hold the publish longer than the maxNetworkDelay

@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -84,7 +85,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
 
         // Subscription has failed on client, but not on server.
         // Publishing a message on server-side must not be notified on the client.
-        bayeux.getChannel(channelName).publish(null, "data");
+        bayeux.getChannel(channelName).publish(null, "data", Promise.noop());
         Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
@@ -130,7 +131,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
 
         // Subscription has failed on client, but has been forced on server.
         // Publishing a message on server-side must not be notified on the client.
-        bayeux.getChannel(channelName).publish(null, "data");
+        bayeux.getChannel(channelName).publish(null, "data", Promise.noop());
         Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
@@ -155,7 +156,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final AtomicBoolean allowed = new AtomicBoolean();
-        client.addExtension(new ClientSession.Extension.Adapter() {
+        client.addExtension(new ClientSession.Extension() {
             @Override
             public boolean sendMeta(ClientSession session, Message.Mutable message) {
                 if (Channel.META_SUBSCRIBE.equals(message.getChannel()) &&
@@ -208,7 +209,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         Assert.assertEquals(1, bayeux.getChannel(channelName).getSubscribers().size());
 
         // Make sure the message can be received.
-        bayeux.getChannel(channelName).publish(null, "data");
+        bayeux.getChannel(channelName).publish(null, "data", Promise.noop());
         Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);

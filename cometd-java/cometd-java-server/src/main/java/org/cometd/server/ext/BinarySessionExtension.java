@@ -30,7 +30,7 @@ import org.cometd.common.Z85;
  *
  * @see BinaryExtension
  */
-public class BinarySessionExtension extends ServerSession.Extension.Adapter {
+public class BinarySessionExtension implements ServerSession.Extension {
     private final BayeuxServer bayeuxServer;
     private final boolean decodeToByteBuffer;
 

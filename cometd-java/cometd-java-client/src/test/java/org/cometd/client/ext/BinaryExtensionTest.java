@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.BinaryData;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerSession;
@@ -60,7 +61,7 @@ public class BinaryExtensionTest extends ClientServerTest {
                 if (Arrays.equals(payload, bytes)) {
                     Map<String, Object> meta = data.getMetaData();
                     ServerSession remote = bayeux.getSession((String)meta.get("peer"));
-                    remote.deliver(service, channelName, new BinaryData(data.asByteBuffer(), data.isLast(), null));
+                    remote.deliver(service, channelName, new BinaryData(data.asByteBuffer(), data.isLast(), null), Promise.noop());
                 }
             }
         });
@@ -133,7 +134,7 @@ public class BinaryExtensionTest extends ClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
-        bayeux.getChannel(channelName).publish(null, new BinaryData(buffer, true, null));
+        bayeux.getChannel(channelName).publish(null, new BinaryData(buffer, true, null), Promise.noop());
 
         Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 

@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
@@ -82,7 +83,7 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
                 if (connect == 1) {
                     // Publish a message on the first connect, which will fail.
                     // The ack extension will deliver it via /meta/connect.
-                    bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data");
+                    bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data", Promise.noop());
                     sleep(maxNetworkDelay + delay);
                 } else if (connect == 2) {
                     // When the second connect arrives, maxNetworkDelay has elapsed.

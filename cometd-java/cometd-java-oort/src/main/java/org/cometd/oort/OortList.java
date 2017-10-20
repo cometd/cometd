@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 
 /**
@@ -129,7 +130,7 @@ public class OortList<E> extends OortContainer<List<E>> {
             logger.debug("Sharing list add {}", data);
         }
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, Promise.noop());
     }
 
     /**
@@ -171,7 +172,7 @@ public class OortList<E> extends OortContainer<List<E>> {
             logger.debug("Sharing list remove {}", data);
         }
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, Promise.noop());
     }
 
     @Override

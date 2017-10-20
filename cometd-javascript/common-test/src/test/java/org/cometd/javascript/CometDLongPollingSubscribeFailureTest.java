@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -111,7 +112,7 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
 
         // Subscription has failed on the client, but not on server.
         // Emitting a message on server must not be received by the client.
-        bayeuxServer.getChannel(channelName).publish(null, "data");
+        bayeuxServer.getChannel(channelName).publish(null, "data", Promise.noop());
         Assert.assertFalse(messageLatch.await(1000));
 
         disconnect();

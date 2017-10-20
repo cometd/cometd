@@ -90,7 +90,7 @@ public class CometDHandshakeFailureTest extends AbstractCometDTransportsTest {
         Assert.assertFalse(handshakeLatch.await(4 * backoffIncrement));
     }
 
-    private static class DeleteMetaHandshakeExtension extends BayeuxServer.Extension.Adapter {
+    private static class DeleteMetaHandshakeExtension implements BayeuxServer.Extension {
         @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             return !Channel.META_HANDSHAKE.equals(message.getChannel());

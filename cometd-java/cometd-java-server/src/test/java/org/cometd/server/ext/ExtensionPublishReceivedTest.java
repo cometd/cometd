@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -115,7 +116,7 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
         public void emit(ServerSession remote, ServerMessage message) {
             HashMap<String, Object> data = new HashMap<>();
             data.put("emitted", true);
-            remote.deliver(getServerSession(), "/test", data);
+            remote.deliver(getServerSession(), "/test", data, Promise.noop());
         }
     }
 }

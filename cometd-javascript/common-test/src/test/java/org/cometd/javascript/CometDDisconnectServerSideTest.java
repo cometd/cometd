@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -131,7 +132,7 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTransportsTest
             // and the disconnect may not be delivered, since the client won't issue
             // a new long poll, and the disconnect will remain in the queue
             session.batch(() -> {
-                session.deliver(getServerSession(), kickMessage);
+                session.deliver(getServerSession(), kickMessage, Promise.noop());
                 session.disconnect();
             });
         }

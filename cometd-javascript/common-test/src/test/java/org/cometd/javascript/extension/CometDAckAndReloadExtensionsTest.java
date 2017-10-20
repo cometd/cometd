@@ -15,6 +15,7 @@
  */
 package org.cometd.javascript.extension;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
 import org.cometd.server.AbstractService;
@@ -98,7 +99,7 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTransportsTe
         }
 
         public void emit(String content) {
-            getBayeux().getChannel("/test").publish(getServerSession(), content);
+            getBayeux().getChannel("/test").publish(getServerSession(), content, Promise.noop());
         }
     }
 }

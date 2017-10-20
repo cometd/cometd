@@ -26,6 +26,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ServerChannel;
@@ -204,7 +205,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         });
 
         BayeuxClient client = newBayeuxClient();
-        client.addExtension(new ClientSession.Extension.Adapter() {
+        client.addExtension(new ClientSession.Extension() {
             @Override
             public boolean send(ClientSession session, Message.Mutable message) {
                 return false;
@@ -224,18 +225,13 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
     public void testExtensionIsInvokedAfterNetworkFailure() throws Exception {
         final BayeuxClient client = newBayeuxClient();
         final String channelName = "/test";
-        final AtomicReference<CountDownLatch> rcv = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-        client.addExtension(new ClientSession.Extension.Adapter() {
+        final AtomicReference<CountDownLatch> rcv = new AtomicReference<>(new CountDownLatch(1));
+        client.addExtension(new ClientSession.Extension() {
             @Override
             public boolean rcv(ClientSession session, Message.Mutable message) {
                 if (channelName.equals(message.getChannel())) {
                     rcv.get().countDown();
                 }
-                return true;
-            }
-
-            @Override
-            public boolean rcvMeta(ClientSession session, Message.Mutable message) {
                 return true;
             }
         });
@@ -261,7 +257,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // This message will be delivered via /meta/connect.
-        bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data1");
+        bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data1", Promise.noop());
         Assert.assertTrue(rcv.get().await(5, TimeUnit.SECONDS));
         // Wait for the /meta/connect to be established again.
         Thread.sleep(1000);
@@ -275,7 +271,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // This message will be delivered via /meta/connect.
-        bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data2");
+        bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data2", Promise.noop());
         Assert.assertTrue(rcv.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);

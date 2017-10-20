@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Queue;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -75,7 +76,7 @@ public class MaxQueuedTest extends AbstractBayeuxClientServerTest {
 
         // Overflow the message queue.
         for (int i = 0; i < maxQueue + 1; ++i) {
-            serverSession.deliver(null, "/max_queue", "message_" + i);
+            serverSession.deliver(null, "/max_queue", "message_" + i, Promise.noop());
         }
 
         // Session should be gone.

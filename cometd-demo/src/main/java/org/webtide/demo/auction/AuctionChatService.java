@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.ServletContext;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
@@ -94,7 +95,7 @@ public class AuctionChatService extends AbstractService {
             if (added) {
                 _logger.info("Members: {}", members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName).publish(getServerSession(), members);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members, Promise.noop());
             }
         } else if (data instanceof Map) {
             Map<String, Object> map = (Map<String, Object>)data;
@@ -130,7 +131,7 @@ public class AuctionChatService extends AbstractService {
                                 Map<String, Object> leave = new HashMap<>();
                                 leave.put("leave", Boolean.TRUE);
                                 leave.put("user", userName);
-                                channel.publish(null, leave);
+                                channel.publish(null, leave, Promise.noop());
                             }
                         }
                     }
@@ -138,7 +139,7 @@ public class AuctionChatService extends AbstractService {
 
                 _logger.info("Members: {}", members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName).publish(getServerSession(), members);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members, Promise.noop());
 
             }
 
@@ -157,7 +158,7 @@ public class AuctionChatService extends AbstractService {
 
                 _logger.info("Members: {}", members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName).publish(getServerSession(), members);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members, Promise.noop());
             }
         }
     }
@@ -166,7 +167,7 @@ public class AuctionChatService extends AbstractService {
         Map<String, Object> data = message.getDataAsMap();
         String toUid = (String)data.get("peer");
         String toChannel = (String)data.get("room");
-        source.deliver(source, toChannel, data);
+        source.deliver(source, toChannel, data, Promise.noop());
         _seti.sendMessage(toUid, toChannel, data);
     }
 }

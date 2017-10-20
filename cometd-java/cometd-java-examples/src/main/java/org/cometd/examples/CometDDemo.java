@@ -99,7 +99,7 @@ public class CometDDemo {
 
         // Demo lazy messages
         if (Boolean.getBoolean("LAZY")) {
-            bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
+            bayeux.addExtension(new BayeuxServer.Extension() {
                 @Override
                 public boolean rcv(ServerSession from, Mutable message) {
                     if (message.getChannel().startsWith("/chat/") && !message.isPublishReply() && message.getData().toString().contains("lazy")) {

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletContext;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
@@ -138,7 +139,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
                     bid.setAmount(amount);
                     bid.setBidder(bidder);
                     _auctionDao.saveAuctionBid(bid);
-                    getBayeux().getChannel(AUCTION_ROOT + "item" + itemId).publish(getServerSession(), bid);
+                    getBayeux().getChannel(AUCTION_ROOT + "item" + itemId).publish(getServerSession(), bid, Promise.noop());
                 }
             }
         } catch (NumberFormatException e) {
@@ -183,7 +184,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
                 Integer itemId = Integer.decode(itemIdS);
                 Bid highest = _auctionDao.getHighestBid(itemId);
                 if (highest != null) {
-                    session.deliver(getServerSession(), channel.getId(), highest);
+                    session.deliver(getServerSession(), channel.getId(), highest, Promise.noop());
                 }
             }
         }

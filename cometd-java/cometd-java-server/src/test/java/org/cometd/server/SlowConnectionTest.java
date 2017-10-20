@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -136,7 +137,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                session.deliver(null, channelName, "test");
+                session.deliver(null, channelName, "test", Promise.noop());
             }
 
             @Override
@@ -231,7 +232,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
         Assert.assertEquals(200, response.getStatus());
 
         // Send a server-side message so it gets written to the client
-        bayeux.getChannel(channelName).publish(null, "x");
+        bayeux.getChannel(channelName).publish(null, "x", Promise.noop());
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();
@@ -312,7 +313,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
         char[] chars = new char[64 * 1024 * 1024];
         Arrays.fill(chars, 'z');
         String data = new String(chars);
-        bayeux.getChannel(channelName).publish(null, data);
+        bayeux.getChannel(channelName).publish(null, data, Promise.noop());
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();

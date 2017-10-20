@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
@@ -219,7 +220,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
                 logger.debug("Broadcasting action: {}", data);
             }
             startTimeout(ctx);
-            oort.getBayeuxServer().getChannel(broadcastChannelName).publish(getLocalSession(), data);
+            oort.getBayeuxServer().getChannel(broadcastChannelName).publish(getLocalSession(), data, Promise.noop());
             return true;
         } else {
             if (localOortURL.equals(targetOortURL)) {

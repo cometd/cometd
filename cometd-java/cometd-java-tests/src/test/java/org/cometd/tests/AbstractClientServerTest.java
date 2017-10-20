@@ -40,7 +40,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.After;
@@ -135,8 +134,9 @@ public abstract class AbstractClientServerTest {
                 wsContainer = ContainerProvider.getWebSocketContainer();
                 break;
             case JETTY_WEBSOCKET:
-                wsClient = new WebSocketClient();
-                wsClient.setMasker(new ZeroMasker());
+                httpClient = new HttpClient();
+                httpClient.start();
+                wsClient = new WebSocketClient(httpClient);
                 wsClient.start();
                 break;
             default:

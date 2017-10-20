@@ -28,7 +28,7 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTranspo
     public void testTransportNegotiationFailureForClientLongPollingServerCallbackPolling() throws Exception {
         // Only callback-polling on server (via extension), only long-polling on client.
         bayeuxServer.setAllowedTransports("long-polling", "callback-polling");
-        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {

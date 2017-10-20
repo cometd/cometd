@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 
 /**
@@ -125,7 +126,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
             logger.debug("Sharing map put {}", data);
         }
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, Promise.noop());
     }
 
     /**
@@ -174,7 +175,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
             logger.debug("Sharing map putIfAbsent {}", data);
         }
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, Promise.noop());
     }
 
     /**
@@ -219,7 +220,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
             logger.debug("Sharing map remove {}", data);
         }
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, Promise.noop());
     }
 
     /**

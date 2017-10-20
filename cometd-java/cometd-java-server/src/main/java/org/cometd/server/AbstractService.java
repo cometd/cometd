@@ -20,6 +20,7 @@ import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
@@ -280,7 +281,7 @@ public abstract class AbstractService {
      * @param data      The data of the message
      */
     protected void send(ServerSession toClient, String onChannel, Object data) {
-        toClient.deliver(_session.getServerSession(), onChannel, data);
+        toClient.deliver(_session.getServerSession(), onChannel, data, Promise.noop());
     }
 
     /**

@@ -33,16 +33,6 @@ import org.cometd.bayeux.Transport;
  */
 public interface ServerTransport extends Transport {
     /**
-     * <p>The advice that this transport sends to inform the client
-     * about transport (re)connection.</p>
-     *
-     * @return the advice object sent by the server transport
-     * @deprecated
-     */
-    @Deprecated
-    public Object getAdvice();
-
-    /**
      * @return the timeout (in milliseconds) of this transport
      */
     public long getTimeout();

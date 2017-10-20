@@ -20,6 +20,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.JSONContext;
@@ -94,7 +95,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
         // Publish the message; it will get lost but the
         // ack extension will track it and resend it later.
         String data = "data";
-        bayeux.getChannel(channel).publish(null, data);
+        bayeux.getChannel(channel).publish(null, data, Promise.noop());
         // Wait for the message to be lost.
         Thread.sleep(1000);
         Assert.assertEquals(0, session.getQueue().size());
@@ -201,7 +202,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
         String data = "data";
         ServerChannel serverChannel = bayeux.getChannel(channel);
         serverChannel.setLazy(true);
-        serverChannel.publish(null, data);
+        serverChannel.publish(null, data, Promise.noop());
         Thread.sleep(1000);
         Assert.assertEquals(1, session.getQueue().size());
 

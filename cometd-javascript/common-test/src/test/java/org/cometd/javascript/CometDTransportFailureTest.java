@@ -141,7 +141,7 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
         Assert.assertEquals("websocket", javaScript.get("transport"));
     }
 
-    private abstract class ConnectFailureExtension extends BayeuxServer.Extension.Adapter {
+    private abstract class ConnectFailureExtension implements BayeuxServer.Extension {
         private final AtomicInteger connects = new AtomicInteger();
 
         @Override

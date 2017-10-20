@@ -17,6 +17,7 @@ package org.cometd.javascript;
 
 import java.util.Map;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
@@ -74,7 +75,7 @@ public class CometDDeliverTest extends AbstractCometDTransportsTest {
             Boolean deliver = (Boolean)data.get("deliver");
             if (deliver) {
                 data.put("echo", true);
-                remote.deliver(getServerSession(), message.getChannel(), data);
+                remote.deliver(getServerSession(), message.getChannel(), data, Promise.noop());
             }
         }
     }

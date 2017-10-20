@@ -92,7 +92,7 @@ public class CometDConnectFailureTest extends AbstractCometDTransportsTest {
         Assert.assertFalse(connectLatch.await(4 * backoffIncrement));
     }
 
-    private static class DeleteMetaConnectExtension extends BayeuxServer.Extension.Adapter {
+    private static class DeleteMetaConnectExtension implements BayeuxServer.Extension {
         @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             return !Channel.META_CONNECT.equals(message.getChannel());

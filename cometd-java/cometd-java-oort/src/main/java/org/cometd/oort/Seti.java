@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
@@ -802,7 +803,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         @Override
         public void send(String toUser, String toChannel, Object data) {
-            _session.deliver(Seti.this._session.getServerSession(), toChannel, data);
+            _session.deliver(Seti.this._session.getServerSession(), toChannel, data, Promise.noop());
         }
 
         @Override
@@ -1044,7 +1045,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
                 }
                 SetiPresence presence = new SetiPresence(true, associatedUserIds);
                 presence.put(SetiPresence.ALIVE_FIELD, true);
-                session.deliver(_session, SETI_ALL_CHANNEL, presence);
+                session.deliver(_session, SETI_ALL_CHANNEL, presence, Promise.noop());
             }
         }
 

@@ -36,7 +36,7 @@ import org.cometd.bayeux.client.ClientSession.Extension;
  * Messages are not acknowledged one by one, but instead a group of messages is
  * acknowledged when long poll returns.</p>
  */
-public class AckExtension extends Extension.Adapter {
+public class AckExtension implements Extension {
     public static final String ACK_FIELD = "ack";
 
     private boolean _serverSupportsAcks;

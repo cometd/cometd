@@ -31,6 +31,7 @@ import javax.websocket.WebSocketContainer;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -338,7 +339,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         final LocalSession emitter = bayeux.newLocalSession("test_emitter");
         emitter.handshake();
         final String data = "test_data";
-        bayeux.getChannel(channelName).publish(emitter, data);
+        bayeux.getChannel(channelName).publish(emitter, data, Promise.noop());
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is not responded
@@ -353,7 +354,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         serviceChannel.addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                bayeux.getChannel(channelName).publish(emitter, data);
+                bayeux.getChannel(channelName).publish(emitter, data, Promise.noop());
                 return true;
             }
         });
@@ -407,7 +408,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         final LocalSession emitter = bayeux.newLocalSession("test_emitter");
         emitter.handshake();
         final String data = "test_data";
-        bayeux.getChannel(channelName).publish(emitter, data);
+        bayeux.getChannel(channelName).publish(emitter, data, Promise.noop());
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
@@ -423,7 +424,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         serviceChannel.addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                bayeux.getChannel(channelName).publish(emitter, data);
+                bayeux.getChannel(channelName).publish(emitter, data, Promise.noop());
                 return true;
             }
         });
@@ -438,7 +439,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
 
     @Test
     public void testMetaConnectDeliveryOnlySession() throws Exception {
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeux.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
@@ -483,7 +484,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         final LocalSession emitter = bayeux.newLocalSession("test_emitter");
         emitter.handshake();
         final String data = "test_data";
-        bayeux.getChannel(channelName).publish(emitter, data);
+        bayeux.getChannel(channelName).publish(emitter, data, Promise.noop());
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
@@ -498,7 +499,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         serviceChannel.addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                bayeux.getChannel(channelName).publish(emitter, data);
+                bayeux.getChannel(channelName).publish(emitter, data, Promise.noop());
                 return true;
             }
         });
@@ -604,7 +605,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
 
         // Send messages while client is offline
         for (int i = count; i < 2 * count; ++i) {
-            chatChannel.publish(null, "hello_" + i);
+            chatChannel.publish(null, "hello_" + i, Promise.noop());
         }
 
         Thread.sleep(1000);
@@ -896,7 +897,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         serverOptions.put("timeout", String.valueOf(timeout));
         prepareAndStart(serverOptions);
 
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeux.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 if (Channel.META_CONNECT.equals(message.getChannel())) {
@@ -960,7 +961,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                session.deliver(null, channelName, "data");
+                session.deliver(null, channelName, "data", Promise.noop());
             }
 
             @Override
@@ -998,7 +999,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                session.deliver(null, channelName, "data");
+                session.deliver(null, channelName, "data", Promise.noop());
             }
 
             @Override
@@ -1022,17 +1023,12 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         final String channelName = "/test";
         final AtomicReference<CountDownLatch> rcv = new AtomicReference<>(new CountDownLatch(1));
         client.addExtension(new AckExtension());
-        client.addExtension(new ClientSession.Extension.Adapter() {
+        client.addExtension(new ClientSession.Extension() {
             @Override
             public boolean rcv(ClientSession session, Message.Mutable message) {
                 if (channelName.equals(message.getChannel())) {
                     rcv.get().countDown();
                 }
-                return true;
-            }
-
-            @Override
-            public boolean rcvMeta(ClientSession session, Message.Mutable message) {
                 return true;
             }
         });
@@ -1049,7 +1045,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // This message will be delivered via /meta/connect.
-        bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data1");
+        bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data1", Promise.noop());
         Assert.assertTrue(rcv.get().await(5, TimeUnit.SECONDS));
         // Wait for the /meta/connect to be established again.
         Thread.sleep(1000);
@@ -1059,7 +1055,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
 
         // Send a message while disconnected.
-        bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data2");
+        bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data2", Promise.noop());
 
         rcv.set(new CountDownLatch(1));
         httpClient.start();

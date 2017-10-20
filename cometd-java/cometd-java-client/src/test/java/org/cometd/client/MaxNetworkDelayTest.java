@@ -51,7 +51,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
         final long maxNetworkDelay = 2000;
         final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
 
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeux.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
@@ -98,7 +98,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
         final long maxNetworkDelay = 2000;
         final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
 
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeux.addExtension(new BayeuxServer.Extension() {
             private AtomicInteger connects = new AtomicInteger();
 
             @Override
@@ -159,7 +159,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
         final long maxNetworkDelay2 = 4000;
         final long sleep = (maxNetworkDelay1 + maxNetworkDelay2) / 2;
 
-        bayeux.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeux.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
                 if (Channel.META_CONNECT.equals(message.getChannel())) {

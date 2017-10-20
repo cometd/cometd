@@ -23,7 +23,7 @@ import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 
-public class TimestampExtension extends Extension.Adapter {
+public class TimestampExtension implements Extension {
     private final String format;
     private final TimeZone timezone;
 

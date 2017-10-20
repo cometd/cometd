@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -199,7 +200,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest {
         Assert.assertEquals(SERVICE_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_FIELD));
     }
 
-    private class MetaExtension extends BayeuxServer.Extension.Adapter {
+    private class MetaExtension implements BayeuxServer.Extension {
         @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             if (Channel.META_HANDSHAKE.equals(message.getChannel()) && (from == null || !from.isLocalSession())) {
@@ -221,7 +222,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest {
         }
     }
 
-    private class NonMetaExtension extends BayeuxServer.Extension.Adapter {
+    private class NonMetaExtension implements BayeuxServer.Extension {
         private final String channel;
 
         private NonMetaExtension(String channel) {
@@ -279,7 +280,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest {
             response.put(SERVER_MESSAGE_FIELD, SERVICE_INFO);
             response.getDataAsMap(true).put(SERVER_DATA_FIELD, SERVICE_INFO);
             response.getExt(true).put(SERVER_EXT_FIELD, SERVICE_INFO);
-            remote.deliver(getServerSession(), response);
+            remote.deliver(getServerSession(), response, Promise.noop());
         }
     }
 

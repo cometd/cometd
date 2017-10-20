@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
@@ -104,7 +105,7 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
                 }, new ClientSessionChannel.MessageListener() {
                     @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
-                        bayeux.getChannel(channelName).publish(null, data);
+                        bayeux.getChannel(channelName).publish(null, data, Promise.noop());
                     }
                 });
             }

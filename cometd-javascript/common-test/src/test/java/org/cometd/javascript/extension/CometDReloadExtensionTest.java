@@ -58,7 +58,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
 
     @Test
     public void testReloadedHandshakeContainsExtension() throws Exception {
-        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter() {
+        bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {

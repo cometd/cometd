@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -127,11 +128,11 @@ public class JacksonContextTest extends ClientServerTest {
             Map<String, Object> data = message.getDataAsMap();
             Map<String, Object> republishData = new HashMap<>(data);
             republishData.put("republish", true);
-            getBayeux().getChannel(channelName).publish(getServerSession(), republishData);
+            getBayeux().getChannel(channelName).publish(getServerSession(), republishData, Promise.noop());
             // Deliver
             Map<String, Object> deliverData = new HashMap<>(data);
             deliverData.put("deliver", true);
-            session.deliver(getServerSession(), channelName, deliverData);
+            session.deliver(getServerSession(), channelName, deliverData, Promise.noop());
         }
     }
 }

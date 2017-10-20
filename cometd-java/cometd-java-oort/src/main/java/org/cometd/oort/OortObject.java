@@ -34,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
@@ -288,7 +289,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             logger.debug("Sharing {}", data);
         }
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, Promise.noop());
     }
 
     protected Object serialize(T object) {
@@ -895,7 +896,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         @Override
         public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             // Deliver the local state to the node that subscribed.
-            session.deliver(getLocalSession(), channel.getId(), getInfo(getOort().getURL()));
+            session.deliver(getLocalSession(), channel.getId(), getInfo(getOort().getURL()), Promise.noop());
         }
 
         @Override
