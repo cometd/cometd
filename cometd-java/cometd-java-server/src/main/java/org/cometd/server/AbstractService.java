@@ -53,8 +53,8 @@ import org.slf4j.LoggerFactory;
  * constructor.</p>
  * <p>Each CometD service has an associated {@link LocalSession} that can be
  * used as the source for messages published via
- * {@link ServerChannel#publish(Session, ServerMessage.Mutable)} or
- * {@link ServerSession#deliver(Session, ServerMessage.Mutable)}.</p>
+ * {@link ServerChannel#publish(Session, ServerMessage.Mutable, Promise)} or
+ * {@link ServerSession#deliver(Session, ServerMessage.Mutable, Promise)}.</p>
  *
  * @see BayeuxServer#newLocalSession(String)
  */
@@ -183,7 +183,7 @@ public abstract class AbstractService {
      * <p>A mapped method may also call {@link #send(org.cometd.bayeux.server.ServerSession, String, Object)}
      * to deliver message(s) to specific clients and/or channels.</p>
      * <p>A mapped method may also publish to different channels via
-     * {@link ServerChannel#publish(Session, ServerMessage.Mutable)}.</p>
+     * {@link ServerChannel#publish(Session, ServerMessage.Mutable, Promise)}.</p>
      *
      * @param channelName The channel to listen to
      * @param methodName  The name of the method on this subclass to call when messages

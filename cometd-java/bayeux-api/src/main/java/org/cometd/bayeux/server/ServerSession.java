@@ -28,8 +28,8 @@ import org.cometd.bayeux.Session;
  * <p>Objects implementing this interface are the server-side representation of remote Bayeux clients.</p>
  * <p>{@link ServerSession} contains the queue of messages to be delivered to the client; messages are
  * normally queued on a {@link ServerSession} by publishing them to a channel to which the session is
- * subscribed (via {@link ServerChannel#publish(Session, ServerMessage.Mutable)}.</p>
- * <p>The {@link #deliver(Session, ServerMessage.Mutable)} and {@link #deliver(Session, String, Object)}
+ * subscribed (via {@link ServerChannel#publish(Session, ServerMessage.Mutable, Promise)}.</p>
+ * <p>The {@link #deliver(Session, ServerMessage.Mutable, Promise)} and {@link #deliver(Session, String, Object, Promise)}
  * methods may be used to directly queue messages to a session without publishing them to all subscribers
  * of a channel.</p>
  */
@@ -85,7 +85,7 @@ public interface ServerSession extends Session {
 
     /**
      * <p>Delivers the given message to this session.</p>
-     * <p>This is different from {@link ServerChannel#publish(Session, ServerMessage.Mutable)}
+     * <p>This is different from {@link ServerChannel#publish(Session, ServerMessage.Mutable, Promise)}
      * as the message is delivered only to this session and
      * not to all subscribers of the channel.</p>
      * <p>The message should still have a channel id specified, so that the ClientSession
