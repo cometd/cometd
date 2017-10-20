@@ -141,6 +141,7 @@ public abstract class AbstractWebSocketEndPoint {
                 ServerMessage.Mutable message = messages[0];
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
                     session = _transport.getBayeux().newServerSession();
+                    session.setAllowMessageDeliveryDuringHandshake(_transport.isAllowMessageDeliveryDuringHandshake());
                 } else if (!_transport.isRequireHandshakePerConnection()) {
                     _session = session = (ServerSessionImpl)_transport.getBayeux().getSession(message.getClientId());
                 }
@@ -215,9 +216,7 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     private void processMetaHandshake(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
-        _transport.getBayeux().handle(context.session, message, Promise.from(reply -> {
-            promise.succeed(null);
-        }, promise::fail));
+        _transport.getBayeux().handle(context.session, message, Promise.from(reply -> promise.succeed(null), promise::fail));
     }
 
     private void processMetaConnect(Context context, ServerMessage.Mutable message, Promise<Boolean> promise) {
