@@ -68,11 +68,6 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
                     _logger.trace("Could not close WebSocket session " + _wsSession, x);
                 }
             }
-
-            @Override
-            public void onClose(int code, String reason) {
-                super.onClose(code, reason);
-            }
         };
     }
 

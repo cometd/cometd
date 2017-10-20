@@ -83,11 +83,6 @@ public class CometDDemoServlet extends HttpServlet {
         }
     }
 
-    @Override
-    public void destroy() {
-        super.destroy();
-    }
-
     @Service("echo")
     public static class EchoRPC {
         @Configure("/service/echo")
