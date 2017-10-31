@@ -30,7 +30,7 @@ node {
     stage('Build JDK 9 - Jetty 9.3.x') {
         withEnv(mvnEnv9) {
             timeout(time: 1, unit: 'HOURS') {
-                sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.3.21.v20170918"
+                sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.3.22.v20171030"
                 // Report failures in the jenkins UI
                 step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
             }
