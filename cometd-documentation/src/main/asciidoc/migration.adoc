@@ -428,4 +428,41 @@ transport are now required to use Jetty versions:
 Application that use the default JSR 356 transport or that do not use WebSocket
 can work with any Jetty version.
 
+[[_migration_31_to_40]]
+=== Migrating from CometD 3.1 to CometD 4.0
+
+==== Required JDK Version Changes
+
+[cols="1,1", options="header"]
+|===
+| CometD 3.1 | CometD 4.0
+| JDK 7      | JDK 8
+|===
+
+==== Jetty Dependency Changes
+
+[cols="1,1", options="header"]
+|===
+| CometD 3.1  | CometD 4.0
+| Jetty 9.2.x | Jetty 9.4.x
+|===
+
+==== Breaking API Changes
+
+In CometD 3.1.x `BayeuxContext` was stored to and retrieved from a `ThreadLocal`
+because the threading model was synchronous and therefore it allowed `ThreadLocal`
+to be used to provide access to `BayeuxContext` from `BayeuxServer`.
+
+In CometD 4.0.x the APIs allow for an asynchronous threading model and
+therefore `ThreadLocal` cannot be used anymore.
+For this reason, access to `BayeuxContext` has been moved to `ServerMessage`.
+
+[cols="1,1", options="header"]
+|===
+| CometD 3.1 | CometD 4.0
+| BayeuxServer.getContext() | ServerMessage.getBayeuxContext()
+| BayeuxServer.getCurrentTransport() | ServerMessage.getServerTransport()
+| ServerTransport.getContext() | ServerMessage.getBayeuxContext()
+|===
+
 :numbered:
