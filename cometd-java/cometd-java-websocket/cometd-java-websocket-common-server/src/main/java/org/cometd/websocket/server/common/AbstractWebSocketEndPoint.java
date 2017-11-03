@@ -34,6 +34,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.AsyncFoldLeft;
 import org.cometd.server.AbstractServerTransport;
+import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -58,32 +59,13 @@ public abstract class AbstractWebSocketEndPoint {
     public abstract void close(int code, String reason);
 
     public void onMessage(String data, Promise<Void> p) {
-        _transport.setContext(_bayeuxContext);
-        _transport.getBayeux().setCurrentTransport(_transport);
-
-        // TODO: consider restoring the context for resumed /meta/connect replies and publishes ?
-        Promise<Void> promise = new Promise<Void>() {
-            @Override
-            public void succeed(Void result) {
-                reset();
-                p.succeed(null);
+        Promise<Void> promise = Promise.from(p::succeed, failure -> {
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("", failure);
             }
-
-            @Override
-            public void fail(Throwable failure) {
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("", failure);
-                }
-                reset();
-                close(1011, failure.toString());
-                p.fail(failure);
-            }
-
-            private void reset() {
-                _transport.setContext(null);
-                _transport.getBayeux().setCurrentTransport(null);
-            }
-        };
+            close(1011, failure.toString());
+            p.fail(failure);
+        });
 
         try {
             ServerMessage.Mutable[] messages = _transport.parseMessages(data);
@@ -126,8 +108,7 @@ public abstract class AbstractWebSocketEndPoint {
                 _logger.debug("WebSocket Timeout", failure);
             }
         } else {
-            BayeuxContext context = _transport.getContext();
-            InetSocketAddress address = context == null ? null : context.getRemoteAddress();
+            InetSocketAddress address = _bayeuxContext == null ? null : _bayeuxContext.getRemoteAddress();
             _logger.info("WebSocket Error, Address: " + address, failure);
         }
     }
@@ -151,7 +132,7 @@ public abstract class AbstractWebSocketEndPoint {
 
             Context context = new Context(session);
             AsyncFoldLeft.run(messages, true, (result, message, loop) ->
-                            processMessage(messages, context, message, Promise.from(b -> loop.proceed(result && b), loop::fail)),
+                            processMessage(messages, context, (ServerMessageImpl)message, Promise.from(b -> loop.proceed(result && b), loop::fail)),
                     Promise.from(flush -> {
                         if (flush) {
                             flush(context, promise);
@@ -162,10 +143,13 @@ public abstract class AbstractWebSocketEndPoint {
         }
     }
 
-    private void processMessage(ServerMessage.Mutable[] messages, Context context, ServerMessage.Mutable message, Promise<Boolean> promise) {
+    private void processMessage(ServerMessage.Mutable[] messages, Context context, ServerMessageImpl message, Promise<Boolean> promise) {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Processing {}", message);
         }
+
+        message.setServerTransport(_transport);
+        message.setBayeuxContext(_bayeuxContext);
 
         switch (message.getChannel()) {
             case Channel.META_HANDSHAKE: {

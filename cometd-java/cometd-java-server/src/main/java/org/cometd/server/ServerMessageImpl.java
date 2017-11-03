@@ -22,7 +22,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.common.JSONContext;
 
@@ -33,6 +35,8 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     private boolean _lazy = false;
     private String _json;
     private transient byte[] _jsonBytes;
+    private transient BayeuxContext _context;
+    private transient ServerTransport _transport;
 
     @Override
     public ServerMessage.Mutable getAssociated() {
@@ -47,6 +51,24 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     @Override
     public boolean isLazy() {
         return _lazy;
+    }
+
+    @Override
+    public BayeuxContext getBayeuxContext() {
+        return _context;
+    }
+
+    public void setBayeuxContext(BayeuxContext context) {
+        _context = context;
+    }
+
+    @Override
+    public ServerTransport getServerTransport() {
+        return _transport;
+    }
+
+    public void setServerTransport(ServerTransport transport) {
+        _transport = transport;
     }
 
     @Override

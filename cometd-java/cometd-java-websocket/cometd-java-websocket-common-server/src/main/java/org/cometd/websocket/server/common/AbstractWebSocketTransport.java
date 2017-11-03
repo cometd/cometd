@@ -18,7 +18,6 @@ package org.cometd.websocket.server.common;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 
@@ -33,7 +32,6 @@ public abstract class AbstractWebSocketTransport extends AbstractServerTransport
     public static final String REQUIRE_HANDSHAKE_PER_CONNECTION_OPTION = "requireHandshakePerConnection";
     public static final String ENABLE_EXTENSION_PREFIX_OPTION = "enableExtension.";
 
-    private final ThreadLocal<BayeuxContext> _bayeuxContext = new ThreadLocal<>();
     private String _protocol;
     private int _messagesPerFrame;
     private boolean _requireHandshakePerConnection;
@@ -61,15 +59,6 @@ public abstract class AbstractWebSocketTransport extends AbstractServerTransport
 
     public boolean isRequireHandshakePerConnection() {
         return _requireHandshakePerConnection;
-    }
-
-    @Override
-    public BayeuxContext getContext() {
-        return _bayeuxContext.get();
-    }
-
-    protected void setContext(BayeuxContext context) {
-        _bayeuxContext.set(context);
     }
 
     protected List<String> normalizeURLMapping(String urlMapping) {

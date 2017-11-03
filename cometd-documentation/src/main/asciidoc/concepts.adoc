@@ -412,11 +412,13 @@ The round trip from client to server back to client is now complete.
 ==== Threading
 
 When Bayeux messages are received by the server, a thread is allocated
-(by the Servlet Container, not by CometD) to handle
+(by the Servlet Container, not by CometD) to process
 the messages, and server-side CometD listeners are invoked in this thread.
 The CometD implementation does not spawn new threads to call server-side
 listeners; in this way the threading model is kept simple and very similar to
 the Servlet threading model.
+Because this is the thread that runs the CometD code, let's call it the
+_CometD thread_.
 
 The CometD implementation also relies on a scheduler to perform periodic or
 delayed tasks.
@@ -437,7 +439,15 @@ will not be processed until the previous message processing ends.
 
 It is therefore very important that if the application knows that a message may
 trigger a time consuming task (for example a database query), it does so in a
-separate thread.
+separate thread, with a timeout to avoid to wait too long.
+
+Similarly, if the application must contact an external service to provide
+an answer to the CometD implementation, it must arrange things in a way that
+either the external service is invoked in a separate thread, or invoking the
+external service is itself non-blocking and based on callbacks (or another
+similar mechanism).
+See the <<_concepts_application_authentication,asynchronous authentication examples>>
+below.
 
 Services (see also <<_java_server_services,the java server services section>>) are an
 easy way to setup server-side listeners but share the same threading model with
@@ -456,14 +466,12 @@ public class MyService {
 
     @Listener("/service/query")
     public void processQuery(final ServerSession remoteSession, final ServerMessage message) {
-        new Thread() {
-            public void run() {
-                Map<String, Object> data = performTimeConsumingTask(message);
+        new Thread(() -> {
+            Map<String, Object> data = performTimeConsumingTask(message);
 
-                // Send data to client once the time consuming task is finished
-                remoteSession.deliver(localSession, message.getChannel(), responseData);
-            }
-        }.start();
+            // Send data to client once the time consuming task is finished
+            remoteSession.deliver(localSession, message.getChannel(), responseData);
+        }).start();
     }
 }
 ----
@@ -498,6 +506,59 @@ public class MySecurityPolicy extends DefaultSecurityPolicy {
         }
 
         return authenticated;
+    }
+}
+----
+====
+
+If the authentication process takes a long time, it can be moved to a different
+thread to avoid blocking the CometD thread, here using
+`CompletableFuture.supplyAsync(...)`:
+
+====
+[source,java]
+----
+public class MySecurityPolicy extends DefaultSecurityPolicy {
+    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
+        CompletableFuture.supplyAsync(() -> authenticate(session, message))
+                .whenComplete(promise.complete());
+    }
+}
+----
+====
+
+The authentication process may be non-blocking and therefore there is no
+need for additional threads, here using Jetty's `HttpClient`:
+
+====
+[source,java]
+----
+public class MySecurityPolicy extends DefaultSecurityPolicy {
+    private final HttpClient httpClient;
+
+    public MySecurityPolicy(HttpClient httpClient) {
+        this.httpClient = httpClient;
+    }
+
+    @Override
+    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
+        httpClient.newRequest("https://authHost")
+                .param("user", message.get("user"))
+                .send(result -> {
+                    if (result.isSucceeded()) {
+                        if (result.getResponse().getStatus() == 200) {
+                            promise.succeed(true);
+                        } else {
+                            ServerMessage.Mutable reply = message.getAssociated();
+                            // Here you can customize the handshake reply to
+                            // specify why the authentication was unsuccessful.
+
+                            promise.succeed(false);
+                        }
+                    } else {
+                        promise.fail(result.getFailure());
+                    }
+                });
     }
 }
 ----

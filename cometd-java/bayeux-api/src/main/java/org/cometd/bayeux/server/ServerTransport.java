@@ -56,9 +56,4 @@ public interface ServerTransport extends Transport {
      * @return whether the messages are delivered to clients exclusively via the "/meta/connect" channel
      */
     public boolean isMetaConnectDeliveryOnly();
-
-    /**
-     * @return The current transport context or null if no current context
-     */
-    public BayeuxContext getContext();
 }

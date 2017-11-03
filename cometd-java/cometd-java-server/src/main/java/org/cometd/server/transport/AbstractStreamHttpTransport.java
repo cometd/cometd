@@ -56,7 +56,6 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
         Promise<Void> promise = new Promise<Void>() {
             @Override
             public void succeed(Void result) {
-                reset();
                 asyncContext.complete();
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Handling successful");
@@ -65,7 +64,6 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
 
             @Override
             public void fail(Throwable failure) {
-                reset();
                 int code = failure instanceof TimeoutException ?
                         HttpServletResponse.SC_REQUEST_TIMEOUT :
                         HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
@@ -75,17 +73,10 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                     _logger.debug("Handling failed", failure);
                 }
             }
-
-            private void reset() {
-                setCurrentRequest(null);
-                getBayeux().setCurrentTransport(null);
-            }
         };
 
         Context context = (Context)request.getAttribute(CONTEXT_ATTRIBUTE);
         if (context == null) {
-            getBayeux().setCurrentTransport(this);
-            setCurrentRequest(request);
             process(new Context(request, response), promise);
         } else {
             ServerMessage.Mutable message = context.scheduler.getMessage();

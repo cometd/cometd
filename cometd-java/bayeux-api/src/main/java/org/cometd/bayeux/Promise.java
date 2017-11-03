@@ -16,6 +16,7 @@
 package org.cometd.bayeux;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public interface Promise<C>
@@ -51,6 +52,30 @@ public interface Promise<C>
      */
     default void fail(Throwable failure)
     {
+    }
+
+    /**
+     * <p>Returns a {@code BiConsumer} that, when invoked,
+     * completes this Promise.</p>
+     * <p>Typical usage is with {@code CompletableFuture}:</p>
+     * <pre>
+     * public void process(ServerMessage message, Promise&lt;Boolean&gt; promise) {
+     *     CompletableFuture.supplyAsync(() -> asyncOperation(message))
+     *             .whenComplete(promise.complete());
+     * }
+     * </pre>
+     *
+     * @return a BiConsumer that completes this Promise
+     * @see Completable
+     */
+    default BiConsumer<C, Throwable> complete() {
+        return (r, x) -> {
+            if (x == null) {
+                succeed(r);
+            } else {
+                fail(x);
+            }
+        };
     }
 
     /**

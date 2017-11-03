@@ -34,6 +34,16 @@ public interface ServerMessage extends Message {
     boolean isLazy();
 
     /**
+     * @return the BayeuxContext associated with this message
+     */
+    BayeuxContext getBayeuxContext();
+
+    /**
+     * @return the ServerTransport associated with this message
+     */
+    ServerTransport getServerTransport();
+
+    /**
      * The mutable version of a {@link ServerMessage}
      */
     public interface Mutable extends ServerMessage, Message.Mutable {

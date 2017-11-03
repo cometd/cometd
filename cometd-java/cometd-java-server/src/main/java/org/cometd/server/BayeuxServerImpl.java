@@ -118,7 +118,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<>();
     private final Map<String, ServerTransport> _transports = new LinkedHashMap<>(); // Order is important
     private final List<String> _allowedTransports = new ArrayList<>();
-    private final ThreadLocal<ServerTransport> _currentTransport = new ThreadLocal<>();
     private final Map<String, Object> _options = new TreeMap<>();
     private final Scheduler _scheduler = new ScheduledExecutorScheduler("BayeuxServer@" + Integer.toHexString(hashCode()) + "-Scheduler", false);
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
@@ -370,21 +369,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     public long randomLong() {
         long value = _random.nextLong();
         return value < 0 ? -value : value;
-    }
-
-    public void setCurrentTransport(ServerTransport transport) {
-        _currentTransport.set(transport);
-    }
-
-    @Override
-    public ServerTransport getCurrentTransport() {
-        return _currentTransport.get();
-    }
-
-    @Override
-    public BayeuxContext getContext() {
-        ServerTransport transport = _currentTransport.get();
-        return transport == null ? null : transport.getContext();
     }
 
     @Override
@@ -1200,10 +1184,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     protected ServerMessage.Mutable createReply(ServerMessage.Mutable message) {
-        ServerMessage.Mutable reply = newMessage();
+        ServerMessageImpl reply = (ServerMessageImpl)newMessage();
         message.setAssociated(reply);
         reply.setAssociated(message);
-
+        reply.setServerTransport(message.getServerTransport());
+        reply.setBayeuxContext(message.getBayeuxContext());
         reply.setChannel(message.getChannel());
         String id = message.getId();
         if (id != null) {
@@ -1332,7 +1317,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     private void handleMetaHandshake(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
-        BayeuxContext context = getContext();
+        BayeuxContext context = message.getBayeuxContext();
         if (context != null) {
             session.setUserAgent(context.getHeader("User-Agent"));
         }
@@ -1359,7 +1344,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
     private void handleMetaHandshake2(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
         ServerMessage.Mutable reply = message.getAssociated();
-        if (session.handshake()) {
+        if (session.handshake(message)) {
             addServerSession(session, message);
 
             reply.setSuccessful(true);
@@ -1368,7 +1353,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             reply.put(Message.MIN_VERSION_FIELD, "1.0");
             reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, getAllowedTransports());
 
-            Map<String, Object> adviceOut = session.takeAdvice(getCurrentTransport());
+            Map<String, Object> adviceOut = session.takeAdvice(message.getServerTransport());
             reply.put(Message.ADVICE_FIELD, adviceOut);
 
             promise.succeed(true);
@@ -1396,7 +1381,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                 session.updateTransientTimeout(-1);
                 session.updateTransientInterval(-1);
             }
-            Map<String, Object> adviceOut = session.takeAdvice(getCurrentTransport());
+            Map<String, Object> adviceOut = session.takeAdvice(message.getServerTransport());
             if (adviceOut != null) {
                 reply.put(Message.ADVICE_FIELD, adviceOut);
             }

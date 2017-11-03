@@ -15,12 +15,15 @@ readily available.
 CometD abstracts the retrieval of contextual information for any transport via
 the `org.cometd.bayeux.server.BayeuxContext` class.
 
-An instance of `BayeuxContext` can be obtained from the `BayeuxServer` instance:
+An instance of `BayeuxContext` can be obtained from a `ServerMessage` instance:
 
 ====
 [source,java]
 ----
-BayeuxContext context = bayeuxServer.getContext();
+public void yourMethod(ServerMessage message) {
+    BayeuxContext context = message.getBayeuxContext();
+    ...
+}
 ----
 ====
 
@@ -31,14 +34,14 @@ A typical usage in a `SecurityPolicy` (see also
 [source,java]
 ----
 public class OneClientPerAddressSecurityPolicy extends DefaultSecurityPolicy {
-    private final Set<String> addresses = new HashSet<String>();
+    private final Set<String> addresses = new HashSet<>();
 
     @Override
     public boolean canHandshake(BayeuxServer bayeuxServer, ServerSession session, ServerMessage message) {
-        BayeuxContext context = bayeuxServer.getContext();
+        BayeuxContext context = message.getBayeuxContext();
 
         // Get the remote address of the client
-        final String remoteAddress = context.getRemoteAddress().getHostString();
+        String remoteAddress = context.getRemoteAddress().getHostString();
 
         // Only allow clients from different remote addresses
 
@@ -60,7 +63,7 @@ public class OneClientPerAddressSecurityPolicy extends DefaultSecurityPolicy {
 Refer to the http://docs.cometd.org/apidocs[Javadoc documentation]
 for further information about methods available in `BayeuxContext`.
 
-It is recommended to always call `BayeuxServer.getContext()` to obtain the
+It is recommended to always call `ServerMessage.getBayeuxContext()` to obtain the
 `BayeuxContext` instance; it should never be cached and then reused across messages.
 This allows maximum portability of your code in case you're using a mix of
 WebSocket and HTTP transports.
@@ -71,13 +74,12 @@ For pure HTTP transports such as `long-polling` and `callback-polling`, there
 is a direct link between the information contained in the `BayeuxContext`
 and the current HTTP request that carried the Bayeux message.
 
-For these transports, the `BayeuxContext` is created anew for every invocation
-of `BayeuxServer.getContext()`, wrapping the current `HttpServletRequest`.
+For these transports, the `BayeuxContext` is created anew for every HTTP request.
 
 ===== WebSocket Contextual Information
 
-For the WebSocket transport, the `BayeuxContext` instance is created only once,
-during the upgrade from HTTP to WebSocket.
+For the WebSocket transport, the `BayeuxContext` instance is created only once
+per connection, during the upgrade from HTTP to WebSocket.
 The information contained in the HTTP upgrade request is copied into the
 `BayeuxContext` instance and never updated again, since after the upgrade the
-protocol is WebSocket, and such contextual information is not available anymore.
+protocol is WebSocket, and the HTTP contextual information is not available anymore.

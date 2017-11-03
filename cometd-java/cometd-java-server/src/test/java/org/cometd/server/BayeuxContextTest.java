@@ -56,8 +56,8 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assert.assertNotNull(bayeux.getContext().getLocalAddress());
-                Assert.assertNotNull(bayeux.getContext().getRemoteAddress());
+                Assert.assertNotNull(message.getBayeuxContext().getLocalAddress());
+                Assert.assertNotNull(message.getBayeuxContext().getRemoteAddress());
                 latch.countDown();
             }
 
@@ -87,8 +87,8 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assert.assertEquals(value1, bayeux.getContext().getHeader(name));
-                Assert.assertEquals(Arrays.asList(value1, value2), bayeux.getContext().getHeaderValues(name));
+                Assert.assertEquals(value1, message.getBayeuxContext().getHeader(name));
+                Assert.assertEquals(Arrays.asList(value1, value2), message.getBayeuxContext().getHeaderValues(name));
                 latch.countDown();
             }
 
@@ -139,7 +139,7 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assert.assertEquals(value, bayeux.getContext().getRequestAttribute(name));
+                Assert.assertEquals(value, message.getBayeuxContext().getRequestAttribute(name));
                 latch.countDown();
             }
 
@@ -189,8 +189,8 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assert.assertNotNull(bayeux.getContext().getHttpSessionId());
-                Assert.assertEquals(value, bayeux.getContext().getHttpSessionAttribute(name));
+                Assert.assertNotNull(message.getBayeuxContext().getHttpSessionId());
+                Assert.assertEquals(value, message.getBayeuxContext().getHttpSessionAttribute(name));
                 latch.countDown();
             }
 
@@ -217,7 +217,7 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assert.assertSame(bayeux, bayeux.getContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
+                Assert.assertSame(bayeux, message.getBayeuxContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
                 latch.countDown();
             }
 

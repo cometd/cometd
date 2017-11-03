@@ -52,6 +52,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.AsyncFoldLeft;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 
 /**
@@ -72,7 +73,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String MULTI_SESSION_INTERVAL_OPTION = "multiSessionInterval";
     public final static String TRUST_CLIENT_SESSION = "trustClientSession";
 
-    private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<>();
     private final Map<String, Collection<ServerSessionImpl>> _sessions = new HashMap<>();
     private final ConcurrentMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<>();
     private final Map<String, AtomicInteger> _browserSweep = new ConcurrentHashMap<>();
@@ -110,14 +110,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return _multiSessionInterval;
     }
 
-    public void setCurrentRequest(HttpServletRequest request) {
-        _currentRequest.set(request);
-    }
-
-    public HttpServletRequest getCurrentRequest() {
-        return _currentRequest.get();
-    }
-
     public abstract boolean accept(HttpServletRequest request);
 
     public abstract void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
@@ -143,7 +135,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
             context.messages = messages;
             context.session = session;
-            AsyncFoldLeft.run(messages, null, (result, item, loop) -> processMessage(context, item, Promise.from(loop::proceed, loop::fail)), Promise.from(y -> {
+            AsyncFoldLeft.run(messages, null, (result, item, loop) -> processMessage(context, (ServerMessageImpl)item, Promise.from(loop::proceed, loop::fail)), Promise.from(y -> {
                 flush(context, promise);
                 if (batch) {
                     session.endBatch();
@@ -152,10 +144,13 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
     }
 
-    private void processMessage(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
+    private void processMessage(Context context, ServerMessageImpl message, Promise<Void> promise) {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Processing {}", message);
         }
+
+        message.setServerTransport(this);
+        message.setBayeuxContext(new HttpContext(context.request));
 
         switch (message.getChannel()) {
             case Channel.META_HANDSHAKE: {
@@ -378,15 +373,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 _logger.debug("", x);
             }
         }
-    }
-
-    @Override
-    public BayeuxContext getContext() {
-        HttpServletRequest request = getCurrentRequest();
-        if (request != null) {
-            return new HttpContext(request);
-        }
-        return null;
     }
 
     protected String findBrowserId(HttpServletRequest request) {

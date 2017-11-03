@@ -15,14 +15,10 @@
  */
 package org.cometd.javascript;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.transport.AbstractHttpTransport;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +26,7 @@ import org.junit.Test;
 public class CometDURLPathTest extends AbstractCometDLongPollingTest {
     @Before
     public void init() {
-        bayeuxServer.addExtension(new BayeuxURLExtension(bayeuxServer));
+        bayeuxServer.addExtension(new BayeuxURLExtension());
     }
 
     @Test
@@ -170,23 +166,13 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
     }
 
     public static class BayeuxURLExtension implements Extension {
-        private final BayeuxServerImpl bayeux;
-
-        public BayeuxURLExtension(BayeuxServerImpl bayeux) {
-            this.bayeux = bayeux;
-        }
-
         @Override
         public boolean sendMeta(ServerSession to, Mutable message) {
             if (Channel.META_HANDSHAKE.equals(message.getChannel()) ||
                     Channel.META_CONNECT.equals(message.getChannel()) ||
                     Channel.META_DISCONNECT.equals(message.getChannel())) {
-                AbstractHttpTransport transport = (AbstractHttpTransport)bayeux.getCurrentTransport();
-                HttpServletRequest request = transport.getCurrentRequest();
-                if (request != null) {
-                    String uri = request.getRequestURI();
-                    message.getExt(true).put("uri", uri);
-                }
+                String uri = message.getBayeuxContext().getURL();
+                message.getExt(true).put("uri", uri);
             }
             return true;
         }

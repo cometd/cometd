@@ -20,7 +20,6 @@ import java.util.List;
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Promise;
-import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 
@@ -169,16 +168,6 @@ public interface BayeuxServer extends Bayeux {
      * @see #getSecurityPolicy()
      */
     public void setSecurityPolicy(SecurityPolicy securityPolicy);
-
-    /**
-     * @return the current transport instance of the current thread
-     */
-    public Transport getCurrentTransport();
-
-    /**
-     * @return the current Context, is equivalent to ((ServerTransport){@link #getCurrentTransport()}).{@link ServerTransport#getContext()}
-     */
-    public BayeuxContext getContext();
 
     /**
      * <p>Common base interface for all server-side Bayeux listeners.</p>

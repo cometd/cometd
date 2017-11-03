@@ -501,7 +501,7 @@ public class ServerChannelTest {
     private ServerSessionImpl newServerSession() {
         ServerSessionImpl session = _bayeux.newServerSession();
         _bayeux.addServerSession(session, _bayeux.newMessage());
-        session.handshake();
+        session.handshake(null);
         session.connected();
         return session;
     }

@@ -61,17 +61,13 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
             encoding = "UTF-8";
         }
         request.setCharacterEncoding(encoding);
-        AsyncContext asyncContext = request.startAsync(request, response);
+        AsyncContext asyncContext = request.startAsync();
         // Explicitly disable the timeout, to prevent
         // that the timeout fires in case of slow reads.
         asyncContext.setTimeout(0);
 
-        getBayeux().setCurrentTransport(this);
-        setCurrentRequest(request);
-
         Promise<Void> promise = new Promise<Void>() {
             public void succeed(Void result) {
-                reset();
                 asyncContext.complete();
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Handling successful");
@@ -80,7 +76,6 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
 
             @Override
             public void fail(Throwable failure) {
-                reset();
                 request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, failure);
                 int code = failure instanceof TimeoutException ?
                         HttpServletResponse.SC_REQUEST_TIMEOUT :
@@ -90,11 +85,6 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Handling failed", failure);
                 }
-            }
-
-            private void reset() {
-                setCurrentRequest(null);
-                getBayeux().setCurrentTransport(null);
             }
         };
 

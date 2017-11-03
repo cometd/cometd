@@ -144,7 +144,7 @@ public class CookiesTest extends ClientServerTest {
         }
 
         public void metaHandshake(ServerSession session, ServerMessage message) {
-            BayeuxContext context = getBayeux().getContext();
+            BayeuxContext context = message.getBayeuxContext();
             String value1 = context.getCookie(cookie1);
             String value2 = context.getCookie(cookie2);
             if (value1 != null && value2 != null) {
@@ -153,7 +153,7 @@ public class CookiesTest extends ClientServerTest {
         }
 
         public void metaConnect(ServerSession session, ServerMessage message) {
-            BayeuxContext context = getBayeux().getContext();
+            BayeuxContext context = message.getBayeuxContext();
             String value1 = context.getCookie(cookie1);
             String value2 = context.getCookie(cookie2);
             String value3 = context.getCookie("BAYEUX_BROWSER");
@@ -163,7 +163,7 @@ public class CookiesTest extends ClientServerTest {
         }
 
         public void metaSubscribe(ServerSession session, ServerMessage message) {
-            BayeuxContext context = getBayeux().getContext();
+            BayeuxContext context = message.getBayeuxContext();
             String value1 = context.getCookie(cookie1);
             String value2 = context.getCookie(cookie2);
             String value3 = context.getCookie("BAYEUX_BROWSER");
@@ -173,7 +173,7 @@ public class CookiesTest extends ClientServerTest {
         }
 
         public void metaUnsubscribe(ServerSession session, ServerMessage message) {
-            BayeuxContext context = getBayeux().getContext();
+            BayeuxContext context = message.getBayeuxContext();
             String value1 = context.getCookie(cookie1);
             String value2 = context.getCookie(cookie2);
             String value3 = context.getCookie("BAYEUX_BROWSER");
@@ -183,7 +183,7 @@ public class CookiesTest extends ClientServerTest {
         }
 
         public void process(ServerSession session, ServerMessage message) {
-            BayeuxContext context = getBayeux().getContext();
+            BayeuxContext context = message.getBayeuxContext();
             String value1 = context.getCookie(cookie1);
             String value2 = context.getCookie(cookie2);
             String value3 = context.getCookie("BAYEUX_BROWSER");

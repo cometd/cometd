@@ -18,7 +18,6 @@ package org.cometd.server;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.server.LocalSession;
-import org.cometd.bayeux.server.ServerTransport;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -106,8 +105,6 @@ public class SweepTest {
         bayeuxServer.setOption("maxInterval", maxInterval);
         bayeuxServer.setOption("maxProcessing", maxInterval);
         bayeuxServer.start();
-        ServerTransport serverTransport = bayeuxServer.getTransport("long-polling");
-        bayeuxServer.setCurrentTransport(serverTransport);
 
         // LocalSessions do not perform heartbeat so we should not sweep them until disconnected
         LocalSession localSession = bayeuxServer.newLocalSession("test_sweep");

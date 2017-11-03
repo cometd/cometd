@@ -108,11 +108,6 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
         _id = id.toString();
 
-        ServerTransport transport = _bayeux.getCurrentTransport();
-        if (transport != null) {
-            _maxInterval = transport.getMaxInterval();
-        }
-
         _broadcastToPublisher = _bayeux.isBroadcastToPublisher();
     }
 
@@ -357,8 +352,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    protected boolean handshake() {
-        AbstractServerTransport transport = (AbstractServerTransport)_bayeux.getCurrentTransport();
+    protected boolean handshake(ServerMessage.Mutable message) {
+        AbstractServerTransport transport = message == null ? null : (AbstractServerTransport)message.getServerTransport();
         if (transport != null) {
             _maxQueue = transport.getOption(AbstractServerTransport.MAX_QUEUE_OPTION, -1);
             _maxInterval = transport.getMaxInterval();

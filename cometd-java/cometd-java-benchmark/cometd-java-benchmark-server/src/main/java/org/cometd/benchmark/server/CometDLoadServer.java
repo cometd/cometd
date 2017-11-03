@@ -476,12 +476,7 @@ public class CometDLoadServer {
 
     private static class RequestLatencyHandler extends HandlerWrapper implements MeasureConverter {
         private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MINUTES.toNanos(1), 3);
-        private final ThreadLocal<Boolean> currentEnabled = new ThreadLocal<Boolean>() {
-            @Override
-            protected Boolean initialValue() {
-                return Boolean.TRUE;
-            }
-        };
+        private final ThreadLocal<Boolean> currentEnabled = ThreadLocal.withInitial(() -> Boolean.TRUE);
 
         @Override
         public void handle(String target, Request request, final HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException {
