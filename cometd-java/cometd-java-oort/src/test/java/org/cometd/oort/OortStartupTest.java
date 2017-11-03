@@ -15,9 +15,9 @@
  */
 package org.cometd.oort;
 
+import java.net.ServerSocket;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.ServletException;
@@ -43,15 +43,20 @@ public class OortStartupTest {
     private final Map<Integer, Server> servers = new ConcurrentHashMap<>();
     private Map<Integer, ServletContextHandler> contexts = new ConcurrentHashMap<>();
 
-    protected int startTwoNodes(Class<? extends HttpServlet> startupServletClass, Map<String, String> options) throws Exception {
-        Random random = new Random();
-        int port1 = 20000 + random.nextInt(20000);
-        int port2 = port1 + 1;
+    protected int[] startTwoNodes(Class<? extends HttpServlet> startupServletClass, Map<String, String> options) throws Exception {
+        int port1;
+        try (ServerSocket server1 = new ServerSocket(0)) {
+            port1 = server1.getLocalPort();
+        }
+        int port2;
+        try (ServerSocket server2 = new ServerSocket(0)) {
+            port2 = server2.getLocalPort();
+        }
 
         startNode(startupServletClass, options, port1, port2);
         startNode(startupServletClass, options, port2, port1);
 
-        return port1;
+        return new int[]{port1, port2};
     }
 
     private void startNode(Class<? extends HttpServlet> startupServletClass, Map<String, String> options, int port1, int port2) throws Exception {
@@ -104,8 +109,9 @@ public class OortStartupTest {
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
 
-        int port1 = startTwoNodes(OortObjectStartupServlet.class, options);
-        int port2 = port1 + 1;
+        int[] ports = startTwoNodes(OortObjectStartupServlet.class, options);
+        int port1 = ports[0];
+        int port2 = ports[1];
         ContextHandler.Context context1 = contexts.get(port1).getServletContext();
         Oort oort1 = (Oort)context1.getAttribute(Oort.OORT_ATTRIBUTE);
         ContextHandler.Context context2 = contexts.get(port2).getServletContext();
@@ -144,7 +150,6 @@ public class OortStartupTest {
 
         // Restart the node.
         startNode(OortObjectStartupServlet.class, null, port2, port1);
-        server2 = servers.get(port2);
         context2 = contexts.get(port2).getServletContext();
         oort2 = (Oort)context2.getAttribute(Oort.OORT_ATTRIBUTE);
 
