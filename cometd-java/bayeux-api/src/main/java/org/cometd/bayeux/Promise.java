@@ -60,7 +60,7 @@ public interface Promise<C>
      * <p>Typical usage is with {@code CompletableFuture}:</p>
      * <pre>
      * public void process(ServerMessage message, Promise&lt;Boolean&gt; promise) {
-     *     CompletableFuture.supplyAsync(() -> asyncOperation(message))
+     *     CompletableFuture.supplyAsync(() -&gt; asyncOperation(message))
      *             .whenComplete(promise.complete());
      * }
      * </pre>
