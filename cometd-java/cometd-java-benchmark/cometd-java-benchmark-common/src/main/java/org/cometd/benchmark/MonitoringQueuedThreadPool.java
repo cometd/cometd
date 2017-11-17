@@ -60,6 +60,11 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool {
                     totalTaskLatency.addAndGet(taskLatency);
                 }
             }
+
+            @Override
+            public String toString() {
+                return job.toString();
+            }
         });
     }
 
