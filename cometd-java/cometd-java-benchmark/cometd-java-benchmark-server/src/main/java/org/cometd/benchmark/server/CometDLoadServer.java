@@ -103,6 +103,8 @@ public class CometDLoadServer {
                 server.port = Integer.parseInt(arg.substring("--port=".length()));
             } else if (arg.equals("--tls")) {
                 server.tls = true;
+            } else if (arg.equals("--selectors")) {
+                server.selectors = Integer.parseInt(arg.substring("--selectors=".length()));
             } else if (arg.startsWith("--maxThreads=")) {
                 server.maxThreads = Integer.parseInt(arg.substring("--maxThreads=".length()));
             } else if (arg.startsWith("--transports=")) {
@@ -230,14 +232,14 @@ public class CometDLoadServer {
 
         SslContextFactory sslContextFactory = null;
         if (tls) {
-            Path keyStoreFile = Paths.get("src/main/resources/keystore.jks");
-            if (Files.exists(keyStoreFile)) {
+            Path keyStoreFile = Paths.get("src/main/resources/keystore.p12");
+            if (!Files.exists(keyStoreFile)) {
                 throw new FileNotFoundException(keyStoreFile.toString());
             }
             sslContextFactory = new SslContextFactory();
             sslContextFactory.setKeyStorePath(keyStoreFile.toString());
+            sslContextFactory.setKeyStoreType("pkcs12");
             sslContextFactory.setKeyStorePassword("storepwd");
-            sslContextFactory.setKeyManagerPassword("keypwd");
         }
 
         HttpConfiguration httpConfiguration = new HttpConfiguration();

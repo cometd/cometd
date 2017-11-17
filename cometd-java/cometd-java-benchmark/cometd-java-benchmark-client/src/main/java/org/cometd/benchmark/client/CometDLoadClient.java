@@ -62,13 +62,15 @@ import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.websocket.client.JettyWebSocketTransport;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.toolchain.perf.PlatformTimer;
+import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 
 public class CometDLoadClient implements MeasureConverter {
     private static final String ID_FIELD = "ID";
@@ -94,14 +96,15 @@ public class CometDLoadClient implements MeasureConverter {
     private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(8);
     private final MonitoringQueuedThreadPool threadPool = new MonitoringQueuedThreadPool(0);
-    private final HttpClient httpClient = new HttpClient();
     private final WebSocketContainer webSocketContainer = ContainerProvider.getWebSocketContainer();
-    private final WebSocketClient webSocketClient = new WebSocketClient();
+    private final WebSocketClient webSocketClient = new WebSocketClient(new SslContextFactory(true));
+    private HttpClient httpClient;
     private boolean interactive = true;
     private String host = "localhost";
     private int port = 8080;
     private ClientTransportType transport = ClientTransportType.LONG_POLLING;
     private boolean tls = false;
+    private int selectors = 1;
     private int maxThreads = 256;
     private String context = Config.CONTEXT_PATH;
     private String channel = "/chat/demo";
@@ -135,6 +138,8 @@ public class CometDLoadClient implements MeasureConverter {
                 client.transport = ClientTransportType.valueOf(arg.substring("--transport=".length()));
             } else if (arg.equals("--tls")) {
                 client.tls = true;
+            } else if (arg.equals("--selectors")) {
+                client.selectors = Integer.parseInt(arg.substring("--selectors=".length()));
             } else if (arg.startsWith("--maxThreads=")) {
                 client.maxThreads = Integer.parseInt(arg.substring("--maxThreads=".length()));
             } else if (arg.startsWith("--context=")) {
@@ -197,6 +202,37 @@ public class CometDLoadClient implements MeasureConverter {
             port = Integer.parseInt(value);
         }
 
+        boolean tls = this.tls;
+        if (interactive) {
+            System.err.printf("use tls [%b]: ", tls);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(tls);
+            }
+            tls = Boolean.parseBoolean(value);
+        }
+
+        int selectors = this.selectors;
+        if (interactive) {
+            System.err.printf("selectors [%d]: ", selectors);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(selectors);
+            }
+            selectors = Integer.parseInt(value);
+        }
+
+        int maxThreads = this.maxThreads;
+        if (interactive) {
+            maxThreads = Integer.parseInt(System.getProperty("cometd.threads", String.valueOf(maxThreads)));
+            System.err.printf("max threads [%d]: ", maxThreads);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(maxThreads);
+            }
+            maxThreads = Integer.parseInt(value);
+        }
+
         ClientTransportType transport = this.transport;
         if (interactive) {
             System.err.printf("transports:%n");
@@ -209,27 +245,6 @@ public class CometDLoadClient implements MeasureConverter {
                 value = String.valueOf(transport.ordinal());
             }
             transport = ClientTransportType.values()[Integer.parseInt(value)];
-        }
-
-        boolean tls = this.tls;
-        if (interactive) {
-            System.err.printf("use tls [%b]: ", tls);
-            String value = console.readLine().trim();
-            if (value.length() == 0) {
-                value = String.valueOf(tls);
-            }
-            tls = Boolean.parseBoolean(value);
-        }
-
-        int maxThreads = this.maxThreads;
-        if (interactive) {
-            maxThreads = Integer.parseInt(System.getProperty("cometd.threads", String.valueOf(maxThreads)));
-            System.err.printf("max threads [%d]: ", maxThreads);
-            String value = console.readLine().trim();
-            if (value.length() == 0) {
-                value = String.valueOf(maxThreads);
-            }
-            maxThreads = Integer.parseInt(value);
         }
 
         String contextPath = this.context;
@@ -293,11 +308,13 @@ public class CometDLoadClient implements MeasureConverter {
         threadPool.start();
         mbeanContainer.beanAdded(null, threadPool);
 
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP(selectors), new SslContextFactory(true));
         httpClient.addBean(mbeanContainer);
         httpClient.setMaxConnectionsPerDestination(60000);
         httpClient.setMaxRequestsQueuedPerDestination(10000);
         httpClient.setExecutor(threadPool);
         httpClient.setIdleTimeout(2 * Config.MAX_NETWORK_DELAY);
+        httpClient.setSocketAddressResolver(new SocketAddressResolver.Sync());
         httpClient.start();
         mbeanContainer.beanAdded(null, httpClient);
 
@@ -306,7 +323,6 @@ public class CometDLoadClient implements MeasureConverter {
         mbeanContainer.beanAdded(null, webSocketContainer);
 
         webSocketClient.setExecutor(threadPool);
-        webSocketClient.setMasker(new ZeroMasker());
         webSocketClient.getPolicy().setInputBufferSize(8 * 1024);
         webSocketClient.addBean(mbeanContainer);
         webSocketClient.start();
