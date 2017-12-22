@@ -1,23 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <groupId>org.cometd.java</groupId>
-        <artifactId>cometd-java</artifactId>
-        <version>3.1.4-SNAPSHOT</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>org.cometd.java</groupId>
+    <artifactId>cometd-java</artifactId>
+    <version>3.1.4-SNAPSHOT</version>
+  </parent>
 
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>cometd-java-websocket</artifactId>
-    <packaging>pom</packaging>
-    <name>CometD :: Java :: WebSocket</name>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>cometd-java-websocket</artifactId>
+  <packaging>pom</packaging>
+  <name>CometD :: Java :: WebSocket</name>
 
-    <modules>
-        <module>cometd-java-websocket-common-client</module>
-        <module>cometd-java-websocket-common-server</module>
-        <module>cometd-java-websocket-javax-client</module>
-        <module>cometd-java-websocket-javax-server</module>
-        <module>cometd-java-websocket-jetty-client</module>
-        <module>cometd-java-websocket-jetty-server</module>
-    </modules>
+  <modules>
+    <module>cometd-java-websocket-common-client</module>
+    <module>cometd-java-websocket-common-server</module>
+    <module>cometd-java-websocket-javax-client</module>
+    <module>cometd-java-websocket-javax-server</module>
+    <module>cometd-java-websocket-jetty-client</module>
+    <module>cometd-java-websocket-jetty-server</module>
+  </modules>
 
 </project>
