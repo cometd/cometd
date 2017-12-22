@@ -17,9 +17,9 @@
     <!--<jetty-version>9.4.8.v20171121</jetty-version>-->
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.25</slf4j-version>
-    <spring-version>4.3.12.RELEASE</spring-version>
-    <jackson-version>2.9.2</jackson-version>
-    <dojo-version>1.12.1</dojo-version>
+    <spring-version>5.0.2.RELEASE</spring-version>
+    <jackson-version>2.9.3</jackson-version>
+    <dojo-version>1.13.0</dojo-version>
     <rhino-version>1.7R4</rhino-version>
   </properties>
 
@@ -149,6 +149,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
+        <inherited>false</inherited>
         <executions>
           <execution>
             <id>enforce-versions</id>
@@ -171,8 +172,8 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>7</source>
+          <target>7</target>
           <showDeprecation>true</showDeprecation>
           <showWarnings>true</showWarnings>
           <compilerArgument>-Xlint:all,-serial,-unchecked</compilerArgument>
@@ -360,7 +361,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -397,9 +398,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.20.1</version>
           <configuration>
-            <argLine>@{argLine} -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails -XX:+PrintCommandLineFlags
-              -XX:MaxGCPauseMillis=1000
-            </argLine>
+            <argLine>@{argLine} -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails -XX:+PrintCommandLineFlags -XX:MaxGCPauseMillis=1000</argLine>
           </configuration>
         </plugin>
         <plugin>
@@ -425,7 +424,7 @@
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.4.0</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.jetty</groupId>
