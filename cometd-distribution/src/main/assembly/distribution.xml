@@ -2,28 +2,28 @@
 <assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
-    <id>distribution</id>
-    <formats>
-        <format>tar.gz</format>
-    </formats>
-    <fileSets>
-        <fileSet>
-            <directory>..</directory>
-            <outputDirectory />
-            <excludes>
-                <exclude>**/overlays/**</exclude>
-                <exclude>**/target/**</exclude>
-                <exclude>**/.idea/**</exclude>
-                <exclude>**/*.iml</exclude>
-                <exclude>.gitignore</exclude>
-            </excludes>
-        </fileSet>
-        <fileSet>
-            <directory>..</directory>
-            <outputDirectory />
-            <includes>
-                <include>**/target/*.?ar</include>
-            </includes>
-        </fileSet>
-    </fileSets>
+  <id>distribution</id>
+  <formats>
+    <format>tar.gz</format>
+  </formats>
+  <fileSets>
+    <fileSet>
+      <directory>..</directory>
+      <outputDirectory />
+      <excludes>
+        <exclude>**/overlays/**</exclude>
+        <exclude>**/target/**</exclude>
+        <exclude>**/.idea/**</exclude>
+        <exclude>**/*.iml</exclude>
+        <exclude>.gitignore</exclude>
+      </excludes>
+    </fileSet>
+    <fileSet>
+      <directory>..</directory>
+      <outputDirectory />
+      <includes>
+        <include>**/target/*.?ar</include>
+      </includes>
+    </fileSet>
+  </fileSets>
 </assembly>

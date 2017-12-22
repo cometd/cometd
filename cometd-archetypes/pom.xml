@@ -1,40 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
-    <parent>
-        <groupId>org.cometd</groupId>
-        <artifactId>cometd-project</artifactId>
-        <version>4.0.0-SNAPSHOT</version>
-    </parent>
+  <parent>
+    <groupId>org.cometd</groupId>
+    <artifactId>cometd-project</artifactId>
+    <version>4.0.0-SNAPSHOT</version>
+  </parent>
 
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>org.cometd.archetypes</groupId>
-    <artifactId>cometd-archetypes</artifactId>
-    <packaging>pom</packaging>
-    <name>CometD :: Archetypes</name>
-    <description>${project.version} - CometD archetype for creating a server-side event-driven web application</description>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.cometd.archetypes</groupId>
+  <artifactId>cometd-archetypes</artifactId>
+  <packaging>pom</packaging>
+  <name>CometD :: Archetypes</name>
+  <description>${project.version} - CometD archetype for creating a server-side event-driven web application
+  </description>
 
-    <modules>
-        <module>dojo-jetty9</module>
-        <module>spring-dojo-jetty9</module>
-        <module>jquery-jetty9</module>
-        <module>spring-jquery-jetty9</module>
-    </modules>
+  <modules>
+    <module>dojo-jetty9</module>
+    <module>spring-dojo-jetty9</module>
+    <module>jquery-jetty9</module>
+    <module>spring-jquery-jetty9</module>
+  </modules>
 
-    <build>
-        <extensions>
-            <extension>
-                <groupId>org.apache.maven.archetype</groupId>
-                <artifactId>archetype-packaging</artifactId>
-                <version>3.0.1</version>
-            </extension>
-        </extensions>
-        <plugins>
-            <plugin>
-                <artifactId>maven-archetype-plugin</artifactId>
-                <extensions>true</extensions>
-            </plugin>
-        </plugins>
-    </build>
+  <build>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.archetype</groupId>
+        <artifactId>archetype-packaging</artifactId>
+        <version>3.0.1</version>
+      </extension>
+    </extensions>
+    <plugins>
+      <plugin>
+        <artifactId>maven-archetype-plugin</artifactId>
+        <extensions>true</extensions>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

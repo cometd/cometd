@@ -1,50 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <groupId>org.cometd.java</groupId>
-        <artifactId>cometd-java</artifactId>
-        <version>4.0.0-SNAPSHOT</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>org.cometd.java</groupId>
+    <artifactId>cometd-java</artifactId>
+    <version>4.0.0-SNAPSHOT</version>
+  </parent>
 
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>cometd-java-common</artifactId>
-    <name>CometD :: Java :: Bayeux Common</name>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>cometd-java-common</artifactId>
+  <name>CometD :: Java :: Bayeux Common</name>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.cometd.java</groupId>
-            <artifactId>bayeux-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-util</artifactId>
-            <version>${jetty-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-util-ajax</artifactId>
-            <version>${jetty-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson-version}</version>
-            <optional>true</optional>
-        </dependency>
+  <dependencies>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>bayeux-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util-ajax</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson-version}</version>
+      <optional>true</optional>
+    </dependency>
 
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-        </dependency>
-    </dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+    </dependency>
+  </dependencies>
 
 </project>
