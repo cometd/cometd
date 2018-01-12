@@ -117,17 +117,21 @@ public abstract class AbstractWebSocketEndPoint {
         if (messages.length == 0) {
             promise.fail(new IOException("bayeux protocol violation"));
         } else {
-            ServerSessionImpl session = _session;
-            if (session == null) {
-                ServerMessage.Mutable message = messages[0];
-                if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
-                    session = _transport.getBayeux().newServerSession();
-                    session.setAllowMessageDeliveryDuringHandshake(_transport.isAllowMessageDeliveryDuringHandshake());
-                } else if (!_transport.isRequireHandshakePerConnection()) {
-                    _session = session = (ServerSessionImpl)_transport.getBayeux().getSession(message.getClientId());
+            ServerSessionImpl session;
+            ServerMessage.Mutable m = messages[0];
+            if (Channel.META_HANDSHAKE.equals(m.getChannel())) {
+                _session = null;
+                session = _transport.getBayeux().newServerSession();
+                session.setAllowMessageDeliveryDuringHandshake(_transport.isAllowMessageDeliveryDuringHandshake());
+            } else {
+                session = _session;
+                if (session == null) {
+                    if (!_transport.isRequireHandshakePerConnection()) {
+                        session = _session = (ServerSessionImpl)_transport.getBayeux().getSession(m.getClientId());
+                    }
+                } else if (_transport.getBayeux().getSession(session.getId()) == null) {
+                    session = _session = null;
                 }
-            } else if (session.isTerminated()) {
-                _session = session = null;
             }
 
             Context context = new Context(session);

@@ -28,12 +28,12 @@ angular.module('cometd', [])
                 $http.post(packet.url, packet.body, {
                     headers: hdrs,
                     withCredentials: true
-                }).success(function(data, status) {
-                    xhr.status = status;
-                    packet.onSuccess(data);
-                }).error(function(data, status, headers, config, reason) {
-                    xhr.status = status;
-                    packet.onError(reason);
+                }).then(function(response) {
+                    xhr.status = response.status;
+                    packet.onSuccess(response.data);
+                }, function(response) {
+                    xhr.status = response.status;
+                    packet.onError(response.statusText);
                 });
 
                 return xhr;
@@ -49,15 +49,15 @@ angular.module('cometd', [])
             that.jsonpSend = function(packet) {
                 $http.jsonp(packet.url, {
                     headers: packet.headers,
+                    jsonpCallbackParam: 'jsonp',
                     params: {
-                        jsonp: 'JSON_CALLBACK',
                         // In callback-polling, the content must be sent via the 'message' parameter.
                         message: packet.body
                     }
-                }).success(function(data) {
-                    packet.onSuccess(data);
-                }).error(function(data, status, headers, config, reason) {
-                    packet.onError(reason);
+                }).then(function(response) {
+                    packet.onSuccess(response.data);
+                }, function(response) {
+                    packet.onError(response.statusText);
                 });
             };
 
