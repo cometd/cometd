@@ -267,17 +267,21 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 throw new IOException();
             }
 
-            ServerSessionImpl session = _session;
-            if (session == null) {
-                ServerMessage.Mutable message = messages[0];
-                if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
-                    session = getBayeux().newServerSession();
-                    session.setAllowMessageDeliveryDuringHandshake(isAllowMessageDeliveryDuringHandshake());
-                } else if (!_requireHandshakePerConnection) {
-                    _session = session = (ServerSessionImpl)getBayeux().getSession(message.getClientId());
+            ServerSessionImpl session;
+            ServerMessage.Mutable m = messages[0];
+            if (Channel.META_HANDSHAKE.equals(m.getChannel())) {
+                _session = null;
+                session = getBayeux().newServerSession();
+                session.setAllowMessageDeliveryDuringHandshake(isAllowMessageDeliveryDuringHandshake());
+            } else {
+                session = _session;
+                if (session == null) {
+                    if (!_requireHandshakePerConnection) {
+                        session = _session = (ServerSessionImpl)getBayeux().getSession(m.getClientId());
+                    }
+                } else if (getBayeux().getSession(session.getId()) == null) {
+                    session = _session = null;
                 }
-            } else if (session.isDisconnected()) {
-                _session = session = null;
             }
 
             boolean sendQueue = false;
