@@ -98,7 +98,11 @@ public class JSONDataFilter implements DataFilter {
         }
 
         for (Map.Entry<String, Object> entry : map.entrySet()) {
-            entry.setValue(filter(from, to, entry.getValue()));
+            Object original = entry.getValue();
+            Object filtered = filter(from, to ,original);
+            if (original!=filtered) {
+                entry.setValue(filtered);
+            }
         }
 
         return map;
