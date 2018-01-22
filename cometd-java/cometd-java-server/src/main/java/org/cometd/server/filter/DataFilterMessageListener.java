@@ -55,7 +55,7 @@ public class DataFilterMessageListener implements ServerChannel.MessageListener 
                 message.setData(data);
             }
             return true;
-        } catch (DataFilter.Abort a) {
+        } catch (DataFilter.AbortException a) {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("", a);
             }
