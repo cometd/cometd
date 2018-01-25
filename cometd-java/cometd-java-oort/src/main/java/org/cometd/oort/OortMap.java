@@ -81,22 +81,6 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
     }
 
     /**
-     * <p>Blocking version of {@link #putAndShare(Object, Object, Result)}, but deprecated.</p>
-     * <p>This method will be removed in a future release.</p>
-     *
-     * @param key   the key to associate the value to
-     * @param value the value associated with the key
-     * @return the previous value associated with the key, or null if no previous value was associated with the key
-     * @deprecated use {@link #putAndShare(Object, Object, Result)} instead
-     */
-    @Deprecated
-    public V putAndShare(K key, V value) {
-        Result.Deferred<V> result = new Result.Deferred<>();
-        putAndShare(key, value, result);
-        return result.get();
-    }
-
-    /**
      * <p>Updates a single entry of the local entity map with the given {@code key} and {@code value},
      * and broadcasts the operation to all nodes in the cluster.</p>
      * <p>Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes.</p>
@@ -130,22 +114,6 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
     }
 
     /**
-     * <p>Blocking version of {@link #putIfAbsentAndShare(Object, Object, Result)}, but deprecated.</p>
-     * <p>This method will be removed in a future release.</p>
-     *
-     * @param key   the key to associate the value to
-     * @param value the value associated with the key
-     * @return the previous value associated with the key, or null if no previous value was associated with the key
-     * @deprecated use {@link #putAndShare(Object, Object, Result)} instead
-     */
-    @Deprecated
-    public V putIfAbsentAndShare(K key, V value) {
-        Result.Deferred<V> result = new Result.Deferred<>();
-        putIfAbsentAndShare(key, value, result);
-        return result.get();
-    }
-
-    /**
      * <p>Updates a single entry of the local entity map with the given {@code key} and {@code value}
      * if it does not exist yet, and broadcasts the operation to all nodes in the cluster.</p>
      * <p>Calling this method triggers notifications {@link EntryListener}s, both on this node and on remote nodes,
@@ -176,21 +144,6 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
         }
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, Promise.noop());
-    }
-
-    /**
-     * <p>Blocking version of {@link #removeAndShare(Object, Result)}, but deprecated.</p>
-     * <p>This method will be removed in a future release.</p>
-     *
-     * @param key the key to remove
-     * @return the value associated with the key, or null if no value was associated with the key
-     * @deprecated use {@link #removeAndShare(Object, Result)} instead
-     */
-    @Deprecated
-    public V removeAndShare(K key) {
-        Result.Deferred<V> result = new Result.Deferred<>();
-        removeAndShare(key, result);
-        return result.get();
     }
 
     /**

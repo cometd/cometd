@@ -92,21 +92,6 @@ public class OortList<E> extends OortContainer<List<E>> {
     }
 
     /**
-     * <p>Blocking version of {@link #addAndShare(Result, Object[])}, but deprecated.</p>
-     * <p>This method will be removed in a future release.</p>
-     *
-     * @param elements the elements to add
-     * @return whether at least one of the elements was added to the local entity list
-     * @deprecated use {@link #addAndShare(Result, Object[])} instead
-     */
-    @Deprecated
-    public boolean addAndShare(E... elements) {
-        Result.Deferred<Boolean> result = new Result.Deferred<>();
-        addAndShare(result, elements);
-        return result.get();
-    }
-
-    /**
      * <p>Adds the given {@code elements} to the local entity list,
      * and then broadcasts the addition to all nodes in the cluster.</p>
      * <p>Calling this method triggers notifications {@link ElementListener}s,
@@ -131,21 +116,6 @@ public class OortList<E> extends OortContainer<List<E>> {
         }
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, Promise.noop());
-    }
-
-    /**
-     * <p>Blocking version of {@link #removeAndShare(Result, Object[])}, but deprecated.</p>
-     * <p>This method will be removed in a future release.</p>
-     *
-     * @param elements the elements to remove
-     * @return whether at least one of the elements was removed from the local entity list
-     * @deprecated use {@link #removeAndShare(Result, Object[])} instead
-     */
-    @Deprecated
-    public boolean removeAndShare(E... elements) {
-        Result.Deferred<Boolean> result = new Result.Deferred<>();
-        removeAndShare(result, elements);
-        return result.get();
     }
 
     /**

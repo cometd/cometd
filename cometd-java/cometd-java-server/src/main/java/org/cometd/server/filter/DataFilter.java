@@ -61,22 +61,4 @@ public interface DataFilter {
             super(cause);
         }
     }
-
-    /**
-     * @deprecated use {@link AbortException} instead
-     */
-    @Deprecated
-    public class Abort extends AbortException {
-        public Abort() {
-            super();
-        }
-
-        public Abort(String msg) {
-            super(msg);
-        }
-
-        public Abort(String msg, Throwable cause) {
-            super(msg, cause);
-        }
-    }
 }

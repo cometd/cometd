@@ -28,9 +28,11 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 
 /**
- * <p>{@link JSONDataFilter} walks an object to see if it is a JSON data structure
- * and calls the appropriate methods {@link #filterString(String)},
- * {@link #filterNumber(Number)}, {@link #filterBoolean(Boolean)},
+ * <p>{@link JSONDataFilter} walks an object to see if it is
+ * a JSON data structure and calls the appropriate methods
+ * {@link #filterString(ServerSession, ServerChannel, String)},
+ * {@link #filterNumber(ServerSession, ServerChannel, Number)},
+ * {@link #filterBoolean(ServerSession, ServerChannel, Boolean)},
  * {@link #filterArray(ServerSession, ServerChannel, Object)},
  * {@link #filterCollection(ServerSession, ServerChannel, Collection)},
  * {@link #filterList(ServerSession, ServerChannel, List)},
@@ -72,38 +74,14 @@ public class JSONDataFilter implements DataFilter {
     }
 
     protected Object filterString(ServerSession session, ServerChannel channel, String string) {
-        return filterString(string);
-    }
-
-    /**
-     * @deprecated use {@link #filterString(ServerSession, ServerChannel, String)} instead
-     */
-    @Deprecated
-    protected Object filterString(String string) {
         return string;
     }
 
     protected Object filterBoolean(ServerSession session, ServerChannel channel, Boolean bool) {
-        return filterBoolean(bool);
-    }
-
-    /**
-     * @deprecated use {@link #filterBoolean(ServerSession, ServerChannel, Boolean)} instead
-     */
-    @Deprecated
-    protected Object filterBoolean(Boolean bool) {
         return bool;
     }
 
     protected Object filterNumber(ServerSession session, ServerChannel channel, Number number) {
-        return filterNumber(number);
-    }
-
-    /**
-     * @deprecated use {@link #filterNumber(ServerSession, ServerChannel, Number)} instead
-     */
-    @Deprecated
-    protected Object filterNumber(Number number) {
         return number;
     }
 
