@@ -97,7 +97,7 @@ public interface ClientSessionChannel extends Channel {
      * @param data     the data to publish
      * @param callback the message callback to notify of the publish result
      * @see #publish(Object)
-     * @see #publish(Message.Mutable, MessageListener)
+     * @see #publish(Message.Mutable, ClientSession.MessageListener)
      */
     public void publish(Object data, ClientSession.MessageListener callback);
 
@@ -124,9 +124,10 @@ public interface ClientSessionChannel extends Channel {
      * subscribe(listener, null)}.</p>
      *
      * @param listener the listener to register and invoke when a message arrives on this channel.
+     * @return whether the subscribe message has been sent
      */
-    public default void subscribe(MessageListener listener) {
-        subscribe(listener, ClientSession.MessageListener.NOOP);
+    public default boolean subscribe(MessageListener listener) {
+        return subscribe(listener, ClientSession.MessageListener.NOOP);
     }
 
     /**
@@ -138,6 +139,18 @@ public interface ClientSessionChannel extends Channel {
     }
 
     /**
+     * <p>Equivalent to {@link #subscribe(Message.Mutable, MessageListener, ClientSession.MessageListener)
+     * subscribe(null, listener, callback)}.</p>
+     *
+     * @param listener the listener to register and invoke when a message arrives on this channel
+     * @param callback the callback to notify of the subscribe result
+     * @return whether the subscribe message has been sent
+     */
+    public default boolean subscribe(MessageListener listener, ClientSession.MessageListener callback) {
+        return subscribe(null, listener, callback);
+    }
+
+    /**
      * <p>Subscribes the given {@code listener} to receive messages sent to this channel.</p>
      * <p>Subscription involves communication with the server only for the first listener
      * subscribed to this channel. Listeners registered after the first will not cause a message
@@ -145,21 +158,23 @@ public interface ClientSessionChannel extends Channel {
      * <p>The callback parameter will be invoked upon acknowledgment of the subscription
      * by the server, and therefore only for the first subscription to this channel.</p>
      *
-     * @param listener the listener to register and invoke when a message arrives on this channel.
-     * @param callback the listener to notify of the subscribe result.
+     * @param listener the listener to register and invoke when a message arrives on this channel
+     * @param callback the callback to notify of the subscribe result
+     * @return whether the subscribe message has been sent
      * @see #unsubscribe(MessageListener)
      * @see #addListener(ClientSessionChannelListener)
      */
-    public void subscribe(MessageListener listener, ClientSession.MessageListener callback);
+    public boolean subscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback);
 
     /**
-     * <p>Equivalent to {@link #unsubscribe(ClientSessionChannel.MessageListener, ClientSessionChannel.MessageListener)
+     * <p>Equivalent to {@link #unsubscribe(ClientSessionChannel.MessageListener, ClientSession.MessageListener)
      * unsubscribe(listener, null)}.</p>
      *
      * @param listener the listener to unsubscribe
+     * @return whether the unsubscribe message has been sent
      */
-    public default void unsubscribe(MessageListener listener) {
-        unsubscribe(listener, ClientSession.MessageListener.NOOP);
+    public default boolean unsubscribe(MessageListener listener) {
+        return unsubscribe(listener, ClientSession.MessageListener.NOOP);
     }
 
     /**
@@ -171,6 +186,18 @@ public interface ClientSessionChannel extends Channel {
     }
 
     /**
+     * <p>Equivalent to {@link #unsubscribe(Message.Mutable, MessageListener, ClientSession.MessageListener)
+     * unsubscribe(null, listener, callback)}.</p>
+     *
+     * @param listener the listener to unsubscribe
+     * @param callback the callback to notify of the unsubscribe result
+     * @return whether the unsubscribe message has been sent
+     */
+    public default boolean unsubscribe(MessageListener listener, ClientSession.MessageListener callback) {
+        return unsubscribe(null, listener, callback);
+    }
+
+    /**
      * <p>Unsubscribes the given {@code listener} from receiving messages sent to this channel.</p>
      * <p>Unsubscription involves communication with the server only for the last listener
      * unsubscribed from this channel.</p>
@@ -178,11 +205,12 @@ public interface ClientSessionChannel extends Channel {
      * by the server, and therefore only for the last unsubscription from this channel.</p>
      *
      * @param listener the listener to unsubscribe
-     * @param callback the listener to notify of the unsubscribe result.
+     * @param callback the callback to notify of the unsubscribe result
      * @see #subscribe(MessageListener)
      * @see #unsubscribe()
+     * @return whether the unsubscribe message has been sent
      */
-    public void unsubscribe(MessageListener listener, ClientSession.MessageListener callback);
+    public boolean unsubscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback);
 
     /**
      * <p>Unsubscribes all subscribers registered on this channel.</p>

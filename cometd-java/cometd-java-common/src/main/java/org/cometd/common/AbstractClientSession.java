@@ -477,19 +477,23 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         }
 
         @Override
-        public void subscribe(MessageListener listener, ClientSession.MessageListener callback) {
+        public boolean subscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback) {
             throwIfReleased();
             boolean added = _subscriptions.add(listener);
             if (added) {
                 int count = _subscriptionCount.incrementAndGet();
                 if (count == 1) {
-                    sendSubscribe(listener, callback);
+                    sendSubscribe(message, listener, callback);
+                    return true;
                 }
             }
+            return false;
         }
 
-        protected void sendSubscribe(MessageListener listener, ClientSession.MessageListener callback) {
-            Message.Mutable message = newMessage();
+        protected void sendSubscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback) {
+            if (message == null) {
+                message = newMessage();
+            }
             String messageId = newMessageId();
             message.setId(messageId);
             message.setChannel(Channel.META_SUBSCRIBE);
@@ -500,11 +504,13 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         }
 
         @Override
-        public void unsubscribe(MessageListener listener, ClientSession.MessageListener callback) {
+        public boolean unsubscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback) {
             boolean removedLast = removeSubscription(listener);
             if (removedLast) {
-                sendUnSubscribe(callback);
+                sendUnSubscribe(message, callback);
+                return true;
             }
+            return false;
         }
 
         private boolean removeSubscription(MessageListener listener) {
@@ -516,8 +522,10 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
             return false;
         }
 
-        protected void sendUnSubscribe(ClientSession.MessageListener callback) {
-            Message.Mutable message = newMessage();
+        protected void sendUnSubscribe(Message.Mutable message, ClientSession.MessageListener callback) {
+            if (message == null) {
+                message = newMessage();
+            }
             String messageId = newMessageId();
             message.setId(messageId);
             message.setChannel(Channel.META_UNSUBSCRIBE);

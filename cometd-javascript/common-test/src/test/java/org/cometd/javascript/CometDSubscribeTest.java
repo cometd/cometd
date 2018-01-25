@@ -53,9 +53,9 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
         Assert.assertFalse(subscribeLatch.await(1000));
 
         // No message if there are subscriptions
-        unsubscribeLatch.reset(0);
+        unsubscribeLatch.reset(1);
         evaluateScript("cometd.unsubscribe(subscription2);");
-        Assert.assertTrue(unsubscribeLatch.await(5000));
+        Assert.assertFalse(unsubscribeLatch.await(1000));
 
         // Expect message for last unsubscription on the channel
         unsubscribeLatch.reset(1);
