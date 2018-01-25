@@ -39,6 +39,7 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.authorizer.GrantAuthorizer;
@@ -171,9 +172,9 @@ public class OortChatService {
 
     class BadWordFilter extends JSONDataFilter {
         @Override
-        protected Object filterString(String string) {
+        protected Object filterString(ServerSession session, ServerChannel channel, String string) {
             if (string.contains("dang")) {
-                throw new DataFilter.Abort();
+                throw new DataFilter.AbortException();
             }
             return string;
         }

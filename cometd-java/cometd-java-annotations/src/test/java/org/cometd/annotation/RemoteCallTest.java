@@ -252,7 +252,7 @@ public class RemoteCallTest {
 
         @RemoteCall(CHANNEL)
         public void service(RemoteCall.Caller caller, Object data) {
-            throw new NullPointerException();
+            throw new RuntimeException("explicitly thrown by test");
         }
     }
 }

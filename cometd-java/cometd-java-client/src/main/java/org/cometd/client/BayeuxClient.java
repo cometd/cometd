@@ -981,8 +981,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         if (Message.RECONNECT_NONE_VALUE.equals(failureInfo.action)) {
             if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
-                if (failureInfo.transport == null) {
-                    onTransportFailure(getTransport().getName(), null, failureInfo.cause);
+                ClientTransport transport = getTransport();
+                if (transport != null && failureInfo.transport == null) {
+                    onTransportFailure(transport.getName(), null, failureInfo.cause);
                 }
             }
         } else {

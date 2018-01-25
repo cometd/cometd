@@ -16,18 +16,24 @@
 package org.cometd.server.filter;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 
 /**
  * <p>{@link JSONDataFilter} walks an object to see if it is a JSON data structure
- * and calls the appropriate protected method {@link #filterString(String)},
+ * and calls the appropriate methods {@link #filterString(String)},
  * {@link #filterNumber(Number)}, {@link #filterBoolean(Boolean)},
- * {@link #filterArray(ServerSession, ServerChannel, Object)} or
+ * {@link #filterArray(ServerSession, ServerChannel, Object)},
+ * {@link #filterCollection(ServerSession, ServerChannel, Collection)},
+ * {@link #filterList(ServerSession, ServerChannel, List)},
  * {@link #filterMap(ServerSession, ServerChannel, Map)}.</p>
  * <p>Derived filters may override one or more of these methods to provide
  * filtering of specific types.</p>
@@ -37,74 +43,142 @@ public class JSONDataFilter implements DataFilter {
     }
 
     @Override
-    public Object filter(ServerSession from, ServerChannel to, Object data) {
+    public Object filter(ServerSession session, ServerChannel channel, Object data) {
         if (data == null) {
             return null;
         }
-
         if (data instanceof Map) {
-            return filterMap(from, to, (Map)data);
+            return filterMap(session, channel, (Map)data);
         }
         if (data instanceof List) {
-            return filterArray(from, to, ((List)data).toArray());
+            return filterList(session, channel, (List)data);
         }
         if (data instanceof Collection) {
-            return filterArray(from, to, ((Collection)data).toArray());
+            return filterCollection(session, channel, (Collection)data);
         }
         if (data.getClass().isArray()) {
-            return filterArray(from, to, data);
+            return filterArray(session, channel, data);
         }
         if (data instanceof Number) {
-            return filterNumber((Number)data);
+            return filterNumber(session, channel, (Number)data);
         }
         if (data instanceof Boolean) {
-            return filterBoolean((Boolean)data);
+            return filterBoolean(session, channel, (Boolean)data);
         }
         if (data instanceof String) {
-            return filterString((String)data);
+            return filterString(session, channel, (String)data);
         }
-        return filterObject(from, to, data);
+        return filterObject(session, channel, data);
     }
 
+    protected Object filterString(ServerSession session, ServerChannel channel, String string) {
+        return filterString(string);
+    }
+
+    /**
+     * @deprecated use {@link #filterString(ServerSession, ServerChannel, String)} instead
+     */
+    @Deprecated
     protected Object filterString(String string) {
         return string;
     }
 
+    protected Object filterBoolean(ServerSession session, ServerChannel channel, Boolean bool) {
+        return filterBoolean(bool);
+    }
+
+    /**
+     * @deprecated use {@link #filterBoolean(ServerSession, ServerChannel, Boolean)} instead
+     */
+    @Deprecated
     protected Object filterBoolean(Boolean bool) {
         return bool;
     }
 
+    protected Object filterNumber(ServerSession session, ServerChannel channel, Number number) {
+        return filterNumber(number);
+    }
+
+    /**
+     * @deprecated use {@link #filterNumber(ServerSession, ServerChannel, Number)} instead
+     */
+    @Deprecated
     protected Object filterNumber(Number number) {
         return number;
     }
 
-    protected Object filterArray(ServerSession from, ServerChannel to, Object array) {
-        if (array == null) {
-            return null;
+    protected Object filterArray(ServerSession session, ServerChannel channel, Object array) {
+        Object[] mutated = null;
+        for (int i = 0; i < Array.getLength(array); ++i) {
+            Object original = Array.get(array, i);
+            Object filtered = filter(session, channel, original);
+            if (original != filtered) {
+                if (mutated == null) {
+                    mutated = Arrays.copyOf((Object[])array, Array.getLength(array));
+                }
+                mutated[i] = filtered;
+            }
         }
-
-        int length = Array.getLength(array);
-
-        for (int i = 0; i < length; i++) {
-            Array.set(array, i, filter(from, to, Array.get(array, i)));
-        }
-
-        return array;
+        return mutated == null ? array : mutated;
     }
 
-    protected Object filterMap(ServerSession from, ServerChannel to, Map<String, Object> map) {
-        if (map == null) {
-            return null;
+    protected Object filterList(ServerSession session, ServerChannel channel, List<Object> list) {
+        List<Object> mutated = null;
+        for (int i = 0; i < list.size(); ++i) {
+            Object original = list.get(i);
+            Object filtered = filter(session, channel, original);
+            if (original != filtered) {
+                if (mutated == null) {
+                    mutated = new ArrayList<>(list);
+                }
+                mutated.set(i, filtered);
+            }
         }
-
-        for (Map.Entry<String, Object> entry : map.entrySet()) {
-            entry.setValue(filter(from, to, entry.getValue()));
-        }
-
-        return map;
+        return mutated == null ? list : mutated;
     }
 
-    protected Object filterObject(ServerSession from, ServerChannel to, Object obj) {
-        return obj;
+    protected Object filterCollection(ServerSession session, ServerChannel channel, Collection<Object> collection) {
+        int index = 0;
+        List<Object> mutated = null;
+        for (Object original : collection) {
+            Object filtered = filter(session, channel, original);
+            if (original != filtered) {
+                if (mutated == null) {
+                    mutated = new ArrayList<>(collection.size());
+                    int i = 0;
+                    for (Object copy : collection) {
+                        if (i == index) {
+                            break;
+                        }
+                        mutated.add(copy);
+                        ++i;
+                    }
+                }
+                mutated.add(filtered);
+            } else if (mutated != null) {
+                mutated.add(original);
+            }
+            ++index;
+        }
+        return mutated == null ? collection : mutated;
+    }
+
+    protected Object filterMap(ServerSession session, ServerChannel channel, Map<String, Object> map) {
+        Map<String, Object> mutated = null;
+        for (Entry<String, Object> entry : map.entrySet()) {
+            Object original = entry.getValue();
+            Object filtered = filter(session, channel, original);
+            if (original != filtered) {
+                if (mutated == null) {
+                    mutated = new HashMap<>(map);
+                }
+                mutated.put(entry.getKey(), filtered);
+            }
+        }
+        return mutated == null ? map : mutated;
+    }
+
+    protected Object filterObject(ServerSession session, ServerChannel channel, Object data) {
+        return data;
     }
 }
