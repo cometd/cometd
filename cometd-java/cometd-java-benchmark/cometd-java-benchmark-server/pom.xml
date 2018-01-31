@@ -46,14 +46,9 @@
             <argument>-showversion</argument>
             <argument>-Xmx2g</argument>
             <argument>-Xms2g</argument>
-            <argument>-Xmn1g</argument>
+            <argument>-Xlog:gc:stderr:time,level,tags</argument>
             <argument>-XX:+PrintCommandLineFlags</argument>
-            <argument>-XX:+PrintGCTimeStamps</argument>
-            <argument>-XX:+PrintGCDetails</argument>
-            <argument>-XX:+UseParallelOldGC</argument>
-            <argument>-XX:+AggressiveOpts</argument>
-            <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
-            <!--<argument>-XX:+UseG1GC</argument>-->
+            <!--<argument>-XX:+UseParallelOldGC</argument>-->
             <argument>-cp</argument>
             <classpath />
             <argument>${mainClass}</argument>

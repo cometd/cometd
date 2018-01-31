@@ -168,6 +168,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             }
 
             endWrite(response, output);
+            writeComplete(request, response, session, messages, replies);
         } catch (Exception x) {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Failure writing messages", x);
@@ -187,6 +188,9 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
     protected abstract ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException;
 
     protected abstract void endWrite(HttpServletResponse response, ServletOutputStream output) throws IOException;
+
+    protected void writeComplete(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, List<ServerMessage> messages, ServerMessage.Mutable[] replies) {
+    }
 
     protected class DispatchingLongPollScheduler extends LongPollScheduler {
         public DispatchingLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {

@@ -100,6 +100,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         }
     }
 
+    protected void writeComplete(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, List<ServerMessage> messages, ServerMessage.Mutable[] replies) {
+    }
+
     protected abstract class AbstractReader implements ReadListener {
         private final HttpServletRequest request;
         private final HttpServletResponse response;
@@ -312,6 +315,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                     }
                     case COMPLETE: {
                         asyncContext.complete();
+                        writeComplete(request, response, session, messages, replies);
                         return;
                     }
                     default: {
