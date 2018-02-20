@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -73,8 +74,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 public class CometDLoadClient implements MeasureConverter {
-    private static final String ID_FIELD = "ID";
     private static final String START_FIELD = "start";
+    private static final String START_DATE_FIELD = "startDate";
 
     private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);
     private final PlatformTimer timer = PlatformTimer.detect();
@@ -107,7 +108,7 @@ public class CometDLoadClient implements MeasureConverter {
     private int selectors = 1;
     private int maxThreads = 256;
     private String context = Config.CONTEXT_PATH;
-    private String channel = "/chat/demo";
+    private String channel = "/a";
     private int rooms = 100;
     private int roomsPerClient = 10;
     private boolean ackExtension = false;
@@ -138,7 +139,7 @@ public class CometDLoadClient implements MeasureConverter {
                 client.transport = ClientTransportType.valueOf(arg.substring("--transport=".length()));
             } else if (arg.equals("--tls")) {
                 client.tls = true;
-            } else if (arg.equals("--selectors")) {
+            } else if (arg.startsWith("--selectors=")) {
                 client.selectors = Integer.parseInt(arg.substring("--selectors=".length()));
             } else if (arg.startsWith("--maxThreads=")) {
                 client.maxThreads = Integer.parseInt(arg.substring("--maxThreads=".length()));
@@ -268,6 +269,7 @@ public class CometDLoadClient implements MeasureConverter {
             }
             channel = value;
         }
+        channel = Config.CHANNEL_PREFIX + (channel.startsWith("/") ? channel.substring(1) : channel);
 
         int rooms = this.rooms;
         if (interactive) {
@@ -371,9 +373,8 @@ public class CometDLoadClient implements MeasureConverter {
                     client.getChannel(Channel.META_HANDSHAKE).addListener(handshakeListener);
                     client.getChannel(Channel.META_DISCONNECT).addListener(disconnectListener);
                     client.handshake();
-
-                    // Give some time to the server to accept connections and
-                    // reply to handshakes, connects and subscribes
+                    // Give some time to the server to accept connections
+                    // and reply to handshakes, connects and subscribes.
                     if (i % 10 == 0) {
                         Thread.sleep(50);
                     }
@@ -382,6 +383,10 @@ public class CometDLoadClient implements MeasureConverter {
                 for (int i = 0; i < currentClients - clients; ++i) {
                     LoadBayeuxClient client = bayeuxClients.get(currentClients - i - 1);
                     client.disconnect();
+                    // Give some time to the server to process the disconnects.
+                    if (i % 10 == 0) {
+                        Thread.sleep(50);
+                    }
                 }
             }
 
@@ -610,7 +615,9 @@ public class CometDLoadClient implements MeasureConverter {
             message.put("chat", chat);
             // Mandatory fields to record latencies
             message.put(START_FIELD, System.nanoTime());
-            message.put(ID_FIELD, String.valueOf(ids.incrementAndGet()));
+            String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").format(System.currentTimeMillis());
+            message.put(START_DATE_FIELD, startDate);
+            message.put(Config.ID_FIELD, String.valueOf(ids.incrementAndGet()) + channel);
             ClientSessionChannel clientChannel = client.getChannel(getChannelId(channel + "/" + room));
             clientChannel.publish(message);
             clientChannel.release();
@@ -831,7 +838,7 @@ public class CometDLoadClient implements MeasureConverter {
                 end.set(endTime);
                 messages.incrementAndGet();
 
-                String id = (String)data.get(ID_FIELD);
+                String id = (String)data.get(Config.ID_FIELD);
 
                 AtomicStampedReference<Long> sendTimeRef = sendTimes.get(id);
                 long sendTime = sendTimeRef.getReference();
@@ -922,7 +929,7 @@ public class CometDLoadClient implements MeasureConverter {
                 if (data != null && message.getChannelId().isBroadcast()) {
                     int room = (Integer)data.get("room");
                     int clientsInRoom = roomMap.get(room).get();
-                    String id = (String)data.get(ID_FIELD);
+                    String id = (String)data.get(Config.ID_FIELD);
                     sendTimes.put(id, new AtomicStampedReference<>(now, clientsInRoom));
                     // There is no write-cheap concurrent list in JDK, so let's use a synchronized wrapper
                     arrivalTimes.put(id, new AtomicStampedReference<>(Collections.synchronizedList(new LinkedList<>()), clientsInRoom));
@@ -938,7 +945,7 @@ public class CometDLoadClient implements MeasureConverter {
                 Map<String, Object> data = message.getDataAsMap();
                 if (data != null) {
                     response = true;
-                    String id = (String)data.get(ID_FIELD);
+                    String id = (String)data.get(Config.ID_FIELD);
                     arrivalTimes.get(id).getReference().add(now);
                 }
             }

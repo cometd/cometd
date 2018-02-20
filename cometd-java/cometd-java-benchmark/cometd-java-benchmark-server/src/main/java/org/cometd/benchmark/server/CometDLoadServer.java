@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -38,6 +39,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.HdrHistogram.AtomicHistogram;
+import org.HdrHistogram.Histogram;
+import org.HdrHistogram.Recorder;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -77,6 +80,7 @@ public class CometDLoadServer {
     private final MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(0);
     private final BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
     private final Server server = new Server(jettyThreadPool);
+    private final MessageLatencyExtension messageLatencyExtension = new MessageLatencyExtension();
     private boolean interactive = true;
     private int port = 8080;
     private boolean tls = false;
@@ -103,7 +107,7 @@ public class CometDLoadServer {
                 server.port = Integer.parseInt(arg.substring("--port=".length()));
             } else if (arg.equals("--tls")) {
                 server.tls = true;
-            } else if (arg.equals("--selectors")) {
+            } else if (arg.startsWith("--selectors=")) {
                 server.selectors = Integer.parseInt(arg.substring("--selectors=".length()));
             } else if (arg.startsWith("--maxThreads=")) {
                 server.maxThreads = Integer.parseInt(arg.substring("--maxThreads=".length()));
@@ -184,10 +188,20 @@ public class CometDLoadServer {
                     bayeuxServer.addTransport(new JettyWebSocketTransport(bayeuxServer));
                     break;
                 case "http":
-                    bayeuxServer.addTransport(new JSONTransport(bayeuxServer));
+                    bayeuxServer.addTransport(new JSONTransport(bayeuxServer) {
+                        @Override
+                        protected void writeComplete(Context context, List<ServerMessage> messages) {
+                            messageLatencyExtension.complete(messages);
+                        }
+                    });
                     break;
                 case "asynchttp":
-                    bayeuxServer.addTransport(new AsyncJSONTransport(bayeuxServer));
+                    bayeuxServer.addTransport(new AsyncJSONTransport(bayeuxServer) {
+                        @Override
+                        protected void writeComplete(Context context, List<ServerMessage> messages) {
+                            messageLatencyExtension.complete(messages);
+                        }
+                    });
                     break;
                 default:
                     throw new IllegalArgumentException("Invalid transport: " + token);
@@ -307,6 +321,8 @@ public class CometDLoadServer {
         server.start();
 
         new StatisticsService(this);
+
+        bayeuxServer.addExtension(messageLatencyExtension);
     }
 
     public static class StatisticsService extends AbstractService {
@@ -345,7 +361,7 @@ public class CometDLoadServer {
             }
         }
 
-        public void stopStatistics(ServerSession remote, ServerMessage message) throws Exception {
+        public void stopStatistics(ServerSession remote, ServerMessage message) {
             synchronized (this) {
                 PlatformMonitor.Stop stop = monitor.stop();
                 if (stop != null) {
@@ -369,7 +385,10 @@ public class CometDLoadServer {
                                 server.statisticsHandler.getStatsOnMs() == 0 ? -1 : server.statisticsHandler.getDispatched() * 1000L / server.statisticsHandler.getStatsOnMs());
                     }
 
+                    server.messageLatencyExtension.print();
+
                     if (server.jettyThreadPool != null) {
+                        System.err.println("========================================");
                         System.err.printf("Jetty Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms | Task Latency avg/max = %d/%d ms%n",
                                 server.jettyThreadPool.getTasks(),
                                 server.jettyThreadPool.getMaxActiveThreads(),
@@ -385,7 +404,7 @@ public class CometDLoadServer {
             }
         }
 
-        public void exit(ServerSession remote, ServerMessage message) throws Exception {
+        public void exit(ServerSession remote, ServerMessage message) {
             remote.disconnect();
             // Cannot stop the server from a threadPool thread.
             new Thread() {
@@ -518,6 +537,50 @@ public class CometDLoadServer {
 
         public void doNotTrackCurrentRequest() {
             currentEnabled.set(false);
+        }
+    }
+
+    private static class MessageLatencyExtension extends BayeuxServer.Extension.Adapter implements MeasureConverter {
+        private static final String SERVER_TIME_FIELD = "serverTime";
+
+        private final Recorder latencies = new Recorder(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);
+
+        @Override
+        public boolean rcv(ServerSession session, ServerMessage.Mutable message) {
+            if (message.getChannel().startsWith(Config.CHANNEL_PREFIX)) {
+                String id = (String)message.getDataAsMap().get(Config.ID_FIELD);
+                if (id != null) {
+                    message.put(SERVER_TIME_FIELD, System.nanoTime());
+                }
+            }
+            return true;
+        }
+
+        private void complete(List<ServerMessage> messages) {
+            for (ServerMessage message : messages) {
+                if (message.getChannel().startsWith(Config.CHANNEL_PREFIX)) {
+                    String id = (String)message.getDataAsMap().get(Config.ID_FIELD);
+                    if (id != null) {
+                        Long serverTime = (Long)message.get(SERVER_TIME_FIELD);
+                        if (serverTime != null) {
+                            latencies.recordValue(System.nanoTime() - serverTime);
+                        }
+                    }
+                }
+            }
+        }
+
+        @Override
+        public long convert(long measure) {
+            return TimeUnit.NANOSECONDS.toMicros(measure);
+        }
+
+        private void print() {
+            Histogram histogram = latencies.getIntervalHistogram();
+            if (histogram.getTotalCount() > 0) {
+                System.err.println("========================================");
+                System.err.println(new HistogramSnapshot(histogram, 20, "Messages - Processing", "\u00B5s", this));
+            }
         }
     }
 }

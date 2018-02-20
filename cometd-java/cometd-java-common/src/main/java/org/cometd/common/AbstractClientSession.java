@@ -164,15 +164,18 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
     private ClientSessionChannel getChannel(String channelName, ChannelId channelId) {
         AbstractSessionChannel channel = _channels.get(channelName);
+        if (channel != null) {
+            return channel;
+        }
+        if (channelId == null) {
+            // Creating the ChannelId will also normalize the channelName.
+            channelId = newChannelId(channelName);
+            return getChannel(channelId);
+        }
+        AbstractSessionChannel newChannel = newChannel(channelId);
+        channel = _channels.putIfAbsent(channelId.getId(), newChannel);
         if (channel == null) {
-            if (channelId == null) {
-                channelId = newChannelId(channelName);
-            }
-            AbstractSessionChannel newChannel = newChannel(channelId);
-            channel = _channels.putIfAbsent(channelName, newChannel);
-            if (channel == null) {
-                channel = newChannel;
-            }
+            channel = newChannel;
         }
         return channel;
     }
@@ -706,7 +709,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
         @Override
         public String toString() {
-            return String.format("%s@%s", _id, AbstractClientSession.this);
+            return String.format("%s@%x[%s]", _id, hashCode(), AbstractClientSession.this);
         }
     }
 }

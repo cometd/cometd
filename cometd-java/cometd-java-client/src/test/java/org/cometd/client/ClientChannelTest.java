@@ -13,17 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.benchmark;
+package org.cometd.client;
 
-public class Config {
-    public static final String CONTEXT_PATH = "/cometd";
-    public static final String SERVLET_PATH = "/cometd";
-    public static final String ID_FIELD = "ID";
-    public static final String CHANNEL_PREFIX = "/bench/";
+import org.cometd.bayeux.client.ClientSessionChannel;
+import org.junit.Assert;
+import org.junit.Test;
 
-    public static final long META_CONNECT_TIMEOUT = 20000;
-    public static final long MAX_NETWORK_DELAY = 5000;
+public class ClientChannelTest extends ClientServerTest {
+    @Test
+    public void testSameChannelWithTrailingSlash() throws Exception {
+        startServer(null);
 
-    private Config() {
+        BayeuxClient client = newBayeuxClient();
+
+        String channelName = "/foo";
+        ClientSessionChannel channel1 = client.getChannel(channelName);
+        ClientSessionChannel channel2 = client.getChannel(channelName + "/");
+
+        Assert.assertSame(channel1, channel2);
+
+        disconnectBayeuxClient(client);
     }
 }

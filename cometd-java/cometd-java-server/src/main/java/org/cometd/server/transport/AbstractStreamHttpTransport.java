@@ -206,8 +206,8 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             }
 
             endWrite(response, output);
-
             promise.succeed(null);
+            writeComplete(context, messages);
         } catch (Throwable x) {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Failure writing messages", x);
@@ -223,6 +223,9 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
     protected abstract ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException;
 
     protected abstract void endWrite(HttpServletResponse response, ServletOutputStream output) throws IOException;
+
+    protected void writeComplete(Context context, List<ServerMessage> messages) {
+    }
 
     protected class DispatchingLongPollScheduler extends LongPollScheduler {
         public DispatchingLongPollScheduler(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {

@@ -149,6 +149,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         }
     }
 
+    protected void writeComplete(Context context, List<ServerMessage> messages) {
+    }
+
     protected abstract class AbstractReader implements ReadListener {
         private final Context context;
         private final Promise<Void> promise;
@@ -329,6 +332,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                     }
                     case COMPLETE: {
                         promise.succeed(null);
+                        writeComplete(context, messages);
                         return;
                     }
                     default: {
