@@ -56,19 +56,12 @@ By default, SLF4J comes with with a simple binding that _does not_ log statement
 produced at debug level.
 
 Therefore you must configure SLF4J with a more advanced binding such as
-http://logging.apache.org/log4j[Log4J] or http://logback.qos.ch/[Logback].
+https://logging.apache.org/log4j/2.x/[Log4J2] or http://logback.qos.ch/[Logback].
 Refer to the SLF4J documentation and the binding implementation documentation on
-how to configure logging when using the advanced bindings.
+how to configure logging when using these advanced bindings.
 
 Therefore, to enable CometD debug logging for your application you need to
 configure whatever SLF4J binding you have chosen to use.
-
-As a simple example, for Log4J it is usually enough to add the SLF4J-Log4J binding jar
-(`slf4j-log4j12-<slf4j-version>.jar`) and the Log4J jar (`log4j-<log4j-version>.jar`)
-in `WEB-INF/lib`, and then add a properly configured `log4j.properties` file in
-`WEB-INF/classes`.
-You don't want to add these files manually; they are reported here just as a simple reference.
-Usually these dependencies are configured in the build system that you use to create your web application. 
 
 Once you have logging enabled on the Java server library, you can see the debug
 logs in the terminal where you launched your Servlet Container (or in its log

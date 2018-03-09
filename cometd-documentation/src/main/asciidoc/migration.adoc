@@ -124,7 +124,7 @@ handled by the next transport (typically the `long-polling` transport).
 |
 | The parameter has been removed in CometD 3. +
   In CometD 3 logging levels are controlled by the logging framework
-  implementation (for example, Log4J).
+  implementation (for example, Log4J2).
 
 | `transports`
 | `transports`

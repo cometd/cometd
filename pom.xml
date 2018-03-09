@@ -14,6 +14,7 @@
     <jetty-version>9.4.8.v20171121</jetty-version>
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.25</slf4j-version>
+    <log4j2-version>2.10.0</log4j2-version>
     <spring-version>5.0.2.RELEASE</spring-version>
     <jackson-version>2.9.3</jackson-version>
     <dojo-version>1.13.0</dojo-version>
@@ -500,9 +501,9 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-log4j12</artifactId>
-        <version>${slf4j-version}</version>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+        <version>${log4j2-version}</version>
         <scope>test</scope>
       </dependency>
     </dependencies>

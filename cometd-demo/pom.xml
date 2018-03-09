@@ -90,6 +90,12 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
         <configuration>
+          <systemProperties>
+            <systemProperty>
+              <name>log4.configurationFile</name>
+              <value>src/main/webapp/WEB-INF/log4j2.properties</value>
+            </systemProperty>
+          </systemProperties>
           <requestLog implementation="org.eclipse.jetty.server.Slf4jRequestLog" />
           <stopPort>8989</stopPort>
           <stopKey>QUIT</stopKey>
@@ -99,6 +105,13 @@
             <contextPath>/</contextPath>
           </webApp>
         </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j2-version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>
@@ -202,8 +215,14 @@
       <version>${jetty-version}</version>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j-impl</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-web</artifactId>
+      <version>${log4j2-version}</version>
       <scope>runtime</scope>
     </dependency>
 

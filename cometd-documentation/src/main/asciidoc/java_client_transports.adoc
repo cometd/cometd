@@ -162,7 +162,7 @@ If you are building your application with http://maven.apache.org[Maven]
 * `org.cometd.java:cometd-java-client` (Maven automatically pulls the Jetty
   dependencies that the `cometd-java-client` artifact needs).
 * an http://slf4j.org[SLF4J] (the logging library) implementation such as
-  `org.slf4j:slf4j-simple` (recommended: `org.slf4j:slf4j-log4j12`
+  `org.slf4j:slf4j-simple` (recommended: `org.apache.logging.log4j:log4j-slf4j-impl`
   or `ch.qos.logback:logback-classic`).
 
 With these dependencies in place, you can use the `long-polling` transport out of the box.
@@ -173,14 +173,14 @@ The dependencies for the JSR 356 WebSocket transport are:
 
 * `org.cometd.java:cometd-java-websocket-javax-client` (and transitive dependencies)
 * an http://slf4j.org[SLF4J] (the logging library) implementation such as
-  `org.slf4j:slf4j-simple` (recommended: `org.slf4j:slf4j-log4j12`
+  `org.slf4j:slf4j-simple` (recommended: `org.apache.logging.log4j:log4j-slf4j-impl`
   or `ch.qos.logback:logback-classic`).
 
 The dependencies for the Jetty WebSocket transport are:
 
 * `org.cometd.java:cometd-java-websocket-jetty-client` (and transitive dependencies)
 * an http://slf4j.org[SLF4J] (the logging library) implementation such as
-  `org.slf4j:slf4j-simple` (recommended: `org.slf4j:slf4j-log4j12`
+  `org.slf4j:slf4j-simple` (recommended: `org.apache.logging.log4j:log4j-slf4j-impl`
   or `ch.qos.logback:logback-classic`).
 
 Maven will automatically pull the transitive dependencies that each artifact needs.
