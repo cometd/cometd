@@ -29,8 +29,8 @@ import org.cometd.bayeux.server.ServerSession;
 
 /**
  * <p>{@link JSONDataFilter} walks an object to see if it is a JSON data structure
- * and calls the appropriate methods {@link #filterString(String)},
- * {@link #filterNumber(Number)}, {@link #filterBoolean(Boolean)},
+ * and calls the appropriate methods {@link #filterString(ServerSession, ServerChannel, String)},
+ * {@link #filterNumber(Number)}, {@link #filterBoolean(ServerSession, ServerChannel, Boolean)},
  * {@link #filterArray(ServerSession, ServerChannel, Object)},
  * {@link #filterCollection(ServerSession, ServerChannel, Collection)},
  * {@link #filterList(ServerSession, ServerChannel, List)},
@@ -76,6 +76,8 @@ public class JSONDataFilter implements DataFilter {
     }
 
     /**
+     * @param string the string to filter
+     * @return a filtered object
      * @deprecated use {@link #filterString(ServerSession, ServerChannel, String)} instead
      */
     @Deprecated
@@ -88,6 +90,8 @@ public class JSONDataFilter implements DataFilter {
     }
 
     /**
+     * @param bool the boolean to filter
+     * @return a filtered object
      * @deprecated use {@link #filterBoolean(ServerSession, ServerChannel, Boolean)} instead
      */
     @Deprecated
@@ -100,6 +104,8 @@ public class JSONDataFilter implements DataFilter {
     }
 
     /**
+     * @param number the number to filter
+     * @return a filtered object
      * @deprecated use {@link #filterNumber(ServerSession, ServerChannel, Number)} instead
      */
     @Deprecated

@@ -20,21 +20,17 @@ import org.cometd.bayeux.ChannelId;
 
 /**
  * <p>{@link Authorizer}s authorize {@link Operation operations} on {@link ServerChannel channels}.</p>
- * <p>
  * <p>Authorizers can be {@link ConfigurableServerChannel#addAuthorizer(Authorizer) added to} and
  * {@link ConfigurableServerChannel#removeAuthorizer(Authorizer)}  removed from} channels, even wildcard
  * channels.</p>
- * <p>
  * <p>{@link Authorizer}s work together with the {@link SecurityPolicy} to determine if a
  * {@link Operation#CREATE channel creation}, a {@link Operation#SUBSCRIBE channel subscribe} or a
  * {@link Operation#PUBLISH publish operation} may succeed.
  * </p>
- * <p>
  * <p>For an operation on a channel, the authorizers on the wildcard channels that match the channel and the
  * authorizers on the channel itself (together known at the <em>authorizers set</em> for that channel) will be
  * consulted to check if the the operation is granted, denied or ignored.</p>
  * <p>The list of wildcard channels that match the channel is obtained from {@link ChannelId#getWilds()}.</p>
- * <p>
  * <p>The following is the authorization algorithm:</p>
  * <ul>
  * <li>If there is a security policy, and the security policy denies the request, then the request is denied.</li>
@@ -46,7 +42,6 @@ import org.cometd.bayeux.ChannelId;
  * request is denied.</li>
  * </ul>
  * <p>The order in which the authorizers are checked is not important.</p>
- * <p>
  * <p>Typically, authorizers are setup during the configuration of a channel:</p>
  * <pre>
  * BayeuxServer bayeuxServer = ...;
@@ -73,7 +68,6 @@ import org.cometd.bayeux.ChannelId;
  *     }
  * });
  * </pre>
- * <p>
  * <p>A typical usage of authorizers is as follows:</p>
  * <ul>
  * <li>Create a wildcard authorizer that matches all channels and neither grants or
