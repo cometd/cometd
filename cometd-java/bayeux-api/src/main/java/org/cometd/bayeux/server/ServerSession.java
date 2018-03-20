@@ -99,6 +99,8 @@ public interface ServerSession extends Session {
     public void deliver(Session sender, ServerMessage.Mutable message, Promise<Boolean> promise);
 
     /**
+     * @param sender  the session delivering the message
+     * @param message the message to deliver
      * @deprecated use {@link #deliver(Session, ServerMessage.Mutable, Promise)} instead
      */
     @Deprecated
@@ -118,6 +120,9 @@ public interface ServerSession extends Session {
     public void deliver(Session sender, String channel, Object data, Promise<Boolean> promise);
 
     /**
+     * @param sender  the session delivering the message
+     * @param channel the channel of the message
+     * @param data    the data of the message
      * @deprecated use {@link #deliver(Session, String, Object, Promise)} instead
      */
     @Deprecated
@@ -203,6 +208,11 @@ public interface ServerSession extends Session {
 
         /**
          * <p>Blocking version of {@link #onMessage(ServerSession, ServerSession, ServerMessage, Promise)}.</p>
+         *
+         * @param session the session that will receive the message
+         * @param sender  the session that sent the message
+         * @param message the message sent
+         * @return whether the processing of the message should continue
          */
         public default boolean onMessage(ServerSession session, ServerSession sender, ServerMessage message) {
             return true;
@@ -315,6 +325,10 @@ public interface ServerSession extends Session {
         /**
          * <p>Blocking version of {@link #incoming(ServerSession, ServerMessage.Mutable, Promise)}
          * for non-meta messages.</p>
+         *
+         * @param session the session that sent the message
+         * @param message the incoming message
+         * @return whether message processing should continue
          */
         default boolean rcv(ServerSession session, ServerMessage.Mutable message) {
             return true;
@@ -323,6 +337,10 @@ public interface ServerSession extends Session {
         /**
          * <p>Blocking version of {@link #incoming(ServerSession, ServerMessage.Mutable, Promise)}
          * for meta messages.</p>
+         *
+         * @param session the session that sent the message
+         * @param message the incoming message
+         * @return whether message processing should continue
          */
         default boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
             return true;
@@ -353,6 +371,10 @@ public interface ServerSession extends Session {
         /**
          * <p>Blocking version of {@link #outgoing(ServerSession, ServerMessage.Mutable, Promise)}
          * for non-meta messages.</p>
+         *
+         * @param session the session receiving the message
+         * @param message the outgoing message
+         * @return the message to send or null to not send the message
          */
         default ServerMessage send(ServerSession session, ServerMessage message) {
             return message;
@@ -361,6 +383,10 @@ public interface ServerSession extends Session {
         /**
          * <p>Blocking version of {@link #outgoing(ServerSession, ServerMessage.Mutable, Promise)}
          * for meta messages.</p>
+         *
+         * @param session the session receiving the message
+         * @param message the outgoing message
+         * @return whether message processing should continue
          */
         default boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
             return true;

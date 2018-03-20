@@ -24,21 +24,16 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 
 /**
- * Timesync extension (server side).
- * <p>
- * With each handshake or connect, the extension sends timestamps within the ext
- * field like:
- * <code>{ext:{timesync:{tc:12345567890,l:23,o:4567},...},...}</code> where:
+ * <p>Timesync extension (server side).</p>
+ * <p>With each handshake or connect, the extension sends timestamps within the ext
+ * field like: {@code {ext:{timesync:{tc:12345567890,l:23,o:4567},...},...}} where:
  * <ul>
  * <li>tc is the client timestamp in ms since 1970 of when the message was sent.
  * <li>l is the network lag that the client has calculated.
  * <li>o is the clock offset that the client has calculated.
  * </ul>
- * <p>
- * <p>
- * A cometd server that supports timesync, can respond with an ext field like:
- * <code>{ext:{timesync:{tc:12345567890,ts:1234567900,p:123,a:3},...},...}</code>
- * where:
+ * <p>A CometD server that supports timesync, can respond with an ext field like:
+ * {@code {ext:{timesync:{tc:12345567890,ts:1234567900,p:123,a:3},...},...}} where:
  * <ul>
  * <li>tc is the client timestamp of when the message was sent,
  * <li>ts is the server timestamp of when the message was received
@@ -47,23 +42,17 @@ import org.cometd.bayeux.server.ServerSession;
  * <li>a is the measured accuracy of the calculated offset and lag sent by the
  * client
  * </ul>
- * <p>
- * The relationship between tc, ts, o and l on the server is given by
- * <code>ts=tc+o+l</code> (the time the server received the message is the
+ * <p>The relationship between tc, ts, o and l on the server is given by
+ * {@code ts=tc+o+l} (the time the server received the message is the
  * client time plus the offset plus the network lag). Thus the accuracy of the o
- * and l settings can be determined with <code>a=tc+o+l-ts</code>.
- * </p>
- * <p>
- * When the client has received the response, it can make a more accurate
- * estimate of the lag as <code>l2=(now-tc-p)/2</code> (assuming symmetric lag).
+ * and l settings can be determined with {@code a=tc+o+l-ts}.</p>
+ * <p>When the client has received the response, it can make a more accurate
+ * estimate of the lag as {@code l2=(now-tc-p)/2} (assuming symmetric lag).
  * A new offset can then be calculated with the relationship on the client that
- * <code>ts=tc+o2+l2</code>, thus <code>o2=ts-tc-l2</code>.
- * </p>
- * <p>
- * Since the client also receives the a value calculated on the server, it
+ * {@code ts=tc+o2+l2}, thus {@code o2=ts-tc-l2}.</p>
+ * <p>Since the client also receives the a value calculated on the server, it
  * should be possible to analyse this and compensate for some asymmetry in the
- * lag. But the current client does not do this.
- * </p>
+ * lag. But the current client does not do this.</p>
  */
 public class TimesyncExtension implements Extension {
     public static final String LAG_ATTRIBUTE = "lag";

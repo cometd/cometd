@@ -70,11 +70,14 @@ public interface ServerChannel extends ConfigurableServerChannel {
      *
      * @param from    the session from which the message originates
      * @param message the message to publish
+     * @param promise the promise to notify whether the message has been published
      * @see #publish(Session, Object, Promise)
      */
     public void publish(Session from, ServerMessage.Mutable message, Promise<Boolean> promise);
 
     /**
+     * @param from    the session from which the message originates
+     * @param message the message to publish
      * @deprecated use {@link #publish(Session, ServerMessage.Mutable, Promise)} instead
      */
     @Deprecated
@@ -85,13 +88,16 @@ public interface ServerChannel extends ConfigurableServerChannel {
     /**
      * <p>Publishes the given information to this channel.</p>
      *
-     * @param from the session from which the message originates
-     * @param data the data of the message
+     * @param from    the session from which the message originates
+     * @param data    the data of the message
+     * @param promise the promise to notify whether the message has been published
      * @see #publish(Session, ServerMessage.Mutable, Promise)
      */
     public void publish(Session from, Object data, Promise<Boolean> promise);
 
     /**
+     * @param from the session from which the message originates
+     * @param data the data of the message
      * @deprecated use {@link #publish(Session, Object, Promise)} instead
      */
     @Deprecated
@@ -121,7 +127,7 @@ public interface ServerChannel extends ConfigurableServerChannel {
          * @param sender  the session that publishes the message
          * @param channel the channel the message is published to
          * @param message the message to be published
-         * @param promise the promise to notify
+         * @param promise the promise to notify whether the message processing should continue
          */
         public default void onMessage(ServerSession sender, ServerChannel channel, ServerMessage.Mutable message, Promise<Boolean> promise) {
             promise.succeed(onMessage(sender, channel, message));
@@ -129,8 +135,13 @@ public interface ServerChannel extends ConfigurableServerChannel {
 
         /**
          * <p>Blocking version of {@link #onMessage(ServerSession, ServerChannel, ServerMessage.Mutable, Promise)}.</p>
+         *
+         * @param sender  the session that publishes the message
+         * @param channel the channel the message is published to
+         * @param message the message to be published
+         * @return whether the message processing should continue
          */
-        public default boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+        public default boolean onMessage(ServerSession sender, ServerChannel channel, ServerMessage.Mutable message) {
             return true;
         }
     }

@@ -19,8 +19,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public interface Promise<C>
-{
+/**
+ * <p>The future result of an operation, either a value if the operation
+ * succeeded, or a failure if the operation failed.</p>
+ *
+ * @param <C> the type of the result value
+ */
+public interface Promise<C> {
     /**
      * <p>Shared instance whose methods are implemented empty,</p>
      * <p>use {@link #noop()} to ease type inference.</p>
@@ -41,8 +46,7 @@ public interface Promise<C>
      * @param result the result
      * @see #fail(Throwable)
      */
-    default void succeed(C result)
-    {
+    default void succeed(C result) {
     }
 
     /**
@@ -50,8 +54,7 @@ public interface Promise<C>
      *
      * @param failure the operation failure
      */
-    default void fail(Throwable failure)
-    {
+    default void fail(Throwable failure) {
     }
 
     /**
@@ -79,6 +82,7 @@ public interface Promise<C>
     }
 
     /**
+     * @param <T> the type of the empty result
      * @return a Promise whose methods are implemented empty.
      */
     static <T> Promise<T> noop() {
@@ -87,7 +91,8 @@ public interface Promise<C>
 
     /**
      * @param succeed the Consumer to call in case of successful completion
-     * @param fail the Consumer to call in case of failed completion
+     * @param fail    the Consumer to call in case of failed completion
+     * @param <T>     the type of the result value
      * @return a Promise from the given consumers
      */
     static <T> Promise<T> from(Consumer<T> succeed, Consumer<Throwable> fail) {
@@ -107,17 +112,14 @@ public interface Promise<C>
     /**
      * <p>A CompletableFuture that is also a Promise.</p>
      */
-    class Completable<S> extends CompletableFuture<S> implements Promise<S>
-    {
+    class Completable<S> extends CompletableFuture<S> implements Promise<S> {
         @Override
-        public void succeed(S result)
-        {
+        public void succeed(S result) {
             complete(result);
         }
 
         @Override
-        public void fail(Throwable failure)
-        {
+        public void fail(Throwable failure) {
             completeExceptionally(failure);
         }
     }

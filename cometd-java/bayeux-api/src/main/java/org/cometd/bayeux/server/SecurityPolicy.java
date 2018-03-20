@@ -53,6 +53,11 @@ public interface SecurityPolicy {
 
     /**
      * <p>Blocking version of {@link #canHandshake(BayeuxServer, ServerSession, ServerMessage, Promise)}.</p>
+     *
+     * @param server  the {@link BayeuxServer} object
+     * @param session the session (not yet added to the BayeuxServer)
+     * @param message the handshake message
+     * @return whether the handshake message is allowed
      */
     default boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
         return false;
@@ -79,6 +84,12 @@ public interface SecurityPolicy {
 
     /**
      * <p>Blocking version of {@link #canCreate(BayeuxServer, ServerSession, String, ServerMessage, Promise)}.</p>
+     *
+     * @param server    the {@link BayeuxServer} object
+     * @param session   the client sending the message
+     * @param channelId the channel to be created
+     * @param message   the message trying to create the channel
+     * @return whether the channel creation is allowed
      */
     default boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message) {
         return false;
@@ -102,6 +113,12 @@ public interface SecurityPolicy {
 
     /**
      * <p>Blocking version of {@link #canSubscribe(BayeuxServer, ServerSession, ServerChannel, ServerMessage, Promise)}.</p>
+     *
+     * @param server  the {@link BayeuxServer} object
+     * @param session the client sending the message
+     * @param channel the channel to subscribe to
+     * @param message the subscribe message
+     * @return whether the channel subscription is allowed
      */
     default boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
         return false;
@@ -125,6 +142,12 @@ public interface SecurityPolicy {
 
     /**
      * <p>Blocking version of {@link #canPublish(BayeuxServer, ServerSession, ServerChannel, ServerMessage, Promise)}.</p>
+     *
+     * @param server  the {@link BayeuxServer} object
+     * @param session the client sending the message
+     * @param channel the channel to publish to
+     * @param message the message to being published
+     * @return whether the publish is allowed
      */
     default boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
         return false;

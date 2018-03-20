@@ -88,7 +88,7 @@ import org.slf4j.LoggerFactory;
  * The diagram below shows one oort object with name "user_count" in two nodes.
  * On the left of the arrow (A), the situation before calling:</p>
  * <pre>
- * userCount1.setAndShare(17, result -> { ... });
+ * userCount1.setAndShare(17, result -&gt; { ... });
  * </pre>
  * <p>and on the right of the arrow (A) the situation afterwards, that shows how the value is first changed
  * (1) locally on {@code node_1}, then a message (2) is broadcast on the cluster, reaches

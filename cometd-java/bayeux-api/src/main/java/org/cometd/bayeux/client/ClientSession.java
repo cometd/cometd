@@ -70,6 +70,8 @@ public interface ClientSession extends Session {
     }
 
     /**
+     * @param template additional fields to add to the handshake message.
+     * @param callback the message listener to notify of the handshake result
      * @deprecated use {@link #handshake(Map, MessageListener)} instead
      */
     @Deprecated
@@ -93,6 +95,7 @@ public interface ClientSession extends Session {
     }
 
     /**
+     * @param callback the message listener to notify of the disconnect result
      * @deprecated use {@link #disconnect(MessageListener)} instead
      */
     @Deprecated

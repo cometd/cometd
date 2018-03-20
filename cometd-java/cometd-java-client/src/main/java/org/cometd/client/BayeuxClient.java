@@ -257,6 +257,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     /**
+     * @param callback the message listener to notify of the handshake result
      * @deprecated use {@link #handshake(MessageListener)} instead
      */
     @Deprecated

@@ -281,6 +281,10 @@ public interface BayeuxServer extends Bayeux {
         /**
          * <p>Blocking version of {@link #incoming(ServerSession, ServerMessage.Mutable, Promise)}
          * for non-meta messages.</p>
+         *
+         * @param from    the session that sent the message
+         * @param message the incoming message
+         * @return whether message processing should continue
          */
         default boolean rcv(ServerSession from, ServerMessage.Mutable message) {
             return true;
@@ -289,6 +293,10 @@ public interface BayeuxServer extends Bayeux {
         /**
          * <p>Blocking version of {@link #incoming(ServerSession, ServerMessage.Mutable, Promise)}
          * for meta messages.</p>
+         *
+         * @param from    the session that sent the message
+         * @param message the incoming message
+         * @return whether message processing should continue
          */
         default boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             return true;
@@ -309,6 +317,11 @@ public interface BayeuxServer extends Bayeux {
         /**
          * <p>Blocking version of {@link #outgoing(ServerSession, ServerSession, ServerMessage.Mutable, Promise)}
          * for non-meta messages.</p>
+         *
+         * @param from    the session that sent the message or null
+         * @param to      the session the message is sent to, or null for a publish.
+         * @param message the outgoing message
+         * @return whether message processing should continue
          */
         default boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
             return true;
@@ -317,6 +330,10 @@ public interface BayeuxServer extends Bayeux {
         /**
          * <p>Blocking version of {@link #outgoing(ServerSession, ServerSession, ServerMessage.Mutable, Promise)}
          * for meta messages.</p>
+         *
+         * @param to      the session the message is sent to, or null for a publish.
+         * @param message the outgoing message
+         * @return whether message processing should continue
          */
         default boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
             return true;
@@ -324,6 +341,7 @@ public interface BayeuxServer extends Bayeux {
 
         /**
          * Empty implementation of {@link Extension}.
+         *
          * @deprecated Use {@link Extension} instead
          */
         @Deprecated

@@ -83,6 +83,8 @@ public interface ClientSessionChannel extends Channel {
     }
 
     /**
+     * @param data     the data to publish
+     * @param callback the message callback to notify of the publish result
      * @deprecated use {@link #publish(Object, ClientSession.MessageListener)} instead
      */
     @Deprecated
@@ -102,6 +104,8 @@ public interface ClientSessionChannel extends Channel {
     public void publish(Object data, ClientSession.MessageListener callback);
 
     /**
+     * @param message  the message to publish
+     * @param callback the message callback to notify of the publish result
      * @deprecated use {@link #publish(Message.Mutable, ClientSession.MessageListener)} instead
      */
     @Deprecated
@@ -131,6 +135,8 @@ public interface ClientSessionChannel extends Channel {
     }
 
     /**
+     * @param listener the listener to register and invoke when a message arrives on this channel
+     * @param callback the callback to notify of the subscribe result
      * @deprecated use {@link #subscribe(MessageListener, ClientSession.MessageListener)} instead
      */
     @Deprecated
@@ -158,6 +164,7 @@ public interface ClientSessionChannel extends Channel {
      * <p>The callback parameter will be invoked upon acknowledgment of the subscription
      * by the server, and therefore only for the first subscription to this channel.</p>
      *
+     * @param message  the subscription message
      * @param listener the listener to register and invoke when a message arrives on this channel
      * @param callback the callback to notify of the subscribe result
      * @return whether the subscribe message has been sent
@@ -178,6 +185,8 @@ public interface ClientSessionChannel extends Channel {
     }
 
     /**
+     * @param listener the listener to unsubscribe
+     * @param callback the callback to notify of the unsubscribe result
      * @deprecated use {@link #unsubscribe(MessageListener, ClientSession.MessageListener)} instead
      */
     @Deprecated
@@ -204,11 +213,12 @@ public interface ClientSessionChannel extends Channel {
      * <p>The callback parameter will be invoked upon acknowledgment of the unsubscription
      * by the server, and therefore only for the last unsubscription from this channel.</p>
      *
+     * @param message  the unsubscription message
      * @param listener the listener to unsubscribe
      * @param callback the callback to notify of the unsubscribe result
+     * @return whether the unsubscribe message has been sent
      * @see #subscribe(MessageListener)
      * @see #unsubscribe()
-     * @return whether the unsubscribe message has been sent
      */
     public boolean unsubscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback);
 
@@ -228,8 +238,8 @@ public interface ClientSessionChannel extends Channel {
     /**
      * <p>Releases this channel from its {@link ClientSession}.</p>
      * <p>If the release is successful, subsequent invocations of {@link ClientSession#getChannel(String)}
-     * will return a new, different, instance of a {@link ClientSessionChannel}.</p>
-     * <p>The release of a {@link ClientSessionChannel} is successful only if no listeners and no
+     * will return a new, different, instance of a ClientSessionChannel.</p>
+     * <p>The release of a ClientSessionChannel is successful only if no listeners and no
      * subscribers are present at the moment of the release.</p>
      *
      * @return true if the release was successful, false otherwise
