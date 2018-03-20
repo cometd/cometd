@@ -6,7 +6,7 @@ node {
 
   builds['Build JDK 9 - Jetty 9.3.x'] = getBuild("9.3.22.v20171030", false)
 
-  builds['Build JDK 9 - Jetty 9.4.x'] = getBuild("9.4.8.v20171121", false)
+  builds['Build JDK 9 - Jetty 9.4.x'] = getBuild("9.4.9.v20180320", false)
 
   parallel builds
 
