@@ -28,9 +28,11 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 
 /**
- * <p>{@link JSONDataFilter} walks an object to see if it is a JSON data structure
- * and calls the appropriate methods {@link #filterString(ServerSession, ServerChannel, String)},
- * {@link #filterNumber(Number)}, {@link #filterBoolean(ServerSession, ServerChannel, Boolean)},
+ * <p>{@link JSONDataFilter} walks an object to see if it is
+ * a JSON data structure and calls the appropriate methods
+ * {@link #filterString(ServerSession, ServerChannel, String)},
+ * {@link #filterNumber(ServerSession, ServerChannel, Number)},
+ * {@link #filterBoolean(ServerSession, ServerChannel, Boolean)},
  * {@link #filterArray(ServerSession, ServerChannel, Object)},
  * {@link #filterCollection(ServerSession, ServerChannel, Collection)},
  * {@link #filterList(ServerSession, ServerChannel, List)},
