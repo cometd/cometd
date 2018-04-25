@@ -4,7 +4,7 @@ node {
 
   builds['Build JDK 9 - Jetty 9.2.x'] = getBuild(null, true)
 
-  builds['Build JDK 9 - Jetty 9.3.x'] = getBuild("9.3.22.v20171030", false)
+  builds['Build JDK 9 - Jetty 9.3.x'] = getBuild("9.3.23.v20180228", false)
 
   builds['Build JDK 9 - Jetty 9.4.x'] = getBuild("9.4.9.v20180320", false)
 
