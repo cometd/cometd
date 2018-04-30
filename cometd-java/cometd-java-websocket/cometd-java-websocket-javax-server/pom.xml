@@ -18,10 +18,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Require-Capability>osgi.serviceloader;
-              filter:="(osgi.serviceloader=javax.websocket.server.ServerEndpointConfig$Configurator)";cardinality:=multiple,
-              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)"
-            </Require-Capability>
+            <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=javax.websocket.server.ServerEndpointConfig$Configurator)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)"</Require-Capability>
           </instructions>
         </configuration>
       </plugin>

@@ -12,8 +12,7 @@
   <artifactId>cometd-archetypes</artifactId>
   <packaging>pom</packaging>
   <name>CometD :: Archetypes</name>
-  <description>${project.version} - CometD archetype for creating a server-side event-driven web application
-  </description>
+  <description>${project.version} - CometD archetype for creating a server-side event-driven web application</description>
 
   <modules>
     <module>dojo-jetty9</module>
