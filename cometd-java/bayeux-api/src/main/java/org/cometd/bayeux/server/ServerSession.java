@@ -175,6 +175,18 @@ public interface ServerSession extends Session {
     }
 
     /**
+     * <p>Listener objects that implement this interface will be notified of session addition.</p>
+     */
+    public interface AddListener extends ServerSessionListener {
+        /**
+         * <p>Callback method invoked when the session is added to a {@link BayeuxServer}.</p>
+         *
+         * @param session the added session
+         */
+        public void added(ServerSession session);
+    }
+
+    /**
      * <p>Listeners objects that implement this interface will be notified of session removal.</p>
      */
     public interface RemoveListener extends ServerSessionListener {

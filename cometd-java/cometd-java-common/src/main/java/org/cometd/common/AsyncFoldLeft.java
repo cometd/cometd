@@ -61,10 +61,10 @@ public class AsyncFoldLeft {
     private static class LoopImpl<T, R> implements Loop<R> {
         private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
         private final List<T> list;
-        private int index;
         private final AtomicReference<R> result;
         private final Operation<T, R> operation;
         private final Promise<R> promise;
+        private int index;
 
         public LoopImpl(List<T> list, R zero, Operation<T, R> operation, Promise<R> promise) {
             this.list = list;

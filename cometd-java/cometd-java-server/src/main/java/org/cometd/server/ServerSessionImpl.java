@@ -778,6 +778,14 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         _broadcastToPublisher = value;
     }
 
+    protected void added() {
+        for (ServerSessionListener listener : _listeners) {
+            if (listener instanceof AddListener) {
+                notifyAdded((AddListener)listener, this);
+            }
+        }
+    }
+
     /**
      * @param timedOut whether the session has been timed out
      * @return True if the session was connected.
@@ -800,6 +808,14 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             }
         }
         return result;
+    }
+
+    private void notifyAdded(AddListener listener, ServerSession serverSession) {
+        try {
+            listener.added(serverSession);
+        } catch (Exception x) {
+            _logger.info("Exception while invoking listener " + listener, x);
+        }
     }
 
     private void notifyRemoved(RemoveListener listener, ServerSession serverSession, boolean timedout) {

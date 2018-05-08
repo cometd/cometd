@@ -31,9 +31,10 @@ import org.cometd.common.JSONContext;
 public class ServerMessageImpl extends HashMapMessage implements ServerMessage.Mutable {
     private static final long serialVersionUID = 6412048662640296067L;
 
-    private transient ServerMessage.Mutable _associated;
-    private boolean _lazy = false;
+    private boolean _lazy;
     private String _json;
+    private transient ServerMessage.Mutable _associated;
+    private transient boolean _handled;
     private transient byte[] _jsonBytes;
     private transient BayeuxContext _context;
     private transient ServerTransport _transport;
@@ -51,6 +52,10 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     @Override
     public boolean isLazy() {
         return _lazy;
+    }
+
+    public boolean isHandled() {
+        return _handled;
     }
 
     @Override
@@ -74,6 +79,10 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     @Override
     public void setLazy(boolean lazy) {
         _lazy = lazy;
+    }
+
+    public void setHandled(boolean handled) {
+        _handled = handled;
     }
 
     protected void freeze(String json) {

@@ -483,6 +483,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                 notifySessionAdded((SessionListener)listener, session, message);
             }
         }
+        session.added();
     }
 
     private void notifySessionAdded(SessionListener listener, ServerSession session, ServerMessage message) {
@@ -549,11 +550,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         return new ServerMessageImpl();
     }
 
-    public ServerMessage.Mutable newMessage(ServerMessage tocopy) {
+    public ServerMessage.Mutable newMessage(ServerMessage original) {
         ServerMessage.Mutable mutable = newMessage();
-        for (String key : tocopy.keySet()) {
-            mutable.put(key, tocopy.get(key));
-        }
+        mutable.putAll(original);
         return mutable;
     }
 
@@ -614,7 +613,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     public void handle(ServerSessionImpl session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
-        Mutable reply = createReply(message);
+        ServerMessageImpl reply = (ServerMessageImpl)createReply(message);
         if (_validation) {
             String error = validateMessage(message);
             if (error != null) {
@@ -630,7 +629,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                         if (sessExtPass) {
                             handle2(session, message, promise);
                         } else {
-                            error(reply, "404::message_deleted");
+                            if (!reply.isHandled()) {
+                                error(reply, "404::message_deleted");
+                            }
                             promise.succeed(reply);
                         }
                     }, promise::fail));
@@ -638,7 +639,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                     handle2(null, message, promise);
                 }
             } else {
-                error(reply, "404::message_deleted");
+                if (!reply.isHandled()) {
+                    error(reply, "404::message_deleted");
+                }
                 promise.succeed(reply);
             }
         }, promise::fail));
@@ -851,7 +854,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             if (proceed) {
                 publish2(session, channel, message, receiving, promise);
             } else {
-                error(message.getAssociated(), "404::message_deleted");
+                ServerMessageImpl reply = (ServerMessageImpl)message.getAssociated();
+                if (reply != null && !reply.isHandled()) {
+                    error(reply, "404::message_deleted");
+                }
                 promise.succeed(false);
             }
         }, promise::fail));
@@ -874,6 +880,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                     freeze(message);
                     publish3(session, channel, message, promise);
                 } else {
+                    ServerMessage.Mutable reply = message.getAssociated();
+                    error(reply, "404::message_deleted");
                     promise.succeed(false);
                 }
             }, promise::fail));
@@ -1013,7 +1021,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         AsyncFoldLeft.run(_extensions, true, (result, extension, loop) -> {
             if (result) {
                 try {
-                    extension.incoming(session, message, Promise.from(r -> loop.proceed(r == null ? true : r), failure -> {
+                    extension.incoming(session, message, Promise.from(r -> {
+                        if (_logger.isDebugEnabled()) {
+                            _logger.debug("Extension {}: result {} for incoming message {}", extension, r, message);
+                        }
+                        loop.proceed(r == null ? true : r);
+                    }, failure -> {
                         _logger.info("Exception reported by extension " + extension, failure);
                         loop.proceed(true);
                     }));
