@@ -11,7 +11,7 @@
   <repositories>
     <repository>
       <id>jetty-staging-9.2.x</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-1378</url>
+      <url>https://oss.sonatype.org/content/repositories/jetty-1382</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -21,7 +21,7 @@
     </repository>
     <repository>
       <id>jetty-staging-9.3.x</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-1379</url>
+      <url>https://oss.sonatype.org/content/repositories/jetty-1385</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -31,7 +31,7 @@
     </repository>
     <repository>
       <id>jetty-staging-9.4.x</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-1380</url>
+      <url>https://oss.sonatype.org/content/repositories/jetty-1386</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -43,7 +43,7 @@
   <pluginRepositories>
     <pluginRepository>
       <id>jetty-staging-9.2.x</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-1378</url>
+      <url>https://oss.sonatype.org/content/repositories/jetty-1382</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -53,7 +53,7 @@
     </pluginRepository>
     <pluginRepository>
       <id>jetty-staging-9.3.x</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-1379</url>
+      <url>https://oss.sonatype.org/content/repositories/jetty-1385</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -63,7 +63,7 @@
     </pluginRepository>
     <pluginRepository>
       <id>jetty-staging-9.4.x</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-1380</url>
+      <url>https://oss.sonatype.org/content/repositories/jetty-1386</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -76,9 +76,9 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>9.2.25.v20180521</jetty-version>
-    <!--<jetty-version>9.3.24.v20180521</jetty-version>-->
-    <!--<jetty-version>9.4.11.v20180521</jetty-version>-->
+    <jetty-version>9.2.25.v20180531</jetty-version>
+    <!--<jetty-version>9.3.24.v20180605</jetty-version>-->
+    <!--<jetty-version>9.4.11.v20180605</jetty-version>-->
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.25</slf4j-version>
     <spring-version>5.0.5.RELEASE</spring-version>
