@@ -77,7 +77,7 @@ def getBuild(jettyVersion, runJacoco) {
                     publisherStrategy: 'EXPLICIT',
                     globalMavenSettingsConfig: settingsName,
                     mavenLocalRepo: localRepo) {
-              sh "mvn -B javadoc:javadoc -e"
+              sh "mvn -B javadoc:javadoc -e -T4"
             }
           }
         }
