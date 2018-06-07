@@ -118,20 +118,35 @@ public class CometDPublishTest extends AbstractCometDTest {
 
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
+                "    if (message.successful) {" +
+                "        readyLatch.countDown();" +
+                "    } " +
+                "});");
+        evaluateScript("var failedLatch = new Latch(2);");
+        Latch failedLatch = get("failedLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
+                "    if (!message.successful) {" +
+                "        failedLatch.countDown();" +
+                "    } " +
+                "});");
         evaluateScript("var publishLatch = new Latch(2);");
         Latch publishLatch = get("publishLatch");
         evaluateScript("cometd.addListener('/meta/publish', publishLatch, publishLatch.countDown);");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(readyLatch.await(5000));
 
-        server.stop();
+        // Wait for the /meta/connect to be held by the server.
         Thread.sleep(1000);
 
-        evaluateScript("cometd.publish('/echo', 'test2', function(message)" +
-                "{" +
-                "    if (!message.successful)" +
+        server.stop();
+
+        Assert.assertTrue(failedLatch.await(5000));
+
+        evaluateScript("cometd.publish('/echo', 'test2', function(message) {" +
+                "    if (!message.successful) {" +
                 "        publishLatch.countDown();" +
+                "    }" +
                 "});");
         Assert.assertTrue(publishLatch.await(5000));
 
