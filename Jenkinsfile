@@ -14,7 +14,7 @@ node {
 
 def getBuild(jettyVersion, runJacoco) {
   return {
-    node {
+    node("linux") {
 
       // System Dependent Locations
       def mvnTool = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
