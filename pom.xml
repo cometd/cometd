@@ -10,28 +10,8 @@
 
   <repositories>
     <repository>
-      <id>jetty-staging-9.2.x</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-1387</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>jetty-staging-9.3.x</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-1385</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>jetty-staging-9.4.x</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-1386</url>
+      <id>jetty-staging</id>
+      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -42,28 +22,8 @@
   </repositories>
   <pluginRepositories>
     <pluginRepository>
-      <id>jetty-staging-9.2.x</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-1387</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </pluginRepository>
-    <pluginRepository>
-      <id>jetty-staging-9.3.x</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-1385</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </pluginRepository>
-    <pluginRepository>
-      <id>jetty-staging-9.4.x</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-1386</url>
+      <id>jetty-staging</id>
+      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
       <releases>
         <enabled>true</enabled>
       </releases>

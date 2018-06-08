@@ -14,11 +14,15 @@ node {
 
 def getBuild(jettyVersion, runJacoco) {
   return {
-    node {
+    node("linux") {
 
       // System Dependent Locations
       def mvnTool = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
-      def jdk9 = tool name: 'jdk9', type: 'hudson.model.JDK'
+      def jdk='jdk9'
+      def jdk9 = tool name: "$jdk", type: 'hudson.model.JDK'
+      def settingsName = 'oss-settings.xml'
+      def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
+      def mvnName = 'maven3'
 
       // Environment
       List mvnEnv9 = ["PATH+MVN=${mvnTool}/bin", "PATH+JDK=${jdk9}/bin", "JAVA_HOME=${jdk9}/", "MAVEN_HOME=${mvnTool}"]
@@ -32,9 +36,25 @@ def getBuild(jettyVersion, runJacoco) {
         withEnv(mvnEnv9) {
           timeout(time: 1, unit: 'HOURS') {
             if (jettyVersion != null) {
-              sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=$jettyVersion"
+              withMaven(
+                      maven: mvnName,
+                      jdk: "$jdk",
+                      mavenOpts:"-Xms256m -Xmx1024m -Djava.awt.headless=true",
+                      publisherStrategy: 'EXPLICIT',
+                      globalMavenSettingsConfig: settingsName,
+                      mavenLocalRepo: localRepo) {
+                sh "mvn -B clean install -Dmaven.test.failure.ignore=true -e -Djetty-version=$jettyVersion"
+              }
             } else {
-              sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
+              withMaven(
+                      maven: mvnName,
+                      jdk: "$jdk",
+                      mavenOpts:"-Xms256m -Xmx1024m -Djava.awt.headless=true",
+                      publisherStrategy: 'EXPLICIT',
+                      globalMavenSettingsConfig: settingsName,
+                      mavenLocalRepo: localRepo) {
+                sh "mvn -B clean install -Dmaven.test.failure.ignore=true -e"
+              }
             }
 
             junit testResults: '**/target/surefire-reports/TEST-*.xml'
@@ -50,7 +70,15 @@ def getBuild(jettyVersion, runJacoco) {
         }
         withEnv(mvnEnv9) {
           timeout(time: 5, unit: 'MINUTES') {
-            sh "mvn -B javadoc:javadoc"
+            withMaven(
+                    maven: mvnName,
+                    jdk: "$jdk",
+                    mavenOpts:"-Xms256m -Xmx1024m -Djava.awt.headless=true",
+                    publisherStrategy: 'EXPLICIT',
+                    globalMavenSettingsConfig: settingsName,
+                    mavenLocalRepo: localRepo) {
+              sh "mvn -B javadoc:javadoc -e -T4"
+            }
           }
         }
       }
