@@ -40,7 +40,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     private final String _idHint;
     private ServerSessionImpl _session;
 
-    protected LocalSessionImpl(BayeuxServerImpl bayeux, String idHint) {
+    public LocalSessionImpl(BayeuxServerImpl bayeux, String idHint) {
         _bayeux = bayeux;
         _idHint = idHint;
     }
