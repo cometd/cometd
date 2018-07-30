@@ -826,6 +826,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
         // First notify the channel listeners.
         if (!notifyListeners(from, to, mutable, wildChannels)) {
+            error(mutable.getAssociated(), "404::message deleted");
             return;
         }
 
@@ -1130,8 +1131,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     protected void error(ServerMessage.Mutable reply, String error) {
-        reply.put(Message.ERROR_FIELD, error);
-        reply.setSuccessful(false);
+        if (reply != null) {
+            reply.put(Message.ERROR_FIELD, error);
+            reply.setSuccessful(false);
+        }
     }
 
     protected ServerMessage.Mutable createReply(ServerMessage.Mutable message) {

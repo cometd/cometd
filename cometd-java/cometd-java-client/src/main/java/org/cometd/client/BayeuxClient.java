@@ -169,6 +169,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     /**
+     * @return the current period of time to wait before trying to reconnect
+     */
+    public long getBackoff() {
+        return sessionState.getBackOff();
+    }
+
+    /**
      * @return the period of time that increments the pause to wait before trying to reconnect
      * after each failed attempt to connect to the Bayeux server
      * @see #getMaxBackoff()
@@ -1419,6 +1426,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 backOff = this.backOff;
                 result = update(State.CONNECTED);
                 if (result) {
+                    this.backOff = backOff = 0;
                     this.unconnectTime = 0;
                     if (advice != null) {
                         this.advice = advice;
