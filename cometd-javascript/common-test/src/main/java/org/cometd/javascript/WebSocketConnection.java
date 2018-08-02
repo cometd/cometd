@@ -77,7 +77,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
                 if (logger.isDebugEnabled()) {
                     logger.debug("WebSocket sending data {}", data);
                 }
-                session.getRemote().sendString(data);
+                session.getRemote().sendString(data, null);
             }
         } catch (final Throwable x) {
             // This method is invoked from JavaScript, so we must fail asynchronously
