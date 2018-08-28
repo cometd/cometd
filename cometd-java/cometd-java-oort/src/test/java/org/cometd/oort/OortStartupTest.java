@@ -31,15 +31,22 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class OortStartupTest {
     @Rule
-    public final TestTracker testName = new TestTracker();
+    public final TestWatcher testName = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            super.starting(description);
+            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
+        }
+    };
     private final Map<Integer, Server> servers = new ConcurrentHashMap<>();
     private Map<Integer, ServletContextHandler> contexts = new ConcurrentHashMap<>();
 

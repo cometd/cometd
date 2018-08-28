@@ -38,12 +38,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.After;
 import org.junit.Rule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
@@ -62,7 +63,13 @@ public abstract class OortTest {
     }
 
     @Rule
-    public final TestTracker testName = new TestTracker();
+    public final TestWatcher testName = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            super.starting(description);
+            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
+        }
+    };
     protected Logger logger = LoggerFactory.getLogger(getClass());
     protected final List<Server> servers = new ArrayList<>();
     protected final List<Oort> oorts = new ArrayList<>();
