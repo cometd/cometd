@@ -851,6 +851,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             if (proceed) {
                 publish2(session, channel, message, receiving, promise);
             } else {
+                error(message.getAssociated(), "404::message_deleted");
                 promise.succeed(false);
             }
         }, promise::fail));
@@ -1179,8 +1180,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     protected void error(ServerMessage.Mutable reply, String error) {
-        reply.put(Message.ERROR_FIELD, error);
-        reply.setSuccessful(false);
+        if (reply != null) {
+            reply.put(Message.ERROR_FIELD, error);
+            reply.setSuccessful(false);
+        }
     }
 
     protected ServerMessage.Mutable createReply(ServerMessage.Mutable message) {

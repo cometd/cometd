@@ -107,15 +107,30 @@ public class CometDPublishTest extends AbstractCometDTransportsTest {
     public void testPublishWithServerDownInvokesCallback() throws Exception {
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
+        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
+                "    if (message.successful) {" +
+                "        readyLatch.countDown();" +
+                "    } " +
+                "});");
+        evaluateScript("var failedLatch = new Latch(2);");
+        Latch failedLatch = javaScript.get("failedLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
+                "    if (!message.successful) {" +
+                "        failedLatch.countDown();" +
+                "    } " +
+                "});");
         evaluateScript("var publishLatch = new Latch(2);");
         Latch publishLatch = javaScript.get("publishLatch");
         evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(readyLatch.await(5000));
 
-        server.stop();
+        // Wait for the /meta/connect to be held by the server.
         Thread.sleep(1000);
+
+        server.stop();
+
+        Assert.assertTrue(failedLatch.await(5000));
 
         evaluateScript("cometd.publish('/echo', 'test2', function(message) {" +
                 "    if (!message.successful) {" +

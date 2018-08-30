@@ -126,12 +126,15 @@ public class LongPollingTransport extends HttpClientTransport {
         final Request request = _httpClient.newRequest(url).method(HttpMethod.POST);
         request.header(HttpHeader.CONTENT_TYPE.asString(), "application/json;charset=UTF-8");
 
-        StringBuilder builder = new StringBuilder();
-        for (HttpCookie cookie : getCookieStore().get(uri)) {
-            builder.setLength(0);
-            builder.append(cookie.getName()).append("=").append(cookie.getValue());
-            request.header(HttpHeader.COOKIE.asString(), builder.toString());
+        List<HttpCookie> cookies = getCookieStore().get(uri);
+        StringBuilder value = new StringBuilder(cookies.size() * 32);
+        for (HttpCookie cookie : cookies) {
+            if (value.length() > 0) {
+                value.append("; ");
+            }
+            value.append(cookie.getName()).append("=").append(cookie.getValue());
         }
+        request.header(HttpHeader.COOKIE.asString(), value.toString());
 
         request.content(new StringContentProvider(generateJSON(messages)));
 

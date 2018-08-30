@@ -21,13 +21,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
+import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.DefaultSecurityPolicy;
+import org.cometd.server.LocalSessionImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -235,6 +243,119 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testPublishDeletedRemovesCallback() throws Exception {
+        final String channelName = "/delete";
+
+        final AtomicReference<String> messageIdRef = new AtomicReference<>();
+        final CountDownLatch unregisterLatch = new CountDownLatch(1);
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
+            @Override
+            protected ClientSessionChannel.MessageListener unregisterCallback(String messageId) {
+                if (messageId.equals(messageIdRef.get())) {
+                    unregisterLatch.countDown();
+                }
+                return super.unregisterCallback(messageId);
+            }
+        };
+        client.addExtension(new ClientSession.Extension.Adapter() {
+            @Override
+            public boolean send(ClientSession session, Message.Mutable message) {
+                if (channelName.equals(message.getChannel())) {
+                    messageIdRef.set(message.getId());
+                    return false;
+                }
+                return true;
+            }
+        });
+        client.handshake();
+
+        client.getChannel(channelName).publish("data", new MessageListenerAdapter());
+
+        Assert.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testSubscribeDeletedRemovesListener() throws Exception {
+        final String channelName = "/delete";
+
+        final AtomicReference<String> messageIdRef = new AtomicReference<>();
+        final CountDownLatch unregisterLatch = new CountDownLatch(1);
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
+            @Override
+            protected ClientSessionChannel.MessageListener unregisterSubscriber(String messageId) {
+                if (messageId.equals(messageIdRef.get())) {
+                    unregisterLatch.countDown();
+                }
+                return super.unregisterSubscriber(messageId);
+            }
+        };
+        client.addExtension(new ClientSession.Extension.Adapter() {
+            @Override
+            public boolean sendMeta(ClientSession session, Message.Mutable message) {
+                if (Channel.META_SUBSCRIBE.equals(message.getChannel()) && channelName.equals(message.get(Message.SUBSCRIPTION_FIELD))) {
+                    messageIdRef.set(message.getId());
+                    return false;
+                }
+                return true;
+            }
+        });
+        client.handshake();
+
+        client.getChannel(channelName).subscribe(new MessageListenerAdapter());
+
+        Assert.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testAuthorizerDenyingPublishRemovesCallback() throws Exception {
+        final String channelName = "/deny_publish";
+
+        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
+            public void configureChannel(ConfigurableServerChannel channel) {
+                channel.addAuthorizer(new Authorizer() {
+                    @Override
+                    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
+                        return operation == Operation.PUBLISH ? Result.deny("denied") : Result.grant();
+                    }
+                });
+            }
+        });
+
+        final AtomicReference<String> messageIdRef = new AtomicReference<>();
+        final CountDownLatch unregisterLatch = new CountDownLatch(1);
+        LocalSession session = new LocalSessionImpl(bayeux, "test") {
+            @Override
+            protected ClientSessionChannel.MessageListener unregisterCallback(String messageId) {
+                if (messageId.equals(messageIdRef.get())) {
+                    unregisterLatch.countDown();
+                }
+                return super.unregisterCallback(messageId);
+            }
+        };
+        session.addExtension(new ClientSession.Extension.Adapter() {
+            @Override
+            public boolean send(ClientSession session, Message.Mutable message) {
+                if (channelName.equals(message.getChannel())) {
+                    messageIdRef.set(message.getId());
+                }
+                return true;
+            }
+        });
+        session.handshake();
+
+        session.getChannel(channelName).publish("data", new MessageListenerAdapter());
+
+        Assert.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
+
+        session.disconnect();
     }
 
     private class MessageListenerAdapter implements ClientSessionChannel.MessageListener {

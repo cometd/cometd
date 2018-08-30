@@ -102,6 +102,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
     // TODO: remove, but needs modifications to BayeuxClient.
     protected boolean extendSend(Message.Mutable message) {
+        String messageId = message.getId();
         ListIterator<Extension> i = _extensions.listIterator();
         while (i.hasNext()) {
             i.next();
@@ -112,6 +113,8 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
                     extension.sendMeta(this, message) :
                     extension.send(this, message);
             if (!proceed) {
+                unregisterSubscriber(messageId);
+                unregisterCallback(messageId);
                 return false;
             }
         }
