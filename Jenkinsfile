@@ -14,21 +14,14 @@ parallel builds
 
 def newBuild(os, jdk) {
   node(os) {
-    def mvnTool = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
+    def mvnName = 'maven3'
+    def mvnTool = tool name: "${mvnName}", type: 'hudson.tasks.Maven$MavenInstallation'
     def jdkTool = tool name: "${jdk}", type: 'hudson.model.JDK'
     List mvnEnv = ["PATH+MVN=${mvnTool}/bin", "PATH+JDK=${jdkTool}/bin", "JAVA_HOME=${jdkTool}/", "MAVEN_HOME=${mvnTool}"]
     mvnEnv.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
 
     stage("Checkout - ${jdk}") {
       checkout scm
-    }
-
-    stage("Javadoc - ${jdk}") {
-      withEnv(mvnEnv) {
-        timeout(time: 5, unit: 'MINUTES') {
-          sh "mvn -V -B javadoc:javadoc"
-        }
-      }
     }
 
     stage("Build - ${jdk}") {
@@ -43,6 +36,14 @@ def newBuild(os, jdk) {
                 execPattern     : '**/target/jacoco.exec',
                 classPattern    : '**/target/classes',
                 sourcePattern   : '**/src/main/java'])
+        }
+      }
+    }
+
+    stage("Javadoc - ${jdk}") {
+      withEnv(mvnEnv) {
+        timeout(time: 5, unit: 'MINUTES') {
+          sh "mvn -V -B javadoc:javadoc"
         }
       }
     }
