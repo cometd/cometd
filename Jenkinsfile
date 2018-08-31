@@ -13,37 +13,45 @@ for (def os in oss) {
 parallel builds
 
 def newBuild(os, jdk) {
-  node(os) {
-    def mvnName = 'maven3'
-    def mvnTool = tool name: "${mvnName}", type: 'hudson.tasks.Maven$MavenInstallation'
-    def jdkTool = tool name: "${jdk}", type: 'hudson.model.JDK'
-    List mvnEnv = ["PATH+MVN=${mvnTool}/bin", "PATH+JDK=${jdkTool}/bin", "JAVA_HOME=${jdkTool}/", "MAVEN_HOME=${mvnTool}"]
-    mvnEnv.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
+  return {
+    node(os) {
+      def mvnName = 'maven3.5'
+      def settingsName = 'oss-settings.xml'
+      def mvnOpts = '-Xms256m -Xmx1024m -Djava.awt.headless=true'
 
-    stage("Checkout - ${jdk}") {
-      checkout scm
-    }
+      stage("Checkout - ${jdk}") {
+        checkout scm
+      }
 
-    stage("Build - ${jdk}") {
-      withEnv(mvnEnv) {
+      stage("Build - ${jdk}") {
         timeout(time: 1, unit: 'HOURS') {
-          sh "mvn -V -B clean install -Dmaven.test.failure.ignore=true"
-          // Report failures in the jenkins UI.
-          step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
-          // Collect the JaCoCo execution results.
-          step([$class          : 'JacocoPublisher',
-                exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
-                execPattern     : '**/target/jacoco.exec',
-                classPattern    : '**/target/classes',
-                sourcePattern   : '**/src/main/java'])
+          withMaven(maven: mvnName,
+                  jdk: "${jdk}",
+                  publisherStrategy: 'EXPLICIT',
+                  globalMavenSettingsConfig: settingsName,
+                  mavenOpts: mvnOpts) {
+            sh "mvn -V -B clean install -Dmaven.test.failure.ignore=true"
+            // Report failures in the jenkins UI.
+            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+            // Collect the JaCoCo execution results.
+            step([$class          : 'JacocoPublisher',
+                  exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
+                  execPattern     : '**/target/jacoco.exec',
+                  classPattern    : '**/target/classes',
+                  sourcePattern   : '**/src/main/java'])
+          }
         }
       }
-    }
 
-    stage("Javadoc - ${jdk}") {
-      withEnv(mvnEnv) {
+      stage("Javadoc - ${jdk}") {
         timeout(time: 5, unit: 'MINUTES') {
-          sh "mvn -V -B javadoc:javadoc"
+          withMaven(maven: mvnName,
+                  jdk: "${jdk}",
+                  publisherStrategy: 'EXPLICIT',
+                  globalMavenSettingsConfig: settingsName,
+                  mavenOpts: mvnOpts) {
+            sh "mvn -V -B javadoc:javadoc"
+          }
         }
       }
     }
