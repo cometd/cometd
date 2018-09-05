@@ -246,19 +246,29 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         getBayeux().extendReply(session, session, reply, promise);
     }
 
-    protected byte[] toJSONBytes(ServerMessage message, String encoding) {
+    protected byte[] toJSONBytes(ServerMessage msg, String encoding) {
         try {
-            byte[] bytes = null;
-            if (message instanceof ServerMessageImpl) {
-                bytes = ((ServerMessageImpl)message).getJSONBytes();
-            }
+            ServerMessageImpl message = (ServerMessageImpl)(msg instanceof ServerMessageImpl ? msg : _bayeux.newMessage(msg));
+            byte[] bytes = message.getJSONBytes();
             if (bytes == null) {
-                bytes = message.getJSON().getBytes(encoding);
+                bytes = toJSON(message).getBytes(encoding);
             }
             return bytes;
         } catch (UnsupportedEncodingException x) {
             throw new UnsupportedCharsetException(encoding);
         }
+    }
+
+    protected String toJSON(ServerMessage msg) {
+        return toJSON((ServerMessageImpl)(msg instanceof ServerMessageImpl ? msg : _bayeux.newMessage(msg)));
+    }
+
+    private String toJSON(ServerMessageImpl message) {
+        String json = message.getJSON();
+        if (json == null) {
+            json = _jsonContext.generate(message);
+        }
+        return json;
     }
 
     public boolean allowMessageDeliveryDuringHandshake(ServerSessionImpl session) {

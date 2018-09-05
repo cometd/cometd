@@ -18,6 +18,7 @@ package org.cometd.websocket.server.common;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 
@@ -77,5 +78,10 @@ public abstract class AbstractWebSocketTransport extends AbstractServerTransport
     }
 
     protected void onClose(int code, String reason) {
+    }
+
+    // Overridden for visibility.
+    protected String toJSON(ServerMessage message) {
+        return super.toJSON(message);
     }
 }

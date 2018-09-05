@@ -273,7 +273,7 @@ public abstract class AbstractWebSocketEndPoint {
         if (batch == 1) {
             // Common path.
             ServerMessage serverMessage = messages.remove(0);
-            builder.append(serverMessage.getJSON());
+            builder.append(toJSON(serverMessage));
         } else {
             boolean comma = false;
             for (int b = 0; b < batch; ++b) {
@@ -282,7 +282,7 @@ public abstract class AbstractWebSocketEndPoint {
                     builder.append(",");
                 }
                 comma = true;
-                builder.append(serverMessage.getJSON());
+                builder.append(toJSON(serverMessage));
             }
             if (batch == size) {
                 messages.clear();
@@ -307,6 +307,10 @@ public abstract class AbstractWebSocketEndPoint {
         if (queued) {
             flusher.iterate();
         }
+    }
+
+    private String toJSON(ServerMessage message) {
+        return _transport.toJSON(message);
     }
 
     private class WebSocketScheduler implements AbstractServerTransport.Scheduler, Runnable, Promise<Void> {

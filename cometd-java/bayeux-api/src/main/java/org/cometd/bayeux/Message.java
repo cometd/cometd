@@ -131,7 +131,9 @@ public interface Message extends Map<String, Object> {
 
     /**
      * @return this message as a JSON string
+     * @deprecated use JSONContext.Client.generate() instead.
      */
+    @Deprecated
     String getJSON();
 
     /**

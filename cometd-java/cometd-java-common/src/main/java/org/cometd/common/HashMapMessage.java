@@ -79,7 +79,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     @Override
     public String getJSON() {
-        return _jsonContext.generate(this);
+        return new JettyJSONContextClient().generate(this);
     }
 
     @Override
@@ -169,8 +169,4 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
     public void setSuccessful(boolean successful) {
         put(SUCCESSFUL_FIELD, successful);
     }
-
-    // The code below is a relic of a mistake in the API, but it is kept for backward compatibility.
-
-    private static JSONContext.Client _jsonContext = new JettyJSONContextClient();
 }

@@ -26,7 +26,6 @@ import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.HashMapMessage;
-import org.cometd.common.JSONContext;
 
 public class ServerMessageImpl extends HashMapMessage implements ServerMessage.Mutable {
     private static final long serialVersionUID = 6412048662640296067L;
@@ -86,7 +85,6 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     }
 
     protected void freeze(String json) {
-        assert _json == null;
         _json = json;
         _jsonBytes = json.getBytes(StandardCharsets.UTF_8);
     }
@@ -97,9 +95,6 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
 
     @Override
     public String getJSON() {
-        if (_json == null) {
-            return _jsonContext.generate(this);
-        }
         return _json;
     }
 
@@ -222,8 +217,4 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
             }
         }
     }
-
-    // The code below is a relic of a mistake in the API, but it is kept for backward compatibility
-
-    private static JSONContext.Server _jsonContext = new JettyJSONContextServer();
 }

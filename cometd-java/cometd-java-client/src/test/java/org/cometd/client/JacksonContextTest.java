@@ -15,7 +15,6 @@
  */
 package org.cometd.client;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -29,12 +28,10 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.common.HashMapMessage;
 import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.AbstractService;
 import org.cometd.server.JacksonJSONContextServer;
-import org.cometd.server.ServerMessageImpl;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -58,14 +55,6 @@ public class JacksonContextTest extends ClientServerTest {
         final String channelName = "/test_jackson";
         final CountDownLatch localLatch = new CountDownLatch(2);
         new JacksonService(bayeux, channelName, localLatch);
-
-        // Clear out the jsonContexts embedded in the message classes
-        Field clientJSONContext = HashMapMessage.class.getDeclaredField("_jsonContext");
-        clientJSONContext.setAccessible(true);
-        clientJSONContext.set(null, null);
-        Field serverJSONContext = ServerMessageImpl.class.getDeclaredField("_jsonContext");
-        serverJSONContext.setAccessible(true);
-        serverJSONContext.set(null, null);
 
         final ClientSessionChannel channel = client.getChannel(channelName);
         final CountDownLatch clientLatch = new CountDownLatch(3);
