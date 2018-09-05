@@ -58,30 +58,6 @@ public interface Promise<C> {
     }
 
     /**
-     * <p>Returns a {@code BiConsumer} that, when invoked,
-     * completes this Promise.</p>
-     * <p>Typical usage is with {@code CompletableFuture}:</p>
-     * <pre>
-     * public void process(ServerMessage message, Promise&lt;Boolean&gt; promise) {
-     *     CompletableFuture.supplyAsync(() -&gt; asyncOperation(message))
-     *             .whenComplete(promise.complete());
-     * }
-     * </pre>
-     *
-     * @return a BiConsumer that completes this Promise
-     * @see Completable
-     */
-    default BiConsumer<C, Throwable> complete() {
-        return (r, x) -> {
-            if (x == null) {
-                succeed(r);
-            } else {
-                fail(x);
-            }
-        };
-    }
-
-    /**
      * @param <T> the type of the empty result
      * @return a Promise whose methods are implemented empty.
      */
@@ -105,6 +81,26 @@ public interface Promise<C> {
             @Override
             public void fail(Throwable failure) {
                 fail.accept(failure);
+            }
+        };
+    }
+
+    /**
+     * <p>Returns a Promise that, when completed,
+     * invokes the given {@link BiConsumer} function.</p>
+     *
+     * @return a Promise that invokes the BiConsumer
+     */
+    static <T> Promise<T> complete(BiConsumer<T, Throwable> fn) {
+        return new Promise<T>() {
+            @Override
+            public void succeed(T result) {
+                fn.accept(result, null);
+            }
+
+            @Override
+            public void fail(Throwable failure) {
+                fn.accept(null, failure);
             }
         };
     }

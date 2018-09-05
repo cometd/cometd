@@ -142,8 +142,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     public BayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport, ClientTransport... transports) {
         this.url = Objects.requireNonNull(url);
         this.scheduler = scheduler;
-
-        transport = Objects.requireNonNull(transport);
+        Objects.requireNonNull(transport);
         transportRegistry.add(transport);
         for (ClientTransport t : transports) {
             transportRegistry.add(t);
@@ -575,11 +574,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         });
     }
 
-    // TODO: remove this and use version with Promise.
-    private void receive(Message.Mutable message) {
-        receive(message, Promise.noop());
-    }
-
     private void processMessages(List<Message.Mutable> messages) {
         for (Message.Mutable message : messages) {
             if (logger.isDebugEnabled()) {
@@ -686,11 +680,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
                 sessionState.submit(() -> {
                     if (sessionState.handshaken(newTransport, handshake.getAdvice(), handshake.getClientId(), messages)) {
-                        receive(handshake);
-                        sendBatch();
-                        if (messages == 0) {
-                            sessionState.connecting();
-                        }
+                        receive(handshake, Promise.from(r -> {
+                            sendBatch();
+                            if (messages == 0) {
+                                sessionState.connecting();
+                            }
+                        }, x -> logger.info("Failure while receiving " + handshake, x)));
                     }
                 });
             }
@@ -714,22 +709,22 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     private void failHandshake(Message.Mutable handshake, ClientTransport.FailureInfo failureInfo) {
-        receive(handshake);
-
-        // The listeners may have disconnected.
-        if (isDisconnected()) {
-            failureInfo.action = Message.RECONNECT_NONE_VALUE;
-        }
-
-        onTransportFailure(handshake, failureInfo, sessionState);
+        receive(handshake, Promise.from(r -> {
+            // The listeners may have disconnected.
+            if (isDisconnected()) {
+                failureInfo.action = Message.RECONNECT_NONE_VALUE;
+            }
+            onTransportFailure(handshake, failureInfo, sessionState);
+        }, x -> logger.info("Failure while receiving " + handshake, x)));
     }
 
     protected void processConnect(final Message.Mutable connect) {
         final Map<String, Object> advice = connect.getAdvice();
 
         if (connect.isSuccessful()) {
-            receive(connect);
-            sessionState.submit(() -> sessionState.connected(advice));
+            receive(connect, Promise.from(r -> sessionState.submit(() -> {
+                sessionState.connected(advice);
+            }), x -> logger.info("Failure while receiving " + connect, x)));
         } else {
             ClientTransport.FailureInfo failureInfo = new ClientTransport.FailureInfo();
             failureInfo.transport = getTransport();
@@ -750,20 +745,18 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     private void failConnect(Message.Mutable connect, ClientTransport.FailureInfo failureInfo) {
-        receive(connect);
-
-        // The listeners may have disconnected.
-        if (isDisconnected()) {
-            failureInfo.action = Message.RECONNECT_NONE_VALUE;
-        }
-
-        onTransportFailure(connect, failureInfo, sessionState);
+        receive(connect, Promise.from(r -> {
+            // The listeners may have disconnected.
+            if (isDisconnected()) {
+                failureInfo.action = Message.RECONNECT_NONE_VALUE;
+            }
+            onTransportFailure(connect, failureInfo, sessionState);
+        }, x -> logger.info("Failure while receiving " + connect, x)));
     }
 
     protected void processDisconnect(final Message.Mutable disconnect) {
         if (disconnect.isSuccessful()) {
-            receive(disconnect);
-            sessionState.submit(sessionState::terminating);
+            receive(disconnect, Promise.complete((r, x) -> sessionState.submit(sessionState::terminating)));
         } else {
             disconnectFailure(disconnect, null);
         }
@@ -779,28 +772,24 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     private void failDisconnect(Message.Mutable disconnect, ClientTransport.FailureInfo failureInfo) {
-        receive(disconnect);
-        sessionState.submit(sessionState::terminating);
+        receive(disconnect, Promise.complete((r, x) -> onTransportFailure(disconnect, failureInfo, sessionState)));
     }
 
     protected void processMessage(Message.Mutable message) {
-        receive(message);
-        if (getState() == State.HANDSHAKEN) {
-            sessionState.submit(sessionState::connecting);
-        }
+        receive(message, Promise.complete((r, x) -> {
+            if (getState() == State.HANDSHAKEN) {
+                sessionState.submit(sessionState::connecting);
+            }
+        }));
     }
 
     private void messageFailure(Message.Mutable message, Throwable failure) {
-        ClientTransport.FailureInfo failureInfo = new ClientTransport.FailureInfo();
-        failureInfo.transport = getTransport();
-        failureInfo.cause = failure;
-        failureInfo.error = null;
-        failureInfo.action = Message.RECONNECT_NONE_VALUE;
-        failMessage(message, failureInfo);
+        failMessage(message);
     }
 
-    private void failMessage(Message.Mutable message, ClientTransport.FailureInfo failureInfo) {
-        receive(message);
+    private void failMessage(Message.Mutable message) {
+        receive(message, Promise.from(r -> {
+        }, x -> logger.info("Failure while receiving " + message, x)));
     }
 
     protected boolean scheduleHandshake(long interval, long backOff) {
