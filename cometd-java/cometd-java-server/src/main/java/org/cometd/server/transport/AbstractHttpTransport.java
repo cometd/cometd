@@ -151,6 +151,10 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
         message.setServerTransport(this);
         message.setBayeuxContext(new HttpContext(context.request));
+        ServerSessionImpl session = context.session;
+        if (session != null) {
+            session.setServerTransport(this);
+        }
 
         switch (message.getChannel()) {
             case Channel.META_HANDSHAKE: {
@@ -158,7 +162,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                     promise.fail(new IOException("bayeux protocol violation"));
                 } else {
                     processMetaHandshake(context, message, Promise.from(y -> {
-                        ServerSessionImpl session = context.session;
                         processReply(session, message.getAssociated(), Promise.from(reply -> {
                             context.replies.add(reply);
                             context.sendQueue = reply != null && reply.isSuccessful() && allowMessageDeliveryDuringHandshake(session);
@@ -176,7 +179,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
             default: {
                 handleMessage(context, message, Promise.from(y -> {
-                    ServerSessionImpl session = context.session;
                     processReply(session, message.getAssociated(), Promise.from(reply -> {
                         context.replies.add(reply);
                         boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();

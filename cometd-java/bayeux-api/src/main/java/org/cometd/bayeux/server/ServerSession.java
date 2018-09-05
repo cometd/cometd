@@ -73,6 +73,11 @@ public interface ServerSession extends Session {
     public void removeListener(ServerSessionListener listener);
 
     /**
+     * @return the ServerTransport associated with this session
+     */
+    public ServerTransport getServerTransport();
+
+    /**
      * @return whether this is a session for a local client on server-side
      */
     public boolean isLocalSession();

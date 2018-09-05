@@ -154,6 +154,10 @@ public abstract class AbstractWebSocketEndPoint {
 
         message.setServerTransport(_transport);
         message.setBayeuxContext(_bayeuxContext);
+        ServerSessionImpl session = context.session;
+        if (session != null) {
+            session.setServerTransport(_transport);
+        }
 
         switch (message.getChannel()) {
             case Channel.META_HANDSHAKE: {
@@ -161,7 +165,6 @@ public abstract class AbstractWebSocketEndPoint {
                     promise.fail(new IOException("protocol violation"));
                 } else {
                     processMetaHandshake(context, message, Promise.from(y -> {
-                        ServerSessionImpl session = context.session;
                         _transport.processReply(session, message.getAssociated(), Promise.from(reply -> {
                             if (reply != null) {
                                 context.replies.add(reply);
@@ -188,7 +191,6 @@ public abstract class AbstractWebSocketEndPoint {
                 break;
             }
             default: {
-                ServerSessionImpl session = context.session;
                 _transport.getBayeux().handle(session, message, Promise.from(y ->
                         _transport.processReply(session, message.getAssociated(), Promise.from(reply -> {
                             if (reply != null) {

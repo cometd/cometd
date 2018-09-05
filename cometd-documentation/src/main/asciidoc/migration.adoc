@@ -461,7 +461,7 @@ For this reason, access to `BayeuxContext` has been moved to `ServerMessage`.
 |===
 | CometD 3.1 | CometD 4.0
 | BayeuxServer.getContext() | ServerMessage.getBayeuxContext()
-| BayeuxServer.getCurrentTransport() | ServerMessage.getServerTransport()
+| BayeuxServer.getCurrentTransport() | ServerMessage.getServerTransport(), ServerSession.getServerTransport()
 | ServerTransport.getContext() | ServerMessage.getBayeuxContext()
 |===
 

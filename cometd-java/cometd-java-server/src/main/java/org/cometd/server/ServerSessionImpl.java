@@ -62,6 +62,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     private final Set<ServerChannelImpl> subscriptions = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final LazyTask _lazyTask = new LazyTask();
     private AbstractServerTransport.Scheduler _scheduler;
+    private ServerTransport _transport;
     private ServerTransport _advisedTransport;
     private State _state = State.NEW;
     private int _maxQueue = -1;
@@ -746,6 +747,15 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
         // advice has not changed, so return null.
         return null;
+    }
+
+    @Override
+    public ServerTransport getServerTransport() {
+        return _transport;
+    }
+
+    public void setServerTransport(ServerTransport transport) {
+        _transport = transport;
     }
 
     @Override
