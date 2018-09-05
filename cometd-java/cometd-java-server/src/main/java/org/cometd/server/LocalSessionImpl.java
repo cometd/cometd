@@ -15,6 +15,7 @@
  */
 package org.cometd.server;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -99,27 +100,31 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         hsMessage.setChannel(Channel.META_HANDSHAKE);
         registerCallback(messageId, callback);
 
-        doSend(session, hsMessage, new Promise<ServerMessage.Mutable>() {
-            @Override
-            public void succeed(ServerMessage.Mutable hsReply) {
-                if (hsReply != null && hsReply.isSuccessful()) {
-                    _session = session;
-
-                    ServerMessage.Mutable cnMessage = newMessage();
-                    cnMessage.setId(newMessageId());
-                    cnMessage.setChannel(Channel.META_CONNECT);
-                    cnMessage.getAdvice(true).put(Message.INTERVAL_FIELD, -1L);
-                    cnMessage.setClientId(session.getId());
-
-                    doSend(session, cnMessage, Promise.from(cnReply -> {}, this::fail));
-                }
+        doSend(session, hsMessage, Promise.from(hsReply -> {
+            if (hsReply != null && hsReply.isSuccessful()) {
+                _session = session;
+                ServerMessage.Mutable cnMessage = newMessage();
+                cnMessage.setId(newMessageId());
+                cnMessage.setChannel(Channel.META_CONNECT);
+                cnMessage.getAdvice(true).put(Message.INTERVAL_FIELD, -1L);
+                cnMessage.setClientId(session.getId());
+                doSend(session, cnMessage, Promise.from(cnReply -> {
+                    // Nothing more to do.
+                }, failure -> messageFailure(cnMessage, failure)));
             }
+        }, failure -> messageFailure(hsMessage, failure)));
+    }
 
-            @Override
-            public void fail(Throwable failure) {
-                // TODO
-            }
-        });
+    private void messageFailure(ServerMessage message, Throwable cause) {
+        ServerMessage.Mutable messageFailed = newMessage();
+        messageFailed.setId(message.getId());
+        messageFailed.setSuccessful(false);
+        messageFailed.setChannel(message.getChannel());
+        Map<String, Object> failure = new HashMap<>();
+        messageFailed.put("failure", failure);
+        failure.put("message", message);
+        failure.put("exception", cause);
+        receive(messageFailed, Promise.noop());
     }
 
     @Override

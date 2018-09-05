@@ -277,7 +277,8 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     public void receive(final Message.Mutable message, Promise<Void> promise) {
         String channelName = message.getChannel();
         if (channelName == null) {
-            throw new IllegalArgumentException("Bayeux messages must have a channel, " + message);
+            promise.fail(new IllegalArgumentException("Bayeux messages must have a channel, " + message));
+            return;
         }
 
         if (Channel.META_SUBSCRIBE.equals(channelName)) {
