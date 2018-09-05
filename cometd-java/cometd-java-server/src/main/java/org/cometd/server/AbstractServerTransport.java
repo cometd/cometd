@@ -240,8 +240,6 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     protected void sweep() {
     }
 
-    // TODO: verify that processing of the reply is performed all the times.
-    // TODO: the call to extendReply can/should be moved to BayeuxServerImpl.handle()
     public void processReply(ServerSessionImpl session, ServerMessage.Mutable reply, Promise<ServerMessage.Mutable> promise) {
         getBayeux().extendReply(session, session, reply, promise);
     }

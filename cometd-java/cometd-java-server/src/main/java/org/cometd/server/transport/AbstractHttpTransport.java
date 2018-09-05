@@ -161,14 +161,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 if (context.messages.length > 1) {
                     promise.fail(new IOException("bayeux protocol violation"));
                 } else {
-                    processMetaHandshake(context, message, Promise.from(y -> {
-                        processReply(session, message.getAssociated(), Promise.from(reply -> {
-                            context.replies.add(reply);
-                            context.sendQueue = reply != null && reply.isSuccessful() && allowMessageDeliveryDuringHandshake(session);
-                            context.scheduleExpiration = true;
-                            promise.succeed(null);
-                        }, promise::fail));
-                    }, promise::fail));
+                    processMetaHandshake(context, message, promise);
                 }
                 break;
             }
@@ -178,17 +171,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 break;
             }
             default: {
-                handleMessage(context, message, Promise.from(y -> {
-                    processReply(session, message.getAssociated(), Promise.from(reply -> {
-                        context.replies.add(reply);
-                        boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
-                        if (!metaConnectDelivery) {
-                            context.sendQueue = true;
-                        }
-                        // Leave scheduleExpiration unchanged.
-                        promise.succeed(null);
-                    }, promise::fail));
-                }, promise::fail));
+                processMessage2(context, message, promise);
                 break;
             }
         }
@@ -234,10 +217,10 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return null;
     }
 
-    protected void processMetaHandshake(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
+    private void processMetaHandshake(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
         handleMessage(context, message, Promise.from(reply -> {
+            ServerSessionImpl session = context.session;
             if (reply.isSuccessful()) {
-                ServerSessionImpl session = context.session;
                 HttpServletRequest request = context.request;
 
                 String id = findBrowserId(request);
@@ -264,11 +247,16 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                     }
                 });
             }
-            promise.succeed(null);
+            processReply(session, reply, Promise.from(r -> {
+                context.replies.add(r);
+                context.sendQueue = r != null && r.isSuccessful() && allowMessageDeliveryDuringHandshake(session);
+                context.scheduleExpiration = true;
+                promise.succeed(null);
+            }, promise::fail));
         }, promise::fail));
     }
 
-    protected void processMetaConnect(Context context, ServerMessage.Mutable message, boolean canSuspend, Promise<Void> promise) {
+    private void processMetaConnect(Context context, ServerMessage.Mutable message, boolean canSuspend, Promise<Void> promise) {
         ServerSessionImpl session = context.session;
         if (session != null) {
             // Cancel the previous scheduler to cancel any prior waiting long poll.
@@ -325,6 +313,21 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             if (proceed) {
                 promise.succeed(null);
             }
+        }, promise::fail));
+    }
+
+    private void processMessage2(Context context, ServerMessageImpl message, Promise<Void> promise) {
+        handleMessage(context, message, Promise.from(y -> {
+            ServerSessionImpl session = context.session;
+            processReply(session, message.getAssociated(), Promise.from(reply -> {
+                context.replies.add(reply);
+                boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
+                if (!metaConnectDelivery) {
+                    context.sendQueue = true;
+                }
+                // Leave scheduleExpiration unchanged.
+                promise.succeed(null);
+            }, promise::fail));
         }, promise::fail));
     }
 
@@ -750,11 +753,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         @Override
-        public void onStartAsync(AsyncEvent event) throws IOException {
+        public void onStartAsync(AsyncEvent event) {
         }
 
         @Override
-        public void onTimeout(AsyncEvent event) throws IOException {
+        public void onTimeout(AsyncEvent event) {
         }
 
         @Override
@@ -762,7 +765,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         @Override
-        public void onError(AsyncEvent event) throws IOException {
+        public void onError(AsyncEvent event) {
             error(event.getThrowable());
         }
 

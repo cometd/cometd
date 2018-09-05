@@ -113,7 +113,7 @@ public abstract class AbstractWebSocketEndPoint {
         }
     }
 
-    private void processMessages(ServerMessage.Mutable[] messages, Promise<Void> promise) throws IOException {
+    private void processMessages(ServerMessage.Mutable[] messages, Promise<Void> promise) {
         if (messages.length == 0) {
             promise.fail(new IOException("bayeux protocol violation"));
         } else {
@@ -135,8 +135,9 @@ public abstract class AbstractWebSocketEndPoint {
             }
 
             Context context = new Context(session);
-            AsyncFoldLeft.run(messages, true, (result, message, loop) ->
-                            processMessage(messages, context, (ServerMessageImpl)message, Promise.from(b -> loop.proceed(result && b), loop::fail)),
+            AsyncFoldLeft.run(messages, true, (result, message, loop) -> {
+                        processMessage(messages, context, (ServerMessageImpl)message, Promise.from(b -> loop.proceed(result && b), loop::fail));
+                    },
                     Promise.from(flush -> {
                         if (flush) {
                             flush(context, promise);
@@ -164,19 +165,7 @@ public abstract class AbstractWebSocketEndPoint {
                 if (messages.length > 1) {
                     promise.fail(new IOException("protocol violation"));
                 } else {
-                    processMetaHandshake(context, message, Promise.from(y -> {
-                        _transport.processReply(session, message.getAssociated(), Promise.from(reply -> {
-                            if (reply != null) {
-                                context.replies.add(reply);
-                                if (reply.isSuccessful()) {
-                                    _session = session;
-                                }
-                            }
-                            context.sendQueue = _transport.allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
-                            context.scheduleExpiration = true;
-                            promise.succeed(true);
-                        }, promise::fail));
-                    }, promise::fail));
+                    processMetaHandshake(context, message, promise);
                 }
                 break;
             }
@@ -191,22 +180,27 @@ public abstract class AbstractWebSocketEndPoint {
                 break;
             }
             default: {
-                _transport.getBayeux().handle(session, message, Promise.from(y ->
-                        _transport.processReply(session, message.getAssociated(), Promise.from(reply -> {
-                            if (reply != null) {
-                                context.replies.add(reply);
-                            }
-                            // Leave sendQueue unchanged.
-                            // Leave scheduleExpiration unchanged.
-                            promise.succeed(true);
-                        }, promise::fail)), promise::fail));
+                processMessage(context, message, promise);
                 break;
             }
         }
     }
 
-    private void processMetaHandshake(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
-        _transport.getBayeux().handle(context.session, message, Promise.from(reply -> promise.succeed(null), promise::fail));
+    private void processMetaHandshake(Context context, ServerMessage.Mutable message, Promise<Boolean> promise) {
+        ServerSessionImpl session = context.session;
+        _transport.getBayeux().handle(session, message, Promise.from(reply -> {
+            _transport.processReply(session, reply, Promise.from(r -> {
+                if (r != null) {
+                    context.replies.add(r);
+                    if (r.isSuccessful()) {
+                        _session = session;
+                    }
+                }
+                context.sendQueue = _transport.allowMessageDeliveryDuringHandshake(session) && r != null && r.isSuccessful();
+                context.scheduleExpiration = true;
+                promise.succeed(true);
+            }, promise::fail));
+        }, promise::fail));
     }
 
     private void processMetaConnect(Context context, ServerMessage.Mutable message, Promise<Boolean> promise) {
@@ -232,6 +226,19 @@ public abstract class AbstractWebSocketEndPoint {
             }
             promise.succeed(proceed);
         }, promise::fail));
+    }
+
+    private void processMessage(Context context, ServerMessageImpl message, Promise<Boolean> promise) {
+        ServerSessionImpl session = context.session;
+        _transport.getBayeux().handle(session, message, Promise.from(y ->
+                _transport.processReply(session, message.getAssociated(), Promise.from(reply -> {
+                    if (reply != null) {
+                        context.replies.add(reply);
+                    }
+                    // Leave sendQueue unchanged.
+                    // Leave scheduleExpiration unchanged.
+                    promise.succeed(true);
+                }, promise::fail)), promise::fail));
     }
 
     private AbstractServerTransport.Scheduler suspend(Context context, ServerMessage.Mutable message, long timeout) {
@@ -406,7 +413,7 @@ public abstract class AbstractWebSocketEndPoint {
         }
 
         @Override
-        protected Action process() throws Exception {
+        protected Action process() {
             Entry entry;
             synchronized (this) {
                 entry = this._entry = _entries.peek();
