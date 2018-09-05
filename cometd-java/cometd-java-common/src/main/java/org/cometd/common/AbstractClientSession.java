@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -98,27 +97,6 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
                 loop.leave(false);
             }
         }, promise);
-    }
-
-    // TODO: remove, but needs modifications to BayeuxClient.
-    protected boolean extendSend(Message.Mutable message) {
-        String messageId = message.getId();
-        ListIterator<Extension> i = _extensions.listIterator();
-        while (i.hasNext()) {
-            i.next();
-        }
-        while (i.hasPrevious()) {
-            Extension extension = i.previous();
-            boolean proceed = message.isMeta() ?
-                    extension.sendMeta(this, message) :
-                    extension.send(this, message);
-            if (!proceed) {
-                unregisterSubscriber(messageId);
-                unregisterCallback(messageId);
-                return false;
-            }
-        }
-        return true;
     }
 
     protected void extendIncoming(Message.Mutable message, Promise<Boolean> promise) {
