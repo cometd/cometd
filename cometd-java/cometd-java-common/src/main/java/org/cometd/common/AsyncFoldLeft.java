@@ -150,5 +150,4 @@ public class AsyncFoldLeft {
             promise.fail(failure);
         }
     }
-
 }

@@ -571,14 +571,13 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         if (scheduler != null) {
             scheduler.schedule();
             // If there is a scheduler, then it's a remote session
-            // and we should not perform local delivery, so we return
+            // and we should not do local delivery, so we return.
             return;
         }
 
-        // do local delivery
+        // Local delivery.
         if (_localSession != null && hasNonLazyMessages()) {
             for (ServerMessage msg : takeQueue()) {
-                // TODO: verify that promise here is not necessary.
                 _localSession.receive(new HashMapMessage(msg), Promise.noop());
             }
         }

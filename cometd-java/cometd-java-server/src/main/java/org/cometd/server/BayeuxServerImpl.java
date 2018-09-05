@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -578,9 +579,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
     @Override
     public void addListener(BayeuxServerListener listener) {
-        if (listener == null) {
-            throw new NullPointerException();
-        }
+        Objects.requireNonNull(listener);
         _listeners.add(listener);
     }
 
