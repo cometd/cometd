@@ -61,10 +61,9 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
 
         TestBayeuxClient client = new TestBayeuxClient() {
             @Override
-            protected boolean sendConnect() {
-                boolean result = super.sendConnect();
+            protected void sendConnect() {
+                super.sendConnect();
                 connectLatch.countDown();
-                return result;
             }
         };
         client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
@@ -136,10 +135,9 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
 
         TestBayeuxClient client = new TestBayeuxClient() {
             @Override
-            protected boolean sendConnect() {
-                boolean result = super.sendConnect();
+            protected void sendConnect() {
+                super.sendConnect();
                 connectLatch.countDown();
-                return result;
             }
         };
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
@@ -236,12 +234,12 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
         }
 
         @Override
-        protected boolean sendConnect() {
+        protected void sendConnect() {
             if (networkDown > 0) {
                 networkDown = 0;
                 System.err.println("Reset network down");
             }
-            return super.sendConnect();
+            super.sendConnect();
         }
 
         @Override

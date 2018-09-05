@@ -271,8 +271,14 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         });
         client.handshake();
 
-        client.getChannel(channelName).publish("data", ClientSession.MessageListener.NOOP);
+        CountDownLatch publishLatch = new CountDownLatch(1);
+        client.getChannel(channelName).publish("data", message -> {
+            if (!message.isSuccessful()) {
+                publishLatch.countDown();
+            }
+        });
 
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
@@ -305,8 +311,14 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         });
         client.handshake();
 
-        client.getChannel(channelName).subscribe(new MessageListenerAdapter());
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
+        client.getChannel(channelName).subscribe(new MessageListenerAdapter(), message -> {
+            if (!message.isSuccessful()) {
+                subscribeLatch.countDown();
+            }
+        });
 
+        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
@@ -342,8 +354,14 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         });
         session.handshake();
 
-        session.getChannel(channelName).publish("data", ClientSession.MessageListener.NOOP);
+        CountDownLatch publishLatch = new CountDownLatch(1);
+        session.getChannel(channelName).publish("data", message -> {
+            if (!message.isSuccessful()) {
+                publishLatch.countDown();
+            }
+        });
 
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
 
         session.disconnect();

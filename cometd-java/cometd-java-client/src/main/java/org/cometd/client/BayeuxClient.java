@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,6 +51,7 @@ import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
+import org.cometd.common.AsyncFoldLeft;
 import org.cometd.common.TransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -315,7 +315,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         return getState();
     }
 
-    protected boolean sendHandshake() {
+    protected void sendHandshake() {
         List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
         List<String> transportNames = new ArrayList<>(transports.size());
         for (ClientTransport transport : transports) {
@@ -341,7 +341,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         List<Message.Mutable> messages = new ArrayList<>(1);
         messages.add(message);
-        return sendMessages(messages);
+        sendMessages(messages, Promise.complete((r, x) -> {
+            if (logger.isDebugEnabled()) {
+                logger.debug("{} handshake {}", x == null ? "Sent" : "Failed", message);
+            }
+        }));
     }
 
     /**
@@ -400,10 +404,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
     }
 
-    protected boolean sendConnect() {
+    protected void sendConnect() {
         ClientTransport transport = getTransport();
         if (transport == null) {
-            return false;
+            return;
         }
 
         Message.Mutable message = newMessage();
@@ -423,7 +427,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         List<Message.Mutable> messages = new ArrayList<>(1);
         messages.add(message);
-        return sendMessages(messages);
+        sendMessages(messages, Promise.complete((r, x) -> {
+            if (logger.isDebugEnabled()) {
+                logger.debug("{} connect {}", x == null ? "Sent" : "Failed", message);
+            }
+        }));
     }
 
     @Override
@@ -443,37 +451,58 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         if (canSend()) {
             List<Message.Mutable> messages = takeMessages();
             if (!messages.isEmpty()) {
-                sendMessages(messages);
+                sendMessages(messages, Promise.complete((r, x) -> {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("{} batch {}", x == null ? "Sent" : "Failed", messages);
+                    }
+                }));
             }
         }
     }
 
-    protected boolean sendMessages(List<Message.Mutable> messages) {
-        for (Iterator<Message.Mutable> iterator = messages.iterator(); iterator.hasNext(); ) {
-            Message.Mutable message = iterator.next();
-
+    protected void sendMessages(List<Message.Mutable> messages, Promise<Boolean> promise) {
+        AsyncFoldLeft.run(messages, new ArrayList<Message.Mutable>(messages.size()), (toSend, message, loop) -> {
             String messageId = message.getId();
             message.setClientId(sessionState.sessionId);
-
-            if (extendSend(message)) {
-                // Extensions may have changed the messageId, but we need to
-                // own it in case of meta messages to link requests to responses
-                // in non request/response transports such as WebSocket.
+            extendOutgoing(message, Promise.from(extPass -> {
+                // Extensions may have changed the messageId.
                 message.setId(messageId);
-            } else {
-                iterator.remove();
+                if (extPass) {
+                    toSend.add(message);
+                }
+                loop.proceed(toSend);
+            }, loop::fail));
+        }, Promise.from(toSend -> {
+            List<Message.Mutable> deleted = Collections.emptyList();
+            if (toSend.size() != messages.size()) {
+                deleted = new ArrayList<>(messages);
+                deleted.removeAll(toSend);
             }
-        }
 
-        if (messages.isEmpty()) {
-            return false;
-        }
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("Sending messages {}", messages);
-        }
-
-        return sessionState.send(messageListener, messages);
+            // Fail the deleted messages first, to avoid a
+            // race with the replies of the sent messages.
+            AsyncFoldLeft.run(deleted, null, (result, message, loop) -> {
+                Message.Mutable failed = newMessage();
+                failed.setId(message.getId());
+                failed.setSuccessful(false);
+                failed.setChannel(message.getChannel());
+                if (message.containsKey(Message.SUBSCRIPTION_FIELD)) {
+                    failed.put(Message.SUBSCRIPTION_FIELD, message.get(Message.SUBSCRIPTION_FIELD));
+                }
+                failed.put(Message.ERROR_FIELD, "404::message_deleted");
+                receive(failed, Promise.from(loop::proceed, loop::fail));
+            }, Promise.from(r -> {
+                // Send the messages.
+                if (toSend.isEmpty()) {
+                    promise.succeed(false);
+                } else {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Sending messages {}", toSend);
+                    }
+                    promise.succeed(sessionState.send(messageListener, toSend));
+                }
+            }, promise::fail));
+        }, promise::fail));
     }
 
     private List<Message.Mutable> takeMessages() {
@@ -505,7 +534,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
                 List<Message.Mutable> messages = new ArrayList<>(1);
                 messages.add(message);
-                sendMessages(messages);
+                sendMessages(messages, Promise.complete((r, x) -> {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("{} disconnect {}", x == null ? "Sent" : "Failed", message);
+                    }
+                }));
             }
         });
     }
@@ -911,10 +944,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         if (canSend()) {
             List<Message.Mutable> messages = new ArrayList<>(1);
             messages.add(message);
-            boolean sent = sendMessages(messages);
-            if (logger.isDebugEnabled()) {
-                logger.debug("{} message {}", sent ? "Sent" : "Failed", message);
-            }
+            sendMessages(messages, Promise.complete((r, x) -> {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("{} message {}", x == null ? "Sent" : "Failed", message);
+                }
+            }));
         } else {
             synchronized (messageQueue) {
                 messageQueue.add(message);

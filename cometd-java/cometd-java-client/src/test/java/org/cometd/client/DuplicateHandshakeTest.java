@@ -39,7 +39,7 @@ public class DuplicateHandshakeTest extends ClientServerTest {
         String sessionId = client.getId();
 
         // Send the second handshake.
-        Assert.assertTrue(client.sendHandshake());
+        client.sendHandshake();
 
         // Wait until the /meta/connect returns, and the maxInterval expires.
         Thread.sleep(timeout * 3 / 2 + sweepPeriod);

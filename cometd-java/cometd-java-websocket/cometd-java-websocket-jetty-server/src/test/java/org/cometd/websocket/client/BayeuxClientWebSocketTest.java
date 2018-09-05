@@ -76,11 +76,11 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         ClientTransport longPollingTransport = newLongPollingTransport(null);
         final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport) {
             @Override
-            protected boolean sendConnect() {
+            protected void sendConnect() {
                 if ("websocket".equals(getTransport().getName())) {
                     connectLatch.countDown();
                 }
-                return super.sendConnect();
+                super.sendConnect();
             }
         };
 

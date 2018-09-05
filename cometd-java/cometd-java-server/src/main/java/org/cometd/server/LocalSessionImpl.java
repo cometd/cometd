@@ -116,15 +116,18 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     }
 
     private void messageFailure(ServerMessage message, Throwable cause) {
-        ServerMessage.Mutable messageFailed = newMessage();
-        messageFailed.setId(message.getId());
-        messageFailed.setSuccessful(false);
-        messageFailed.setChannel(message.getChannel());
+        ServerMessage.Mutable failed = newMessage();
+        failed.setId(message.getId());
+        failed.setSuccessful(false);
+        failed.setChannel(message.getChannel());
+        if (message.containsKey(Message.SUBSCRIPTION_FIELD)) {
+            failed.put(Message.SUBSCRIPTION_FIELD, message.get(Message.SUBSCRIPTION_FIELD));
+        }
         Map<String, Object> failure = new HashMap<>();
-        messageFailed.put("failure", failure);
+        failed.put("failure", failure);
         failure.put("message", message);
         failure.put("exception", cause);
-        receive(messageFailed, Promise.noop());
+        receive(failed, Promise.noop());
     }
 
     @Override
@@ -212,7 +215,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
                 ServerMessage.Mutable reply = _bayeux.createReply(message);
                 _bayeux.error(reply, "404::message_deleted");
                 receive(reply, Promise.from(y -> promise.succeed(reply), promise::fail));
-                promise.succeed(reply);
             }
         }, promise::fail));
     }

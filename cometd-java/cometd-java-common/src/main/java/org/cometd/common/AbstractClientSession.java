@@ -139,19 +139,6 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         }, promise);
     }
 
-    // TODO: remove, but needs modifications to BayeuxClient.
-    protected boolean extendRcv(Message.Mutable message) {
-        for (Extension extension : _extensions) {
-            boolean proceed = message.isMeta() ?
-                    extension.rcvMeta(this, message) :
-                    extension.rcv(this, message);
-            if (!proceed) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     protected abstract ChannelId newChannelId(String channelId);
 
     protected abstract AbstractSessionChannel newChannel(ChannelId channelId);

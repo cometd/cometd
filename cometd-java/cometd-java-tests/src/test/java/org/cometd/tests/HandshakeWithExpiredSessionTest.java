@@ -78,21 +78,13 @@ public class HandshakeWithExpiredSessionTest extends AbstractClientServerTest {
 
         ServerSession session1 = sessionRef1.get();
         final CountDownLatch removeLatch = new CountDownLatch(1);
-        session1.addListener(new ServerSession.RemoveListener() {
-            @Override
-            public void removed(ServerSession session, boolean timeout) {
-                removeLatch.countDown();
-            }
-        });
+        session1.addListener((ServerSession.RemoveListener)(session, timeout) -> removeLatch.countDown());
 
         final CountDownLatch handshakeLatch2 = new CountDownLatch(1);
         final AtomicReference<ServerSession> sessionRef2 = new AtomicReference<>();
-        metaHandshake.addListener(new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                sessionRef2.set(bayeux.getSession(message.getClientId()));
-                handshakeLatch2.countDown();
-            }
+        metaHandshake.addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+            sessionRef2.set(bayeux.getSession(message.getClientId()));
+            handshakeLatch2.countDown();
         });
 
         // Wait for the session to expire on the server.
@@ -121,8 +113,9 @@ public class HandshakeWithExpiredSessionTest extends AbstractClientServerTest {
         }
 
         @Override
-        public boolean sendConnect() {
-            return connect.get() && super.sendConnect();
+        public void sendConnect() {
+            if (connect.get())
+                super.sendConnect();
         }
     }
 }

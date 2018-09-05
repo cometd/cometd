@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.LongPollingTransport;
 import org.junit.Assert;
@@ -41,11 +42,10 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
         final CountDownLatch latch = new CountDownLatch(1);
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
             @Override
-            protected boolean sendHandshake() {
+            protected void sendHandshake() {
                 disconnect();
                 super.sendHandshake();
                 latch.countDown();
-                return false;
             }
         };
         client.handshake();
@@ -59,11 +59,10 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
         final CountDownLatch latch = new CountDownLatch(1);
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
             @Override
-            protected boolean sendConnect() {
+            protected void sendConnect() {
                 disconnect();
                 super.sendConnect();
                 latch.countDown();
-                return false;
             }
         };
         client.handshake();
@@ -144,14 +143,14 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
         final AtomicInteger connects = new AtomicInteger();
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
             @Override
-            protected boolean sendConnect() {
+            protected void sendConnect() {
                 try {
                     if (connects.incrementAndGet() == 2) {
                         server.stop();
                     }
-                    return super.sendConnect();
+                    super.sendConnect();
                 } catch (Exception x) {
-                    return false;
+                    x.printStackTrace();
                 }
             }
         };
@@ -204,13 +203,13 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
         final CountDownLatch sendLatch = new CountDownLatch(1);
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
             @Override
-            protected boolean sendMessages(List<Message.Mutable> messages) {
+            protected void sendMessages(List<Message.Mutable> messages, Promise<Boolean> promise) {
                 for (Message message : messages) {
                     if (message.getChannel().equals(channelName)) {
                         sendLatch.countDown();
                     }
                 }
-                return super.sendMessages(messages);
+                super.sendMessages(messages, promise);
             }
         };
 

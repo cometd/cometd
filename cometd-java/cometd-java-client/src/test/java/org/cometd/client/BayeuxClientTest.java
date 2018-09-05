@@ -174,10 +174,9 @@ public class BayeuxClientTest extends ClientServerTest {
             }
 
             @Override
-            protected boolean sendConnect() {
-                boolean result = super.sendConnect();
+            protected void sendConnect() {
+                super.sendConnect();
                 connectLatch.countDown();
-                return result;
             }
         };
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
@@ -280,9 +279,10 @@ public class BayeuxClientTest extends ClientServerTest {
             }
 
             @Override
-            protected boolean sendConnect() {
+            protected void sendConnect() {
                 if (connects.incrementAndGet() < 2) {
-                    return super.sendConnect();
+                    super.sendConnect();
+                    return;
                 }
 
                 Message.Mutable connect = newMessage();
@@ -290,7 +290,6 @@ public class BayeuxClientTest extends ClientServerTest {
                 connect.setChannel(Channel.META_CONNECT);
                 connect.setSuccessful(false);
                 processConnect(connect);
-                return false;
             }
         };
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(1));
@@ -500,12 +499,13 @@ public class BayeuxClientTest extends ClientServerTest {
             }
 
             @Override
-            protected boolean sendMessages(List<Message.Mutable> messages) {
-                boolean result = super.sendMessages(messages);
-                if (result && !messages.get(0).getChannelId().isMeta()) {
-                    publishLatch.countDown();
-                }
-                return result;
+            protected void sendMessages(List<Message.Mutable> messages, Promise<Boolean> promise) {
+                super.sendMessages(messages, Promise.from(result -> {
+                    promise.succeed(result);
+                    if (result && !messages.get(0).getChannelId().isMeta()) {
+                        publishLatch.countDown();
+                    }
+                }, promise::fail));
             }
         };
         client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
@@ -549,12 +549,12 @@ public class BayeuxClientTest extends ClientServerTest {
         final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
             @Override
-            protected boolean sendMessages(List<Message.Mutable> messages) {
+            protected void sendMessages(List<Message.Mutable> messages, Promise<Boolean> promise) {
                 if (!messages.get(0).getChannelId().isMeta()) {
                     abort();
                     publishLatch.get().countDown();
                 }
-                return super.sendMessages(messages);
+                super.sendMessages(messages, promise);
             }
         };
         client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
@@ -628,7 +628,7 @@ public class BayeuxClientTest extends ClientServerTest {
     }
 
     @Test
-    public void testAuthentication() throws Exception {
+    public void testAuthentication() {
         final AtomicReference<String> sessionId = new AtomicReference<>();
         class A extends DefaultSecurityPolicy implements ServerSession.RemoveListener {
             @Override
@@ -1037,7 +1037,7 @@ public class BayeuxClientTest extends ClientServerTest {
         }
 
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException {
+        public void init(FilterConfig filterConfig) {
         }
     }
 }
