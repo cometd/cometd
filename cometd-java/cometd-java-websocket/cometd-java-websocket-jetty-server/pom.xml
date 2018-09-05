@@ -10,6 +10,21 @@
   <artifactId>cometd-java-websocket-jetty-server</artifactId>
   <name>CometD :: Java :: WebSocket :: Jetty Server</name>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Automatic-Module-Name>org.cometd.websocket.jetty.server</Automatic-Module-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>javax.servlet</groupId>

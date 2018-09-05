@@ -45,7 +45,7 @@
     <dojo-version>1.14.0</dojo-version>
   </properties>
 
-  <url>http://cometd.org</url>
+  <url>https://cometd.org</url>
   <description>
     The CometD project is a scalable web messaging bus that uses WebSocket
     and HTTP AJAX push technology patterns known as "Comet" techniques
@@ -228,11 +228,7 @@
             <Bundle-DocURL>http://docs.cometd.org</Bundle-DocURL>
             <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
             <Bundle-Version>${project.version}</Bundle-Version>
-            <Import-Package>org.eclipse.jetty.*;version="[9.2,10)",*</Import-Package>
-            <mode>development</mode>
-            <url>${project.url}</url>
-            <implementation-version>${project.version}</implementation-version>
-            <package>org.cometd</package>
+            <Import-Package>org.eclipse.jetty.*;version="[9.4,10)",*</Import-Package>
           </instructions>
         </configuration>
         <executions>
@@ -251,6 +247,10 @@
         <configuration>
           <archive>
             <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+            <manifestEntries>
+              <Implementation-Version>${project.version}</Implementation-Version>
+              <Implementation-Vendor>${project.organization.name}</Implementation-Vendor>
+            </manifestEntries>
           </archive>
         </configuration>
       </plugin>
