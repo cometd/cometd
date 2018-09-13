@@ -148,7 +148,7 @@ List<String> names = factory.newObject(null);
 names.add("B1");
 
 // Share the new list with the other nodes
-users.setAndShare(names);
+users.setAndShare(names, null);
 ----
 ====
 
@@ -166,12 +166,12 @@ methods to put/remove the map entries and share them:
 OortStringMap<UserInfo> userInfos = ...;
 
 // Map user name "B1" with its metadata
-userInfos.putAndShare("B1", new UserInfo("B1", ...));
+userInfos.putAndShare("B1", new UserInfo("B1", ...), null);
 
 // In another place in the code
 
 // Remove the mapping for user "B1"
-userInfos.removeAndShare("B1");
+userInfos.removeAndShare("B1", null);
 ----
 ====
 
@@ -183,12 +183,12 @@ userInfos.removeAndShare("B1");
 OortList<String> names = ...;
 
 // Add user name "B1"
-names.addAndShare("B1");
+names.addAndShare(null, "B1");
 
 // In another place in the code
 
 // Remove user "B1"
-names.removeAndShare("B1");
+names.removeAndShare(null, "B1");
 ----
 ====
 
@@ -223,7 +223,7 @@ When a node receives the JSON representation of data entity and its contained
 objects, it deserializes it from JSON into an object graph.
 
 In the `OortStringMap` example above, the data entity is a
-+ConcurrentMap<String, Object>+ and the values of this data entity are objects
+`ConcurrentMap<String, Object>` and the values of this data entity are objects
 of class `UserInfo`.
 
 While the `OortObject` implementation is able to serialize a `ConcurrentMap`
@@ -454,7 +454,7 @@ userCount.addListener(new OortObject.Listener() {
     private void broadcastUserCount(long count) {
         // Publish a message on "/user/count" to update the remote clients connected to this node
         BayeuxServer bayeuxServer = userCount.getOort().getBayeuxServer();
-        bayeuxServer.getChannel("/user/count").publish(userCount.getLocalSession(), count);
+        bayeuxServer.getChannel("/user/count").publish(userCount.getLocalSession(), count, Promise.noop());
     }
 });
 ----

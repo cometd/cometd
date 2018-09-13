@@ -37,7 +37,7 @@ public class OneClientPerAddressSecurityPolicy extends DefaultSecurityPolicy {
     private final Set<String> addresses = new HashSet<>();
 
     @Override
-    public boolean canHandshake(BayeuxServer bayeuxServer, ServerSession session, ServerMessage message) {
+    public void canHandshake(BayeuxServer bayeuxServer, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
         BayeuxContext context = message.getBayeuxContext();
 
         // Get the remote address of the client
@@ -54,7 +54,7 @@ public class OneClientPerAddressSecurityPolicy extends DefaultSecurityPolicy {
             }
         });
 
-        return notPresent ? true : false;
+        promise.succeed(notPresent ? true : false);
     }
 }
 ----

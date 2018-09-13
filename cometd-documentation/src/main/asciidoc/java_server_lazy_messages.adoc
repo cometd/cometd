@@ -6,7 +6,7 @@ Sometimes applications need to send non-urgent messages to clients; alert
 messages such as "email received" or "server uptime", are typical examples,
 but chat messages sometimes also fit this definition.
 While these messages need to reach the client(s) eventually, there is no need
-to deliver them immediately: they are queued into the `ServerSession`'s message
+to deliver them immediately: they are queued into the `ServerSession` message
 queue, but their delivery can be postponed to the first occasion.
 
 In CometD, "first occasion" means whichever of the following things occurs first
@@ -16,7 +16,7 @@ information about configuring the following parameters):
 * the channel's lazy timeout expires
 * the `/meta/connect` timeout expires so that the `/meta/connect` response is
   sent to the client
-* another non-lazy message triggered the `ServerSession`'s message queue to be
+* another non-lazy message triggered the `ServerSession` message queue to be
   sent to the client
 
 To support this feature, CometD introduces the concepts of _lazy channel_ and
@@ -40,7 +40,7 @@ public class LazyService {
         message.setChannel("/news");
         message.setData(news);
         message.setLazy(true);
-        this.bayeuxServer.getChannel("/news").publish(this.session, message);
+        this.bayeuxServer.getChannel("/news").publish(this.session, message, Promise.noop());
     }
 }
 ----
@@ -78,7 +78,7 @@ public class LazyService {
     }
 
     public void receiveNewsFromExternalSystem(NewsInfo news) {
-        this.bayeuxServer.getChannel("/news").publish(this.session, news);
+        this.bayeuxServer.getChannel("/news").publish(this.session, news, Promise.noop());
     }
 }
 ----

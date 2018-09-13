@@ -147,7 +147,7 @@ You can customize it by adding serializers/deserializers as explained above.
 ===== Oort Configuration
 
 In the Oort clustering (see also <<_java_oort,the Oort section>>), an `Oort`
-instance need to have both the server and the client`JSONContext`: the server
+instance need to have both the server and the client `JSONContext`: the server
 one to deserialize messages that other Oort comets send, and the client one
 to serialize messages to send to other Oort comets.
 

@@ -66,17 +66,14 @@ and processed by the server, you can pass a callback `MessageListener` to the
 ====
 [source,java]
 ----
-final BayeuxClient client = ...;
-final ClientSessionChannel.MessageListener messageHandler = ...;
-client.handshake(new ClientSessionChannel.MessageListener() {
-    public void onMessage(ClientSessionChannel channel, Message message) {
-        if (message.isSuccessful()) {
-            // Subscribe
-            client.getChannel("/foo").subscribe(messageHandler, new ClientSessionChannel.MessageListener() {
-                public void onMessage(ClientSessionChannel channel, Message message) {
-                    if (message.isSuccessful()) {
-                        // Subscription successful.
-                    }
+BayeuxClient client = ...;
+ClientSessionChannel.MessageListener messageHandler = ...;
+client.handshake(handshake -> {
+        if (handshake.isSuccessful()) {
+            // Subscribe.
+            client.getChannel("/foo").subscribe(messageHandler, subscribe -> {
+                if (subscribe.isSuccessful()) {
+                    // Subscription successful.
                 }
             }
         }
@@ -105,10 +102,8 @@ It does make sense, however, to listen to messages that arrive on those channels
 public class Example {
     public void init() {
         ClientSession client = ...;
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                // Here you received a handshake response message
-            }
+        client.getChannel(Channel.META_HANDSHAKE).addListener((channel, message) -> {
+            // Here you received a handshake response message
         });
     }
 }

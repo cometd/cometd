@@ -76,7 +76,8 @@ session for which you want to monitor inactivity, for example:
 ----
 public class MyPolicy extends DefaultSecurityPolicy {
     @Override
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise
+    ) {
         if (!isAdminUser(session, message)) {
             session.addExtension(new ActivityExtension.SessionExtension(ActivityExtension.Activity.CLIENT, 10 * 60 * 1000L));
         }

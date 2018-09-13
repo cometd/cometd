@@ -61,23 +61,23 @@ bayeuxServer.addExtension(new ExtensionB());
 ----
 ====
 
-then for incoming non-meta messages the call order is:
+then for incoming messages the call order is:
 
 ====
 [source,java]
 ----
-ExtensionA.rcv(...);
-ExtensionB.rcv(...);
+ExtensionA.incoming(...);
+ExtensionB.incoming(...);
 ----
 ====
 
-while for outgoing non-meta messages the call order is:
+while for outgoing messages the call order is:
 
 ====
 [source,java]
 ----
-ExtensionB.send(...);
-ExtensionA.send(...);
+ExtensionB.outgoing(...);
+ExtensionA.outgoing(...);
 ----
 ====
 
@@ -232,8 +232,8 @@ To learn about a similar mechanism for listeners and subscribers, see also
 
 The next sections explain in detail the use of the extensions CometD provides.
 
-include::extensions_activity.adoc[]
 include::extensions_acknowledge.adoc[]
+include::extensions_activity.adoc[]
 include::extensions_binary.adoc[]
 include::extensions_reload.adoc[]
 include::extensions_timestamp.adoc[]

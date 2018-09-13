@@ -5,7 +5,7 @@
 [[_migration]]
 == Migration Guides
 
-=== Migrating from CometD 2
+=== Migrating from CometD 2 to CometD 3
 
 ==== Required JDK Version Changes
 
@@ -463,6 +463,21 @@ For this reason, access to `BayeuxContext` has been moved to `ServerMessage`.
 | BayeuxServer.getContext() | ServerMessage.getBayeuxContext()
 | BayeuxServer.getCurrentTransport() | ServerMessage.getServerTransport(), ServerSession.getServerTransport()
 | ServerTransport.getContext() | ServerMessage.getBayeuxContext()
+|===
+
+==== Deprecated API Removed
+
+In `OortMap` and `OortList`, a number of deprecated (since 3.0.x) blocking APIs
+have been removed. Use the non-blocking variant of the same APIs.
+
+[cols="1,1", options="header"]
+|===
+| CometD 3.1 | CometD 4.0
+| OortMap.putAndShare(K key, V value) | OortMap.putAndShare(K key, V value, Result<V> callback)
+| OortMap.putIfAbsentAndShare(K key, V value) | OortMap.putIfAbsentAndShare(K key, V value, Result<V> callback)
+| OortMap.removeAndShare(K key) | OortMap.removeAndShare(K key, Result<V> callback)
+| OortList.addAndShare(E... elements) | OortList.addAndShare(Result<Boolean> callback, E... elements)
+| OortList.removeAndShare(E... elements) | OortList.removeAndShare(Result<Boolean> callback, E... elements)
 |===
 
 :numbered:

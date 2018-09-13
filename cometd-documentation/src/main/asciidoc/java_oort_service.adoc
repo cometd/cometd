@@ -142,7 +142,7 @@ public class NameEditService extends OortService<String, Boolean> {
         // This runs in the requesting node.
 
         // Notify the remote client of the result of the edit.
-        context.getServerSession().deliver(getLocalSession(), context.getServerMessage().getChannel(), result);
+        context.getServerSession().deliver(getLocalSession(), context.getServerMessage().getChannel(), result, Promise.noop());
     }
 
     @Override
@@ -151,7 +151,7 @@ public class NameEditService extends OortService<String, Boolean> {
         // This runs in the requesting node.
 
         // Notify the remote client of the failure.
-        context.getServerSession().deliver(getLocalSession(), context.getServerMessage().getChannel(), failure);
+        context.getServerSession().deliver(getLocalSession(), context.getServerMessage().getChannel(), failure, Promise.noop());
     }
 }
 ----

@@ -17,7 +17,7 @@ public class EchoService extends AbstractService { <1>
     }
 
     public void processEcho(ServerSession remote, ServerMessage message) { <5>
-        remote.deliver(getServerSession(), "/echo", message.getData()); <6>
+        remote.deliver(getServerSession(), "/echo", message.getData(), Promise.noop()); <6>
     }
 }
 ----
@@ -61,14 +61,14 @@ public class BaseballTeamService extends AbstractService {
 
     public void processBaseballTeam(ServerSession remote, ServerMessage message) {
         // Upon receiving a message on channel /baseball/team/*, forward to channel /events/baseball/team/*
-        getBayeux().getChannel("/events" + message.getChannel()).publish(getServerSession(), message.getData());
+        getBayeux().getChannel("/events" + message.getChannel()).publish(getServerSession(), message.getData(), Promise.noop());
     }
 }
 ----
 ====
 
-Notice also how the first example uses `ServerSession.deliver()` to send a
-message to a particular remote client, while the second uses `ServerChannel.publish()`
+Notice also how the first example uses `ServerSession.deliver(...)` to send a
+message to a particular remote client, while the second uses `ServerChannel.publish(...)`
 to send a message to anyone who subscribes to channel `+/events/baseball/team/*+`.
 
 Method `addService(...)` is used to map a server-side channel listener with a

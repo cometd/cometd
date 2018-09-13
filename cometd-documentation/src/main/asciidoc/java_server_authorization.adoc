@@ -18,13 +18,13 @@ The `org.cometd.bayeux.server.SecurityPolicy` methods are:
 ====
 [source,java]
 ----
-boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message);
+void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise);
 
-boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message);
+void canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message, Promise<Boolean> promise);
 
-boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage);
+void canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage, Promise<Boolean> promise);
 
-boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage);
+void canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage, Promise<Boolean> promise);
 ----
 ====
 
@@ -62,16 +62,17 @@ method to control authentication:
 [source,java]
 ----
 public class CustomSecurityPolicy extends DefaultSecurityPolicy {
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
         // Always allow local clients
         if (session.isLocalSession()) {
-            return true;
+            promise.succeed(true);
+            return;
         }
 
         // Implement custom authentication logic
         boolean authenticated = authenticate(server, session, message);
 
-        return authenticated;
+        promise.succeed(authenticated);
     }
 }
 ----

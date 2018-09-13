@@ -19,17 +19,15 @@ that the server received and processed the disconnect request:
 [source,java]
 ----
 BayeuxClient client = ...;
-client.disconnect(new ClientSessionChannel.MessageListener() {
-    public void onMessage(ClientSessionChannel channel, Message message) {
-        if (message.isSuccessful()) {
-            // Server processed the disconnect request.
-        }
+client.disconnect(message -> {
+    if (message.isSuccessful()) {
+        // Server processed the disconnect request.
     }
 });
 ----
 ====
 
-Alternatively, you can wait for the disconnect to complete:
+Alternatively, you can block and wait for the disconnect to complete:
 
 ====
 [source,java]

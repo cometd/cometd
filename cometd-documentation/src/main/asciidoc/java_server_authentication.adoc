@@ -87,24 +87,28 @@ Below you can find the code for the `MyAppAuthenticator` class referenced above:
 ----
 public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerSession.RemoveListener { <1>
     @Override
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) { <2>
+    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) { <2>
         if (session.isLocalSession()) { <3>
-            return true;
+            promise.succeed(true);
+            return;
         }
 
         Map<String, Object> ext = message.getExt();
         if (ext == null) {
-            return false;
+            promise.succeed(false);
+            return;
         }
 
         Map<String, Object> authentication = (Map<String, Object>)ext.get("com.myapp.authn");
         if (authentication == null) {
-            return false;
+            promise.succeed(false);
+            return;
         }
 
         Object authenticationData = verify(authentication); <4>
         if (authenticationData == null) {
-            return false;
+            promise.succeed(false);
+            return;
         }
 
         // Authentication successful
@@ -114,7 +118,7 @@ public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerS
         // Be notified when the session disappears
         session.addListener(this); <6>
 
-        return true;
+        promise.succeed(true);
     }
 
     public void removed(ServerSession session, boolean expired) { <7>
@@ -162,23 +166,27 @@ public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerS
     }
 
     @Override
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
         if (session.isLocalSession()) {
-            return true;
+            promise.succeed(true);
+            return;
         }
 
         Map<String, Object> ext = message.getExt();
         if (ext == null) {
-            return false;
+            promise.succeed(false);
+            return;
         }
 
         Map<String, Object> authentication = (Map<String, Object>)ext.get("com.myapp.authn");
         if (authentication == null) {
-            return false;
+            promise.succeed(false);
+            return;
         }
 
         if (!verify(authentication)) {
-            return false;
+            promise.succeed(false);
+            return;
         }
 
         // Authentication successful.
@@ -189,7 +197,7 @@ public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerS
         // Be notified when the session disappears.
         session.addListener(this);
 
-        return true;
+        promise.succeed(true);
     }
 
     public void removed(ServerSession session, boolean expired) {
@@ -280,7 +288,7 @@ the `SecurityPolicy` implementation:
 [source,java]
 ----
 public class MySecurityPolicy extends DefaultSecurityPolicy {
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
         if (!canAuthenticate(session, message)) {
             // Retrieve the handshake response
             ServerMessage.Mutable handshakeReply = message.getAssociated();
@@ -295,9 +303,10 @@ public class MySecurityPolicy extends DefaultSecurityPolicy {
             Map authentication = new HashMap();
             ext.put("com.myapp.authn", authentication);
             authentication.put("failureReason", "invalid_credentials");
-            return false;
+
+            promise.succeed(false);
         }
-        return true;
+        promise.succeed(true);
     }
 }
 ----
@@ -310,7 +319,7 @@ implementing a `BayeuxServer.Extension`:
 [source,java]
 ----
 public class HandshakeExtension implements BayeuxServer.Extension {
-    public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
+    public void void outgoing(ServerSession from, ServerSession to, ServerMessage.Mutable message, Promise<Boolean> promise) {
         if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
             if (!message.isSuccessful()) {
                 Map advice = message.getAdvice(true);
@@ -322,6 +331,7 @@ public class HandshakeExtension implements BayeuxServer.Extension {
                 authentication.put("failureReason", "invalid_credentials");
             }
         }
+        promise.succeed(true);
     }
 
     // Other methods omitted

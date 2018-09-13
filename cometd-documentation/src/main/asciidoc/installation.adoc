@@ -5,7 +5,7 @@
 === Requirements and Dependencies
 
 In order to run CometD applications, you need the Java Development Kit
-(JDK) – version 7.0 or greater, and a compliant Servlet 3.0 or greater
+(JDK) – version 8 or greater, and a compliant Servlet 3.0 or greater
 Servlet Container such as http://eclipse.org/jetty[Jetty].
 
 The CometD implementation depends on few Jetty libraries, such as
@@ -23,12 +23,6 @@ The current Jetty version CometD depends on by default is:
 include::{resources}/pom.xml[tags=jetty-version]
 ----
 
-It is possible to use a different Jetty version, starting from Jetty
-9.2.x, with CometD.
-You can find the examples of how to <<_build,build CometD with a different Jetty
-version>>, how to <<_installation_demos,run the CometD demos with a different Jetty version>>
-and how to <<_primer_maven_way,create your web applications with a different Jetty version>>.
-
 === Downloading and Installing
 
 You can download the CometD distribution from http://download.cometd.org/.
@@ -45,10 +39,10 @@ $ cd cometd-<version>/
 
 The CometD Demos contain:
 
-* Three full chat applications (one developed with Dojo, one with jQuery and one with Angular 1).
+* Four full chat applications (one developed with vanilla Javascript, on with Dojo, one with jQuery and one with Angular 1).
 * Examples of extensions such as message acknowledgement, reload, timesync and timestamp.
 * An example of how to echo private messages to a particular client only.
-* Clustered Auction demo (using the <<_oort,Oort clustering>>).
+* A clustered auction demo (using the <<_oort,Oort clustering>>).
 
 ==== Running the Demos with Maven
 
@@ -73,25 +67,6 @@ $ mvn jetty:run
 
 The last command starts an embedded Jetty that listens on port 8080.
 Now point your browser to http://localhost:8080, to see the CometD Demos main page.
-
-If you want to run the CometD Demos with a different Jetty version, change the
-last command to be:
-
-----
-$ mvn jetty:run -Djetty-version=<alternate-jetty-version>
-----
-
-for example:
-
-----
-$ mvn jetty:run -Djetty-version=9.3.10.v20160621
-----
-
-[IMPORTANT]
-====
-Running CometD with Jetty 9.2.x requires at least JDK 7.
-Running CometD with Jetty 9.3.x or greater requires at least JDK 8.
-====
 
 === Deploying your CometD Application
 

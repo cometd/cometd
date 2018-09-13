@@ -7,7 +7,7 @@ CometD allows you to send messages in two ways:
 . by <<_java_client_publish,publishing>> a message onto a channel
 . by performing a <<_java_client_rpc,remote procedure call>>
 
-The first case is covered by the `ClientSessionChannel.publish()` API.
+The first case is covered by the `ClientSessionChannel.publish(...)` API.
 The second case is covered by the `ClientSession.remoteCall()` API.
 
 [[_java_client_publish]]
@@ -49,12 +49,9 @@ this variant of the `publish()` method:
 Map<String, Object> data = new HashMap<String, Object>();
 // Fill in the data
 
-client.getChannel("/game/table/1").publish(data, new ClientSessionChannel.MessageListener() {
-    @Override
-    public void onMessage(ClientSessionChannel channel, Message message) {
-        if (message.isSuccessful()) {
-            // The message reached the server
-        }
+client.getChannel("/game/table/1").publish(data, message -> {
+    if (message.isSuccessful()) {
+        // The message reached the server
     }
 });
 ----
@@ -73,16 +70,14 @@ Message batching is also available:
 final ClientSession client = ...;
 client.handshake();
 
-client.batch (new Runnable() {
-    public void run() {
-        Map<String, Object> data1 = new HashMap<String, Object>();
-        // Fill in the data1 map object
-        client.getChannel("/game/table/1").publish(data1);
+client.batch (() -> {
+    Map<String, Object> data1 = new HashMap<String, Object>();
+    // Fill in the data1 map object
+    client.getChannel("/game/table/1").publish(data1);
 
-        Map<String, Object> data2 = new HashMap<String, Object>();
-        // Fill in the data2 map object<
-        client.getChannel("/game/chat/1").publish(data2);
-    }
+    Map<String, Object> data2 = new HashMap<String, Object>();
+    // Fill in the data2 map object<
+    client.getChannel("/game/chat/1").publish(data2);
 });
 ----
 ====
@@ -136,15 +131,12 @@ client.handshake();
 
 ...
 Object data = ...;
-client.remoteCall("target", data, new MessageListener() {
-    @Override
-    public void onMessage(Message message) {
-        if (message.isSuccessful()) {
-            String result = (String)message.getData();
-            // Use the result.
-        } else {
-            // Remote call failed.
-        }
+client.remoteCall("target", data, message -> {
+    if (message.isSuccessful()) {
+        String result = (String)message.getData();
+        // Use the result.
+    } else {
+        // Remote call failed.
     }
 }
 ----
@@ -187,14 +179,11 @@ ClientSession client = ...;
 client.handshake();
 
 ByteBuffer buffer = ...;
-client.remoteCall("target", new BinaryData(buffer, true, null), new MessageListener() {
-    @Override
-    public void onMessage(Message message) {
-        if (message.isSuccessful()) {
-            // Use the result.
-        } else {
-            // Remote call failed.
-        }
+client.remoteCall("target", new BinaryData(buffer, true, null), message -> {
+    if (message.isSuccessful()) {
+        // Use the result.
+    } else {
+        // Remote call failed.
     }
 }
 ----

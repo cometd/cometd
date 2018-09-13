@@ -9,7 +9,7 @@
 
 Building the CometD project has 2 minimum requirements:
 
-* http://java.sun.com[JDK 7] or greater, to compile the Java code
+* http://java.sun.com[JDK 8] or greater, to compile the Java code
 * http://maven.apache.org[Maven 3] or greater, the build tool
 
 Make sure that the `mvn` executable is in your path, and that your `JAVA_HOME`
@@ -33,6 +33,7 @@ If you want to use the latest code, clone the GitHub repository with the followi
 ----
 $ git clone git://github.com/cometd/cometd.git cometd
 $ cd cometd
+$ git checkout 4.0.x
 ----
 
 === Performing the Build
@@ -46,19 +47,7 @@ $ mvn clean install
 If you want to save some time, you can skip the execution of the test suite using the following command:
 
 ----
-$ mvn clean install -DskipTests=true
-----
-
-If you want to build CometD with a different Jetty version, issue the following command:
-
-----
-$ mvn clean install -Djetty-version=<alternate-jetty-version>
-----
-
-for example:
-
-----
-$ mvn clean install -Djetty-version=9.3.10.v20160621 -DskipTests=true
+$ mvn clean install -DskipTests
 ----
 
 === Trying out your Build
@@ -71,12 +60,5 @@ $ mvn jetty:run
 ----
 
 Then point your browser at http://localhost:8080 and you should see the CometD Demo page.
-
-If you want to try out your build using a different Jetty version, replace the
-last command above with:
-
-----
-$ mvn jetty:run -Djetty-version=<alternate-jetty-version>
-----
 
 :numbered:

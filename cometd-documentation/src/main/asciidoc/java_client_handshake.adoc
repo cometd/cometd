@@ -17,20 +17,20 @@ The following is a typical use:
 ====
 [source,java]
 ----
-// Create (and eventually set up) Jetty's HttpClient:
+// Create (and eventually set up) Jetty's HttpClient.
 HttpClient httpClient = new HttpClient();
-// Here set up Jetty's HttpClient, for example:
+// Here set up Jetty's HttpClient.
 // httpClient.setMaxConnectionsPerDestination(2);
 httpClient.start();
 
-// Prepare the transport
+// Prepare the transport.
 Map<String, Object> options = new HashMap<String, Object>();
 ClientTransport transport = new LongPollingTransport(options, httpClient);
 
-// Create the BayeuxClient
+// Create the BayeuxClient.
 ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transport);
 
-// Here set up the BayeuxClient, for example:
+// Here set up the BayeuxClient.
 // client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() { ... });
 
 // Handshake
@@ -64,11 +64,9 @@ To verify that the handshake is successful, you can pass a callback
 ----
 ClientTransport transport = ...
 ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transport);
-client.handshake(new ClientSessionChannel.MessageListener() {
-    public void onMessage(ClientSessionChannel channel, Message message) {
-        if (message.isSuccessful()) {
-            // Here handshake is successful
-        }
+client.handshake(message -> {
+    if (message.isSuccessful()) {
+        // Here handshake is successful
     }
 });
 ----
@@ -82,11 +80,9 @@ An alternative, equivalent, way is to add a `MessageListener` before calling
 ----
 ClientTransport transport = ...
 ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transport);
-client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
-    public void onMessage(ClientSessionChannel channel, Message message) {
-        if (message.isSuccessful()) {
-            // Here handshake is successful
-        }
+client.getChannel(Channel.META_HANDSHAKE).addListener((channel, message) -> {
+    if (message.isSuccessful()) {
+        // Here handshake is successful
     }
 });
 client.handshake();

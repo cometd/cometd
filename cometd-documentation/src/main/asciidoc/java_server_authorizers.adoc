@@ -52,9 +52,9 @@ you can use to control access to channels:
 ====
 [source,java]
 ----
-public boolean canCreate   (BayeuxServer server, ServerSession session, String channelId,      ServerMessage message);
-public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message);
-public boolean canPublish  (BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message);
+public void canCreate   (BayeuxServer server, ServerSession session, String channelId,      ServerMessage message, Promise<Boolean> promise);
+public void canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message, Promise<Boolean> promise);
+public void canPublish  (BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message, Promise<Boolean> promise);
 ----
 ====
 
@@ -79,19 +79,19 @@ implemented with your authorization algorithm:
 ====
 [source,java]
 ----
-public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message);
+public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise);
 ----
 ====
 
-One of three possible results must be returned:
+One of three possible results must be used to succeed the promise:
 
 * `Result.grant()`:
 +
 ====
 [source,java]
 ----
-public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
-    return Result.grant();
+public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
+    promise.succeed(Result.grant());
 }
 ----
 ====
@@ -109,8 +109,8 @@ could be denied by another authorizer in the set of authorizers for that channel
 ====
 [source,java]
 ----
-public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
-    return Result.ignore();
+public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
+    promise.succeed(Result.ignore());
 }
 ----
 ====
@@ -125,8 +125,8 @@ public Result authorize(Operation operation, ChannelId channel, ServerSession se
 ====
 [source,java]
 ----
-public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
-    return Result.deny("reason to deny");
+public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
+    promise.succeed(Result.deny("reason to deny"));
 }
 ----
 ====
@@ -182,18 +182,21 @@ for that game, for example `/game/123` (where `123` is the gameId):
 [source,java]
 ----
 gameStarStar.addAuthorizer(new Authorizer() {
-    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
+    public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
         // Always grant authorization to local clients
         if (session.isLocalSession()) {
-            return Result.grant();
+            promise.succeed(Result.grant());
+            return;
         }
 
         boolean isCaptain = isCaptain(session);
         boolean isGameChannel = !channel.isWild() && new ChannelId("/game").isParentOf(channel);
         if (operation == Operation.CREATE && isCaptain && isGameChannel) {
-            return Result.grant();
+            promise.succeed(Result.grant());
+            return;
         }
-        return Result.ignore();
+
+        promise.succeed(Result.ignore());
     }
 });
 ----
@@ -215,17 +218,20 @@ Only players can play:
 ----
 ServerChannel gameChannel = bayeuxServer.getChannel("/game/" + gameId);
 gameChannel.addAuthorizer(new Authorizer() {
-    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
+    public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
         // Always grant authorization to local clients
         if (session.isLocalSession()) {
-            return Result.grant();
+            promise.succeed(Result.grant());
+            return;
         }
 
         boolean isPlayer = isPlayer(session, channel);
         if (operation == Operation.PUBLISH && isPlayer) {
-            return Result.grant();
+            promise.succeed(Result.grant());
+            return;
         }
-        return Result.ignore();
+
+        promise.succeed(Result.ignore());
     }
 });
 ----
@@ -234,6 +240,7 @@ gameChannel.addAuthorizer(new Authorizer() {
 The authorizers are the following:
 
 ====
+[source]
 ----
 /game/**  --> one authorizer that ignores everything
           --> one authorizer that grants captains authority to create games
@@ -250,17 +257,20 @@ allows everyone to watch games):
 [source,java]
 ----
 gameStarStar.addAuthorizer(new Authorizer() {
-    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
+    public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
         // Always grant authorization to local clients
         if (session.isLocalSession()) {
-            return Result.grant();
+            promise.succeed(Result.grant());
+            return;
         }
 
         boolean isCriminalSupporter = isCriminalSupporter(session);
         if (operation == Operation.SUBSCRIBE && isCriminalSupporter) {
-            return Result.deny("criminal_supporter");
+            promise.succeed(Result.deny("criminal_supporter"));
+            return;
         }
-        return Result.ignore();
+
+        promise.succeed(Result.ignore());
     }
 });
 ----

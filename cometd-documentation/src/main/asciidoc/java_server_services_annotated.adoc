@@ -205,7 +205,7 @@ public class EchoService {
     public void echo(ServerSession remote, ServerMessage.Mutable message) {
         String channel = message.getChannel();
         Object data = message.getData();
-        remote.deliver(serverSession, channel, data);
+        remote.deliver(serverSession, channel, data, Promise.noop());
     }
 }
 ----
@@ -224,7 +224,7 @@ public class EchoService extends AbstractService {
     public void echo(ServerSession remote, ServerMessage.Mutable message) {
         String channel = message.getChannel();
         Object data = message.getData();
-        remote.deliver(getServerSession(), channel, data);
+        remote.deliver(getServerSession(), channel, data, Promise.noop());
     }
 }
 ----

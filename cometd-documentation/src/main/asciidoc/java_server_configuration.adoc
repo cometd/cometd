@@ -376,9 +376,9 @@ IllegalStateException: the servlet does not support async operations for this re
 [NOTE]
 ====
 While Jetty is configured by default with a non-blocking connector that allows
-CometD to run out of the box, Tomcat 7 is not, by default, configured with a
+CometD to run out of the box, Tomcat is not, by default, configured with a
 non-blocking connector.
-You must first enable the non-blocking connector in Tomcat 7 in order for CometD
+You must first enable the non-blocking connector in Tomcat in order for CometD
 to work properly.
 Please refer to the http://tomcat.apache.org[Tomcat documentation] for how to
 configure a non-blocking connector in Tomcat.

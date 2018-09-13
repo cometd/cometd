@@ -86,21 +86,23 @@ public class MySecurityPolicy extends DefaultSecurityPolicy {
     }
 
     @Override
-    public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
+    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
         if (session.isLocalSession()) {
-            return true;
+            promise.succeed(true);
+            return;
         }
 
         // Authenticate
         String userId = performAuthentication(session, message);
         if (userId == null) {
-            return false;
+            promise.succeed(false);
+            return;
         }
 
         // Associate
         seti.associate(userId, session);
 
-        return true;
+        promise.succeed(true);
     }
 }
 ----
