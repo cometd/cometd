@@ -111,10 +111,10 @@ public class BayeuxClientUsageTest extends ClientServerTest {
         startServer(null);
 
         SslContextFactory sslContextFactory = new SslContextFactory();
-        File keyStoreFile = new File("src/test/resources/keystore.jks");
+        File keyStoreFile = new File("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePath(keyStoreFile.getAbsolutePath());
+        sslContextFactory.setKeyStoreType("pkcs12");
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
         ServerConnector sslConnector = new ServerConnector(server, sslContextFactory);
         server.addConnector(sslConnector);
         sslConnector.start();
