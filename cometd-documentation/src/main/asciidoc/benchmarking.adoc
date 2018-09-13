@@ -202,7 +202,7 @@ transport [0]:
 use ssl [false]:
 max threads [256]:
 context [/cometd]:
-channel [/chat/demo]:
+channel [/a]:
 rooms [100]:
 rooms per client [10]:
 enable ack extension [false]:
@@ -228,51 +228,54 @@ and sends 1000 batches of 10 messages each, each message of 50 bytes size.
 When the benchmark run is complete, the message latency graph is displayed:
 
 ----
-Outgoing: Elapsed = 12760 ms | Rate = 783 messages/s - 78 requests/s - ~0.299 Mib/s
-Waiting for messages to arrive 998910/999669
-All messages arrived 999669/999669
-Messages - Success/Expected = 999669/999669
-Incoming - Elapsed = 12781 ms | Rate = 78211 messages/s - 33690 responses/s(43.08%) - ~29.835 Mib/s
-                 @    _  14,639 µs (323157, 32.33%)
-                   @  _  29,278 µs (389645, 38.98%) ^50%
-       @              _  43,917 µs (135915, 13.60%)
-   @                  _  58,556 µs (55470, 5.55%) ^85%
-  @                   _  73,195 µs (29921, 2.99%)
- @                    _  87,834 µs (17204, 1.72%) ^95%
- @                    _  102,473 µs (11824, 1.18%)
- @                    _  117,112 µs (11505, 1.15%)
-@                     _  131,751 µs (8812, 0.88%)
-@                     _  146,390 µs (5557, 0.56%)
-@                     _  161,029 µs (2941, 0.29%) ^99%
-@                     _  175,668 µs (2074, 0.21%)
-@                     _  190,307 µs (2975, 0.30%)
-@                     _  204,946 µs (1641, 0.16%)
-@                     _  219,585 µs (693, 0.07%) ^99.9%
-@                     _  234,224 µs (283, 0.03%)
-@                     _  248,863 µs (33, 0.00%)
-@                     _  263,502 µs (11, 0.00%)
-@                     _  278,141 µs (3, 0.00%)
-@                     _  292,780 µs (0, 0.00%)
-@                     _  307,419 µs (5, 0.00%)
-Messages - Latency: 999669 samples | min/avg/50th%/99th%/max = 296/28,208/19,906/149,946/293,076 µs
+Outgoing: Elapsed = 10872 ms | Rate = 919 messages/s - 91 requests/s - ~0.351 Mib/s
+Waiting for messages to arrive 998612/1000280
+All messages arrived 1000280/1000280
+Messages - Success/Expected = 1000280/1000280
+Incoming - Elapsed = 10889 ms | Rate = 91853 messages/s - 36083 responses/s(39.28%) - ~35.039 Mib/s
+    @                 _  4,428 µs (27125, 2.71%)
+          @           _  8,856 µs (76147, 7.61%)
+              @       _  13,284 µs (108330, 10.83%)
+                 @    _  17,713 µs (134328, 13.43%)
+                   @  _  22,141 µs (150450, 15.04%)
+                   @  _  26,569 µs (154943, 15.49%) ^50%
+                 @    _  30,998 µs (134868, 13.48%)
+            @         _  35,426 µs (91634, 9.16%) ^85%
+       @              _  39,854 µs (55773, 5.58%)
+    @                 _  44,283 µs (31270, 3.13%) ^95%
+  @                   _  48,711 µs (18015, 1.80%)
+ @                    _  53,139 µs (9208, 0.92%) ^99%
+ @                    _  57,568 µs (4216, 0.42%)
+@                     _  61,996 µs (2162, 0.22%)
+@                     _  66,424 µs (912, 0.09%) ^99.9%
+@                     _  70,853 µs (502, 0.05%)
+@                     _  75,281 µs (178, 0.02%)
+@                     _  79,709 µs (164, 0.02%)
+@                     _  84,137 µs (46, 0.00%)
+@                     _  88,566 µs (7, 0.00%)
+@                     _  92,994 µs (2, 0.00%)
+Messages - Latency: 1000280 samples | min/avg/50th%/99th%/max = 300/22,753/22,265/51,937/88,866 µs
+Messages - Network Latency Min/Ave/Max = 0/22/88 ms
+Slowest Message ID = 30111/bench/a time = 88 ms
+Thread Pool - Tasks = 391244 | Concurrent Threads max = 255 | Queue Size max = 940 | Queue Latency avg/max = 3/17 ms | Task Latency avg/max = 0/28 ms
 ----
 
 In the example above, the benchmark client sent messages to the server at
 a nominal rate of 1 batch every 10 ms (therefore at a nominal rate of 1000
-messages/s), but the real outgoing rate was of 783 messages/s, as reported
+messages/s), but the real outgoing rate was of 919 messages/s, as reported
 in the first line.
 
 Because there were 100 rooms, and each user was subscribed to 10 rooms, there
 were 100 members per room in average, and therefore each message was broadcast
 to about 100 other users.
-This yielded an incoming nominal message rate of 100000 messages/s, but the
-real incoming rate was 78211 messages/s (on par with the outgoing rate),
-with a median latency of 20 ms and a max latency of 293 ms.
+This yielded an incoming nominal message rate of 100,000 messages/s, but the
+real incoming rate was 91853 messages/s (on par with the outgoing rate),
+with a median latency of 22 ms and a max latency of 88 ms.
 
 The ASCII graph represent the message latency distribution.
 Imagine to rotate the latency distribution graph 90 degrees counter-clockwise.
 Then you will see a bell-shaped curve (strongly shifted to the left) with the peak
-at around 29 ms and a long tail towards 300 ms.
+at around 24 ms and a long tail towards 100 ms.
 
 For each interval of time, the curve reports the number of messages received and
 their percentage over the total (in parenthesis) and where various percentiles fall.
@@ -288,19 +291,24 @@ Recall that the benchmark simulates a chat application, and that the message
 latency times are recorded on the same client host.
 
 Because the benchmark client waits for all messages to arrive in order to measure
-their latency, it is necessary that each user receiving the message live on the
+their latency, it is necessary that each user receiving the message is on the
 same host as the user sending the message.
 
 Each benchmark client defines a number of rooms (by default 100) and a root
-channel to which messages are sent (by default `/chat/demo`).
-Messages to the first room, `room0`, go to channel `/chat/demo/0` and so forth.
+channel to which messages are sent (by default `/a`).
+Messages to the first room, `room0`, go to channel `/a/0` and so forth.
 
 When you are using multiple benchmark client hosts, you must specify different
-root channels for each benchmark client host, to avoid that the benchmark client
-host waits for messages that will not arrive because they are being delivered
-to other benchmark client hosts.
-Also, it would be very difficult to correlate a timestamp generated in one host
-with a timestamp obtained in another host.
+root channels for each benchmark client host.
+Therefore, on client host `A` you specify root channel `/a`; on client host
+`B` you specify root channel `/b` and so forth.
+This is to avoid that benchmark client host `A` waits for messages that will
+not arrive because they are being delivered to client host `B`.
+
+Also, it would be very difficult to correlate a timestamp generated in one
+client host JVM (via `System.nanoTime()`) with a timestamp generated in another
+client host JVM.
+
 The recommended configuration is therefore to specify a different root channel
-for each benchmark client, so that users from each host will send and receive
-messages only from users living in the same host.
+for each benchmark client, so that users from each client host will send and
+receive messages only from users existing in the same client host.
