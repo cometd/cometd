@@ -49,9 +49,9 @@ public class DemoTest {
         Server server = new Demo(httpPort, httpsPort, contextPath).start();
 
         SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
+        sslContextFactory.setKeyStoreType("pkcs12");
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
 
         // Starts the HTTP client.
         HttpClient httpClient = new HttpClient(sslContextFactory);
