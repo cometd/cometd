@@ -33,15 +33,25 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 
 public class Demo {
-    public static final int HTTP_PORT = 8080;
-    public static final int HTTPS_PORT = 8443;
-    public static final String CONTEXT_PATH = "/app";
+    private static final int HTTP_PORT = 8080;
+    private static final int HTTPS_PORT = 8443;
+    private static final String CONTEXT_PATH = "/app";
 
     public static void main(String[] args) throws Exception {
-        start();
+        new Demo(HTTP_PORT, HTTPS_PORT, CONTEXT_PATH).start();
     }
 
-    static Server start() throws Exception {
+    private final int httpPort;
+    private final int httpsPort;
+    private final String contextPath;
+
+    public Demo(int httpPort, int httpsPort, String contextPath) {
+        this.httpPort = httpPort;
+        this.httpsPort = httpsPort;
+        this.contextPath = contextPath;
+    }
+
+    public Server start() throws Exception {
         // NOTE: this code is referenced by the documentation
 
         // tag::embedded-cometd[]
@@ -54,7 +64,7 @@ public class Demo {
         // Setup and configure a connector for clear-text http:// and ws://.
         HttpConfiguration httpConfig = new HttpConfiguration();
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
-        connector.setPort(HTTP_PORT);
+        connector.setPort(httpPort);
         server.addConnector(connector);
 
         // Setup and configure a connector for https:// and wss://.
@@ -65,11 +75,11 @@ public class Demo {
         HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
         httpsConfig.addCustomizer(new SecureRequestCustomizer());
         ServerConnector tlsConnector = new ServerConnector(server, sslContextFactory, new HttpConnectionFactory(httpsConfig));
-        tlsConnector.setPort(8443);
+        tlsConnector.setPort(httpsPort);
         server.addConnector(tlsConnector);
 
         // The context where the application is deployed.
-        ServletContextHandler context = new ServletContextHandler(server, CONTEXT_PATH);
+        ServletContextHandler context = new ServletContextHandler(server, contextPath);
 
         // Configure WebSocket for the context.
         WebSocketServerContainerInitializer.configureContext(context);

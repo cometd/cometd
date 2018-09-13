@@ -15,7 +15,9 @@
  */
 package org.cometd.demo;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.net.ServerSocket;
 import java.util.Set;
 
 import javax.management.MBeanServer;
@@ -39,13 +41,17 @@ import org.junit.Test;
 public class DemoTest {
     @Test
     public void testDemo() throws Exception {
+        int httpPort = newServerPort();
+        int httpsPort = newServerPort();
+        String contextPath = "/ctx";
+
+        // Start the Server.
+        Server server = new Demo(httpPort, httpsPort, contextPath).start();
+
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
-
-        // Start the Server.
-        Server server = Demo.start();
 
         // Starts the HTTP client.
         HttpClient httpClient = new HttpClient(sslContextFactory);
@@ -56,12 +62,12 @@ public class DemoTest {
         WebSocketContainer jsrWebSocketClient = ContainerProvider.getWebSocketContainer();
 
         // Jetty's WebSocket client works also over TLS.
-        WebSocketClient jettyWebSocketClient = new WebSocketClient(sslContextFactory);
+        WebSocketClient jettyWebSocketClient = new WebSocketClient(httpClient);
         jettyWebSocketClient.start();
 
         try {
             // Test clear-text communication.
-            String clearTextURL = "http://localhost:" + Demo.HTTP_PORT + Demo.CONTEXT_PATH + "/cometd";
+            String clearTextURL = "http://localhost:" + httpPort + contextPath + "/cometd";
             BayeuxClient client = new BayeuxClient(clearTextURL, new WebSocketTransport(null, null, jsrWebSocketClient));
             client.handshake();
             Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -70,7 +76,7 @@ public class DemoTest {
             Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
             // Test confidential communication.
-            String confidentialURL = "https://localhost:" + Demo.HTTPS_PORT + Demo.CONTEXT_PATH + "/cometd";
+            String confidentialURL = "https://localhost:" + httpsPort + contextPath + "/cometd";
             client = new BayeuxClient(confidentialURL, new LongPollingTransport(null, httpClient));
             client.handshake();
             Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -96,6 +102,12 @@ public class DemoTest {
             }
             httpClient.stop();
             server.stop();
+        }
+    }
+
+    private int newServerPort() throws IOException {
+        try (ServerSocket serverSocket = new ServerSocket(0)) {
+            return serverSocket.getLocalPort();
         }
     }
 }
