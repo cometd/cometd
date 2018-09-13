@@ -31,15 +31,14 @@ def newBuild(os, jdk) {
                   globalMavenSettingsConfig: settingsName,
                   mavenOpts: mvnOpts) {
             sh "mvn -V -B clean install -Dmaven.test.failure.ignore=true"
-            // Report failures in the jenkins UI.
-            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
-            // Collect the JaCoCo execution results.
-            step([$class          : 'JacocoPublisher',
-                  exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
-                  execPattern     : '**/target/jacoco.exec',
-                  classPattern    : '**/target/classes',
-                  sourcePattern   : '**/src/main/java'])
           }
+          // Report failures in the jenkins UI.
+          junit testResults: '**/target/surefire-reports/TEST-*.xml'
+          // Collect the JaCoCo execution results.
+          jacoco exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
+                  execPattern: '**/target/jacoco.exec',
+                  classPattern: '**/target/classes',
+                  sourcePattern: '**/src/main/java'
         }
       }
 
