@@ -34,7 +34,7 @@ tar cvf - -C ${COMETD_DIR}/cometd-documentation/target/html . | ssh ubuntu@docs.
 
 if yes_no "Relink documentation ? (Y/n)" y; then
   echo "Relinking documentation"
-  ssh ubuntu@docs.cometd.org "sudo -u www-data bash -c 'cd ${DOCS_ROOT} && ln -fns ${VERSION} current'"
+  ssh ubuntu@docs.cometd.org "sudo -u www-data bash -c 'cd ${DOCS_ROOT} && ln -fns ${VERSION} current3'"
 fi
 
 echo "Updating cometd-javascript repository"
