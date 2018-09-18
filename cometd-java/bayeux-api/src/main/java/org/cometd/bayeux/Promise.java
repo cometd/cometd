@@ -58,6 +58,30 @@ public interface Promise<C> {
     }
 
     /**
+     * <p>Returns a {@code BiConsumer} that, when invoked,
+     * completes this Promise.</p>
+     * <p>Typical usage is with {@code CompletableFuture}:</p>
+     * <pre>
+     * public void process(ServerMessage message, Promise&lt;Boolean&gt; promise) {
+     *     CompletableFuture.supplyAsync(() -&gt; asyncOperation(message))
+     *             .whenComplete(promise.complete());
+     * }
+     * </pre>
+     *
+     * @return a BiConsumer that completes this Promise
+     * @see Completable
+     */
+    default BiConsumer<C, Throwable> complete() {
+        return (r, x) -> {
+            if (x == null) {
+                succeed(r);
+            } else {
+                fail(x);
+            }
+        };
+    }
+
+    /**
      * @param <T> the type of the empty result
      * @return a Promise whose methods are implemented empty.
      */

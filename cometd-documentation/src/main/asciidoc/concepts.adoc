@@ -521,12 +521,7 @@ thread to avoid blocking the CometD thread, here using
 public class MySecurityPolicy extends DefaultSecurityPolicy {
     public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
         CompletableFuture.supplyAsync(() -> authenticate(session, message))
-                .whenComplete((r, x) -> {
-                    if (x == null) {
-                        promise.succeed(r);
-                    } else {
-                        promise.fail(x);
-                    }
+                .whenComplete(promise.complete());
     }
 }
 ----
