@@ -106,8 +106,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
                     // Hopefully these will become a standard, for now they are Jetty specific.
                     (InetSocketAddress)userProperties.get("javax.websocket.endpoint.localAddress"),
                     (InetSocketAddress)userProperties.get("javax.websocket.endpoint.remoteAddress"),
-                    retrieveLocales(userProperties), "HTTP/1.1",
-                    request.getRequestURI().getScheme().equalsIgnoreCase("https"));
+                    WebSocketTransport.retrieveLocales(userProperties), "HTTP/1.1",
+                    WebSocketTransport.isSecure(request));
         }
     }
 
@@ -118,6 +118,11 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
             return Collections.singletonList(Locale.getDefault());
         }
         return locales;
+    }
+
+    private static boolean isSecure(HandshakeRequest request) {
+        String scheme = request.getRequestURI().getScheme();
+        return "https".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme);
     }
 
     private class Configurator extends ServerEndpointConfig.Configurator {
