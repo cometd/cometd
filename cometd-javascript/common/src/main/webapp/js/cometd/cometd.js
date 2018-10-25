@@ -30,6 +30,50 @@
     }
 }(this, function() {
     /**
+     * Browsers may throttle the Window scheduler,
+     * so we may replace it with a Worker scheduler.
+     */
+    var Scheduler = function() {
+        var _ids = 0;
+        var _tasks = {};
+        this.setTimeout = function(funktion, delay) {
+            return window.setTimeout(funktion, delay);
+        };
+        this.clearTimeout = function(id) {
+            window.clearTimeout(id);
+        };
+    };
+    /**
+     * The scheduler code that will run in the Worker.
+     */
+    function WorkerScheduler() {
+        var _tasks = {};
+        self.onmessage = function(e) {
+            var cmd = e.data;
+            switch (cmd.type) {
+                case 'setTimeout': {
+                    _tasks[cmd.id] = self.setTimeout(function() {
+                        delete _tasks[cmd.id];
+                        self.postMessage({
+                            id: cmd.id
+                        });
+                    }, cmd.delay);
+                    break;
+                }
+                case 'clearTimeout': {
+                    var id = _tasks[cmd.id];
+                    delete _tasks[cmd.id];
+                    if (id) {
+                        self.clearTimeout(id);
+                    }
+                    break;
+                }
+            }
+        };
+    }
+
+
+    /**
      * Utility functions.
      */
     var Utils = {
@@ -58,19 +102,6 @@
                 }
             }
             return -1;
-        },
-        setTimeout: function(cometd, funktion, delay) {
-            return window.setTimeout(function() {
-                try {
-                    cometd._debug('Invoking timed function', funktion);
-                    funktion();
-                } catch (x) {
-                    cometd._debug('Exception invoking timed function', funktion, x);
-                }
-            }, delay);
-        },
-        clearTimeout: function(timeoutHandle) {
-            window.clearTimeout(timeoutHandle);
         }
     };
 
@@ -212,11 +243,11 @@
         };
 
         this.setTimeout = function(funktion, delay) {
-            return Utils.setTimeout(_cometd, funktion, delay);
+            return _cometd.setTimeout(funktion, delay);
         };
 
-        this.clearTimeout = function(handle) {
-            Utils.clearTimeout(handle);
+        this.clearTimeout = function(id) {
+            _cometd.clearTimeout(id);
         };
 
         /**
@@ -1189,6 +1220,7 @@
      * @param name the optional name of this cometd object
      */
     var CometD = function (name) {
+        var _scheduler = new Scheduler();
         var _cometd = this;
         var _name = name || 'default';
         var _crossDomain = false;
@@ -1215,6 +1247,7 @@
         var _unconnectTime = 0;
         var _handshakeMessages = 0;
         var _config = {
+            useWorkerScheduler: true,
             protocol: null,
             stickyReconnect: true,
             connectTimeout: 0,
@@ -1376,7 +1409,7 @@
 
         function _configure(configuration) {
             _cometd._debug('Configuring cometd object with', configuration);
-            // Support old style param, where only the Bayeux server URL was passed
+            // Support old style param, where only the Bayeux server URL was passed.
             if (_isString(configuration)) {
                 configuration = { url: configuration };
             }
@@ -1398,7 +1431,7 @@
             var afterURI = urlParts[9];
             _crossDomain = _cometd._isCrossDomain(hostAndPort);
 
-            // Check if appending extra path is supported
+            // Check if appending extra path is supported.
             if (_config.appendMessageTypeToURL) {
                 if (afterURI !== undefined && afterURI.length > 0) {
                     _cometd._info('Appending message type to URI ' + uri + afterURI + ' is not supported, disabling \'appendMessageTypeToURL\' configuration');
@@ -1416,6 +1449,43 @@
                         _config.appendMessageTypeToURL = false;
                     }
                 }
+            }
+
+            if (window.Worker && window.Blob && window.URL && _config.useWorkerScheduler) {
+                var code = WorkerScheduler.toString();
+                // Remove the function declaration and the opening brace.
+                code = code.replace(/^function\s+.+\{/, '');
+                // Remove the function's closing brace.
+                code = code.replace(/\}\s*$/, '');
+                var blob = new window.Blob([code], {
+                    type: 'application/json'
+                });
+                var worker = new window.Worker(window.URL.createObjectURL(blob));
+                _scheduler.setTimeout = function(funktion, delay) {
+                    var id = ++_scheduler._ids;
+                    _scheduler._tasks[id] = funktion;
+                    worker.postMessage({
+                        id: id,
+                        type: 'setTimeout',
+                        delay: delay
+                    });
+                    return id;
+                };
+                _scheduler.clearTimeout = function(id) {
+                    delete _scheduler._tasks[id];
+                    worker.postMessage({
+                        id: id,
+                        type: 'clearTimeout'
+                    });
+                };
+                worker.onmessage = function(e) {
+                    var id = e.data.id;
+                    var funktion = _scheduler._tasks[id];
+                    delete _scheduler._tasks[id];
+                    if (funktion) {
+                        funktion();
+                    }
+                };
             }
         }
 
@@ -1568,7 +1638,7 @@
 
         function _cancelDelayedSend() {
             if (_scheduledSend !== null) {
-                Utils.clearTimeout(_scheduledSend);
+                _cometd.clearTimeout(_scheduledSend);
             }
             _scheduledSend = null;
         }
@@ -1577,7 +1647,7 @@
             _cancelDelayedSend();
             var time = _advice.interval + delay;
             _cometd._debug('Function scheduled in', time, 'ms, interval =', _advice.interval, 'backoff =', _backoff, operation);
-            _scheduledSend = Utils.setTimeout(_cometd, operation, time);
+            _scheduledSend = _cometd.setTimeout(operation, time);
         }
 
         // Needed to break cyclic dependencies between function definitions
@@ -1932,7 +2002,7 @@
                 // Clear the timeout, if present.
                 var timeout = context.timeout;
                 if (timeout) {
-                    Utils.clearTimeout(timeout);
+                    _cometd.clearTimeout(timeout);
                 }
 
                 var callback = context.callback;
@@ -2907,7 +2977,7 @@
                 callback: callback
             };
             if (timeout > 0) {
-                context.timeout = Utils.setTimeout(_cometd, function() {
+                context.timeout = _cometd.setTimeout(function() {
                     _cometd._debug('Timing out remote call', message, 'after', timeout, 'ms');
                     _failMessage({
                         id: message.id,
@@ -3169,6 +3239,21 @@
 
         this.getAdvice = function() {
             return this._mixin(true, {}, _advice);
+        };
+
+        this.setTimeout = function(funktion, delay) {
+            return _scheduler.setTimeout(function() {
+                try {
+                    _cometd._debug('Invoking timed function', funktion);
+                    funktion();
+                } catch (x) {
+                    _cometd._debug('Exception invoking timed function', funktion, x);
+                }
+            }, delay);
+        };
+
+        this.clearTimeout = function(id) {
+            _scheduler.clearTimeout(id);
         };
 
         // Initialize transports.
