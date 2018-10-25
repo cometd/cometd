@@ -53,6 +53,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
             _cometd.configure({
                 url: cometdURL,
+                useWorkerScheduler: false,
                 logLevel: 'debug'
             });
             _cometd.websocketEnabled = false;
