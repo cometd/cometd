@@ -1,83 +1,61 @@
 node {
-
   def builds = [:]
-
-  builds['Build JDK 9 - Jetty 9.2.x'] = getBuild(null, true)
-
-  builds['Build JDK 9 - Jetty 9.3.x'] = getBuild("9.3.25.v20180904", false)
-
-  builds['Build JDK 9 - Jetty 9.4.x'] = getBuild("9.4.12.v20180829", false)
-
+  builds['Build JDK 11 - Jetty 9.2.x'] = getBuild('9.2.26.v20180806', true)
+  builds['Build JDK 11 - Jetty 9.3.x'] = getBuild('9.3.25.v20180904', false)
+  builds['Build JDK 11 - Jetty 9.4.x'] = getBuild('9.4.12.v20180830', false)
   parallel builds
-
 }
 
-def getBuild(jettyVersion, runJacoco) {
+def getBuild(jettyVersion, mainBuild) {
   return {
     node("linux") {
-
-      // System Dependent Locations
-      def mvnTool = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
-      def jdk='jdk9'
-      def jdk9 = tool name: "$jdk", type: 'hudson.model.JDK'
+      def jdk = 'jdk11'
+      def mvnName = 'maven3.5'
       def settingsName = 'oss-settings.xml'
-      def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
-      def mvnName = 'maven3'
-
-      // Environment
-      List mvnEnv9 = ["PATH+MVN=${mvnTool}/bin", "PATH+JDK=${jdk9}/bin", "JAVA_HOME=${jdk9}/", "MAVEN_HOME=${mvnTool}"]
-      mvnEnv9.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
+      def mvnOpts = '-Xms1g -Xmx1g -Djava.awt.headless=true'
 
       stage('Checkout') {
         checkout scm
       }
 
-      stage("Build $jettyVersion") {
-        withEnv(mvnEnv9) {
-          timeout(time: 1, unit: 'HOURS') {
-            if (jettyVersion != null) {
-              withMaven(
-                      maven: mvnName,
-                      jdk: "$jdk",
-                      mavenOpts:"-Xms256m -Xmx1024m -Djava.awt.headless=true",
-                      publisherStrategy: 'EXPLICIT',
-                      globalMavenSettingsConfig: settingsName,
-                      mavenLocalRepo: localRepo) {
-                sh "mvn -B clean install -Dmaven.test.failure.ignore=true -e -Djetty-version=$jettyVersion"
-              }
-            } else {
-              withMaven(
-                      maven: mvnName,
-                      jdk: "$jdk",
-                      mavenOpts:"-Xms256m -Xmx1024m -Djava.awt.headless=true",
-                      publisherStrategy: 'EXPLICIT',
-                      globalMavenSettingsConfig: settingsName,
-                      mavenLocalRepo: localRepo) {
-                sh "mvn -B clean install -Dmaven.test.failure.ignore=true -e"
-              }
-            }
-
-            junit testResults: '**/target/surefire-reports/TEST-*.xml'
-            // Collect the JaCoCo execution results.
-            if (runJacoco) {
-              step([$class          : 'JacocoPublisher',
-                    exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
-                    execPattern     : '**/target/jacoco.exec',
-                    classPattern    : '**/target/classes',
-                    sourcePattern   : '**/src/main/java'])
-            }
-          }
-        }
-        withEnv(mvnEnv9) {
-          timeout(time: 5, unit: 'MINUTES') {
-            withMaven(
-                    maven: mvnName,
-                    jdk: "$jdk",
-                    mavenOpts:"-Xms256m -Xmx1024m -Djava.awt.headless=true",
+      stage("Build ${jettyVersion}") {
+        timeout(time: 1, unit: 'HOURS') {
+          if (mainBuild) {
+            withMaven(maven: mvnName,
+                    jdk: jdk,
                     publisherStrategy: 'EXPLICIT',
                     globalMavenSettingsConfig: settingsName,
-                    mavenLocalRepo: localRepo) {
-              sh "mvn -B javadoc:javadoc -e -T4"
+                    mavenOpts: mvnOpts) {
+              sh "mvn -B clean install -Dmaven.test.failure.ignore=true -e"
+            }
+          } else {
+            withMaven(maven: mvnName,
+                    jdk: jdk,
+                    publisherStrategy: 'EXPLICIT',
+                    globalMavenSettingsConfig: settingsName,
+                    mavenOpts: mvnOpts) {
+              sh "mvn -B clean install -Dmaven.test.failure.ignore=true -e -Djetty-version=${jettyVersion}"
+            }
+          }
+
+          junit testResults: '**/target/surefire-reports/TEST-*.xml'
+          // Collect the JaCoCo execution results.
+          if (mainBuild) {
+            jacoco exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
+                    execPattern: '**/target/jacoco.exec',
+                    classPattern: '**/target/classes',
+                    sourcePattern: '**/src/main/java'
+          }
+        }
+
+        stage("Javadoc ${jettyVersion}") {
+          timeout(time: 5, unit: 'MINUTES') {
+            withMaven(maven: mvnName,
+                    jdk: jdk,
+                    publisherStrategy: 'EXPLICIT',
+                    globalMavenSettingsConfig: settingsName,
+                    mavenOpts: mvnOpts) {
+              sh "mvn -B javadoc:javadoc -e"
             }
           }
         }
@@ -85,4 +63,3 @@ def getBuild(jettyVersion, runJacoco) {
     }
   }
 }
-
