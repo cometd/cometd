@@ -26,7 +26,7 @@ def getBuild(jettyVersion, mainBuild) {
                     publisherStrategy: 'EXPLICIT',
                     globalMavenSettingsConfig: settingsName,
                     mavenOpts: mvnOpts) {
-              sh "mvn -B clean install -Dmaven.test.failure.ignore=true -e"
+              sh "mvn -V -B clean install -Dmaven.test.failure.ignore=true -e"
             }
           } else {
             withMaven(maven: mvnName,
@@ -34,7 +34,7 @@ def getBuild(jettyVersion, mainBuild) {
                     publisherStrategy: 'EXPLICIT',
                     globalMavenSettingsConfig: settingsName,
                     mavenOpts: mvnOpts) {
-              sh "mvn -B clean install -Dmaven.test.failure.ignore=true -e -Djetty-version=${jettyVersion}"
+              sh "mvn -V -B clean install -Dmaven.test.failure.ignore=true -e -Djetty-version=${jettyVersion}"
             }
           }
 
@@ -47,16 +47,16 @@ def getBuild(jettyVersion, mainBuild) {
                     sourcePattern: '**/src/main/java'
           }
         }
+      }
 
-        stage("Javadoc ${jettyVersion}") {
-          timeout(time: 5, unit: 'MINUTES') {
-            withMaven(maven: mvnName,
-                    jdk: jdk,
-                    publisherStrategy: 'EXPLICIT',
-                    globalMavenSettingsConfig: settingsName,
-                    mavenOpts: mvnOpts) {
-              sh "mvn -B javadoc:javadoc -e"
-            }
+      stage("Javadoc ${jettyVersion}") {
+        timeout(time: 5, unit: 'MINUTES') {
+          withMaven(maven: mvnName,
+                  jdk: jdk,
+                  publisherStrategy: 'EXPLICIT',
+                  globalMavenSettingsConfig: settingsName,
+                  mavenOpts: mvnOpts) {
+            sh "mvn -V -B javadoc:javadoc -e"
           }
         }
       }
