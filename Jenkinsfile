@@ -30,7 +30,7 @@ def newBuild(os, jdk) {
                   publisherStrategy: 'EXPLICIT',
                   globalMavenSettingsConfig: settingsName,
                   mavenOpts: mvnOpts) {
-            sh "mvn -V -B clean install -Dmaven.test.failure.ignore=true"
+            sh "mvn -V -B clean install -Dmaven.test.failure.ignore=true -e"
           }
 
           junit testResults: '**/target/surefire-reports/TEST-*.xml'
