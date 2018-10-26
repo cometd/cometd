@@ -17,7 +17,7 @@ def newBuild(os, jdk) {
     node(os) {
       def mvnName = 'maven3.5'
       def settingsName = 'oss-settings.xml'
-      def mvnOpts = '-Xms256m -Xmx1024m -Djava.awt.headless=true'
+      def mvnOpts = '-Xms1g -Xmx1g -Djava.awt.headless=true'
 
       stage("Checkout - ${jdk}") {
         checkout scm
@@ -26,13 +26,13 @@ def newBuild(os, jdk) {
       stage("Build - ${jdk}") {
         timeout(time: 1, unit: 'HOURS') {
           withMaven(maven: mvnName,
-                  jdk: "${jdk}",
+                  jdk: jdk,
                   publisherStrategy: 'EXPLICIT',
                   globalMavenSettingsConfig: settingsName,
                   mavenOpts: mvnOpts) {
             sh "mvn -V -B clean install -Dmaven.test.failure.ignore=true"
           }
-          // Report failures in the jenkins UI.
+
           junit testResults: '**/target/surefire-reports/TEST-*.xml'
           // Collect the JaCoCo execution results.
           jacoco exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
@@ -45,11 +45,11 @@ def newBuild(os, jdk) {
       stage("Javadoc - ${jdk}") {
         timeout(time: 5, unit: 'MINUTES') {
           withMaven(maven: mvnName,
-                  jdk: "${jdk}",
+                  jdk: jdk,
                   publisherStrategy: 'EXPLICIT',
                   globalMavenSettingsConfig: settingsName,
                   mavenOpts: mvnOpts) {
-            sh "mvn -V -B javadoc:javadoc"
+            sh "mvn -V -B javadoc:javadoc -e"
           }
         }
       }
