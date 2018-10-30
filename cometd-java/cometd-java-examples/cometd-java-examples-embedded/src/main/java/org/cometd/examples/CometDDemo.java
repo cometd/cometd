@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
- * Main class for cometd demo.
+ * Main class for CometD demo.
  */
 public class CometDDemo {
     public static void main(String[] args) throws Exception {
@@ -63,14 +63,14 @@ public class CometDDemo {
 
         ServletContextHandler context = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
         context.setBaseResource(new ResourceCollection(
-                Resource.newResource("../../cometd-demo/src/main/webapp/"),
-                Resource.newResource("../../cometd-javascript/common/src/main/webapp/"),
-                Resource.newResource("../../cometd-javascript/jquery/src/main/webapp/"),
-                Resource.newResource("../../cometd-javascript/examples-jquery/src/main/webapp/"),
-                Resource.newResource("../../cometd-javascript/dojo/src/main/webapp/"),
-                Resource.newResource("../../cometd-javascript/examples-dojo/src/main/webapp/"),
-                Resource.newResource("../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-dojo/"),
-                Resource.newResource("../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-jquery/"))
+                Resource.newResource("../../../cometd-demo/src/main/webapp/"),
+                Resource.newResource("../../../cometd-javascript/common/src/main/webapp/"),
+                Resource.newResource("../../../cometd-javascript/jquery/src/main/webapp/"),
+                Resource.newResource("../../../cometd-javascript/examples-jquery/src/main/webapp/"),
+                Resource.newResource("../../../cometd-javascript/dojo/src/main/webapp/"),
+                Resource.newResource("../../../cometd-javascript/examples-dojo/src/main/webapp/"),
+                Resource.newResource("../../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-dojo/"),
+                Resource.newResource("../../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-jquery/"))
         );
 
         ServletHolder dftServlet = context.addServlet(DefaultServlet.class, "/");
@@ -78,14 +78,14 @@ public class CometDDemo {
 
         // CometD servlet
         AnnotationCometDServlet cometdServlet = new AnnotationCometDServlet();
-        ServletHolder comet = new ServletHolder(cometdServlet);
-        context.addServlet(comet, "/cometd/*");
-        comet.setInitParameter("timeout", "20000");
-        comet.setInitParameter("interval", "100");
-        comet.setInitParameter("maxInterval", "10000");
-        comet.setInitParameter("multiSessionInterval", "5000");
-        comet.setInitParameter("services", "org.cometd.examples.ChatService");
-        comet.setInitOrder(2);
+        ServletHolder cometd = new ServletHolder(cometdServlet);
+        context.addServlet(cometd, "/cometd/*");
+        cometd.setInitParameter("timeout", "20000");
+        cometd.setInitParameter("interval", "100");
+        cometd.setInitParameter("maxInterval", "10000");
+        cometd.setInitParameter("multiSessionInterval", "5000");
+        cometd.setInitParameter("services", ChatService.class.getName());
+        cometd.setInitOrder(2);
 
         ServletHolder demo = context.addServlet(CometDDemoServlet.class, "/demo");
         demo.setInitOrder(3);

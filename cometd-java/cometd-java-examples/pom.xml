@@ -8,37 +8,12 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>cometd-java-examples</artifactId>
-  <packaging>war</packaging>
+  <packaging>pom</packaging>
   <name>CometD :: Java :: Examples</name>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-annotations</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-client</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <version>${jetty-version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet</artifactId>
-      <version>${jetty-version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlets</artifactId>
-      <version>${jetty-version}</version>
-    </dependency>
-  </dependencies>
+  <modules>
+    <module>cometd-java-examples-embedded</module>
+    <module>cometd-java-examples-springboot</module>
+  </modules>
 
 </project>

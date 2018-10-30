@@ -16,7 +16,6 @@
 package org.cometd.examples;
 
 import java.io.IOException;
-import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -69,7 +68,6 @@ public class CometDDemoServlet extends HttpServlet {
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
         processor.process(new EchoRPC());
         processor.process(new Monitor());
-        // processor.process(new ChatService());
 
         bayeux.createChannelIfAbsent("/foo/bar/baz", new ConfigurableServerChannel.Initializer.Persistent());
 
@@ -86,7 +84,7 @@ public class CometDDemoServlet extends HttpServlet {
         }
 
         @RemoteCall("echo")
-        public void doEcho(RemoteCall.Caller caller, Map<String, Object> data) {
+        public void doEcho(RemoteCall.Caller caller, Object data) {
             logger.info("ECHO from " + caller.getServerSession() + ": " + data);
             caller.result(data);
         }
