@@ -220,7 +220,6 @@ The final content, equivalent to that produced by the Maven way, should be like 
 |   |   |-- cometd-java-server-<version>.jar
 |   |   |-- cometd-java-websocket-common-server-<version>.jar
 |   |   |-- cometd-java-websocket-javax-server-<version>.jar
-|   |   |-- jetty-continuation-<version>.jar
 |   |   |-- jetty-http-<version>.jar
 |   |   |-- jetty-io-<version>.jar
 |   |   |-- jetty-jmx-<version>.jar
