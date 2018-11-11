@@ -29,7 +29,7 @@ public class XMLHttpRequestClient {
     private final JavaScriptCookieStore cookieStore;
     private HttpClient httpClient;
 
-    public XMLHttpRequestClient(JavaScriptCookieStore cookieStore) throws Exception {
+    public XMLHttpRequestClient(JavaScriptCookieStore cookieStore) {
         this.cookieStore = cookieStore;
     }
 

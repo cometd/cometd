@@ -184,7 +184,7 @@ public abstract class AbstractCometDTest {
         xhrClient.start();
         javaScript.putAsync("xhrClient", xhrClient);
 
-        wsConnector = new WebSocketConnector(xhrClient, cookies);
+        wsConnector = new WebSocketConnector(xhrClient);
         wsConnector.start();
         javaScript.putAsync("wsConnector", wsConnector);
 
