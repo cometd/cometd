@@ -248,7 +248,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     /**
-     * @return whether this BayeuxClient is disconnecting or disconnected
+     * @return whether this BayeuxClient is terminating or disconnected
      */
     public boolean isDisconnected() {
         State state = getState();
@@ -731,31 +731,43 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     protected void processConnect(final Message.Mutable connect) {
-        if (connect.isSuccessful()) {
-            receive(connect);
-            sessionState.submit(new Runnable() {
-                @Override
-                public void run() {
-                    sessionState.connected(connect);
-                }
-            });
+        if (sessionState.matchMetaConnect(connect)) {
+            if (connect.isSuccessful()) {
+                receive(connect);
+                sessionState.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        sessionState.connected(connect);
+                    }
+                });
+            } else {
+                ClientTransport.FailureInfo failureInfo = new ClientTransport.FailureInfo();
+                failureInfo.transport = getTransport();
+                failureInfo.cause = null;
+                failureInfo.error = null;
+                failureInfo.action = sessionState.getAdviceAction(connect.getAdvice(), Message.RECONNECT_RETRY_VALUE);
+                failConnect(connect, failureInfo);
+            }
         } else {
-            ClientTransport.FailureInfo failureInfo = new ClientTransport.FailureInfo();
-            failureInfo.transport = getTransport();
-            failureInfo.cause = null;
-            failureInfo.error = null;
-            failureInfo.action = sessionState.getAdviceAction(connect.getAdvice(), Message.RECONNECT_RETRY_VALUE);
-            failConnect(connect, failureInfo);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Mismatched /meta/connect reply: expected reply for {}, received {}", sessionState.getMetaConnect(), connect);
+            }
         }
     }
 
     private void connectFailure(Message.Mutable connect, Throwable failure) {
-        ClientTransport.FailureInfo failureInfo = new ClientTransport.FailureInfo();
-        failureInfo.transport = null;
-        failureInfo.cause = failure;
-        failureInfo.error = null;
-        failureInfo.action = Message.RECONNECT_RETRY_VALUE;
-        failConnect(connect, failureInfo);
+        if (sessionState.matchMetaConnect(connect)) {
+            ClientTransport.FailureInfo failureInfo = new ClientTransport.FailureInfo();
+            failureInfo.transport = null;
+            failureInfo.cause = failure;
+            failureInfo.error = null;
+            failureInfo.action = Message.RECONNECT_RETRY_VALUE;
+            failConnect(connect, failureInfo);
+        } else {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Mismatched /meta/connect failure: expected {}, got {}", sessionState.getMetaConnect(), connect);
+            }
+        }
     }
 
     private void failConnect(Message.Mutable connect, ClientTransport.FailureInfo failureInfo) {
@@ -1208,6 +1220,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         private long unconnectTime;
         private boolean active;
         private int handshakeMessages;
+        private Message metaConnect;
 
         private void reset() {
             actions.clear();
@@ -1221,6 +1234,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             unconnectTime = 0;
             active = false;
             handshakeMessages = 0;
+            metaConnect = null;
         }
 
         private State getState() {
@@ -1531,8 +1545,41 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 messagesFailure(new TransportException(null), messages);
                 return false;
             } else {
+                for (Message.Mutable message : messages) {
+                    if (Channel.META_CONNECT.equals(message.getChannel())) {
+                        Message existing;
+                        synchronized (this) {
+                            existing = metaConnect;
+                            metaConnect = message;
+                        }
+                        if (logger.isDebugEnabled()) {
+                            if (existing != null) {
+                                logger.debug("Overwriting existing /meta/connect {}", existing);
+                            }
+                            logger.debug("Sending /meta/connect {}", message);
+                        }
+                    }
+                }
                 transport.send(messageListener, messages);
                 return true;
+            }
+        }
+
+        private boolean matchMetaConnect(Message.Mutable connect) {
+            synchronized (this) {
+                if (State.DISCONNECTED.implies(state))
+                    return true;
+                if (metaConnect != null && metaConnect.getId().equals(connect.getId())) {
+                    metaConnect = null;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private Message getMetaConnect() {
+            synchronized (this) {
+                return metaConnect;
             }
         }
 
