@@ -36,6 +36,16 @@
     var Scheduler = function() {
         var _ids = 0;
         var _tasks = {};
+        this.register = function(funktion) {
+            var id = ++_ids;
+            _tasks[id] = funktion;
+            return id;
+        };
+        this.unregister = function(id) {
+            var funktion = _tasks[id];
+            delete _tasks[id];
+            return funktion;
+        };
         this.setTimeout = function(funktion, delay) {
             return window.setTimeout(funktion, delay);
         };
@@ -1462,8 +1472,7 @@
                 });
                 var worker = new window.Worker(window.URL.createObjectURL(blob));
                 _scheduler.setTimeout = function(funktion, delay) {
-                    var id = ++_scheduler._ids;
-                    _scheduler._tasks[id] = funktion;
+                    var id = _scheduler.register(funktion);
                     worker.postMessage({
                         id: id,
                         type: 'setTimeout',
@@ -1472,7 +1481,7 @@
                     return id;
                 };
                 _scheduler.clearTimeout = function(id) {
-                    delete _scheduler._tasks[id];
+                    _scheduler.unregister(id);
                     worker.postMessage({
                         id: id,
                         type: 'clearTimeout'
@@ -1480,8 +1489,7 @@
                 };
                 worker.onmessage = function(e) {
                     var id = e.data.id;
-                    var funktion = _scheduler._tasks[id];
-                    delete _scheduler._tasks[id];
+                    var funktion = _scheduler.unregister(id);
                     if (funktion) {
                         funktion();
                     }
