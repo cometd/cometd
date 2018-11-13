@@ -727,6 +727,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
         }
 
+        @Override
+        public void destroy() {
+            cancel();
+        }
+
         private boolean cancelTimeout() {
             // Cannot rely on the return value of task.cancel()
             // since it may be invoked when the task is in run()

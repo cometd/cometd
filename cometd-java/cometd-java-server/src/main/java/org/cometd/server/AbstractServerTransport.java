@@ -288,8 +288,25 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         return getName();
     }
 
+    /**
+     * Performs transport operations when a /meta/connect message is held.
+     */
     public interface Scheduler {
+        /**
+         * Invoked when the transport wants to send queued
+         * messages, and possibly a /meta/connect reply.
+         */
         void schedule();
+
+        /**
+         * Invoked when the transport wants to cancel scheduled operations
+         * that will trigger when the /meta/connect timeout fires.
+         */
         void cancel();
+
+        /**
+         * Invoked when the transport wants to abort communication.
+         */
+        void destroy();
     }
 }

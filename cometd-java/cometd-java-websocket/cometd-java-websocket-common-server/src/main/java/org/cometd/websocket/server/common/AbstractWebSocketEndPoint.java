@@ -349,8 +349,13 @@ public abstract class AbstractWebSocketEndPoint {
 
         @Override
         public void cancel() {
+            cancelTimeout();
+        }
+
+        @Override
+        public void destroy() {
             if (cancelTimeout()) {
-                close(1000, "Cancel");
+                close(1000, "Destroy");
             }
         }
 

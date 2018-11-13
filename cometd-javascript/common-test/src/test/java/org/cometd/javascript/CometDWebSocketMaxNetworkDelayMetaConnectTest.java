@@ -75,7 +75,7 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         //   + Second connect is canceled and not replied
         // Sixth connect is replied
 
-        Assert.assertTrue(latch.await(3 * metaConnectPeriod + 3 * maxNetworkDelay));
+        Assert.assertTrue(latch.await(2 * (3 * metaConnectPeriod + 3 * maxNetworkDelay)));
         evaluateScript("window.assert(failure === undefined, failure);");
 
         disconnect();

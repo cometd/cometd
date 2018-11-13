@@ -111,7 +111,7 @@ public class CometDServlet extends HttpServlet {
     @Override
     public void destroy() {
         for (ServerSession session : _bayeux.getSessions()) {
-            ((ServerSessionImpl)session).cancelSchedule();
+            ((ServerSessionImpl)session).destroyScheduler();
         }
 
         try {

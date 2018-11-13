@@ -36,6 +36,16 @@
     var Scheduler = function() {
         var _ids = 0;
         var _tasks = {};
+        this.register = function(funktion) {
+            var id = ++_ids;
+            _tasks[id] = funktion;
+            return id;
+        };
+        this.unregister = function(id) {
+            var funktion = _tasks[id];
+            delete _tasks[id];
+            return funktion;
+        };
         this.setTimeout = function(funktion, delay) {
             return window.setTimeout(funktion, delay);
         };
@@ -399,7 +409,7 @@
                 envelope: envelope
             };
 
-            // Consider the metaConnect requests which should always be present
+            // Consider the /meta/connect requests which should always be present.
             if (_requests.length < this.getConfiguration().maxConnections - 1) {
                 _requests.push(request);
                 _transportSend.call(this, envelope, request);
@@ -411,12 +421,10 @@
 
         function _metaConnectComplete(request) {
             var requestId = request.id;
-            this._debug('Transport', this.getType(), 'metaConnect complete, request', requestId);
+            this._debug('Transport', this.getType(), '/meta/connect complete, request', requestId);
             if (_metaConnectRequest !== null && _metaConnectRequest.id !== requestId) {
-                throw 'Longpoll request mismatch, completing request ' + requestId;
+                throw '/meta/connect request mismatch, completing request ' + requestId;
             }
-
-            // Reset metaConnect request
             _metaConnectRequest = null;
         }
 
@@ -495,11 +503,11 @@
 
         function _metaConnectSend(envelope) {
             if (_metaConnectRequest !== null) {
-                throw 'Concurrent metaConnect requests not allowed, request id=' + _metaConnectRequest.id + ' not yet completed';
+                throw 'Concurrent /meta/connect requests not allowed, request id=' + _metaConnectRequest.id + ' not yet completed';
             }
 
             var requestId = ++_requestIds;
-            this._debug('Transport', this.getType(), 'metaConnect send, request', requestId, 'envelope', envelope);
+            this._debug('Transport', this.getType(), '/meta/connect send, request', requestId, 'envelope', envelope);
             var request = {
                 id: requestId,
                 metaConnect: true,
@@ -530,7 +538,7 @@
             }
             var metaConnectRequest = _metaConnectRequest;
             if (metaConnectRequest) {
-                this._debug('Aborting metaConnect request', metaConnectRequest);
+                this._debug('Aborting /meta/connect request', metaConnectRequest);
                 if (!this.abortXHR(metaConnectRequest.xhr)) {
                     this.transportFailure(metaConnectRequest.envelope, metaConnectRequest, {reason: 'abort'});
                 }
@@ -992,7 +1000,7 @@
         function _webSocketSend(context, envelope, metaConnect) {
             var json = JSON.stringify(envelope.messages);
             context.webSocket.send(json);
-            this._debug('Transport', this.getType(), 'sent', envelope, 'metaConnect =', metaConnect);
+            this._debug('Transport', this.getType(), 'sent', envelope, '/meta/connect =', metaConnect);
 
             // Manage the timeout waiting for the response.
             var maxDelay = this.getConfiguration().maxNetworkDelay;
@@ -1190,7 +1198,7 @@
         };
 
         _self.send = function(envelope, metaConnect) {
-            this._debug('Transport', this.getType(), 'sending', envelope, 'metaConnect =', metaConnect);
+            this._debug('Transport', this.getType(), 'sending', envelope, '/meta/connect =', metaConnect);
             _send.call(this, _context, envelope, metaConnect);
         };
 
@@ -1246,6 +1254,7 @@
         var _connected = false;
         var _unconnectTime = 0;
         var _handshakeMessages = 0;
+        var _metaConnect = null;
         var _config = {
             useWorkerScheduler: true,
             protocol: null,
@@ -1462,8 +1471,7 @@
                 });
                 var worker = new window.Worker(window.URL.createObjectURL(blob));
                 _scheduler.setTimeout = function(funktion, delay) {
-                    var id = ++_scheduler._ids;
-                    _scheduler._tasks[id] = funktion;
+                    var id = _scheduler.register(funktion);
                     worker.postMessage({
                         id: id,
                         type: 'setTimeout',
@@ -1472,7 +1480,7 @@
                     return id;
                 };
                 _scheduler.clearTimeout = function(id) {
-                    delete _scheduler._tasks[id];
+                    _scheduler.unregister(id);
                     worker.postMessage({
                         id: id,
                         type: 'clearTimeout'
@@ -1480,8 +1488,7 @@
                 };
                 worker.onmessage = function(e) {
                     var id = e.data.id;
-                    var funktion = _scheduler._tasks[id];
-                    delete _scheduler._tasks[id];
+                    var funktion = _scheduler.unregister(id);
                     if (funktion) {
                         funktion();
                     }
@@ -1688,6 +1695,10 @@
                 return;
             }
 
+            if (metaConnect) {
+                _metaConnect = messages[0];
+            }
+
             var url = _cometd.getURL();
             if (_config.appendMessageTypeToURL) {
                 // If url does not end with '/', then append it
@@ -1832,13 +1843,16 @@
             if (abort && _transport) {
                 _transport.abort();
             }
-            _clientId = null;
+            _crossDomain = false;
+            _transport = null;
             _setStatus('disconnected');
+            _clientId = null;
             _batch = 0;
             _resetBackoff();
-            _transport = null;
             _reestablish = false;
             _connected = false;
+            _unconnectTime = 0;
+            _metaConnect = null;
 
             // Fail any existing queued message
             if (_messageQueue.length > 0) {
@@ -2198,6 +2212,17 @@
             });
         }
 
+        function _matchMetaConnect(connect) {
+            if (_status === 'disconnected') {
+                return true;
+            }
+            if (_metaConnect && _metaConnect.id === connect.id) {
+                _metaConnect = null;
+                return true;
+            }
+            return false;
+        }
+
         function _failConnect(message, failureInfo) {
             // Notify the listeners after the status change but before the next action.
             _notifyListeners('/meta/connect', message);
@@ -2212,44 +2237,50 @@
         }
 
         function _connectResponse(message) {
-            _connected = message.successful;
+            if (_matchMetaConnect(message)) {
+                _connected = message.successful;
+                if (_connected) {
+                    _notifyListeners('/meta/connect', message);
 
-            if (_connected) {
-                _notifyListeners('/meta/connect', message);
-
-                // Normally, the advice will say "reconnect: 'retry', interval: 0"
-                // and the server will hold the request, so when a response returns
-                // we immediately call the server again (long polling).
-                // Listeners can call disconnect(), so check the state after they run.
-                var action = _isDisconnected() ? 'none' : _advice.reconnect || 'retry';
-                switch (action) {
-                    case 'retry':
-                        _resetBackoff();
-                        _delayedConnect(_backoff);
-                        break;
-                    case 'none':
-                        _disconnect(false);
-                        break;
-                    default:
-                        throw 'Unrecognized advice action ' + action;
+                    // Normally, the advice will say "reconnect: 'retry', interval: 0"
+                    // and the server will hold the request, so when a response returns
+                    // we immediately call the server again (long polling).
+                    // Listeners can call disconnect(), so check the state after they run.
+                    var action = _isDisconnected() ? 'none' : _advice.reconnect || 'retry';
+                    switch (action) {
+                        case 'retry':
+                            _resetBackoff();
+                            _delayedConnect(_backoff);
+                            break;
+                        case 'none':
+                            _disconnect(false);
+                            break;
+                        default:
+                            throw 'Unrecognized advice action ' + action;
+                    }
+                } else {
+                    _failConnect(message, {
+                        cause: 'unsuccessful',
+                        action: _advice.reconnect || 'retry',
+                        transport: _transport
+                    });
                 }
             } else {
-                _failConnect(message, {
-                    cause: 'unsuccessful',
-                    action: _advice.reconnect || 'retry',
-                    transport: _transport
-                });
+                _cometd._debug('Mismatched /meta/connect reply', message);
             }
         }
 
         function _connectFailure(message) {
-            _connected = false;
-
-            _failConnect(message, {
-                cause: 'failure',
-                action: 'retry',
-                transport: null
-            });
+            if (_matchMetaConnect(message)) {
+                _connected = false;
+                _failConnect(message, {
+                    cause: 'failure',
+                    action: 'retry',
+                    transport: null
+                });
+            } else {
+                _cometd._debug('Mismatched /meta/connect failure', message);
+            }
         }
 
         function _failDisconnect(message) {

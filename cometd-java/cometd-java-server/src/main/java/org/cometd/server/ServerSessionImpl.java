@@ -174,7 +174,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
         if (remove) {
             if (scheduler != null) {
-                scheduler.cancel();
+                scheduler.destroy();
             }
             _bayeux.removeServerSession(this, true);
         }
@@ -602,7 +602,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    public void cancelSchedule() {
+    public void destroyScheduler() {
         Scheduler scheduler;
         synchronized (getLock()) {
             scheduler = _scheduler;
@@ -611,7 +611,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             }
         }
         if (scheduler != null) {
-            scheduler.cancel();
+            scheduler.destroy();
         }
     }
 
