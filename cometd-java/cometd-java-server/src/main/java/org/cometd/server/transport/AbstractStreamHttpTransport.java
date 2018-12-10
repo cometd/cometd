@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import javax.servlet.AsyncContext;
-import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -46,7 +45,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
     }
 
     @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void handle(HttpServletRequest request, HttpServletResponse response) {
         // API calls could be async, so we must be async in the request processing too.
         AsyncContext asyncContext = request.startAsync();
         // Explicitly disable the timeout, to prevent
@@ -144,7 +143,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                 messages.addAll(Arrays.asList(parsed));
             }
         }
-        return messages.toArray(new ServerMessage.Mutable[messages.size()]);
+        return messages.toArray(new ServerMessage.Mutable[0]);
     }
 
     @Override
@@ -194,14 +193,12 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             // Write the replies, if any.
             while (replyIndex < replies.size()) {
                 ServerMessage.Mutable reply = replies.get(replyIndex);
-                if (reply != null) {
-                    if (needsComma) {
-                        output.write(',');
-                    }
-                    needsComma = true;
-                    getBayeux().freeze(reply);
-                    writeMessage(response, output, session, reply);
+                if (needsComma) {
+                    output.write(',');
                 }
+                needsComma = true;
+                getBayeux().freeze(reply);
+                writeMessage(response, output, session, reply);
                 ++replyIndex;
             }
 

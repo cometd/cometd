@@ -409,17 +409,13 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                     return true;
                 } else {
                     ServerMessage.Mutable reply = replies.get(replyIndex);
-                    if (reply != null) {
-                        if (needsComma) {
-                            output.write(',');
-                            needsComma = false;
-                        } else {
-                            getBayeux().freeze(reply);
-                            output.write(toJSONBytes(reply, "UTF-8"));
-                            needsComma = replyIndex < size;
-                            ++replyIndex;
-                        }
+                    if (needsComma) {
+                        output.write(',');
+                        needsComma = false;
                     } else {
+                        getBayeux().freeze(reply);
+                        output.write(toJSONBytes(reply, "UTF-8"));
+                        needsComma = replyIndex < size;
                         ++replyIndex;
                     }
                 }

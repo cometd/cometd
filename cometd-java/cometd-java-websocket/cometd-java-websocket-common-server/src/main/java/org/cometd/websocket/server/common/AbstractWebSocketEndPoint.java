@@ -302,15 +302,15 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     protected void flush(Context context, Promise<Void> promise) {
-        List<ServerMessage> queue = Collections.emptyList();
+        List<ServerMessage> messages = Collections.emptyList();
         ServerSessionImpl session = context.session;
         if (context.sendQueue && session != null) {
-            queue = session.takeQueue();
+            messages = session.takeQueue(context.replies);
         }
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Flushing {}, replies={}, messages={}", session, context.replies, queue);
+            _logger.debug("Flushing {}, replies={}, messages={}", session, context.replies, messages);
         }
-        boolean queued = flusher.queue(new Entry(context, queue, promise));
+        boolean queued = flusher.queue(new Entry(context, messages, promise));
         if (queued) {
             flusher.iterate();
         }

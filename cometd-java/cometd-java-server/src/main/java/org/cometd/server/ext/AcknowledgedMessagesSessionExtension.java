@@ -16,6 +16,7 @@
 package org.cometd.server.ext;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -35,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class AcknowledgedMessagesSessionExtension implements Extension, ServerSession.DeQueueListener, ServerSession.QueueListener {
     private static final Logger _logger = LoggerFactory.getLogger(AcknowledgedMessagesSessionExtension.class);
 
-    private final Map<Long, Long> _batches = new HashMap<>();
+    private final Map<String, Long> _batches = new HashMap<>();
     private final ServerSessionImpl _session;
     private final BatchArrayQueue<ServerMessage> _queue;
     private long _lastBatch;
@@ -116,7 +117,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         Map<String, Object> ext = message.getExt(true);
         if (channel.equals(Channel.META_HANDSHAKE)) {
             if (_session.isAllowMessageDeliveryDuringHandshake()) {
-                long batch = closeBatch();
+                long batch = closeBatch(message);
                 Map<String, Object> ack = new HashMap<>(3);
                 ack.put("enabled", true);
                 ack.put("batch", batch);
@@ -128,7 +129,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
                 ext.put("ack", Boolean.TRUE);
             }
         } else if (channel.equals(Channel.META_CONNECT)) {
-            long batch = closeBatch();
+            long batch = closeBatch(message);
             ext.put("ack", batch);
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Sending batch {} for {}", batch, _session);
@@ -137,25 +138,39 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         return true;
     }
 
-    private long closeBatch() {
+    private long closeBatch(Mutable message) {
         synchronized (_session.getLock()) {
             long batch = _queue.getBatch();
-            _batches.put(Thread.currentThread().getId(), batch);
+            _batches.put(message.getId(), batch);
             _queue.nextBatch();
             return batch;
         }
     }
 
     @Override
-    public void deQueue(ServerSession session, Queue<ServerMessage> queue) {
-        synchronized (_session.getLock()) {
-            Long batch = _batches.remove(Thread.currentThread().getId());
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("Dequeuing {}/{} messages until batch {} for {}", queue.size(), _queue.size(), batch, _session);
+    public void deQueue(ServerSession session, Queue<ServerMessage> queue, List<Mutable> replies) {
+        Mutable reply = null;
+        for (Mutable r : replies) {
+            String channel = r.getChannel();
+            if (Channel.META_HANDSHAKE.equals(channel) || Channel.META_CONNECT.equals(channel)) {
+                reply = r;
+                break;
             }
-            queue.clear();
-            _queue.exportMessagesToBatch(queue, batch);
         }
+        if (reply != null) {
+            long batch = _batches.remove(reply.getId());
+            synchronized (_session.getLock()) {
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Dequeuing {}/{} messages until batch {} for {} on {}", queue.size(), _queue.size(), batch, reply, _session);
+                }
+                queue.clear();
+                _queue.exportMessagesToBatch(queue, batch);
+            }
+        }
+    }
+
+    @Override
+    public void deQueue(ServerSession session, Queue<ServerMessage> queue) {
     }
 
     protected void importMessages(ServerSessionImpl session) {

@@ -258,6 +258,20 @@ public interface ServerSession extends Session {
      */
     public interface DeQueueListener extends ServerSessionListener {
         /**
+         * <p>Callback invoked to notify that the queue of messages and the message replies are
+         * about to be sent to the remote client.</p>
+         * <p>This is the last chance to process the queue, to remove duplicates or merge messages,
+         * and to process the replies.</p>
+         *
+         * @param session the session whose messages are being sent
+         * @param queue   the queue of messages to send
+         * @param replies the message replies to send
+         */
+        public default void deQueue(ServerSession session, Queue<ServerMessage> queue, List<ServerMessage.Mutable> replies) {
+            deQueue(session, queue);
+        }
+
+        /**
          * <p>Callback invoked to notify that the queue of messages is about to be sent to the
          * remote client.</p>
          * <p>This is the last chance to process the queue and remove duplicates or merge messages.</p>

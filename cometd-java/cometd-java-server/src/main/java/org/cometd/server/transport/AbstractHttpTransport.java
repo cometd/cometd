@@ -248,7 +248,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 });
             }
             processReply(session, reply, Promise.from(r -> {
-                context.replies.add(r);
+                if (r != null) {
+                    context.replies.add(r);
+                }
                 context.sendQueue = r != null && r.isSuccessful() && allowMessageDeliveryDuringHandshake(session);
                 context.scheduleExpiration = true;
                 promise.succeed(null);
@@ -320,7 +322,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         handleMessage(context, message, Promise.from(y -> {
             ServerSessionImpl session = context.session;
             processReply(session, message.getAssociated(), Promise.from(reply -> {
-                context.replies.add(reply);
+                if (reply != null) {
+                    context.replies.add(reply);
+                }
                 boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
                 if (!metaConnectDelivery) {
                     context.sendQueue = true;
@@ -339,7 +343,10 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         List<ServerMessage> messages = Collections.emptyList();
         ServerSessionImpl session = context.session;
         if (context.sendQueue && session != null) {
-            messages = session.takeQueue();
+            messages = session.takeQueue(context.replies);
+        }
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("Flushing {}, replies={}, messages={}", session, context.replies, messages);
         }
         write(context, messages, promise);
     }
@@ -362,7 +369,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         processReply(session, reply, Promise.from(r -> {
-            context.replies.add(r);
+            if (r != null) {
+                context.replies.add(r);
+            }
             context.sendQueue = true;
             context.scheduleExpiration = true;
             promise.succeed(null);

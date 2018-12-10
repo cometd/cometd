@@ -21,6 +21,42 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Promise;
 
+/**
+ * <p>Processes asynchronously a sequence of elements, producing a result that
+ * is the reduction of the results produced by the processing of each element.</p>
+ * <p>This class implements the asynchronous version of the following synchronous
+ * {@code for} loop, but where the processing of each element may be asynchronous.</p>
+ * <pre>
+ * R result;
+ * for (T element : list) {
+ *     (result, proceed) = operation.apply(result, element);
+ *     if (!proceed) {
+ *         break;
+ *     }
+ * }
+ * </pre>
+ * <p>Using this class, the loop above becomes:</p>
+ * <pre>
+ * R zero;
+ * AsyncFoldLeft.run(list, zero, (result, element, loop) -&gt; {
+ *     CompletableFuture&lt;R&gt; future = processAsync(element);
+ *     future.whenComplete((r, x) -&gt; {
+ *         if (x == null) {
+ *             R reduced = reduce(result, r);
+ *             if (shouldIterate(r)) {
+ *                 loop.proceed(reduced);
+ *             } else {
+ *                 loop.leave(reduced);
+ *             }
+ *         } else {
+ *             loop.fail(x);
+ *         }
+ *     })
+ * }, Promise.complete((r, x) -&gt; {
+ *     // Process final result or failure.
+ * });
+ * </pre>
+ */
 public class AsyncFoldLeft {
     public static <T, R> void run(T[] array, R zero, Operation<T, R> operation, Promise<R> promise) {
         if (array.length == 0) {
@@ -30,6 +66,19 @@ public class AsyncFoldLeft {
         }
     }
 
+    /**
+     * <p>Processes the given {@code list} of elements.</p>
+     * <p>The initial result {@code zero} is returned if the list is empty.</p>
+     * <p>For each element the {@link Operation#apply(Object, Object, Loop) operation}
+     * function is invoked.</p>
+     *
+     * @param list      the elements to process
+     * @param zero      the initial result
+     * @param operation the operation to invoke for each element
+     * @param promise   the promise to notify of the final result
+     * @param <T>       the type of element
+     * @param <R>       the type of the result
+     */
     public static <T, R> void run(List<T> list, R zero, Operation<T, R> operation, Promise<R> promise) {
         if (list.isEmpty()) {
             promise.succeed(zero);
@@ -39,10 +88,37 @@ public class AsyncFoldLeft {
         }
     }
 
+    /**
+     * <p>The operation to invoke for each element.</p>
+     *
+     * @param <T> the type of element
+     * @param <R> the type of the result
+     */
+    @FunctionalInterface
     public interface Operation<T, R> {
-        void apply(R result, T item, Loop<R> loop);
+        /**
+         * <p>Processes the given {@code element}.</p>
+         * <p>The processing of the element must produce a result that is the reduction
+         * of the accumulated {@code result} with the result of the processing of the
+         * given {@code element}.</p>
+         * <p>After the processing of the given element, the implementation must decide
+         * whether to continue with or break out of the iteration (with the reduced
+         * result) or to fail the iteration (with an exception).</p>
+         *
+         * @param result  the accumulated result so far
+         * @param element the element to process
+         * @param loop    the control object that continues or breaks the iteration
+         */
+        void apply(R result, T element, Loop<R> loop);
     }
 
+    /**
+     * <p>Controls the iteration over a sequence of elements, allowing to
+     * continue the iteration (with a result), break out of the iteration
+     * (with a result), or fail the iteration (with an exception).</p>
+     *
+     * @param <R> the type of the result
+     */
     public interface Loop<R> {
         public default void proceed(R r) {
         }

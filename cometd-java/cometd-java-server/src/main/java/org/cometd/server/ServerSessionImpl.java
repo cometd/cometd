@@ -459,14 +459,14 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    public List<ServerMessage> takeQueue() {
+    public List<ServerMessage> takeQueue(List<ServerMessage.Mutable> replies) {
         List<ServerMessage> copy = Collections.emptyList();
         synchronized (getLock()) {
             // Always call listeners, even if the queue is
             // empty since they may add messages to the queue.
             for (ServerSessionListener listener : _listeners) {
                 if (listener instanceof DeQueueListener) {
-                    notifyDeQueue((DeQueueListener)listener, this, _queue);
+                    notifyDeQueue((DeQueueListener)listener, this, _queue, replies);
                 }
             }
 
@@ -482,9 +482,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         return copy;
     }
 
-    private void notifyDeQueue(DeQueueListener listener, ServerSession serverSession, Queue<ServerMessage> queue) {
+    private void notifyDeQueue(DeQueueListener listener, ServerSession serverSession, Queue<ServerMessage> queue, List<ServerMessage.Mutable> replies) {
         try {
-            listener.deQueue(serverSession, queue);
+            listener.deQueue(serverSession, queue, replies);
         } catch (Throwable x) {
             _logger.info("Exception while invoking listener " + listener, x);
         }
@@ -577,7 +577,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
         // Local delivery.
         if (_localSession != null && hasNonLazyMessages()) {
-            for (ServerMessage msg : takeQueue()) {
+            for (ServerMessage msg : takeQueue(Collections.emptyList())) {
                 _localSession.receive(new HashMapMessage(msg), Promise.noop());
             }
         }
