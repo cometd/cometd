@@ -179,7 +179,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
                 }
                 try {
                     // Limits of the WebSocket APIs, otherwise an exception is thrown.
-                    reason = reason.substring(0, Math.min(reason.length(), 30));
+                    reason = reason.substring(0, Math.min(reason.length(), MAX_CLOSE_REASON_LENGTH));
                     session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
                 } catch (Throwable x) {
                     logger.trace("Could not close websocket session " + session, x);
@@ -225,12 +225,12 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
             CookieStore cookieStore = getCookieStore();
             List<HttpCookie> cookies = cookieStore.get(URI.create(getURL()));
             if (!cookies.isEmpty()) {
-                List<String> cookieHeader = headers.get("Cookie");
+                List<String> cookieHeader = headers.get(COOKIE_HEADER);
                 if (cookieHeader == null) {
-                    cookieHeader = headers.get("cookie");
+                    cookieHeader = headers.get(COOKIE_HEADER);
                 }
                 if (cookieHeader == null) {
-                    headers.put("Cookie", cookieHeader = new ArrayList<>());
+                    headers.put(COOKIE_HEADER, cookieHeader = new ArrayList<>());
                 }
                 for (HttpCookie cookie : cookies) {
                     cookieHeader.add(cookie.getName() + "=" + cookie.getValue());

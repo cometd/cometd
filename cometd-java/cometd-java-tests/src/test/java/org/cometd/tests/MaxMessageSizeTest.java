@@ -15,12 +15,6 @@
  */
 package org.cometd.tests;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
@@ -28,6 +22,12 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class MaxMessageSizeTest extends AbstractClientServerTest {
     public MaxMessageSizeTest(Transport transport) {
@@ -67,6 +67,10 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
 
     @Test
     public void testClientMaxMessageSize() throws Exception {
+        // OkHttp has no way to override the max message size
+        if (transport == Transport.OKHTTP_WEBSOCKET) {
+            return;
+        }
         startServer(serverOptions());
 
         int maxMessageSize = 512;
