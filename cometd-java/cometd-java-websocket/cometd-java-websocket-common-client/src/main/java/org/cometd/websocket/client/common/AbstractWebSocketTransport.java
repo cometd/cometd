@@ -47,6 +47,11 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     public final static String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public final static String STICKY_RECONNECT_OPTION = "stickyReconnect";
 
+    public static final int MAX_CLOSE_REASON_LENGTH = 30;
+    public static final int NORMAL_CLOSE_CODE = 1000;
+
+    protected static final String COOKIE_HEADER = "Cookie";
+
     private ScheduledExecutorService _scheduler;
     private String _protocol;
     private long _connectTimeout;

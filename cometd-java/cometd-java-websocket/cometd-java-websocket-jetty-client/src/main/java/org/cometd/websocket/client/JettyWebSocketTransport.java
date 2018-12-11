@@ -201,7 +201,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
                 if (logger.isDebugEnabled()) {
                     logger.debug("Closing websocket session {}", session);
                 }
-                session.close(1000, reason);
+                session.close(NORMAL_CLOSE_CODE, reason);
             }
         }
 
