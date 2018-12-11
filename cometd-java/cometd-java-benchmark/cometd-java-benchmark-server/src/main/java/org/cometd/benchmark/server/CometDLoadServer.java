@@ -56,6 +56,7 @@ import org.cometd.server.transport.AsyncJSONTransport;
 import org.cometd.server.transport.JSONTransport;
 import org.cometd.websocket.server.JettyWebSocketTransport;
 import org.cometd.websocket.server.WebSocketTransport;
+import org.cometd.websocket.server.common.AbstractWebSocketEndPoint;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
@@ -182,10 +183,20 @@ public class CometDLoadServer {
         for (String token : transports.split(",")) {
             switch (token.trim()) {
                 case "jsrws":
-                    bayeuxServer.addTransport(new WebSocketTransport(bayeuxServer));
+                    bayeuxServer.addTransport(new WebSocketTransport(bayeuxServer) {
+                        @Override
+                        protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
+                            messageLatencyExtension.complete(messages);
+                        }
+                    });
                     break;
                 case "jettyws":
-                    bayeuxServer.addTransport(new JettyWebSocketTransport(bayeuxServer));
+                    bayeuxServer.addTransport(new JettyWebSocketTransport(bayeuxServer) {
+                        @Override
+                        protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
+                            messageLatencyExtension.complete(messages);
+                        }
+                    });
                     break;
                 case "http":
                     bayeuxServer.addTransport(new JSONTransport(bayeuxServer) {
@@ -373,16 +384,19 @@ public class CometDLoadServer {
                     }
 
                     if (server.statisticsHandler != null) {
-                        System.err.printf("Requests times (total/avg/max - stddev): %d/%d/%d ms - %d%n",
-                                server.statisticsHandler.getDispatchedTimeTotal(),
-                                ((Double)server.statisticsHandler.getDispatchedTimeMean()).longValue(),
-                                server.statisticsHandler.getDispatchedTimeMax(),
-                                ((Double)server.statisticsHandler.getDispatchedTimeStdDev()).longValue());
-                        System.err.printf("Requests (total/failed/max - rate): %d/%d/%d - %d requests/s%n",
-                                server.statisticsHandler.getDispatched(),
-                                server.statisticsHandler.getResponses4xx() + server.statisticsHandler.getResponses5xx(),
-                                server.statisticsHandler.getDispatchedActiveMax(),
-                                server.statisticsHandler.getStatsOnMs() == 0 ? -1 : server.statisticsHandler.getDispatched() * 1000L / server.statisticsHandler.getStatsOnMs());
+                        int dispatched = server.statisticsHandler.getDispatched();
+                        if (dispatched > 0) {
+                            System.err.printf("Requests times (total/avg/max - stddev): %d/%d/%d ms - %d%n",
+                                    server.statisticsHandler.getDispatchedTimeTotal(),
+                                    ((Double)server.statisticsHandler.getDispatchedTimeMean()).longValue(),
+                                    server.statisticsHandler.getDispatchedTimeMax(),
+                                    ((Double)server.statisticsHandler.getDispatchedTimeStdDev()).longValue());
+                            System.err.printf("Requests (total/failed/max - rate): %d/%d/%d - %d requests/s%n",
+                                    dispatched,
+                                    server.statisticsHandler.getResponses4xx() + server.statisticsHandler.getResponses5xx(),
+                                    server.statisticsHandler.getDispatchedActiveMax(),
+                                    server.statisticsHandler.getStatsOnMs() == 0 ? -1 : server.statisticsHandler.getDispatched() * 1000L / server.statisticsHandler.getStatsOnMs());
+                        }
                     }
 
                     server.messageLatencyExtension.print();
@@ -407,18 +421,15 @@ public class CometDLoadServer {
         public void exit(ServerSession remote, ServerMessage message) {
             remote.disconnect();
             // Cannot stop the server from a threadPool thread.
-            new Thread() {
-                @Override
-                public void run() {
-                    try {
-                        if (!server.interactive) {
-                            server.server.stop();
-                        }
-                    } catch (Throwable x) {
-                        _logger.trace("", x);
+            new Thread(() -> {
+                try {
+                    if (!server.interactive) {
+                        server.server.stop();
                     }
+                } catch (Throwable x) {
+                    _logger.trace("", x);
                 }
-            }.start();
+            }).start();
         }
     }
 
@@ -540,7 +551,7 @@ public class CometDLoadServer {
         }
     }
 
-    private static class MessageLatencyExtension extends BayeuxServer.Extension.Adapter implements MeasureConverter {
+    private static class MessageLatencyExtension implements BayeuxServer.Extension, MeasureConverter {
         private static final String SERVER_TIME_FIELD = "serverTime";
 
         private final Recorder latencies = new Recorder(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);

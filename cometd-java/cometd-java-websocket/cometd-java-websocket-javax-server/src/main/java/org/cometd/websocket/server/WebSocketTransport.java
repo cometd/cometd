@@ -32,8 +32,10 @@ import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.cometd.bayeux.server.BayeuxContext;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.websocket.server.common.AbstractBayeuxContext;
+import org.cometd.websocket.server.common.AbstractWebSocketEndPoint;
 import org.cometd.websocket.server.common.AbstractWebSocketTransport;
 
 public class WebSocketTransport extends AbstractWebSocketTransport {
@@ -96,7 +98,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     }
 
     protected Object newWebSocketEndPoint(BayeuxContext bayeuxContext) {
-        return new WebSocketEndPoint(this, bayeuxContext);
+        return new EndPoint(bayeuxContext);
     }
 
     private class WebSocketContext extends AbstractBayeuxContext {
@@ -217,6 +219,17 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
             bayeuxContext = null;
             // Use a sensible default in case getNegotiatedSubprotocol() is not invoked.
             protocolMatches = true;
+        }
+    }
+
+    private class EndPoint extends WebSocketEndPoint {
+        public EndPoint(BayeuxContext bayeuxContext) {
+            super(WebSocketTransport.this, bayeuxContext);
+        }
+
+        @Override
+        protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
+            WebSocketTransport.this.writeComplete(context, messages);
         }
     }
 }

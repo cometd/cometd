@@ -23,6 +23,7 @@ import java.util.Map;
 import javax.servlet.ServletContext;
 
 import org.cometd.bayeux.server.BayeuxContext;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.websocket.server.common.AbstractBayeuxContext;
 import org.cometd.websocket.server.common.AbstractWebSocketTransport;
@@ -107,7 +108,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
     }
 
     protected Object newWebSocketEndPoint(BayeuxContext bayeuxContext) {
-        return new JettyWebSocketEndPoint(this, bayeuxContext);
+        return new EndPoint(bayeuxContext);
     }
 
     protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response) {
@@ -131,6 +132,17 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
         @Override
         public Object getRequestAttribute(String name) {
             return attributes.get(name);
+        }
+    }
+
+    private class EndPoint extends JettyWebSocketEndPoint {
+        public EndPoint(BayeuxContext bayeuxContext) {
+            super(JettyWebSocketTransport.this, bayeuxContext);
+        }
+
+        @Override
+        protected void writeComplete(Context context, List<ServerMessage> messages) {
+            JettyWebSocketTransport.this.writeComplete(context, messages);
         }
     }
 }

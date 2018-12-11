@@ -265,55 +265,26 @@ public abstract class AbstractWebSocketEndPoint {
         }, promise::fail));
     }
 
-    protected void send(List<? extends ServerMessage> messages, int batchSize, Callback callback) {
-        if (messages.isEmpty()) {
-            callback.succeeded();
-            return;
-        }
-
-        int size = messages.size();
-        int batch = Math.min(batchSize, size);
-        // Assume 4 fields of 48 chars per message
-        int capacity = batch * 4 * 48;
-        StringBuilder builder = new StringBuilder(capacity);
-        builder.append("[");
-        if (batch == 1) {
-            // Common path.
-            ServerMessage serverMessage = messages.remove(0);
-            builder.append(toJSON(serverMessage));
-        } else {
-            boolean comma = false;
-            for (int b = 0; b < batch; ++b) {
-                ServerMessage serverMessage = messages.get(b);
-                if (comma) {
-                    builder.append(",");
-                }
-                comma = true;
-                builder.append(toJSON(serverMessage));
-            }
-            if (batch == size) {
-                messages.clear();
-            } else {
-                messages.subList(0, batch).clear();
-            }
-        }
-        builder.append("]");
-        send(_session, builder.toString(), callback);
-    }
-
     protected void flush(Context context, Promise<Void> promise) {
-        List<ServerMessage> messages = Collections.emptyList();
+        List<ServerMessage> msgs = Collections.emptyList();
         ServerSessionImpl session = context.session;
         if (context.sendQueue && session != null) {
-            messages = session.takeQueue(context.replies);
+            msgs = session.takeQueue(context.replies);
         }
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Flushing {}, replies={}, messages={}", session, context.replies, messages);
+            _logger.debug("Flushing {}, replies={}, messages={}", session, context.replies, msgs);
         }
-        boolean queued = flusher.queue(new Entry(context, messages, promise));
+        List<ServerMessage> messages = msgs;
+        boolean queued = flusher.queue(new Entry(context, messages, Promise.from(y -> {
+            promise.succeed(null);
+            writeComplete(context, messages);
+        }, promise::fail)));
         if (queued) {
             flusher.iterate();
         }
+    }
+
+    protected void writeComplete(Context context, List<ServerMessage> messages) {
     }
 
     private String toJSON(ServerMessage message) {
@@ -399,7 +370,11 @@ public abstract class AbstractWebSocketEndPoint {
 
     private class Flusher extends IteratingCallback {
         private final Queue<Entry> _entries = new ArrayDeque<>();
+        private State _state = State.IDLE;
+        private StringBuilder _buffer;
         private Entry _entry;
+        private int _messageIndex;
+        private int _replyIndex;
         private Throwable _failure;
 
         private boolean queue(Entry entry) {
@@ -419,62 +394,113 @@ public abstract class AbstractWebSocketEndPoint {
 
         @Override
         protected Action process() {
-            Entry entry;
-            synchronized (this) {
-                entry = this._entry = _entries.peek();
-            }
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("Processing {}", entry);
-            }
-
-            if (entry == null) {
-                return Action.IDLE;
-            }
-
-            List<ServerMessage.Mutable> replies = entry._context.replies;
-            List<ServerMessage> queue = entry._queue;
-            if (replies.size() > 0) {
-                ServerMessage.Mutable reply = replies.get(0);
-                if (Channel.META_HANDSHAKE.equals(reply.getChannel())) {
-                    if (_transport.allowMessageDeliveryDuringHandshake(_session) && !queue.isEmpty()) {
-                        reply.put("x-messages", queue.size());
+            while (true) {
+                switch (_state) {
+                    case IDLE: {
+                        _entry = _entries.poll();
+                        if (_logger.isDebugEnabled()) {
+                            _logger.debug("Processing {}", _entry);
+                        }
+                        if (_entry == null) {
+                            return Action.IDLE;
+                        }
+                        _state = State.HANDSHAKE;
+                        _buffer = new StringBuilder(256);
+                        break;
                     }
-                    _transport.getBayeux().freeze(reply);
-                    send(replies, 1, this);
-                    return Action.SCHEDULED;
+                    case HANDSHAKE: {
+                        _state = State.MESSAGES;
+                        List<ServerMessage.Mutable> replies = _entry._context.replies;
+                        if (!replies.isEmpty()) {
+                            ServerMessage.Mutable reply = replies.get(0);
+                            if (Channel.META_HANDSHAKE.equals(reply.getChannel())) {
+                                if (_logger.isDebugEnabled()) {
+                                    _logger.debug("Processing handshake reply {}", reply);
+                                }
+                                List<ServerMessage> queue = _entry._queue;
+                                if (_transport.allowMessageDeliveryDuringHandshake(_session) && !queue.isEmpty()) {
+                                    reply.put("x-messages", queue.size());
+                                }
+                                _transport.getBayeux().freeze(reply);
+                                _buffer.setLength(0);
+                                _buffer.append("[");
+                                _buffer.append(toJSON(reply));
+                                _buffer.append("]");
+                                ++_replyIndex;
+                                AbstractWebSocketEndPoint.this.send(_session, _buffer.toString(), this);
+                                return Action.SCHEDULED;
+                            }
+                        }
+                        break;
+                    }
+                    case MESSAGES: {
+                        List<ServerMessage> messages = _entry._queue;
+                        int size = messages.size();
+                        if (_messageIndex < size) {
+                            int batchSize = _transport.getMessagesPerFrame();
+                            batchSize = batchSize > 0 ? Math.min(batchSize, size) : size;
+                            if (_logger.isDebugEnabled()) {
+                                _logger.debug("Processing messages, batch size {}: {}", batchSize, messages);
+                            }
+                            _buffer.setLength(0);
+                            _buffer.append("[");
+                            boolean comma = false;
+                            int endIndex = Math.min(size, _messageIndex + batchSize);
+                            while (_messageIndex < endIndex) {
+                                ServerMessage message = messages.get(_messageIndex);
+                                if (comma) {
+                                    _buffer.append(",");
+                                }
+                                comma = true;
+                                _buffer.append(toJSON(message));
+                                ++_messageIndex;
+                            }
+                            _buffer.append("]");
+                            AbstractWebSocketEndPoint.this.send(_session, _buffer.toString(), this);
+                            return Action.SCHEDULED;
+                        }
+                        // Start the interval timeout after writing the
+                        // messages since they may take time to be written.
+                        _entry.scheduleExpiration();
+                        _state = State.REPLIES;
+                        break;
+                    }
+                    case REPLIES: {
+                        List<ServerMessage.Mutable> replies = _entry._context.replies;
+                        int size = replies.size();
+                        if (_replyIndex < size) {
+                            if (_logger.isDebugEnabled()) {
+                                _logger.debug("Processing replies {}", replies);
+                            }
+                            _buffer.setLength(0);
+                            _buffer.append("[");
+                            boolean comma = false;
+                            while (_replyIndex < size) {
+                                ServerMessage.Mutable reply = replies.get(_replyIndex);
+                                _transport.getBayeux().freeze(reply);
+                                if (comma) {
+                                    _buffer.append(",");
+                                }
+                                comma = true;
+                                _buffer.append(toJSON(reply));
+                                ++_replyIndex;
+                            }
+                            _buffer.append("]");
+                            AbstractWebSocketEndPoint.this.send(_session, _buffer.toString(), this);
+                            return Action.SCHEDULED;
+                        }
+                        _state = State.IDLE;
+                        _buffer = null;
+                        _entry = null;
+                        _messageIndex = 0;
+                        _replyIndex = 0;
+                        break;
+                    }
+                    default: {
+                        throw new IllegalStateException("Invalid state " + _state);
+                    }
                 }
             }
-
-            if (!queue.isEmpty()) {
-                // Under load, it is possible that we have many bayeux messages and
-                // that these would generate a large websocket message that the client
-                // could not handle, so we need to split the messages into batches.
-                int size = queue.size();
-                int messagesPerFrame = _transport.getMessagesPerFrame();
-                int batchSize = messagesPerFrame > 0 ? Math.min(messagesPerFrame, size) : size;
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Processing queue, batch size {}: {}", batchSize, queue);
-                }
-                send(queue, batchSize, this);
-                return Action.SCHEDULED;
-            }
-
-            synchronized (this) {
-                _entries.poll();
-            }
-
-            // Start the interval timeout after writing the
-            // messages since they may take time to be written.
-            entry.scheduleExpiration();
-
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("Processing replies {}", replies);
-            }
-            for (ServerMessage.Mutable reply : replies) {
-                _transport.getBayeux().freeze(reply);
-            }
-            send(replies, replies.size(), this);
-            return Action.SCHEDULED;
         }
 
         @Override
@@ -527,7 +553,11 @@ public abstract class AbstractWebSocketEndPoint {
         }
     }
 
-    protected static class Context {
+    private enum State {
+        IDLE, HANDSHAKE, MESSAGES, REPLIES
+    }
+
+    public static class Context {
         private final List<ServerMessage.Mutable> replies = new ArrayList<>();
         private final ServerSessionImpl session;
         private boolean sendQueue;

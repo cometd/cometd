@@ -792,7 +792,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
     }
 
-    protected static class Context {
+    public static class Context {
         protected final List<ServerMessage.Mutable> replies = new ArrayList<>();
         public final HttpServletRequest request;
         public final HttpServletResponse response;

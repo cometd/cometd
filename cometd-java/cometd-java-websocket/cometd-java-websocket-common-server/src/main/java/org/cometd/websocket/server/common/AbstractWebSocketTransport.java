@@ -84,4 +84,7 @@ public abstract class AbstractWebSocketTransport extends AbstractServerTransport
     protected String toJSON(ServerMessage message) {
         return super.toJSON(message);
     }
+
+    protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
+    }
 }

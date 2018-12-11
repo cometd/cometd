@@ -82,7 +82,7 @@ public class CometDLoadClient implements MeasureConverter {
     private final Random random = new Random();
     private final PlatformMonitor monitor = new PlatformMonitor();
     private final AtomicLong ids = new AtomicLong();
-    private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<LoadBayeuxClient>());
+    private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<>());
     private final ConcurrentMap<String, ChannelId> channelIds = new ConcurrentHashMap<>();
     private final ConcurrentMap<Integer, AtomicInteger> roomMap = new ConcurrentHashMap<>();
     private final AtomicLong start = new AtomicLong();
@@ -97,9 +97,9 @@ public class CometDLoadClient implements MeasureConverter {
     private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(8);
     private final MonitoringQueuedThreadPool threadPool = new MonitoringQueuedThreadPool(0);
-    private final WebSocketContainer webSocketContainer = ContainerProvider.getWebSocketContainer();
-    private final WebSocketClient webSocketClient = new WebSocketClient(new SslContextFactory(true));
     private HttpClient httpClient;
+    private WebSocketClient webSocketClient;
+    private WebSocketContainer webSocketContainer;
     private boolean interactive = true;
     private String host = "localhost";
     private int port = 8080;
@@ -320,15 +320,16 @@ public class CometDLoadClient implements MeasureConverter {
         httpClient.start();
         mbeanContainer.beanAdded(null, httpClient);
 
-        // Make sure the container is stopped when the HttpClient is stopped
-        httpClient.addBean(webSocketContainer, true);
-        mbeanContainer.beanAdded(null, webSocketContainer);
-
-        webSocketClient.setExecutor(threadPool);
+        webSocketClient = new WebSocketClient(httpClient);
         webSocketClient.getPolicy().setInputBufferSize(8 * 1024);
         webSocketClient.addBean(mbeanContainer);
         webSocketClient.start();
         mbeanContainer.beanAdded(null, webSocketClient);
+
+        webSocketContainer = ContainerProvider.getWebSocketContainer();
+        // Make sure the container is stopped when the HttpClient is stopped
+        httpClient.addBean(webSocketContainer, true);
+        mbeanContainer.beanAdded(null, webSocketContainer);
 
         HandshakeListener handshakeListener = new HandshakeListener(channel, rooms, roomsPerClient);
         DisconnectListener disconnectListener = new DisconnectListener();
@@ -617,7 +618,7 @@ public class CometDLoadClient implements MeasureConverter {
             message.put(START_FIELD, System.nanoTime());
             String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").format(System.currentTimeMillis());
             message.put(START_DATE_FIELD, startDate);
-            message.put(Config.ID_FIELD, String.valueOf(ids.incrementAndGet()) + channel);
+            message.put(Config.ID_FIELD, ids.incrementAndGet() + channel);
             ClientSessionChannel clientChannel = client.getChannel(getChannelId(channel + "/" + room));
             clientChannel.publish(message);
             clientChannel.release();
@@ -680,7 +681,7 @@ public class CometDLoadClient implements MeasureConverter {
         totLatency.addAndGet(latency);
     }
 
-    private boolean waitForMessages(long expected) throws InterruptedException {
+    private void waitForMessages(long expected) throws InterruptedException {
         long arrived = messages.get();
         long lastArrived = 0;
         int maxRetries = 20;
@@ -701,10 +702,8 @@ public class CometDLoadClient implements MeasureConverter {
         }
         if (arrived < expected) {
             System.err.printf("Interrupting wait for messages %d/%d%n", arrived, expected);
-            return false;
         } else {
             System.err.printf("All messages arrived %d/%d%n", arrived, expected);
-            return true;
         }
     }
 

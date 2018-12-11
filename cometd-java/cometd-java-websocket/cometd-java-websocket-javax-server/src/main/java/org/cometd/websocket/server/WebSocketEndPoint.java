@@ -15,6 +15,7 @@
  */
 package org.cometd.websocket.server;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import javax.websocket.CloseReason;
@@ -25,6 +26,7 @@ import javax.websocket.Session;
 
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.websocket.server.common.AbstractWebSocketEndPoint;
 import org.cometd.websocket.server.common.AbstractWebSocketTransport;
@@ -38,37 +40,7 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
     private volatile Session _wsSession;
 
     public WebSocketEndPoint(AbstractWebSocketTransport transport, BayeuxContext bayeuxContext) {
-        _delegate = new AbstractWebSocketEndPoint(transport, bayeuxContext) {
-            @Override
-            protected void send(ServerSession session, String data, Callback callback) {
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Sending {}", data);
-                }
-                // Async write.
-                _wsSession.getAsyncRemote().sendText(data, result -> {
-                    Throwable failure = result.getException();
-                    if (failure == null) {
-                        callback.succeeded();
-                    } else {
-                        callback.failed(failure);
-                    }
-                });
-            }
-
-            @Override
-            public void close(final int code, String reason) {
-                try {
-                    // Limits of the WebSocket APIs, otherwise an exception is thrown.
-                    reason = reason.substring(0, Math.min(reason.length(), 30));
-                    if (_logger.isDebugEnabled()) {
-                        _logger.debug("Closing {}/{}", code, reason);
-                    }
-                    _wsSession.close(new CloseReason(CloseReason.CloseCodes.getCloseCode(code), reason));
-                } catch (Throwable x) {
-                    _logger.trace("Could not close WebSocket session " + _wsSession, x);
-                }
-            }
-        };
+        _delegate = new Delegate(transport, bayeuxContext);
     }
 
     @Override
@@ -109,5 +81,49 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
     @Override
     public void onError(Session wsSession, Throwable failure) {
         _delegate.onError(failure);
+    }
+
+    protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
+    }
+
+    private class Delegate extends AbstractWebSocketEndPoint {
+        public Delegate(AbstractWebSocketTransport transport, BayeuxContext bayeuxContext) {
+            super(transport, bayeuxContext);
+        }
+
+        @Override
+        protected void send(ServerSession session, String data, Callback callback) {
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Sending {}", data);
+            }
+            // Async write.
+            _wsSession.getAsyncRemote().sendText(data, result -> {
+                Throwable failure = result.getException();
+                if (failure == null) {
+                    callback.succeeded();
+                } else {
+                    callback.failed(failure);
+                }
+            });
+        }
+
+        @Override
+        public void close(final int code, String reason) {
+            try {
+                // Limits of the WebSocket APIs, otherwise an exception is thrown.
+                reason = reason.substring(0, Math.min(reason.length(), 30));
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Closing {}/{}", code, reason);
+                }
+                _wsSession.close(new CloseReason(CloseReason.CloseCodes.getCloseCode(code), reason));
+            } catch (Throwable x) {
+                _logger.trace("Could not close WebSocket session " + _wsSession, x);
+            }
+        }
+
+        @Override
+        protected void writeComplete(Context context, List<ServerMessage> messages) {
+            WebSocketEndPoint.this.writeComplete(context, messages);
+        }
     }
 }
