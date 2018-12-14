@@ -1091,6 +1091,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure) {
     }
 
+    @Override
+    public String toString() {
+        return String.format("%s@%x[%s][%s]", getClass().getSimpleName(), hashCode(), getId(), sessionState);
+    }
+
     /**
      * The states that a BayeuxClient may assume
      */
@@ -1650,6 +1655,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                     }
                 }
             });
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), state);
         }
     }
 
