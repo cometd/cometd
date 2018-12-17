@@ -148,8 +148,8 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                 // Start the interval timeout after writing the messages
                 // since they may take time to be written, even in case
                 // of exceptions to make sure the session can be swept.
-                if (scheduleExpiration && session != null && (session.isHandshook() || session.isConnected())) {
-                    session.scheduleExpiration(getInterval());
+                if (scheduleExpiration) {
+                    scheduleExpiration(session);
                 }
             }
 
@@ -169,15 +169,11 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
 
             endWrite(response, output);
             writeComplete(request, response, session, messages, replies);
-        } catch (Exception x) {
+        } catch (Throwable x) {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Failure writing messages", x);
             }
-            AsyncContext asyncContext = null;
-            if (request.isAsyncStarted()) {
-                asyncContext = request.getAsyncContext();
-            }
-            error(request, response, asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            error(request, response, getAsyncContext(request), HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 

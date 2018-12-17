@@ -202,7 +202,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 // because the connection may have been closed for a reload, so
                 // just null out the current session to have it retrieved again
                 _session = null;
-                session.scheduleExpiration(getInterval());
+                scheduleExpiration(session);
                 cancelMetaConnectTask(session);
             }
             if (_logger.isDebugEnabled()) {
@@ -657,9 +657,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
             private void scheduleExpiration() {
                 if (_scheduleExpiration) {
-                    if (_session != null) {
-                        _session.scheduleExpiration(getInterval());
-                    }
+                    AbstractWebSocketTransport.this.scheduleExpiration(_session);
                 }
             }
 

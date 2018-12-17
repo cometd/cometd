@@ -76,8 +76,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
 
     @Override
     protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
-        AsyncContext asyncContext = request.getAsyncContext();
-        return newHttpScheduler(request, response, asyncContext, session, reply, timeout);
+        return newHttpScheduler(request, response, getAsyncContext(request), session, reply, timeout);
     }
 
     protected HttpScheduler newHttpScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
@@ -86,7 +85,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
 
     @Override
     protected void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies) {
-        AsyncContext asyncContext = request.getAsyncContext();
+        AsyncContext asyncContext = getAsyncContext(request);
         try {
             // Always write asynchronously
             response.setContentType("application/json;charset=UTF-8");
@@ -95,6 +94,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         } catch (Exception x) {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Exception while writing messages", x);
+            }
+            if (scheduleExpiration) {
+                scheduleExpiration(session);
             }
             error(request, response, asyncContext, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
@@ -314,7 +316,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                         break;
                     }
                     case COMPLETE: {
-                        asyncContext.complete();
+                        if (asyncContext != null) {
+                            asyncContext.complete();
+                        }
                         writeComplete(request, response, session, messages, replies);
                         return;
                     }
@@ -377,8 +381,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         }
 
         private void startExpiration() {
-            if (scheduleExpiration && session != null && (session.isHandshook() || session.isConnected())) {
-                session.scheduleExpiration(getInterval());
+            if (scheduleExpiration) {
+                scheduleExpiration(session);
             }
         }
 

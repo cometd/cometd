@@ -473,6 +473,17 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
     }
 
+    protected AsyncContext getAsyncContext(HttpServletRequest request) {
+        try {
+            return request.getAsyncContext();
+        } catch (Throwable x) {
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Could not retrieve AsyncContext for " + request, x);
+            }
+            return null;
+        }
+    }
+
     protected void error(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, int responseCode) {
         try {
             response.setStatus(responseCode);

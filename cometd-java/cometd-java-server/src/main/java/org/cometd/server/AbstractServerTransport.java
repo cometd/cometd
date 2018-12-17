@@ -270,6 +270,12 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         return session != null && session.isAllowMessageDeliveryDuringHandshake();
     }
 
+    protected void scheduleExpiration(ServerSessionImpl session) {
+        if (session != null) {
+            session.scheduleExpiration(getInterval());
+        }
+    }
+
     @Override
     public String dump() {
         return ContainerLifeCycle.dump(this);
