@@ -30,7 +30,7 @@ public class DuplicateHandshakeTest extends ClientServerTest {
         options.put("timeout", String.valueOf(timeout));
         options.put("maxInterval", String.valueOf(timeout));
         options.put("sweepPeriod", String.valueOf(sweepPeriod));
-        startServer(options);
+        start(options);
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();

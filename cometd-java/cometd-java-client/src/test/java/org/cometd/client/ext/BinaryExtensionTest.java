@@ -37,7 +37,7 @@ import org.junit.Test;
 public class BinaryExtensionTest extends ClientServerTest {
     @Before
     public void prepare() throws Exception {
-        startServer(null);
+        start(null);
         bayeux.addExtension(new org.cometd.server.ext.BinaryExtension());
     }
 

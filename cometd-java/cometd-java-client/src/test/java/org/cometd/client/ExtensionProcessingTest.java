@@ -41,7 +41,7 @@ import org.junit.Test;
 public class ExtensionProcessingTest extends ClientServerTest {
     @Test
     public void testServerExtensionProcessing() throws Exception {
-        startServer(null);
+        start(null);
         bayeux.addExtension(new org.cometd.server.ext.BinaryExtension());
         bayeux.addExtension(new GZIPServerExtension());
 
@@ -56,7 +56,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
 
     @Test
     public void testServerSessionExtensionProcessing() throws Exception {
-        startServer(null);
+        start(null);
         bayeux.addExtension(new org.cometd.server.ext.BinaryExtension());
         bayeux.addExtension(new BayeuxServer.Extension() {
             @Override

@@ -15,6 +15,10 @@
  */
 package org.cometd.client;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.net.HttpCookie;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
@@ -31,14 +35,10 @@ import org.cometd.server.AbstractService;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 public class CookiesTest extends ClientServerTest {
     @Before
     public void init() throws Exception {
-        startServer(null);
+        start(null);
     }
 
     @Test

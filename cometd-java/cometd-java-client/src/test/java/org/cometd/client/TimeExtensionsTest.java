@@ -33,7 +33,7 @@ import org.junit.Test;
 public class TimeExtensionsTest extends ClientServerTest {
     @Before
     public void setUp() throws Exception {
-        startServer(null);
+        start(null);
     }
 
     @Test

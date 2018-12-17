@@ -40,7 +40,7 @@ public class JacksonContextTest extends ClientServerTest {
     public void testAllMessagesUseJackson() throws Exception {
         Map<String, String> serverParams = new HashMap<>();
         serverParams.put(AbstractServerTransport.JSON_CONTEXT_OPTION, JacksonJSONContextServer.class.getName());
-        startServer(serverParams);
+        start(serverParams);
 
         Map<String, Object> clientParams = new HashMap<>();
         clientParams.put(ClientTransport.JSON_CONTEXT_OPTION, JacksonJSONContextClient.class.getName());

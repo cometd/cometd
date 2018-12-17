@@ -68,7 +68,7 @@ import org.junit.Test;
 public class BayeuxClientTest extends ClientServerTest {
     @Before
     public void setUp() throws Exception {
-        startServer(null);
+        start(null);
     }
 
     @Test
@@ -682,7 +682,7 @@ public class BayeuxClientTest extends ClientServerTest {
         long timeout = 5000;
         Map<String, String> serverParams = new HashMap<>();
         serverParams.put("timeout", String.valueOf(timeout));
-        startServer(serverParams);
+        start(serverParams);
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
@@ -860,7 +860,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
     @Test
     public void testHandshakeOverHTTPReportsHTTPFailure() throws Exception {
-        startServer(null);
+        start(null);
         // No transports on server, to make the client fail
         bayeux.setAllowedTransports();
 
@@ -890,7 +890,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
     @Test
     public void testCustomTransportURL() throws Exception {
-        startServer(null);
+        start(null);
 
         LongPollingTransport transport = new LongPollingTransport(cometdURL, null, httpClient);
         // Pass a bogus URL that must not be used
@@ -904,7 +904,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
     @Test
     public void testDeliver() throws Exception {
-        startServer(null);
+        start(null);
 
         BayeuxClient client = newBayeuxClient();
 
@@ -938,7 +938,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
     @Test
     public void testMaxMessageSizeExceededViaMetaConnect() throws Exception {
-        startServer(null);
+        start(null);
 
         Map<String, Object> options = new HashMap<>();
         int maxMessageSize = 1024;
@@ -978,7 +978,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
     @Test
     public void testMaxMessageSizeExceededViaPublish() throws Exception {
-        startServer(null);
+        start(null);
 
         Map<String, Object> options = new HashMap<>();
         int maxMessageSize = 1024;

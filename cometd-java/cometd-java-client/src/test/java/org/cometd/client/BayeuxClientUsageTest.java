@@ -71,7 +71,7 @@ public class BayeuxClientUsageTest extends ClientServerTest {
 
     @Test
     public void testClientWithSelectConnector() throws Exception {
-        startServer(null);
+        start(null);
         testClient(newBayeuxClient());
     }
 
@@ -79,7 +79,7 @@ public class BayeuxClientUsageTest extends ClientServerTest {
     public void testClientWithJackson() throws Exception {
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, jacksonContextServerClassName);
-        startServer(serverOptions);
+        start(serverOptions);
 
         Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put(ClientTransport.JSON_CONTEXT_OPTION, jacksonContextClientClassName);
@@ -90,7 +90,7 @@ public class BayeuxClientUsageTest extends ClientServerTest {
 
     @Test
     public void testClientWithProxy() throws Exception {
-        startServer(null);
+        start(null);
 
         Server proxy = new Server();
         ServerConnector proxyConnector = new ServerConnector(proxy);
@@ -108,7 +108,7 @@ public class BayeuxClientUsageTest extends ClientServerTest {
 
     @Test
     public void testClientWithProxyTunnel() throws Exception {
-        startServer(null);
+        start(null);
 
         SslContextFactory sslContextFactory = new SslContextFactory();
         File keyStoreFile = new File("src/test/resources/keystore.p12");

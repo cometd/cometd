@@ -42,7 +42,7 @@ public class ServerSessionExpirationTest extends ClientServerTest {
         serverOptions.put("timeout", String.valueOf(timeout));
         long maxInterval = 4000;
         serverOptions.put("maxInterval", String.valueOf(maxInterval));
-        startServer(serverOptions);
+        start(serverOptions);
 
         long backOffIncrement = 3000;
         final AtomicBoolean networkDown = new AtomicBoolean();
@@ -108,7 +108,7 @@ public class ServerSessionExpirationTest extends ClientServerTest {
         serverOptions.put("timeout", String.valueOf(timeout));
         long maxInterval = 4000;
         serverOptions.put("maxInterval", String.valueOf(maxInterval));
-        startServer(serverOptions);
+        start(serverOptions);
 
         long backOffIncrement = 3000;
         final AtomicBoolean networkDown = new AtomicBoolean();

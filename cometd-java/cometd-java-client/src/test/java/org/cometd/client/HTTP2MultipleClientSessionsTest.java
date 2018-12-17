@@ -15,32 +15,21 @@
  */
 package org.cometd.client;
 
-import java.io.IOException;
 import java.net.HttpCookie;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.transport.AbstractHttpTransport;
-import org.cometd.server.transport.AsyncJSONTransport;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class HTTP2MultipleClientSessionsTest extends ClientServerTest {
+public class HTTP2MultipleClientSessionsTest extends HTTP2ClientServerTest {
     @Test
     public void testMultipleClientSession_WithOneMaxSessionPerBrowser_WithMultiSessionInterval() throws Exception {
         long timeout = 7000;
@@ -49,25 +38,7 @@ public class HTTP2MultipleClientSessionsTest extends ClientServerTest {
         options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
         options.put(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, "1");
         options.put(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, String.valueOf(multiSessionInterval));
-        startServer(options);
-        AsyncJSONTransport transport = new AsyncJSONTransport(bayeux) {
-            @Override
-            public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-                // Just before handling the request, fake that it's HTTP/2.0.
-                ((Request)request).setHttpVersion(HttpVersion.HTTP_2);
-                super.handle(request, response);
-            }
-
-            @Override
-            protected void write(Context context, List<ServerMessage> messages, Promise<Void> promise) {
-                // Just before writing the response, fake back that the request is HTTP/1.1,
-                // otherwise the HTTP/1.1 generator does not generate the correct response.
-                ((Request)context.request).setHttpVersion(HttpVersion.HTTP_1_1);
-                super.write(context, messages, promise);
-            }
-        };
-        transport.init();
-        bayeux.setTransports(transport);
+        start(options);
 
         BayeuxClient client1 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();

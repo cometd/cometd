@@ -30,7 +30,7 @@ import org.junit.Test;
 public class SubscriptionTest extends ClientServerTest {
     @Test
     public void testSubscriptionToMetaChannelFails() throws Exception {
-        startServer(null);
+        start(null);
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
@@ -54,7 +54,7 @@ public class SubscriptionTest extends ClientServerTest {
 
     @Test
     public void testSubscriptionToServiceChannelIsANoOperation() throws Exception {
-        startServer(null);
+        start(null);
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
@@ -92,7 +92,7 @@ public class SubscriptionTest extends ClientServerTest {
 
     @Test
     public void testSubscriptionUnsubscriptionToSameChannelSentOnlyOnce() throws Exception {
-        startServer(null);
+        start(null);
 
         AtomicReference<CountDownLatch> subscribeLatch = new AtomicReference<>(new CountDownLatch(1));
         bayeux.getChannel(Channel.META_SUBSCRIBE).addListener(new ServerChannel.MessageListener() {

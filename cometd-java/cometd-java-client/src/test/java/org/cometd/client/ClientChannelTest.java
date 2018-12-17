@@ -22,7 +22,7 @@ import org.junit.Test;
 public class ClientChannelTest extends ClientServerTest {
     @Test
     public void testSameChannelWithTrailingSlash() throws Exception {
-        startServer(null);
+        start(null);
 
         BayeuxClient client = newBayeuxClient();
 

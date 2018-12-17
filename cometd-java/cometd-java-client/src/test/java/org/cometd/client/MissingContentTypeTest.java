@@ -24,7 +24,7 @@ import org.junit.Test;
 public class MissingContentTypeTest extends ClientServerTest {
     @Test
     public void testMissingContentType() throws Exception {
-        startServer(null);
+        start(null);
 
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient) {
             @Override

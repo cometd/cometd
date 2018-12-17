@@ -32,7 +32,7 @@ import org.junit.Test;
 public class DeliverWithTimeStampExtensionTest extends ClientServerTest {
     @Test
     public void testDeliverWithTimeStampExtension() throws Exception {
-        startServer(null);
+        start(null);
         bayeux.addExtension(new TimestampExtension());
 
         final String channelName = "/service/test";

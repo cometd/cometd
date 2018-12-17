@@ -46,7 +46,7 @@ public class ActivityExtensionTest extends ClientServerTest {
         timeout = 1000;
         Map<String, String> options = new HashMap<>();
         options.put("timeout", String.valueOf(timeout));
-        startServer(options);
+        start(options);
         bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer.Persistent());
         scheduler = Executors.newSingleThreadScheduledExecutor();
     }

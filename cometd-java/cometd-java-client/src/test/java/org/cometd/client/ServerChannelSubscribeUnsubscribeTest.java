@@ -35,7 +35,7 @@ import org.junit.Test;
 public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest {
     @Before
     public void init() throws Exception {
-        startServer(null);
+        start(null);
     }
 
     @Test

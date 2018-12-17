@@ -30,7 +30,7 @@ import org.junit.Test;
 public class PublishDoesNotLeakClientIdTest extends ClientServerTest {
     @Before
     public void init() throws Exception {
-        startServer(null);
+        start(null);
     }
 
     @Test

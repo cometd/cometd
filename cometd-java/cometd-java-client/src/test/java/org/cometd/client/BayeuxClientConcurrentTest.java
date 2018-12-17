@@ -34,7 +34,7 @@ import org.junit.Test;
 public class BayeuxClientConcurrentTest extends ClientServerTest {
     @Before
     public void startServer() throws Exception {
-        startServer(null);
+        start(null);
     }
 
     @Test

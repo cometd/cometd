@@ -15,6 +15,9 @@
  */
 package org.cometd.client;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -31,13 +34,10 @@ import org.cometd.server.DefaultSecurityPolicy;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
     @Before
     public void init() throws Exception {
-        startServer(null);
+        start(null);
         bayeux.setSecurityPolicy(new Policy());
     }
 

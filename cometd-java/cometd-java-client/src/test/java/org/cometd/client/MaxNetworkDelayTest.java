@@ -15,6 +15,8 @@
  */
 package org.cometd.client;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +36,6 @@ import org.cometd.client.transport.LongPollingTransport;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
-
 public class MaxNetworkDelayTest extends ClientServerTest {
     private final long timeout = 5000;
 
@@ -43,7 +43,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
     public void setUp() throws Exception {
         Map<String, String> params = new HashMap<>();
         params.put("timeout", String.valueOf(timeout));
-        startServer(params);
+        start(params);
     }
 
     @Test

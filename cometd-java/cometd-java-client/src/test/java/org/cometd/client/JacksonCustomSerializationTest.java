@@ -44,7 +44,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
         Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put(ClientTransport.JSON_CONTEXT_OPTION, TestJacksonJSONContextClient.class.getName());
 
-        startServer(serverOptions);
+        start(serverOptions);
 
         String channelName = "/data";
         final String dataContent = "random";

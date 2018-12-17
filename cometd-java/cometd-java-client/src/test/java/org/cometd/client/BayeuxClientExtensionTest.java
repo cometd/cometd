@@ -39,7 +39,7 @@ import org.junit.Test;
 public class BayeuxClientExtensionTest extends ClientServerTest {
     @Before
     public void init() throws Exception {
-        startServer(null);
+        start(null);
     }
 
     @Test

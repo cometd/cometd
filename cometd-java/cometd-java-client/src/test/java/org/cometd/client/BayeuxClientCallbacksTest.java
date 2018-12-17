@@ -15,6 +15,8 @@
  */
 package org.cometd.client;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -39,12 +41,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
-
 public class BayeuxClientCallbacksTest extends ClientServerTest {
     @Before
     public void init() throws Exception {
-        startServer(null);
+        start(null);
     }
 
     @Test

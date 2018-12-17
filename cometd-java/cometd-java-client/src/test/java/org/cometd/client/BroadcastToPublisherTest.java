@@ -43,7 +43,7 @@ public class BroadcastToPublisherTest extends ClientServerTest {
     private void testBroadcastToPublisher(boolean broadcast) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put(BayeuxServerImpl.BROADCAST_TO_PUBLISHER_OPTION, String.valueOf(broadcast));
-        startServer(options);
+        start(options);
 
         final String channelName = "/own";
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
@@ -66,7 +66,7 @@ public class BroadcastToPublisherTest extends ClientServerTest {
 
     @Test
     public void testDontBroadcastToPublisherWithLocalSessionConfigured() throws Exception {
-        startServer(null);
+        start(null);
 
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override

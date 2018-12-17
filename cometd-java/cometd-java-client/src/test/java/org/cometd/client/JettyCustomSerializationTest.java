@@ -47,7 +47,7 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put(ClientTransport.JSON_CONTEXT_OPTION, new TestJettyJSONContextClient());
 
-        startServer(serverOptions);
+        start(serverOptions);
 
         String broadcastChannelName = "/data";
         final String serviceChannelName = "/service/data";

@@ -26,7 +26,7 @@ import org.junit.Test;
 public class ChannelReleaseTest extends ClientServerTest {
     @Test
     public void testChannelReleased() throws Exception {
-        startServer(null);
+        start(null);
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
@@ -50,7 +50,7 @@ public class ChannelReleaseTest extends ClientServerTest {
 
     @Test
     public void testChannelWithListenersNotReleased() throws Exception {
-        startServer(null);
+        start(null);
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
@@ -76,7 +76,7 @@ public class ChannelReleaseTest extends ClientServerTest {
 
     @Test
     public void testChannelWithSubscriberNotReleased() throws Exception {
-        startServer(null);
+        start(null);
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
@@ -106,7 +106,7 @@ public class ChannelReleaseTest extends ClientServerTest {
 
     @Test
     public void testChannelWithListenerRemovedIsReleased() throws Exception {
-        startServer(null);
+        start(null);
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
@@ -135,7 +135,7 @@ public class ChannelReleaseTest extends ClientServerTest {
 
     @Test
     public void testChannelWithSubscriberRemovedIsReleased() throws Exception {
-        startServer(null);
+        start(null);
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
@@ -171,7 +171,7 @@ public class ChannelReleaseTest extends ClientServerTest {
 
     @Test
     public void testReleasedChannelCannotOperate() throws Exception {
-        startServer(null);
+        start(null);
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();

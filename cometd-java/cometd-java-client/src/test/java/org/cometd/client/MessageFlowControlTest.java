@@ -39,7 +39,7 @@ import org.junit.Test;
 public class MessageFlowControlTest extends ClientServerTest {
     @Test
     public void testMessageFlowControlWithDeQueueListener() throws Exception {
-        startServer(null);
+        start(null);
         testMessageFlowControlWithDeQueueListener(false, -1);
     }
 
@@ -48,7 +48,7 @@ public class MessageFlowControlTest extends ClientServerTest {
         Map<String, String> initParams = new HashMap<>();
         long maxLazyTimeout = 1000;
         initParams.put("maxLazyTimeout", String.valueOf(maxLazyTimeout));
-        startServer(initParams);
+        start(initParams);
         testMessageFlowControlWithDeQueueListener(true, maxLazyTimeout);
     }
 

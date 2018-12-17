@@ -36,7 +36,7 @@ public class BackoffTest extends ClientServerTest {
 
     @Test
     public void testBackoffAfterReconnect() throws Exception {
-        startServer(null);
+        start(null);
 
         final AtomicBoolean serverMetaConnect = new AtomicBoolean(true);
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {

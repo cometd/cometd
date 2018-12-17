@@ -27,7 +27,7 @@ import org.junit.Test;
 public class ServerSessionExtensionTest extends ClientServerTest {
     @Test
     public void testServerSessionExtensionDeletingMessage() throws Exception {
-        startServer(null);
+        start(null);
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();

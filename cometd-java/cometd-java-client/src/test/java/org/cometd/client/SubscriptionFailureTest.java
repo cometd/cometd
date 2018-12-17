@@ -39,7 +39,7 @@ import org.junit.Test;
 public class SubscriptionFailureTest extends ClientServerTest {
     @Test
     public void testSubscriptionFailedOnClientRemovesListener() throws Exception {
-        startServer(null);
+        start(null);
 
         long maxNetworkDelay = 2000;
         final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
@@ -85,7 +85,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
 
     @Test
     public void testSubscriptionFailedOnServerRemovesListener() throws Exception {
-        startServer(null);
+        start(null);
 
         String channelName = "/echo";
         bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH));
@@ -118,7 +118,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
 
     @Test
     public void testFailedSubscriptionDecrementsSubscriptionCount() throws Exception {
-        startServer(null);
+        start(null);
 
         final String channelName = "/count";
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {

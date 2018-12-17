@@ -42,7 +42,7 @@ import org.junit.Test;
 public class HandshakeWithAuthenticationTest extends ClientServerTest {
     @Test
     public void testHandshakeWithBasicAuthenticationHeaders() throws Exception {
-        startServer(null);
+        start(null);
         int port = connector.getLocalPort();
         server.stop();
 
