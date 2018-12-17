@@ -22,8 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -34,6 +36,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
+import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.server.Server;
@@ -915,5 +918,53 @@ public class OortObserveCometTest extends OortTest {
         Arrays.fill(clob, 'z');
         clientA.getChannel(channelName).publish(new String(clob));
         Assert.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testHandshakeReplyFailureDoesNotDisconnectOortComet() throws Exception {
+        Server serverA = startServer(0);
+        Oort oortA = startOort(serverA);
+        Server serverB = startServer(0);
+        final long maxNetworkDelay = 1000;
+        BayeuxServer bayeuxServerB = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeuxServerB.addExtension(new BayeuxServer.Extension.Adapter() {
+            private final AtomicInteger replies = new AtomicInteger();
+
+            @Override
+            public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
+                if (session != null && !session.isLocalSession() &&
+                        Channel.META_HANDSHAKE.equals(message.getChannel()) &&
+                        message.containsKey(Message.SUCCESSFUL_FIELD)) {
+                    if (replies.incrementAndGet() == 1) {
+                        // Delay the reply so the client thinks it has been lost.
+                        sleep(2 * maxNetworkDelay);
+                    }
+                }
+                return true;
+            }
+        });
+        Oort oortB = startOort(serverB);
+
+        OortComet oortCometAB = oortA.createOortComet(oortB.getURL());
+        oortCometAB.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
+        oortA.connectComet(oortCometAB);
+
+        Thread.sleep(2 * maxNetworkDelay);
+
+        Assert.assertFalse(oortCometAB.isDisconnected());
+        // TODO: add additional checks to verify that the state of the OortComets is correct.
+        //  For example, the CCI must not be present.
+        //  Also, verify that B does not generate a comet left event!
+    }
+
+    // TODO: add test for failure of the JOIN message.
+
+    private void sleep(long time) {
+        try {
+            Thread.sleep(time);
+        } catch (InterruptedException x) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(x);
+        }
     }
 }
