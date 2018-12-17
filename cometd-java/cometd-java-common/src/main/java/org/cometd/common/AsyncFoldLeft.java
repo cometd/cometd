@@ -131,11 +131,12 @@ public class AsyncFoldLeft {
     }
 
     private enum State {
-        IDLE, ASYNC, PROCEED, LEAVE
+        LOOP, ASYNC, PROCEED, LEAVE, FAIL
     }
 
     private static class LoopImpl<T, R> implements Loop<R> {
-        private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
+        private final AtomicReference<State> state = new AtomicReference<>(State.LOOP);
+        private final AtomicReference<Throwable> failure = new AtomicReference<>();
         private final List<T> list;
         private final AtomicReference<R> result;
         private final Operation<T, R> operation;
@@ -150,16 +151,14 @@ public class AsyncFoldLeft {
         }
 
         private void run() {
-            iteration:
             while (index < list.size()) {
-                state.set(State.IDLE);
+                state.set(State.LOOP);
                 operation.apply(result.get(), list.get(index), this);
-
                 loop:
                 while (true) {
                     State current = state.get();
                     switch (current) {
-                        case IDLE:
+                        case LOOP:
                             if (state.compareAndSet(current, State.ASYNC)) {
                                 return;
                             }
@@ -168,7 +167,11 @@ public class AsyncFoldLeft {
                             ++index;
                             break loop;
                         case LEAVE:
-                            break iteration;
+                            promise.succeed(result.get());
+                            return;
+                        case FAIL:
+                            promise.fail(failure.get());
+                            return;
                         default:
                             throw new IllegalStateException();
                     }
@@ -180,20 +183,19 @@ public class AsyncFoldLeft {
         @Override
         public void proceed(R r) {
             result.set(r);
-            loop:
             while (true) {
                 State current = state.get();
                 switch (current) {
-                    case IDLE:
+                    case LOOP:
                         if (state.compareAndSet(current, State.PROCEED)) {
-                            break loop;
+                            return;
                         }
                         break;
                     case ASYNC:
                         if (state.compareAndSet(current, State.PROCEED)) {
                             ++index;
                             run();
-                            break loop;
+                            return;
                         }
                         break;
                     default:
@@ -205,14 +207,13 @@ public class AsyncFoldLeft {
         @Override
         public void leave(R r) {
             result.set(r);
-            loop:
             while (true) {
                 State current = state.get();
                 switch (current) {
-                    case IDLE:
+                    case LOOP:
                     case ASYNC:
                         if (state.compareAndSet(current, State.LEAVE)) {
-                            break loop;
+                            return;
                         }
                         break;
                     default:
@@ -222,8 +223,25 @@ public class AsyncFoldLeft {
         }
 
         @Override
-        public void fail(Throwable failure) {
-            promise.fail(failure);
+        public void fail(Throwable x) {
+            failure.compareAndSet(null, x);
+            while (true) {
+                State current = state.get();
+                switch (current) {
+                    case LOOP:
+                        if (state.compareAndSet(current, State.FAIL)) {
+                            return;
+                        }
+                        break;
+                    case ASYNC:
+                        if (state.compareAndSet(current, State.FAIL)) {
+                            promise.fail(x);
+                            return;
+                        }
+                    default:
+                        throw new IllegalStateException();
+                }
+            }
         }
     }
 }
