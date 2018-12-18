@@ -1466,13 +1466,15 @@
             if (window.Worker && window.Blob && window.URL && _config.useWorkerScheduler) {
                 var code = WorkerScheduler.toString();
                 // Remove the function declaration and the opening brace.
-                code = code.replace(/^function\s+.+\{/, '');
+                code = code.replace(/^function\s+.+{/, '');
                 // Remove the function's closing brace.
-                code = code.replace(/\}\s*$/, '');
+                code = code.replace(/}\s*$/, '');
                 var blob = new window.Blob([code], {
                     type: 'application/json'
                 });
-                var worker = new window.Worker(window.URL.createObjectURL(blob));
+                var blobURL = window.URL.createObjectURL(blob);
+                var worker = new window.Worker(blobURL);
+                window.URL.revokeObjectURL(blobURL);
                 _scheduler.setTimeout = function(funktion, delay) {
                     var id = _scheduler.register(funktion);
                     worker.postMessage({
