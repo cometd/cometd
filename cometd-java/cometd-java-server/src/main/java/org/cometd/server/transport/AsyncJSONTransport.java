@@ -145,6 +145,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Exception while writing messages", x);
             }
+            if (context.scheduleExpiration) {
+                scheduleExpiration(context.session);
+            }
             promise.fail(x);
         }
     }
@@ -395,9 +398,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         }
 
         private void startExpiration() {
-            ServerSessionImpl session = context.session;
-            if (context.scheduleExpiration && session != null && (session.isHandshook() || session.isConnected())) {
-                session.scheduleExpiration(getInterval());
+            if (context.scheduleExpiration) {
+                scheduleExpiration(context.session);
             }
         }
 

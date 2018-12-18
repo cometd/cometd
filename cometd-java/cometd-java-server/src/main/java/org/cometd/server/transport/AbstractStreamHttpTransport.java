@@ -185,8 +185,8 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                 // Start the interval timeout after writing the messages
                 // since they may take time to be written, even in case
                 // of exceptions to make sure the session can be swept.
-                if (context.scheduleExpiration && session != null && (session.isHandshook() || session.isConnected())) {
-                    session.scheduleExpiration(getInterval());
+                if (context.scheduleExpiration) {
+                    scheduleExpiration(session);
                 }
             }
 
@@ -241,7 +241,10 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             // there will be more mechanical sympathy.
             HttpServletRequest request = getContext().request;
             request.setAttribute(HEARTBEAT_TIMEOUT_ATTRIBUTE, timeout);
-            request.getAsyncContext().dispatch();
+            AsyncContext asyncContext = getAsyncContext(request);
+            if (asyncContext != null) {
+                asyncContext.dispatch();
+            }
         }
     }
 }

@@ -33,6 +33,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.RequestDispatcher;
@@ -499,6 +500,17 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         getBayeux().handle(context.session, message, promise);
     }
 
+    protected AsyncContext getAsyncContext(HttpServletRequest request) {
+        try {
+            return request.getAsyncContext();
+        } catch (Throwable x) {
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Could not retrieve AsyncContext for " + request, x);
+            }
+            return null;
+        }
+    }
+
     /**
      * Sweeps the transport for old Browser IDs
      */
@@ -700,7 +712,10 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             this.message = message;
             this.task = getBayeux().schedule(this, timeout);
             this.cancel = new AtomicBoolean();
-            context.request.getAsyncContext().addListener(this);
+            AsyncContext asyncContext = getAsyncContext(context.request);
+            if (asyncContext != null) {
+                asyncContext.addListener(this);
+            }
         }
 
         public Context getContext() {

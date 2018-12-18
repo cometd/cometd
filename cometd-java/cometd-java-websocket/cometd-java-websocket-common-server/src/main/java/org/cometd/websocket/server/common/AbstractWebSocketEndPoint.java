@@ -97,7 +97,7 @@ public abstract class AbstractWebSocketEndPoint {
             // just null out the current session to have it retrieved again.
             _session = null;
             session.setScheduler(null);
-            session.scheduleExpiration(_transport.getInterval());
+            _transport.scheduleExpiration(session);
         }
         _transport.onClose(code, reason);
     }
@@ -536,10 +536,7 @@ public abstract class AbstractWebSocketEndPoint {
 
         private void scheduleExpiration() {
             if (_context.scheduleExpiration) {
-                ServerSessionImpl session = _context.session;
-                if (session != null) {
-                    session.scheduleExpiration(_transport.getInterval());
-                }
+                _transport.scheduleExpiration(_context.session);
             }
         }
 

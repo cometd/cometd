@@ -130,10 +130,6 @@ public class OortComet extends BayeuxClient {
 
     @Override
     public String toString() {
-        return String.format("%s@%x[%s@%s]",
-                getClass().getSimpleName(),
-                System.identityHashCode(this),
-                _cometURL,
-                getId());
+        return String.format("%s[%s]", super.toString(), _cometURL);
     }
 }
