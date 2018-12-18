@@ -16,7 +16,7 @@
 
 /* CometD Version ${project.version} */
 
-(function(root, factory){
+(function(root, factory) {
     if (typeof exports === 'object') {
         // CommonJS.
         module.exports = factory();
@@ -53,6 +53,7 @@
             window.clearTimeout(id);
         };
     };
+
     /**
      * The scheduler code that will run in the Worker.
      */
@@ -60,8 +61,9 @@
         var _tasks = {};
         self.onmessage = function(e) {
             var cmd = e.data;
+            var id = _tasks[cmd.id];
             switch (cmd.type) {
-                case 'setTimeout': {
+                case 'setTimeout':
                     _tasks[cmd.id] = self.setTimeout(function() {
                         delete _tasks[cmd.id];
                         self.postMessage({
@@ -69,15 +71,14 @@
                         });
                     }, cmd.delay);
                     break;
-                }
-                case 'clearTimeout': {
-                    var id = _tasks[cmd.id];
+                case 'clearTimeout':
                     delete _tasks[cmd.id];
                     if (id) {
                         self.clearTimeout(id);
                     }
                     break;
-                }
+                default:
+                    throw 'Unknown command ' + cmd.type;
             }
         };
     }
@@ -1040,9 +1041,9 @@
             try {
                 if (context === null) {
                     context = _connecting || {
-                            envelopes: {},
-                            timeouts: {}
-                        };
+                        envelopes: {},
+                        timeouts: {}
+                    };
                     _storeEnvelope.call(this, context, envelope, metaConnect);
                     _websocketConnect.call(this, context);
                 } else {
@@ -1227,7 +1228,7 @@
      * The default name is the string 'default'.
      * @param name the optional name of this cometd object
      */
-    var CometD = function (name) {
+    var CometD = function(name) {
         var _scheduler = new Scheduler();
         var _cometd = this;
         var _name = name || 'default';
@@ -1395,7 +1396,7 @@
             // [7] = port,
             // [8] = uri,
             // [9] = rest (query / fragment)
-            return /(^https?:\/\/)?(((\[[^\]]+\])|([^:\/\?#]+))(:(\d+))?)?([^\?#]*)(.*)?/.exec(url);
+            return new RegExp('(^https?://)?(((\\[[^\\]]+])|([^:/?#]+))(:(\\d+))?)?([^?#]*)(.*)?').exec(url);
         }
 
         /**
@@ -1420,7 +1421,9 @@
             _cometd._debug('Configuring cometd object with', configuration);
             // Support old style param, where only the Bayeux server URL was passed.
             if (_isString(configuration)) {
-                configuration = { url: configuration };
+                configuration = {
+                    url: configuration
+                };
             }
             if (!configuration) {
                 configuration = {};
@@ -1579,7 +1582,7 @@
         }
 
         function _applyOutgoingExtensions(message) {
-            for (var i = _extensions.length - 1; i >= 0 ; --i) {
+            for (var i = _extensions.length - 1; i >= 0; --i) {
                 if (message === undefined || message === null) {
                     break;
                 }
@@ -1815,7 +1818,9 @@
                 // instead of being held by the server, so that connect listeners
                 // can be notified that the connection has been re-established
                 if (!_connected) {
-                    bayeuxMessage.advice = { timeout: 0 };
+                    bayeuxMessage.advice = {
+                        timeout: 0
+                    };
                 }
 
                 _setStatus('connecting');
@@ -2966,8 +2971,7 @@
             };
             var ext = {
                 ext: {
-                    binary: {
-                    }
+                    binary: {}
                 }
             };
             this.publish(channel, content, ext, callback);
@@ -3025,7 +3029,7 @@
                         error: '406::timeout',
                         successful: false,
                         failure: {
-                            message : message,
+                            message: message,
                             reason: 'Remote Call Timeout'
                         }
                     });
@@ -3065,8 +3069,7 @@
             };
             var ext = {
                 ext: {
-                    binary: {
-                    }
+                    binary: {}
                 }
             };
 
@@ -3146,9 +3149,9 @@
          * The format of the extension object is the following:
          * <pre>
          * {
-     *     incoming: function(message) { ... },
-     *     outgoing: function(message) { ... }
-     * }
+         *     incoming: function(message) { ... },
+         *     outgoing: function(message) { ... }
+         * }
          * </pre>
          * Both properties are optional, but if they are present they will be called
          * respectively for each incoming message and for each outgoing message.
