@@ -5,6 +5,16 @@
 [[_troubleshooting_logging]]
 === Logging
 
+The CometD libraries emit log statements at `INFO` and `DEBUG` levels.
+Very little, if anything, is produced at `INFO` level: typically only unexpected
+application exceptions detected by the CometD libraries, such as exceptions thrown by
+<<_concept_listeners,listeners>> and <<_extensions,extensions>>.
+
+The CometD Java libraries (both client and server) use http://slf4j.org[SLF4J]
+as logging framework.
+You can therefore plugin any logging implementation that supports SLF4J, and
+configure the logging category `org.cometd` at `INFO` level.
+
 When CometD does not work, the first thing that you want to do is to enable debug logging.
 This is helpful because by reading the debug logs you get a better understanding
 of what is going on in the system (and that alone may give you the answers you
@@ -48,8 +58,6 @@ depending on the Internet Explorer version.
 [[_troubleshooting_logging_java_server]]
 ==== Enabling Debug Logging in the Java Server Library
 
-The CometD Java libraries (both client and server) use http://slf4j.org[SLF4J]
-as logging framework.
 The Java server library uses the SLF4J APIs, but it does not bind to any specific
 logging implementation. You have to choose what implementation you want to use.
 By default, SLF4J comes with with a simple binding that _does not_ log statements
