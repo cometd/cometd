@@ -23,6 +23,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -50,7 +51,7 @@ public abstract class ClientServerTest {
     protected BayeuxServerImpl bayeux;
 
     public void start(Map<String, String> initParams) throws Exception {
-        startServer(initParams);
+        startServer(initParams, new HttpConnectionFactory());
         startClient();
     }
 
