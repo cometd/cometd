@@ -404,7 +404,9 @@ public abstract class AbstractWebSocketEndPoint {
             while (true) {
                 switch (_state) {
                     case IDLE: {
-                        _entry = _entries.poll();
+                        synchronized (this) {
+                            _entry = _entries.poll();
+                        }
                         if (_logger.isDebugEnabled()) {
                             _logger.debug("Processing {}", _entry);
                         }

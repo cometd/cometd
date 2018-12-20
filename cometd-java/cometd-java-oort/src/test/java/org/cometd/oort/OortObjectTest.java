@@ -308,17 +308,14 @@ public class OortObjectTest extends AbstractOortObjectTest {
                     Map<String, Object> data = message.getDataAsMap();
                     if (data != null) {
                         if (value2 == ((Number)data.get(OortObject.Info.OBJECT_FIELD)).longValue()) {
-                            new Thread() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        sleep(delay);
-                                        ServerChannel channel = oort2.getBayeuxServer().getChannel(message.getChannel());
-                                        channel.publish(oort2.getOortSession(), message, Promise.noop());
-                                    } catch (InterruptedException ignored) {
-                                    }
+                            new Thread(() -> {
+                                try {
+                                    Thread.sleep(delay);
+                                    ServerChannel channel = oort2.getBayeuxServer().getChannel(message.getChannel());
+                                    channel.publish(oort2.getOortSession(), message, Promise.noop());
+                                } catch (InterruptedException ignored) {
                                 }
-                            }.start();
+                            }).start();
                             return false;
                         }
                     }
@@ -391,10 +388,16 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
         while (true) {
             String object2 = values.poll(10, TimeUnit.SECONDS);
-            if (object2.equals(object1)) {
-                // Make sure there are no more values.
-                Assert.assertNull(values.poll(1, TimeUnit.SECONDS));
-                break;
+            if (object2 == null) {
+                System.err.println(oortObject1.dump());
+                System.err.println(oortObject2.dump());
+                Assert.fail();
+            } else {
+                if (object2.equals(object1)) {
+                    // Make sure there are no more values.
+                    Assert.assertNull(values.poll(1, TimeUnit.SECONDS));
+                    break;
+                }
             }
         }
 
