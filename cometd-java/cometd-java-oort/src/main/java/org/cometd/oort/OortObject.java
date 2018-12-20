@@ -15,6 +15,7 @@
  */
 package org.cometd.oort;
 
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +43,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,7 +124,7 @@ import org.slf4j.LoggerFactory;
  *
  * @param <T> the type of value object stored in this oort object
  */
-public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServerChannel.Initializer, Oort.CometListener, Iterable<OortObject.Info<T>> {
+public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServerChannel.Initializer, Oort.CometListener, Iterable<OortObject.Info<T>>, Dumpable {
     public static final String OORT_OBJECTS_CHANNEL = "/oort/objects";
     private static final String ACTION_FIELD_PUSH_VALUE = "oort.object.push";
     private static final String ACTION_FIELD_PULL_VALUE = "oort.object.pull";
@@ -517,6 +519,16 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     }
 
     @Override
+    public String dump() {
+        return Dumpable.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException {
+        Dumpable.dumpObjects(out, indent, this, parts.values());
+    }
+
+    @Override
     public String toString() {
         return String.format("%s[%s]@%s", getClass().getSimpleName(), getName(), getOort().getURL());
     }
@@ -798,7 +810,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * and to provide a consistent view of the Info object to readers invoking
      * for example, {@link #getInfo(String)}.</p>
      */
-    private class ObjectPart {
+    private class ObjectPart implements Dumpable {
         private final Deque<Map<String, Object>> updates = new ArrayDeque<>();
         private boolean active;
         private long versions;
@@ -874,6 +886,21 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
                     onObject(data);
                 }
             }
+        }
+
+        @Override
+        public String dump() {
+            return Dumpable.dump(this);
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException {
+            Dumpable.dumpObjects(out, indent, this);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s@%x[active=%b,updates=%d][%s]", getClass().getSimpleName(), hashCode(), active, updates.size(), info);
         }
     }
 
