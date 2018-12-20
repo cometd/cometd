@@ -36,6 +36,7 @@ import org.cometd.common.AsyncFoldLeft;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -105,11 +106,17 @@ public abstract class AbstractWebSocketEndPoint {
     public void onError(Throwable failure) {
         if (failure instanceof SocketTimeoutException || failure instanceof TimeoutException) {
             if (_logger.isDebugEnabled()) {
-                _logger.debug("WebSocket Timeout", failure);
+                _logger.debug("WebSocket timeout", failure);
             }
         } else {
             InetSocketAddress address = _bayeuxContext == null ? null : _bayeuxContext.getRemoteAddress();
-            _logger.info("WebSocket Error, Address: " + address, failure);
+            if (failure instanceof QuietException) {
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("WebSocket failure, address: " + address, failure);
+                }
+            } else {
+                _logger.info("WebSocket failure, address: " + address, failure);
+            }
         }
     }
 
@@ -489,11 +496,18 @@ public abstract class AbstractWebSocketEndPoint {
                             AbstractWebSocketEndPoint.this.send(_session, _buffer.toString(), this);
                             return Action.SCHEDULED;
                         }
+                        _state = State.COMPLETE;
+                        break;
+                    }
+                    case COMPLETE: {
+                        Entry entry = _entry;
                         _state = State.IDLE;
+                        // Do not keep the buffer around while we are idle.
                         _buffer = null;
                         _entry = null;
                         _messageIndex = 0;
                         _replyIndex = 0;
+                        entry._promise.succeed(null);
                         break;
                     }
                     default: {
@@ -501,12 +515,6 @@ public abstract class AbstractWebSocketEndPoint {
                     }
                 }
             }
-        }
-
-        @Override
-        public void succeeded() {
-            _entry._promise.succeed(null);
-            super.succeeded();
         }
 
         @Override
@@ -551,7 +559,7 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     private enum State {
-        IDLE, HANDSHAKE, MESSAGES, REPLIES
+        IDLE, HANDSHAKE, MESSAGES, REPLIES, COMPLETE
     }
 
     public static class Context {
