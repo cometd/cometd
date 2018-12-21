@@ -65,8 +65,17 @@ $ cd cometd-demo
 $ mvn jetty:run
 ----
 
-The last command starts an embedded Jetty that listens on port 8080.
-Now point your browser to http://localhost:8080, to see the CometD Demos main page.
+The last command starts an embedded Jetty server that listens on port 8080 for clear-text
+HTTP/1.1 (`http`) and on port 8443 for both encrypted HTTP/1.1 and HTTP/2 (`https`).
+Now point your browser to http://localhost:8080 or to https://localhost:8443 to see
+the CometD Demos main page.
+
+When connecting using `https`, the browser may display a page that says something
+like "Your connection is not secure" or "This site is not secure".
+Don't worry, this message is due to the fact that the CometD Demos use a self-signed
+certificate to encrypt the traffic between the browser and the embedded Jetty server.
+The browser will display a button or a link to consider the site safe and you will be
+able to continue to the CometD Demos main page.
 
 === Deploying your CometD Application
 
