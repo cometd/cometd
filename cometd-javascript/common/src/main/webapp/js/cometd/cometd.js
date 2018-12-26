@@ -1465,10 +1465,8 @@
 
             if (window.Worker && window.Blob && window.URL && _config.useWorkerScheduler) {
                 var code = WorkerScheduler.toString();
-                // Remove the function declaration and the opening brace.
-                code = code.replace(/^function\s+.+{/, '');
-                // Remove the function's closing brace.
-                code = code.replace(/}\s*$/, '');
+                // Remove the function declaration, the opening brace and the closing brace.
+                code = code.substring(code.indexOf('{') + 1, code.lastIndexOf('}'));
                 var blob = new window.Blob([code], {
                     type: 'application/json'
                 });
