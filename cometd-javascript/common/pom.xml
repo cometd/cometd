@@ -11,8 +11,37 @@
   <packaging>war</packaging>
   <name>CometD :: JavaScript :: Common</name>
 
+  <properties>
+    <cometd-minify-dir>${project.build.directory}/minify</cometd-minify-dir>
+  </properties>
+
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>minify</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <executable>java</executable>
+          <arguments>
+            <argument>-cp</argument>
+            <classpath />
+            <argument>com.google.javascript.jscomp.CommandLineRunner</argument>
+            <argument>--js</argument>
+            <argument>src/main/webapp/js/cometd/cometd.js</argument>
+            <argument>--js_output_file</argument>
+            <argument>${cometd-minify-dir}/js/cometd/cometd.min.js</argument>
+          </arguments>
+        </configuration>
+      </plugin>
       <plugin>
         <artifactId>maven-war-plugin</artifactId>
         <configuration>
@@ -21,10 +50,21 @@
               <directory>src/main/webapp</directory>
               <filtering>true</filtering>
             </webResource>
+            <webResource>
+              <directory>${cometd-minify-dir}</directory>
+            </webResource>
           </webResources>
+          <packagingExcludes>WEB-INF/lib/*.jar</packagingExcludes>
         </configuration>
       </plugin>
     </plugins>
   </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.javascript</groupId>
+      <artifactId>closure-compiler</artifactId>
+    </dependency>
+  </dependencies>
 
 </project>

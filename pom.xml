@@ -438,19 +438,14 @@
           <version>3.2.2</version>
         </plugin>
         <plugin>
-          <groupId>org.jacoco</groupId>
-          <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.2</version>
-        </plugin>
-        <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
           <version>3.0</version>
         </plugin>
         <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>exec-maven-plugin</artifactId>
-          <version>1.6.0</version>
+          <groupId>org.asciidoctor</groupId>
+          <artifactId>asciidoctor-maven-plugin</artifactId>
+          <version>1.5.7.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
@@ -458,14 +453,19 @@
           <version>4.1.0</version>
         </plugin>
         <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>1.6.0</version>
+        </plugin>
+        <plugin>
           <groupId>org.eclipse.jetty</groupId>
           <artifactId>jetty-maven-plugin</artifactId>
           <version>${jetty-version}</version>
         </plugin>
         <plugin>
-          <groupId>org.asciidoctor</groupId>
-          <artifactId>asciidoctor-maven-plugin</artifactId>
-          <version>1.5.7.1</version>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>0.8.2</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -510,6 +510,12 @@
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j-version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.google.javascript</groupId>
+        <artifactId>closure-compiler</artifactId>
+        <version>v20181210</version>
+      </dependency>
+
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
