@@ -688,8 +688,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                         String denyReason = ((Authorizer.Result.Denied)publishResult).getReason();
                         error(reply, "403:" + denyReason + ":publish denied");
                     } else {
-                        doPublish(session, channel, message, true);
                         reply.setSuccessful(true);
+                        doPublish(session, channel, message, true);
                     }
                 }
             }
