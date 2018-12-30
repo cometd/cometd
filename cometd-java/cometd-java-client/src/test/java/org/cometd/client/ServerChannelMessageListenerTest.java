@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -39,7 +38,7 @@ public class ServerChannelMessageListenerTest extends ClientServerTest {
     }
 
     private void testMessageProcessingHalted(String channelName) throws Exception {
-        startServer(null);
+        start(null);
         ServerChannel serverChannel = bayeux.createChannelIfAbsent(channelName).getReference();
         serverChannel.addListener(new ServerChannel.MessageListener() {
             @Override
@@ -53,12 +52,9 @@ public class ServerChannelMessageListenerTest extends ClientServerTest {
 
         final AtomicReference<Message> messageRef = new AtomicReference<>();
         final CountDownLatch messageLatch = new CountDownLatch(1);
-        client.getChannel(channelName).publish("data", new ClientSessionChannel.MessageListener() {
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                messageRef.set(message);
-                messageLatch.countDown();
-            }
+        client.getChannel(channelName).publish("data", message -> {
+            messageRef.set(message);
+            messageLatch.countDown();
         });
 
         Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
