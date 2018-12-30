@@ -322,6 +322,9 @@ class OortMembership extends AbstractLifeCycle {
                 return;
             }
 
+            if (logger.isDebugEnabled()) {
+                logger.debug("Received handshake reply message", message);
+            }
             @SuppressWarnings("unchecked")
             Map<String, Object> oortExt = (Map<String, Object>)oortExtObject;
             String oortId = (String)oortExt.get(EXT_OORT_ID_FIELD);
@@ -383,6 +386,10 @@ class OortMembership extends AbstractLifeCycle {
                     oortComet.open();
                     if (notify) {
                         oort.notifyCometJoined(oortId, oortURL);
+                    } else {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Delaying local join event: {}|{}", oortId, oortURL);
+                        }
                     }
                 } else {
                     if (logger.isDebugEnabled()) {
@@ -424,7 +431,7 @@ class OortMembership extends AbstractLifeCycle {
 
         @Override
         public String toString() {
-            return String.format("%s[%s][%s]", super.toString(), state, session);
+            return String.format("%s[%s,%s]", super.toString(), state, session);
         }
     }
 
@@ -651,6 +658,9 @@ class OortMembership extends AbstractLifeCycle {
     private class JoinListener implements ServerChannel.MessageListener {
         @Override
         public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Received join message", message);
+            }
             Map<String, Object> data = message.getDataAsMap();
             String remoteOortId = (String)data.get(Oort.EXT_OORT_ID_FIELD);
             String remoteOortURL = (String)data.get(Oort.EXT_OORT_URL_FIELD);
@@ -666,9 +676,15 @@ class OortMembership extends AbstractLifeCycle {
                             if (remoteOortId.equals(oortId)) {
                                 notify = clientComets.containsKey(remoteOortId) &&
                                         serverCometInfo.state == RemoteState.HANDSHAKE_RECEIVED;
+                                if (logger.isDebugEnabled()) {
+                                    logger.debug("Found current {}", serverCometInfo);
+                                }
                                 serverCometInfo.state = RemoteState.JOIN_RECEIVED;
                             } else {
                                 // We found a stale entry for a crashed node.
+                                if (logger.isDebugEnabled()) {
+                                    logger.debug("Found stale {}", serverCometInfo);
+                                }
                                 iterator.remove();
                                 if (staleComets == null) {
                                     staleComets = new HashSet<>(4);
@@ -687,7 +703,7 @@ class OortMembership extends AbstractLifeCycle {
                     oort.notifyCometJoined(remoteOortId, remoteOortURL);
                 } else {
                     if (logger.isDebugEnabled()) {
-                        logger.debug("Delaying comet joined: {}|{}", remoteOortId, remoteOortURL);
+                        logger.debug("Delaying remote join event: {}|{}", remoteOortId, remoteOortURL);
                     }
                 }
             }

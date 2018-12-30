@@ -956,7 +956,7 @@ public class OortObserveCometTest extends OortTest {
                         message.containsKey(Message.SUCCESSFUL_FIELD)) {
                     if (replies.incrementAndGet() == 1) {
                         // Delay the reply so the client thinks it has been lost.
-                        sleep(2 * maxNetworkDelay);
+                        sleep(3 * maxNetworkDelay);
                     }
                 }
                 return true;
@@ -964,16 +964,36 @@ public class OortObserveCometTest extends OortTest {
         });
         Oort oortB = startOort(serverB);
 
+        CountDownLatch joinLatch = new CountDownLatch(1);
+        oortB.addCometListener(new CometJoinedListener(joinLatch));
+        CountDownLatch leftLatch = new CountDownLatch(1);
+        oortB.addCometListener(new CometLeftListener(leftLatch));
+
         OortComet oortCometAB = oortA.createOortComet(oortB.getURL());
         oortCometAB.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
+        final CountDownLatch handshakeLatch = new CountDownLatch(1);
+        oortCometAB.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            private final AtomicInteger handshakes = new AtomicInteger();
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                // The first handshake should timeout.
+                if (handshakes.incrementAndGet() == 1) {
+                    if (!message.isSuccessful()) {
+                        handshakeLatch.countDown();
+                    }
+                }
+            }
+        });
         oortA.connectComet(oortCometAB);
 
-        Thread.sleep(2 * maxNetworkDelay);
+        // Wait for the first handshake reply to fail, the
+        // OortComet should retry the handshake and succeed.
+        sleep(2 * maxNetworkDelay);
 
+        Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertFalse(oortCometAB.isDisconnected());
-        // TODO: add additional checks to verify that the state of the OortComets is correct.
-        //  For example, the CCI must not be present.
-        //  Also, verify that B does not generate a comet left event!
+        Assert.assertTrue(joinLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(leftLatch.await(1, TimeUnit.SECONDS));
     }
 
     // TODO: add test for failure of the JOIN message.
