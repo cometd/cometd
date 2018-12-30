@@ -1147,6 +1147,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         if (id != null) {
             reply.setId(id);
         }
+        Object subscriptions = message.get(Message.SUBSCRIPTION_FIELD);
+        if (subscriptions != null) {
+            reply.put(Message.SUBSCRIPTION_FIELD, subscriptions);
+        }
+
         return reply;
     }
 
@@ -1394,7 +1399,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             }
 
             validateSubscriptions(subscriptions);
-            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
 
             for (String subscription : subscriptions) {
                 ServerChannelImpl channel = getServerChannel(subscription);
@@ -1459,7 +1463,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             }
 
             validateSubscriptions(subscriptions);
-            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
 
             for (String subscription : subscriptions) {
                 ServerChannelImpl channel = getServerChannel(subscription);

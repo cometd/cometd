@@ -20,7 +20,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -659,7 +661,7 @@ public class OortObserveCometTest extends OortTest {
 
         Assert.assertEquals(1, oortB.getKnownComets().size());
 
-        // Only master URLs are known
+        // Only master URLs are known.
         Assert.assertFalse(oortA.getKnownComets().contains(otherURLB));
         Assert.assertTrue(oortA.getKnownComets().contains(urlB));
         // But comets can be known with alias URLs
@@ -670,21 +672,38 @@ public class OortObserveCometTest extends OortTest {
         Assert.assertSame(oortCometAB, oortCometAB1);
         Assert.assertSame(oortCometAB1, oortCometAB2);
 
-        // Now try with the original URL
+        // Now try with the original URL.
         OortComet oortCometAB3 = oortA.observeComet(urlB);
         Assert.assertNotNull(oortCometAB3);
         Assert.assertSame(oortCometAB, oortCometAB3);
 
-        // Try with yet another URL
+        // Try with yet another URL.
+        // The previous OortComet will be disconnected, but since
+        // it was already connected, no join/left events are emitted.
+        final BlockingQueue<Oort.CometListener.Event> cometEvents = new LinkedBlockingQueue<>();
+        oortB.addCometListener(new Oort.CometListener() {
+            @Override
+            public void cometLeft(Event event) {
+                cometEvents.offer(event);
+            }
+
+            @Override
+            public void cometJoined(Event event) {
+                cometEvents.offer(event);
+            }
+        });
         String anotherURLB = urlB.replace("localhost", "[::1]");
         OortComet oortCometAB4 = oortA.observeComet(anotherURLB);
-        Assert.assertTrue(oortCometAB4.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(oortCometAB4.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.DISCONNECTED));
         OortComet oortCometAB5 = oortA.getComet(anotherURLB);
-        Assert.assertSame(oortCometAB, oortCometAB5);
+        Assert.assertSame(oortCometAB4, oortCometAB5);
+        Assert.assertNull(cometEvents.poll(1, TimeUnit.SECONDS));
 
         // Now disconnect with the original URL
         OortComet oortCometAB6 = oortA.deobserveComet(urlB);
         Assert.assertNotNull(oortCometAB6);
+        Assert.assertSame(oortCometAB4, oortCometAB6);
         Assert.assertTrue(oortCometAB6.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 
