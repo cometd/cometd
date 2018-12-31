@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.common.TransportException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
@@ -138,121 +139,130 @@ public class LongPollingTransport extends HttpClientTransport {
 
         request.content(new StringContentProvider(generateJSON(messages)));
 
-        customize(request);
-
-        synchronized (this) {
-            if (_aborted) {
-                throw new IllegalStateException("Aborted");
-            }
-            _requests.add(request);
-        }
-
-        request.listener(new Request.Listener.Adapter() {
-            @Override
-            public void onHeaders(Request request) {
-                listener.onSending(messages);
-            }
-        });
-
-        long maxNetworkDelay = getMaxNetworkDelay();
-        if (messages.size() == 1) {
-            Message.Mutable message = messages.get(0);
-            if (Channel.META_CONNECT.equals(message.getChannel())) {
-                Map<String, Object> advice = message.getAdvice();
-                if (advice == null) {
-                    advice = _advice;
+        customize(request, Promise.from(customizedRequest -> {
+            synchronized (this) {
+                if (_aborted) {
+                    throw new IllegalStateException("Aborted");
                 }
-                if (advice != null) {
-                    Object timeout = advice.get("timeout");
-                    if (timeout instanceof Number) {
-                        maxNetworkDelay += ((Number)timeout).longValue();
-                    } else if (timeout != null) {
-                        maxNetworkDelay += Long.parseLong(timeout.toString());
+                _requests.add(customizedRequest);
+            }
+
+            customizedRequest.listener(new Request.Listener.Adapter() {
+                @Override
+                public void onHeaders(Request request) {
+                    listener.onSending(messages);
+                }
+            });
+
+            long maxNetworkDelay = getMaxNetworkDelay();
+            if (messages.size() == 1) {
+                Message.Mutable message = messages.get(0);
+                if (Channel.META_CONNECT.equals(message.getChannel())) {
+                    Map<String, Object> advice = message.getAdvice();
+                    if (advice == null) {
+                        advice = _advice;
+                    }
+                    if (advice != null) {
+                        Object timeout = advice.get("timeout");
+                        if (timeout instanceof Number) {
+                            maxNetworkDelay += ((Number)timeout).longValue();
+                        } else if (timeout != null) {
+                            maxNetworkDelay += Long.parseLong(timeout.toString());
+                        }
                     }
                 }
             }
-        }
-        // Set the idle timeout for this request larger than the total timeout
-        // so there are no races between the two timeouts
-        request.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
-        request.timeout(maxNetworkDelay, TimeUnit.MILLISECONDS);
-        request.send(new BufferingResponseListener(_maxMessageSize) {
-            @Override
-            public boolean onHeader(Response response, HttpField field) {
-                HttpHeader header = field.getHeader();
-                if (header != null && (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2)) {
-                    // We do not allow cookies to be handled by HttpClient, since one
-                    // HttpClient instance is shared by multiple BayeuxClient instances.
-                    // Instead, we store the cookies in the BayeuxClient instance.
-                    Map<String, List<String>> cookies = new HashMap<>(1);
-                    cookies.put(field.getName(), Collections.singletonList(field.getValue()));
-                    storeCookies(uri, cookies);
-                    return false;
+            // Set the idle timeout for this request larger than the total timeout
+            // so there are no races between the two timeouts
+            customizedRequest.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
+            customizedRequest.timeout(maxNetworkDelay, TimeUnit.MILLISECONDS);
+            customizedRequest.send(new BufferingResponseListener(_maxMessageSize) {
+                @Override
+                public boolean onHeader(Response response, HttpField field) {
+                    HttpHeader header = field.getHeader();
+                    if (header != null && (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2)) {
+                        // We do not allow cookies to be handled by HttpClient, since one
+                        // HttpClient instance is shared by multiple BayeuxClient instances.
+                        // Instead, we store the cookies in the BayeuxClient instance.
+                        Map<String, List<String>> cookies = new HashMap<>(1);
+                        cookies.put(field.getName(), Collections.singletonList(field.getValue()));
+                        storeCookies(uri, cookies);
+                        return false;
+                    }
+                    return true;
                 }
-                return true;
-            }
 
-            private void storeCookies(URI uri, Map<String, List<String>> cookies) {
-                try {
-                    _cookieManager.put(uri, cookies);
-                } catch (IOException x) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("", x);
+                private void storeCookies(URI uri, Map<String, List<String>> cookies) {
+                    try {
+                        _cookieManager.put(uri, cookies);
+                    } catch (IOException x) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("", x);
+                        }
                     }
                 }
-            }
 
-            @Override
-            public void onComplete(Result result) {
-                synchronized (LongPollingTransport.this) {
-                    _requests.remove(result.getRequest());
-                }
+                @Override
+                public void onComplete(Result result) {
+                    synchronized (LongPollingTransport.this) {
+                        _requests.remove(result.getRequest());
+                    }
 
-                if (result.isFailed()) {
-                    listener.onFailure(result.getFailure(), messages);
-                    return;
-                }
+                    if (result.isFailed()) {
+                        listener.onFailure(result.getFailure(), messages);
+                        return;
+                    }
 
-                Response response = result.getResponse();
-                int status = response.getStatus();
-                if (status == HttpStatus.OK_200) {
-                    String content = getContentAsString();
-                    if (content != null && content.length() > 0) {
-                        try {
-                            List<Message.Mutable> messages = parseMessages(content);
-                            if (logger.isDebugEnabled()) {
-                                logger.debug("Received messages {}", messages);
-                            }
-                            for (Message.Mutable message : messages) {
-                                if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel())) {
-                                    Map<String, Object> advice = message.getAdvice();
-                                    if (advice != null && advice.get("timeout") != null) {
-                                        _advice = advice;
+                    Response response = result.getResponse();
+                    int status = response.getStatus();
+                    if (status == HttpStatus.OK_200) {
+                        String content = getContentAsString();
+                        if (content != null && content.length() > 0) {
+                            try {
+                                List<Message.Mutable> messages = parseMessages(content);
+                                if (logger.isDebugEnabled()) {
+                                    logger.debug("Received messages {}", messages);
+                                }
+                                for (Message.Mutable message : messages) {
+                                    if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel())) {
+                                        Map<String, Object> advice = message.getAdvice();
+                                        if (advice != null && advice.get("timeout") != null) {
+                                            _advice = advice;
+                                        }
                                     }
                                 }
+                                listener.onMessages(messages);
+                            } catch (ParseException x) {
+                                listener.onFailure(x, messages);
                             }
-                            listener.onMessages(messages);
-                        } catch (ParseException x) {
+                        } else {
+                            Map<String, Object> failure = new HashMap<>(2);
+                            // Convert the 200 into 204 (no content)
+                            failure.put("httpCode", 204);
+                            TransportException x = new TransportException(failure);
                             listener.onFailure(x, messages);
                         }
                     } else {
                         Map<String, Object> failure = new HashMap<>(2);
-                        // Convert the 200 into 204 (no content)
-                        failure.put("httpCode", 204);
+                        failure.put("httpCode", status);
                         TransportException x = new TransportException(failure);
                         listener.onFailure(x, messages);
                     }
-                } else {
-                    Map<String, Object> failure = new HashMap<>(2);
-                    failure.put("httpCode", status);
-                    TransportException x = new TransportException(failure);
-                    listener.onFailure(x, messages);
                 }
-            }
-        });
+            });
+        }, error -> {
+            listener.onFailure(error, messages);
+        }));
+
+
     }
 
     protected void customize(Request request) {
+    }
+
+    protected void customize(Request request, Promise<Request> promise) {
+        customize(request);
+        promise.succeed(request);
     }
 
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
