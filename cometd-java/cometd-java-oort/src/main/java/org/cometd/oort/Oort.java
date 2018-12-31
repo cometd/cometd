@@ -208,6 +208,10 @@ public class Oort extends ContainerLifeCycle {
         }
     }
 
+    ScheduledExecutorService getScheduler() {
+        return _scheduler;
+    }
+
     @ManagedAttribute(value = "The BayeuxServer of this Oort", readonly = true)
     public BayeuxServer getBayeuxServer() {
         return _bayeux;

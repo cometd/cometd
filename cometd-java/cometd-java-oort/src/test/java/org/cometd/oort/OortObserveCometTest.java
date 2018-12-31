@@ -24,6 +24,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -974,6 +975,7 @@ public class OortObserveCometTest extends OortTest {
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
         oortCometAB.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
             private final AtomicInteger handshakes = new AtomicInteger();
+
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 // The first handshake should timeout.
@@ -996,7 +998,53 @@ public class OortObserveCometTest extends OortTest {
         Assert.assertFalse(leftLatch.await(1, TimeUnit.SECONDS));
     }
 
-    // TODO: add test for failure of the JOIN message.
+    @Test
+    public void testJoinMessageFailure() throws Exception {
+        Server serverA = startServer(0);
+        Oort oortA = startOort(serverA);
+        Server serverB = startServer(0);
+        BayeuxServer bayeuxServerB = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
+        ServerChannel joinChannel = bayeuxServerB.createChannelIfAbsent(Oort.OORT_SERVICE_CHANNEL).getReference();
+        final AtomicBoolean joinMessage = new AtomicBoolean();
+        joinChannel.addListener(new ServerChannel.MessageListener() {
+            @Override
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+                return joinMessage.get();
+            }
+        });
+        Oort oortB = startOort(serverB);
+
+        final AtomicReference<CountDownLatch> joinEventLatch = new AtomicReference<>(new CountDownLatch(1));
+        oortB.addCometListener(new Oort.CometListener.Adapter() {
+            @Override
+            public void cometJoined(Event event) {
+                joinEventLatch.get().countDown();
+            }
+        });
+
+        OortComet oortCometAB = oortA.createOortComet(oortB.getURL());
+        final CountDownLatch joinMessageFailure = new CountDownLatch(1);
+        final CountDownLatch joinMessageSuccess = new CountDownLatch(1);
+        oortCometAB.getChannel(Oort.OORT_SERVICE_CHANNEL).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isSuccessful()) {
+                    joinMessageSuccess.countDown();
+                } else {
+                    joinMessageFailure.countDown();
+                }
+            }
+        });
+        oortA.connectComet(oortCometAB);
+
+        // Must not emit the join event if the join message failed.
+        Assert.assertFalse(joinEventLatch.get().await(1, TimeUnit.SECONDS));
+
+        // Allow the join message to succeed, the join message must be retried.
+        joinEventLatch.set(new CountDownLatch(1));
+        joinMessage.set(true);
+        Assert.assertTrue(joinEventLatch.get().await(5, TimeUnit.SECONDS));
+    }
 
     private void sleep(long time) {
         try {

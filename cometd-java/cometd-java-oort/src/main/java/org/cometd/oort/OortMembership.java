@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -330,7 +331,7 @@ class OortMembership extends AbstractLifeCycle {
             String oortId = (String)oortExt.get(EXT_OORT_ID_FIELD);
             String oortURL = (String)oortExt.get(Oort.EXT_OORT_URL_FIELD);
 
-            List<OortComet> staleOortComets = new ArrayList<>();
+            List<ClientCometInfo> staleClientCometInfos = new ArrayList<>();
             ClientCometInfo clientCometInfo;
             ServerCometInfo serverCometInfo;
             boolean notify = false;
@@ -344,7 +345,7 @@ class OortMembership extends AbstractLifeCycle {
                     clientCometInfo = iterator.next();
                     if (clientCometInfo.matchesURL(cometURL) || clientCometInfo.matchesURL(oortURL)) {
                         iterator.remove();
-                        staleOortComets.add(clientCometInfo.oortComet);
+                        staleClientCometInfos.add(clientCometInfo);
                         if (logger.isDebugEnabled()) {
                             logger.debug("Unregistered client comet {}", clientCometInfo);
                         }
@@ -371,8 +372,12 @@ class OortMembership extends AbstractLifeCycle {
                 }
             }
 
-            for (OortComet comet : staleOortComets) {
+            for (ClientCometInfo info : staleClientCometInfos) {
+                OortComet comet = info.oortComet;
                 if (comet != oortComet) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Disconnecting stale client comet {}", info);
+                    }
                     comet.disconnect();
                 }
             }
@@ -382,8 +387,8 @@ class OortMembership extends AbstractLifeCycle {
                     if (logger.isDebugEnabled()) {
                         logger.debug("Server comet present {}", serverCometInfo);
                     }
-                    // TODO: add listener to make sure the open succeeded.
-                    oortComet.open();
+                    // Should we not guard this with the state?
+                    oortComet.open(new JoinCallback(oortComet));
                     if (notify) {
                         oort.notifyCometJoined(oortId, oortURL);
                     } else {
@@ -490,90 +495,91 @@ class OortMembership extends AbstractLifeCycle {
             }
 
             Object messageOortExtObject = messageExt.get(Oort.EXT_OORT_FIELD);
-            if (messageOortExtObject instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> messageOortExt = (Map<String, Object>)messageOortExtObject;
-                String remoteOortURL = (String)messageOortExt.get(Oort.EXT_OORT_URL_FIELD);
-                String cometURL = (String)messageOortExt.get(Oort.EXT_COMET_URL_FIELD);
-                String remoteOortId = (String)messageOortExt.get(EXT_OORT_ID_FIELD);
+            if (!(messageOortExtObject instanceof Map)) {
+                return true;
+            }
 
-                session.setAttribute(Oort.COMET_URL_ATTRIBUTE, remoteOortURL);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> messageOortExt = (Map<String, Object>)messageOortExtObject;
+            String remoteOortURL = (String)messageOortExt.get(Oort.EXT_OORT_URL_FIELD);
+            String cometURL = (String)messageOortExt.get(Oort.EXT_COMET_URL_FIELD);
+            String remoteOortId = (String)messageOortExt.get(EXT_OORT_ID_FIELD);
 
-                if (oort.getId().equals(remoteOortId)) {
-                    // Connecting to myself: disconnect.
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Detected self connect from {} to {}, disconnecting", remoteOortURL, cometURL);
-                    }
-                    disconnect(session, reply);
-                } else {
-                    // Add the extension information even in case we're then disconnecting.
-                    // The presence of the extension information will inform the client
-                    // that the connection "succeeded" from the Oort point of view, but
-                    // we add the extension information to drop it if it already exists.
-                    Map<String, Object> replyExt = reply.getExt(true);
-                    Map<String, Object> replyOortExt = new HashMap<>(2);
-                    replyExt.put(Oort.EXT_OORT_FIELD, replyOortExt);
-                    replyOortExt.put(Oort.EXT_OORT_URL_FIELD, oort.getURL());
-                    replyOortExt.put(EXT_OORT_ID_FIELD, oort.getId());
+            session.setAttribute(Oort.COMET_URL_ATTRIBUTE, remoteOortURL);
 
-                    ClientCometInfo clientCometInfo;
-                    ServerCometInfo existingServerCometInfo;
-                    ServerCometInfo serverCometInfo = new ServerCometInfo(remoteOortId, remoteOortURL, session);
-                    synchronized (lock) {
-                        clientCometInfo = clientComets.get(remoteOortId);
-                        existingServerCometInfo = serverComets.put(remoteOortId, serverCometInfo);
-                        if (existingServerCometInfo != null) {
-                            serverCometInfo.state = existingServerCometInfo.state;
-                        } else {
-                            serverCometInfo.state = RemoteState.HANDSHAKE_RECEIVED;
-                        }
-                    }
+            if (oort.getId().equals(remoteOortId)) {
+                // Connecting to myself: disconnect.
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Detected self connect from {} to {}, disconnecting", remoteOortURL, cometURL);
+                }
+                disconnect(session, reply);
+            } else {
+                // Add the extension information even in case we're then disconnecting.
+                // The presence of the extension information will inform the client
+                // that the connection "succeeded" from the Oort point of view, but
+                // we add the extension information to drop it if it already exists.
+                Map<String, Object> replyExt = reply.getExt(true);
+                Map<String, Object> replyOortExt = new HashMap<>(2);
+                replyExt.put(Oort.EXT_OORT_FIELD, replyOortExt);
+                replyOortExt.put(Oort.EXT_OORT_URL_FIELD, oort.getURL());
+                replyOortExt.put(EXT_OORT_ID_FIELD, oort.getId());
 
+                ClientCometInfo clientCometInfo;
+                ServerCometInfo existingServerCometInfo;
+                ServerCometInfo serverCometInfo = new ServerCometInfo(remoteOortId, remoteOortURL, session);
+                synchronized (lock) {
+                    clientCometInfo = clientComets.get(remoteOortId);
+                    existingServerCometInfo = serverComets.put(remoteOortId, serverCometInfo);
                     if (existingServerCometInfo != null) {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Comet already known, disconnecting {}", existingServerCometInfo);
-                        }
-                        // Since it's only a session replace, there is no need to emit a "comet left"
-                        // event, but we want to send a /meta/disconnect to the other node for the
-                        // previous session. We want to do it from here because the RemoveListener
-                        // won't find the previous session, as it has been replaced in the Map.
-                        existingServerCometInfo.session.disconnect();
+                        serverCometInfo.state = existingServerCometInfo.state;
+                    } else {
+                        serverCometInfo.state = RemoteState.HANDSHAKE_RECEIVED;
                     }
+                }
+
+                if (existingServerCometInfo != null) {
                     if (logger.isDebugEnabled()) {
-                        logger.debug("Registered server comet {}", serverCometInfo);
+                        logger.debug("Comet already known, disconnecting {}", existingServerCometInfo);
                     }
+                    // Since it's only a session replace, there is no need to emit a "comet left"
+                    // event, but we want to send a /meta/disconnect to the other node for the
+                    // previous session. We want to do it from here because the RemoveListener
+                    // won't find the previous session, as it has been replaced in the Map.
+                    existingServerCometInfo.session.disconnect();
+                }
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Registered server comet {}", serverCometInfo);
+                }
 
-                    // Be notified when the remote comet stops.
-                    session.addListener(new OortCometDisconnectListener());
-                    // Prevent loops in sending/receiving messages.
-                    session.addListener(new OortCometLoopListener());
+                // Be notified when the remote comet stops.
+                session.addListener(new OortCometDisconnectListener());
+                // Prevent loops in sending/receiving messages.
+                session.addListener(new OortCometLoopListener());
 
-                    if (clientCometInfo != null) {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Client comet present {}", clientCometInfo);
-                        }
-                        // TODO: add message listener to handle failures.
-                        //  How do we not call open twice, once here and once on HS reply?
-                        clientCometInfo.oortComet.open();
-                    } else {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Client comet not yet present");
-                        }
+                if (clientCometInfo != null) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Client comet present {}", clientCometInfo);
                     }
-
-                    String cometAliasURL = (String)messageOortExt.get(Oort.EXT_OORT_ALIAS_URL_FIELD);
-                    if (cometAliasURL != null && oort.findComet(cometAliasURL) != null) {
-                        // We are connecting to a comet that it is connecting back to us
-                        // so there is no need to connect back again (just to be disconnected)
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Comet {} exists with alias {}, avoiding to establish connection", remoteOortURL, cometAliasURL);
-                        }
-                    } else {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Comet {} is unknown, establishing connection", remoteOortURL);
-                        }
-                        observeComet(remoteOortURL, cometURL);
+                    OortComet oortComet = clientCometInfo.oortComet;
+                    oortComet.open(new JoinCallback(oortComet));
+                } else {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Client comet not yet present");
                     }
+                }
+
+                String cometAliasURL = (String)messageOortExt.get(Oort.EXT_OORT_ALIAS_URL_FIELD);
+                if (cometAliasURL != null && oort.findComet(cometAliasURL) != null) {
+                    // We are connecting to a comet that it is connecting back to us
+                    // so there is no need to connect back again (just to be disconnected)
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Comet {} exists with alias {}, avoiding to establish connection", remoteOortURL, cometAliasURL);
+                    }
+                } else {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Comet {} is unknown, establishing connection", remoteOortURL);
+                    }
+                    observeComet(remoteOortURL, cometURL);
                 }
             }
 
@@ -593,11 +599,11 @@ class OortMembership extends AbstractLifeCycle {
         public void removed(ServerSession session, boolean timeout) {
             ServerCometInfo serverCometInfo = null;
             synchronized (lock) {
-                Iterator<ServerCometInfo> cometInfos = serverComets.values().iterator();
-                while (cometInfos.hasNext()) {
-                    ServerCometInfo info = cometInfos.next();
+                Iterator<ServerCometInfo> serverCometInfos = serverComets.values().iterator();
+                while (serverCometInfos.hasNext()) {
+                    ServerCometInfo info = serverCometInfos.next();
                     if (info.session.getId().equals(session.getId())) {
-                        cometInfos.remove();
+                        serverCometInfos.remove();
                         serverCometInfo = info;
                         break;
                     }
@@ -641,15 +647,15 @@ class OortMembership extends AbstractLifeCycle {
     private class OortCometLoopListener implements ServerSession.MessageListener {
         @Override
         public boolean onMessage(ServerSession session, ServerSession sender, ServerMessage message) {
-            // Prevent loops by not delivering a message from self or Oort session to remote Oort comets
-            if (sender != null && (sender.getId().equals(session.getId()) || oort.isOort(sender))) {
+            // Prevent loops by not delivering a message from self or Oort session to remote Oort comets.
+            if (!message.isMeta() && sender != null && (sender.getId().equals(session.getId()) || oort.isOort(sender))) {
                 if (logger.isDebugEnabled()) {
-                    logger.debug("{} --| {} {}", sender, session, message);
+                    logger.debug("Blocked {} from {} to {}", message, sender, session);
                 }
                 return false;
             }
             if (logger.isDebugEnabled()) {
-                logger.debug("{} --> {} {}", sender, session, message);
+                logger.debug("Allowed {} from {} to {}", message, sender, session);
             }
             return true;
         }
@@ -659,7 +665,7 @@ class OortMembership extends AbstractLifeCycle {
         @Override
         public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
             if (logger.isDebugEnabled()) {
-                logger.debug("Received join message", message);
+                logger.debug("Received join message {}", message);
             }
             Map<String, Object> data = message.getDataAsMap();
             String remoteOortId = (String)data.get(Oort.EXT_OORT_ID_FIELD);
@@ -710,4 +716,34 @@ class OortMembership extends AbstractLifeCycle {
             return true;
         }
     }
+
+    private class JoinCallback implements ClientSessionChannel.MessageListener, Runnable {
+        private final OortComet oortComet;
+
+        private JoinCallback(OortComet oortComet) {
+            this.oortComet = oortComet;
+        }
+
+        @Override
+        public void onMessage(ClientSessionChannel channel, Message message) {
+            if (message.isSuccessful()) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Join message successful {}", message);
+                }
+            } else {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Join message failure, retrying {}", message);
+                }
+                // TODO: hardcoded delay.
+                oort.getScheduler().schedule(this, 1, TimeUnit.SECONDS);
+            }
+        }
+
+        @Override
+        public void run() {
+            oortComet.open(this);
+        }
+    }
+
+    // TODO: why we don't need LocalState?
 }
