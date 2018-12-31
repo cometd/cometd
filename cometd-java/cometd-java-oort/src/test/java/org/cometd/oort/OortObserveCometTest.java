@@ -1046,6 +1046,33 @@ public class OortObserveCometTest extends OortTest {
         Assert.assertTrue(joinEventLatch.get().await(5, TimeUnit.SECONDS));
     }
 
+    @Test
+    public void testHandshakeFailureDoesNotDisconnectOortComet() throws Exception {
+        Server serverA = startServer(0);
+        Oort oortA = startOort(serverA);
+        Server serverB = startServer(0);
+        BayeuxServer bayeuxServerB = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeuxServerB.addExtension(new BayeuxServer.Extension.Adapter() {
+            private final AtomicInteger handshakes = new AtomicInteger();
+
+            @Override
+            public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
+                if (session != null && !session.isLocalSession() &&
+                        Channel.META_HANDSHAKE.equals(message.getChannel())) {
+                    return handshakes.incrementAndGet() > 1;
+                }
+                return true;
+            }
+        });
+        Oort oortB = startOort(serverB);
+
+        OortComet oortCometAB = oortA.observeComet(oortB.getURL());
+        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        oortCometAB.disconnect();
+        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+    }
+
     private void sleep(long time) {
         try {
             Thread.sleep(time);

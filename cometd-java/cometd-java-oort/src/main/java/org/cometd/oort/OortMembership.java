@@ -314,6 +314,9 @@ class OortMembership extends AbstractLifeCycle {
 
         @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Received handshake reply message {}", message);
+            }
             Map<String, Object> ext = message.getExt();
             if (ext == null) {
                 return;
@@ -323,9 +326,6 @@ class OortMembership extends AbstractLifeCycle {
                 return;
             }
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("Received handshake reply message", message);
-            }
             @SuppressWarnings("unchecked")
             Map<String, Object> oortExt = (Map<String, Object>)oortExtObject;
             String oortId = (String)oortExt.get(EXT_OORT_ID_FIELD);
@@ -336,8 +336,6 @@ class OortMembership extends AbstractLifeCycle {
             ServerCometInfo serverCometInfo;
             boolean notify = false;
             synchronized (lock) {
-                pendingComets.remove(cometURL);
-
                 // Remove possibly stale information, e.g. when the other node restarted
                 // we will have a stale oortId for the same oortURL we are processing now.
                 Iterator<ClientCometInfo> iterator = clientComets.values().iterator();
@@ -356,6 +354,7 @@ class OortMembership extends AbstractLifeCycle {
                 serverCometInfo = serverComets.get(oortId);
 
                 if (message.isSuccessful()) {
+                    pendingComets.remove(cometURL);
                     clientComets.put(oortId, clientCometInfo);
                     if (logger.isDebugEnabled()) {
                         logger.debug("Registered client comet {}", clientCometInfo);
@@ -402,10 +401,10 @@ class OortMembership extends AbstractLifeCycle {
                     }
                 }
             } else {
+                // Handshake failed, we will retry it.
                 if (logger.isDebugEnabled()) {
                     logger.debug("Handshake failed to comet {}, message {}", cometURL, message);
                 }
-                oortComet.disconnect();
             }
         }
     }
@@ -480,22 +479,32 @@ class OortMembership extends AbstractLifeCycle {
             if (!Channel.META_HANDSHAKE.equals(reply.getChannel())) {
                 return true;
             }
-            // Process only successful responses.
-            if (!reply.isSuccessful()) {
-                return true;
-            }
             // Skip local sessions.
             if (session == null || session.isLocalSession()) {
                 return true;
             }
-
+            // Must be an Oort handshake.
             Map<String, Object> messageExt = reply.getAssociated().getExt();
             if (messageExt == null) {
                 return true;
             }
-
             Object messageOortExtObject = messageExt.get(Oort.EXT_OORT_FIELD);
             if (!(messageOortExtObject instanceof Map)) {
+                return true;
+            }
+
+            // Add the extension information even in case we will disconnect.
+            // The presence of the extension information will inform the client
+            // that the connection "succeeded" from the Oort point of view, but
+            // we add the extension information to drop it if it already exists.
+            Map<String, Object> replyExt = reply.getExt(true);
+            Map<String, Object> replyOortExt = new HashMap<>(2);
+            replyExt.put(Oort.EXT_OORT_FIELD, replyOortExt);
+            replyOortExt.put(Oort.EXT_OORT_URL_FIELD, oort.getURL());
+            replyOortExt.put(EXT_OORT_ID_FIELD, oort.getId());
+
+            // Process only successful responses.
+            if (!reply.isSuccessful()) {
                 return true;
             }
 
@@ -514,16 +523,6 @@ class OortMembership extends AbstractLifeCycle {
                 }
                 disconnect(session, reply);
             } else {
-                // Add the extension information even in case we're then disconnecting.
-                // The presence of the extension information will inform the client
-                // that the connection "succeeded" from the Oort point of view, but
-                // we add the extension information to drop it if it already exists.
-                Map<String, Object> replyExt = reply.getExt(true);
-                Map<String, Object> replyOortExt = new HashMap<>(2);
-                replyExt.put(Oort.EXT_OORT_FIELD, replyOortExt);
-                replyOortExt.put(Oort.EXT_OORT_URL_FIELD, oort.getURL());
-                replyOortExt.put(EXT_OORT_ID_FIELD, oort.getId());
-
                 ClientCometInfo clientCometInfo;
                 ServerCometInfo existingServerCometInfo;
                 ServerCometInfo serverCometInfo = new ServerCometInfo(remoteOortId, remoteOortURL, session);
