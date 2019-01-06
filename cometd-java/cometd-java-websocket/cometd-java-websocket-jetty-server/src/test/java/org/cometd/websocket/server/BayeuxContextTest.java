@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2018 the original author or authors.
+ * Copyright (c) 2008-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.cometd.websocket.server;
+
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -53,8 +55,6 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 public class BayeuxContextTest extends ClientServerWebSocketTest {
     public BayeuxContextTest(String implementation) {

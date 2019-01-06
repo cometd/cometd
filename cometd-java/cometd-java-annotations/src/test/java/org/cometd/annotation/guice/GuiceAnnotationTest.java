@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2018 the original author or authors.
+ * Copyright (c) 2008-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,17 @@
  */
 package org.cometd.annotation.guice;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import org.cometd.annotation.ServerAnnotationProcessor;
 import org.cometd.server.BayeuxServerImpl;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class GuiceAnnotationTest {
     @Test
