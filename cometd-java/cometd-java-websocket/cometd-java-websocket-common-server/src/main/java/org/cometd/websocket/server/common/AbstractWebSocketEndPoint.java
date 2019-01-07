@@ -88,17 +88,10 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     public void onClose(int code, String reason) {
-        final ServerSessionImpl session = _session;
+        // There is no need to call BayeuxServerImpl.removeServerSession(),
+        // because the connection may have been closed for a reload.
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Closing {}/{} - {}", code, reason, session);
-        }
-        if (session != null) {
-            // There is no need to call BayeuxServerImpl.removeServerSession(),
-            // because the connection may have been closed for a reload, so
-            // just null out the current session to have it retrieved again.
-            _session = null;
-            session.setScheduler(null);
-            _transport.scheduleExpiration(session);
+            _logger.debug("Closing {}/{} - {}", code, reason, _session);
         }
         _transport.onClose(code, reason);
     }
