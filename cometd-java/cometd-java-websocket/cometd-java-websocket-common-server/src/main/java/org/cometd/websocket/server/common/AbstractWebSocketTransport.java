@@ -196,17 +196,10 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         }
 
         public void onClose(int code, String reason) {
-            final ServerSessionImpl session = _session;
-            if (session != null) {
-                // There is no need to call BayeuxServerImpl.removeServerSession(),
-                // because the connection may have been closed for a reload, so
-                // just null out the current session to have it retrieved again
-                _session = null;
-                scheduleExpiration(session);
-                cancelMetaConnectTask(session);
-            }
+            // There is no need to call BayeuxServerImpl.removeServerSession(),
+            // because the connection may have been closed for a reload.
             if (_logger.isDebugEnabled()) {
-                _logger.debug("Closing {}/{} - {}", code, reason, session);
+                _logger.debug("Closing {}/{} - {}", code, reason, _session);
             }
             AbstractWebSocketTransport.this.onClose(code, reason);
         }
@@ -566,7 +559,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             }
 
             @Override
-            protected Action process() throws Exception {
+            protected Action process() {
                 Entry<S> entry;
                 synchronized (this) {
                     entry = this.entry = _entries.peek();

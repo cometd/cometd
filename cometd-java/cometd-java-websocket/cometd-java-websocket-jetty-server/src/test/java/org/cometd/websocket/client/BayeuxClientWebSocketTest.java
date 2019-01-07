@@ -868,7 +868,9 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         stopAndDispose();
 
         Map<String, String> options = new HashMap<>();
+        long timeout = 2000;
         long maxInterval = 1000;
+        options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
         prepareAndStart(options);
 
@@ -876,7 +878,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        // Allow long poll to establish
+        // Allow the /meta/connect to be held.
         Thread.sleep(1000);
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -890,7 +892,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
 
         client.abort();
 
-        Assert.assertTrue(latch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.await(timeout + 2 * maxInterval, TimeUnit.MILLISECONDS));
     }
 
     @Test
