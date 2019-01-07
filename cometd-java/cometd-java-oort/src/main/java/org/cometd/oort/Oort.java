@@ -208,7 +208,7 @@ public class Oort extends ContainerLifeCycle {
         }
     }
 
-    ScheduledExecutorService getScheduler() {
+    protected ScheduledExecutorService getScheduler() {
         return _scheduler;
     }
 
@@ -313,6 +313,12 @@ public class Oort extends ContainerLifeCycle {
             options.put(idleTimeoutOption, option);
         }
 
+        String maxNetworkDelayOption = ClientTransport.MAX_NETWORK_DELAY_OPTION;
+        option = _bayeux.getOption(maxNetworkDelayOption);
+        if (option != null) {
+            options.put(maxNetworkDelayOption, option);
+        }
+
         List<ClientTransport> transports = new ArrayList<>();
         for (ClientTransport.Factory factory : getClientTransportFactories()) {
             transports.add(factory.newClientTransport(cometURL, options));
@@ -320,9 +326,13 @@ public class Oort extends ContainerLifeCycle {
 
         ClientTransport transport = transports.get(0);
         int size = transports.size();
-        ClientTransport[] otherTransports = transports.subList(1, size).toArray(new ClientTransport[size - 1]);
+        ClientTransport[] otherTransports = transports.subList(1, size).toArray(new ClientTransport[0]);
 
-        return new OortComet(this, cometURL, _scheduler, transport, otherTransports);
+        return newOortComet(cometURL, transport, otherTransports);
+    }
+
+    protected OortComet newOortComet(String cometURL, ClientTransport transport, ClientTransport[] otherTransports) {
+        return new OortComet(this, cometURL, getScheduler(), transport, otherTransports);
     }
 
     protected void configureOortComet(OortComet oortComet) {
