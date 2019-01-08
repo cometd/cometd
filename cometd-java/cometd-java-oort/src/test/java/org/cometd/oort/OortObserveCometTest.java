@@ -1151,11 +1151,12 @@ public class OortObserveCometTest extends OortTest {
         Server serverB = startServer(0, options);
         Oort oortB = startOort(serverB);
 
-
+        final AtomicInteger joinCount = new AtomicInteger();
         final AtomicReference<CountDownLatch> joinLatch = new AtomicReference<>(new CountDownLatch(2));
         Oort.CometListener joinListener = new Oort.CometListener.Adapter() {
             @Override
             public void cometJoined(Event event) {
+                joinCount.incrementAndGet();
                 joinLatch.get().countDown();
             }
         };
@@ -1170,22 +1171,36 @@ public class OortObserveCometTest extends OortTest {
         // Wait for the long polls to be held.
         sleep(1000);
 
-        CountDownLatch leftLatch = new CountDownLatch(1);
-        Oort.CometListener leftListener = new CometLeftListener(leftLatch);
+        final AtomicInteger leftCount = new AtomicInteger();
+        final CountDownLatch leftLatch = new CountDownLatch(1);
+        Oort.CometListener leftListener = new Oort.CometListener.Adapter() {
+            @Override
+            public void cometLeft(Event event) {
+                leftCount.incrementAndGet();
+                leftLatch.countDown();
+            }
+        };
         oortA.addCometListener(leftListener);
         LoggerFactory.getLogger(getClass()).info("HALF NETWORK DOWN");
         halfNetworkDown.set(true);
 
-        Assert.assertTrue(leftLatch.await(30, TimeUnit.SECONDS));
+        Assert.assertTrue(leftLatch.await(timeout + maxInterval + 2 * sweepPeriod, TimeUnit.MILLISECONDS));
+        // Make sure there is only one node left event.
+        sleep(1000);
+        Assert.assertEquals(1, leftCount.get());
 
         // Restore connectivity.
-        joinLatch.set(new CountDownLatch(2));
+        joinCount.set(0);
+        joinLatch.set(new CountDownLatch(1));
         LoggerFactory.getLogger(getClass()).info("HALF NETWORK UP");
         halfNetworkDown.set(false);
 
-        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.CONNECTED));
-        Assert.assertTrue(oortCometBA.waitFor(5000, BayeuxClient.State.CONNECTED));
-        Assert.assertTrue(joinLatch.get().await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(oortCometAB.waitFor(10000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(oortCometBA.waitFor(10000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(joinLatch.get().await(10, TimeUnit.SECONDS));
+        // Make sure there is only one node joined event.
+        sleep(1000);
+        Assert.assertEquals(1, joinCount.get());
     }
 
     private void sleep(long time) {
