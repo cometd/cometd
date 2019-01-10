@@ -90,8 +90,14 @@ public abstract class AbstractWebSocketEndPoint {
     public void onClose(int code, String reason) {
         // There is no need to call BayeuxServerImpl.removeServerSession(),
         // because the connection may have been closed for a reload.
+        ServerSessionImpl session = _session;
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Closing {}/{} - {}", code, reason, _session);
+            _logger.debug("Closing {}/{} - {}", code, reason, session);
+        }
+        // Detach the current scheduler from the session, so that if a new
+        // message is received, it will be processed by the new scheduler.
+        if (session != null) {
+            session.setScheduler(null);
         }
         _transport.onClose(code, reason);
     }
@@ -320,7 +326,9 @@ public abstract class AbstractWebSocketEndPoint {
 
         @Override
         public void cancel() {
-            cancelTimeout();
+            if (cancelTimeout()) {
+                _transport.scheduleExpiration(_session);
+            }
         }
 
         @Override
