@@ -76,7 +76,7 @@ public class HighRateServerEventsTest extends ClientServerTest {
         }
         long end = System.nanoTime();
         Assert.assertTrue(latch.get().await(count * 100, TimeUnit.MILLISECONDS));
-        System.err.println("rate = " + count * 1_000_000_000L / (end - begin) + " messages/s");
+        logger.info("rate = {} messages/s", count * 1_000_000_000L / (end - begin));
 
         assertEquals(count, messages.get());
 

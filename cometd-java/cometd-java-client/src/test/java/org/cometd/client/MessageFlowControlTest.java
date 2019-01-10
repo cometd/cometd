@@ -82,10 +82,8 @@ public class MessageFlowControlTest extends ClientServerTest {
                             if (channelName.equals(message.getChannel())) {
                                 long timeStamp = Long.parseLong(message.get(Message.TIMESTAMP_FIELD).toString());
                                 if (timeStamp <= lastTimeStamp + toleranceSeconds) {
-                                    System.err.println("removed " + message);
                                     iterator.remove();
                                 } else {
-                                    System.err.println("kept " + message);
                                     keptMessages.incrementAndGet();
                                     lastTimeStamp = timeStamp;
                                 }
@@ -119,7 +117,6 @@ public class MessageFlowControlTest extends ClientServerTest {
         client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
-                System.err.println("message = " + message);
                 messages.offer(message);
             }
         });

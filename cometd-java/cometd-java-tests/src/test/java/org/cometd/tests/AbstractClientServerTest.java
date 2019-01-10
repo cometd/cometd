@@ -49,6 +49,8 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
 public abstract class AbstractClientServerTest {
@@ -65,6 +67,7 @@ public abstract class AbstractClientServerTest {
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
     };
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
     private final Transport transport;
     protected Server server;
     protected ServerConnector connector;

@@ -58,7 +58,6 @@ public class BroadcastToPublisherTest extends ClientServerTest {
                     client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
                         @Override
                         public void onMessage(ClientSessionChannel channel, Message message) {
-                            System.err.println("message = " + message);
                             messageLatch.countDown();
                         }
                     }, new ClientSessionChannel.MessageListener() {

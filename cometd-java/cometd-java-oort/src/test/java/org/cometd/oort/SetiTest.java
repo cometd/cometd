@@ -940,9 +940,6 @@ public class SetiTest extends OortTest {
             // Wait for cloud/seti notifications to happen
             Thread.sleep(1000);
 
-            System.err.println(seti1.dump());
-            System.err.println(seti2.dump());
-
             Assert.assertFalse(seti1.isAssociated(userId1));
             Assert.assertTrue(seti1.isPresent(userId1));
             Assert.assertTrue(seti2.isAssociated(userId1));
@@ -988,9 +985,6 @@ public class SetiTest extends OortTest {
             new SetiService(seti2);
             // Wait for cloud/seti notifications to happen
             Thread.sleep(1000);
-
-            System.err.println(seti1.dump());
-            System.err.println(seti2.dump());
 
             Assert.assertTrue(seti1.isAssociated(userId1));
             Assert.assertTrue(seti1.isPresent(userId1));

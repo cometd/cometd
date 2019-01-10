@@ -72,11 +72,10 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
             public void onMessage(ClientSessionChannel channel, Message message) {
                 boolean wasConnected = connected.get();
                 connected.set(message.isSuccessful());
-
                 if (!wasConnected && connected.get()) {
-                    System.err.printf("BayeuxClient connected %s%n", message);
+                    logger.info("BayeuxClient connected {}", message);
                 } else if (wasConnected && !connected.get()) {
-                    System.err.printf("BayeuxClient unconnected %s%n", message);
+                    logger.info("BayeuxClient unconnected {}", message);
                 }
             }
         });
@@ -161,11 +160,10 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
             public void onMessage(ClientSessionChannel channel, Message message) {
                 boolean wasConnected = connected.get();
                 connected.set(message.isSuccessful());
-
                 if (!wasConnected && connected.get()) {
-                    System.err.println("BayeuxClient connected");
+                    logger.info("BayeuxClient connected");
                 } else if (wasConnected && !connected.get()) {
-                    System.err.println("BayeuxClient unconnected");
+                    logger.info("BayeuxClient unconnected");
                 }
             }
         });
@@ -231,7 +229,7 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
 
         public void setNetworkDown(long time) {
             this.networkDown = time;
-            System.err.println("Set network down");
+            logger.info("Set network down");
         }
 
         @Override
@@ -254,7 +252,7 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
         protected boolean sendConnect() {
             if (networkDown > 0) {
                 networkDown = 0;
-                System.err.println("Reset network down");
+                logger.info("Reset network down");
             }
             return super.sendConnect();
         }

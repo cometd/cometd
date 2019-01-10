@@ -157,27 +157,20 @@ public class BayeuxClientTest extends AbstractClientServerTest {
             final String channel = "/channel/" + random.nextInt(rooms);
 
             String data = "data from " + sender + " to " + channel;
-            // System.err.println(data);
             clients[sender].getChannel(channel).publish(data);
 
             if (i % batch == (batch - 1)) {
-                System.err.print('.');
                 Thread.sleep(pause);
             }
-            if (i % 1000 == 999) {
-                System.err.println();
-            }
         }
-        System.err.println();
 
         int expected = clients.length * publish / rooms;
 
         long start = System.nanoTime();
         while (received.get() < expected && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 10) {
             Thread.sleep(100);
-            System.err.println("received " + received.get() + "/" + expected);
         }
-        System.err.println((received.get() * 1000 * 1000 * 1000L) / (System.nanoTime() - start0) + " m/s");
+        logger.info("{} m/s", (received.get() * 1000 * 1000 * 1000L) / (System.nanoTime() - start0));
 
         Assert.assertEquals(expected, received.get());
 

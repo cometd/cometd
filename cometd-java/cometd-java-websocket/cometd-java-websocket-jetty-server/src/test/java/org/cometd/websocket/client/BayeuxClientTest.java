@@ -242,7 +242,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
-                System.err.println("<<" + message + " @ " + channel);
+                logger.info("<< {} @ {}", message, channel);
                 if (message.isSuccessful()) {
                     handshakeLatch.countDown();
                 }
@@ -252,7 +252,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
-                System.err.println("<<" + message + " @ " + channel);
+                logger.info("<< {} @ {}", message, channel);
                 if (message.isSuccessful()) {
                     connectLatch.countDown();
                 }
@@ -262,7 +262,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
-                System.err.println("<<" + message + " @ " + channel);
+                logger.info("<< {} @ {}", message, channel);
                 if (message.isSuccessful()) {
                     subscribeLatch.countDown();
                 }
@@ -272,7 +272,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
-                System.err.println("<<" + message + " @ " + channel);
+                logger.info("<< {} @ {}", message, channel);
                 if (message.isSuccessful()) {
                     unsubscribeLatch.countDown();
                 }
@@ -287,7 +287,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
         ClientSessionChannel.MessageListener subscriber = new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
-                System.err.println(" <" + message + " @ " + channel);
+                logger.info(" < {} @ {}", message, channel);
                 publishLatch.countDown();
             }
         };

@@ -30,6 +30,8 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class ClientServerTest {
     @Rule
@@ -40,6 +42,7 @@ public abstract class ClientServerTest {
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
     };
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected ServerConnector connector;
     protected Server server;
     protected ServletContextHandler context;
