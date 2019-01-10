@@ -77,10 +77,8 @@ public class MessageFlowControlTest extends ClientServerTest {
                         if (channelName.equals(message1.getChannel())) {
                             long timeStamp = Long.parseLong(message1.get(Message.TIMESTAMP_FIELD).toString());
                             if (timeStamp <= lastTimeStamp + toleranceSeconds) {
-                                System.err.println("removed " + message1);
                                 iterator.remove();
                             } else {
-                                System.err.println("kept " + message1);
                                 keptMessages.incrementAndGet();
                                 lastTimeStamp = timeStamp;
                             }
@@ -106,7 +104,6 @@ public class MessageFlowControlTest extends ClientServerTest {
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribed.countDown());
         final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
         client.getChannel(channelName).subscribe((channel, message) -> {
-            System.err.println("message = " + message);
             messages.offer(message);
         });
         Assert.assertTrue(subscribed.await(5, TimeUnit.SECONDS));

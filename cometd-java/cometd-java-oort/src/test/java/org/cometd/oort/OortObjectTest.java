@@ -389,8 +389,8 @@ public class OortObjectTest extends AbstractOortObjectTest {
         while (true) {
             String object2 = values.poll(10, TimeUnit.SECONDS);
             if (object2 == null) {
-                System.err.println(oortObject1.dump());
-                System.err.println(oortObject2.dump());
+                logger.info(oortObject1.dump());
+                logger.info(oortObject2.dump());
                 Assert.fail();
             } else {
                 if (object2.equals(object1)) {

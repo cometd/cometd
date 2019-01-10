@@ -45,6 +45,8 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
 public abstract class ClientServerWebSocketTest {
@@ -69,6 +71,7 @@ public abstract class ClientServerWebSocketTest {
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
     };
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final String wsTransportType;
     protected ServerConnector connector;
     protected Server server;

@@ -65,7 +65,6 @@ public class JacksonContextTest extends ClientServerTest {
 
                 @Override
                 public void onMessage(ClientSessionChannel channel1, Message message) {
-                    System.err.println("message = " + message);
                     Map<String, Object> data = message.getDataAsMap();
                     Assert.assertTrue(data.containsKey("publish"));
                     republishSeen |= data.containsKey("republish");
@@ -100,7 +99,6 @@ public class JacksonContextTest extends ClientServerTest {
 
                 @Override
                 public void onMessage(ClientSessionChannel channel, Message message) {
-                    System.err.println("local message = " + message);
                     Map<String, Object> data = message.getDataAsMap();
                     Assert.assertTrue(data.containsKey("publish"));
                     republishSeen |= data.containsKey("republish");

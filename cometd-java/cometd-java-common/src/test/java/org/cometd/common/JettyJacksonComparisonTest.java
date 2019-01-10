@@ -26,6 +26,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
 public class JettyJacksonComparisonTest {
@@ -85,6 +87,7 @@ public class JettyJacksonComparisonTest {
         }
     }
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final JSONProvider jsonProvider;
 
     public JettyJacksonComparisonTest(final Class<?> jsonProvider) throws Exception {
@@ -124,7 +127,7 @@ public class JettyJacksonComparisonTest {
                 jsonProvider.parse(json);
             }
             long end = System.nanoTime();
-            System.err.printf("%s context_parse iteration: %d time: %d ms%n",
+            logger.info("{} context_parse iteration: {} time: {} ms",
                     jsonProvider.getName(),
                     j,
                     TimeUnit.NANOSECONDS.toMillis(end - start));
@@ -160,7 +163,7 @@ public class JettyJacksonComparisonTest {
                 jsonProvider.generate(message);
             }
             long end = System.nanoTime();
-            System.err.printf("%s context_generate iteration: %d time: %d ms%n",
+            logger.info("{} context_generate iteration: {} time: {} ms",
                     jsonProvider.getName(),
                     j,
                     TimeUnit.NANOSECONDS.toMillis(end - start));

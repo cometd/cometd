@@ -81,7 +81,7 @@ public abstract class OortTest {
     }
 
     protected Server startServer(int port) throws Exception {
-        return startServer(port, new HashMap<String, String>());
+        return startServer(port, new HashMap<>());
     }
 
     protected Server startServer(int port, Map<String, String> options) throws Exception {

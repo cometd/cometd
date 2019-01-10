@@ -232,28 +232,28 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
 
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
-            System.err.println("<<" + message + " @ " + channel);
+            logger.info("<< {} @ {}", message, channel);
             if (message.isSuccessful()) {
                 handshakeLatch.countDown();
             }
         });
         final CountDownLatch connectLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
-            System.err.println("<<" + message + " @ " + channel);
+            logger.info("<< {} @ {}", message, channel);
             if (message.isSuccessful()) {
                 connectLatch.countDown();
             }
         });
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
-            System.err.println("<<" + message + " @ " + channel);
+            logger.info("<< {} @ {}", message, channel);
             if (message.isSuccessful()) {
                 subscribeLatch.countDown();
             }
         });
         final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
-            System.err.println("<<" + message + " @ " + channel);
+            logger.info("<< {} @ {}", message, channel);
             if (message.isSuccessful()) {
                 unsubscribeLatch.countDown();
             }
@@ -265,7 +265,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
 
         final CountDownLatch publishLatch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener subscriber = (channel, message) -> {
-            System.err.println(" <" + message + " @ " + channel);
+            logger.info(" < {} @ {}", message, channel);
             publishLatch.countDown();
         };
         ClientSessionChannel aChannel = client.getChannel("/a/channel");
