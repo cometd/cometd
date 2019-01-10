@@ -49,13 +49,19 @@ The repository for the CometD libraries is https://github.com/cometd/cometd.
 You can build the CometD project yourself by following the instruction in
 <<_build,the build section>>.
 
-In order to contribute code or documentation, you need to certify the
-http://developercertificate.org/[Developer Certificate of Origin] and sign-off your
-`git` commits using `git commit --signoff`.
+In order to contribute code or documentation, you need to comply with the following two
+requirements:
 
+* You must certify the http://developercertificate.org/[Developer Certificate of Origin]
+and sign-off your `git` commits using `git commit --signoff`.
 By signing off your `git` commits, you agree that you can certify
 what stated by the Developer Certificate of Origin.
-That is enough for the CometD project to accept your contribution.
+* You must license your contributed code under the
+http://www.apache.org/licenses/LICENSE-2.0[CometD project license], i.e. the Apache
+License version 2.0.
+
+Complying with these two requirements is enough for the CometD project to accept your
+contribution.
 
 The Developer Certificate of Origin (from https://developercertificate.org/):
 
@@ -70,10 +76,10 @@ To contribute code or documentation, follow these steps:
 
 * Create an issue at http://bugs.cometd.org.
 * Commit your changes:
-** If you have multiple commits, squash them into one commit only.
+** If you have multiple commits, consider squashing them into one commit only.
 ** Make sure that the email in the `Author` field of the commits
 corresponds to your GitHub email.
-** Signoff your commit using `git commit --signoff`.
+** Signoff your commits using `git commit --signoff`.
 ** The commit message should reference the issue number with the
 format `#<issue_number>`, so that GitHub can properly link the
 commit with the issue.
@@ -91,3 +97,8 @@ Date:   Sun Jan 01 00:00:00 1970 +0000
 
     Signed-off-by: John Doe <john.doe@nowhere.com>
 ----
+
+If your contribution contains new Java or JavaScript files, they must have the
+copyright/license header that is present in other Java or JavaScript files
+(otherwise the build will fail).
+
