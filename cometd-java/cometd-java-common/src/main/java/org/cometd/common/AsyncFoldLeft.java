@@ -150,7 +150,7 @@ public class AsyncFoldLeft {
             this.promise = promise;
         }
 
-        private void run() {
+        void run() {
             while (index < list.size()) {
                 state.set(State.LOOP);
                 operation.apply(result.get(), list.get(index), this);
