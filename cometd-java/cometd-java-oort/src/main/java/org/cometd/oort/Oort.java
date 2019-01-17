@@ -105,7 +105,7 @@ public class Oort extends ContainerLifeCycle {
     private final OortMembership _membership;
     private ScheduledExecutorService _scheduler;
     private String _secret;
-    private boolean _ackExtensionEnabled;
+    private boolean _ackExtensionEnabled = true;
     private Extension _ackExtension;
     private boolean _binaryExtensionEnabled;
     private Extension _serverBinaryExtension;
@@ -450,6 +450,10 @@ public class Oort extends ContainerLifeCycle {
      * @see #isOortHandshake(Message)
      */
     public boolean isOort(ServerSession session) {
+        if (session == null) {
+            return false;
+        }
+
         String id = session.getId();
 
         if (id.equals(_oortSession.getId())) {
