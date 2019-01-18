@@ -99,7 +99,7 @@ public class OortComet extends BayeuxClient {
         batch(new Runnable() {
             @Override
             public void run() {
-                // Subscribe to cloud notifications
+                // Subscribe to cloud notifications.
                 getChannel(Oort.OORT_CLOUD_CHANNEL).subscribe(new ClientSessionChannel.MessageListener() {
                     @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
@@ -126,7 +126,7 @@ public class OortComet extends BayeuxClient {
                 }
                 subscribe(channels);
 
-                // Advertise our own network
+                // Advertise our own network.
                 getChannel(Oort.OORT_CLOUD_CHANNEL).publish(new ArrayList<>(_oort.getKnownComets()));
 
                 // Advertise the remote node that we have joined.

@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -827,7 +828,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         @Override
         public void send(String toUser, String toChannel, Object data) {
-            _session.deliver(Seti.this._session.getServerSession(), toChannel, data);
+            _session.deliver(Seti.this._session, toChannel, data);
         }
 
         @Override
@@ -854,7 +855,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         @Override
         public int hashCode() {
-            return 31 * _userId.hashCode() + _session.getId().hashCode();
+            return Objects.hash(_userId, _session.getId());
         }
 
         @Override
@@ -906,7 +907,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         @Override
         public int hashCode() {
-            return 31 * _userId.hashCode() + _setiChannel.hashCode();
+            return Objects.hash(_userId, _setiChannel);
         }
 
         @Override

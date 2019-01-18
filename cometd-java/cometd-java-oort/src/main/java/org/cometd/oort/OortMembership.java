@@ -17,9 +17,11 @@ package org.cometd.oort;
 
 import static org.cometd.oort.Oort.EXT_OORT_ID_FIELD;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -30,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -38,6 +41,8 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,8 +58,7 @@ import org.slf4j.LoggerFactory;
  * confirmation that the {@code /meta/handshake} reply was processed by the
  * local node.</p>
  */
-// TODO: implement dump()
-class OortMembership extends AbstractLifeCycle {
+class OortMembership extends AbstractLifeCycle implements Dumpable {
     private final Map<String, OortComet> pendingComets = new HashMap<>();
     private final Map<String, ClientCometInfo> clientComets = new HashMap<>();
     private final Map<String, ServerCometInfo> serverComets = new HashMap<>();
@@ -288,6 +292,26 @@ class OortMembership extends AbstractLifeCycle {
             result = new ArrayList<>(clientComets.keySet());
         }
         return result;
+    }
+
+    @Override
+    public String dump() {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException {
+        ContainerLifeCycle.dumpObject(out, this);
+        Collection<Object> children = new ArrayList<>();
+        children.add(new Oort.DumpableCollection("pending", pendingComets.values()));
+        children.add(new Oort.DumpableCollection("clientComets", clientComets.values()));
+        children.add(new Oort.DumpableCollection("serverComets", serverComets.values()));
+        ContainerLifeCycle.dump(out, indent, children);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), oort.getURL());
     }
 
     private enum LocalState {
@@ -651,7 +675,7 @@ class OortMembership extends AbstractLifeCycle {
         @Override
         public boolean onMessage(ServerSession session, ServerSession sender, ServerMessage message) {
             // Prevent loops by not delivering a message from self or Oort session to remote Oort comets.
-            if (!message.isMeta() && sender != null && (sender.getId().equals(session.getId()) || oort.isOort(sender))) {
+            if (ChannelId.isBroadcast(message.getChannel()) && sender != null && (sender.getId().equals(session.getId()) || oort.isOort(sender))) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Blocked {} from {} to {}", message, sender, session);
                 }

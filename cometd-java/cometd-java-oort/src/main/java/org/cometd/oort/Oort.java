@@ -714,11 +714,11 @@ public class Oort extends ContainerLifeCycle {
         }
     }
 
-    private static class DumpableCollection implements Dumpable {
+    static class DumpableCollection implements Dumpable {
         private final String name;
         private final Collection<?> collection;
 
-        private DumpableCollection(String name, Collection<?> collection) {
+        DumpableCollection(String name, Collection<?> collection) {
             this.name = name;
             this.collection = collection;
         }
