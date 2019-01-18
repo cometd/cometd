@@ -82,12 +82,6 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
         <configuration>
-          <systemProperties>
-            <systemProperty>
-              <name>log4.configurationFile</name>
-              <value>src/main/webapp/WEB-INF/log4j2.properties</value>
-            </systemProperty>
-          </systemProperties>
           <requestLog implementation="org.eclipse.jetty.server.Slf4jRequestLog" />
           <stopPort>8989</stopPort>
           <stopKey>QUIT</stopKey>
