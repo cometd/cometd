@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.client.BayeuxClient;
+import org.cometd.server.AbstractServerTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.Assert;
@@ -493,7 +494,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
     }
 
     @Test
-    public void testNodeHalfDisconnected() throws Exception {
+    public void testNodeHalfDisconnectedWillReconnect() throws Exception {
         stop();
         long timeout = 5000;
         long maxInterval = 3000;
@@ -554,5 +555,99 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
         String value2 = oortMap1.find("key2");
         Assert.assertNotNull(value2);
+    }
+
+    @Test
+    public void testNodeHalfDisconnectedWillResync() throws Exception {
+        stop();
+        long timeout = 5000;
+        long maxInterval = 3000;
+        Map<String, String> options = new HashMap<>();
+        options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
+        options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
+        prepare(options);
+        String name = "half_disconnection_resync";
+        OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
+        final String key2B = "key2B";
+        final AtomicReference<ConcurrentMap<String, String>> mergeRef = new AtomicReference<>();
+        final CountDownLatch mergeLatch = new CountDownLatch(1);
+        final OortStringMap<String> oortMap1 = new OortStringMap<String>(oort1, name, factory) {
+            @Override
+            protected void onObject(Map<String, Object> data) {
+                @SuppressWarnings("unchecked")
+                Map<String, String> map = (Map<String, String>)data.get(Info.OBJECT_FIELD);
+                if (map != null && map.containsValue(key2B)) {
+                    // We have a Part for node2, but not an Info,
+                    // try a merge - should only contain node1 entries.
+                    mergeRef.set(merge(OortObjectMergers.<String, String>concurrentMapUnion()));
+                    mergeLatch.countDown();
+                }
+                super.onObject(data);
+            }
+        };
+        OortStringMap<String> oortMap2 = new OortStringMap<>(oort2, name, factory);
+        startOortObjects(oortMap1, oortMap2);
+
+        final CountDownLatch putLatch = new CountDownLatch(4);
+        OortMap.EntryListener<String, String> putListener = new OortMap.EntryListener.Adapter<String, String>() {
+            @Override
+            public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
+                putLatch.countDown();
+            }
+        };
+        oortMap1.addEntryListener(putListener);
+        oortMap2.addEntryListener(putListener);
+        oortMap1.putAndShare("key1A", "value1A", null);
+        oortMap2.putAndShare("key2A", "value2A", null);
+        Assert.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
+
+        // Stop only one of the connectors, so that the communication is half-disconnected.
+        final CountDownLatch leftLatch = new CountDownLatch(2);
+        oortMap1.getOort().addCometListener(new CometLeftListener(leftLatch));
+        oortMap1.addListener(new OortObject.Listener.Adapter<ConcurrentMap<String, String>>() {
+            @Override
+            public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info) {
+                leftLatch.countDown();
+            }
+        });
+        Server server1 = (Server)oortMap1.getOort().getBayeuxServer().getOption(Server.class.getName());
+        ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
+        int port1 = connector1.getLocalPort();
+        connector1.stop();
+        Assert.assertTrue(leftLatch.await(2 * (timeout + maxInterval), TimeUnit.SECONDS));
+
+        // OortCometBA communication is interrupted, but OortCometAB
+        // will allow nodeA to receive messages from nodeB.
+        oortMap2.putAndShare("key2B", "value2B", null);
+
+        // The merge should only contain node1 entries.
+        Assert.assertTrue(mergeLatch.await(5, TimeUnit.SECONDS));
+        ConcurrentMap<String, String> merge = mergeRef.get();
+        Assert.assertEquals(1, merge.size());
+        Assert.assertEquals("value1A", merge.get("key1A"));
+
+        // Give some time before reconnecting.
+        Thread.sleep(1000);
+
+        final CountDownLatch joinLatch = new CountDownLatch(2);
+        oortMap1.getOort().addCometListener(new CometJoinedListener(joinLatch));
+        oortMap1.addListener(new OortObject.Listener.Adapter<ConcurrentMap<String, String>>() {
+            @Override
+            public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo) {
+                if (oldInfo == null) {
+                    joinLatch.countDown();
+                }
+            }
+        });
+        connector1.setPort(port1);
+        connector1.start();
+        Assert.assertTrue(joinLatch.await(15, TimeUnit.SECONDS));
+
+        String value2A = oortMap1.find("key2A");
+        Assert.assertNotNull(value2A);
+        String value2B = oortMap1.find("key2B");
+        Assert.assertNotNull(value2B);
+        String value1A = oortMap2.find("key1A");
+        Assert.assertNotNull(value1A);
     }
 }

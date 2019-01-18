@@ -455,9 +455,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     protected boolean sendMessages(List<Message.Mutable> messages) {
-        for (Iterator<Message.Mutable> iterator = messages.iterator(); iterator.hasNext(); ) {
+        Iterator<Message.Mutable> iterator = messages.iterator();
+        while (iterator.hasNext()) {
             Message.Mutable message = iterator.next();
-
             String messageId = message.getId();
             message.setClientId(sessionState.sessionId);
 

@@ -20,10 +20,15 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -34,7 +39,9 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
+import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.AbstractServerTransport;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -247,7 +254,7 @@ public class OortObserveCometTest extends OortTest {
     }
 
     @Test
-    public void testObserveStartedOortAndDetectRestart() throws Exception {
+    public void testObserveStartedOortAndDetectConnectorRestart() throws Exception {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
 
@@ -259,6 +266,18 @@ public class OortObserveCometTest extends OortTest {
         OortComet oortComet21 = oort2.observeComet(oort1.getURL());
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
+        // Wait for for comet events and for /meta/connect to be held.
+        sleep(1000);
+
+        CountDownLatch joinedLatch = new CountDownLatch(1);
+        CometJoinedListener joinedListener = new CometJoinedListener(joinedLatch);
+        oort1.addCometListener(joinedListener);
+        oort2.addCometListener(joinedListener);
+        CountDownLatch leftLatch = new CountDownLatch(1);
+        CometLeftListener leftListener = new CometLeftListener(leftLatch);
+        oort1.addCometListener(leftListener);
+        oort2.addCometListener(leftListener);
+
         ServerConnector connector2 = (ServerConnector)server2.getConnectors()[0];
         int port2 = connector2.getLocalPort();
         connector2.stop();
@@ -269,6 +288,85 @@ public class OortObserveCometTest extends OortTest {
         connector2.start();
 
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Assert.assertFalse(joinedLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(leftLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testObserveStartedOortAndDetectServerRestart() throws Exception {
+        Server serverA = startServer(0);
+        Oort oortA = startOort(serverA);
+
+        Server serverB = startServer(0);
+        Oort oortB = startOort(serverB);
+
+        OortComet oortCometAB1 = oortA.observeComet(oortB.getURL());
+        Assert.assertTrue(oortCometAB1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        OortComet oortComet21 = oortB.observeComet(oortA.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait for for comet events and for /meta/connect to be held.
+        sleep(1000);
+
+        final AtomicInteger leftCountA = new AtomicInteger();
+        final CountDownLatch leftLatchA = new CountDownLatch(1);
+        oortA.addCometListener(new Oort.CometListener.Adapter() {
+            @Override
+            public void cometLeft(Event event) {
+                leftCountA.incrementAndGet();
+                leftLatchA.countDown();
+            }
+        });
+
+        ServerConnector connector2 = (ServerConnector)serverB.getConnectors()[0];
+        int port2 = connector2.getLocalPort();
+        stopOort(oortB);
+        oorts.remove(oortB);
+        stopServer(serverB);
+
+        Assert.assertTrue(oortCometAB1.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(leftLatchA.await(5, TimeUnit.SECONDS));
+        // Wait for possibly more (wrong) comet events.
+        sleep(1000);
+        Assert.assertEquals(1, leftCountA.get());
+
+        serverB = startServer(port2);
+        String url2 = (String)serverB.getAttribute(OortConfigServlet.OORT_URL_PARAM);
+        BayeuxServer bayeuxServer2 = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeuxServer2.setOption(Server.class.getName(), serverB);
+        oortB = new Oort(bayeuxServer2, url2);
+        oorts.add(oortB);
+        final AtomicInteger joinedCountA = new AtomicInteger();
+        final CountDownLatch joinedLatchA = new CountDownLatch(1);
+        oortA.addCometListener(new Oort.CometListener.Adapter() {
+            @Override
+            public void cometJoined(Event event) {
+                joinedCountA.incrementAndGet();
+                joinedLatchA.countDown();
+            }
+        });
+        final AtomicInteger joinedCountB = new AtomicInteger();
+        final CountDownLatch joinedLatchB = new CountDownLatch(1);
+        oortB.addCometListener(new Oort.CometListener.Adapter() {
+            @Override
+            public void cometJoined(Event event) {
+                joinedCountB.incrementAndGet();
+                joinedLatchB.countDown();
+            }
+        });
+        oortB.start();
+        OortComet oortCometAB2 = oortA.observeComet(oortB.getURL());
+        Assert.assertNotSame(oortCometAB1, oortCometAB2);
+
+        Assert.assertTrue(oortCometAB2.waitFor(5000, BayeuxClient.State.CONNECTED));
+        // Wait for for comet events and for /meta/connect to be held.
+        sleep(1000);
+
+        Assert.assertTrue(joinedLatchA.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(1, joinedCountA.get());
+        Assert.assertTrue(joinedLatchB.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(1, joinedCountB.get());
     }
 
     @Test
@@ -324,8 +422,10 @@ public class OortObserveCometTest extends OortTest {
 
     @Test
     public void testNetworkBrokenLongerThanMaxInterval() throws Exception {
-        long maxInterval = 2000;
+        long timeout = 2000;
+        long maxInterval = 3000;
         Map<String, String> options = new HashMap<>();
+        options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
 
         Server server1 = startServer(0, options);
@@ -339,6 +439,29 @@ public class OortObserveCometTest extends OortTest {
         OortComet oortComet21 = oort2.observeComet(oort1.getURL());
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
+        // Wait for the comet events and for /meta/connect to be held.
+        sleep(1000);
+
+        final AtomicInteger joinCount = new AtomicInteger();
+        final CountDownLatch joinLatch = new CountDownLatch(2);
+        final AtomicInteger leftCount = new AtomicInteger();
+        final CountDownLatch leftLatch = new CountDownLatch(2);
+        Oort.CometListener listener = new Oort.CometListener() {
+            @Override
+            public void cometJoined(Event event) {
+                joinCount.incrementAndGet();
+                joinLatch.countDown();
+            }
+
+            @Override
+            public void cometLeft(Event event) {
+                leftCount.incrementAndGet();
+                leftLatch.countDown();
+            }
+        };
+        oort1.addCometListener(listener);
+        oort2.addCometListener(listener);
+
         ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
         int port1 = connector1.getLocalPort();
         connector1.stop();
@@ -351,7 +474,10 @@ public class OortObserveCometTest extends OortTest {
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.UNCONNECTED));
 
         // Wait until the servers sweep the sessions.
-        Thread.sleep(2 * maxInterval);
+        Thread.sleep(timeout + 2 * maxInterval);
+
+        Assert.assertTrue(leftLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(2, leftCount.get());
 
         connector1.setPort(port1);
         connector1.start();
@@ -361,6 +487,12 @@ public class OortObserveCometTest extends OortTest {
 
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+        
+        // Wait for comet events.
+        sleep(1000);
+
+        Assert.assertTrue(joinLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(2, joinCount.get());
     }
 
     @Test
@@ -656,7 +788,7 @@ public class OortObserveCometTest extends OortTest {
 
         Assert.assertEquals(1, oortB.getKnownComets().size());
 
-        // Only master URLs are known
+        // Only master URLs are known.
         Assert.assertFalse(oortA.getKnownComets().contains(otherURLB));
         Assert.assertTrue(oortA.getKnownComets().contains(urlB));
         // But comets can be known with alias URLs
@@ -667,21 +799,38 @@ public class OortObserveCometTest extends OortTest {
         Assert.assertSame(oortCometAB, oortCometAB1);
         Assert.assertSame(oortCometAB1, oortCometAB2);
 
-        // Now try with the original URL
+        // Now try with the original URL.
         OortComet oortCometAB3 = oortA.observeComet(urlB);
         Assert.assertNotNull(oortCometAB3);
         Assert.assertSame(oortCometAB, oortCometAB3);
 
-        // Try with yet another URL
+        // Try with yet another URL.
+        // The previous OortComet will be disconnected, but since
+        // it was already connected, no join/left events are emitted.
+        final BlockingQueue<Oort.CometListener.Event> cometEvents = new LinkedBlockingQueue<>();
+        oortB.addCometListener(new Oort.CometListener() {
+            @Override
+            public void cometLeft(Event event) {
+                cometEvents.offer(event);
+            }
+
+            @Override
+            public void cometJoined(Event event) {
+                cometEvents.offer(event);
+            }
+        });
         String anotherURLB = urlB.replace("localhost", "[::1]");
         OortComet oortCometAB4 = oortA.observeComet(anotherURLB);
-        Assert.assertTrue(oortCometAB4.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(oortCometAB4.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.DISCONNECTED));
         OortComet oortCometAB5 = oortA.getComet(anotherURLB);
-        Assert.assertSame(oortCometAB, oortCometAB5);
+        Assert.assertSame(oortCometAB4, oortCometAB5);
+        Assert.assertNull(cometEvents.poll(1, TimeUnit.SECONDS));
 
         // Now disconnect with the original URL
         OortComet oortCometAB6 = oortA.deobserveComet(urlB);
         Assert.assertNotNull(oortCometAB6);
+        Assert.assertSame(oortCometAB4, oortCometAB6);
         Assert.assertTrue(oortCometAB6.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 
@@ -915,5 +1064,242 @@ public class OortObserveCometTest extends OortTest {
         Arrays.fill(clob, 'z');
         clientA.getChannel(channelName).publish(new String(clob));
         Assert.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testHandshakeReplyFailureDoesNotDisconnectOortComet() throws Exception {
+        Server serverA = startServer(0);
+        Oort oortA = startOort(serverA);
+        Server serverB = startServer(0);
+        final long maxNetworkDelay = 1000;
+        BayeuxServer bayeuxServerB = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeuxServerB.addExtension(new BayeuxServer.Extension.Adapter() {
+            private final AtomicInteger replies = new AtomicInteger();
+
+            @Override
+            public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
+                if (session != null && !session.isLocalSession() &&
+                        Channel.META_HANDSHAKE.equals(message.getChannel()) &&
+                        message.containsKey(Message.SUCCESSFUL_FIELD)) {
+                    if (replies.incrementAndGet() == 1) {
+                        // Delay the reply so the client thinks it has been lost.
+                        sleep(3 * maxNetworkDelay);
+                    }
+                }
+                return true;
+            }
+        });
+        Oort oortB = startOort(serverB);
+
+        CountDownLatch joinLatch = new CountDownLatch(1);
+        oortB.addCometListener(new CometJoinedListener(joinLatch));
+        CountDownLatch leftLatch = new CountDownLatch(1);
+        oortB.addCometListener(new CometLeftListener(leftLatch));
+
+        OortComet oortCometAB = oortA.createOortComet(oortB.getURL());
+        oortCometAB.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
+        final CountDownLatch handshakeLatch = new CountDownLatch(1);
+        oortCometAB.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            private final AtomicInteger handshakes = new AtomicInteger();
+
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                // The first handshake should timeout.
+                if (handshakes.incrementAndGet() == 1) {
+                    if (!message.isSuccessful()) {
+                        handshakeLatch.countDown();
+                    }
+                }
+            }
+        });
+        oortA.connectComet(oortCometAB);
+
+        // Wait for the first handshake reply to fail, the
+        // OortComet should retry the handshake and succeed.
+        sleep(2 * maxNetworkDelay);
+
+        Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(oortCometAB.isDisconnected());
+        Assert.assertTrue(joinLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(leftLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testJoinMessageFailure() throws Exception {
+        Server serverA = startServer(0);
+        Oort oortA = startOort(serverA);
+        Server serverB = startServer(0);
+        BayeuxServer bayeuxServerB = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
+        ServerChannel joinChannel = bayeuxServerB.createChannelIfAbsent(Oort.OORT_SERVICE_CHANNEL).getReference();
+        final AtomicBoolean joinMessage = new AtomicBoolean();
+        joinChannel.addListener(new ServerChannel.MessageListener() {
+            @Override
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+                return joinMessage.get();
+            }
+        });
+        Oort oortB = startOort(serverB);
+
+        final AtomicReference<CountDownLatch> joinEventLatch = new AtomicReference<>(new CountDownLatch(1));
+        oortB.addCometListener(new Oort.CometListener.Adapter() {
+            @Override
+            public void cometJoined(Event event) {
+                joinEventLatch.get().countDown();
+            }
+        });
+
+        OortComet oortCometAB = oortA.createOortComet(oortB.getURL());
+        final CountDownLatch joinMessageFailure = new CountDownLatch(1);
+        final CountDownLatch joinMessageSuccess = new CountDownLatch(1);
+        oortCometAB.getChannel(Oort.OORT_SERVICE_CHANNEL).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                if (message.isSuccessful()) {
+                    joinMessageSuccess.countDown();
+                } else {
+                    joinMessageFailure.countDown();
+                }
+            }
+        });
+        oortA.connectComet(oortCometAB);
+
+        // Must not emit the join event if the join message failed.
+        Assert.assertFalse(joinEventLatch.get().await(1, TimeUnit.SECONDS));
+
+        // Allow the join message to succeed, the join message must be retried.
+        joinEventLatch.set(new CountDownLatch(1));
+        joinMessage.set(true);
+        Assert.assertTrue(joinEventLatch.get().await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testHandshakeFailureDoesNotDisconnectOortComet() throws Exception {
+        Server serverA = startServer(0);
+        Oort oortA = startOort(serverA);
+        Server serverB = startServer(0);
+        BayeuxServer bayeuxServerB = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeuxServerB.addExtension(new BayeuxServer.Extension.Adapter() {
+            private final AtomicInteger handshakes = new AtomicInteger();
+
+            @Override
+            public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
+                if (session != null && !session.isLocalSession() &&
+                        Channel.META_HANDSHAKE.equals(message.getChannel())) {
+                    return handshakes.incrementAndGet() > 1;
+                }
+                return true;
+            }
+        });
+        Oort oortB = startOort(serverB);
+
+        OortComet oortCometAB = oortA.observeComet(oortB.getURL());
+        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        oortCometAB.disconnect();
+        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+    }
+
+    @Test
+    public void testMessagesDroppedOnlyInOneDirection() throws Exception {
+        long sweepPeriod = 1000;
+        long maxNetworkDelay = 1000;
+        long timeout = 2000;
+        long maxInterval = timeout + maxNetworkDelay + 1000;
+        Map<String, String> options = new HashMap<>();
+        options.put(BayeuxServerImpl.SWEEP_PERIOD_OPTION, String.valueOf(sweepPeriod));
+        options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, String.valueOf(maxNetworkDelay));
+        options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
+        options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
+        Server serverA = startServer(0, options);
+        String urlA = (String)serverA.getAttribute(OortConfigServlet.OORT_URL_PARAM);
+        BayeuxServer bayeuxServerA = (BayeuxServer)serverA.getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeuxServerA.setOption(Server.class.getName(), serverA);
+        final AtomicBoolean halfNetworkDown = new AtomicBoolean();
+        Oort oortA = new Oort(bayeuxServerA, urlA) {
+            @Override
+            protected OortComet newOortComet(String cometURL, ClientTransport transport, ClientTransport[] otherTransports) {
+                return new OortComet(this, cometURL, getScheduler(), transport, otherTransports) {
+                    @Override
+                    public void onMessages(final List<Message.Mutable> messages) {
+                        if (halfNetworkDown.get()) {
+                            logger.info("Network down for client receive {}", messages);
+                            messagesFailure(new Exception(), messages);
+                            messages.clear();
+                        }
+                    }
+                };
+            }
+
+            @Override
+            protected void configureOortComet(OortComet oortComet) {
+                super.configureOortComet(oortComet);
+                oortComet.setOption(BayeuxClient.BACKOFF_INCREMENT_OPTION, 250L);
+            }
+        };
+        bayeuxServerA.addExtension(new HalfNetworkDownExtension(oortA, halfNetworkDown));
+        oortA.start();
+        oorts.add(oortA);
+        Server serverB = startServer(0, options);
+        Oort oortB = startOort(serverB);
+
+        final AtomicInteger joinCount = new AtomicInteger();
+        final AtomicReference<CountDownLatch> joinLatch = new AtomicReference<>(new CountDownLatch(2));
+        Oort.CometListener joinListener = new Oort.CometListener.Adapter() {
+            @Override
+            public void cometJoined(Event event) {
+                joinCount.incrementAndGet();
+                joinLatch.get().countDown();
+            }
+        };
+        oortA.addCometListener(joinListener);
+        oortB.addCometListener(joinListener);
+        OortComet oortCometAB = oortA.observeComet(oortB.getURL());
+        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(joinLatch.get().await(5, TimeUnit.SECONDS));
+        OortComet oortCometBA = oortB.findComet(oortA.getURL());
+        Assert.assertTrue(oortCometBA.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait for the /meta/connects to be held.
+        sleep(1000);
+
+        final AtomicInteger leftCount = new AtomicInteger();
+        final CountDownLatch leftLatch = new CountDownLatch(1);
+        Oort.CometListener leftListener = new Oort.CometListener.Adapter() {
+            @Override
+            public void cometLeft(Event event) {
+                leftCount.incrementAndGet();
+                leftLatch.countDown();
+            }
+        };
+        oortA.addCometListener(leftListener);
+        logger.info("HALF NETWORK DOWN");
+        halfNetworkDown.set(true);
+
+        Assert.assertTrue(leftLatch.await(timeout + maxInterval + 2 * sweepPeriod, TimeUnit.MILLISECONDS));
+        // Make sure there is only one node left event.
+        sleep(1000);
+        Assert.assertEquals(1, leftCount.get());
+
+        // Restore connectivity.
+        joinCount.set(0);
+        joinLatch.set(new CountDownLatch(1));
+        logger.info("HALF NETWORK UP");
+        halfNetworkDown.set(false);
+
+        Assert.assertTrue(oortCometAB.waitFor(10000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(oortCometBA.waitFor(10000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(joinLatch.get().await(10, TimeUnit.SECONDS));
+        // Make sure there is only one node joined event.
+        sleep(1000);
+        Assert.assertEquals(1, joinCount.get());
+    }
+
+    private void sleep(long time) {
+        try {
+            Thread.sleep(time);
+        } catch (InterruptedException x) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(x);
+        }
     }
 }

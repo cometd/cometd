@@ -478,6 +478,9 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         if (part == null) {
             part = new ObjectPart();
             ObjectPart existing = parts.putIfAbsent(oortURL, part);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Created part {} for {}{}", part, oortURL, existing != null ? ", existing " + existing : "");
+            }
             if (existing != null) {
                 part = existing;
             }
@@ -525,7 +528,10 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     protected Collection<Info<T>> getInfos() {
         List<Info<T>> result = new ArrayList<>(parts.size());
         for (ObjectPart part : parts.values()) {
-            result.add(part.getInfo());
+            Info<T> info = part.getInfo();
+            if (info != null) {
+                result.add(info);
+            }
         }
         return result;
     }

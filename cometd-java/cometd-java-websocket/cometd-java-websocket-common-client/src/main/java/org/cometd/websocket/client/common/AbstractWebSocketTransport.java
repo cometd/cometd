@@ -244,7 +244,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
                     WebSocketExchange exchange = deregisterMessage(message);
                     if (exchange != null) {
-                        exchange.listener.onMessages(Collections.singletonList(message));
+                        exchange.listener.onMessages(new ArrayList<>(Collections.singletonList(message)));
                     } else {
                         // If the exchange is missing, then the message has expired, and we do not notify
                         if (logger.isDebugEnabled()) {
@@ -256,7 +256,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
                         disconnect("Disconnect");
                     }
                 } else {
-                    _listener.onMessages(Collections.singletonList(message));
+                    _listener.onMessages(new ArrayList<>(Collections.singletonList(message)));
                 }
             }
         }
