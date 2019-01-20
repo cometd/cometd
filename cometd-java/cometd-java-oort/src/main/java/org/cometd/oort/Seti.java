@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -102,7 +103,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     }
 
     @Override
-    protected void doStart() throws Exception {
+    protected void doStart() {
         BayeuxServer bayeux = _oort.getBayeuxServer();
 
         _session.handshake();
@@ -124,7 +125,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     }
 
     @Override
-    protected void doStop() throws Exception {
+    protected void doStop() {
         removeAssociationsAndPresences();
         _presenceListeners.clear();
 
@@ -196,11 +197,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         }
 
         synchronized (_uid2Location) {
-            Set<Location> locations = _uid2Location.get(userId);
-            if (locations == null) {
-                locations = new HashSet<>();
-                _uid2Location.put(userId, locations);
-            }
+            Set<Location> locations = _uid2Location.computeIfAbsent(userId, k -> new HashSet<>());
             boolean result = locations.add(location);
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Associations: {}", _uid2Location.size());
@@ -414,18 +411,30 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Broadcasting association removal for users {}", userIds);
         }
-        SetiPresence presence = new SetiPresence(false, userIds);
+        SetiPresence presence = new SetiPresence(Collections.emptySet());
         presence.put(SetiPresence.ALIVE_FIELD, false);
         _session.getChannel(SETI_ALL_CHANNEL).publish(presence);
     }
 
     protected void removePresences(String oortURL) {
-        List<String> userIds = new ArrayList<>();
+        Set<String> userIds = removeRemotePresences(oortURL);
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("Removing presences of comet {} for users {}", oortURL, userIds);
+        }
+        for (String userId : userIds) {
+            notifyPresenceRemoved(oortURL, userId);
+        }
+    }
+
+    private Set<String> removeRemotePresences(String oortURL) {
+        Set<String> userIds = new HashSet<>();
         synchronized (_uid2Location) {
-            for (Iterator<Map.Entry<String, Set<Location>>> entries = _uid2Location.entrySet().iterator(); entries.hasNext(); ) {
+            Iterator<Map.Entry<String, Set<Location>>> entries = _uid2Location.entrySet().iterator();
+            while (entries.hasNext()) {
                 Map.Entry<String, Set<Location>> entry = entries.next();
                 Set<Location> userLocations = entry.getValue();
-                for (Iterator<Location> iterator = userLocations.iterator(); iterator.hasNext(); ) {
+                Iterator<Location> iterator = userLocations.iterator();
+                while (iterator.hasNext()) {
                     Location location = iterator.next();
                     if (location instanceof SetiLocation) {
                         if (oortURL.equals(((SetiLocation)location)._oortURL)) {
@@ -440,12 +449,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
                 }
             }
         }
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Removing presences of comet {} for users {}", oortURL, userIds);
-        }
-        for (String userId : userIds) {
-            notifyPresenceRemoved(oortURL, userId);
-        }
+        return userIds;
     }
 
     /**
@@ -600,23 +604,41 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     protected void receiveRemotePresence(Map<String, Object> presence) {
         String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
         boolean present = (Boolean)presence.get(SetiPresence.PRESENCE_FIELD);
+        boolean replace = presence.get(SetiPresence.REPLACE_FIELD) == Boolean.TRUE;
         Set<String> userIds = convertPresenceUsers(presence);
 
         if (_logger.isDebugEnabled()) {
             _logger.debug("Received remote presence message from comet {} for {}", oortURL, userIds);
         }
 
-        for (String userId : userIds) {
-            SetiLocation location = new SetiLocation(userId, oortURL);
-            if (present) {
-                if (associateRemote(userId, location)) {
-                    notifyPresenceAdded(oortURL, userId);
-                }
-            } else {
-                if (disassociate(userId, location)) {
-                    notifyPresenceRemoved(oortURL, userId);
+        Set<String> added = new HashSet<>();
+        Set<String> removed = new HashSet<>();
+        synchronized (_uid2Location) {
+            if (replace) {
+                removed.addAll(removeRemotePresences(oortURL));
+            }
+            for (String userId : userIds) {
+                SetiLocation location = new SetiLocation(userId, oortURL);
+                if (present) {
+                    if (associateRemote(userId, location)) {
+                        added.add(userId);
+                    }
+                } else {
+                    if (disassociate(userId, location)) {
+                        removed.add(userId);
+                    }
                 }
             }
+        }
+
+        Set<String> toRemove = new HashSet<>(removed);
+        toRemove.removeAll(added);
+        for (String userId : toRemove) {
+            notifyPresenceRemoved(oortURL, userId);
+        }
+        added.removeAll(removed);
+        for (String userId : added) {
+            notifyPresenceAdded(oortURL, userId);
         }
 
         if (presence.get(SetiPresence.ALIVE_FIELD) == Boolean.TRUE) {
@@ -628,7 +650,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
                     _logger.debug("Pushing associated users {} to comet {}", associatedUserIds, oortURL);
                 }
                 ClientSessionChannel channel = oortComet.getChannel(generateSetiChannel(generateSetiId(oortURL)));
-                channel.publish(new SetiPresence(true, associatedUserIds));
+                channel.publish(new SetiPresence(associatedUserIds));
             }
         }
     }
@@ -793,7 +815,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         @Override
         public void send(String toUser, String toChannel, Object data) {
-            _session.deliver(Seti.this._session.getServerSession(), toChannel, data, Promise.noop());
+            _session.deliver(Seti.this._session, toChannel, data, Promise.noop());
         }
 
         @Override
@@ -820,7 +842,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         @Override
         public int hashCode() {
-            return 31 * _userId.hashCode() + _session.getId().hashCode();
+            return Objects.hash(_userId, _session.getId());
         }
 
         @Override
@@ -872,7 +894,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         @Override
         public int hashCode() {
-            return 31 * _userId.hashCode() + _setiChannel.hashCode();
+            return Objects.hash(_userId, _setiChannel);
         }
 
         @Override
@@ -901,16 +923,22 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         private static final String OORT_URL_FIELD = "oortURL";
         private static final String ALIVE_FIELD = "alive";
         private static final String PRESENCE_FIELD = "presence";
+        private static final String REPLACE_FIELD = "replace";
 
         private SetiPresence(boolean present, String userId) {
-            this(present, Collections.singleton(userId));
+            this(present, Collections.singleton(userId), false);
         }
 
-        private SetiPresence(boolean present, Set<String> userIds) {
+        private SetiPresence(Set<String> userIds) {
+            this(true, userIds, true);
+        }
+
+        private SetiPresence(boolean present, Set<String> userIds, boolean replace) {
             super(4);
             put(USER_IDS_FIELD, userIds);
             put(OORT_URL_FIELD, _oort.getURL());
             put(PRESENCE_FIELD, present);
+            put(REPLACE_FIELD, replace);
         }
     }
 
@@ -1011,7 +1039,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Pushing associated users {} to comet {}", userIds, oortURL);
                 }
-                channel.publish(new SetiPresence(true, userIds));
+                channel.publish(new SetiPresence(userIds));
             }
         }
 
@@ -1033,7 +1061,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Broadcasting associated users {}", associatedUserIds);
                 }
-                SetiPresence presence = new SetiPresence(true, associatedUserIds);
+                SetiPresence presence = new SetiPresence(associatedUserIds);
                 presence.put(SetiPresence.ALIVE_FIELD, true);
                 session.deliver(_session, SETI_ALL_CHANNEL, presence, Promise.noop());
             }

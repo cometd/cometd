@@ -1209,6 +1209,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         if (id != null) {
             reply.setId(id);
         }
+        Object subscriptions = message.get(Message.SUBSCRIPTION_FIELD);
+        if (subscriptions != null) {
+            reply.put(Message.SUBSCRIPTION_FIELD, subscriptions);
+        }
         return reply;
     }
 
@@ -1424,7 +1428,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                     error(reply, "403::subscription_invalid");
                     promise.succeed(false);
                 } else {
-                    reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
                     AsyncFoldLeft.run(subscriptions, true, (result, subscription, loop) -> {
                         ServerChannelImpl channel = getServerChannel(subscription);
                         if (channel == null) {
@@ -1481,7 +1484,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                     error(reply, "403::subscription_invalid");
                     promise.succeed(false);
                 } else {
-                    reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
                     AsyncFoldLeft.run(subscriptions, true, (result, subscription, loop) -> {
                         ServerChannelImpl channel = getServerChannel(subscription);
                         if (channel == null) {

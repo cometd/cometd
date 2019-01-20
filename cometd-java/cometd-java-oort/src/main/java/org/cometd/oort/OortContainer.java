@@ -32,7 +32,7 @@ public abstract class OortContainer<T> extends OortObject<T> {
     }
 
     @Override
-    protected void doStop() throws Exception {
+    protected void doStop() {
         super.doStop();
         updaters.clear();
     }
@@ -146,7 +146,7 @@ public abstract class OortContainer<T> extends OortObject<T> {
         public int compare(Map<String, Object> o1, Map<String, Object> o2) {
             long v1 = ((Number)o1.get(Info.VERSION_FIELD)).longValue();
             long v2 = ((Number)o2.get(Info.VERSION_FIELD)).longValue();
-            return v1 > v2 ? 1 : v1 < v2 ? -1 : 0;
+            return Long.compare(v1, v2);
         }
     }
 }

@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
@@ -91,7 +92,7 @@ public class OortComet extends BayeuxClient {
         }
     }
 
-    void open() {
+    void open(final ClientSession.MessageListener callback) {
         batch(() -> {
             // Subscribe to cloud notifications
             getChannel(Oort.OORT_CLOUD_CHANNEL).subscribe((channel, message) -> {
@@ -113,18 +114,21 @@ public class OortComet extends BayeuxClient {
 
             Set<String> channels = _oort.getObservedChannels();
             if (logger.isDebugEnabled()) {
-                logger.debug("Handshake completed, observing channels {}", channels);
+                logger.debug("Observing channels {}", channels);
             }
             subscribe(channels);
 
-            // Advertise the remote node that we have joined
+            // Advertise our own network.
+            getChannel(Oort.OORT_CLOUD_CHANNEL).publish(new ArrayList<>(_oort.getKnownComets()));
+
+            // Advertise the remote node that we have joined.
             Map<String, Object> data = new HashMap<>(2);
             data.put(Oort.EXT_OORT_ID_FIELD, _oort.getId());
             data.put(Oort.EXT_OORT_URL_FIELD, _oort.getURL());
-            getChannel(Oort.OORT_SERVICE_CHANNEL).publish(data);
-
-            // Advertise our own network
-            getChannel(Oort.OORT_CLOUD_CHANNEL).publish(new ArrayList<>(_oort.getKnownComets()));
+            if (logger.isDebugEnabled()) {
+                logger.debug("Sending join data {}", data);
+            }
+            getChannel(Oort.OORT_SERVICE_CHANNEL).publish(data, callback);
         });
     }
 

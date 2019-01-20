@@ -156,7 +156,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     }
 
     @Override
-    protected void doStart() throws Exception {
+    protected void doStart() {
         ObjectPart part = new ObjectPart();
         parts.put(oort.getURL(), part);
         Info<T> info = newInfo(factory.newObject(null));
@@ -180,7 +180,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     }
 
     @Override
-    protected void doStop() throws Exception {
+    protected void doStop() {
         oort.deobserveChannel(broadcastChannel);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         ServerChannel channel = bayeuxServer.getChannel(broadcastChannel);
@@ -466,6 +466,9 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         if (part == null) {
             part = new ObjectPart();
             ObjectPart existing = parts.putIfAbsent(oortURL, part);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Created part {} for {}{}", part, oortURL, existing != null ? ", existing " + existing : "");
+            }
             if (existing != null) {
                 part = existing;
             }
@@ -513,7 +516,10 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     protected Collection<Info<T>> getInfos() {
         List<Info<T>> result = new ArrayList<>(parts.size());
         for (ObjectPart part : parts.values()) {
-            result.add(part.getInfo());
+            Info<T> info = part.getInfo();
+            if (info != null) {
+                result.add(info);
+            }
         }
         return result;
     }
