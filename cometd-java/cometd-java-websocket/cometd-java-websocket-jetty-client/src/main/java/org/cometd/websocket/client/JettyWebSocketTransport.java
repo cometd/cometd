@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.ClientTransport;
@@ -111,8 +113,13 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
     protected Delegate connect(WebSocketClient client, ClientUpgradeRequest request, String uri) throws IOException, InterruptedException {
         try {
             Delegate delegate = newDelegate();
-            client.connect(delegate, new URI(uri), request, this).get();
+            // The connect() should be failed by the WebSocket implementation,
+            // but will use Future.get(timeout) to avoid implementation bugs.
+            long timeout = getConnectTimeout() + 1000;
+            client.connect(delegate, new URI(uri), request, this).get(timeout, TimeUnit.MILLISECONDS);
             return delegate;
+        } catch (TimeoutException e) {
+            throw new ConnectException("Connect timeout");
         } catch (ExecutionException x) {
             Throwable cause = x.getCause();
             if (cause instanceof RuntimeException) {
@@ -184,9 +191,16 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
                 }
 
                 // Blocking async sends for the client to allow concurrent sends.
-                session.getRemote().sendStringByFuture(content).get();
+                // The send() should be failed by the implementation, but
+                // will use Future.get(timeout) to avoid implementation bugs.
+                long timeout = getIdleTimeout() + 1000;
+                session.getRemote().sendStringByFuture(content).get(timeout, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException x) {
+                fail(x, "Timeout");
+            } catch (ExecutionException x) {
+                fail(x.getCause(), "Exception");
             } catch (Throwable x) {
-                fail(x, "Exception");
+                fail(x, "Failure");
             }
         }
 

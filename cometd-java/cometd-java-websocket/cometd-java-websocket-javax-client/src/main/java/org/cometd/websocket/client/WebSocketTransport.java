@@ -27,7 +27,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
@@ -150,9 +153,16 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
 
                 // Blocking sends for the client, using
                 // AsyncRemote to allow concurrent sends.
-                session.getAsyncRemote().sendText(content).get();
+                // The send() should be failed by the implementation, but
+                // will use Future.get(timeout) to avoid implementation bugs.
+                long timeout = getIdleTimeout() + 1000;
+                session.getAsyncRemote().sendText(content).get(timeout, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException x) {
+                fail(x, "Timeout");
+            } catch (ExecutionException x) {
+                fail(x.getCause(), "Exception");
             } catch (Throwable x) {
-                fail(x, "Exception");
+                fail(x, "Failure");
             }
         }
 
