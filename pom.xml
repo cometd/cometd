@@ -6,7 +6,7 @@
   <artifactId>cometd-project</artifactId>
   <packaging>pom</packaging>
   <name>CometD</name>
-  <version>4.0.3-SNAPSHOT</version>
+  <version>5.0.0-SNAPSHOT</version>
 
   <repositories>
     <repository>
@@ -36,7 +36,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>9.4.14.v20181114</jetty-version>
+    <jetty-version>10.0.0-SNAPSHOT</jetty-version>
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.25</slf4j-version>
     <log4j2-version>2.11.1</log4j2-version>
@@ -131,30 +131,6 @@
 
   <profiles>
     <profile>
-      <id>jdk9</id>
-      <activation>
-        <jdk>[1.9,)</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <configuration>
-              <release>8</release>
-            </configuration>
-          </plugin>
-          <plugin>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <configuration>
-              <additionalOptions>
-                <additionalOption>-html5</additionalOption>
-              </additionalOptions>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
       <id>release</id>
       <build>
         <plugins>
@@ -190,10 +166,10 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <version>[1.8,)</version>
+                  <version>[11,)</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
-                  <version>[3.3,)</version>
+                  <version>[3.6,)</version>
                 </requireMavenVersion>
               </rules>
             </configuration>
@@ -203,8 +179,8 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>8</source>
-          <target>8</target>
+          <source>11</source>
+          <target>11</target>
           <showDeprecation>true</showDeprecation>
           <showWarnings>true</showWarnings>
           <compilerArgument>-Xlint:all,-serial,-unchecked</compilerArgument>
@@ -393,6 +369,11 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>3.0.1</version>
+          <configuration>
+            <additionalOptions>
+              <additionalOption>-html5</additionalOption>
+            </additionalOptions>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -429,7 +410,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>3.0.0-M2</version>
           <configuration>
-            <argLine>@{argLine} -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails -XX:+PrintCommandLineFlags -XX:MaxGCPauseMillis=1000</argLine>
+            <argLine>@{argLine} -showversion -Xmx1g -Xms1g -Xlog:gc*</argLine>
           </configuration>
         </plugin>
         <plugin>
