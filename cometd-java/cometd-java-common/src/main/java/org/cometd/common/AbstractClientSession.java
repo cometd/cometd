@@ -36,8 +36,8 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -363,31 +363,9 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     }
 
     @Override
-    public String dump() {
-        return ContainerLifeCycle.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException {
-        ContainerLifeCycle.dumpObject(out, this);
-
-        List<Dumpable> children = new ArrayList<>();
-
-        children.add(new Dumpable() {
-            @Override
-            public String dump() {
-                return null;
-            }
-
-            @Override
-            public void dump(Appendable out, String indent) throws IOException {
-                Collection<AbstractSessionChannel> channels = getChannels().values();
-                ContainerLifeCycle.dumpObject(out, "channels: " + channels.size());
-                ContainerLifeCycle.dump(out, indent, channels);
-            }
-        });
-
-        ContainerLifeCycle.dump(out, indent, children);
+        Collection<AbstractSessionChannel> channels = getChannels().values();
+        Dumpable.dumpObjects(out, indent, this, new DumpableCollection("channels", channels));
     }
 
     /**
@@ -635,45 +613,8 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         }
 
         @Override
-        public String dump() {
-            return ContainerLifeCycle.dump(this);
-        }
-
-        @Override
         public void dump(Appendable out, String indent) throws IOException {
-            ContainerLifeCycle.dumpObject(out, this);
-
-            List<Dumpable> children = new ArrayList<>();
-
-            children.add(new Dumpable() {
-                @Override
-                public String dump() {
-                    return null;
-                }
-
-                @Override
-                public void dump(Appendable out, String indent) throws IOException {
-                    List<ClientSessionChannelListener> listeners = getListeners();
-                    ContainerLifeCycle.dumpObject(out, "listeners: " + listeners.size());
-                    ContainerLifeCycle.dump(out, indent, listeners);
-                }
-            });
-
-            children.add(new Dumpable() {
-                @Override
-                public String dump() {
-                    return null;
-                }
-
-                @Override
-                public void dump(Appendable out, String indent) throws IOException {
-                    List<MessageListener> subscribers = getSubscribers();
-                    ContainerLifeCycle.dumpObject(out, "subscribers: " + subscribers.size());
-                    ContainerLifeCycle.dump(out, indent, subscribers);
-                }
-            });
-
-            ContainerLifeCycle.dump(out, indent, children);
+            Dumpable.dumpObjects(out, indent, this, new DumpableCollection("listeners", getListeners()), new DumpableCollection("subscribers", getSubscribers()));
         }
 
         @Override

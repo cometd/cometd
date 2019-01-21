@@ -26,7 +26,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.JSONContext;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -280,13 +279,8 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     @Override
-    public String dump() {
-        return ContainerLifeCycle.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException {
-        ContainerLifeCycle.dumpObject(out, this);
+        Dumpable.dumpObject(out, this);
     }
 
     @Override

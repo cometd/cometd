@@ -66,7 +66,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -1254,15 +1253,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         _detailedDump = detailedDump;
     }
 
-    @ManagedOperation(value = "Dumps the BayeuxServer state", impact = "INFO")
-    @Override
-    public String dump() {
-        return ContainerLifeCycle.dump(this);
-    }
-
     @Override
     public void dump(Appendable out, String indent) throws IOException {
-        ContainerLifeCycle.dumpObject(out, this);
+        Dumpable.dumpObject(out, this);
 
         List<Object> children = new ArrayList<>();
         SecurityPolicy securityPolicy = getSecurityPolicy();
@@ -1279,15 +1272,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             @Override
             public void dump(Appendable out, String indent) throws IOException {
                 List<String> allowedTransports = getAllowedTransports();
-                ContainerLifeCycle.dumpObject(out, "transports: " + allowedTransports.size());
+                Dumpable.dumpObject(out, "transports: " + allowedTransports.size());
                 if (isDetailedDump()) {
                     List<ServerTransport> transports = new ArrayList<>();
                     for (String allowedTransport : allowedTransports) {
                         transports.add(getTransport(allowedTransport));
                     }
-                    ContainerLifeCycle.dump(out, indent, transports);
+                    Dumpable.dumpObjects(out, indent, transports);
                 } else {
-                    ContainerLifeCycle.dump(out, indent, allowedTransports);
+                    Dumpable.dumpObjects(out, indent, allowedTransports);
                 }
             }
         });
@@ -1301,9 +1294,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             @Override
             public void dump(Appendable out, String indent) throws IOException {
                 Set<String> channels = _channels.keySet();
-                ContainerLifeCycle.dumpObject(out, "channels: " + channels.size());
+                Dumpable.dumpObject(out, "channels: " + channels.size());
                 if (isDetailedDump()) {
-                    ContainerLifeCycle.dump(out, indent, new TreeSet<>(channels));
+                    Dumpable.dumpObjects(out, indent, new TreeSet<>(channels));
                 }
             }
         });
@@ -1317,7 +1310,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             @Override
             public void dump(Appendable out, String indent) throws IOException {
                 List<ServerSession> sessions = new ArrayList<>(_sessions.values());
-                ContainerLifeCycle.dumpObject(out, "sessions: " + sessions.size());
+                Dumpable.dumpObject(out, "sessions: " + sessions.size());
                 if (isDetailedDump()) {
                     List<ServerSession> locals = new ArrayList<>();
                     for (Iterator<ServerSession> iterator = sessions.iterator(); iterator.hasNext(); ) {
@@ -1327,12 +1320,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                             iterator.remove();
                         }
                     }
-                    ContainerLifeCycle.dump(out, indent, locals, sessions);
+                    Dumpable.dumpObjects(out, indent, locals, sessions);
                 }
             }
         });
 
-        ContainerLifeCycle.dump(out, indent, children);
+        Dumpable.dumpObjects(out, indent, children);
     }
 
     private void handleMetaHandshake(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
