@@ -1472,7 +1472,6 @@
                 });
                 var blobURL = window.URL.createObjectURL(blob);
                 var worker = new window.Worker(blobURL);
-                window.URL.revokeObjectURL(blobURL);
                 _scheduler.setTimeout = function(funktion, delay) {
                     var id = _scheduler.register(funktion);
                     worker.postMessage({
