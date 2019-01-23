@@ -18,7 +18,7 @@
     <module>cometd-java-websocket-javax-server</module>
     <module>cometd-java-websocket-jetty-client</module>
     <module>cometd-java-websocket-jetty-server</module>
-      <module>cometd-java-websocket-okhttp-client</module>
+    <module>cometd-java-websocket-okhttp-client</module>
   </modules>
 
 </project>

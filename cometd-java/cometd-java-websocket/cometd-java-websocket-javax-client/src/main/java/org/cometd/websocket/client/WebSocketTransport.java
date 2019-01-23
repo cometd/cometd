@@ -26,6 +26,7 @@ import java.nio.channels.UnresolvedAddressException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -179,7 +180,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
                 }
                 try {
                     // Limits of the WebSocket APIs, otherwise an exception is thrown.
-                    reason = reason.substring(0, Math.min(reason.length(), MAX_CLOSE_REASON_LENGTH));
+                    reason = trimCloseReason(reason);
                     session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
                 } catch (Throwable x) {
                     logger.trace("Could not close websocket session " + session, x);
@@ -227,7 +228,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
             if (!cookies.isEmpty()) {
                 List<String> cookieHeader = headers.get(COOKIE_HEADER);
                 if (cookieHeader == null) {
-                    cookieHeader = headers.get(COOKIE_HEADER);
+                    cookieHeader = headers.get(COOKIE_HEADER.toLowerCase(Locale.ENGLISH));
                 }
                 if (cookieHeader == null) {
                     headers.put(COOKIE_HEADER, cookieHeader = new ArrayList<>());

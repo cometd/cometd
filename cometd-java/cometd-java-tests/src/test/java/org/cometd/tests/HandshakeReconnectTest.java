@@ -15,8 +15,11 @@
  */
 package org.cometd.tests;
 
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -25,11 +28,6 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 public class HandshakeReconnectTest extends AbstractClientServerTest {
     public HandshakeReconnectTest(Transport transport) {
@@ -45,14 +43,8 @@ public class HandshakeReconnectTest extends AbstractClientServerTest {
         options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
         startServer(options);
-        final CountDownLatch handshakeReconnect = new CountDownLatch(1);
-        BayeuxClient client = new BayeuxClient(cometdURL, newClientTransport(null)) {
-            @Override
-            public void onFailure(Throwable failure, List<? extends Message> messages) {
-                logger.error("failure with messages {}", messages, failure);
-                handshakeReconnect.countDown();
-            }
-        };
+
+        BayeuxClient client = newBayeuxClient();
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
@@ -64,7 +56,7 @@ public class HandshakeReconnectTest extends AbstractClientServerTest {
         connector.stop();
 
         // Add a /meta/handshake listener to be sure we reconnect using handshake.
-
+        final CountDownLatch handshakeReconnect = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             // Reconnecting using handshake, first failure.
             if (!message.isSuccessful()) {
@@ -92,9 +84,8 @@ public class HandshakeReconnectTest extends AbstractClientServerTest {
         connector.setPort(port);
         connector.start();
 
-        Assert.assertTrue(client.waitFor(30 * client.getBackoffIncrement(), BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(20 * client.getBackoffIncrement(), BayeuxClient.State.CONNECTED));
 
         disconnectBayeuxClient(client);
     }
-
 }

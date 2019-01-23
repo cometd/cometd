@@ -40,16 +40,14 @@ import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
 
 public abstract class AbstractWebSocketTransport extends HttpClientTransport implements MessageClientTransport {
-    public final static String PREFIX = "ws";
-    public final static String NAME = "websocket";
-    public final static String PROTOCOL_OPTION = "protocol";
-    public final static String CONNECT_TIMEOUT_OPTION = "connectTimeout";
-    public final static String IDLE_TIMEOUT_OPTION = "idleTimeout";
-    public final static String STICKY_RECONNECT_OPTION = "stickyReconnect";
-
+    public static final String PREFIX = "ws";
+    public static final String NAME = "websocket";
+    public static final String PROTOCOL_OPTION = "protocol";
+    public static final String CONNECT_TIMEOUT_OPTION = "connectTimeout";
+    public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
+    public static final String STICKY_RECONNECT_OPTION = "stickyReconnect";
     public static final int MAX_CLOSE_REASON_LENGTH = 30;
     public static final int NORMAL_CLOSE_CODE = 1000;
-
     protected static final String COOKIE_HEADER = "Cookie";
 
     private ScheduledExecutorService _scheduler;
@@ -367,6 +365,13 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             }
 
             return exchange;
+        }
+
+        protected String trimCloseReason(String reason) {
+            if (reason != null) {
+                return reason.substring(0, Math.min(reason.length(), MAX_CLOSE_REASON_LENGTH));
+            }
+            return null;
         }
 
         protected abstract void send(String content);

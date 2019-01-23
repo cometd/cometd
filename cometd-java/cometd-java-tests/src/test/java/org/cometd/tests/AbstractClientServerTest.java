@@ -98,7 +98,7 @@ public abstract class AbstractClientServerTest {
 
         switch (transport) {
             case JAVAX_WEBSOCKET:
-            case OKHTTP_WEBSOCKET: // OkHttp websocket uses javax.websocket server
+            case OKHTTP_WEBSOCKET:
                 WebSocketServerContainerInitializer.configureContext(context);
                 break;
             case JETTY_WEBSOCKET:
@@ -147,7 +147,7 @@ public abstract class AbstractClientServerTest {
                 wsClient.start();
                 break;
             case OKHTTP_WEBSOCKET:
-                // There's no lifecycle of OkHttp client
+                // There's no lifecycle of OkHttp client.
                 okHttpClient = new OkHttpClient();
                 break;
             default:
@@ -169,7 +169,7 @@ public abstract class AbstractClientServerTest {
             case ASYNC_LONG_POLLING:
                 return AsyncJSONTransport.class.getName();
             case JAVAX_WEBSOCKET:
-            case OKHTTP_WEBSOCKET: // OkHttp transport uses javax.websocket server
+            case OKHTTP_WEBSOCKET:
                 return org.cometd.websocket.server.WebSocketTransport.class.getName();
             case JETTY_WEBSOCKET:
                 return org.cometd.websocket.server.JettyWebSocketTransport.class.getName();
