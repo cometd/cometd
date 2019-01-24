@@ -18,7 +18,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <Automatic-Module-Name>org.cometd.websocket.okhttp.client</Automatic-Module-Name>
+              <Automatic-Module-Name>org.cometd.websocket.client.okhttp</Automatic-Module-Name>
             </manifestEntries>
           </archive>
         </configuration>
