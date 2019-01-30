@@ -109,7 +109,7 @@ container with lifecycle management such as http://www.springsource.org[Spring].
 
 To initialize channels before they can be actually referenced for
 subscriptions, the CometD API provides the
-+BayeuxServer.createChannelIfAbsent(String channelId, ConfigurableServerChannel.Initializer... initializers)+
+`BayeuxServer.createChannelIfAbsent(String channelId, ConfigurableServerChannel.Initializer... initializers)`
 method, which allows you to pass initializers that configure the given channel.
 Furthermore, it is useful to have a configuration step for channels that happens
 before any subscription or listener addition, for example, to configure

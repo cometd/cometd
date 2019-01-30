@@ -25,24 +25,25 @@ the connected users for each node.
 connected, while `nodeC` has 3 clients connected.
 Oort objects are composites in that they store N data entities, also called
 _parts_, where N is the number of nodes in the Oort cluster.
-You can see that each Oort object is made of 3 parts (the innermost blue,
-green and red boxes); each part is colored like the node it represents.
+You can see that each Oort object is made of 3 parts (the innermost [blue]+blue+,
+[lime]+green+ and [red]+red+ boxes); each part is colored like the node it represents.
 The part that has the same color as the node it lives in it's the _local_ part.
 
 image::oort_object.png[]
 
 Each Oort object can only update its local part: `nodeA` can only add/remove
-user names from its local (blue) part, and cannot add/remove from the remote
-parts (in green and red). Likewise, `nodeB` can only update the green part
-but not the blue and red parts, and `nodeC` can only update the red part,
-but not the blue and green ones.
+user names from its local ([blue]+blue+) part, and cannot add/remove from the
+remote parts (in [lime]+green+ and [red]+red+). Likewise, `nodeB` can only
+update the [lime]+green+ part but not the [blue]+blue+ and [red]+red+ parts,
+and `nodeC` can only update the [red]+red+ part, but not the [blue]+blue+ and
+[lime]+green+ ones.
 
 If a new client connects to `nodeB`, say `Cb2`, then the application on `nodeB`
 takes the user name (`B2`) that wants to share with other nodes, and adds it
 to the Oort object on `nodeB`.
-The user name `B2` will be added to the green part of `nodeB`, and a message
-will be broadcast to the other nodes, which will also modify the correspondent
-green parts on themselves, adding a copy of `B2`.
+The user name `B2` will be added to the [lime]+green+ part of `nodeB`, and a
+message will be broadcast to the other nodes, which will also modify the
+correspondent [lime]+green+ parts on themselves, adding a copy of `B2`.
 The remote parts of an Oort object can only be updated by messages internal
 to the `OortObject` implementation; they cannot be updated by application
 code directly.
@@ -223,7 +224,7 @@ When a node receives the JSON representation of data entity and its contained
 objects, it deserializes it from JSON into an object graph.
 
 In the `OortStringMap` example above, the data entity is a
-+ConcurrentMap<String, Object>+ and the values of this data entity are objects
+`ConcurrentMap<String, Object>` and the values of this data entity are objects
 of class `UserInfo`.
 
 While the `OortObject` implementation is able to serialize a `ConcurrentMap`
@@ -388,12 +389,12 @@ to be converted into a `ConcurrentMap`.
 [[_java_oort_objects_oort_object_merging]]
 ===== OortObject Data Entity Merging
 
-`OortObject` are made of parts, and applications may need to access the
-data contained in all parts.
+`OortObject` is made of parts, and applications may need to access the
+data contained in all the parts.
 In the examples above, an application may want to be able to access all
 the user names from all nodes.
 
-In order to access the data from all parts, `OortObject` provides the
+In order to access the data from all the parts, `OortObject` provides the
 `merge(OortObject.Merger merger)` method.
 Applications can use mergers provided by `org.cometd.oort.OortObjectMergers`
 or implement their own, for example:
