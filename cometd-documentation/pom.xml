@@ -14,7 +14,7 @@
   <properties>
     <html-directory>${project.build.directory}/html/reference</html-directory>
     <resources-directory>${project.build.directory}/resources</resources-directory>
-    <github>https://raw.github.com/cometd/cometd/master</github>
+    <github>https://raw.github.com/cometd/cometd/3.1.x</github>
   </properties>
 
   <build>
