@@ -789,7 +789,7 @@ public class OortObserveCometTest extends OortTest {
 
         Assert.assertEquals(1, oortB.getKnownComets().size());
 
-        // Only master URLs are known.
+        // Only primary URLs are known.
         Assert.assertFalse(oortA.getKnownComets().contains(otherURLB));
         Assert.assertTrue(oortA.getKnownComets().contains(urlB));
         // But comets can be known with alias URLs

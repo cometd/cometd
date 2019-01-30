@@ -26,21 +26,21 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  * <p>This class exposes an API similar to that of {@link AtomicLong}, and for every successful
  * update of the local value of the internal {@link AtomicLong}, it broadcast the local value
  * via the internal {@link OortObject} to other nodes.</p>
- * <p>This class can be seen as the counterpart of {@link OortMasterLong}.</p>
- * <p>Where the {@link OortMasterLong} instance in each node has an internal {@link AtomicLong},
- * but only the one in the "master" node has a non-zero value, the instance of this class in
+ * <p>This class can be seen as the counterpart of {@link OortPrimaryLong}.</p>
+ * <p>Where the {@link OortPrimaryLong} instance in each node has an internal {@link AtomicLong},
+ * but only the one in the "primary" node has a non-zero value, the instance of this class in
  * each node has an internal {@link AtomicLong} that has its own value.</p>
- * <p>Where in {@link OortMasterLong} updates are always sent to the "master" node, in this
+ * <p>Where in {@link OortPrimaryLong} updates are always sent to the "primary" node, in this
  * class updates are always local, and then broadcast to the other nodes in the cluster.</p>
- * <p>Where in {@link OortMasterLong} each node has to send a message to the "master" node to
+ * <p>Where in {@link OortPrimaryLong} each node has to send a message to the "primary" node to
  * retrieve the total value, in this class the total value can be obtained from the internal
  * {@link OortObject} without network communication with other nodes.</p>
- * <p>Where {@link OortMasterLong} trades less memory (one {@code long} per node) for
- * larger latencies (every operation on non-master nodes requires sending a message to the
- * master node), this class trades more memory (N {@code long}s per node - where N is the
+ * <p>Where {@link OortPrimaryLong} trades less memory (one {@code long} per node) for
+ * larger latencies (every operation on non-primary nodes requires sending a message to the
+ * primary node), this class trades more memory (N {@code long}s per node - where N is the
  * number of nodes) for smaller latencies (operations do not require messaging).</p>
  *
- * @see OortMasterLong
+ * @see OortPrimaryLong
  */
 public class OortLong extends AbstractLifeCycle {
     private final AtomicLong atomic = new AtomicLong();
