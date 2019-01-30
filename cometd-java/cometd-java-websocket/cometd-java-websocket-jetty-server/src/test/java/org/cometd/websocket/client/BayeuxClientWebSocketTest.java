@@ -270,6 +270,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
         ClientTransport webSocketTransport = newWebSocketTransport(options);
         final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport);
+        long backOffIncrement = 1000;
+        client.setBackOffStrategy(new BayeuxClient.BackOffStrategy.Linear(backOffIncrement, -1));
 
         // Expect 2 failed messages because the client backoffs and retries
         // This way we are sure that the late response from the first
@@ -284,7 +286,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
 
         client.handshake();
 
-        Assert.assertTrue(latch.await(maxNetworkDelay * 2 + client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.await(maxNetworkDelay * 2 + backOffIncrement * 2, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -643,7 +645,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         client.handshake();
 
         Assert.assertTrue(connectLatch1.await(timeout + 2 * maxNetworkDelay, TimeUnit.MILLISECONDS));
-        Assert.assertTrue(connectLatch2.await(client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(connectLatch2.await(backoffIncrement * 2, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }

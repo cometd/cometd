@@ -87,6 +87,8 @@ public class BayeuxClientTest extends ClientServerTest {
         };
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
+        long backOffIncrement = 500;
+        client.setBackOffStrategy(new BayeuxClient.BackOffStrategy.Linear(backOffIncrement, -1));
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             Assert.assertFalse(message.isSuccessful());
             latch.get().countDown();
@@ -96,13 +98,13 @@ public class BayeuxClientTest extends ClientServerTest {
 
         // Be sure it backoffs and retries
         latch.set(new CountDownLatch(1));
-        Assert.assertTrue(latch.get().await(client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.get().await(backOffIncrement * 2, TimeUnit.MILLISECONDS));
 
         Assert.assertTrue(client.disconnect(1000));
 
         // Be sure it does not retry
         latch.set(new CountDownLatch(1));
-        Assert.assertFalse(latch.get().await(client.getBackoffIncrement() * 3, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(latch.get().await(backOffIncrement * 3, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -116,6 +118,8 @@ public class BayeuxClientTest extends ClientServerTest {
         };
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
+        long backOffIncrement = 500;
+        client.setBackOffStrategy(new BayeuxClient.BackOffStrategy.Linear(backOffIncrement, -1));
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             Assert.assertFalse(message.isSuccessful());
             latch.get().countDown();
@@ -125,18 +129,20 @@ public class BayeuxClientTest extends ClientServerTest {
 
         // Be sure it backoffs and retries
         latch.set(new CountDownLatch(1));
-        Assert.assertTrue(latch.get().await(client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.get().await(backOffIncrement * 2, TimeUnit.MILLISECONDS));
 
         Assert.assertTrue(client.disconnect(1000));
 
         // Be sure it does not retry
         latch.set(new CountDownLatch(1));
-        Assert.assertFalse(latch.get().await(client.getBackoffIncrement() * 3, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(latch.get().await(backOffIncrement * 3, TimeUnit.MILLISECONDS));
     }
 
     @Test
     public void testHandshakeDenied() throws Exception {
         BayeuxClient client = newBayeuxClient();
+        long backOffIncrement = 500;
+        client.setBackOffStrategy(new BayeuxClient.BackOffStrategy.Linear(backOffIncrement, -1));
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
             public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
@@ -153,7 +159,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
         // Be sure it does not retry
         latch.set(new CountDownLatch(1));
-        Assert.assertFalse(latch.get().await(client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(latch.get().await(backOffIncrement * 2, TimeUnit.MILLISECONDS));
 
         Assert.assertEquals(BayeuxClient.State.DISCONNECTED, client.getState());
         disconnectBayeuxClient(client);
@@ -274,17 +280,19 @@ public class BayeuxClientTest extends ClientServerTest {
         });
 
         final CountDownLatch attempts = new CountDownLatch(4);
+        final long backOffIncrement = 1000;
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
             @Override
             protected boolean scheduleConnect(long interval, long backOff) {
                 int count = connects.get();
                 if (count > 0) {
-                    Assert.assertEquals((count - 1) * getBackoffIncrement(), backOff);
+                    Assert.assertEquals((count - 1) * backOffIncrement, backOff);
                     attempts.countDown();
                 }
                 return super.scheduleConnect(interval, backOff);
             }
         };
+        client.setBackOffStrategy(new BayeuxClient.BackOffStrategy.Linear(backOffIncrement, -1));
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(1));
         client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             if (!message.isSuccessful()) {
@@ -296,7 +304,7 @@ public class BayeuxClientTest extends ClientServerTest {
 
         // BayeuxClient should backoff and retry.
         // Wait for 2 attempts, which will happen at +1s and +3s (doubled for safety).
-        Assert.assertTrue(attempts.await(client.getBackoffIncrement() * 8, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(attempts.await(backOffIncrement * 8, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }

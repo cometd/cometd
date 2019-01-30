@@ -70,6 +70,9 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
     @Test
     public void testHandshakeDenied() throws Exception {
         BayeuxClient client = newBayeuxClient();
+        long backOffIncrement = 500;
+        client.setBackOffStrategy(new BayeuxClient.BackOffStrategy.Linear(backOffIncrement, -1));
+
         SecurityPolicy oldPolicy = bayeux.getSecurityPolicy();
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
@@ -77,6 +80,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
                 return false;
             }
         });
+
         try {
             final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
             client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
@@ -88,7 +92,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
 
             // Be sure it does not retry
             latch.set(new CountDownLatch(1));
-            Assert.assertFalse(latch.get().await(client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
+            Assert.assertFalse(latch.get().await(backOffIncrement * 2, TimeUnit.MILLISECONDS));
 
             Assert.assertTrue(client.waitFor(5000, State.DISCONNECTED));
         } finally {

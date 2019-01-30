@@ -45,6 +45,8 @@ public class HandshakeReconnectTest extends AbstractClientServerTest {
         startServer(options);
 
         BayeuxClient client = newBayeuxClient();
+        long backOffIncrement = 1000;
+        client.setBackOffStrategy(new BayeuxClient.BackOffStrategy.Linear(backOffIncrement, -1));
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
@@ -78,13 +80,13 @@ public class HandshakeReconnectTest extends AbstractClientServerTest {
         });
 
         Assert.assertTrue(sessionRemoved.await(timeout + 2 * maxInterval, TimeUnit.MILLISECONDS));
-        Assert.assertTrue(handshakeReconnect.await(10 * client.getBackoffIncrement(), TimeUnit.MILLISECONDS));
+        Assert.assertTrue(handshakeReconnect.await(10 * backOffIncrement, TimeUnit.MILLISECONDS));
 
         // Restart the connector.
         connector.setPort(port);
         connector.start();
 
-        Assert.assertTrue(client.waitFor(20 * client.getBackoffIncrement(), BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(20 * backOffIncrement, BayeuxClient.State.CONNECTED));
 
         disconnectBayeuxClient(client);
     }

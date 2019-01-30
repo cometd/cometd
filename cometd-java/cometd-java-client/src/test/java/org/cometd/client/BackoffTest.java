@@ -56,6 +56,7 @@ public class BackoffTest extends ClientServerTest {
             public boolean sendMeta(ClientSession session, Message.Mutable message) {
                 if (Channel.META_CONNECT.equals(message.getChannel())) {
                     LOGGER.info("> {}", message);
+                    long backoff = client.getBackOffStrategy().current();
                     int metaConnects = clientMetaConnects.incrementAndGet();
                     if (metaConnects == 1) {
                         latch.countDown();
@@ -64,12 +65,10 @@ public class BackoffTest extends ClientServerTest {
                     } else if (metaConnects == 3) {
                         latch.countDown();
                     } else if (metaConnects == 4) {
-                        long backoff = client.getBackoff();
                         if (backoff > 0) {
                             latch.countDown();
                         }
                     } else if (metaConnects == 5) {
-                        long backoff = client.getBackoff();
                         if (backoff == 0) {
                             latch.countDown();
                         }

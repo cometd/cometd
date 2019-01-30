@@ -112,8 +112,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     private final SessionState sessionState = new SessionState();
     private final String url;
     private ScheduledExecutorService scheduler;
-    private long backoffIncrement;
-    private long maxBackoff;
+    private BackOffStrategy backOffStrategy = new BackOffStrategy.Linear();
 
     /**
      * <p>Creates a BayeuxClient that will connect to the Bayeux server at the given URL
@@ -168,29 +167,49 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         return url;
     }
 
+    public BackOffStrategy getBackOffStrategy() {
+        return backOffStrategy;
+    }
+
+    public void setBackOffStrategy(BackOffStrategy backOffStrategy) {
+        this.backOffStrategy = backOffStrategy;
+    }
+
     /**
      * @return the current period of time to wait before trying to reconnect
+     * @deprecated use {@link BackOffStrategy} instead.
      */
+    @Deprecated
     public long getBackoff() {
-        return sessionState.getBackOff();
+        return getBackOffStrategy().current();
     }
 
     /**
      * @return the period of time that increments the pause to wait before trying to reconnect
      * after each failed attempt to connect to the Bayeux server
-     * @see #getMaxBackoff()
+     * @deprecated use {@link BackOffStrategy} instead.
      */
+    @Deprecated
     public long getBackoffIncrement() {
-        return backoffIncrement;
+        BackOffStrategy strategy = getBackOffStrategy();
+        if (strategy instanceof BackOffStrategy.Linear) {
+            return ((BackOffStrategy.Linear)strategy).increment;
+        }
+        return -1;
     }
 
     /**
      * @return the maximum pause to wait before trying to reconnect after each failed attempt
      * to connect to the Bayeux server
-     * @see #getBackoffIncrement()
+     * @deprecated use {@link BackOffStrategy} instead.
      */
+    @Deprecated
     public long getMaxBackoff() {
-        return maxBackoff;
+        BackOffStrategy strategy = getBackOffStrategy();
+        if (strategy instanceof BackOffStrategy.Linear) {
+            return ((BackOffStrategy.Linear)strategy).increment;
+        }
+        return -1;
     }
 
     public CookieStore getCookieStore() {
@@ -861,19 +880,23 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     protected void initialize() {
-        Number value = (Number)getOption(BACKOFF_INCREMENT_OPTION);
-        long backoffIncrement = value == null ? -1 : value.longValue();
-        if (backoffIncrement < 0) {
-            backoffIncrement = 1000L;
+        BackOffStrategy backOffStrategy = getBackOffStrategy();
+        if (backOffStrategy instanceof BackOffStrategy.Linear) {
+            BackOffStrategy.Linear linear = (BackOffStrategy.Linear)backOffStrategy;
+            Number value = (Number)getOption(BACKOFF_INCREMENT_OPTION);
+            long increment = linear.increment;
+            if (value != null) {
+                increment = value.longValue();
+            }
+            value = (Number)getOption(MAX_BACKOFF_OPTION);
+            long maximum = linear.maximum;
+            if (value != null) {
+                maximum = value.longValue();
+            }
+            if (increment > 0 && increment != linear.increment || maximum != linear.maximum) {
+                setBackOffStrategy(new BackOffStrategy.Linear(increment, maximum));
+            }
         }
-        this.backoffIncrement = backoffIncrement;
-
-        value = (Number)getOption(MAX_BACKOFF_OPTION);
-        long maxBackoff = value == null ? -1 : value.longValue();
-        if (maxBackoff <= 0) {
-            maxBackoff = 30000L;
-        }
-        this.maxBackoff = maxBackoff;
 
         if (scheduler == null) {
             scheduler = new BayeuxClientScheduler();
@@ -1002,7 +1025,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 }
             }
         } else {
-            failureInfo.delay = sessionState.getBackOff();
+            failureInfo.delay = getBackOffStrategy().current();
 
             if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
                 // Invalid transport, try to negotiate a new one.
@@ -1140,6 +1163,108 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
     }
 
+    /**
+     * <p>A strategy to controls wait times of the retry attempts in case of heartbeat failures.</p>
+     * <p>Method {@link #next()} is invoked when a retry attempt has failed and returns the wait time
+     * before the next retry attempt.</p>
+     */
+    public interface BackOffStrategy {
+        /**
+         * @return the current wait time
+         * @see #next()
+         * @see #reset()
+         */
+        public long current();
+
+        /**
+         * @return the next wait time
+         * @see #current()
+         */
+        public long next();
+
+        /**
+         * Resets the wait time.
+         */
+        public void reset();
+
+        /**
+         * <p>A back off strategy that always returns the same wait time.</p>
+         */
+        public class Constant implements BackOffStrategy {
+            private final long delay;
+            private long backOff;
+
+            public Constant(long delay) {
+                this.delay = delay;
+            }
+
+            @Override
+            public long current() {
+                synchronized (this) {
+                    return backOff;
+                }
+            }
+
+            @Override
+            public long next() {
+                synchronized (this) {
+                    return backOff = delay;
+                }
+            }
+
+            @Override
+            public void reset() {
+                synchronized (this) {
+                    backOff = 0;
+                }
+            }
+        }
+
+
+        /**
+         * <p>A strategy that increases the wait time linearly up to a maximum.</p>
+         */
+        public static class Linear implements BackOffStrategy {
+            private final long increment;
+            private final long maximum;
+            private long backOff;
+
+            public Linear() {
+                this(1000, 30000);
+            }
+
+            public Linear(long increment, long maximum) {
+                this.increment = increment;
+                this.maximum = maximum;
+            }
+
+            @Override
+            public long current() {
+                synchronized (this) {
+                    return backOff;
+                }
+            }
+
+            @Override
+            public long next() {
+                synchronized (this) {
+                    long newBackOff = backOff + increment;
+                    if (maximum > 0 && newBackOff > maximum) {
+                        newBackOff = maximum;
+                    }
+                    return backOff = newBackOff;
+                }
+            }
+
+            @Override
+            public void reset() {
+                synchronized (this) {
+                    backOff = 0;
+                }
+            }
+        }
+    }
+
     private class MessageTransportListener implements TransportListener {
         @Override
         public void onSending(List<? extends Message> messages) {
@@ -1182,7 +1307,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         private ClientSession.MessageListener handshakeCallback;
         private Map<String, Object> advice;
         private String sessionId;
-        private long backOff;
         private long unconnectTime;
         private boolean active;
         private int handshakeMessages;
@@ -1196,7 +1320,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             handshakeCallback = null;
             advice = null;
             sessionId = null;
-            backOff = 0;
+            resetBackOff();
             unconnectTime = 0;
             active = false;
             handshakeMessages = 0;
@@ -1236,12 +1360,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         private String getSessionId() {
             synchronized (this) {
                 return sessionId;
-            }
-        }
-
-        private long getBackOff() {
-            synchronized (this) {
-                return backOff;
             }
         }
 
@@ -1287,21 +1405,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             }
         }
 
-        private long nextBackOff() {
-            synchronized (this) {
-                return Math.min(backOff + getBackoffIncrement(), getMaxBackoff());
-            }
-        }
-
         private long increaseBackOff() {
             synchronized (this) {
-                return this.backOff = nextBackOff();
+                return getBackOffStrategy().next();
             }
         }
 
         private void resetBackOff() {
             synchronized (this) {
-                this.backOff = 0;
+                getBackOffStrategy().reset();
             }
         }
 
@@ -1352,7 +1464,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                     this.advice = handshake.getAdvice();
                     this.sessionId = handshake.getClientId();
                     this.handshakeMessages = messages;
-                    this.backOff = 0;
+                    resetBackOff();
                 }
             }
             if (updated) {
@@ -1391,7 +1503,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             synchronized (this) {
                 updated = update(State.CONNECTED);
                 if (updated) {
-                    this.backOff = 0;
+                    resetBackOff();
                     this.unconnectTime = 0;
                     Map<String, Object> advice = connect.getAdvice();
                     if (advice != null) {
@@ -1415,7 +1527,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 long maxInterval = getMaxInterval();
                 if (maxInterval > 0) {
                     long expiration = getTimeout() + getInterval() + maxInterval;
-                    return getUnconnectTime() + getBackOff() > expiration;
+                    return getUnconnectTime() + getBackOffStrategy().current() > expiration;
                 }
                 return false;
             }
@@ -1540,8 +1652,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         private boolean matchMetaConnect(Message.Mutable connect) {
             synchronized (this) {
-                if (State.DISCONNECTED.implies(state))
+                if (State.DISCONNECTED.implies(state)) {
                     return true;
+                }
                 if (metaConnect != null && metaConnect.getId().equals(connect.getId())) {
                     metaConnect = null;
                     return true;
