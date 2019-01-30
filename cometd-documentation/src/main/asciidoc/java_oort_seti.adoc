@@ -15,7 +15,7 @@ Keep the following points in mind when configuring Seti:
   `org.cometd.oort.SetiServlet` in `web.xml`.
 * There may be only one instance of `Seti` for each `Oort`.
 * The `load-on-startup` parameter of the `SetiServlet` must be greater than
-  that of the `OortServlet`.
+  that of the Oort configuration Servlet.
 * `SetiServlet` does not have any configuration init parameter.
 
 A configuration example follows:
@@ -42,7 +42,7 @@ A configuration example follows:
 
     <servlet>
         <servlet-name>oort</servlet-name>
-        <servlet-class>org.cometd.oort.OortServlet</servlet-class>
+        <servlet-class>org.cometd.oort.OortStaticConfigServlet</servlet-class>
         <init-param>
             <param-name>oort.url</param-name>
             <param-value>http://host:port/context/cometd</param-value>
@@ -127,7 +127,7 @@ computer logs in – and therefore is associated – in `comet1`, while the mobi
 device is associated in `comet2`).
 
 Similarly, you can disassociate a `userId` at any time by calling
-+Seti.disassociate(userId, session)+.
+`Seti.disassociate(userId, session)`.
 If the user disconnects or "disappears" (for example, it crashed or its network
 dropped), the server removes or expires its session and `Seti` automatically
 disassociates the `userId`.
