@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.common.TransportException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
@@ -138,8 +139,6 @@ public class LongPollingTransport extends HttpClientTransport {
 
         request.content(new StringContentProvider(generateJSON(messages)));
 
-        customize(request);
-
         synchronized (this) {
             if (_aborted) {
                 throw new IllegalStateException("Aborted");
@@ -147,7 +146,17 @@ public class LongPollingTransport extends HttpClientTransport {
             _requests.add(request);
         }
 
-        request.listener(new Request.Listener.Adapter() {
+        customize(request, Promise.from(
+                customizedRequest -> sendAfterCustomize(listener, messages, uri, customizedRequest),
+                error -> listener.onFailure(error, messages)
+        ));
+    }
+
+    private void sendAfterCustomize(TransportListener listener,
+                                    List<Message.Mutable> messages,
+                                    URI uri,
+                                    Request customizedRequest) {
+        customizedRequest.listener(new Request.Listener.Adapter() {
             @Override
             public void onHeaders(Request request) {
                 listener.onSending(messages);
@@ -165,7 +174,7 @@ public class LongPollingTransport extends HttpClientTransport {
                 if (advice != null) {
                     Object timeout = advice.get("timeout");
                     if (timeout instanceof Number) {
-                        maxNetworkDelay += ((Number)timeout).longValue();
+                        maxNetworkDelay += ((Number) timeout).longValue();
                     } else if (timeout != null) {
                         maxNetworkDelay += Long.parseLong(timeout.toString());
                     }
@@ -174,9 +183,9 @@ public class LongPollingTransport extends HttpClientTransport {
         }
         // Set the idle timeout for this request larger than the total timeout
         // so there are no races between the two timeouts
-        request.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
-        request.timeout(maxNetworkDelay, TimeUnit.MILLISECONDS);
-        request.send(new BufferingResponseListener(_maxMessageSize) {
+        customizedRequest.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
+        customizedRequest.timeout(maxNetworkDelay, TimeUnit.MILLISECONDS);
+        customizedRequest.send(new BufferingResponseListener(_maxMessageSize) {
             @Override
             public boolean onHeader(Response response, HttpField field) {
                 HttpHeader header = field.getHeader();
@@ -253,6 +262,11 @@ public class LongPollingTransport extends HttpClientTransport {
     }
 
     protected void customize(Request request) {
+    }
+
+    protected void customize(Request request, Promise<Request> promise) {
+        customize(request);
+        promise.succeed(request);
     }
 
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
