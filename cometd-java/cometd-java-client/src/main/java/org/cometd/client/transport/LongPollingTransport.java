@@ -147,16 +147,13 @@ public class LongPollingTransport extends HttpClientTransport {
         }
 
         customize(request, Promise.from(
-                customizedRequest -> sendAfterCustomize(listener, messages, uri, customizedRequest),
+                customizedRequest -> send(listener, messages, uri, customizedRequest),
                 error -> listener.onFailure(error, messages)
         ));
     }
 
-    private void sendAfterCustomize(TransportListener listener,
-                                    List<Message.Mutable> messages,
-                                    URI uri,
-                                    Request customizedRequest) {
-        customizedRequest.listener(new Request.Listener.Adapter() {
+    private void send(TransportListener listener, List<Message.Mutable> messages, URI uri, Request request) {
+        request.listener(new Request.Listener.Adapter() {
             @Override
             public void onHeaders(Request request) {
                 listener.onSending(messages);
@@ -174,7 +171,7 @@ public class LongPollingTransport extends HttpClientTransport {
                 if (advice != null) {
                     Object timeout = advice.get("timeout");
                     if (timeout instanceof Number) {
-                        maxNetworkDelay += ((Number) timeout).longValue();
+                        maxNetworkDelay += ((Number)timeout).longValue();
                     } else if (timeout != null) {
                         maxNetworkDelay += Long.parseLong(timeout.toString());
                     }
@@ -183,13 +180,13 @@ public class LongPollingTransport extends HttpClientTransport {
         }
         // Set the idle timeout for this request larger than the total timeout
         // so there are no races between the two timeouts
-        customizedRequest.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
-        customizedRequest.timeout(maxNetworkDelay, TimeUnit.MILLISECONDS);
-        customizedRequest.send(new BufferingResponseListener(_maxMessageSize) {
+        request.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
+        request.timeout(maxNetworkDelay, TimeUnit.MILLISECONDS);
+        request.send(new BufferingResponseListener(_maxMessageSize) {
             @Override
             public boolean onHeader(Response response, HttpField field) {
                 HttpHeader header = field.getHeader();
-                if (header != null && (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2)) {
+                if (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2) {
                     // We do not allow cookies to be handled by HttpClient, since one
                     // HttpClient instance is shared by multiple BayeuxClient instances.
                     // Instead, we store the cookies in the BayeuxClient instance.
@@ -265,8 +262,12 @@ public class LongPollingTransport extends HttpClientTransport {
     }
 
     protected void customize(Request request, Promise<Request> promise) {
-        customize(request);
-        promise.succeed(request);
+        try {
+            customize(request);
+            promise.succeed(request);
+        } catch (Throwable x) {
+            promise.fail(x);
+        }
     }
 
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
