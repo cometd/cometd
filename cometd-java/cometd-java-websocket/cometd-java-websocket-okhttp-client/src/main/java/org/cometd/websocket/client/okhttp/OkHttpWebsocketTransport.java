@@ -16,8 +16,10 @@
 package org.cometd.websocket.client.okhttp;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.CookieStore;
 import java.net.HttpCookie;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.List;
@@ -88,7 +90,7 @@ public class OkHttpWebsocketTransport extends AbstractWebSocketTransport {
             }
             this.webSocketConnected = true;
             return delegate;
-        } catch (TimeoutException | UnresolvedAddressException e) {
+        } catch (ConnectException | SocketTimeoutException | TimeoutException | UnresolvedAddressException e) {
             listener.onFailure(e, messages);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
