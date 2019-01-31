@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
 import org.cometd.common.TransportException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
@@ -138,8 +139,6 @@ public class LongPollingTransport extends HttpClientTransport {
 
         request.content(new StringContentProvider(generateJSON(messages)));
 
-        customize(request);
-
         synchronized (this) {
             if (_aborted) {
                 throw new IllegalStateException("Aborted");
@@ -147,6 +146,13 @@ public class LongPollingTransport extends HttpClientTransport {
             _requests.add(request);
         }
 
+        customize(request, Promise.from(
+                customizedRequest -> send(listener, messages, uri, customizedRequest),
+                error -> listener.onFailure(error, messages)
+        ));
+    }
+
+    private void send(TransportListener listener, List<Message.Mutable> messages, URI uri, Request request) {
         request.listener(new Request.Listener.Adapter() {
             @Override
             public void onHeaders(Request request) {
@@ -180,7 +186,7 @@ public class LongPollingTransport extends HttpClientTransport {
             @Override
             public boolean onHeader(Response response, HttpField field) {
                 HttpHeader header = field.getHeader();
-                if (header != null && (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2)) {
+                if (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2) {
                     // We do not allow cookies to be handled by HttpClient, since one
                     // HttpClient instance is shared by multiple BayeuxClient instances.
                     // Instead, we store the cookies in the BayeuxClient instance.
@@ -253,6 +259,15 @@ public class LongPollingTransport extends HttpClientTransport {
     }
 
     protected void customize(Request request) {
+    }
+
+    protected void customize(Request request, Promise<Request> promise) {
+        try {
+            customize(request);
+            promise.succeed(request);
+        } catch (Throwable x) {
+            promise.fail(x);
+        }
     }
 
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
