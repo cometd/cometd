@@ -124,7 +124,8 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         map1.put("data", data1);
         map1.put("extra", extra1);
         String json = jsonContext.getGenerator().generate(map1);
-        Map map2 = jsonContext.getParser().parse(new StringReader(json), Map.class);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> map2 = jsonContext.getParser().parse(new StringReader(json), Map.class);
         Data data2 = (Data)map2.get("data");
         Extra extra2 = (Extra)map2.get("extra");
         Assert.assertEquals(data1.content, data2.content);
@@ -185,6 +186,7 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         }
 
         @Override
+        @SuppressWarnings("rawtypes")
         public Object fromJSON(Map map) {
             String content = (String)map.get("content");
             return new Data(content);
@@ -200,6 +202,7 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         }
 
         @Override
+        @SuppressWarnings("rawtypes")
         public Object fromJSON(Map map) {
             String content = (String)map.get("content");
             return new Extra(content);

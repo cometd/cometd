@@ -33,7 +33,9 @@ public class BatchArrayQueue<T> implements Queue<T> {
 
     public BatchArrayQueue(int initial, Object lock) {
         this.lock = lock;
-        this.elements = (T[])new Object[initial];
+        @SuppressWarnings("unchecked")
+        T[] array = (T[])new Object[initial];
+        this.elements = array;
         this.batches = new long[initial];
         this.batch = 1;
     }
@@ -58,6 +60,7 @@ public class BatchArrayQueue<T> implements Queue<T> {
                     throw new IllegalStateException();
                 }
 
+                @SuppressWarnings("unchecked")
                 T[] newElements = (T[])new Object[newCapacity];
                 long[] newBatches = new long[newCapacity];
                 // Copy from head to end of array.
@@ -209,6 +212,7 @@ public class BatchArrayQueue<T> implements Queue<T> {
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public T next() {
                 return (T)objects[index++];
             }
@@ -243,6 +247,7 @@ public class BatchArrayQueue<T> implements Queue<T> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <E> E[] toArray(E[] a) {
         synchronized (lock) {
             int size = size();

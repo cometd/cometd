@@ -29,6 +29,7 @@ public class MarkedReference<T> {
      * @return a null-reference, non-marked instance
      * @param <S> the type of the null reference
      */
+    @SuppressWarnings("unchecked")
     public static <S> MarkedReference<S> empty() {
         return (MarkedReference<S>)EMPTY;
     }

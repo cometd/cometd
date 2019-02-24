@@ -165,18 +165,18 @@ public abstract class ClientServerWebSocketTest {
     }
 
     protected void prepareClient() {
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
         httpClient = new HttpClient();
+        httpClient.setExecutor(clientThreads);
         switch (wsTransportType) {
             case WEBSOCKET_JSR_356:
                 wsClientContainer = ContainerProvider.getWebSocketContainer();
                 httpClient.addBean(wsClientContainer, true);
                 break;
             case WEBSOCKET_JETTY:
-                QueuedThreadPool wsThreadPool = new QueuedThreadPool();
-                wsThreadPool.setName("client");
-                wsClient = new WebSocketClient();
-                wsClient.setExecutor(wsThreadPool);
-                httpClient.addBean(wsClient);
+                wsClient = new WebSocketClient(httpClient);
+                httpClient.addBean(wsClient, true);
                 break;
             default:
                 throw new IllegalArgumentException();

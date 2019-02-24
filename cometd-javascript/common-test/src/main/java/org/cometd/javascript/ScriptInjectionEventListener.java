@@ -33,9 +33,9 @@ public class ScriptInjectionEventListener implements EventListener {
     private final JavaScript javaScript;
     private final ScriptObjectMirror thiz;
     private final ScriptObjectMirror function;
-    private final Map domNodes;
+    private final Map<?, ?> domNodes;
 
-    public ScriptInjectionEventListener(JavaScript javaScript, ScriptObjectMirror thiz, ScriptObjectMirror function, Map domNodes) {
+    public ScriptInjectionEventListener(JavaScript javaScript, ScriptObjectMirror thiz, ScriptObjectMirror function, Map<?, ?> domNodes) {
         this.javaScript = javaScript;
         this.thiz = thiz;
         this.function = function;

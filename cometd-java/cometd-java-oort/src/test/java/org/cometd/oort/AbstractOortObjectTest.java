@@ -43,7 +43,7 @@ public abstract class AbstractOortObjectTest extends OortTest {
 
     @Before
     public void prepare() throws Exception {
-        prepare(new HashMap<String, String>());
+        prepare(new HashMap<>());
     }
 
     protected void prepare(Map<String, String> options) throws Exception {
@@ -134,7 +134,7 @@ public abstract class AbstractOortObjectTest extends OortTest {
      *
      * @param <T>
      */
-    public static class OortObjectInitialListener<T> extends OortObject.Listener.Adapter<T> {
+    public static class OortObjectInitialListener<T> implements OortObject.Listener<T> {
         private final CountDownLatch latch;
 
         public OortObjectInitialListener(int parties) {

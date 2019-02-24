@@ -238,6 +238,7 @@ public class AsyncFoldLeft {
                             promise.fail(x);
                             return;
                         }
+                        break;
                     default:
                         throw new IllegalStateException();
                 }

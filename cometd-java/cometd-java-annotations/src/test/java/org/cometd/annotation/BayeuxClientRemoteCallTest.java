@@ -219,6 +219,7 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
         }
 
         @Override
+        @SuppressWarnings("rawtypes")
         public Object fromJSON(Map object) {
             return new Custom((String)object.get("payload"));
         }

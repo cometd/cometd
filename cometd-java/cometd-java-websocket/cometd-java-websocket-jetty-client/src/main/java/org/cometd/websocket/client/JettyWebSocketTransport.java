@@ -68,11 +68,11 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
     public void init() {
         super.init();
 
-        _webSocketClient.setConnectTimeout(getConnectTimeout());
+        _webSocketClient.getHttpClient().setConnectTimeout(getConnectTimeout());
         _webSocketClient.getPolicy().setIdleTimeout(getIdleTimeout());
         int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClient.getPolicy().getMaxTextMessageSize());
         _webSocketClient.getPolicy().setMaxTextMessageSize(maxMessageSize);
-        _webSocketClient.setCookieStore(getCookieStore());
+        _webSocketClient.getHttpClient().setCookieStore(getCookieStore());
 
         _webSocketSupported = true;
         _webSocketConnected = false;
@@ -84,8 +84,6 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
             if (logger.isDebugEnabled()) {
                 logger.debug("Opening websocket session to {}", uri);
             }
-            _webSocketClient.setConnectTimeout(getConnectTimeout());
-            _webSocketClient.getPolicy().setIdleTimeout(getIdleTimeout());
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             String protocol = getProtocol();
             if (protocol != null) {

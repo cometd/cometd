@@ -106,7 +106,9 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     public Object getData() {
         Object data = super.getData();
         if (isFrozen() && data instanceof Map) {
-            return Collections.unmodifiableMap((Map<String, Object>)data);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>)data;
+            return Collections.unmodifiableMap(map);
         }
         return data;
     }

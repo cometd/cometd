@@ -131,18 +131,23 @@ public class OortPrimaryLong extends OortPrimaryService<Long, OortPrimaryLong.Co
          *
          * @param result the result of the operation
          */
-        public void succeeded(Long result);
+        public default void succeeded(Long result) {
+        }
 
         /**
          * Callback method invoked when the operation on the counter failed.
          *
          * @param failure the failure object
          */
-        public void failed(Object failure);
+        public default void failed(Object failure) {
+        }
 
         /**
          * Empty implementation of {@link Callback}
+         *
+         * @deprecated use {@link Callback} instead
          */
+        @Deprecated
         public static class Adapter implements Callback {
             @Override
             public void succeeded(Long result) {

@@ -17,6 +17,7 @@ package org.cometd.server.filter;
 
 import java.util.Collections;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -48,7 +49,7 @@ public class JSONDataFilterTest extends AbstractBayeuxClientServerTest {
         bayeux.createChannelIfAbsent(unfiltered).getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession session, ServerChannel channel, ServerMessage.Mutable message) {
-                bayeux.getChannel(filtered).publish(session, Collections.unmodifiableMap(message.getDataAsMap()));
+                bayeux.getChannel(filtered).publish(session, Collections.unmodifiableMap(message.getDataAsMap()), Promise.noop());
                 return true;
             }
         });

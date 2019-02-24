@@ -22,18 +22,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -66,8 +65,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -1254,85 +1253,45 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         _detailedDump = detailedDump;
     }
 
-    @ManagedOperation(value = "Dumps the BayeuxServer state", impact = "INFO")
-    @Override
-    public String dump() {
-        return ContainerLifeCycle.dump(this);
-    }
-
     @Override
     public void dump(Appendable out, String indent) throws IOException {
-        ContainerLifeCycle.dumpObject(out, this);
-
         List<Object> children = new ArrayList<>();
+
         SecurityPolicy securityPolicy = getSecurityPolicy();
         if (securityPolicy != null) {
             children.add(securityPolicy);
         }
 
-        children.add(new Dumpable() {
-            @Override
-            public String dump() {
-                return null;
-            }
+        List<?> transports = _allowedTransports;
+        if (isDetailedDump()) {
+            transports = transports.stream()
+                    .map(t -> getTransport((String)t))
+                    .collect(Collectors.toList());
+        }
+        children.add(new DumpableCollection("transports", transports));
 
-            @Override
-            public void dump(Appendable out, String indent) throws IOException {
-                List<String> allowedTransports = getAllowedTransports();
-                ContainerLifeCycle.dumpObject(out, "transports: " + allowedTransports.size());
-                if (isDetailedDump()) {
-                    List<ServerTransport> transports = new ArrayList<>();
-                    for (String allowedTransport : allowedTransports) {
-                        transports.add(getTransport(allowedTransport));
-                    }
-                    ContainerLifeCycle.dump(out, indent, transports);
-                } else {
-                    ContainerLifeCycle.dump(out, indent, allowedTransports);
-                }
-            }
-        });
+        if (isDetailedDump()) {
+            children.add(new DumpableCollection("channels", new TreeMap<>(_channels).values()));
+        } else {
+            children.add("channels size=" + _channels.size());
+        }
 
-        children.add(new Dumpable() {
-            @Override
-            public String dump() {
-                return null;
+        if (isDetailedDump()) {
+            Map<Boolean, List<ServerSessionImpl>> sessions = _sessions.values().stream()
+                    .collect(Collectors.groupingBy(ServerSessionImpl::isLocalSession));
+            List<ServerSessionImpl> local = sessions.get(true);
+            if (local != null) {
+                children.add(new DumpableCollection("local sessions", local));
             }
-
-            @Override
-            public void dump(Appendable out, String indent) throws IOException {
-                Set<String> channels = _channels.keySet();
-                ContainerLifeCycle.dumpObject(out, "channels: " + channels.size());
-                if (isDetailedDump()) {
-                    ContainerLifeCycle.dump(out, indent, new TreeSet<>(channels));
-                }
+            List<ServerSessionImpl> remote = sessions.get(false);
+            if (remote != null) {
+                children.add(new DumpableCollection("remote sessions", remote));
             }
-        });
+        } else {
+            children.add("sessions size=" + _sessions.size());
+        }
 
-        children.add(new Dumpable() {
-            @Override
-            public String dump() {
-                return null;
-            }
-
-            @Override
-            public void dump(Appendable out, String indent) throws IOException {
-                List<ServerSession> sessions = new ArrayList<>(_sessions.values());
-                ContainerLifeCycle.dumpObject(out, "sessions: " + sessions.size());
-                if (isDetailedDump()) {
-                    List<ServerSession> locals = new ArrayList<>();
-                    for (Iterator<ServerSession> iterator = sessions.iterator(); iterator.hasNext(); ) {
-                        ServerSession session = iterator.next();
-                        if (session.isLocalSession()) {
-                            locals.add(session);
-                            iterator.remove();
-                        }
-                    }
-                    ContainerLifeCycle.dump(out, indent, locals, sessions);
-                }
-            }
-        });
-
-        ContainerLifeCycle.dump(out, indent, children);
+        Dumpable.dumpObjects(out, indent, this, children.toArray());
     }
 
     private void handleMetaHandshake(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {

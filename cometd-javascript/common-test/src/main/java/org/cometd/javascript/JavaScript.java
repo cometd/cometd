@@ -46,7 +46,7 @@ public class JavaScript implements Runnable {
         bindings.put("javaScript", this);
     }
 
-    public void init() throws Exception {
+    public void init() {
         queue.clear();
         running = true;
         thread.start();
@@ -74,6 +74,7 @@ public class JavaScript implements Runnable {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T invoke(boolean sync, ScriptObjectMirror thiz, Object function, Object... arguments) {
         FutureTask<T> task = new FutureTask<>(() -> {
             try {
@@ -111,6 +112,7 @@ public class JavaScript implements Runnable {
         return result(task);
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T evaluate(URL url) {
         FutureTask<T> task = new FutureTask<>(() -> {
             try(URLReader r = new URLReader(url)) {
@@ -122,6 +124,7 @@ public class JavaScript implements Runnable {
         return submitTask(task);
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T evaluate(String name, String code) {
         String script = name == null ? code : String.format("//# sourceURL=%s%n%s", name, code);
         FutureTask<T> task = new FutureTask<>(() -> {
@@ -146,6 +149,7 @@ public class JavaScript implements Runnable {
         return result(task);
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T getAsync(String key) {
         return (T)bindings.get(key);
     }

@@ -49,7 +49,7 @@ public class BackoffTest extends ClientServerTest {
         final BayeuxClient client = newBayeuxClient();
 
         final CountDownLatch latch = new CountDownLatch(9);
-        client.addExtension(new ClientSession.Extension.Adapter() {
+        client.addExtension(new ClientSession.Extension() {
             private final AtomicInteger clientMetaConnects = new AtomicInteger();
 
             @Override

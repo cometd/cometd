@@ -85,6 +85,7 @@ public interface Promise<C> {
      * @param <T> the type of the empty result
      * @return a Promise whose methods are implemented empty.
      */
+    @SuppressWarnings("unchecked")
     static <T> Promise<T> noop() {
         return (Promise<T>)NOOP;
     }

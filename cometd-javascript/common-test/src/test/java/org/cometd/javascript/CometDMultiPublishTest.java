@@ -73,7 +73,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
         Latch disconnect = javaScript.get("disconnect");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnect.countDown(); });");
 
-        AtomicReference<List<Throwable>> failures = new AtomicReference<>(new ArrayList<Throwable>());
+        AtomicReference<List<Throwable>> failures = new AtomicReference<>(new ArrayList<>());
         handler.expect(failures, 4);
         disconnect.reset(1);
 
@@ -112,7 +112,8 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
                 if (successful == null || successful) {
                     failures.get().add(new AssertionError("Publish " + id + " expected unsuccessful"));
                 } else {
-                    Map data = (Map)((Map)((Map)message.get("failure")).get("message")).get("data");
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> data = (Map<String, Object>)((Map<String, Object>)((Map<String, Object>)message.get("failure")).get("message")).get("data");
                     int dataId = ((Number)data.get("id")).intValue();
                     if (dataId != id) {
                         failures.get().add(new AssertionError("data id " + dataId + ", expecting " + id));
@@ -136,7 +137,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
         private int messages;
 
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException {
+        public void init(FilterConfig filterConfig) {
         }
 
         @Override

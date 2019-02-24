@@ -171,7 +171,9 @@ public class OortStartupTest {
         // Wait for the OortObject to sync.
         Thread.sleep(1000);
 
+        @SuppressWarnings("unchecked")
         OortObject<String> oortObject1 = (OortObject<String>)context1.getAttribute(OortObjectStartupServlet.NAME);
+        @SuppressWarnings("unchecked")
         OortObject<String> oortObject2 = (OortObject<String>)context2.getAttribute(OortObjectStartupServlet.NAME);
         Assert.assertEquals(2, oortObject1.getInfos().size());
         Assert.assertEquals(2, oortObject2.getInfos().size());

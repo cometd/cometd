@@ -15,9 +15,6 @@
  */
 package org.webtide.demo.auction;
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,7 +26,7 @@ public class AuctionServlet extends HttpServlet {
     AuctionChatService _chat;
 
     @Override
-    public void init() throws ServletException {
+    public void init() {
         CategoryDao dao = new CategoryDao();
 
         Category arts = new Category(1, "Arts and Crafts", "Original artworks");
@@ -59,12 +56,10 @@ public class AuctionServlet extends HttpServlet {
     }
 
     @Override
-    public void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    public void doPost(HttpServletRequest request, HttpServletResponse response) {
     }
 
     @Override
-    public void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    public void doGet(HttpServletRequest request, HttpServletResponse response) {
     }
 }

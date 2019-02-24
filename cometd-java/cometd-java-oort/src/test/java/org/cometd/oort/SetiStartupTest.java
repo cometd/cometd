@@ -50,7 +50,7 @@ public class SetiStartupTest extends OortTest {
         int nodes = 4;
         int edges = nodes * (nodes - 1);
         final CountDownLatch joinLatch = new CountDownLatch(edges);
-        Oort.CometListener joinListener = new Oort.CometListener.Adapter() {
+        Oort.CometListener joinListener = new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
                 joinLatch.countDown();

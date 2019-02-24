@@ -97,6 +97,7 @@ public class BinaryData extends HashMap<String, Object> {
     /**
      * @return the meta data associated with the binary chunk
      */
+    @SuppressWarnings("unchecked")
     public Map<String, Object> getMetaData() {
         return (Map<String, Object>)get(META);
     }

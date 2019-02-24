@@ -17,11 +17,11 @@ package org.cometd.common;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -36,8 +36,8 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -363,31 +363,11 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     }
 
     @Override
-    public String dump() {
-        return ContainerLifeCycle.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException {
-        ContainerLifeCycle.dumpObject(out, this);
-
-        List<Dumpable> children = new ArrayList<>();
-
-        children.add(new Dumpable() {
-            @Override
-            public String dump() {
-                return null;
-            }
-
-            @Override
-            public void dump(Appendable out, String indent) throws IOException {
-                Collection<AbstractSessionChannel> channels = getChannels().values();
-                ContainerLifeCycle.dumpObject(out, "channels: " + channels.size());
-                ContainerLifeCycle.dump(out, indent, channels);
-            }
-        });
-
-        ContainerLifeCycle.dump(out, indent, children);
+        Dumpable.dumpObjects(out, indent, this,
+                _attributes,
+                new DumpableCollection("extensions", _extensions),
+                new DumpableCollection("channels", new TreeMap<>(_channels).values()));
     }
 
     /**
@@ -635,50 +615,20 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         }
 
         @Override
-        public String dump() {
-            return ContainerLifeCycle.dump(this);
+        public String dumpSelf() {
+            return getId();
         }
 
         @Override
         public void dump(Appendable out, String indent) throws IOException {
-            ContainerLifeCycle.dumpObject(out, this);
-
-            List<Dumpable> children = new ArrayList<>();
-
-            children.add(new Dumpable() {
-                @Override
-                public String dump() {
-                    return null;
-                }
-
-                @Override
-                public void dump(Appendable out, String indent) throws IOException {
-                    List<ClientSessionChannelListener> listeners = getListeners();
-                    ContainerLifeCycle.dumpObject(out, "listeners: " + listeners.size());
-                    ContainerLifeCycle.dump(out, indent, listeners);
-                }
-            });
-
-            children.add(new Dumpable() {
-                @Override
-                public String dump() {
-                    return null;
-                }
-
-                @Override
-                public void dump(Appendable out, String indent) throws IOException {
-                    List<MessageListener> subscribers = getSubscribers();
-                    ContainerLifeCycle.dumpObject(out, "subscribers: " + subscribers.size());
-                    ContainerLifeCycle.dump(out, indent, subscribers);
-                }
-            });
-
-            ContainerLifeCycle.dump(out, indent, children);
+            Dumpable.dumpObjects(out, indent, this,
+                    new DumpableCollection("listeners", _listeners),
+                    new DumpableCollection("subscribers", _subscriptions));
         }
 
         @Override
         public String toString() {
-            return String.format("%s@%x[%s]", _id, hashCode(), AbstractClientSession.this);
+            return String.format("%s@%x[%s][%s]", getClass().getSimpleName(), hashCode(), getChannelId(), AbstractClientSession.this);
         }
     }
 }

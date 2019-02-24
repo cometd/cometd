@@ -363,7 +363,7 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
 
         // Republish, it must not have resubscribed
         messageLatch.set(new CountDownLatch(1));
-        bayeuxClient.getChannel("/foo").publish(new HashMap());
+        bayeuxClient.getChannel("/foo").publish(new HashMap<>());
         assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
     }
 

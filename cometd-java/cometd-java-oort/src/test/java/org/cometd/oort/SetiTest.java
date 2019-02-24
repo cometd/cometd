@@ -521,7 +521,7 @@ public class SetiTest extends OortTest {
 
         // Stop Seti1
         final CountDownLatch presenceOffLatch = new CountDownLatch(1);
-        seti2.addPresenceListener(new Seti.PresenceListener.Adapter() {
+        seti2.addPresenceListener(new Seti.PresenceListener() {
             @Override
             public void presenceRemoved(Event event) {
                 presenceOffLatch.countDown();
@@ -1107,7 +1107,7 @@ public class SetiTest extends OortTest {
         Assert.assertEquals(0, ((ServerSessionImpl)session).getListeners().size());
     }
 
-    private static class UserPresentListener extends Seti.PresenceListener.Adapter {
+    private static class UserPresentListener implements Seti.PresenceListener {
         private final CountDownLatch latch;
 
         private UserPresentListener(CountDownLatch latch) {
@@ -1120,7 +1120,7 @@ public class SetiTest extends OortTest {
         }
     }
 
-    private static class UserAbsentListener extends Seti.PresenceListener.Adapter {
+    private static class UserAbsentListener implements Seti.PresenceListener {
         private final CountDownLatch latch;
 
         private UserAbsentListener(CountDownLatch latch) {

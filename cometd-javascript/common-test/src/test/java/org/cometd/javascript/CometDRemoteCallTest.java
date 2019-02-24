@@ -158,7 +158,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
             new Thread(() -> {
                 try {
                     Thread.sleep(2 * timeout);
-                    caller.result(new HashMap());
+                    caller.result(new HashMap<>());
                 } catch (InterruptedException x) {
                     caller.failure(x);
                 }
@@ -239,6 +239,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         }
 
         @Override
+        @SuppressWarnings("rawtypes")
         public Object fromJSON(Map object) {
             return new Custom((String)object.get("payload"));
         }

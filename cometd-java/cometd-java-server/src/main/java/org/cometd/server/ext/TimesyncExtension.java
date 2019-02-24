@@ -86,6 +86,7 @@ public class TimesyncExtension implements Extension {
     public boolean rcvMeta(ServerSession from, Mutable message) {
         Map<String, Object> ext = message.getExt(false);
         if (ext != null) {
+            @SuppressWarnings("unchecked")
             Map<String, Object> sync = (Map<String, Object>)ext.get("timesync");
             if (sync != null) {
                 sync.put("ts", System.currentTimeMillis());
@@ -105,6 +106,7 @@ public class TimesyncExtension implements Extension {
             Map<String, Object> extIn = associated.getExt();
 
             if (extIn != null) {
+                @SuppressWarnings("unchecked")
                 Map<String, Object> sync = (Map<String, Object>)extIn.get("timesync");
                 if (sync != null) {
                     final long tc = ((Number)sync.get("tc")).longValue();

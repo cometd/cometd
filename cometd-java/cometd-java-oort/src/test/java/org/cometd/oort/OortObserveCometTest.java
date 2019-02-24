@@ -312,7 +312,7 @@ public class OortObserveCometTest extends OortTest {
 
         final AtomicInteger leftCountA = new AtomicInteger();
         final CountDownLatch leftLatchA = new CountDownLatch(1);
-        oortA.addCometListener(new Oort.CometListener.Adapter() {
+        oortA.addCometListener(new Oort.CometListener() {
             @Override
             public void cometLeft(Event event) {
                 leftCountA.incrementAndGet();
@@ -340,7 +340,7 @@ public class OortObserveCometTest extends OortTest {
         oorts.add(oortB);
         final AtomicInteger joinedCountA = new AtomicInteger();
         final CountDownLatch joinedLatchA = new CountDownLatch(1);
-        oortA.addCometListener(new Oort.CometListener.Adapter() {
+        oortA.addCometListener(new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
                 joinedCountA.incrementAndGet();
@@ -349,7 +349,7 @@ public class OortObserveCometTest extends OortTest {
         });
         final AtomicInteger joinedCountB = new AtomicInteger();
         final CountDownLatch joinedLatchB = new CountDownLatch(1);
-        oortB.addCometListener(new Oort.CometListener.Adapter() {
+        oortB.addCometListener(new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
                 joinedCountB.incrementAndGet();
@@ -979,7 +979,7 @@ public class OortObserveCometTest extends OortTest {
         final String channelName = "/test";
         final String data = "data";
         final CountDownLatch joinedLatch = new CountDownLatch(1);
-        oortA.addCometListener(new Oort.CometListener.Adapter() {
+        oortA.addCometListener(new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
                 bayeuxServerA.createChannelIfAbsent(channelName).getReference().publish(serviceA, data, Promise.noop());
@@ -1137,7 +1137,7 @@ public class OortObserveCometTest extends OortTest {
         Oort oortB = startOort(serverB);
 
         final AtomicReference<CountDownLatch> joinEventLatch = new AtomicReference<>(new CountDownLatch(1));
-        oortB.addCometListener(new Oort.CometListener.Adapter() {
+        oortB.addCometListener(new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
                 joinEventLatch.get().countDown();
@@ -1237,7 +1237,7 @@ public class OortObserveCometTest extends OortTest {
 
         final AtomicInteger joinCount = new AtomicInteger();
         final AtomicReference<CountDownLatch> joinLatch = new AtomicReference<>(new CountDownLatch(2));
-        Oort.CometListener joinListener = new Oort.CometListener.Adapter() {
+        Oort.CometListener joinListener = new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
                 joinCount.incrementAndGet();
@@ -1257,7 +1257,7 @@ public class OortObserveCometTest extends OortTest {
 
         final AtomicInteger leftCount = new AtomicInteger();
         final CountDownLatch leftLatch = new CountDownLatch(1);
-        Oort.CometListener leftListener = new Oort.CometListener.Adapter() {
+        Oort.CometListener leftListener = new Oort.CometListener() {
             @Override
             public void cometLeft(Event event) {
                 leftCount.incrementAndGet();

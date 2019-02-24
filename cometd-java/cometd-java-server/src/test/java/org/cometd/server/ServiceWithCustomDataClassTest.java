@@ -89,6 +89,7 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
         }
 
         @Override
+        @SuppressWarnings("rawtypes")
         public Object fromJSON(Map map) {
             String value = (String)map.get("field");
             Holder holder = new Holder();

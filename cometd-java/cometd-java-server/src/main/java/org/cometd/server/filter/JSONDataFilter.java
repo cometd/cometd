@@ -45,6 +45,7 @@ public class JSONDataFilter implements DataFilter {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Object filter(ServerSession session, ServerChannel channel, Object data) {
         if (data == null) {
             return null;

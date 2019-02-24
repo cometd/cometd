@@ -50,7 +50,7 @@ public class OortObjectStartupTest extends OortTest {
         int nodes = 4;
         int edges = nodes * (nodes - 1);
         final CountDownLatch joinLatch = new CountDownLatch(edges);
-        Oort.CometListener joinListener = new Oort.CometListener.Adapter() {
+        Oort.CometListener joinListener = new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
                 joinLatch.countDown();
@@ -93,9 +93,9 @@ public class OortObjectStartupTest extends OortTest {
         for (int i = 0; i < oorts.size(); i++) {
             final Oort oort = oorts.get(i);
             OortObject<String> oortObject = new OortObject<>(oort, name, OortObjectFactories.forString(i + "_default"));
-            oortObject.addListener(new OortObject.Listener.Adapter<String>() {
+            oortObject.addListener(new OortObject.Listener<String>() {
                 @Override
-                public void onUpdated(OortObject.Info oldInfo, OortObject.Info newInfo) {
+                public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
                     if (oldInfo == null) {
                         logger.info("{} got part from {}", oort.getURL(), newInfo.getOortURL());
                         initialLatch.countDown();

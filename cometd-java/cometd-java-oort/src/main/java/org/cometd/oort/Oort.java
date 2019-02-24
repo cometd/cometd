@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.EventListener;
 import java.util.EventObject;
 import java.util.HashMap;
@@ -60,7 +59,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -610,13 +609,7 @@ public class Oort extends ContainerLifeCycle {
 
     @Override
     public void dump(Appendable out, String indent) throws IOException {
-        super.dump(out, indent);
-
-        List<Dumpable> children = new ArrayList<>();
-        Set<String> observedChannels = getObservedChannels();
-        children.add(new DumpableCollection("observed channels: " + observedChannels.size(), observedChannels));
-
-        ContainerLifeCycle.dump(out, indent, children);
+        dumpObjects(out, indent, new DumpableCollection("observed channels", _channels.keySet()));
     }
 
     @Override
@@ -656,18 +649,22 @@ public class Oort extends ContainerLifeCycle {
          *
          * @param event the comet event
          */
-        public void cometJoined(Event event);
+        public default void cometJoined(Event event) {
+        }
 
         /**
          * Callback method invoked when a comet leaves the cloud
          *
          * @param event the comet event
          */
-        public void cometLeft(Event event);
+        public default void cometLeft(Event event) {
+        }
 
         /**
          * Empty implementation of {@link CometListener}
+         * @deprecated use {@link CometListener} instead
          */
+        @Deprecated
         public static class Adapter implements CometListener {
             @Override
             public void cometJoined(Event event) {
@@ -710,28 +707,6 @@ public class Oort extends ContainerLifeCycle {
              */
             public String getCometURL() {
                 return cometURL;
-            }
-        }
-    }
-
-    // TODO: Use Jetty's.
-    static class DumpableCollection implements Dumpable {
-        private final String name;
-        private final Collection<?> collection;
-
-        DumpableCollection(String name, Collection<?> collection) {
-            this.name = name;
-            this.collection = collection;
-        }
-
-        public String dump() {
-            return ContainerLifeCycle.dump(this);
-        }
-
-        public void dump(Appendable out, String indent) throws IOException {
-            out.append(name).append(System.lineSeparator());
-            if (collection != null) {
-                ContainerLifeCycle.dump(out, indent, collection);
             }
         }
     }

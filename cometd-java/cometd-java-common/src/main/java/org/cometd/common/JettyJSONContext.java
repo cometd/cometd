@@ -98,6 +98,7 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
 
         // Overridden for visibility
         @Override
+        @SuppressWarnings("rawtypes")
         protected Convertor getConvertor(Class forClass) {
             return super.getConvertor(forClass);
         }
@@ -115,6 +116,7 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
         }
 
         @Override
+        @SuppressWarnings("rawtypes")
         protected Convertor getConvertor(Class forClass) {
             return _jsonParser.getConvertor(forClass);
         }
@@ -142,6 +144,7 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
         }
 
         @Override
+        @SuppressWarnings("rawtypes")
         protected Convertor getConvertor(Class forClass) {
             return _messageParser.getConvertor(forClass);
         }

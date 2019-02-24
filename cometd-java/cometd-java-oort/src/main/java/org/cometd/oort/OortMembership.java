@@ -42,8 +42,8 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -296,18 +296,19 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
     }
 
     @Override
-    public String dump() {
-        return ContainerLifeCycle.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException {
-        ContainerLifeCycle.dumpObject(out, this);
-        Collection<Object> children = new ArrayList<>();
-        children.add(new Oort.DumpableCollection("pending", pendingComets.values()));
-        children.add(new Oort.DumpableCollection("clientComets", clientComets.values()));
-        children.add(new Oort.DumpableCollection("serverComets", serverComets.values()));
-        ContainerLifeCycle.dump(out, indent, children);
+        Collection<OortComet> pendingComets;
+        Collection<ClientCometInfo> clientComets;
+        Collection<ServerCometInfo> serverComets;
+        synchronized (lock) {
+            pendingComets = new ArrayList<>(this.pendingComets.values());
+            clientComets = new ArrayList<>(this.clientComets.values());
+            serverComets = new ArrayList<>(this.serverComets.values());
+        }
+        Dumpable.dumpObjects(out, indent, this,
+                new DumpableCollection("pending", pendingComets),
+                new DumpableCollection("clientComets", clientComets),
+                new DumpableCollection("serverComets", serverComets));
     }
 
     @Override

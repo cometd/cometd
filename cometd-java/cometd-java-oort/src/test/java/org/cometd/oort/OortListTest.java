@@ -41,7 +41,7 @@ public class OortListTest extends AbstractOortObjectTest {
 
         final long element = 1;
         final CountDownLatch addLatch = new CountDownLatch(1);
-        oortList2.addElementListener(new OortList.ElementListener.Adapter<Long>() {
+        oortList2.addElementListener(new OortList.ElementListener<Long>() {
             @Override
             public void onAdded(OortObject.Info<List<Long>> info, List<Long> elements) {
                 Assert.assertEquals(1, elements.size());
@@ -65,7 +65,7 @@ public class OortListTest extends AbstractOortObjectTest {
         startOortObjects(oortList1, oortList2);
 
         final CountDownLatch setLatch = new CountDownLatch(2);
-        OortObject.Listener<List<Long>> listener = new OortObject.Listener.Adapter<List<Long>>() {
+        OortObject.Listener<List<Long>> listener = new OortObject.Listener<List<Long>>() {
             @Override
             public void onUpdated(OortObject.Info<List<Long>> oldInfo, OortObject.Info<List<Long>> newInfo) {
                 setLatch.countDown();
@@ -80,7 +80,7 @@ public class OortListTest extends AbstractOortObjectTest {
         Assert.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
-        oortList2.addElementListener(new OortList.ElementListener.Adapter<Long>() {
+        oortList2.addElementListener(new OortList.ElementListener<Long>() {
             @Override
             public void onRemoved(OortObject.Info<List<Long>> info, List<Long> elements) {
                 Assert.assertEquals(1, elements.size());
@@ -104,7 +104,7 @@ public class OortListTest extends AbstractOortObjectTest {
         startOortObjects(oortList1, oortList2);
 
         final CountDownLatch setLatch1 = new CountDownLatch(2);
-        OortObject.Listener<List<String>> listener = new OortObject.Listener.Adapter<List<String>>() {
+        OortObject.Listener<List<String>> listener = new OortObject.Listener<List<String>>() {
             @Override
             public void onUpdated(OortObject.Info<List<String>> oldInfo, OortObject.Info<List<String>> newInfo) {
                 setLatch1.countDown();
@@ -172,7 +172,7 @@ public class OortListTest extends AbstractOortObjectTest {
         startOortObjects(oortList1, oortList2);
 
         final CountDownLatch setLatch = new CountDownLatch(2);
-        OortObject.Listener<List<String>> listener = new OortObject.Listener.Adapter<List<String>>() {
+        OortObject.Listener<List<String>> listener = new OortObject.Listener<List<String>>() {
             @Override
             public void onUpdated(OortObject.Info<List<String>> oldInfo, OortObject.Info<List<String>> newInfo) {
                 setLatch.countDown();
@@ -184,7 +184,7 @@ public class OortListTest extends AbstractOortObjectTest {
         Assert.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch addLatch = new CountDownLatch(4);
-        OortList.ElementListener<String> addedListener = new OortList.ElementListener.Adapter<String>() {
+        OortList.ElementListener<String> addedListener = new OortList.ElementListener<String>() {
             @Override
             public void onAdded(OortObject.Info<List<String>> info, List<String> elements) {
                 addLatch.countDown();
@@ -229,7 +229,7 @@ public class OortListTest extends AbstractOortObjectTest {
         final CountDownLatch latch2 = new CountDownLatch(threads * iterations);
 
         oortList2.addListener(new OortList.DeltaListener<>(oortList2));
-        oortList2.addElementListener(new OortList.ElementListener.Adapter<String>() {
+        oortList2.addElementListener(new OortList.ElementListener<String>() {
             @Override
             public void onAdded(OortObject.Info<List<String>> info, List<String> elements) {
                 for (int i = 0; i < elements.size(); ++i) {
@@ -245,7 +245,7 @@ public class OortListTest extends AbstractOortObjectTest {
                     barrier.await();
                     for (int j = 0; j < iterations; ++j) {
                         String element = String.valueOf(index * iterations + j);
-                        oortList1.addAndShare((OortObject.Result<Boolean>)null, element);
+                        oortList1.addAndShare(null, element);
                     }
                 } catch (Throwable x) {
                     x.printStackTrace();

@@ -40,7 +40,7 @@ public class OortPrimaryLongTest extends AbstractOortObjectTest {
         Thread.sleep(1000);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
-        Assert.assertTrue(counter1.get(new OortPrimaryLong.Callback.Adapter() {
+        Assert.assertTrue(counter1.get(new OortPrimaryLong.Callback() {
             @Override
             public void succeeded(Long result) {
                 Assert.assertEquals(initial, (long)result);
@@ -52,7 +52,7 @@ public class OortPrimaryLongTest extends AbstractOortObjectTest {
         Assert.assertEquals(initial, counter1.getValue());
 
         final CountDownLatch latch2 = new CountDownLatch(1);
-        Assert.assertTrue(counter2.get(new OortPrimaryLong.Callback.Adapter() {
+        Assert.assertTrue(counter2.get(new OortPrimaryLong.Callback() {
             @Override
             public void succeeded(Long result) {
                 Assert.assertEquals(initial, (long)result);
@@ -64,7 +64,7 @@ public class OortPrimaryLongTest extends AbstractOortObjectTest {
         Assert.assertEquals(0, counter2.getValue());
 
         final CountDownLatch latch3 = new CountDownLatch(1);
-        Assert.assertTrue(counter1.addAndGet(1, new OortPrimaryLong.Callback.Adapter() {
+        Assert.assertTrue(counter1.addAndGet(1, new OortPrimaryLong.Callback() {
             @Override
             public void succeeded(Long result) {
                 Assert.assertEquals(initial + 1, (long)result);
@@ -76,7 +76,7 @@ public class OortPrimaryLongTest extends AbstractOortObjectTest {
         Assert.assertEquals(initial + 1, counter1.getValue());
 
         final CountDownLatch latch4 = new CountDownLatch(1);
-        Assert.assertTrue(counter2.addAndGet(1, new OortPrimaryLong.Callback.Adapter() {
+        Assert.assertTrue(counter2.addAndGet(1, new OortPrimaryLong.Callback() {
             @Override
             public void succeeded(Long result) {
                 Assert.assertEquals(initial + 2, (long)result);
@@ -88,7 +88,7 @@ public class OortPrimaryLongTest extends AbstractOortObjectTest {
         Assert.assertEquals(0, counter2.getValue());
 
         final CountDownLatch latch5 = new CountDownLatch(1);
-        Assert.assertTrue(counter2.getAndAdd(1, new OortPrimaryLong.Callback.Adapter() {
+        Assert.assertTrue(counter2.getAndAdd(1, new OortPrimaryLong.Callback() {
             @Override
             public void succeeded(Long result) {
                 Assert.assertEquals(initial + 2, (long)result);
@@ -100,7 +100,7 @@ public class OortPrimaryLongTest extends AbstractOortObjectTest {
         Assert.assertEquals(0, counter2.getValue());
 
         final CountDownLatch latch6 = new CountDownLatch(1);
-        Assert.assertTrue(counter1.get(new OortPrimaryLong.Callback.Adapter() {
+        Assert.assertTrue(counter1.get(new OortPrimaryLong.Callback() {
             @Override
             public void succeeded(Long result) {
                 Assert.assertEquals(initial + 3, (long)result);

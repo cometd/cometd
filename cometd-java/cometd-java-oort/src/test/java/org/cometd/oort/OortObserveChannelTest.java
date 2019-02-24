@@ -199,7 +199,7 @@ public class OortObserveChannelTest extends OortTest {
 
         // Resend, the message must not be received
         messageLatch1.reset(1);
-        client2.getChannel(channelName).publish(new HashMap());
+        client2.getChannel(channelName).publish(new HashMap<>());
         Assert.assertFalse(messageLatch1.await(1, TimeUnit.SECONDS));
     }
 

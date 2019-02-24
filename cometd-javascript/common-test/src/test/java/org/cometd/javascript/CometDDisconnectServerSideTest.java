@@ -124,7 +124,7 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTransportsTest
         public void kick(String sessionId) {
             final ServerMessage.Mutable kickMessage = getBayeux().newMessage();
             kickMessage.setChannel(channelName);
-            kickMessage.setData(new HashMap());
+            kickMessage.setData(new HashMap<>());
 
             final ServerSession session = getBayeux().getSession(sessionId);
 
