@@ -79,10 +79,7 @@ public class LongPollingTransport extends HttpClientTransport {
         _httpClient = httpClient;
         setOptionPrefix(PREFIX);
         _cookieMiddleware = (cookieMiddleware!=null)? cookieMiddleware: new CookieMiddleware.DefaultCookieMiddleware(_cookieManager, getCookieStore());
-
     }
-
-
 
     @Override
     public boolean accept(String bayeuxVersion) {
@@ -208,13 +205,7 @@ public class LongPollingTransport extends HttpClientTransport {
             }
 
             private void storeCookies(URI uri, Map<String, List<String>> cookies) {
-                try {
-                    _cookieManager.put(uri, cookies);
-                } catch (IOException x) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("", x);
-                    }
-                }
+                _cookieMiddleware.storeCookies(url, cookies);
             }
 
             @Override
