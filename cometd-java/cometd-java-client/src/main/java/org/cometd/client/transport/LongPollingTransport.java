@@ -21,11 +21,7 @@ import java.net.CookiePolicy;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,20 +48,33 @@ public class LongPollingTransport extends HttpClientTransport {
 
     private final HttpClient _httpClient;
     private final List<Request> _requests = new ArrayList<>();
+    private final CookieMiddleware _cookieMiddleware;
+
     private volatile boolean _aborted;
     private volatile int _maxBufferSize;
     private volatile boolean _appendMessageType;
     private volatile CookieManager _cookieManager;
     private volatile Map<String, Object> _advice;
 
-    public LongPollingTransport(Map<String, Object> options, HttpClient httpClient) {
-        this(null, options, httpClient);
+    public LongPollingTransport(Map<String, Object> options, HttpClient httpClient, CookieMiddleware cookieMiddleware) {
+        this(null, options, httpClient, cookieMiddleware);
     }
 
+
     public LongPollingTransport(String url, Map<String, Object> options, HttpClient httpClient) {
+        this(url, options, httpClient, null);
+
+    }
+
+    public LongPollingTransport(Map<String, Object> options, HttpClient httpClient) {
+        this(null, options, httpClient, null);
+    }
+
+    public LongPollingTransport(String url, Map<String, Object> options, HttpClient httpClient, CookieMiddleware cookieMiddleware) {
         super(NAME, url, options);
         _httpClient = httpClient;
         setOptionPrefix(PREFIX);
+        _cookieMiddleware = (cookieMiddleware!=null)? cookieMiddleware: new CookieMiddleware.DefaultCookieMiddleware(_cookieManager, getCookieStore());
     }
 
     @Override
@@ -127,7 +136,7 @@ public class LongPollingTransport extends HttpClientTransport {
         final Request request = _httpClient.newRequest(url).method(HttpMethod.POST);
         request.header(HttpHeader.CONTENT_TYPE.asString(), "application/json;charset=UTF-8");
 
-        List<HttpCookie> cookies = _cookieMiddleware.extractCookies(url);
+        Collection<HttpCookie> cookies = _cookieMiddleware.extractCookies(url);
 
         StringBuilder value = new StringBuilder(cookies.size() * 32);
         for (HttpCookie cookie : cookies) {
