@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,14 @@ import java.util.concurrent.atomic.AtomicMarkableReference;
 /**
  * Immutable, non-volatile, non-atomic version of {@link AtomicMarkableReference}.
  *
- * @param <T> the reference type
+ * @param <T> the type of the reference
  */
 public class MarkedReference<T> {
     private static final MarkedReference<?> EMPTY = new MarkedReference<>(null, false);
 
     /**
      * @return a null-reference, non-marked instance
+     * @param <S> the type of the null reference
      */
     public static <S> MarkedReference<S> empty() {
         return (MarkedReference<S>)EMPTY;

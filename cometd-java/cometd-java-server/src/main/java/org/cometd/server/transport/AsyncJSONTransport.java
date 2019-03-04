@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         input.setReadListener(reader);
     }
 
+    @Override
     protected HttpScheduler suspend(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
         AsyncContext asyncContext = request.getAsyncContext();
         return newHttpScheduler(request, response, asyncContext, session, reply, timeout);
@@ -99,10 +100,14 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         }
     }
 
+    protected void writeComplete(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, List<ServerMessage> messages, ServerMessage.Mutable[] replies) {
+    }
+
     protected abstract class AbstractReader implements ReadListener {
         private final HttpServletRequest request;
         private final HttpServletResponse response;
         protected final AsyncContext asyncContext;
+        private int total;
 
         protected AbstractReader(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext) {
             this.request = request;
@@ -116,15 +121,22 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Asynchronous read start from {}", input);
             }
+            int maxMessageSize = getMaxMessageSize();
             byte[] buffer = buffers.get();
-            // First check for isReady() because it has
-            // side effects, and then for isFinished().
-            while (input.isReady() && !input.isFinished()) {
+            while (input.isReady()) {
                 int read = input.read(buffer);
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Asynchronous read {} bytes from {}", read, input);
                 }
-                if (read >= 0) {
+                if (read < 0) {
+                    break;
+                } else {
+                    if (maxMessageSize > 0) {
+                        total += read;
+                        if (total > maxMessageSize) {
+                            throw new IOException("Max message size " + maxMessageSize + " exceeded");
+                        }
+                    }
                     append(buffer, 0, read);
                 }
             }
@@ -303,6 +315,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                     }
                     case COMPLETE: {
                         asyncContext.complete();
+                        writeComplete(request, response, session, messages, replies);
                         return;
                     }
                     default: {

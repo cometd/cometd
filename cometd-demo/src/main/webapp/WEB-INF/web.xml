@@ -5,99 +5,99 @@
          metadata-complete="true"
          version="3.1">
 
-    <display-name>CometD Test WebApp</display-name>
+  <display-name>CometD Test WebApp</display-name>
 
-    <!--  Request that Jetty create an MBean to manage the Bayeux instance -->
-    <context-param>
-        <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>
-        <param-value>org.cometd.bayeux,org.cometd.oort.Oort</param-value>
-    </context-param>
+  <!--  Request that Jetty create an MBean to manage the Bayeux instance -->
+  <context-param>
+    <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>
+    <param-value>org.cometd.bayeux,org.cometd.oort.Oort</param-value>
+  </context-param>
 
-    <!-- Filter to support cross domain requests -->
-    <filter>
-        <filter-name>cross-origin</filter-name>
-        <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
-        <async-supported>true</async-supported>
-    </filter>
-    <filter-mapping>
-        <filter-name>cross-origin</filter-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </filter-mapping>
+  <!-- Filter to support cross domain requests -->
+  <filter>
+    <filter-name>cross-origin</filter-name>
+    <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+    <async-supported>true</async-supported>
+  </filter>
+  <filter-mapping>
+    <filter-name>cross-origin</filter-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </filter-mapping>
 
-    <!-- CometD Servlet -->
-    <servlet>
-        <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.annotation.AnnotationCometDServlet</servlet-class>
-        <init-param>
-            <param-name>timeout</param-name>
-            <param-value>20000</param-value>
-        </init-param>
-        <init-param>
-            <param-name>interval</param-name>
-            <param-value>0</param-value>
-        </init-param>
-        <init-param>
-            <param-name>maxInterval</param-name>
-            <param-value>10000</param-value>
-        </init-param>
-        <init-param>
-            <param-name>handshakeReconnect</param-name>
-            <param-value>true</param-value>
-        </init-param>
-        <init-param>
-            <param-name>maxLazyTimeout</param-name>
-            <param-value>5000</param-value>
-        </init-param>
-        <init-param>
-            <param-name>long-polling.multiSessionInterval</param-name>
-            <param-value>2000</param-value>
-        </init-param>
-        <init-param>
-            <param-name>services</param-name>
-            <param-value>org.cometd.examples.ChatService</param-value>
-        </init-param>
-        <init-param>
-            <param-name>ws.cometdURLMapping</param-name>
-            <param-value>/cometd/*</param-value>
-        </init-param>
-        <load-on-startup>1</load-on-startup>
-        <async-supported>true</async-supported>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>cometd</servlet-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </servlet-mapping>
+  <!-- CometD Servlet -->
+  <servlet>
+    <servlet-name>cometd</servlet-name>
+    <servlet-class>org.cometd.annotation.AnnotationCometDServlet</servlet-class>
+    <init-param>
+      <param-name>timeout</param-name>
+      <param-value>20000</param-value>
+    </init-param>
+    <init-param>
+      <param-name>interval</param-name>
+      <param-value>0</param-value>
+    </init-param>
+    <init-param>
+      <param-name>maxInterval</param-name>
+      <param-value>10000</param-value>
+    </init-param>
+    <init-param>
+      <param-name>handshakeReconnect</param-name>
+      <param-value>true</param-value>
+    </init-param>
+    <init-param>
+      <param-name>maxLazyTimeout</param-name>
+      <param-value>5000</param-value>
+    </init-param>
+    <init-param>
+      <param-name>long-polling.multiSessionInterval</param-name>
+      <param-value>2000</param-value>
+    </init-param>
+    <init-param>
+      <param-name>services</param-name>
+      <param-value>org.cometd.examples.ChatService</param-value>
+    </init-param>
+    <init-param>
+      <param-name>ws.cometdURLMapping</param-name>
+      <param-value>/cometd/*</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>cometd</servlet-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </servlet-mapping>
 
-    <servlet>
-        <servlet-name>cometdDemo</servlet-name>
-        <servlet-class>org.cometd.examples.CometDDemoServlet</servlet-class>
-        <load-on-startup>2</load-on-startup>
-    </servlet>
+  <servlet>
+    <servlet-name>cometdDemo</servlet-name>
+    <servlet-class>org.cometd.examples.CometDDemoServlet</servlet-class>
+    <load-on-startup>2</load-on-startup>
+  </servlet>
 
-    <!-- Configure Oort Cloud, used by Auction demo -->
-    <servlet>
-        <servlet-name>oort</servlet-name>
-        <servlet-class>org.cometd.oort.OortMulticastConfigServlet</servlet-class>
-        <init-param>
-            <param-name>oort.url</param-name>
-            <param-value>http://localhost:8080/cometd</param-value>
-        </init-param>
-        <load-on-startup>3</load-on-startup>
-    </servlet>
+  <!-- Configure Oort Cloud, used by Auction demo -->
+  <servlet>
+    <servlet-name>oort</servlet-name>
+    <servlet-class>org.cometd.oort.OortMulticastConfigServlet</servlet-class>
+    <init-param>
+      <param-name>oort.url</param-name>
+      <param-value>http://localhost:8080/cometd</param-value>
+    </init-param>
+    <load-on-startup>3</load-on-startup>
+  </servlet>
 
-    <!-- Configure Seti ID management, used by Auction demo -->
-    <servlet>
-        <servlet-name>seti</servlet-name>
-        <servlet-class>org.cometd.oort.SetiServlet</servlet-class>
-        <load-on-startup>4</load-on-startup>
-    </servlet>
+  <!-- Configure Seti ID management, used by Auction demo -->
+  <servlet>
+    <servlet-name>seti</servlet-name>
+    <servlet-class>org.cometd.oort.SetiServlet</servlet-class>
+    <load-on-startup>4</load-on-startup>
+  </servlet>
 
-    <!-- Auction demo Servlet-->
-    <servlet>
-        <servlet-name>auctionDemo</servlet-name>
-        <servlet-class>org.webtide.demo.auction.AuctionServlet</servlet-class>
-        <load-on-startup>5</load-on-startup>
-    </servlet>
+  <!-- Auction demo Servlet-->
+  <servlet>
+    <servlet-name>auctionDemo</servlet-name>
+    <servlet-class>org.webtide.demo.auction.AuctionServlet</servlet-class>
+    <load-on-startup>5</load-on-startup>
+  </servlet>
 
 </web-app>
 

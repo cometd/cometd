@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,6 +130,7 @@ public interface ConfigurableServerChannel extends Channel {
          * Utility class that initializes channels to be persistent
          */
         public static class Persistent implements Initializer {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
             }

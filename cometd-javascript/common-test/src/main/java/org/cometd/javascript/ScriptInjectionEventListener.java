@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ public class ScriptInjectionEventListener implements EventListener {
         this.domNodes = domNodes;
     }
 
+    @Override
     public void handleEvent(Event evt) {
         if ("DOMNodeInserted".equals(evt.getType())) {
             Object target = evt.getTarget();

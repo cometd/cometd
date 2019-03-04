@@ -76,11 +76,6 @@ However, the second way allows you to pass other configuration parameters, curre
 | The maximum number of milliseconds of the backoff time after which the
   backoff time is not incremented further.
 
-| reverseIncomingExtensions
-| no
-| true
-| Controls whether the incoming extensions are called in reverse order with respect to the registration order.
-
 | maxNetworkDelay
 | no
 | 10000

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.cometd.benchmark;
 public class Config {
     public static final String CONTEXT_PATH = "/cometd";
     public static final String SERVLET_PATH = "/cometd";
+    public static final String ID_FIELD = "ID";
+    public static final String CHANNEL_PREFIX = "/bench/";
 
     public static final long META_CONNECT_TIMEOUT = 20000;
     public static final long MAX_NETWORK_DELAY = 5000;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ public abstract class ClientTransport extends AbstractTransport {
     public static final String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
     public static final String JSON_CONTEXT_OPTION = "jsonContext";
     public static final String SCHEDULER_OPTION = "scheduler";
+    public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     private String url;

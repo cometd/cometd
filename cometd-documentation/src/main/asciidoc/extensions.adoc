@@ -3,9 +3,10 @@
 == Extensions
 
 The CometD implementation includes the ability to add/remove _extensions_.
-An extension is a function that CometD calls; it allows you to modify a message
-just before sending it (an _outgoing_ extension) or just after receiving it
-(an _incoming_ extension).
+An extension is a function that the CometD implementation calls; it allows
+you to modify a message just after receiving it but before the rest of the
+<<_concepts_message_processing,message processing>> (an _incoming_ extension),
+or just before sending it (an _outgoing_ extension).
 
 An extension normally adds fields to the message being sent or received in
 the <<_bayeux_ext,`ext` object>> that the Bayeux protocol specification defines.
@@ -21,7 +22,7 @@ or reloads the same CometD page in the browser, the same CometD session is used
 without having to go through a disconnect/handshake cycle, to add to every
 message metadata fields such as the timestamp, to detect whether the client and
 the server have a time offset (for example when only one of them is synchronized
- with http://en.wikipedia.org/wiki/Network_Time_Protocol[NTP]), etc.
+with http://en.wikipedia.org/wiki/Network_Time_Protocol[NTP]), etc.
 
 If you do not have such concerns or requirements, you should not use the
 extensions, as they add a minimal overhead without bringing value.
@@ -40,6 +41,45 @@ it is possible that an extension is only client-side or only server-side, but
 most of the time both client and server need them.
 When an extension does not behave as expected, it's often because the extension
 is missing on one of the two sides.
+
+An extension has two set of functions that are invoked: the _incoming_ functions
+(for messages that are being received) and the _outgoing_ functions
+(for messages that are being sent).
+The incoming functions are invoked in extension registration order.
+The outgoing functions are invoked in extension registration reverse order.
+On the server, `BayeuxServer` extensions are always invoked before `ServerSession`
+extensions.
+
+For example, given this code:
+
+====
+[source,java]
+----
+BayeuxServer bayeuxServer = ...;
+bayeuxServer.addExtension(new ExtensionA());
+bayeuxServer.addExtension(new ExtensionB());
+----
+====
+
+then for incoming non-meta messages the call order is:
+
+====
+[source,java]
+----
+ExtensionA.rcv(...);
+ExtensionB.rcv(...);
+----
+====
+
+while for outgoing non-meta messages the call order is:
+
+====
+[source,java]
+----
+ExtensionB.send(...);
+ExtensionA.send(...);
+----
+====
 
 The next sections describe the JavaScript CometD Extensions; they follow the
 same pattern the portable JavaScript CometD implementation uses: a portable
@@ -149,16 +189,6 @@ cometd.unregisterExtension('loggerExt');
 ====
 
 It is not possible to register two extensions under the same name.
-
-You can register more than one extension, and CometD supplies them in
-registration order: outgoing extensions functions are called in registration
-order and, by default, incoming registration functions are called in reverse
-registration order.
-See also the `reverseIncomingExtensions` configuration parameter in
-<<_javascript_configure,the JavaScript library configuration section>>.
-For example, if you register `extA` and `extB`, for outgoing messages the
-functions called are: `extA.outgoing()` and then `extB.outgoing()`, while for
-incoming messages the functions called are `extB.incoming()` and then `extA.incoming()`.
 
 [[_extensions_exceptions]]
 === Extension Exception Handling

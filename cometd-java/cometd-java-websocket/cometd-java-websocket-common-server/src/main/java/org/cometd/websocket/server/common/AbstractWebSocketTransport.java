@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
     public static final String PROTOCOL_OPTION = "protocol";
     public static final String MESSAGES_PER_FRAME_OPTION = "messagesPerFrame";
     public static final String BUFFER_SIZE_OPTION = "bufferSize";
-    public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public static final String COMETD_URL_MAPPING_OPTION = "cometdURLMapping";
     public static final String REQUIRE_HANDSHAKE_PER_CONNECTION_OPTION = "requireHandshakePerConnection";
@@ -264,32 +263,34 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
         }
 
         private void processMessages(S wsSession, ServerMessage.Mutable[] messages) throws IOException {
-            ServerSessionImpl session = _session;
+            if (messages.length == 0) {
+                throw new IOException();
+            }
 
-            boolean sendQueue = true;
-            boolean sendReplies = true;
-            boolean scheduleExpiration = true;
+            ServerSessionImpl session;
+            ServerMessage.Mutable m = messages[0];
+            if (Channel.META_HANDSHAKE.equals(m.getChannel())) {
+                _session = null;
+                session = getBayeux().newServerSession();
+                session.setAllowMessageDeliveryDuringHandshake(isAllowMessageDeliveryDuringHandshake());
+            } else {
+                session = _session;
+                if (session == null) {
+                    if (!_requireHandshakePerConnection) {
+                        session = _session = (ServerSessionImpl)getBayeux().getSession(m.getClientId());
+                    }
+                } else if (getBayeux().getSession(session.getId()) == null) {
+                    session = _session = null;
+                }
+            }
+
+            boolean sendQueue = false;
+            boolean sendReplies = false;
+            boolean scheduleExpiration = false;
             List<ServerMessage.Mutable> replies = new ArrayList<>(messages.length);
-            for (int i = 0; i < messages.length; i++) {
-                ServerMessage.Mutable message = messages[i];
+            for (ServerMessage.Mutable message : messages) {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Processing {}", message);
-                }
-
-                // Session expired concurrently ?
-                if (session != null && !session.isHandshook()) {
-                    _session = session = null;
-                }
-
-                String clientId = message.getClientId();
-
-                if (session == null && !_requireHandshakePerConnection) {
-                    _session = session = (ServerSessionImpl)getBayeux().getSession(clientId);
-                }
-
-                // Session hijacked ?
-                if (session != null && !session.getId().equals(clientId)) {
-                    session = null;
                 }
 
                 switch (message.getChannel()) {
@@ -298,8 +299,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                             throw new IOException();
                         }
                         ServerMessage.Mutable reply = processMetaHandshake(session, message);
-                        if (reply != null) {
-                            _session = session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+                        if (reply.isSuccessful()) {
+                            _session = session;
                         }
                         reply = processReply(session, reply);
                         if (reply != null) {
@@ -307,6 +308,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         }
                         sendQueue = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
                         sendReplies = reply != null;
+                        scheduleExpiration = true;
                         break;
                     }
                     case Channel.META_CONNECT: {
@@ -318,6 +320,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         boolean deliver = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
                         sendQueue = deliver && reply != null;
                         sendReplies = reply != null;
+                        scheduleExpiration = true;
                         break;
                     }
                     default: {
@@ -326,8 +329,11 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                         if (reply != null) {
                             replies.add(reply);
                         }
-                        sendQueue = false;
-                        scheduleExpiration = false;
+                        // Leave sendQueue unchanged.
+                        if (reply != null) {
+                            sendReplies = true;
+                        }
+                        // Leave scheduleExpiration unchanged.
                         break;
                     }
                 }
@@ -340,11 +346,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
 
         private ServerMessage.Mutable processMetaHandshake(ServerSessionImpl session, ServerMessage.Mutable message) {
             ServerMessage.Mutable reply = getBayeux().handle(session, message);
-            if (reply != null && reply.isSuccessful()) {
-                session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-                if (session != null) {
-                    session.setScheduler(this);
-                }
+            if (reply.isSuccessful()) {
+                session.setScheduler(this);
             }
             return reply;
         }
@@ -353,7 +356,7 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
             // Remember the connected status before handling the message.
             boolean wasConnected = session != null && session.isConnected();
             ServerMessage.Mutable reply = getBayeux().handle(session, message);
-            if (reply != null && session != null) {
+            if (session != null) {
                 if (reply.isSuccessful() && session.isConnected()) {
                     // We need to set the scheduler again, in case the connection
                     // has temporarily broken and we have created a new scheduler.
@@ -532,8 +535,8 @@ public abstract class AbstractWebSocketTransport<S> extends AbstractServerTransp
                 long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 long delay = now - _connectExpiration;
                 if (_logger.isDebugEnabled()) {
-                    if (delay > 5000) // TODO: make the max delay a parameter ?
-                    {
+                    // TODO: make the max delay a parameter ?
+                    if (delay > 5000) {
                         _logger.debug("/meta/connect {} expired {} ms too late", _connectReply, delay);
                     }
                 }

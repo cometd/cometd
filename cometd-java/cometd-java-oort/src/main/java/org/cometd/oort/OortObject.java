@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -204,6 +204,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * @param channel the channel to configure
      * @see #getChannelName()
      */
+    @Override
     public void configureChannel(ConfigurableServerChannel channel) {
         // Allow subclasses to override
     }
@@ -310,6 +311,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         return info;
     }
 
+    @Override
     public void cometJoined(Event event) {
         String remoteOortURL = event.getCometURL();
         if (logger.isDebugEnabled()) {
@@ -318,6 +320,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         pushInfo(remoteOortURL, null);
     }
 
+    @Override
     public void cometLeft(Event event) {
         String remoteOortURL = event.getCometURL();
         if (logger.isDebugEnabled()) {
@@ -335,6 +338,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     /**
      * @return an iterator over the {@link Info} known to this oort object
      */
+    @Override
     public Iterator<Info<T>> iterator() {
         return getInfos().iterator();
     }
@@ -677,9 +681,11 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
          * @param <T> the object type
          */
         public static class Adapter<T> implements Listener<T> {
+            @Override
             public void onUpdated(Info<T> oldInfo, Info<T> newInfo) {
             }
 
+            @Override
             public void onRemoved(Info<T> info) {
             }
         }

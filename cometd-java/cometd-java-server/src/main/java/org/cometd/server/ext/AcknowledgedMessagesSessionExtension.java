@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerSession.Extension;
-import org.cometd.bayeux.server.ServerTransport;
-import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,10 +47,12 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         _session.addListener(this);
     }
 
+    @Override
     public boolean rcv(ServerSession from, Mutable message) {
         return true;
     }
 
+    @Override
     public boolean rcvMeta(ServerSession session, Mutable message) {
         if (Channel.META_CONNECT.equals(message.getChannel())) {
             Map<String, Object> ext = message.getExt(false);
@@ -92,12 +91,14 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         }
     }
 
+    @Override
     public ServerMessage send(ServerSession session, ServerMessage message) {
         // Too early to do anything with the message.
         // Other extensions and/or listener may modify/veto it.
         return message;
     }
 
+    @Override
     public void queued(ServerSession sender, ServerMessage message) {
         // This method is called after all the extensions and the other
         // listeners, so only here are sure that the message is not vetoed.
@@ -109,32 +110,19 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         }
     }
 
+    @Override
     public boolean sendMeta(ServerSession to, Mutable message) {
         String channel = message.getChannel();
         Map<String, Object> ext = message.getExt(true);
         if (channel.equals(Channel.META_HANDSHAKE)) {
-            BayeuxServerImpl bayeuxServer = _session.getBayeuxServer();
-            ServerTransport transport = bayeuxServer.getCurrentTransport();
-            if (allowMessageDeliveryDuringHandshake(_session, transport)) {
-                long batch;
-                long size;
-                synchronized (_session.getLock()) {
-                    batch = closeBatch();
-                    size = _queue.batchSize(batch);
-                }
-
-                if (size == 0) {
-                    // No messages to send.
-                    ext.put("ack", Boolean.TRUE);
-                } else {
-                    Map<String, Object> ack = new HashMap<>(3);
-                    ack.put("enabled", true);
-                    ack.put("batch", batch);
-                    ack.put("size", size);
-                    ext.put("ack", ack);
-                    if (_logger.isDebugEnabled()) {
-                        _logger.debug("Sending batch {} for {}", batch, _session);
-                    }
+            if (_session.isAllowMessageDeliveryDuringHandshake()) {
+                long batch = closeBatch();
+                Map<String, Object> ack = new HashMap<>(3);
+                ack.put("enabled", true);
+                ack.put("batch", batch);
+                ext.put("ack", ack);
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Sending batch {} for {}", batch, _session);
                 }
             } else {
                 ext.put("ack", Boolean.TRUE);
@@ -158,6 +146,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         }
     }
 
+    @Override
     public void deQueue(ServerSession session, Queue<ServerMessage> queue) {
         synchronized (_session.getLock()) {
             Long batch = _batches.remove(Thread.currentThread().getId());
@@ -178,15 +167,5 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     // Used only in tests.
     BatchArrayQueue<ServerMessage> getBatchArrayQueue() {
         return _queue;
-    }
-
-    private boolean allowMessageDeliveryDuringHandshake(ServerSessionImpl session, ServerTransport transport) {
-        if (session.isAllowMessageDeliveryDuringHandshake()) {
-            return true;
-        }
-        if (transport instanceof AbstractServerTransport) {
-            return ((AbstractServerTransport)transport).isAllowMessageDeliveryDuringHandshake();
-        }
-        return false;
     }
 }

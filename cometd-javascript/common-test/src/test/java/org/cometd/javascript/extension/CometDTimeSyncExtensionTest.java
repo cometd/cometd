@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTest {
     @Test
     public void testTimeSync() throws Exception {
         bayeuxServer.addExtension(new TimesyncExtension());
-
-        provideTimesyncExtension();
 
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -55,6 +53,8 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTest {
                 "    return message;" +
                 "}" +
                 "});");
+        provideTimesyncExtension();
+
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");

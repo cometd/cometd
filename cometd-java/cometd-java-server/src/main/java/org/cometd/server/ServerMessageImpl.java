@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,18 +34,22 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     private String _json;
     private transient byte[] _jsonBytes;
 
+    @Override
     public ServerMessage.Mutable getAssociated() {
         return _associated;
     }
 
+    @Override
     public void setAssociated(ServerMessage.Mutable associated) {
         _associated = associated;
     }
 
+    @Override
     public boolean isLazy() {
         return _lazy;
     }
 
+    @Override
     public void setLazy(boolean lazy) {
         _lazy = lazy;
     }
@@ -148,14 +152,17 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
                 this.delegate = delegate;
             }
 
+            @Override
             public boolean hasNext() {
                 return delegate.hasNext();
             }
 
+            @Override
             public Map.Entry<String, Object> next() {
                 return new ImmutableEntry(delegate.next());
             }
 
+            @Override
             public void remove() {
                 throw new UnsupportedOperationException();
             }
@@ -167,14 +174,17 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
                     this.delegate = delegate;
                 }
 
+                @Override
                 public String getKey() {
                     return delegate.getKey();
                 }
 
+                @Override
                 public Object getValue() {
                     return delegate.getValue();
                 }
 
+                @Override
                 public Object setValue(Object value) {
                     throw new UnsupportedOperationException();
                 }

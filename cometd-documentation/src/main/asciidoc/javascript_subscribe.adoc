@@ -362,7 +362,7 @@ By default, subscriptions to the global wildcards `+/*+` and `+/**+` result in a
 error, but you can change this behavior by specifying a custom security policy
 on the Bayeux server.
 
-[[_javascript_subscribe_meta_channels]]
+[[_javascript_meta_channels]]
 ==== Meta Channel List
 
 These are the meta channels available in the JavaScript CometD implementation:

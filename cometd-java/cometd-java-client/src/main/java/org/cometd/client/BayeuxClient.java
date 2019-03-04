@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,6 +166,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
      */
     public String getURL() {
         return url;
+    }
+
+    /**
+     * @return the current period of time to wait before trying to reconnect
+     */
+    public long getBackoff() {
+        return sessionState.getBackOff();
     }
 
     /**
@@ -542,6 +549,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         final CountDownLatch latch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener lastConnectListener = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 final Map<String, Object> advice = message.getAdvice();
                 if (!message.isSuccessful() ||
@@ -847,6 +855,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             logger.debug("Scheduled handshake in {}+{} ms", interval, backOff);
         }
         return scheduleAction(new Runnable() {
+            @Override
             public void run() {
                 sendHandshake();
             }
@@ -858,6 +867,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             logger.debug("Scheduled connect in {}+{} ms", interval, backOff);
         }
         return scheduleAction(new Runnable() {
+            @Override
             public void run() {
                 sendConnect();
             }
@@ -1036,8 +1046,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         if (Message.RECONNECT_NONE_VALUE.equals(failureInfo.action)) {
             if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
-                if (failureInfo.transport == null) {
-                    onTransportFailure(getTransport().getName(), null, failureInfo.cause);
+                ClientTransport transport = getTransport();
+                if (transport != null && failureInfo.transport == null) {
+                    onTransportFailure(transport.getName(), null, failureInfo.cause);
                 }
             }
         } else {
@@ -1415,6 +1426,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 backOff = this.backOff;
                 result = update(State.CONNECTED);
                 if (result) {
+                    this.backOff = backOff = 0;
                     this.unconnectTime = 0;
                     if (advice != null) {
                         this.advice = advice;

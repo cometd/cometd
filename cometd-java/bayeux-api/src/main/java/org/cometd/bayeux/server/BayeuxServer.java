@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -269,11 +269,10 @@ public interface BayeuxServer extends Bayeux {
     /**
      * <p>Extension API for {@link BayeuxServer}.</p>
      * <p>Implementations of this interface allow to modify incoming and outgoing messages
-     * respectively just before and just after they are handled by the implementation,
-     * either on client side or server side.</p>
-     * <p>Extensions are be registered in order and one extension may allow subsequent
-     * extensions to process the message by returning true from the callback method, or
-     * forbid further processing by returning false.</p>
+     * before any other processing performed by the implementation.</p>
+     * <p>Multiple extensions can be registered; the extension <em>receive</em> methods
+     * are invoked in registration order, while the extension <em>send</em> methods are
+     * invoked in registration reverse order.</p>
      *
      * @see BayeuxServer#addExtension(Extension)
      */
@@ -319,18 +318,22 @@ public interface BayeuxServer extends Bayeux {
          * Empty implementation of {@link Extension}.
          */
         public static class Adapter implements Extension {
+            @Override
             public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 return true;
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,6 +133,7 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest {
             // and the disconnect may not be delivered, since the client won't issue
             // a new long poll, and the disconnect will remain in the queue
             session.batch(new Runnable() {
+                @Override
                 public void run() {
                     session.deliver(getServerSession(), kickMessage);
                     session.disconnect();

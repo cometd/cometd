@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
         final CountDownLatch serverLatch = new CountDownLatch(1);
         final String channelName = "/test_subscribe_after_failed_handshake";
         bayeux.getChannel(Channel.META_SUBSCRIBE).addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 serverLatch.countDown();
                 return true;
@@ -57,9 +58,11 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
 
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+                        @Override
                         public void onMessage(ClientSessionChannel channel, Message message) {
                         }
                     });
@@ -69,6 +72,7 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
         });
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     subscribeLatch.countDown();
@@ -90,6 +94,7 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
         final String channelName = "/test_subscribe_after_failed_handshake";
         MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
         channel.getReference().addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 serverLatch.countDown();
                 return true;
@@ -100,6 +105,7 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
 
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     client.getChannel(channelName).publish(new HashMap<String, Object>());
@@ -109,6 +115,7 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
         });
         final CountDownLatch publishLatch = new CountDownLatch(1);
         client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     publishLatch.countDown();

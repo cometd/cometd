@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@
             // We just check the URL for now, but in future
             // further checks may involve the transport type
             // and other configuration parameters.
-            return _state.url == oldState.url;
+            return _state.url === oldState.url;
         }
 
         function _configure(config) {

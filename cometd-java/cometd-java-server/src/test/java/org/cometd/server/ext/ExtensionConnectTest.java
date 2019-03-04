@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,11 +77,13 @@ public class ExtensionConnectTest extends AbstractBayeuxClientServerTest {
         private final List<Message> sends = new ArrayList<>();
         private final List<Message> sendMetas = new ArrayList<>();
 
+        @Override
         public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
             rcvs.add(message);
             return true;
         }
 
+        @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             if (Channel.META_CONNECT.equals(message.getChannel())) {
                 rcvMetas.add(message);
@@ -89,11 +91,13 @@ public class ExtensionConnectTest extends AbstractBayeuxClientServerTest {
             return true;
         }
 
+        @Override
         public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
             sends.add(message);
             return true;
         }
 
+        @Override
         public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
             if (Channel.META_CONNECT.equals(message.getChannel())) {
                 sendMetas.add(message);

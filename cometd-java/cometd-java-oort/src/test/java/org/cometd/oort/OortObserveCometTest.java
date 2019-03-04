@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.cometd.oort;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -541,6 +542,10 @@ public class OortObserveCometTest extends OortTest {
         Assert.assertTrue(joinedLatch2.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(joinedLatch1.await(5, TimeUnit.SECONDS));
 
+        List<String> oortIds = oort2.knownOortIds();
+        Assert.assertEquals(1, oortIds.size());
+        Assert.assertEquals(newOortId1, oortIds.get(0));
+
         // Avoid assertions while stopping the test.
         oort2.removeCometListener(cometListener);
     }
@@ -825,6 +830,7 @@ public class OortObserveCometTest extends OortTest {
         final String data = "data";
         final CountDownLatch joinedLatch = new CountDownLatch(1);
         oortA.addCometListener(new Oort.CometListener.Adapter() {
+            @Override
             public void cometJoined(Event event) {
                 bayeuxServerA.createChannelIfAbsent(channelName).getReference().publish(serviceA, data);
                 joinedLatch.countDown();
@@ -839,6 +845,7 @@ public class OortObserveCometTest extends OortTest {
         BayeuxServer bayeuxServerB = oortB.getBayeuxServer();
         final CountDownLatch latch = new CountDownLatch(1);
         bayeuxServerB.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 if (data.equals(message.getData())) {
                     latch.countDown();
@@ -888,6 +895,7 @@ public class OortObserveCometTest extends OortTest {
 
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         clientB.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.get().countDown();
             }

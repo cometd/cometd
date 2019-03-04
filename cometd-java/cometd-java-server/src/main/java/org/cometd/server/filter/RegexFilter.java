@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,25 @@ package org.cometd.server.filter;
 import java.lang.reflect.Array;
 import java.util.regex.Pattern;
 
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerSession;
+
 public class RegexFilter extends JSONDataFilter {
     protected String[] _templates;
     protected String[] _replaces;
-    protected transient Pattern[] _patterns;
+    protected Pattern[] _patterns;
 
     /**
-     * Assumes the init object is an Array of 2 element Arrays:
-     * [regex,replacement]. if the regex replacement string is null, then an
-     * IllegalStateException is thrown if the pattern matches.
+     * <p>The {@code init} object must be an array of array of this form:</p>
+     * <pre>
+     * [
+     *     [regex1, replacement1],
+     *     [regex2, replacement2],
+     *     ...
+     * ]
+     * </pre>
+     * <p>If the {@code replacement} string is null, then an
+     * {@link AbortException} is thrown if the pattern matches.
      */
     @Override
     public void init(Object init) {
@@ -41,29 +51,19 @@ public class RegexFilter extends JSONDataFilter {
             _replaces[i] = (String)Array.get(entry, 1);
         }
 
-        checkPatterns();
-    }
-
-    protected void checkPatterns() {
-        synchronized (this) {
-            if (_patterns == null) {
-                _patterns = new Pattern[_templates.length];
-                for (int i = 0; i < _patterns.length; i++) {
-                    _patterns[i] = Pattern.compile(_templates[i]);
-                }
-            }
+        _patterns = new Pattern[_templates.length];
+        for (int i = 0; i < _patterns.length; i++) {
+            _patterns[i] = Pattern.compile(_templates[i]);
         }
     }
 
     @Override
-    protected Object filterString(String string) {
-        checkPatterns();
-
+    protected Object filterString(ServerSession session, ServerChannel channel, String string) {
         for (int i = 0; i < _patterns.length; i++) {
             if (_replaces[i] != null) {
                 string = _patterns[i].matcher(string).replaceAll(_replaces[i]);
             } else if (_patterns[i].matcher(string).matches()) {
-                throw new IllegalStateException("matched " + _patterns[i] + " in " + string);
+                throw new AbortException("matched " + _patterns[i] + " in " + string);
             }
         }
         return string;

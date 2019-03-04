@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.cometd.annotation.Session;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.authorizer.GrantAuthorizer;
@@ -155,9 +156,9 @@ public class ChatService {
 
     class BadWordFilter extends JSONDataFilter {
         @Override
-        protected Object filterString(String string) {
+        protected Object filterString(ServerSession session, ServerChannel channel, String string) {
             if (string.contains("dang")) {
-                throw new DataFilter.Abort();
+                throw new DataFilter.AbortException();
             }
             return string;
         }

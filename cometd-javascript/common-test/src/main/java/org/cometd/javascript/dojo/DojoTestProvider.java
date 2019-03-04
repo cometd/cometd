@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.cometd.javascript.TestProvider;
 import org.cometd.javascript.ThreadModel;
 
 public class DojoTestProvider implements TestProvider {
+    @Override
     public void provideCometD(ThreadModel threadModel, String fullContextURL) throws Exception {
         // Order of the script evaluation is important, as they depend one from the other
         threadModel.evaluate(new URL(fullContextURL + "/env.js"));
@@ -55,18 +56,22 @@ public class DojoTestProvider implements TestProvider {
                 "cometd.registerTransport('long-polling', originalTransports['long-polling']);");
     }
 
+    @Override
     public void provideMessageAcknowledgeExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate("ack extension", "require(['dojox/cometd/ack']);");
     }
 
+    @Override
     public void provideReloadExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate("reload extension", "require(['dojox/cometd/reload']);");
     }
 
+    @Override
     public void provideTimestampExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate("timestamp extension", "require(['dojox/cometd/timestamp']);");
     }
 
+    @Override
     public void provideTimesyncExtension(ThreadModel threadModel, String contextURL) throws Exception {
         threadModel.evaluate("timesync extension", "require(['dojox/cometd/timesync']);");
     }

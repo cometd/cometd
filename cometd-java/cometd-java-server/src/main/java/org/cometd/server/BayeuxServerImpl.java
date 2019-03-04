@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -324,6 +324,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         return _options;
     }
 
+    @Override
     @ManagedOperation(value = "The value of the given configuration option", impact = "INFO")
     public Object getOption(@Name("optionName") String qualifiedName) {
         return _options.get(qualifiedName);
@@ -549,7 +550,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
     }
 
-    protected ServerSessionImpl newServerSession() {
+    public ServerSessionImpl newServerSession() {
         return new ServerSessionImpl(this);
     }
 
@@ -656,47 +657,39 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private void handle(ServerSessionImpl session, Mutable message, Mutable reply) {
         String channelName = message.getChannel();
 
-        if (session != null) {
-            session.cancelExpiration(Channel.META_CONNECT.equals(channelName));
+        if (session == null || session.isDisconnected() ||
+                (!session.getId().equals(message.getClientId()) && !Channel.META_HANDSHAKE.equals(message.getChannel()))) {
+            unknownSession(reply);
+            return;
         }
+
+        session.cancelExpiration(Channel.META_CONNECT.equals(channelName));
 
         if (channelName == null) {
             error(reply, "400::channel missing");
         } else {
             ServerChannelImpl channel = getServerChannel(channelName);
             if (channel == null) {
-                if (session == null) {
-                    unknownSession(reply);
+                Authorizer.Result creationResult = isCreationAuthorized(session, message, channelName);
+                if (creationResult instanceof Authorizer.Result.Denied) {
+                    String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
+                    error(reply, "403:" + denyReason + ":create denied");
                 } else {
-                    Authorizer.Result creationResult = isCreationAuthorized(session, message, channelName);
-                    if (creationResult instanceof Authorizer.Result.Denied) {
-                        String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
-                        error(reply, "403:" + denyReason + ":create denied");
-                    } else {
-                        channel = (ServerChannelImpl)createChannelIfAbsent(channelName).getReference();
-                    }
+                    channel = (ServerChannelImpl)createChannelIfAbsent(channelName).getReference();
                 }
             }
 
             if (channel != null) {
                 if (channel.isMeta()) {
-                    if (session == null && !Channel.META_HANDSHAKE.equals(channelName)) {
-                        unknownSession(reply);
+                    doPublish(session, channel, message, true);
+                } else {
+                    Authorizer.Result publishResult = isPublishAuthorized(channel, session, message);
+                    if (publishResult instanceof Authorizer.Result.Denied) {
+                        String denyReason = ((Authorizer.Result.Denied)publishResult).getReason();
+                        error(reply, "403:" + denyReason + ":publish denied");
                     } else {
                         doPublish(session, channel, message, true);
-                    }
-                } else {
-                    if (session == null) {
-                        unknownSession(reply);
-                    } else {
-                        Authorizer.Result publishResult = isPublishAuthorized(channel, session, message);
-                        if (publishResult instanceof Authorizer.Result.Denied) {
-                            String denyReason = ((Authorizer.Result.Denied)publishResult).getReason();
-                            error(reply, "403:" + denyReason + ":publish denied");
-                        } else {
-                            doPublish(session, channel, message, true);
-                            reply.setSuccessful(true);
-                        }
+                        reply.setSuccessful(true);
                     }
                 }
             }
@@ -833,26 +826,24 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
         // First notify the channel listeners.
         if (!notifyListeners(from, to, mutable, wildChannels)) {
+            error(mutable.getAssociated(), "404::message deleted");
             return;
         }
 
-        if (broadcast && receiving) {
+        if (broadcast || !receiving) {
             if (!extendSend(from, null, mutable)) {
                 return;
             }
-        }
-
-        // Exactly at this point, we convert the message to JSON and therefore
-        // any further modification will be lost.
-        // This is an optimization so that if the message is sent to a million
-        // subscribers, we generate the JSON only once.
-        // From now on, user code is passed a ServerMessage reference (and not
-        // ServerMessage.Mutable), and we attempt to return immutable data
-        // structures, even if it is not possible to guard against all cases.
-        // For example, it is impossible to prevent things like
-        // ((CustomObject)serverMessage.getData()).change() or
-        // ((Map)serverMessage.getExt().get("map")).put().
-        if (broadcast || !receiving) {
+            // Exactly at this point, we convert the message to JSON and therefore
+            // any further modification will be lost.
+            // This is an optimization so that if the message is sent to a million
+            // subscribers, we generate the JSON only once.
+            // From now on, user code is passed a ServerMessage reference (and not
+            // ServerMessage.Mutable), and we attempt to return immutable data
+            // structures, even if it is not possible to guard against all cases.
+            // For example, it is impossible to prevent things like
+            // ((CustomObject)serverMessage.getData()).change() or
+            // ((Map)serverMessage.getExt().get("map")).put().
             freeze(mutable);
         }
 
@@ -1140,8 +1131,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     protected void error(ServerMessage.Mutable reply, String error) {
-        reply.put(Message.ERROR_FIELD, error);
-        reply.setSuccessful(false);
+        if (reply != null) {
+            reply.put(Message.ERROR_FIELD, error);
+            reply.setSuccessful(false);
+        }
     }
 
     protected ServerMessage.Mutable createReply(ServerMessage.Mutable message) {
@@ -1312,10 +1305,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private class HandshakeHandler extends HandlerListener {
         @Override
         public void onMessage(ServerSessionImpl session, final Mutable message) {
-            if (session == null) {
-                session = newServerSession();
-            }
-
             BayeuxContext context = getContext();
             if (context != null) {
                 session.setUserAgent(context.getHeader("User-Agent"));
@@ -1336,7 +1325,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             addServerSession(session, message);
 
             reply.setSuccessful(true);
-            reply.put(Message.CLIENT_ID_FIELD, session.getId());
+            reply.setClientId(session.getId());
             reply.put(Message.VERSION_FIELD, "1.0");
             reply.put(Message.MIN_VERSION_FIELD, "1.0");
             reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, getAllowedTransports());

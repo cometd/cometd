@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ public class GrantAuthorizer implements Authorizer {
         _operations = operations;
     }
 
+    @Override
     public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
         if (_operations.contains(operation)) {
             return Result.grant();
@@ -76,6 +77,7 @@ public class GrantAuthorizer implements Authorizer {
         return Result.ignore();
     }
 
+    @Override
     public String toString() {
         return getClass().getSimpleName() + _operations;
     }

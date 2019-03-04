@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     public final static String PROTOCOL_OPTION = "protocol";
     public final static String CONNECT_TIMEOUT_OPTION = "connectTimeout";
     public final static String IDLE_TIMEOUT_OPTION = "idleTimeout";
-    public final static String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public final static String STICKY_RECONNECT_OPTION = "stickyReconnect";
 
     private ScheduledExecutorService _scheduler;
@@ -323,8 +322,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
                     long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                     long delay = now - expiration;
                     if (logger.isDebugEnabled()) {
-                        if (delay > 5000) // TODO: make the max delay a parameter ?
-                        {
+                        // TODO: make the max delay a parameter ?
+                        if (delay > 5000) {
                             logger.debug("Message {} expired {} ms too late", message, delay);
                         }
                         logger.debug("Expiring message {}", message);

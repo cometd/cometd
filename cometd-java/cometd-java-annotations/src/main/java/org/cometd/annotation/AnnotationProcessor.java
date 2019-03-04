@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,20 +187,22 @@ class AnnotationProcessor {
         }
     }
 
-    protected static Object invokePublic(Object target, Method method, Object... arguments) {
+    protected static Object invokePublic(Object target, Method method, Object[] arguments) throws Throwable {
         try {
             return method.invoke(target, arguments);
         } catch (InvocationTargetException x) {
-            Throwable cause = x.getCause();
-            if (cause instanceof RuntimeException) {
-                throw (RuntimeException)cause;
-            }
-            if (cause instanceof Error) {
-                throw (Error)cause;
-            }
-            throw new RuntimeException(cause);
-        } catch (IllegalAccessException x) {
-            throw new RuntimeException(x);
+            throw x.getCause();
+        }
+    }
+
+    protected static Object callPublic(Object target, Method method, Object... arguments) {
+        try {
+            return invokePublic(target, method, arguments);
+        } catch (Throwable x) {
+            Class<?> klass = target.getClass();
+            Logger logger = LoggerFactory.getLogger(klass);
+            logger.info("Exception while invoking " + klass + "#" + method.getName() + "()", x);
+            return null;
         }
     }
 

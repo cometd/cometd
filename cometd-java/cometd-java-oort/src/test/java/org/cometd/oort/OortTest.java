@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,12 +38,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.After;
 import org.junit.Rule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
@@ -62,7 +63,13 @@ public abstract class OortTest {
     }
 
     @Rule
-    public final TestTracker testName = new TestTracker();
+    public final TestWatcher testName = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            super.starting(description);
+            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
+        }
+    };
     protected Logger logger = LoggerFactory.getLogger(getClass());
     protected final List<Server> servers = new ArrayList<>();
     protected final List<Oort> oorts = new ArrayList<>();
@@ -191,6 +198,7 @@ public abstract class OortTest {
             reset(counts);
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (!message.isMeta() || message.isSuccessful()) {
                 count.incrementAndGet();
@@ -223,6 +231,7 @@ public abstract class OortTest {
             this.latch = latch;
         }
 
+        @Override
         public void cometJoined(Event event) {
             latch.countDown();
         }
@@ -235,6 +244,7 @@ public abstract class OortTest {
             this.latch = latch;
         }
 
+        @Override
         public void cometLeft(Event event) {
             latch.countDown();
         }

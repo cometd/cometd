@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,8 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Processes annotations in server-side service objects.</p>
@@ -142,6 +144,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             String[] channels = configure.value();
             for (String channel : channels) {
                 final Initializer init = new Initializer() {
+                    @Override
                     public void configureChannel(ConfigurableServerChannel channel) {
                         if (logger.isDebugEnabled()) {
                             logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
@@ -599,6 +602,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             this.receiveOwnPublishes = receiveOwnPublishes;
         }
 
+        @Override
         public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
             if (from == localSession.getServerSession() && !receiveOwnPublishes) {
                 return true;
@@ -615,7 +619,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             for (int i = 0; i < paramNames.size(); ++i) {
                 args[2 + i] = matches.get(paramNames.get(i));
             }
-            return !Boolean.FALSE.equals(invokePublic(target, method, args));
+            return !Boolean.FALSE.equals(callPublic(target, method, args));
         }
     }
 
@@ -637,6 +641,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             this.subscription = subscription;
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, String> matches = channelId.bind(message.getChannelId());
             if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames)) {
@@ -648,7 +653,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             for (int i = 0; i < paramNames.size(); ++i) {
                 args[1 + i] = matches.get(paramNames.get(i));
             }
-            invokePublic(target, method, args);
+            callPublic(target, method, args);
         }
     }
 
@@ -698,7 +703,10 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
                 failure.put("class", x.getClass().getName());
                 failure.put("message", x.getMessage());
                 caller.failure(failure);
-                throw x;
+                Class<?> klass = target.getClass();
+                Logger logger = LoggerFactory.getLogger(klass);
+                logger.info("Exception while invoking " + klass + "#" + method.getName() + "()", x);
+                return true;
             }
         }
     }

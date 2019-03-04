@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,6 +149,7 @@ public class BayeuxServerTest {
         final Queue<String> events = new ConcurrentLinkedQueue<>();
 
         ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 events.add(channel.getSession().getId());
                 events.add(message.getData().toString());
@@ -197,6 +198,7 @@ public class BayeuxServerTest {
         foostar0.unsubscribe(listener);
 
         session1.batch(new Runnable() {
+            @Override
             public void run() {
                 ClientSessionChannel foobar1 = session1.getChannel("/foo/bar");
                 foobar1.publish("part1");
@@ -249,14 +251,17 @@ public class BayeuxServerTest {
     }
 
     class CListener implements BayeuxServer.ChannelListener {
+        @Override
         public void configureChannel(ConfigurableServerChannel channel) {
         }
 
+        @Override
         public void channelAdded(ServerChannel channel) {
             _events.add("channelAdded");
             _events.add(channel);
         }
 
+        @Override
         public void channelRemoved(String channelId) {
             _events.add("channelRemoved");
             _events.add(channelId);
@@ -265,11 +270,13 @@ public class BayeuxServerTest {
     }
 
     class SessListener implements BayeuxServer.SessionListener {
+        @Override
         public void sessionAdded(ServerSession session, ServerMessage message) {
             _events.add("sessionAdded");
             _events.add(session);
         }
 
+        @Override
         public void sessionRemoved(ServerSession session, boolean timedout) {
             _events.add("sessionRemoved");
             _events.add(session);
@@ -278,12 +285,14 @@ public class BayeuxServerTest {
     }
 
     class SubListener implements BayeuxServer.SubscriptionListener {
+        @Override
         public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             _events.add("subscribed");
             _events.add(session);
             _events.add(channel);
         }
 
+        @Override
         public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             _events.add("unsubscribed");
             _events.add(session);

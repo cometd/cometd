@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -307,6 +307,7 @@ public abstract class AbstractService {
             doInvoke(method, fromClient, msg);
         } else {
             threadPool.execute(new Runnable() {
+                @Override
                 public void run() {
                     doInvoke(method, fromClient, msg);
                 }
@@ -334,6 +335,7 @@ public abstract class AbstractService {
             this.method = method;
         }
 
+        @Override
         public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
             if (isSeeOwnPublishes() || from != getServerSession()) {
                 invoke(method, from, message);

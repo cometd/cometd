@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,11 +133,13 @@ public class OortListTest extends AbstractOortObjectTest {
         oortList1.addListener(new OortList.DeltaListener<>(oortList1));
         oortList2.addListener(new OortList.DeltaListener<>(oortList2));
         OortList.ElementListener<String> elementListener = new OortList.ElementListener<String>() {
+            @Override
             public void onAdded(OortObject.Info<List<String>> info, List<String> elements) {
                 adds.addAll(elements);
                 setLatch2.get().countDown();
             }
 
+            @Override
             public void onRemoved(OortObject.Info<List<String>> info, List<String> elements) {
                 removes.addAll(elements);
                 setLatch2.get().countDown();

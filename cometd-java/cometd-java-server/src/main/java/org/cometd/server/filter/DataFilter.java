@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +15,58 @@
  */
 package org.cometd.server.filter;
 
+import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 
+/**
+ * <p>A filter that can add, modify or remove fields from the
+ * {@link Message#getData() message data}.</p>
+ */
 public interface DataFilter {
     /**
-     * @param from    the {@link ServerSession} that sends the data
-     * @param channel the channel the data is being sent to
+     * <p>Modifies the given message data.</p>
+     * <p>Returning {@code null} or throwing {@link AbortException}
+     * results in the message processing being interrupted
+     * and the message itself discarded.</p>
+     * <p>If the returned object is different (as returned by
+     * the {@code !=} operator) from the {@code data} parameter
+     * then it is set as the new message data via
+     * {@link Message.Mutable#setData(Object)}.</p>
+     *
+     * @param session the {@link ServerSession} that sends the data
+     * @param channel the channel the data is being sent on
      * @param data    the data being sent
-     * @return the transformed data or null if the message should be aborted
+     * @return the transformed data or null if the message should be ignored
+     * @throws AbortException to abort the filtering of the data
      */
-    public abstract Object filter(ServerSession from, ServerChannel channel, Object data);
-
+    public abstract Object filter(ServerSession session, ServerChannel channel, Object data) throws AbortException;
 
     /**
-     * Abort the message by throwing this exception
+     * <p>Aborts the filtering of the message data.</p>
      */
-    public class Abort extends RuntimeException {
+    public static class AbortException extends RuntimeException {
+        public AbortException() {
+        }
+
+        public AbortException(String message) {
+            super(message);
+        }
+
+        public AbortException(String message, Throwable cause) {
+            super(message, cause);
+        }
+
+        public AbortException(Throwable cause) {
+            super(cause);
+        }
+    }
+
+    /**
+     * @deprecated use {@link AbortException} instead
+     */
+    @Deprecated
+    public class Abort extends AbortException {
         public Abort() {
             super();
         }
@@ -43,6 +78,5 @@ public interface DataFilter {
         public Abort(String msg, Throwable cause) {
             super(msg, cause);
         }
-
     }
 }

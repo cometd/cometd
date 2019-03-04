@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,6 +168,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             }
 
             endWrite(response, output);
+            writeComplete(request, response, session, messages, replies);
         } catch (Exception x) {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Failure writing messages", x);
@@ -188,11 +189,15 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
 
     protected abstract void endWrite(HttpServletResponse response, ServletOutputStream output) throws IOException;
 
+    protected void writeComplete(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, List<ServerMessage> messages, ServerMessage.Mutable[] replies) {
+    }
+
     protected class DispatchingLongPollScheduler extends LongPollScheduler {
         public DispatchingLongPollScheduler(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSessionImpl session, ServerMessage.Mutable reply, long timeout) {
             super(request, response, asyncContext, session, reply, timeout);
         }
 
+        @Override
         protected void dispatch() {
             // We dispatch() when either we are suspended or timed out, instead of doing a write() + complete().
             // If we have to write a message to 10 clients, and the first client write() blocks, then we would

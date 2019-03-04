@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String MAX_SESSIONS_PER_BROWSER_OPTION = "maxSessionsPerBrowser";
     public final static String HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION = "http2MaxSessionsPerBrowser";
     public final static String MULTI_SESSION_INTERVAL_OPTION = "multiSessionInterval";
-    public final static String AUTOBATCH_OPTION = "autoBatch";
     public final static String TRUST_CLIENT_SESSION = "trustClientSession";
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
@@ -84,7 +83,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     private int _maxSessionsPerBrowser;
     private int _http2MaxSessionsPerBrowser;
     private long _multiSessionInterval;
-    private boolean _autoBatch;
     private boolean _trustClientSession;
     private long _lastSweep;
 
@@ -104,16 +102,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         _maxSessionsPerBrowser = getOption(MAX_SESSIONS_PER_BROWSER_OPTION, 1);
         _http2MaxSessionsPerBrowser = getOption(HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION, -1);
         _multiSessionInterval = getOption(MULTI_SESSION_INTERVAL_OPTION, 2000);
-        _autoBatch = getOption(AUTOBATCH_OPTION, true);
         _trustClientSession = getOption(TRUST_CLIENT_SESSION, false);
     }
 
     protected long getMultiSessionInterval() {
         return _multiSessionInterval;
-    }
-
-    protected boolean isAutoBatch() {
-        return _autoBatch;
     }
 
     public void setCurrentRequest(HttpServletRequest request) {
@@ -133,51 +126,29 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     protected abstract void write(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, boolean scheduleExpiration, List<ServerMessage> messages, ServerMessage.Mutable[] replies);
 
     protected void processMessages(HttpServletRequest request, HttpServletResponse response, ServerMessage.Mutable[] messages) throws IOException {
+        if (messages.length == 0) {
+            throw new IOException();
+        }
+
         Collection<ServerSessionImpl> sessions = findCurrentSessions(request);
-        ServerSessionImpl session = null;
-        boolean autoBatch = isAutoBatch();
-        boolean batch = false;
-        boolean sendQueue = true;
-        boolean sendReplies = true;
-        boolean scheduleExpiration = true;
+        ServerMessage.Mutable message = messages[0];
+        ServerSessionImpl session = findSession(sessions, message);
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("Processing {} messages for session {}", messages.length, session);
+        }
+        boolean batch = session != null && !Channel.META_CONNECT.equals(message.getChannel());
+        if (batch) {
+            session.startBatch();
+        }
+
+        boolean sendQueue = false;
+        boolean sendReplies = false;
+        boolean scheduleExpiration = false;
         try {
             for (int i = 0; i < messages.length; ++i) {
-                ServerMessage.Mutable message = messages[i];
+                message = messages[i];
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Processing {}", message);
-                }
-
-                // Try to find the session.
-                String clientId = message.getClientId();
-                if (sessions != null) {
-                    if (clientId != null) {
-                        for (ServerSessionImpl s : sessions) {
-                            if (s.getId().equals(clientId)) {
-                                session = s;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (session == null && _trustClientSession) {
-                    session = (ServerSessionImpl)getBayeux().getSession(clientId);
-                }
-
-                if (session != null) {
-                    if (session.isHandshook()) {
-                        if (autoBatch && !batch) {
-                            batch = true;
-                            session.startBatch();
-                        }
-                    } else {
-                        // Disconnected concurrently.
-                        if (batch) {
-                            batch = false;
-                            session.endBatch();
-                        }
-                        session = null;
-                    }
                 }
 
                 switch (message.getChannel()) {
@@ -186,27 +157,32 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                             throw new IOException();
                         }
                         ServerMessage.Mutable reply = processMetaHandshake(request, response, session, message);
-                        if (reply != null) {
-                            session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-                        }
-                        messages[i] = processReply(session, reply);
+                        messages[i] = reply = processReply(session, reply);
                         sendQueue = allowMessageDeliveryDuringHandshake(session) && reply != null && reply.isSuccessful();
                         sendReplies = reply != null;
+                        scheduleExpiration = true;
                         break;
                     }
                     case Channel.META_CONNECT: {
-                        ServerMessage.Mutable reply = processMetaConnect(request, response, session, message);
-                        messages[i] = processReply(session, reply);
-                        sendQueue = sendReplies = reply != null;
+                        boolean canSuspend = messages.length == 1;
+                        ServerMessage.Mutable reply = processMetaConnect(request, response, session, message, canSuspend);
+                        messages[i] = reply = processReply(session, reply);
+                        sendQueue = !canSuspend || reply != null;
+                        sendReplies = sendQueue;
+                        scheduleExpiration = true;
                         break;
                     }
                     default: {
                         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-                        messages[i] = processReply(session, reply);
-                        if (isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly()) {
-                            sendQueue = false;
+                        messages[i] = reply = processReply(session, reply);
+                        boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
+                        if (!metaConnectDelivery) {
+                            sendQueue = true;
                         }
-                        scheduleExpiration = false;
+                        if (reply != null) {
+                            sendReplies = true;
+                        }
+                        // Leave scheduleExpiration unchanged.
                         break;
                     }
                 }
@@ -220,6 +196,32 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 session.endBatch();
             }
         }
+    }
+
+    protected ServerSessionImpl findSession(Collection<ServerSessionImpl> sessions, ServerMessage.Mutable message) {
+        if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
+            ServerSessionImpl session = getBayeux().newServerSession();
+            session.setAllowMessageDeliveryDuringHandshake(isAllowMessageDeliveryDuringHandshake());
+            return session;
+        }
+
+        // Is there an existing, trusted, session ?
+        String clientId = message.getClientId();
+        if (sessions != null) {
+            if (clientId != null) {
+                for (ServerSessionImpl session : sessions) {
+                    if (session.getId().equals(clientId)) {
+                        return session;
+                    }
+                }
+            }
+        }
+
+        if (_trustClientSession) {
+            return (ServerSessionImpl)getBayeux().getSession(clientId);
+        }
+
+        return null;
     }
 
     protected Collection<ServerSessionImpl> findCurrentSessions(HttpServletRequest request) {
@@ -238,44 +240,41 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     protected ServerMessage.Mutable processMetaHandshake(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message) {
         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-        if (reply != null) {
-            session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
-            if (session != null) {
-                String id = findBrowserId(request);
-                if (id == null) {
-                    id = setBrowserId(request, response);
+        if (reply.isSuccessful()) {
+            String id = findBrowserId(request);
+            if (id == null) {
+                id = setBrowserId(request, response);
+            }
+            final String browserId = id;
+            session.setBrowserId(browserId);
+            synchronized (_sessions) {
+                Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
+                if (sessions == null) {
+                    // The list is modified inside sync blocks, but
+                    // iterated outside, so it must be concurrent.
+                    sessions = new CopyOnWriteArrayList<>();
+                    _sessions.put(browserId, sessions);
                 }
-                final String browserId = id;
-                session.setBrowserId(browserId);
-                synchronized (_sessions) {
-                    Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
-                    if (sessions == null) {
-                        // The list is modified inside sync blocks, but
-                        // iterated outside, so it must be concurrent.
-                        sessions = new CopyOnWriteArrayList<>();
-                        _sessions.put(browserId, sessions);
-                    }
-                    sessions.add(session);
-                }
+                sessions.add(session);
+            }
 
-                session.addListener(new ServerSession.RemoveListener() {
-                    @Override
-                    public void removed(ServerSession session, boolean timeout) {
-                        synchronized (_sessions) {
-                            Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
-                            sessions.remove(session);
-                            if (sessions.isEmpty()) {
-                                _sessions.remove(browserId);
-                            }
+            session.addListener(new ServerSession.RemoveListener() {
+                @Override
+                public void removed(ServerSession session, boolean timeout) {
+                    synchronized (_sessions) {
+                        Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
+                        sessions.remove(session);
+                        if (sessions.isEmpty()) {
+                            _sessions.remove(browserId);
                         }
                     }
-                });
-            }
+                }
+            });
         }
         return reply;
     }
 
-    protected ServerMessage.Mutable processMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message) {
+    protected ServerMessage.Mutable processMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, ServerMessage.Mutable message, boolean canSuspend) {
         if (session != null) {
             // Cancel the previous scheduler to cancel any prior waiting long poll.
             // This should also decrement the browser ID.
@@ -284,8 +283,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
         boolean wasConnected = session != null && session.isConnected();
         ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
-        if (reply != null && session != null) {
-            if (!session.hasNonLazyMessages() && reply.isSuccessful()) {
+        if (session != null) {
+            boolean maySuspend = !session.shouldSchedule();
+            if (canSuspend && maySuspend && reply.isSuccessful()) {
                 // Detect if we have multiple sessions from the same browser.
                 boolean allowSuspendConnect = incBrowserId(session, isHTTP2(request));
                 if (allowSuspendConnect) {
@@ -357,6 +357,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         flush(request, response, session, true, true, processReply(session, reply));
     }
 
+    @Override
     public BayeuxContext getContext() {
         HttpServletRequest request = getCurrentRequest();
         if (request != null) {
@@ -507,6 +508,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     /**
      * Sweeps the transport for old Browser IDs
      */
+    @Override
     protected void sweep() {
         long now = System.currentTimeMillis();
         long elapsed = now - _lastSweep;
@@ -540,38 +542,47 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             _request = request;
         }
 
+        @Override
         public Principal getUserPrincipal() {
             return _request.getUserPrincipal();
         }
 
+        @Override
         public boolean isUserInRole(String role) {
             return _request.isUserInRole(role);
         }
 
+        @Override
         public InetSocketAddress getRemoteAddress() {
             return new InetSocketAddress(_request.getRemoteHost(), _request.getRemotePort());
         }
 
+        @Override
         public InetSocketAddress getLocalAddress() {
             return new InetSocketAddress(_request.getLocalName(), _request.getLocalPort());
         }
 
+        @Override
         public String getHeader(String name) {
             return _request.getHeader(name);
         }
 
+        @Override
         public List<String> getHeaderValues(String name) {
             return Collections.list(_request.getHeaders(name));
         }
 
+        @Override
         public String getParameter(String name) {
             return _request.getParameter(name);
         }
 
+        @Override
         public List<String> getParameterValues(String name) {
             return Arrays.asList(_request.getParameterValues(name));
         }
 
+        @Override
         public String getCookie(String name) {
             Cookie[] cookies = _request.getCookies();
             if (cookies != null) {
@@ -584,6 +595,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             return null;
         }
 
+        @Override
         public String getHttpSessionId() {
             HttpSession session = _request.getSession(false);
             if (session != null) {
@@ -592,6 +604,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             return null;
         }
 
+        @Override
         public Object getHttpSessionAttribute(String name) {
             HttpSession session = _request.getSession(false);
             if (session != null) {
@@ -600,6 +613,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             return null;
         }
 
+        @Override
         public void setHttpSessionAttribute(String name, Object value) {
             HttpSession session = _request.getSession(false);
             if (session != null) {
@@ -609,6 +623,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
         }
 
+        @Override
         public void invalidateHttpSession() {
             HttpSession session = _request.getSession(false);
             if (session != null) {
@@ -616,6 +631,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
         }
 
+        @Override
         public Object getRequestAttribute(String name) {
             return _request.getAttribute(name);
         }
@@ -632,14 +648,17 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
         }
 
+        @Override
         public Object getContextAttribute(String name) {
             return getServletContext().getAttribute(name);
         }
 
+        @Override
         public String getContextInitParameter(String name) {
             return getServletContext().getInitParameter(name);
         }
 
+        @Override
         public String getURL() {
             StringBuffer url = _request.getRequestURL();
             String query = _request.getQueryString();

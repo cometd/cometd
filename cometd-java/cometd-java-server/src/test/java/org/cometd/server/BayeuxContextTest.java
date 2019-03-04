@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,12 +54,14 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
     public void testAddresses() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assert.assertNotNull(bayeux.getContext().getLocalAddress());
                 Assert.assertNotNull(bayeux.getContext().getRemoteAddress());
                 latch.countDown();
             }
 
+            @Override
             public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
@@ -83,12 +85,14 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
         final String value2 = "bar";
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assert.assertEquals(value1, bayeux.getContext().getHeader(name));
                 Assert.assertEquals(Arrays.asList(value1, value2), bayeux.getContext().getHeaderValues(name));
                 latch.countDown();
             }
 
+            @Override
             public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
@@ -114,14 +118,17 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
 
         context.stop();
         context.addFilter(new FilterHolder(new Filter() {
+            @Override
             public void init(FilterConfig filterConfig) throws ServletException {
             }
 
+            @Override
             public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
                 servletRequest.setAttribute(name, value);
                 filterChain.doFilter(servletRequest, servletResponse);
             }
 
+            @Override
             public void destroy() {
             }
         }), "/*", EnumSet.of(DispatcherType.REQUEST));
@@ -130,11 +137,13 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assert.assertEquals(value, bayeux.getContext().getRequestAttribute(name));
                 latch.countDown();
             }
 
+            @Override
             public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
@@ -158,15 +167,18 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
 
         context.stop();
         context.addFilter(new FilterHolder(new Filter() {
+            @Override
             public void init(FilterConfig filterConfig) throws ServletException {
             }
 
+            @Override
             public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
                 HttpServletRequest request = (HttpServletRequest)servletRequest;
                 request.getSession(true).setAttribute(name, value);
                 filterChain.doFilter(servletRequest, servletResponse);
             }
 
+            @Override
             public void destroy() {
             }
         }), "/*", EnumSet.of(DispatcherType.REQUEST));
@@ -175,12 +187,14 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assert.assertNotNull(bayeux.getContext().getHttpSessionId());
                 Assert.assertEquals(value, bayeux.getContext().getHttpSessionAttribute(name));
                 latch.countDown();
             }
 
+            @Override
             public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
@@ -201,11 +215,13 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
     public void testContextAttribute() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assert.assertSame(bayeux, bayeux.getContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
                 latch.countDown();
             }
 
+            @Override
             public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });

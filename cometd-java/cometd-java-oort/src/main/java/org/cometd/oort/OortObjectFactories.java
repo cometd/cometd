@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,7 @@ public class OortObjectFactories {
             this.defaultValue = defaultValue;
         }
 
+        @Override
         public Boolean newObject(Object representation) {
             if (representation == null) {
                 return defaultValue;
@@ -88,6 +89,7 @@ public class OortObjectFactories {
             this.defaultValue = defaultValue;
         }
 
+        @Override
         public Long newObject(Object representation) {
             if (representation == null) {
                 return defaultValue;
@@ -125,6 +127,7 @@ public class OortObjectFactories {
             this.defaultValue = defaultValue;
         }
 
+        @Override
         @SuppressWarnings("unchecked")
         public Map<K, V> newObject(Object representation) {
             if (representation == null) {
@@ -144,6 +147,7 @@ public class OortObjectFactories {
             this.defaultValue = defaultValue;
         }
 
+        @Override
         @SuppressWarnings("unchecked")
         public ConcurrentMap<K, V> newObject(Object representation) {
             if (representation == null) {
@@ -166,6 +170,7 @@ public class OortObjectFactories {
             this.defaultValue = defaultValue;
         }
 
+        @Override
         @SuppressWarnings("unchecked")
         public List<E> newObject(Object representation) {
             if (representation == null) {

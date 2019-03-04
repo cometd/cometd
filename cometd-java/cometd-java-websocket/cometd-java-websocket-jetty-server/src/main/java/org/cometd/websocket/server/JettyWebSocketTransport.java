@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,12 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         WebSocketPolicy policy = wsConfig.getFactory().getPolicy();
         int bufferSize = getOption(BUFFER_SIZE_OPTION, policy.getInputBufferSize());
         policy.setInputBufferSize(bufferSize);
-        int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, policy.getMaxTextMessageSize());
+        int maxMessageSize = getMaxMessageSize();
+        if (maxMessageSize < 0) {
+            maxMessageSize = policy.getMaxTextMessageSize();
+        }
         policy.setMaxTextMessageSize(maxMessageSize);
+
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, policy.getIdleTimeout());
         policy.setIdleTimeout((int)idleTimeout);
 
@@ -118,6 +122,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         return true;
     }
 
+    @Override
     protected void send(final Session wsSession, final ServerSession session, String data, final Callback callback) {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Sending {}", data);
@@ -170,6 +175,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
             super(context);
         }
 
+        @Override
         public void onWebSocketConnect(Session session) {
             _wsSession = session;
         }
@@ -178,10 +184,12 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport<Session>
         public void onWebSocketBinary(byte[] payload, int offset, int len) {
         }
 
+        @Override
         public void onWebSocketText(String data) {
             onMessage(_wsSession, data);
         }
 
+        @Override
         public void onWebSocketClose(int code, String reason) {
             onClose(code, reason);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,8 +71,12 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
         }
 
         // JSR 356 does not support a input buffer size option
-        int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, container.getDefaultMaxTextMessageBufferSize());
+        int maxMessageSize = getMaxMessageSize();
+        if (maxMessageSize < 0) {
+            maxMessageSize = container.getDefaultMaxTextMessageBufferSize();
+        }
         container.setDefaultMaxTextMessageBufferSize(maxMessageSize);
+
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, container.getDefaultMaxSessionIdleTimeout());
         container.setDefaultMaxSessionIdleTimeout(idleTimeout);
 
@@ -101,6 +105,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
     protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response) {
     }
 
+    @Override
     protected void send(final Session wsSession, final ServerSession session, String data, final Callback callback) {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Sending {}", data);

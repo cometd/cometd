@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ public class Bid implements Cloneable, JSON.Convertible {
         bidder = aBidder;
     }
 
+    @Override
     public Bid clone() {
         try {
             return (Bid)super.clone();
@@ -65,15 +66,18 @@ public class Bid implements Cloneable, JSON.Convertible {
         }
     }
 
+    @Override
     public void fromJSON(Map object) {
     }
 
+    @Override
     public void toJSON(Output out) {
         out.add("itemId", itemId);
         out.add("amount", amount);
         out.add("bidder", bidder);
     }
 
+    @Override
     public String toString() {
         return JSON.toString(this);
     }

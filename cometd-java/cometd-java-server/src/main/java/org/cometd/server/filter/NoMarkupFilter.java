@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,16 @@ package org.cometd.server.filter;
 
 import java.util.regex.Pattern;
 
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerSession;
+
 public class NoMarkupFilter extends JSONDataFilter {
     private static Pattern __open = Pattern.compile("<");
     private static Pattern __close = Pattern.compile(">");
 
     @Override
-    protected Object filterString(String string) {
+    protected Object filterString(ServerSession session, ServerChannel channel, String string) {
         string = __open.matcher(string).replaceAll("&lt;");
-        string = __close.matcher(string).replaceAll("&gt;");
-        return string;
+        return __close.matcher(string).replaceAll("&gt;");
     }
 }

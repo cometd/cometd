@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,8 +90,10 @@ public class ChannelReleaseTest extends ClientServerTest {
         String channelName = "/foo";
         final ClientSessionChannel channel = client.getChannel(channelName);
         client.batch(new Runnable() {
+            @Override
             public void run() {
                 channel.subscribe(new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                         latch.countDown();
                     }
@@ -155,11 +157,13 @@ public class ChannelReleaseTest extends ClientServerTest {
         String channelName = "/foo";
         final ClientSessionChannel channel = client.getChannel(channelName);
         final ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 latch.countDown();
             }
         };
         client.batch(new Runnable() {
+            @Override
             public void run() {
                 channel.subscribe(listener);
                 channel.publish("");
@@ -172,6 +176,7 @@ public class ChannelReleaseTest extends ClientServerTest {
 
         final CountDownLatch unsubscribe = new CountDownLatch(1);
         client.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 unsubscribe.countDown();
             }
@@ -235,6 +240,7 @@ public class ChannelReleaseTest extends ClientServerTest {
         }
 
         ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
             }
         };

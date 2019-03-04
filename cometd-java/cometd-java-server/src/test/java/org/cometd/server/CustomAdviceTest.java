@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
     public void testCustomTimeoutViaMessage() throws Exception {
         final CountDownLatch connectLatch = new CountDownLatch(2);
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 connectLatch.countDown();
                 return true;
@@ -57,8 +58,10 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
         String channelName = "/connect";
         final long newTimeout = timeout / 2;
         bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addListener(new ServerChannel.MessageListener() {
+                    @Override
                     public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                         from.setTimeout(newTimeout);
                         return true;
@@ -121,6 +124,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
     public void testCustomIntervalViaMessage() throws Exception {
         final CountDownLatch connectLatch = new CountDownLatch(2);
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 connectLatch.countDown();
                 return true;
@@ -130,8 +134,10 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
         String channelName = "/interval";
         final long newInterval = 1000;
         bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addListener(new ServerChannel.MessageListener() {
+                    @Override
                     public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                         from.setInterval(newInterval);
                         return true;

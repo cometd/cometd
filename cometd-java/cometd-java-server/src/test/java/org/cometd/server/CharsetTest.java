@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest {
         final String data = new String(new byte[]{(byte)0xC3, (byte)0xA9}, "UTF-8");
         String channelName = "/test_charset";
         bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 String messageData = (String)message.getData();
                 Assert.assertEquals(data, messageData);
@@ -102,6 +103,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest {
         final String data = new String(new byte[]{(byte)0xE1}, encoding);
         String channelName = "/test_charset";
         bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 String messageData = (String)message.getData();
                 Assert.assertEquals(data, messageData);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         final CountDownLatch connectLatch = new CountDownLatch(2);
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
         bayeux.getChannel("/meta/connect").addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 connectLatch.countDown();
                 if (connectLatch.getCount() == 0) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,6 @@
      * representation suitable for JSON, using the Z85 algorithm.
      */
     return cometdModule.BinaryExtension = function() {
-        this.registered = function(name, cometd) {
-            _cometd = cometd;
-        };
-
         this.incoming = function(message) {
             if (!/^\/meta\//.test(message.channel)) {
                 var ext = message.ext;

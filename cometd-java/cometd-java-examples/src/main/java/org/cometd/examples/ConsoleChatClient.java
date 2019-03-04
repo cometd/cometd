@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,6 +97,7 @@ public class ConsoleChatClient {
 
     private void initialize() {
         client.batch(new Runnable() {
+            @Override
             public void run() {
                 ClientSessionChannel chatChannel = client.getChannel("/chat/demo");
                 chatChannel.subscribe(chatListener);
@@ -130,6 +131,7 @@ public class ConsoleChatClient {
     }
 
     private class InitializerListener implements ClientSessionChannel.MessageListener {
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (message.isSuccessful()) {
                 initialize();
@@ -141,6 +143,7 @@ public class ConsoleChatClient {
         private boolean wasConnected;
         private boolean connected;
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (client.isDisconnected()) {
                 connected = false;
@@ -159,6 +162,7 @@ public class ConsoleChatClient {
     }
 
     private class ChatListener implements ClientSessionChannel.MessageListener {
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, Object> data = message.getDataAsMap();
             String fromUser = (String)data.get("user");
@@ -168,6 +172,7 @@ public class ConsoleChatClient {
     }
 
     private class MembersListener implements ClientSessionChannel.MessageListener {
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Object data = message.getData();
             Object[] members = data instanceof List ? ((List)data).toArray() : (Object[])data;

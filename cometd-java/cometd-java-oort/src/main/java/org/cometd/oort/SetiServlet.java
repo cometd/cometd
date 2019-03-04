@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServlet;
  * @see OortMulticastConfigServlet
  */
 public class SetiServlet extends HttpServlet {
+    @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
@@ -54,6 +55,7 @@ public class SetiServlet extends HttpServlet {
         return new Seti(oort);
     }
 
+    @Override
     public void destroy() {
         try {
             ServletContext servletContext = getServletConfig().getServletContext();

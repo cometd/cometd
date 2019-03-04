@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,7 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
         final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
 
         bayeuxServer.getChannel(Channel.META_SUBSCRIBE).addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 try {
                     Thread.sleep(sleep);
@@ -115,9 +116,11 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
     }
 
     public static class SubscribeThrowingFilter implements Filter {
+        @Override
         public void init(FilterConfig filterConfig) throws ServletException {
         }
 
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
@@ -132,6 +135,7 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
             chain.doFilter(request, response);
         }
 
+        @Override
         public void destroy() {
         }
     }

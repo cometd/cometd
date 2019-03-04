@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ public class OortLongMapTest extends AbstractOortObjectTest {
         // The other OortObject listens to receive the object
         final CountDownLatch objectLatch2 = new CountDownLatch(1);
         oortMap2.addListener(new OortObject.Listener.Adapter<ConcurrentMap<Long, Object>>() {
+            @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<Long, Object>> oldInfo, OortObject.Info<ConcurrentMap<Long, Object>> newInfo) {
                 Assert.assertFalse(newInfo.isLocal());
                 Assert.assertNotNull(oldInfo);

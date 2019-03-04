@@ -42,7 +42,7 @@ file (otherwise you will get a Maven error), for example an empty directory:
 
 ----
 $ cd /tmp
-$ mvn archetype:generate -DarchetypeCatalog=http://cometd.org
+$ mvn org.apache.maven.plugins:maven-archetype-plugin:2.4:generate -DarchetypeCatalog=http://cometd.org
 ...
 Choose archetype:
 1: local -> org.cometd.archetypes:cometd-archetype-dojo-jetty9
@@ -282,7 +282,7 @@ The archetypes provide:
 ====
 [source,javascript]
 ----
-include::{github}/cometd-archetypes/dojo-jetty9/src/main/resources/archetype-resources/src/main/webapp/application.js[]
+include::{resources}/application.js[]
 ----
 ====
 

@@ -1,70 +1,88 @@
 node {
-    // System Dependent Locations
-    def mvnTool = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
-    def jdk7 = tool name: 'jdk7', type: 'hudson.model.JDK'
-    def jdk8 = tool name: 'jdk8', type: 'hudson.model.JDK'
 
-    // Environment
-    List mvnEnv7 = ["PATH+MVN=${mvnTool}/bin", "PATH+JDK=${jdk7}/bin", "JAVA_HOME=${jdk7}/", "MAVEN_HOME=${mvnTool}"]
-    mvnEnv7.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
-    List mvnEnv8 = ["PATH+MVN=${mvnTool}/bin", "PATH+JDK=${jdk8}/bin", "JAVA_HOME=${jdk8}/", "MAVEN_HOME=${mvnTool}"]
-    mvnEnv8.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
+  def builds = [:]
 
-    stage('Checkout') {
-        checkout scm
-    }
+  builds['Build JDK 9 - Jetty 9.2.x'] = getBuild(null, true)
 
-    stage('Build JDK 7') {
-        withEnv(mvnEnv7) {
-            sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
-            // Report failures in the jenkins UI
-            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
-        }
-    }
+  builds['Build JDK 9 - Jetty 9.3.x'] = getBuild("9.3.25.v20180904", false)
 
-    stage('Build JDK 8') {
-        withEnv(mvnEnv8) {
-            sh "mvn -B clean install -Dmaven.test.failure.ignore=true"
-            // Report failures in the jenkins UI.
-            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
-            // Collect the JaCoCo execution results.
-            step([$class: 'JacocoPublisher',
-                  exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
-                  execPattern: '**/target/jacoco.exec',
-                  classPattern: '**/target/classes',
-                  sourcePattern: '**/src/main/java'])
-        }
-    }
+  builds['Build JDK 9 - Jetty 9.4.x'] = getBuild("9.4.12.v20180829", false)
 
-    stage('Build JDK 8 - Jetty 9.3.x') {
-        withEnv(mvnEnv8) {
-            sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.3.16.v20170120"
-            // Report failures in the jenkins UI
-            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
-        }
-    }
+  parallel builds
 
-    stage('Build JDK 8 - Jetty 9.4.x') {
-        withEnv(mvnEnv8) {
-            sh "mvn -B clean install -Dmaven.test.failure.ignore=true -Djetty-version=9.4.1.v20170120"
-            // Report failures in the jenkins UI
-            step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
-        }
-    }
-
-    stage('Javadoc') {
-        withEnv(mvnEnv8) {
-            sh "mvn -B javadoc:javadoc"
-        }
-    }
-
-    /*
-    stage('Documentation') {
-        dir("cometd-documentation") {
-            withEnv(mvnEnv8) {
-                sh "mvn clean install"
-            }
-        }
-    }
-    */
 }
+
+def getBuild(jettyVersion, runJacoco) {
+  return {
+    node("linux") {
+
+      // System Dependent Locations
+      def mvnTool = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
+      def jdk='jdk9'
+      def jdk9 = tool name: "$jdk", type: 'hudson.model.JDK'
+      def settingsName = 'oss-settings.xml'
+      def localRepo = "${env.JENKINS_HOME}/${env.EXECUTOR_NUMBER}"
+      def mvnName = 'maven3'
+
+      // Environment
+      List mvnEnv9 = ["PATH+MVN=${mvnTool}/bin", "PATH+JDK=${jdk9}/bin", "JAVA_HOME=${jdk9}/", "MAVEN_HOME=${mvnTool}"]
+      mvnEnv9.add("MAVEN_OPTS=-Xms256m -Xmx1024m -Djava.awt.headless=true")
+
+      stage('Checkout') {
+        checkout scm
+      }
+
+      stage("Build $jettyVersion") {
+        withEnv(mvnEnv9) {
+          timeout(time: 1, unit: 'HOURS') {
+            if (jettyVersion != null) {
+              withMaven(
+                      maven: mvnName,
+                      jdk: "$jdk",
+                      mavenOpts:"-Xms256m -Xmx1024m -Djava.awt.headless=true",
+                      publisherStrategy: 'EXPLICIT',
+                      globalMavenSettingsConfig: settingsName,
+                      mavenLocalRepo: localRepo) {
+                sh "mvn -B clean install -Dmaven.test.failure.ignore=true -e -Djetty-version=$jettyVersion"
+              }
+            } else {
+              withMaven(
+                      maven: mvnName,
+                      jdk: "$jdk",
+                      mavenOpts:"-Xms256m -Xmx1024m -Djava.awt.headless=true",
+                      publisherStrategy: 'EXPLICIT',
+                      globalMavenSettingsConfig: settingsName,
+                      mavenLocalRepo: localRepo) {
+                sh "mvn -B clean install -Dmaven.test.failure.ignore=true -e"
+              }
+            }
+
+            junit testResults: '**/target/surefire-reports/TEST-*.xml'
+            // Collect the JaCoCo execution results.
+            if (runJacoco) {
+              step([$class          : 'JacocoPublisher',
+                    exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
+                    execPattern     : '**/target/jacoco.exec',
+                    classPattern    : '**/target/classes',
+                    sourcePattern   : '**/src/main/java'])
+            }
+          }
+        }
+        withEnv(mvnEnv9) {
+          timeout(time: 5, unit: 'MINUTES') {
+            withMaven(
+                    maven: mvnName,
+                    jdk: "$jdk",
+                    mavenOpts:"-Xms256m -Xmx1024m -Djava.awt.headless=true",
+                    publisherStrategy: 'EXPLICIT',
+                    globalMavenSettingsConfig: settingsName,
+                    mavenLocalRepo: localRepo) {
+              sh "mvn -B javadoc:javadoc -e -T4"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

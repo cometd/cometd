@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ public class CometDAckExtensionTest extends AbstractCometDTest {
     public void initExtension() throws Exception {
         bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         ackService = new AckService(bayeuxServer);
-        provideMessageAcknowledgeExtension();
     }
 
     @Test
@@ -52,6 +51,8 @@ public class CometDAckExtensionTest extends AbstractCometDTest {
                 "   return message;" +
                 "}" +
                 "});");
+        provideMessageAcknowledgeExtension();
+
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
@@ -91,6 +92,8 @@ public class CometDAckExtensionTest extends AbstractCometDTest {
                 "   return message;" +
                 "}" +
                 "});");
+        provideMessageAcknowledgeExtension();
+
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");

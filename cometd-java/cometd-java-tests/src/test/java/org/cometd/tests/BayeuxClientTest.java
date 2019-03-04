@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,11 +59,13 @@ public class BayeuxClientTest extends AbstractClientServerTest {
         final BayeuxClient client = newBayeuxClient();
         final AtomicBoolean connected = new AtomicBoolean();
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 connected.set(message.isSuccessful());
             }
         });
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 connected.set(false);
             }
@@ -73,10 +75,12 @@ public class BayeuxClientTest extends AbstractClientServerTest {
         final String channelName = "/foo/bar";
         final BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
         client.batch(new Runnable() {
+            @Override
             public void run() {
                 // Subscribe and publish must be batched so that they are sent in order,
                 // otherwise it's possible that the subscribe arrives to the server after the publish
                 client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                         messages.add(channel.getId());
                         messages.add(message.getData().toString());
@@ -115,6 +119,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
             clients[i] = client;
 
             client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+                @Override
                 public void onMessage(ClientSessionChannel channel, Message message) {
                     if (connected.getAndSet(false)) {
                         connections.decrementAndGet();
@@ -122,6 +127,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
 
                     if (message.isSuccessful()) {
                         client.getChannel(room).subscribe(new ClientSessionChannel.MessageListener() {
+                            @Override
                             public void onMessage(ClientSessionChannel channel, Message message) {
                                 received.incrementAndGet();
                             }
@@ -131,6 +137,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
             });
 
             client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+                @Override
                 public void onMessage(ClientSessionChannel channel, Message message) {
                     if (!connected.getAndSet(message.isSuccessful())) {
                         connections.incrementAndGet();

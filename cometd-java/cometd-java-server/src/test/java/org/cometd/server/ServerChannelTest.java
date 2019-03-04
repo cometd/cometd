@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,12 +90,14 @@ public class ServerChannelTest {
         final CountDownLatch latch = new CountDownLatch(2);
         String channelName = "/root";
         Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
                 latch.countDown();
             }
         }).isMarked());
         Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName + "/1", new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.setPersistent(true);
                 latch.countDown();
@@ -216,12 +218,14 @@ public class ServerChannelTest {
         ServerChannelImpl wibble = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/wibble").getReference();
 
         foobar.addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
                 return !"ignore".equals(message.getData());
             }
         });
 
         foostar.addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
                 if ("foostar".equals(message.getData())) {
                     message.setData("FooStar");
@@ -231,6 +235,7 @@ public class ServerChannelTest {
         });
 
         starstar.addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
                 if ("starstar".equals(message.getData())) {
                     message.setData("StarStar");
@@ -381,6 +386,7 @@ public class ServerChannelTest {
         String channelName = "/test";
         ServerChannel channel = _bayeux.createChannelIfAbsent(channelName).getReference();
         channel.addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
                 return true;
             }
@@ -394,11 +400,13 @@ public class ServerChannelTest {
     @Test
     public void testChannelsWithAutorizersSweeping() throws Exception {
         ServerChannel.MessageListener listener = new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
                 return true;
             }
         };
         ConfigurableServerChannel.Initializer initializer = new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }
@@ -444,6 +452,7 @@ public class ServerChannelTest {
     @Test
     public void testSweepOfWeakListeners() {
         class L implements ServerChannel.MessageListener {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
                 return true;
             }
@@ -454,6 +463,7 @@ public class ServerChannelTest {
         final ServerChannel.ServerChannelListener listener = new L();
         final String channelName = "/weak";
         _bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addListener(listener);
                 channel.addListener(new W());
@@ -520,12 +530,14 @@ public class ServerChannelTest {
             _channel = null;
         }
 
+        @Override
         public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             _method = "subscribed";
             _session = session;
             _channel = channel;
         }
 
+        @Override
         public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             _method = "unsubscribed";
             _session = session;
@@ -544,12 +556,14 @@ public class ServerChannelTest {
             _channel = null;
         }
 
+        @Override
         public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             _method = "subscribed";
             _session = session;
             _channel = channel;
         }
 
+        @Override
         public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             _method = "unsubscribed";
             _session = session;
@@ -568,17 +582,20 @@ public class ServerChannelTest {
             _channel = null;
         }
 
+        @Override
         public void configureChannel(ConfigurableServerChannel channel) {
             _calls++;
             _method = "init";
         }
 
+        @Override
         public void channelAdded(ServerChannel channel) {
             _calls++;
             _method += "added";
             _channel = channel.getId();
         }
 
+        @Override
         public void channelRemoved(String channelId) {
             _calls++;
             _method = "removed";

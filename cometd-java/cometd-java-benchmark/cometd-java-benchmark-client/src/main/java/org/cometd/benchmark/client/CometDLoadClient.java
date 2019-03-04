@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,17 +63,19 @@ import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.websocket.client.JettyWebSocketTransport;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.toolchain.perf.PlatformTimer;
+import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 
 public class CometDLoadClient implements MeasureConverter {
-    private static final String ID_FIELD = "ID";
     private static final String START_FIELD = "start";
+    private static final String START_DATE_FIELD = "startDate";
 
     private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);
     private final PlatformTimer timer = PlatformTimer.detect();
@@ -94,17 +97,18 @@ public class CometDLoadClient implements MeasureConverter {
     private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(8);
     private final MonitoringQueuedThreadPool threadPool = new MonitoringQueuedThreadPool(0);
-    private final HttpClient httpClient = new HttpClient();
     private final WebSocketContainer webSocketContainer = ContainerProvider.getWebSocketContainer();
-    private final WebSocketClient webSocketClient = new WebSocketClient();
+    private final WebSocketClient webSocketClient = new WebSocketClient(new SslContextFactory(true));
+    private HttpClient httpClient;
     private boolean interactive = true;
     private String host = "localhost";
     private int port = 8080;
     private ClientTransportType transport = ClientTransportType.LONG_POLLING;
     private boolean tls = false;
+    private int selectors = 1;
     private int maxThreads = 256;
     private String context = Config.CONTEXT_PATH;
-    private String channel = "/chat/demo";
+    private String channel = "/a";
     private int rooms = 100;
     private int roomsPerClient = 10;
     private boolean ackExtension = false;
@@ -135,6 +139,8 @@ public class CometDLoadClient implements MeasureConverter {
                 client.transport = ClientTransportType.valueOf(arg.substring("--transport=".length()));
             } else if (arg.equals("--tls")) {
                 client.tls = true;
+            } else if (arg.startsWith("--selectors=")) {
+                client.selectors = Integer.parseInt(arg.substring("--selectors=".length()));
             } else if (arg.startsWith("--maxThreads=")) {
                 client.maxThreads = Integer.parseInt(arg.substring("--maxThreads=".length()));
             } else if (arg.startsWith("--context=")) {
@@ -197,6 +203,37 @@ public class CometDLoadClient implements MeasureConverter {
             port = Integer.parseInt(value);
         }
 
+        boolean tls = this.tls;
+        if (interactive) {
+            System.err.printf("use tls [%b]: ", tls);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(tls);
+            }
+            tls = Boolean.parseBoolean(value);
+        }
+
+        int selectors = this.selectors;
+        if (interactive) {
+            System.err.printf("selectors [%d]: ", selectors);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(selectors);
+            }
+            selectors = Integer.parseInt(value);
+        }
+
+        int maxThreads = this.maxThreads;
+        if (interactive) {
+            maxThreads = Integer.parseInt(System.getProperty("cometd.threads", String.valueOf(maxThreads)));
+            System.err.printf("max threads [%d]: ", maxThreads);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(maxThreads);
+            }
+            maxThreads = Integer.parseInt(value);
+        }
+
         ClientTransportType transport = this.transport;
         if (interactive) {
             System.err.printf("transports:%n");
@@ -209,27 +246,6 @@ public class CometDLoadClient implements MeasureConverter {
                 value = String.valueOf(transport.ordinal());
             }
             transport = ClientTransportType.values()[Integer.parseInt(value)];
-        }
-
-        boolean tls = this.tls;
-        if (interactive) {
-            System.err.printf("use tls [%b]: ", tls);
-            String value = console.readLine().trim();
-            if (value.length() == 0) {
-                value = String.valueOf(tls);
-            }
-            tls = Boolean.parseBoolean(value);
-        }
-
-        int maxThreads = this.maxThreads;
-        if (interactive) {
-            maxThreads = Integer.parseInt(System.getProperty("cometd.threads", String.valueOf(maxThreads)));
-            System.err.printf("max threads [%d]: ", maxThreads);
-            String value = console.readLine().trim();
-            if (value.length() == 0) {
-                value = String.valueOf(maxThreads);
-            }
-            maxThreads = Integer.parseInt(value);
         }
 
         String contextPath = this.context;
@@ -253,6 +269,7 @@ public class CometDLoadClient implements MeasureConverter {
             }
             channel = value;
         }
+        channel = Config.CHANNEL_PREFIX + (channel.startsWith("/") ? channel.substring(1) : channel);
 
         int rooms = this.rooms;
         if (interactive) {
@@ -293,11 +310,13 @@ public class CometDLoadClient implements MeasureConverter {
         threadPool.start();
         mbeanContainer.beanAdded(null, threadPool);
 
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP(selectors), new SslContextFactory(true));
         httpClient.addBean(mbeanContainer);
         httpClient.setMaxConnectionsPerDestination(60000);
         httpClient.setMaxRequestsQueuedPerDestination(10000);
         httpClient.setExecutor(threadPool);
         httpClient.setIdleTimeout(2 * Config.MAX_NETWORK_DELAY);
+        httpClient.setSocketAddressResolver(new SocketAddressResolver.Sync());
         httpClient.start();
         mbeanContainer.beanAdded(null, httpClient);
 
@@ -306,7 +325,6 @@ public class CometDLoadClient implements MeasureConverter {
         mbeanContainer.beanAdded(null, webSocketContainer);
 
         webSocketClient.setExecutor(threadPool);
-        webSocketClient.setMasker(new ZeroMasker());
         webSocketClient.getPolicy().setInputBufferSize(8 * 1024);
         webSocketClient.addBean(mbeanContainer);
         webSocketClient.start();
@@ -319,11 +337,17 @@ public class CometDLoadClient implements MeasureConverter {
         LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(transport), null, false);
         statsClient.handshake();
 
+        int clients = this.clients;
+        int batches = this.batches;
+        int batchSize = this.batchSize;
+        long batchPause = this.batchPause;
+        int messageSize = this.messageSize;
+        boolean randomize = this.randomize;
+
         while (true) {
             System.err.println();
             System.err.println("-----");
 
-            int clients = this.clients;
             if (interactive) {
                 System.err.printf("clients [%d]: ", clients);
                 String value = console.readLine();
@@ -349,9 +373,8 @@ public class CometDLoadClient implements MeasureConverter {
                     client.getChannel(Channel.META_HANDSHAKE).addListener(handshakeListener);
                     client.getChannel(Channel.META_DISCONNECT).addListener(disconnectListener);
                     client.handshake();
-
-                    // Give some time to the server to accept connections and
-                    // reply to handshakes, connects and subscribes
+                    // Give some time to the server to accept connections
+                    // and reply to handshakes, connects and subscribes.
                     if (i % 10 == 0) {
                         Thread.sleep(50);
                     }
@@ -360,6 +383,10 @@ public class CometDLoadClient implements MeasureConverter {
                 for (int i = 0; i < currentClients - clients; ++i) {
                     LoadBayeuxClient client = bayeuxClients.get(currentClients - i - 1);
                     client.disconnect();
+                    // Give some time to the server to process the disconnects.
+                    if (i % 10 == 0) {
+                        Thread.sleep(50);
+                    }
                 }
             }
 
@@ -395,7 +422,6 @@ public class CometDLoadClient implements MeasureConverter {
 
             reset();
 
-            int batches = this.batches;
             if (interactive) {
                 System.err.printf("batch count [%d]: ", batches);
                 String value = console.readLine().trim();
@@ -405,7 +431,6 @@ public class CometDLoadClient implements MeasureConverter {
                 batches = Integer.parseInt(value);
             }
 
-            int batchSize = this.batchSize;
             if (interactive) {
                 System.err.printf("batch size [%d]: ", batchSize);
                 String value = console.readLine().trim();
@@ -415,7 +440,6 @@ public class CometDLoadClient implements MeasureConverter {
                 batchSize = Integer.parseInt(value);
             }
 
-            long batchPause = this.batchPause;
             if (interactive) {
                 System.err.printf("batch pause (\u00B5s) [%d]: ", batchPause);
                 String value = console.readLine().trim();
@@ -425,7 +449,6 @@ public class CometDLoadClient implements MeasureConverter {
                 batchPause = Long.parseLong(value);
             }
 
-            int messageSize = this.messageSize;
             if (interactive) {
                 System.err.printf("message size [%d]: ", messageSize);
                 String value = console.readLine().trim();
@@ -438,7 +461,6 @@ public class CometDLoadClient implements MeasureConverter {
             Arrays.fill(chars, 'x');
             String chat = new String(chars);
 
-            boolean randomize = this.randomize;
             if (interactive) {
                 System.err.printf("randomize sends [%b]: ", randomize);
                 String value = console.readLine().trim();
@@ -593,7 +615,9 @@ public class CometDLoadClient implements MeasureConverter {
             message.put("chat", chat);
             // Mandatory fields to record latencies
             message.put(START_FIELD, System.nanoTime());
-            message.put(ID_FIELD, String.valueOf(ids.incrementAndGet()));
+            String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").format(System.currentTimeMillis());
+            message.put(START_DATE_FIELD, startDate);
+            message.put(Config.ID_FIELD, String.valueOf(ids.incrementAndGet()) + channel);
             ClientSessionChannel clientChannel = client.getChannel(getChannelId(channel + "/" + room));
             clientChannel.publish(message);
             clientChannel.release();
@@ -763,6 +787,7 @@ public class CometDLoadClient implements MeasureConverter {
             this.roomsPerClient = roomsPerClient;
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (message.isSuccessful()) {
                 final LoadBayeuxClient client = (LoadBayeuxClient)channel.getSession();
@@ -773,6 +798,7 @@ public class CometDLoadClient implements MeasureConverter {
                     bayeuxClients.add(client);
 
                     client.batch(new Runnable() {
+                        @Override
                         public void run() {
                             List<Integer> roomsSubscribedTo = new ArrayList<>();
                             for (int j = 0; j < roomsPerClient; ++j) {
@@ -794,6 +820,7 @@ public class CometDLoadClient implements MeasureConverter {
     }
 
     private class DisconnectListener implements ClientSessionChannel.MessageListener {
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (message.isSuccessful()) {
                 LoadBayeuxClient client = (LoadBayeuxClient)channel.getSession();
@@ -804,6 +831,7 @@ public class CometDLoadClient implements MeasureConverter {
     }
 
     private class LatencyListener implements ClientSessionChannel.MessageListener {
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, Object> data = message.getDataAsMap();
             if (data != null) {
@@ -813,7 +841,7 @@ public class CometDLoadClient implements MeasureConverter {
                 end.set(endTime);
                 messages.incrementAndGet();
 
-                String id = (String)data.get(ID_FIELD);
+                String id = (String)data.get(Config.ID_FIELD);
 
                 AtomicStampedReference<Long> sendTimeRef = sendTimes.get(id);
                 long sendTime = sendTimeRef.getReference();
@@ -893,6 +921,7 @@ public class CometDLoadClient implements MeasureConverter {
             final CountDownLatch latch = new CountDownLatch(1);
             ClientSessionChannel channel = getChannel(channelName);
             channel.publish(new HashMap<String, Object>(1), new ClientSessionChannel.MessageListener() {
+                @Override
                 public void onMessage(ClientSessionChannel channel, Message message) {
                     latch.countDown();
                 }
@@ -908,7 +937,7 @@ public class CometDLoadClient implements MeasureConverter {
                 if (data != null && message.getChannelId().isBroadcast()) {
                     int room = (Integer)data.get("room");
                     int clientsInRoom = roomMap.get(room).get();
-                    String id = (String)data.get(ID_FIELD);
+                    String id = (String)data.get(Config.ID_FIELD);
                     sendTimes.put(id, new AtomicStampedReference<>(now, clientsInRoom));
                     // There is no write-cheap concurrent list in JDK, so let's use a synchronized wrapper
                     arrivalTimes.put(id, new AtomicStampedReference<>(Collections.synchronizedList(new LinkedList<Long>()), clientsInRoom));
@@ -924,7 +953,7 @@ public class CometDLoadClient implements MeasureConverter {
                 Map<String, Object> data = message.getDataAsMap();
                 if (data != null) {
                     response = true;
-                    String id = (String)data.get(ID_FIELD);
+                    String id = (String)data.get(Config.ID_FIELD);
                     arrivalTimes.get(id).getReference().add(now);
                 }
             }

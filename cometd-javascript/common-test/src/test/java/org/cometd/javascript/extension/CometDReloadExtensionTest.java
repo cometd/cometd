@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,21 +22,16 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.javascript.AbstractCometDTest;
 import org.cometd.javascript.Latch;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 public class CometDReloadExtensionTest extends AbstractCometDTest {
-    @Before
-    public void initExtension() throws Exception {
-        provideReloadExtension();
-    }
-
     @Test
     public void testReloadWithConfiguration() throws Exception {
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         String attributeName = "reload.test";
+        provideReloadExtension();
         evaluateScript("" +
                 "cometd.unregisterExtension('reload');" +
                 "cometd.registerExtension('reload', new cometdModule.ReloadExtension({" +
@@ -77,6 +72,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
+        provideReloadExtension();
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "cometd.addListener('/meta/connect', function(message) " +
@@ -94,11 +90,11 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         // Reload the page
         destroyPage();
         initPage();
-        initExtension();
 
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");
+        provideReloadExtension();
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "var ext = undefined;" +
@@ -125,6 +121,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
     @Test
     public void testReloadDoesNotExpire() throws Exception {
         defineClass(Latch.class);
+        provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
@@ -148,9 +145,9 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         // Reload the page
         destroyPage();
         initPage();
-        initExtension();
 
         defineClass(Latch.class);
+        provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");
@@ -202,6 +199,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
 
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
+        provideReloadExtension();
         evaluateScript("" +
                 "cometd.addListener('/meta/connect', function(message) " +
                 "{ " +
@@ -219,9 +217,9 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         // Reload the page
         destroyPage();
         initPage();
-        initExtension();
 
         defineClass(Latch.class);
+        provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
         // Leave the default transports so that we can test if the previous transport is the one used on reload
         evaluateScript("cometd.registerTransport('" + transportName + "', originalTransports['" + transportName + "']);");
@@ -254,6 +252,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
     public void testReloadAcrossServerRestart() throws Exception {
         defineClass(Latch.class);
 
+        provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var readyLatch = new Latch(1);");
@@ -271,9 +270,6 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
 
-        // Get the clientId
-        String clientId = evaluateScript("cometd.getClientId();");
-
         // Stop the server
         int port = connector.getLocalPort();
         server.stop();
@@ -290,10 +286,10 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         evaluateScript("cometd.reload();");
         destroyPage();
         initPage();
-        initExtension();
 
         defineClass(Latch.class);
 
+        provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var readyLatch = new Latch(1);");
@@ -328,7 +324,6 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         // Reload the page
         destroyPage();
         initPage();
-        initExtension();
 
         defineClass(Latch.class);
         evaluateApplication();
@@ -365,8 +360,9 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
                 "       else if (!/^\\/meta\\//.test(message.channel))" +
                 "           extPublish = message;" +
                 "   }" +
-                "});" +
-                "" +
+                "});");
+        provideReloadExtension();
+        evaluateScript("" +
                 "/* Override receive() since it's the method called by the extension to fake responses */" +
                 "var rcvHandshake = null;" +
                 "var rcvSubscribe = null;" +
@@ -407,6 +403,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
 
+        provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("cometd.handshake(function(message)" +
                 "{" +
@@ -423,12 +420,12 @@ public class CometDReloadExtensionTest extends AbstractCometDTest {
         evaluateScript("cometd.reload();");
         destroyPage();
         initPage();
-        initExtension();
 
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");
 
+        provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("cometd.handshake(function(message)" +
                 "{" +

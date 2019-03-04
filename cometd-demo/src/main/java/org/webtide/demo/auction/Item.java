@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,6 +86,7 @@ public class Item implements Cloneable, JSON.Convertible {
         category = aCategory;
     }
 
+    @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
@@ -99,12 +100,14 @@ public class Item implements Cloneable, JSON.Convertible {
         return ((Item)obj).getId().equals(id);
     }
 
+    @Override
     public int hashCode() {
 
         return id.hashCode();
     }
 
 
+    @Override
     public Item clone() {
         try {
             return (Item)super.clone();
@@ -113,9 +116,11 @@ public class Item implements Cloneable, JSON.Convertible {
         }
     }
 
+    @Override
     public void fromJSON(Map object) {
     }
 
+    @Override
     public void toJSON(Output out) {
         out.add("itemId", id);
         out.add("name", itemName);
@@ -123,6 +128,7 @@ public class Item implements Cloneable, JSON.Convertible {
         out.add("categoryId", category.getId());
     }
 
+    @Override
     public String toString() {
         return JSON.toString(this);
     }

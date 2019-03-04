@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,9 +111,11 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         private boolean handshook;
         private String clientId;
 
+        @Override
         public void init(FilterConfig filterConfig) throws ServletException {
         }
 
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
@@ -148,6 +150,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
             }
         }
 
+        @Override
         public void destroy() {
         }
     }

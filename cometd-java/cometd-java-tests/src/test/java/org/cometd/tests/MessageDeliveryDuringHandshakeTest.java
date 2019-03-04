@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.cometd.tests;
 
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -118,6 +119,74 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
         Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
         message = messages.poll(1, TimeUnit.SECONDS);
         Assert.assertEquals(channelName, message.getChannel());
+        message = messages.poll(1, TimeUnit.SECONDS);
+        Assert.assertEquals(channelName, message.getChannel());
+        message = messages.poll(1, TimeUnit.SECONDS);
+        Assert.assertEquals(Channel.META_CONNECT, message.getChannel());
+        message = messages.poll(1, TimeUnit.SECONDS);
+        Assert.assertNull(message);
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testMessagesSentInHandshakeResponseWithAckExtensionWithDeQueueListener() throws Exception {
+        Map<String, String> options = serverOptions();
+        options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
+        startServer(options);
+        bayeux.addExtension(new AcknowledgedMessagesExtension());
+        bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
+            public void sessionAdded(ServerSession session, ServerMessage message) {
+                session.addListener(new ServerSession.DeQueueListener() {
+                    @Override
+                    public void deQueue(ServerSession session, Queue<ServerMessage> queue) {
+                        while (queue.size() > 1) {
+                            queue.poll();
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void sessionRemoved(ServerSession session, boolean timedout) {
+            }
+        });
+        BayeuxClient client = newBayeuxClient();
+        client.addExtension(new AckExtension());
+
+        final String channelName = "/test";
+        bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
+            public void sessionAdded(ServerSession session, ServerMessage message) {
+                // Send messages during the handshake processing.
+                session.deliver(null, channelName, "data1");
+                session.deliver(null, channelName, "data2");
+            }
+
+            @Override
+            public void sessionRemoved(ServerSession session, boolean timedout) {
+            }
+        });
+
+        final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener() {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                messages.offer(message);
+            }
+        };
+        client.getChannel(Channel.META_HANDSHAKE).addListener(listener);
+        client.getChannel(channelName).addListener(listener);
+        client.getChannel(Channel.META_CONNECT).addListener(listener);
+
+        client.handshake();
+
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Make sure that the messages arrive in the expected order.
+        Message message = messages.poll(1, TimeUnit.SECONDS);
+        Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
         message = messages.poll(1, TimeUnit.SECONDS);
         Assert.assertEquals(channelName, message.getChannel());
         message = messages.poll(1, TimeUnit.SECONDS);

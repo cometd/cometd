@@ -42,14 +42,14 @@ If you do not have a GitHub login already, you can create one by
 visiting https://github.com/join[this link].
 
 [[_contribute_code]]
-=== Contributing Code Fixes and Enhancements
+=== Contributing Code Fixes, Enhancements and Documentation
 
 The CometD project code is hosted at https://github.com/cometd[GitHub CometD Organization].
 The repository for the CometD libraries is https://github.com/cometd/cometd.
 You can build the CometD project yourself by following the instruction in
 <<_build,the build section>>.
 
-In order to contribute code, you need to certify the
+In order to contribute code or documentation, you need to certify the
 http://developercertificate.org/[Developer Certificate of Origin] and sign-off your
 `git` commits using `git commit --signoff`.
 
@@ -57,16 +57,16 @@ By signing off your `git` commits, you agree that you can certify
 what stated by the Developer Certificate of Origin.
 That is enough for the CometD project to accept your contribution.
 
-The Developer Certificate of Origin (from http://developercertificate.org/):
+The Developer Certificate of Origin (from https://developercertificate.org/):
 
 ====
 [source,text]
 ----
-include::http://developercertificate.org/[lines=14..49]
+include::{resources}/developercertificate.txt[lines=14..50]
 ----
 ====
 
-To contribute code, follow these steps:
+To contribute code or documentation, follow these steps:
 
 * Create an issue at http://bugs.cometd.org.
 * Commit your changes:
@@ -91,14 +91,3 @@ Date:   Sun Jan 01 00:00:00 1970 +0000
 
     Signed-off-by: John Doe <john.doe@nowhere.com>
 ----
-
-[[_contribute_documentation]]
-=== Contributing to Documentation & Tutorials
-
-The repository for the CometD documentation is https://github.com/cometd/cometd-documentation,
-while the repository for the CometD tutorials is https://github.com/cometd/cometd-tutorials.
-The CometD documentation and tutorials are written in http://asciidoc.org/[AsciiDoc],
-and built using Maven and the http://asciidoctor.org[AsciiDoctor] Maven Plugin.
-
-To contribute fixes or enhancements to the documentation or the tutorials, you can just issue
-https://help.github.com/articles/using-pull-requests[GitHub pull requests].

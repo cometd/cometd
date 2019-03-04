@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,10 @@ package org.cometd.common;
 
 import java.nio.ByteBuffer;
 
+/**
+ * <p>An implementation of Z85, a format for representing binary data
+ * as printable text defined at https://rfc.zeromq.org/spec:32/Z85/.</p>
+ */
 public class Z85 {
     private static char[] encodeTable = new char[]{
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',

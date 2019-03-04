@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         _webSocketConnected = false;
     }
 
+    @Override
     protected Delegate connect(String uri, TransportListener listener, List<Mutable> messages) {
         try {
             if (logger.isDebugEnabled()) {
@@ -183,6 +184,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
             }
         }
 
+        @Override
         protected void close() {
             synchronized (this) {
                 _session = null;
@@ -245,11 +247,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
 
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
         private final WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-
-        public Factory() {
-            // The WebSocketContainer is already started, so we must explicitly manage it.
-            addBean(container, true);
-        }
 
         @Override
         public ClientTransport newClientTransport(String url, Map<String, Object> options) {

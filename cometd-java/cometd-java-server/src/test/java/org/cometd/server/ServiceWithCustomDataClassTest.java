@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,12 +81,14 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
     }
 
     public static class HolderConvertor implements JSON.Convertor {
+        @Override
         public void toJSON(Object obj, JSON.Output out) {
             Holder holder = (Holder)obj;
             out.addClass(Holder.class);
             out.add("field", holder.field);
         }
 
+        @Override
         public Object fromJSON(Map map) {
             String value = (String)map.get("field");
             Holder holder = new Holder();

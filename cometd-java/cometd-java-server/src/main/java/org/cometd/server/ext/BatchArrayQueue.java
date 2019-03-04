@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -308,26 +308,6 @@ public class BatchArrayQueue<T> implements Queue<T> {
                     cursor = 0;
                 }
             }
-        }
-    }
-
-    public int batchSize(long value) {
-        synchronized (lock) {
-            int result = 0;
-            int cursor = head;
-            while (cursor != tail) {
-                long batch = batches[cursor];
-                if (batch == value) {
-                    ++result;
-                } else if (batch > value) {
-                    break;
-                }
-                ++cursor;
-                if (cursor == batches.length) {
-                    cursor = 0;
-                }
-            }
-            return result;
         }
     }
 

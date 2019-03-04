@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,34 +80,32 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     }
 
     protected boolean extendSend(Message.Mutable message) {
-        if (message.isMeta()) {
-            for (Extension extension : _extensions) {
-                if (!extension.sendMeta(this, message)) {
-                    return false;
-                }
-            }
-        } else {
-            for (Extension extension : _extensions) {
-                if (!extension.send(this, message)) {
-                    return false;
-                }
+        String messageId = message.getId();
+        ListIterator<Extension> i = _extensions.listIterator();
+        while (i.hasNext()) {
+            i.next();
+        }
+        while (i.hasPrevious()) {
+            Extension extension = i.previous();
+            boolean proceed = message.isMeta() ?
+                    extension.sendMeta(this, message) :
+                    extension.send(this, message);
+            if (!proceed) {
+                unregisterSubscriber(messageId);
+                unregisterCallback(messageId);
+                return false;
             }
         }
         return true;
     }
 
     protected boolean extendRcv(Message.Mutable message) {
-        if (message.isMeta()) {
-            for (Extension extension : _extensions) {
-                if (!extension.rcvMeta(this, message)) {
-                    return false;
-                }
-            }
-        } else {
-            for (Extension extension : _extensions) {
-                if (!extension.rcv(this, message)) {
-                    return false;
-                }
+        for (Extension extension : _extensions) {
+            boolean proceed = message.isMeta() ?
+                    extension.rcvMeta(this, message) :
+                    extension.rcv(this, message);
+            if (!proceed) {
+                return false;
             }
         }
         return true;
@@ -127,15 +126,18 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
     private ClientSessionChannel getChannel(String channelName, ChannelId channelId) {
         AbstractSessionChannel channel = _channels.get(channelName);
+        if (channel != null) {
+            return channel;
+        }
+        if (channelId == null) {
+            // Creating the ChannelId will also normalize the channelName.
+            channelId = newChannelId(channelName);
+            return getChannel(channelId);
+        }
+        AbstractSessionChannel newChannel = newChannel(channelId);
+        channel = _channels.putIfAbsent(channelId.getId(), newChannel);
         if (channel == null) {
-            if (channelId == null) {
-                channelId = newChannelId(channelName);
-            }
-            AbstractSessionChannel newChannel = newChannel(channelId);
-            channel = _channels.putIfAbsent(channelName, newChannel);
-            if (channel == null) {
-                channel = newChannel;
-            }
+            channel = newChannel;
         }
         return channel;
     }
@@ -677,7 +679,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
         @Override
         public String toString() {
-            return String.format("%s@%s", _id, AbstractClientSession.this);
+            return String.format("%s@%x[%s]", _id, hashCode(), AbstractClientSession.this);
         }
     }
 }

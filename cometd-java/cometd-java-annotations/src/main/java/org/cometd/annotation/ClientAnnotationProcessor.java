@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -374,6 +374,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
             this.subscription = subscription;
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, String> matches = channelId.bind(message.getChannelId());
             if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames)) {
@@ -385,7 +386,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
             for (int i = 0; i < paramNames.size(); ++i) {
                 args[1 + i] = matches.get(paramNames.get(i));
             }
-            invokePublic(target, method, args);
+            callPublic(target, method, args);
         }
     }
 
@@ -407,6 +408,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
             this.subscription = subscription;
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, String> matches = channelId.bind(message.getChannelId());
             if (!paramNames.isEmpty() && !matches.keySet().containsAll(paramNames)) {
@@ -418,7 +420,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
             for (int i = 0; i < paramNames.size(); ++i) {
                 args[1 + i] = matches.get(paramNames.get(i));
             }
-            invokePublic(target, method, args);
+            callPublic(target, method, args);
         }
 
         private void subscribe() {
@@ -433,11 +435,13 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
             this.bean = bean;
         }
 
+        @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (message.isSuccessful()) {
                 final List<SubscriptionCallback> subscriptions = subscribers.get(bean);
                 if (subscriptions != null) {
                     clientSession.batch(new Runnable() {
+                        @Override
                         public void run() {
                             for (SubscriptionCallback subscription : subscriptions) {
                                 subscription.subscribe();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         long maxNetworkDelay = 2000;
         final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
         bayeux.getChannel(Channel.META_SUBSCRIBE).addListener(new ServerChannel.MessageListener() {
+            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 try {
                     Thread.sleep(sleep);
@@ -60,12 +61,14 @@ public class SubscriptionFailureTest extends ClientServerTest {
 
         final CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
         };
         final CountDownLatch subscriptionLatch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     subscriptionLatch.countDown();
@@ -93,6 +96,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
 
         String channelName = "/echo";
         bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
+            @Override
             public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
             }
@@ -104,12 +108,14 @@ public class SubscriptionFailureTest extends ClientServerTest {
 
         final CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
         };
         final CountDownLatch subscriptionLatch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     subscriptionLatch.countDown();
@@ -162,12 +168,14 @@ public class SubscriptionFailureTest extends ClientServerTest {
 
         final CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener messageCallback = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 messageLatch.countDown();
             }
         };
         final CountDownLatch failedSubscription = new CountDownLatch(1);
         ClientSessionChannel.MessageListener subscriptionCallback = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     failedSubscription.countDown();
@@ -186,6 +194,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         allowed.set(true);
         final CountDownLatch succeededSubscription = new CountDownLatch(1);
         subscriptionCallback = new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     succeededSubscription.countDown();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ public abstract class OortConfigServlet extends HttpServlet {
     public static final String OORT_JSON_CONTEXT_PARAM = "jsonContext";
     protected static final Logger LOG = LoggerFactory.getLogger(OortConfigServlet.class);
 
+    @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
@@ -138,6 +139,7 @@ public abstract class OortConfigServlet extends HttpServlet {
      */
     protected abstract void configureCloud(ServletConfig config, Oort oort) throws Exception;
 
+    @Override
     public void destroy() {
         try {
             ServletContext servletContext = getServletConfig().getServletContext();

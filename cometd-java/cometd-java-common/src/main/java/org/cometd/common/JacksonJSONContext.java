@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,6 +90,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
     }
 
     private class ObjectMapperParser implements JSONContext.Parser {
+        @Override
         public <T> T parse(Reader reader, Class<T> type) throws ParseException {
             try {
                 return getObjectMapper().readValue(reader, type);
@@ -100,6 +101,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
     }
 
     private class ObjectMapperGenerator implements JSONContext.Generator {
+        @Override
         public String generate(Object object) {
             try {
                 return getObjectMapper().writeValueAsString(object);

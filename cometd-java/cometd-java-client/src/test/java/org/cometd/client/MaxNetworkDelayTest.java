@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
             }
         };
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (!message.isSuccessful()) {
                     latch.countDown();
@@ -132,6 +133,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             private AtomicInteger connects = new AtomicInteger();
 
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 int c = connects.incrementAndGet();
                 if (c == 1 && message.isSuccessful()) {
@@ -185,6 +187,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             private AtomicInteger connects = new AtomicInteger();
 
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 int c = connects.incrementAndGet();
                 if (c == 1 && !message.isSuccessful()) {

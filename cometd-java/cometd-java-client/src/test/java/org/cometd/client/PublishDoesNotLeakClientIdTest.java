@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest {
                 String channel = "/test";
                 final CountDownLatch subscribe = new CountDownLatch(1);
                 client1.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                         subscribe.countDown();
                     }
@@ -57,6 +58,7 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest {
                 final CountDownLatch latch = new CountDownLatch(1);
                 final AtomicReference<Message> messageRef = new AtomicReference<>();
                 client1.getChannel(channel).subscribe(new ClientSessionChannel.MessageListener() {
+                    @Override
                     public void onMessage(ClientSessionChannel channel, Message message) {
                         messageRef.set(message);
                         latch.countDown();

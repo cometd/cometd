@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ public class OortObjectMergers {
     }
 
     private static class LongSumMerger implements OortObject.Merger<Long, Long> {
+        @Override
         public Long merge(Collection<OortObject.Info<Long>> infos) {
             long sum = 0;
             for (OortObject.Info<Long> info : infos) {
@@ -54,6 +55,7 @@ public class OortObjectMergers {
     }
 
     private static class MapUnionMerger<K, V> implements OortObject.Merger<Map<K, V>, Map<K, V>> {
+        @Override
         public Map<K, V> merge(Collection<OortObject.Info<Map<K, V>>> infos) {
             Map<K, V> result = new HashMap<>();
             for (OortObject.Info<Map<K, V>> value : infos) {
@@ -64,6 +66,7 @@ public class OortObjectMergers {
     }
 
     private static class ConcurrentMapUnionMerger<K, V> implements OortObject.Merger<ConcurrentMap<K, V>, ConcurrentMap<K, V>> {
+        @Override
         public ConcurrentMap<K, V> merge(Collection<OortObject.Info<ConcurrentMap<K, V>>> infos) {
             ConcurrentMap<K, V> result = new ConcurrentHashMap<>();
             for (OortObject.Info<ConcurrentMap<K, V>> value : infos) {
@@ -74,6 +77,7 @@ public class OortObjectMergers {
     }
 
     public static class ListUnionMerger<E> implements OortObject.Merger<List<E>, List<E>> {
+        @Override
         public List<E> merge(Collection<OortObject.Info<List<E>>> infos) {
             List<E> result = new ArrayList<>();
             for (OortObject.Info<List<E>> value : infos) {

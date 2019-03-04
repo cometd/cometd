@@ -1,51 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <parent>
-        <groupId>org.cometd</groupId>
-        <artifactId>cometd-project</artifactId>
-        <version>3.1.1</version>
-    </parent>
+  <parent>
+    <groupId>org.cometd</groupId>
+    <artifactId>cometd-project</artifactId>
+    <version>3.1.6-SNAPSHOT</version>
+  </parent>
 
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>org.cometd.java</groupId>
-    <artifactId>cometd-java</artifactId>
-    <packaging>pom</packaging>
-    <name>CometD :: Java</name>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.cometd.java</groupId>
+  <artifactId>cometd-java</artifactId>
+  <packaging>pom</packaging>
+  <name>CometD :: Java</name>
 
-    <modules>
-        <module>bayeux-api</module>
-        <module>cometd-java-annotations</module>
-        <module>cometd-java-client</module>
-        <module>cometd-java-common</module>
-        <module>cometd-java-examples</module>
-        <module>cometd-java-oort</module>
-        <module>cometd-java-server</module>
-        <module>cometd-java-websocket</module>
-        <module>cometd-java-benchmark</module>
-        <module>cometd-java-tests</module>
-    </modules>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>javax.websocket</groupId>
-                <artifactId>javax.websocket-client-api</artifactId>
-                <version>1.0</version>
-            </dependency>
-            <dependency>
-                <groupId>javax.websocket</groupId>
-                <artifactId>javax.websocket-api</artifactId>
-                <version>1.0</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty.toolchain</groupId>
-                <artifactId>jetty-test-helper</artifactId>
-                <version>2.7</version>
-                <scope>test</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+  <modules>
+    <module>bayeux-api</module>
+    <module>cometd-java-annotations</module>
+    <module>cometd-java-client</module>
+    <module>cometd-java-common</module>
+    <module>cometd-java-examples</module>
+    <module>cometd-java-oort</module>
+    <module>cometd-java-server</module>
+    <module>cometd-java-websocket</module>
+    <module>cometd-java-benchmark</module>
+    <module>cometd-java-tests</module>
+  </modules>
 
 </project>

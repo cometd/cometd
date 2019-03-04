@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,9 +144,11 @@ public class OortMasterLong extends OortMasterService<Long, OortMasterLong.Conte
          * Empty implementation of {@link Callback}
          */
         public static class Adapter implements Callback {
+            @Override
             public void succeeded(Long result) {
             }
 
+            @Override
             public void failed(Object failure) {
             }
         }

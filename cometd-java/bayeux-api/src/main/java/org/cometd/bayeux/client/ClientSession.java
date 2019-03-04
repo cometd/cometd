@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,18 +195,22 @@ public interface ClientSession extends Session {
          * Empty implementation of {@link Extension}.
          */
         public static class Adapter implements Extension {
+            @Override
             public boolean rcv(ClientSession session, Message.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean rcvMeta(ClientSession session, Message.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean send(ClientSession session, Message.Mutable message) {
                 return true;
             }
 
+            @Override
             public boolean sendMeta(ClientSession session, Message.Mutable message) {
                 return true;
             }

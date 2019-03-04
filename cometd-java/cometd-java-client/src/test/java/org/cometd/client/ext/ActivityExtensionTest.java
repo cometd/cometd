@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ public class ActivityExtensionTest extends ClientServerTest {
         bayeux.addExtension(new ActivityExtension(ActivityExtension.Activity.CLIENT, maxInactivityPeriod));
 
         scheduler.scheduleWithFixedDelay(new Runnable() {
+            @Override
             public void run() {
                 bayeux.getChannel(channelName).publish(null, "test");
             }
@@ -69,9 +70,11 @@ public class ActivityExtensionTest extends ClientServerTest {
 
         final BayeuxClient client = newBayeuxClient();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+                        @Override
                         public void onMessage(ClientSessionChannel channel, Message message) {
                         }
                     });
@@ -81,6 +84,7 @@ public class ActivityExtensionTest extends ClientServerTest {
 
         final CountDownLatch latch = new CountDownLatch(2);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Map<String, Object> advice = message.getAdvice();
                 if (advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD))) {
@@ -89,6 +93,7 @@ public class ActivityExtensionTest extends ClientServerTest {
             }
         });
         client.getChannel(Channel.META_DISCONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 latch.countDown();
             }
@@ -106,9 +111,11 @@ public class ActivityExtensionTest extends ClientServerTest {
 
         final BayeuxClient client = newBayeuxClient();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 if (message.isSuccessful()) {
                     client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener() {
+                        @Override
                         public void onMessage(ClientSessionChannel channel, Message message) {
                         }
                     });
@@ -118,6 +125,7 @@ public class ActivityExtensionTest extends ClientServerTest {
 
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(2));
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 Map<String, Object> advice = message.getAdvice();
                 if (advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD))) {
@@ -126,6 +134,7 @@ public class ActivityExtensionTest extends ClientServerTest {
             }
         });
         client.getChannel(Channel.META_DISCONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 latch.get().countDown();
             }

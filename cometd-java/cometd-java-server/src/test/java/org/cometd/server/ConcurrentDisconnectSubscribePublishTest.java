@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,11 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
     public void testDisconnectSubscribe() throws Exception {
         final AtomicBoolean subscribed = new AtomicBoolean(false);
         bayeux.addListener(new BayeuxServer.SubscriptionListener() {
+            @Override
             public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
             }
 
+            @Override
             public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
                 subscribed.set(true);
             }
@@ -141,7 +143,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         response = disconnect.send();
         Assert.assertEquals(200, response.getStatus());
         Assert.assertEquals(1, publishes.get());
-        // The response to the subscribe must be that the client is unknown
+        // The response to the publish must be that the client is unknown
         Assert.assertTrue(response.getContentAsString().contains("402::"));
     }
 

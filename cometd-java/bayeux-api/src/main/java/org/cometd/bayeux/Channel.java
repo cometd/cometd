@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,10 @@ import java.util.Set;
  * <p>A Bayeux channel is the primary message routing mechanism within Bayeux:
  * both Bayeux clients and Bayeux server use channels to group listeners that
  * are interested in receiving messages with that channel.</p>
- * <p>
  * <p>This interface is the common root for both the
  * {@link org.cometd.bayeux.client.ClientSessionChannel client side} representation
  * of a channel and the {@link org.cometd.bayeux.server.ServerChannel server side}
  * representation of a channel.</p>
- * <p>
  * <p>Channels are identified with strings that look like paths (e.g. "/foo/bar")
  * called "channel id".
  * Meta channels have channel ids starting with "/meta/" and are reserved for the
@@ -34,7 +32,6 @@ import java.util.Set;
  * Service channels have channel ids starting with "/service/" and are channels
  * for which publish is disabled, so that only server side listeners will receive
  * the messages.</p>
- * <p>
  * <p>A channel id may also be specified with wildcards.
  * For example "/meta/*" refers to all top level meta channels
  * like "/meta/subscribe" or "/meta/handshake".

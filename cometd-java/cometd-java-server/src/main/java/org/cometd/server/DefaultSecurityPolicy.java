@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,18 +23,22 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 
 public class DefaultSecurityPolicy implements SecurityPolicy {
+    @Override
     public boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message) {
         return session != null && session.isLocalSession() || !ChannelId.isMeta(channelId);
     }
 
+    @Override
     public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
         return true;
     }
 
+    @Override
     public boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
         return session != null && session.isHandshook() && !channel.isMeta();
     }
 
+    @Override
     public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
         return session != null && session.isLocalSession() || !channel.isMeta();
     }

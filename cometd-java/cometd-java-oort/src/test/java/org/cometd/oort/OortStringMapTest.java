@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,11 +160,13 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         oortMap1.addListener(new OortMap.DeltaListener<>(oortMap1));
         oortMap2.addListener(new OortMap.DeltaListener<>(oortMap2));
         OortMap.EntryListener<String, String> entryListener = new OortMap.EntryListener<String, String>() {
+            @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 puts.add(entry);
                 setLatch2.get().countDown();
             }
 
+            @Override
             public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 removes.add(entry);
                 setLatch2.get().countDown();
@@ -294,26 +296,12 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         String name = "entry_before_map";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
-        OortStringMap<String> oortMap2 = new OortStringMap<String>(oort2, name, factory) {
-            private int peerMessages;
-
-            @Override
-            protected void onObject(Map<String, Object> data) {
-                super.onObject(data);
-                String oortURL = (String)data.get(Info.OORT_URL_FIELD);
-                if (!getOort().getURL().equals(oortURL)) {
-                    ++peerMessages;
-                    // Simulate that the first message from the
-                    // other peer for the whole map gets lost.
-                    if (peerMessages == 1) {
-                        removeInfo(oortURL);
-                    }
-                }
-            }
-        };
+        OortStringMap<String> oortMap2 = new OortStringMap<>(oort2, name, factory);
         startOortObjects(oortMap1, oortMap2);
+        // Simulate that the second map lost the whole map update from the first map.
+        oortMap2.removeInfo(oort1.getURL());
 
-        Assert.assertNull(oortMap2.getInfo(oortMap1.getOort().getURL()));
+        Assert.assertNull(oortMap2.getInfo(oort1.getURL()));
 
         final CountDownLatch objectLatch = new CountDownLatch(1);
         oortMap2.addListener(new OortObject.Listener.Adapter<ConcurrentMap<String, String>>() {
@@ -325,7 +313,9 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
         // Put an entry in oortMap1, the update should arrive to oortMap2
         // which does not have the Info object, so it should pull it.
-        oortMap1.putAndShare("key1", "value1", null);
+        OortObject.Result.Deferred<String> result1 = new OortObject.Result.Deferred<>();
+        oortMap1.putAndShare("key1", "value1", result1);
+        result1.get(5, TimeUnit.SECONDS);
 
         Assert.assertTrue(objectLatch.await(5, TimeUnit.SECONDS));
 
@@ -342,7 +332,9 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         });
 
         // Put another entry in oortMap1, the objects should sync.
-        oortMap1.putAndShare("key2", "value2", null);
+        OortObject.Result.Deferred<String> result2 = new OortObject.Result.Deferred<>();
+        oortMap1.putAndShare("key2", "value2", result2);
+        result2.get(5, TimeUnit.SECONDS);
 
         Assert.assertTrue(putLatch.get().await(5, TimeUnit.SECONDS));
 
@@ -352,7 +344,9 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
         // And again.
         putLatch.set(new CountDownLatch(1));
-        oortMap1.putAndShare("key3", "value3", null);
+        OortObject.Result.Deferred<String> result3 = new OortObject.Result.Deferred<>();
+        oortMap1.putAndShare("key3", "value3", result3);
+        result3.get(5, TimeUnit.SECONDS);
 
         Assert.assertTrue(putLatch.get().await(5, TimeUnit.SECONDS));
 

@@ -4,32 +4,32 @@
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
 
-    <servlet>
-        <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
-        <init-param>
-            <param-name>timeout</param-name>
-            <param-value>30000</param-value>
-        </init-param>
-        <init-param>
-            <param-name>interval</param-name>
-            <param-value>0</param-value>
-        </init-param>
-        <init-param>
-            <param-name>maxInterval</param-name>
-            <param-value>10000</param-value>
-        </init-param>
-        <init-param>
-            <param-name>multiSessionInterval</param-name>
-            <param-value>2000</param-value>
-        </init-param>
-        <load-on-startup>1</load-on-startup>
-        <async-supported>true</async-supported>
-    </servlet>
+  <servlet>
+    <servlet-name>cometd</servlet-name>
+    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <init-param>
+      <param-name>timeout</param-name>
+      <param-value>30000</param-value>
+    </init-param>
+    <init-param>
+      <param-name>interval</param-name>
+      <param-value>0</param-value>
+    </init-param>
+    <init-param>
+      <param-name>maxInterval</param-name>
+      <param-value>10000</param-value>
+    </init-param>
+    <init-param>
+      <param-name>multiSessionInterval</param-name>
+      <param-value>2000</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
+  </servlet>
 
-    <servlet-mapping>
-        <servlet-name>cometd</servlet-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>cometd</servlet-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </servlet-mapping>
 
 </web-app>

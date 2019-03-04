@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool {
     public void execute(final Runnable job) {
         final long begin = System.nanoTime();
         super.execute(new Runnable() {
+            @Override
             public void run() {
                 long queueLatency = System.nanoTime() - begin;
                 tasks.incrementAndGet();
@@ -58,6 +59,11 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool {
                     Atomics.updateMax(maxTaskLatency, taskLatency);
                     totalTaskLatency.addAndGet(taskLatency);
                 }
+            }
+
+            @Override
+            public String toString() {
+                return job.toString();
             }
         });
     }

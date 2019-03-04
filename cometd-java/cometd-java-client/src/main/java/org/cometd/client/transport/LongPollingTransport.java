@@ -52,33 +52,20 @@ public class LongPollingTransport extends HttpClientTransport {
 
     private final HttpClient _httpClient;
     private final List<Request> _requests = new ArrayList<>();
-    private final CookieMiddleware _cookieMiddleware;
-
     private volatile boolean _aborted;
     private volatile int _maxBufferSize;
     private volatile boolean _appendMessageType;
     private volatile CookieManager _cookieManager;
     private volatile Map<String, Object> _advice;
 
-    public LongPollingTransport(Map<String, Object> options, HttpClient httpClient, CookieMiddleware cookieMiddleware) {
-        this(null, options, httpClient, cookieMiddleware);
+    public LongPollingTransport(Map<String, Object> options, HttpClient httpClient) {
+        this(null, options, httpClient);
     }
-
 
     public LongPollingTransport(String url, Map<String, Object> options, HttpClient httpClient) {
-        this(url, options, httpClient, null);
-
-    }
-
-    public LongPollingTransport(Map<String, Object> options, HttpClient httpClient) {
-        this(null, options, httpClient, null);
-    }
-
-    public LongPollingTransport(String url, Map<String, Object> options, HttpClient httpClient, CookieMiddleware cookieMiddleware) {
         super(NAME, url, options);
         _httpClient = httpClient;
         setOptionPrefix(PREFIX);
-        _cookieMiddleware = (cookieMiddleware!=null)? cookieMiddleware: new CookieMiddleware.DefaultCookieMiddleware(_cookieManager, getCookieStore());
     }
 
     @Override
@@ -124,29 +111,32 @@ public class LongPollingTransport extends HttpClientTransport {
 
     @Override
     public void send(final TransportListener listener, final List<Message.Mutable> messages) {
-
-        String workingUrl = getURL();
+        String url = getURL();
+        final URI uri = URI.create(url);
         if (_appendMessageType && messages.size() == 1) {
             Message.Mutable message = messages.get(0);
             if (message.isMeta()) {
                 String type = message.getChannel().substring(Channel.META.length());
-                if (workingUrl.endsWith("/")) {
-                    workingUrl = workingUrl.substring(0, workingUrl.length() - 1);
+                if (url.endsWith("/")) {
+                    url = url.substring(0, url.length() - 1);
                 }
-                workingUrl += type;
+                url += type;
             }
         }
-        final String url = workingUrl;
 
         final Request request = _httpClient.newRequest(url).method(HttpMethod.POST);
         request.header(HttpHeader.CONTENT_TYPE.asString(), "application/json;charset=UTF-8");
 
-        StringBuilder builder = new StringBuilder();
-        for (HttpCookie cookie : _cookieMiddleware.extractCookies(url)) {
-            builder.setLength(0);
-            builder.append(cookie.getName()).append("=").append(cookie.getValue());
-            request.header(HttpHeader.COOKIE.asString(), builder.toString());
+        List<HttpCookie> cookies = _cookieMiddleware.extractCookies(url);
+
+        StringBuilder value = new StringBuilder(cookies.size() * 32);
+        for (HttpCookie cookie : cookies) {
+            if (value.length() > 0) {
+                value.append("; ");
+            }
+            value.append(cookie.getName()).append("=").append(cookie.getValue());
         }
+        request.header(HttpHeader.COOKIE.asString(), value.toString());
 
         request.content(new StringContentProvider(generateJSON(messages)));
 
@@ -198,14 +188,20 @@ public class LongPollingTransport extends HttpClientTransport {
                     // Instead, we store the cookies in the BayeuxClient instance.
                     Map<String, List<String>> cookies = new HashMap<>(1);
                     cookies.put(field.getName(), Collections.singletonList(field.getValue()));
-                    _cookieMiddleware.storeCookies(url, cookies);
+                    storeCookies(uri, cookies);
                     return false;
                 }
                 return true;
             }
 
             private void storeCookies(URI uri, Map<String, List<String>> cookies) {
-                _cookieMiddleware.storeCookies(url, cookies);
+                try {
+                    _cookieManager.put(uri, cookies);
+                } catch (IOException x) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("", x);
+                    }
+                }
             }
 
             @Override

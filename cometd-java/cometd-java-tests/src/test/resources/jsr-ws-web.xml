@@ -5,46 +5,46 @@
          metadata-complete="true"
          version="3.1">
 
-    <context-param>
-        <param-name>org.eclipse.jetty.websocket.jsr356.addDynamicFilter</param-name>
-        <param-value>false</param-value>
-    </context-param>
+  <context-param>
+    <param-name>org.eclipse.jetty.websocket.jsr356.addDynamicFilter</param-name>
+    <param-value>false</param-value>
+  </context-param>
 
-    <filter>
-        <filter-name>cross-origin</filter-name>
-        <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
-        <async-supported>true</async-supported>
-    </filter>
-    <filter-mapping>
-        <filter-name>cross-origin</filter-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </filter-mapping>
+  <filter>
+    <filter-name>cross-origin</filter-name>
+    <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+    <async-supported>true</async-supported>
+  </filter>
+  <filter-mapping>
+    <filter-name>cross-origin</filter-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </filter-mapping>
 
-    <filter>
-        <filter-name>wsuf</filter-name>
-        <filter-class>org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter</filter-class>
-        <async-supported>true</async-supported>
-    </filter>
+  <filter>
+    <filter-name>wsuf</filter-name>
+    <filter-class>org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter</filter-class>
+    <async-supported>true</async-supported>
+  </filter>
 
-    <filter-mapping>
-        <filter-name>wsuf</filter-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </filter-mapping>
+  <filter-mapping>
+    <filter-name>wsuf</filter-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </filter-mapping>
 
-    <servlet>
-        <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
-        <init-param>
-            <param-name>ws.cometdURLMapping</param-name>
-            <param-value>/cometd/*</param-value>
-        </init-param>
-        <load-on-startup>1</load-on-startup>
-        <async-supported>true</async-supported>
-    </servlet>
+  <servlet>
+    <servlet-name>cometd</servlet-name>
+    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <init-param>
+      <param-name>ws.cometdURLMapping</param-name>
+      <param-value>/cometd/*</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
+  </servlet>
 
-    <servlet-mapping>
-        <servlet-name>cometd</servlet-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>cometd</servlet-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </servlet-mapping>
 
 </web-app>

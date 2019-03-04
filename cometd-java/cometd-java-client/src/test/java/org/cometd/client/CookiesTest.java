@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ public class CookiesTest extends ClientServerTest {
         final AtomicReference<HttpCookie> browserCookie = new AtomicReference<>();
         final BayeuxClient client = newBayeuxClient();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
                 browserCookie.set(client.getCookie("BAYEUX_BROWSER"));
             }
@@ -111,6 +112,7 @@ public class CookiesTest extends ClientServerTest {
 
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.subscribe(new ClientSessionChannel.MessageListener() {
+            @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
             }
         });

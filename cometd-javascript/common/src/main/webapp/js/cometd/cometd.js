@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -519,7 +519,7 @@
                 try {
                     var state = xhr.readyState;
                     xhr.abort();
-                    return state !== XMLHttpRequest.UNSENT;
+                    return state !== window.XMLHttpRequest.UNSENT;
                 } catch (x) {
                     this._debug(x);
                 }
@@ -552,8 +552,14 @@
             return _supportsCrossDomain || !crossDomain;
         };
 
+        _self.newXMLHttpRequest = function() {
+            return new window.XMLHttpRequest();
+        };
+
         _self.xhrSend = function(packet) {
-            var xhr = new XMLHttpRequest();
+            var xhr = _self.newXMLHttpRequest();
+            // Copy external context, to be used in other environments.
+            xhr.context = _self.context;
             xhr.withCredentials = true;
             xhr.open('POST', packet.url, packet.sync !== true);
             var headers = packet.headers;
@@ -679,7 +685,7 @@
             var url = packet.url;
             url += url.indexOf('?') < 0 ? '?' : '&';
             url += 'jsonp=' + callbackName;
-            url += '&message=' + packet.body;
+            url += '&message=' + encodeURIComponent(packet.body);
             script.src = url;
             script.async = packet.sync !== true;
             script.type = 'application/javascript';
@@ -1216,7 +1222,6 @@
             backoffIncrement: 1000,
             maxBackoff: 60000,
             logLevel: 'info',
-            reverseIncomingExtensions: true,
             maxNetworkDelay: 10000,
             requestHeaders: {},
             appendMessageTypeToURL: true,
@@ -1361,7 +1366,12 @@
          * @return whether the given hostAndPort is cross domain
          */
         this._isCrossDomain = function(hostAndPort) {
-            return hostAndPort && hostAndPort !== window.location.host;
+            if (window.location && window.location.host) {
+                if (hostAndPort) {
+                    return hostAndPort !== window.location.host;
+                }
+            }
+            return false;
         };
 
         function _configure(configuration) {
@@ -1481,8 +1491,7 @@
                     break;
                 }
 
-                var index = _config.reverseIncomingExtensions ? _extensions.length - 1 - i : i;
-                var extension = _extensions[index];
+                var extension = _extensions[i];
                 var callback = extension.extension.incoming;
                 if (_isFunction(callback)) {
                     var result = _applyExtension(extension.extension, callback, extension.name, message, false);
@@ -1493,7 +1502,7 @@
         }
 
         function _applyOutgoingExtensions(message) {
-            for (var i = 0; i < _extensions.length; ++i) {
+            for (var i = _extensions.length - 1; i >= 0 ; --i) {
                 if (message === undefined || message === null) {
                     break;
                 }
@@ -1800,8 +1809,10 @@
             // Reset the transports if we're not retrying the handshake
             if (_isDisconnected()) {
                 _transports.reset(true);
-                _updateAdvice(_config.advice);
             }
+
+            // Reset the advice.
+            _updateAdvice({});
 
             _batch = 0;
 
