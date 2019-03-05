@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.awaitility.Awaitility;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
@@ -61,7 +62,9 @@ public class BroadcastToPublisherTest extends ClientServerTest {
         client.getChannel(channelName).publish("test");
         Assert.assertEquals(broadcast, messageLatch.await(1, TimeUnit.SECONDS));
 
-        disconnectBayeuxClient(client);
+        bayeux.getSession(client.getId()).disconnect();
+        Awaitility.await()
+                .until(() -> !client.isConnected());
     }
 
     @Test
