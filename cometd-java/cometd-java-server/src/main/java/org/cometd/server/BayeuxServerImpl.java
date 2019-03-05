@@ -1238,7 +1238,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             }
         }
 
-        long now = System.currentTimeMillis();
+        long now = System.nanoTime();
         for (ServerSessionImpl session : _sessions.values()) {
             session.sweep(now);
         }

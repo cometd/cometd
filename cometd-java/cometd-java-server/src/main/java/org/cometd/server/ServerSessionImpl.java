@@ -616,7 +616,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     public void cancelExpiration(boolean metaConnect) {
-        long now = System.currentTimeMillis();
+        long now = System.nanoTime();
         synchronized (getLock()) {
             _messageTime = now;
             if (metaConnect) {
@@ -632,10 +632,10 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     public void scheduleExpiration(long defaultInterval) {
         long interval = calculateInterval(defaultInterval);
-        long now = System.currentTimeMillis();
+        long now = System.nanoTime();
         synchronized (getLock()) {
             _scheduleTime = now;
-            _expireTime = now + interval + _maxInterval;
+            _expireTime = now + TimeUnit.MILLISECONDS.toNanos(interval + _maxInterval);
         }
         if (_logger.isDebugEnabled()) {
             _logger.debug("Scheduled expiration for {}", this);
@@ -931,13 +931,17 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         long last;
         long expire;
         State state;
-        long now = System.currentTimeMillis();
+        long now = System.nanoTime();
         synchronized (getLock()) {
             last = now - _messageTime;
             expire = _expireTime == 0 ? 0 : _expireTime - now;
             state = _state;
         }
-        return String.format("%s,%s,last=%d,expire=%d", _id, state, last, expire);
+        return String.format("%s,%s,last=%d,expire=%d",
+                _id,
+                state,
+                TimeUnit.NANOSECONDS.toMillis(last),
+                TimeUnit.NANOSECONDS.toMillis(expire));
     }
 
     private class LazyTask implements Runnable {

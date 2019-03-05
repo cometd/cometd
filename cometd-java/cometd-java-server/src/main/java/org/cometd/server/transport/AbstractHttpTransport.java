@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -516,13 +517,12 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
      */
     @Override
     protected void sweep() {
-        long now = System.currentTimeMillis();
-        long elapsed = now - _lastSweep;
-        if (_lastSweep > 0 && elapsed > 0) {
+        long now = System.nanoTime();
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(now - _lastSweep);
+        if (_lastSweep != 0 && elapsed > 0) {
             // Calculate the maximum sweeps that a browser ID can be 0 as the
             // maximum interval time divided by the sweep period, doubled for safety
             int maxSweeps = (int)(2 * getMaxInterval() / elapsed);
-
             for (Map.Entry<String, AtomicInteger> entry : _browserSweep.entrySet()) {
                 AtomicInteger count = entry.getValue();
                 // if the ID has been in the sweep map for 3 sweeps

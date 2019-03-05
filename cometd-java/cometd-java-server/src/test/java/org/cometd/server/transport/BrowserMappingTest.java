@@ -79,7 +79,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(isSuccessful(response));
 
-        long begin = System.currentTimeMillis();
+        long begin = System.nanoTime();
         Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
@@ -88,7 +88,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(isSuccessful(response));
-        long elapsed = System.currentTimeMillis() - begin;
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
         Assert.assertTrue("" + elapsed, elapsed >= (timeout - timeout / 10));
     }
 
@@ -167,7 +167,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         // Remove cookie.
         httpClient.getCookieStore().removeAll();
 
-        long begin = System.currentTimeMillis();
+        long begin = System.nanoTime();
         Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
@@ -176,7 +176,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(isSuccessful(response));
-        long elapsed = System.currentTimeMillis() - begin;
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
         Assert.assertTrue("" + elapsed, elapsed >= timeout - (timeout / 10));
     }
 
@@ -214,7 +214,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(isSuccessful(response));
 
-        long begin = System.currentTimeMillis();
+        long begin = System.nanoTime();
         Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
@@ -225,7 +225,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(isSuccessful(response));
-        long elapsed = System.currentTimeMillis() - begin;
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
         Assert.assertTrue("" + elapsed, elapsed >= (timeout - timeout / 10));
     }
 
