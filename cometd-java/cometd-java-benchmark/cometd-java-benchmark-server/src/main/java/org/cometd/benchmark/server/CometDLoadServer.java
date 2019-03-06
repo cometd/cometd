@@ -57,7 +57,10 @@ import org.cometd.server.transport.JSONTransport;
 import org.cometd.websocket.server.JettyWebSocketTransport;
 import org.cometd.websocket.server.WebSocketTransport;
 import org.cometd.websocket.server.common.AbstractWebSocketEndPoint;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -269,8 +272,14 @@ public class CometDLoadServer {
 
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         httpConfiguration.setDelayDispatchUntilContent(true);
-        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(httpConfiguration);
-        ConnectionFactory[] factories = AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory);
+        ConnectionFactory http = new HttpConnectionFactory(httpConfiguration);
+        ConnectionFactory http2 = tls ? new HTTP2ServerConnectionFactory(httpConfiguration) : new HTTP2CServerConnectionFactory(httpConfiguration);
+        ConnectionFactory[] factories = {http, http2};
+        if (tls) {
+            ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+            alpn.setDefaultProtocol(http.getProtocol());
+            factories = AbstractConnectionFactory.getFactories(sslContextFactory, alpn, http, http2);
+        }
         ServerConnector connector = new ServerConnector(server, null, null, null, 1, selectors, factories);
         // Make sure the OS is configured properly for load testing;
         // see http://cometd.org/documentation/howtos/loadtesting

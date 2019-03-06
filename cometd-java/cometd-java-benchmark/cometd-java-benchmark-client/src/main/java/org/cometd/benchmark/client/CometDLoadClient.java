@@ -65,7 +65,10 @@ import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.websocket.client.JettyWebSocketTransport;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
@@ -107,6 +110,7 @@ public class CometDLoadClient implements MeasureConverter {
     private String host = "localhost";
     private int port = 8080;
     private ClientTransportType transport = ClientTransportType.LONG_POLLING;
+    private boolean http2 = false;
     private boolean tls = false;
     private int selectors = 1;
     private int maxThreads = 256;
@@ -140,6 +144,8 @@ public class CometDLoadClient implements MeasureConverter {
                 client.port = Integer.parseInt(arg.substring("--port=".length()));
             } else if (arg.startsWith("--transport=")) {
                 client.transport = ClientTransportType.valueOf(arg.substring("--transport=".length()));
+            } else if (arg.equals("--http2")) {
+                client.http2 = true;
             } else if (arg.equals("--tls")) {
                 client.tls = true;
             } else if (arg.startsWith("--selectors=")) {
@@ -251,6 +257,20 @@ public class CometDLoadClient implements MeasureConverter {
             transport = ClientTransportType.values()[Integer.parseInt(value)];
         }
 
+        boolean http2 = this.http2;
+        if (transport == ClientTransportType.LONG_POLLING) {
+            if (interactive) {
+                System.err.printf("use HTTP/2 [%b]: ", http2);
+                String value = console.readLine().trim();
+                if (value.length() == 0) {
+                    value = String.valueOf(http2);
+                }
+                http2 = Boolean.parseBoolean(value);
+            }
+        } else {
+            http2 = false;
+        }
+
         String contextPath = this.context;
         if (interactive) {
             System.err.printf("context [%s]: ", contextPath);
@@ -313,7 +333,13 @@ public class CometDLoadClient implements MeasureConverter {
         threadPool.start();
         mbeanContainer.beanAdded(null, threadPool);
 
-        httpClient = new HttpClient(new HttpClientTransportOverHTTP(selectors), new SslContextFactory(true));
+        HttpClientTransport httpClientTransport = new HttpClientTransportOverHTTP(selectors);
+        if (http2) {
+            HTTP2Client http2Client = new HTTP2Client();
+            http2Client.setSelectors(selectors);
+            httpClientTransport = new HttpClientTransportOverHTTP2(http2Client);
+        }
+        httpClient = new HttpClient(httpClientTransport, new SslContextFactory(true));
         httpClient.addBean(mbeanContainer);
         httpClient.setMaxConnectionsPerDestination(60000);
         httpClient.setMaxRequestsQueuedPerDestination(10000);
