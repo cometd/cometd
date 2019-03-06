@@ -604,12 +604,13 @@ public class CometDLoadClient implements MeasureConverter {
 
     private long sendBatches(int batchSize, long batchPause, String chat, String channel, LoadBayeuxClient client) {
         long expected = 0;
+        List<Integer> rooms = new ArrayList<>(roomMap.keySet());
         client.startBatch();
         for (int b = 0; b < batchSize; ++b) {
             int room = -1;
             AtomicInteger clientsPerRoom = null;
             while (clientsPerRoom == null || clientsPerRoom.get() == 0) {
-                room = nextRandom(roomMap.size());
+                room = rooms.get(nextRandom(rooms.size()));
                 clientsPerRoom = roomMap.get(room);
             }
             Map<String, Object> message = new HashMap<>(5);
