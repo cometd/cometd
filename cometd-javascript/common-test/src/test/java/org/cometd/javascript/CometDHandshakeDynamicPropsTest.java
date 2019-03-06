@@ -126,8 +126,8 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
                             throw new ServletException(x);
                         }
                     }
-                    // Remove the client, so that the CometD implementation will send
-                    // "unknown client" and the JavaScript will re-handshake
+                    // Remove the client, so that the CometD implementation will
+                    // send "unknown_session" and the JavaScript will re-handshake.
                     ServerSession session = bayeuxServer.getSession(clientId);
                     if (session != null) {
                         bayeuxServer.removeServerSession(session, false);

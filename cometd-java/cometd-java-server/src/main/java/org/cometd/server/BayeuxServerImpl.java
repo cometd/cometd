@@ -689,7 +689,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             isPublishAuthorized(channel, session, message, Promise.from(result -> {
                 if (result instanceof Authorizer.Result.Denied) {
                     String denyReason = ((Authorizer.Result.Denied)result).getReason();
-                    error(reply, "403:" + denyReason + ":publish denied");
+                    error(reply, "403:" + denyReason + ":publish_denied");
                     promise.succeed(reply);
                 } else {
                     reply.setSuccessful(true);
@@ -1182,7 +1182,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     protected void unknownSession(Mutable reply) {
-        error(reply, "402::Unknown client");
+        error(reply, "402::unknown_session");
         if (Channel.META_HANDSHAKE.equals(reply.getChannel()) || Channel.META_CONNECT.equals(reply.getChannel())) {
             Map<String, Object> advice = reply.getAdvice(true);
             advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);

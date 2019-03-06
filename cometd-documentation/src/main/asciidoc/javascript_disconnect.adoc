@@ -80,7 +80,7 @@ The same happens when the Bayeux server crashes (except that the state of all
 clients is lost). In this case, the reconnection mechanism on the client
 performs the following steps:
 
-* A long poll is re-attempted, but the server rejects it with a `402::Unknown client` error message.
+* A long poll is re-attempted, but the server rejects it with a `402::unknown_session` error message.
 * A handshake is attempted, and the server normally accepts it and allocates a new client.
 * Upon the successful re-handshake, a long poll is re-established.
 

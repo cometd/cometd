@@ -298,7 +298,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "});");
         evaluateScript("cometd.handshake();");
         Assert.assertTrue(readyLatch.await(5000));
-        // Must not have failed with a 402::Unknown Client error
+        // Must not have failed with a 402::unknown_session error.
         Assert.assertEquals(0, ((Number)javaScript.get("failures")).intValue());
 
         disconnect();
