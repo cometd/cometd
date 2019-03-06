@@ -57,7 +57,7 @@ public class TimeExtensionsTest extends ClientServerTest {
         Assert.assertTrue(messages.size() > 0);
 
         for (Message message : messages) {
-            Assert.assertTrue(message.get(Message.TIMESTAMP_FIELD) != null);
+            Assert.assertNotNull(message.get(Message.TIMESTAMP_FIELD));
         }
 
         disconnectBayeuxClient(client);

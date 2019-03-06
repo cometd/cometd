@@ -15,7 +15,8 @@
  */
 package org.cometd.server.ext;
 
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
 
 import org.cometd.bayeux.Message;
@@ -24,8 +25,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 
 public class TimestampExtension implements Extension {
-    private final String format;
-    private final TimeZone timezone;
+    private final DateTimeFormatter formatter;
 
     public TimestampExtension() {
         this("EEE MMM dd HH:mm:ss zzz yyyy");
@@ -36,8 +36,7 @@ public class TimestampExtension implements Extension {
     }
 
     public TimestampExtension(String format, TimeZone tz) {
-        this.format = format;
-        this.timezone = tz;
+        formatter = DateTimeFormatter.ofPattern(format).withZone(tz.toZoneId());
     }
 
     @Override
@@ -53,8 +52,6 @@ public class TimestampExtension implements Extension {
     }
 
     private void timestamp(Mutable message) {
-        SimpleDateFormat formatter = new SimpleDateFormat(format);
-        formatter.setTimeZone(timezone);
-        message.put(Message.TIMESTAMP_FIELD, formatter.format(System.currentTimeMillis()));
+        message.put(Message.TIMESTAMP_FIELD, formatter.format(Instant.now()));
     }
 }

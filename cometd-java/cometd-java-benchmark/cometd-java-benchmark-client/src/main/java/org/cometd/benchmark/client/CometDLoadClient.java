@@ -20,7 +20,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -77,6 +79,7 @@ public class CometDLoadClient implements MeasureConverter {
     private static final String START_FIELD = "start";
     private static final String START_DATE_FIELD = "startDate";
 
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").withZone(ZoneId.of("GMT"));
     private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);
     private final PlatformTimer timer = PlatformTimer.detect();
     private final Random random = new Random();
@@ -616,8 +619,7 @@ public class CometDLoadClient implements MeasureConverter {
             message.put("chat", chat);
             // Mandatory fields to record latencies
             message.put(START_FIELD, System.nanoTime());
-            String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").format(System.currentTimeMillis());
-            message.put(START_DATE_FIELD, startDate);
+            message.put(START_DATE_FIELD, formatter.format(Instant.now()));
             message.put(Config.ID_FIELD, ids.incrementAndGet() + channel);
             ClientSessionChannel clientChannel = client.getChannel(getChannelId(channel + "/" + room));
             clientChannel.publish(message);

@@ -18,17 +18,19 @@ package org.cometd.javascript;
 import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <p>Representation of the cookies in the JavaScript environment.</p>
  * <p>The actual store must survive page reloads.</p>
  */
 public class JavaScriptCookieStore {
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US).withZone(ZoneId.of("GMT"));
     private final CookieStore store;
 
     public JavaScriptCookieStore(CookieStore store) {
@@ -70,7 +72,7 @@ public class JavaScriptCookieStore {
             boolean httpOnly = false;
             String domain = null;
             String path = null;
-            long maxAge = 0;
+            Long maxAge = null;
             String[] parts = cookies.split(";");
             for (String part : parts) {
                 part = part.trim();
@@ -87,13 +89,12 @@ public class JavaScriptCookieStore {
                     } else if ("Path".equalsIgnoreCase(key)) {
                         path = val;
                     } else if ("Expires".equalsIgnoreCase(key)) {
-                        if (maxAge <= 0) {
-                            SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
-                            dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-                            maxAge = TimeUnit.MILLISECONDS.toSeconds(dateFormat.parse(val).getTime() - System.currentTimeMillis());
+                        if (maxAge == null) {
+                            Instant parsed = formatter.parse(val, Instant::from);
+                            maxAge = ChronoUnit.SECONDS.between(parsed, Instant.now());
                         }
                     } else if ("Max-Age".equalsIgnoreCase(key)) {
-                        maxAge = Integer.parseInt(val);
+                        maxAge = Long.parseLong(val);
                     } else if ("Comment".equalsIgnoreCase(key) ||
                             "CommentURL".equalsIgnoreCase(key) ||
                             "Discard".equalsIgnoreCase(key) ||
@@ -125,7 +126,9 @@ public class JavaScriptCookieStore {
                 cookie.setHttpOnly(httpOnly);
                 cookie.setDomain(domain);
                 cookie.setPath(path);
-                cookie.setMaxAge(maxAge);
+                if (maxAge != null) {
+                    cookie.setMaxAge(maxAge);
+                }
                 store.add(uri, cookie);
             }
         } catch (Exception x) {
