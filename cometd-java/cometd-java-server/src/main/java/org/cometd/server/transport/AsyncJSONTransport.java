@@ -35,7 +35,6 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
 public class AsyncJSONTransport extends AbstractHttpTransport {
@@ -153,6 +152,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
     }
 
     protected void writeComplete(Context context, List<ServerMessage> messages) {
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("Messages/replies {}/{} written for session {}", messages.size(), context.replies.size(), context.session);
+        }
     }
 
     protected abstract class AbstractReader implements ReadListener {
