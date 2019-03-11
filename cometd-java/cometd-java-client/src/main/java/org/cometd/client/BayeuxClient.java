@@ -501,13 +501,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             // Fail the deleted messages first, to avoid a
             // race with the replies of the sent messages.
             AsyncFoldLeft.run(deleted, null, (result, message, loop) -> {
-                Message.Mutable failed = newMessage();
-                failed.setId(message.getId());
+                Message.Mutable failed = newReply(message);
                 failed.setSuccessful(false);
-                failed.setChannel(message.getChannel());
-                if (message.containsKey(Message.SUBSCRIPTION_FIELD)) {
-                    failed.put(Message.SUBSCRIPTION_FIELD, message.get(Message.SUBSCRIPTION_FIELD));
-                }
                 failed.put(Message.ERROR_FIELD, "404::message_deleted");
                 receive(failed, Promise.from(loop::proceed, loop::fail));
             }, Promise.from(r -> {
@@ -642,14 +637,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 logger.debug("Failing {}", message);
             }
 
-            Message.Mutable failed = newMessage();
-            failed.setId(message.getId());
+            Message.Mutable failed = newReply(message);
             failed.setSuccessful(false);
-            failed.setChannel(message.getChannel());
-            if (message.containsKey(Message.SUBSCRIPTION_FIELD)) {
-                failed.put(Message.SUBSCRIPTION_FIELD, message.get(Message.SUBSCRIPTION_FIELD));
-            }
-
             Map<String, Object> failure = new HashMap<>();
             failed.put("failure", failure);
             failure.put("message", message);
@@ -686,6 +675,16 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 }
             }
         }
+    }
+
+    private Message.Mutable newReply(Message message) {
+        Message.Mutable reply = newMessage();
+        reply.setId(message.getId());
+        reply.setChannel(message.getChannel());
+        if (message.containsKey(Message.SUBSCRIPTION_FIELD)) {
+            reply.put(Message.SUBSCRIPTION_FIELD, message.get(Message.SUBSCRIPTION_FIELD));
+        }
+        return reply;
     }
 
     protected void processHandshake(final Message.Mutable handshake) {
