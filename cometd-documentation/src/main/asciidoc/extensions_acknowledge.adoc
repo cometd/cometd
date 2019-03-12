@@ -90,7 +90,7 @@ This is negotiated during handshake.
 On handshake, the client sends `{"ext":{"ack": "true"}}` to indicate that it
 supports message acknowledgement.
 If the server also supports message acknowledgement, it likewise replies with
-+{"ext":{"ack": "true"}}+.
+`{"ext":{"ack": "true"}}`.
 
 The extension does not insert ack IDs in every message, as this would impose
 a significant burden on the server for messages sent to multiple clients
