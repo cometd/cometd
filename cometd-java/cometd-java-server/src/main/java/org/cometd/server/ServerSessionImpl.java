@@ -357,7 +357,6 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         AbstractServerTransport transport = message == null ? null : (AbstractServerTransport)message.getServerTransport();
         if (transport != null) {
             _maxQueue = transport.getOption(AbstractServerTransport.MAX_QUEUE_OPTION, -1);
-            _maxInterval = transport.getMaxInterval();
             _maxProcessing = transport.getOption(AbstractServerTransport.MAX_PROCESSING_OPTION, -1);
             _maxLazy = transport.getMaxLazyTimeout();
         }
@@ -630,20 +629,27 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    public void scheduleExpiration(long defaultInterval) {
+    public void scheduleExpiration(long defaultInterval, long defaultMaxInterval) {
         long interval = calculateInterval(defaultInterval);
+        long maxInterval = calculateMaxInterval(defaultMaxInterval);
         long now = System.nanoTime();
         synchronized (getLock()) {
             _scheduleTime = now;
-            _expireTime = now + TimeUnit.MILLISECONDS.toNanos(interval + _maxInterval);
+            _expireTime = now + TimeUnit.MILLISECONDS.toNanos(interval + maxInterval);
         }
         if (_logger.isDebugEnabled()) {
             _logger.debug("Scheduled expiration for {}", this);
         }
     }
 
-    protected long getMaxInterval() {
+    @Override
+    public long getMaxInterval() {
         return _maxInterval;
+    }
+
+    @Override
+    public void setMaxInterval(long maxInterval) {
+        _maxInterval = maxInterval;
     }
 
     long getIntervalTimestamp() {
@@ -870,11 +876,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         if (_transientTimeout >= 0) {
             return _transientTimeout;
         }
-
         if (_timeout >= 0) {
             return _timeout;
         }
-
         return defaultTimeout;
     }
 
@@ -882,12 +886,17 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         if (_transientInterval >= 0) {
             return _transientInterval;
         }
-
         if (_interval >= 0) {
             return _interval;
         }
-
         return defaultInterval;
+    }
+
+    private long calculateMaxInterval(long defaultMaxInterval) {
+        if (_maxInterval > 0) {
+            return _maxInterval;
+        }
+        return defaultMaxInterval;
     }
 
     /**

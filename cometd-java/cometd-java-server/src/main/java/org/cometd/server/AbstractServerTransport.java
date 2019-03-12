@@ -274,7 +274,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
 
     public void scheduleExpiration(ServerSessionImpl session) {
         if (session != null) {
-            session.scheduleExpiration(getInterval());
+            session.scheduleExpiration(getInterval(), getMaxInterval());
         }
     }
 

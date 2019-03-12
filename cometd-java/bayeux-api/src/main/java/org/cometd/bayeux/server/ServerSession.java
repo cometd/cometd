@@ -173,6 +173,22 @@ public interface ServerSession extends Session {
     public void setTimeout(long timeout);
 
     /**
+     * @return the max period of time, in milliseconds, that the server waits before expiring
+     * the session when the client does not send messages to the server, or -1 if the default
+     * value is used
+     */
+    public default long getMaxInterval() {
+        return -1;
+    }
+
+    /**
+     * @param maxInterval the max period of time, in milliseconds, that the server waits
+     *                    before expiring the session
+     */
+    public default void setMaxInterval(long maxInterval) {
+    }
+
+    /**
      * <p>Common interface for {@link ServerSession} listeners.</p>
      * <p>Specific sub-interfaces define what kind of event listeners will be notified.</p>
      */

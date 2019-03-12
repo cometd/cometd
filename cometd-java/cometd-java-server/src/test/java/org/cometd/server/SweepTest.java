@@ -121,5 +121,45 @@ public class SweepTest {
         Assert.assertNotNull(bayeuxServer.getSession(localSession.getId()));
 
         localSession.disconnect();
+        bayeuxServer.stop();
+    }
+
+    @Test
+    public void testSweepSessionWithCustomMaxInterval() throws Exception {
+        BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
+        long sweepPeriod = 400;
+        bayeuxServer.setOption(BayeuxServerImpl.SWEEP_PERIOD_OPTION, sweepPeriod);
+        long maxInterval = 1000;
+        bayeuxServer.setOption(AbstractServerTransport.MAX_INTERVAL_OPTION, maxInterval);
+        bayeuxServer.start();
+
+        ServerSessionImpl normal = bayeuxServer.newServerSession();
+        bayeuxServer.addServerSession(normal, bayeuxServer.newMessage());
+        Assert.assertTrue(normal.handshake(null));
+        Assert.assertTrue(normal.connected());
+        normal.cancelExpiration(true);
+        normal.scheduleExpiration(0, maxInterval);
+
+        ServerSessionImpl custom = bayeuxServer.newServerSession();
+        long customMaxInterval = 3 * maxInterval;
+        custom.setMaxInterval(customMaxInterval);
+        bayeuxServer.addServerSession(custom, bayeuxServer.newMessage());
+        Assert.assertTrue(custom.handshake(null));
+        Assert.assertTrue(custom.connected());
+        custom.cancelExpiration(true);
+        custom.scheduleExpiration(0, customMaxInterval);
+
+        // Wait one maxInterval, the normal session should be swept.
+        Thread.sleep(maxInterval + 2 * sweepPeriod);
+
+        Assert.assertNull(bayeuxServer.getSession(normal.getId()));
+        Assert.assertNotNull(bayeuxServer.getSession(custom.getId()));
+
+        // Wait another 2 maxIntervals, the custom session should be swept.
+        Thread.sleep(2 * maxInterval);
+
+        Assert.assertNull(bayeuxServer.getSession(custom.getId()));
+
+        bayeuxServer.stop();
     }
 }

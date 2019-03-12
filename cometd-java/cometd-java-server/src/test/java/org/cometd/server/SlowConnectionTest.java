@@ -121,7 +121,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
             protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException {
                 try {
                     if (channelName.equals(message.getChannel())) {
-                        session.scheduleExpiration(0);
+                        session.scheduleExpiration(0, maxInterval);
                         TimeUnit.MILLISECONDS.sleep(2 * maxInterval);
                     }
                     super.writeMessage(response, output, session, message);
