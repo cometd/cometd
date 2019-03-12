@@ -727,31 +727,36 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     public Map<String, Object> takeAdvice(ServerTransport transport) {
-        if (transport != null && transport != _advisedTransport) {
-            _advisedTransport = transport;
+        if (transport == null || transport == _advisedTransport) {
+            // The advice has not changed, so return null.
+            return null;
+        }
+        return createAdvice(transport);
+    }
 
-            // The timeout is calculated based on the values of the session/transport
-            // because we want to send to the client the *next* timeout
-            long timeout = getTimeout() < 0 ? transport.getTimeout() : getTimeout();
+    private Map<String, Object> createAdvice(ServerTransport transport) {
+        _advisedTransport = transport;
 
-            // The interval is calculated using also the transient value
-            // because we want to send to the client the *current* interval
-            long interval = calculateInterval(transport.getInterval());
+        // The timeout is calculated based on the values of the session/transport
+        // because we want to send to the client the *next* timeout.
+        long timeout = getTimeout() < 0 ? transport.getTimeout() : getTimeout();
 
-            Map<String, Object> advice = new HashMap<>(3);
-            advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
-            advice.put(Message.INTERVAL_FIELD, interval);
-            advice.put(Message.TIMEOUT_FIELD, timeout);
-            if (transport instanceof AbstractServerTransport) {
-                if (((AbstractServerTransport)transport).isHandshakeReconnect()) {
-                    advice.put(Message.MAX_INTERVAL_FIELD, getMaxInterval());
-                }
+        // The interval is calculated using also the transient value
+        // because we want to send to the client the *current* interval.
+        long interval = calculateInterval(transport.getInterval());
+
+        Map<String, Object> advice = new HashMap<>(3);
+        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
+        advice.put(Message.INTERVAL_FIELD, interval);
+        advice.put(Message.TIMEOUT_FIELD, timeout);
+        if (transport instanceof AbstractServerTransport) {
+            if (((AbstractServerTransport)transport).isHandshakeReconnect()) {
+                long maxInterval = calculateMaxInterval(transport.getMaxInterval());
+                advice.put(Message.MAX_INTERVAL_FIELD, maxInterval);
             }
-            return advice;
         }
 
-        // advice has not changed, so return null.
-        return null;
+        return advice;
     }
 
     @Override

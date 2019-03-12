@@ -233,7 +233,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
 
         // Verify that the server is aware of the interval and will not expire the session
         ServerSessionImpl session = (ServerSessionImpl)bayeux.getSession(clientId);
-        long expectedMaxInterval = TimeUnit.NANOSECONDS.toMillis(session.getIntervalTimestamp() - System.nanoTime());
-        Assert.assertTrue(expectedMaxInterval > session.getMaxInterval() + newInterval / 2);
+        long expectedExpire = TimeUnit.NANOSECONDS.toMillis(session.getIntervalTimestamp() - System.nanoTime());
+        Assert.assertTrue(expectedExpire > session.getServerTransport().getMaxInterval() + newInterval / 2);
     }
 }
