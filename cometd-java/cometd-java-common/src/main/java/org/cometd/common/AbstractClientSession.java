@@ -242,7 +242,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     public void receive(final Message.Mutable message, Promise<Void> promise) {
         String channelName = message.getChannel();
         if (channelName == null) {
-            promise.fail(new IllegalArgumentException("Bayeux messages must have a channel, " + message));
+            promise.fail(new IllegalArgumentException("Bayeux message must have a channel: " + message));
             return;
         }
 
@@ -262,8 +262,12 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
         extendIncoming(message, Promise.from(pass -> {
             if (pass) {
-                if (!handleRemoteCall(message)) {
+                if (message.isPublishReply() && message.isSuccessful()) {
                     notifyListeners(message);
+                } else {
+                    if (!handleRemoteCall(message)) {
+                        notifyListeners(message);
+                    }
                 }
             }
             promise.succeed(null);
