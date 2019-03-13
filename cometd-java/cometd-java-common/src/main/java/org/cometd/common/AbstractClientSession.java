@@ -235,7 +235,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     public void receive(final Message.Mutable message) {
         String channelName = message.getChannel();
         if (channelName == null) {
-            throw new IllegalArgumentException("Bayeux messages must have a channel, " + message);
+            throw new IllegalArgumentException("Bayeux message must have a channel: " + message);
         }
 
         if (Channel.META_SUBSCRIBE.equals(channelName)) {
@@ -256,8 +256,10 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
             return;
         }
 
-        if (handleRemoteCall(message)) {
-            return;
+        if (!message.isPublishReply() || !message.isSuccessful()) {
+            if (handleRemoteCall(message)) {
+                return;
+            }
         }
 
         notifyListeners(message);
