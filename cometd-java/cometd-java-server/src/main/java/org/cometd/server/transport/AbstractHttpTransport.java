@@ -174,7 +174,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 break;
             }
             default: {
-                processMessage2(context, message, promise);
+                processMessage1(context, message, promise);
                 break;
             }
         }
@@ -319,7 +319,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }, promise::fail));
     }
 
-    private void processMessage2(Context context, ServerMessageImpl message, Promise<Void> promise) {
+    private void processMessage1(Context context, ServerMessageImpl message, Promise<Void> promise) {
         handleMessage(context, message, Promise.from(y -> {
             ServerSessionImpl session = context.session;
             processReply(session, message.getAssociated(), Promise.from(reply -> {

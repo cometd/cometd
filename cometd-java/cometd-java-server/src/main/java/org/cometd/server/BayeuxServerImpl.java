@@ -625,7 +625,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                 if (session != null) {
                     session.extendIncoming(message, Promise.from(sessExtPass -> {
                         if (sessExtPass) {
-                            handle2(session, message, promise);
+                            handle1(session, message, promise);
                         } else {
                             if (!reply.isHandled()) {
                                 error(reply, "404::message_deleted");
@@ -634,7 +634,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                         }
                     }, promise::fail));
                 } else {
-                    handle2(null, message, promise);
+                    handle1(null, message, promise);
                 }
             } else {
                 if (!reply.isHandled()) {
@@ -645,7 +645,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }, promise::fail));
     }
 
-    private void handle2(ServerSessionImpl session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
+    private void handle1(ServerSessionImpl session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
         if (_logger.isDebugEnabled()) {
             _logger.debug(">  {} {}", message, session);
         }
@@ -671,17 +671,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                             error(reply, "403:" + denyReason + ":channel_create_denied");
                             promise.succeed(reply);
                         } else {
-                            handle3(session, message, (ServerChannelImpl)createChannelIfAbsent(channelName).getReference(), promise);
+                            handle2(session, message, (ServerChannelImpl)createChannelIfAbsent(channelName).getReference(), promise);
                         }
                     }, promise::fail));
                 } else {
-                    handle3(session, message, channel, promise);
+                    handle2(session, message, channel, promise);
                 }
             }
         }
     }
 
-    private void handle3(ServerSessionImpl session, ServerMessage.Mutable message, ServerChannelImpl channel, Promise<ServerMessage.Mutable> promise) {
+    private void handle2(ServerSessionImpl session, ServerMessage.Mutable message, ServerChannelImpl channel, Promise<ServerMessage.Mutable> promise) {
         ServerMessage.Mutable reply = message.getAssociated();
         if (channel.isMeta()) {
             publish(session, channel, message, true, Promise.from(published -> promise.succeed(reply), promise::fail));
@@ -850,7 +850,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
         notifyListeners(session, channel, message, Promise.from(proceed -> {
             if (proceed) {
-                publish2(session, channel, message, receiving, promise);
+                publish1(session, channel, message, receiving, promise);
             } else {
                 ServerMessageImpl reply = (ServerMessageImpl)message.getAssociated();
                 if (reply != null && !reply.isHandled()) {
@@ -861,7 +861,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }, promise::fail));
     }
 
-    private void publish2(ServerSessionImpl session, ServerChannelImpl channel, ServerMessage.Mutable message, boolean receiving, Promise<Boolean> promise) {
+    private void publish1(ServerSessionImpl session, ServerChannelImpl channel, ServerMessage.Mutable message, boolean receiving, Promise<Boolean> promise) {
         if (channel.isBroadcast() || !receiving) {
             extendOutgoing(session, null, message, Promise.from(result -> {
                 if (result) {
@@ -876,7 +876,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                     // ((CustomObject)serverMessage.getData()).change() or
                     // ((Map)serverMessage.getExt().get("map")).put().
                     freeze(message);
-                    publish3(session, channel, message, promise);
+                    publish2(session, channel, message, promise);
                 } else {
                     ServerMessage.Mutable reply = message.getAssociated();
                     error(reply, "404::message_deleted");
@@ -884,11 +884,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                 }
             }, promise::fail));
         } else {
-            publish3(session, channel, message, promise);
+            publish2(session, channel, message, promise);
         }
     }
 
-    private void publish3(ServerSessionImpl session, ServerChannelImpl channel, ServerMessage.Mutable message, Promise<Boolean> promise) {
+    private void publish2(ServerSessionImpl session, ServerChannelImpl channel, ServerMessage.Mutable message, Promise<Boolean> promise) {
         if (channel.isMeta()) {
             notifyMetaHandlers(session, channel, message, promise);
         } else if (channel.isBroadcast()) {
@@ -1303,7 +1303,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         if (_policy != null) {
             _policy.canHandshake(this, session, message, Promise.from(can -> {
                 if (can) {
-                    handleMetaHandshake2(session, message, promise);
+                    handleMetaHandshake1(session, message, promise);
                 } else {
                     ServerMessage.Mutable reply = message.getAssociated();
                     error(reply, "403::handshake_denied");
@@ -1316,11 +1316,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                 }
             }, promise::fail));
         } else {
-            handleMetaHandshake2(session, message, promise);
+            handleMetaHandshake1(session, message, promise);
         }
     }
 
-    private void handleMetaHandshake2(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
+    private void handleMetaHandshake1(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
         ServerMessage.Mutable reply = message.getAssociated();
         if (session.handshake(message)) {
             addServerSession(session, message);
@@ -1396,11 +1396,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                                     error(reply, "403:" + denyReason + ":create_denied");
                                     loop.leave(false);
                                 } else {
-                                    handleMetaSubscribe2(session, message, (ServerChannelImpl)createChannelIfAbsent(subscription).getReference(), resolveLoop(loop));
+                                    handleMetaSubscribe1(session, message, (ServerChannelImpl)createChannelIfAbsent(subscription).getReference(), resolveLoop(loop));
                                 }
                             }, promise::fail));
                         } else {
-                            handleMetaSubscribe2(session, message, channel, resolveLoop(loop));
+                            handleMetaSubscribe1(session, message, channel, resolveLoop(loop));
                         }
                     }, promise);
                 }
@@ -1408,7 +1408,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
     }
 
-    private void handleMetaSubscribe2(ServerSessionImpl session, Mutable message, ServerChannelImpl channel, Promise<Boolean> promise) {
+    private void handleMetaSubscribe1(ServerSessionImpl session, Mutable message, ServerChannelImpl channel, Promise<Boolean> promise) {
         ServerMessage.Mutable reply = message.getAssociated();
         isSubscribeAuthorized(channel, session, message, Promise.from(subscribeResult -> {
             if (subscribeResult instanceof Authorizer.Result.Denied) {
