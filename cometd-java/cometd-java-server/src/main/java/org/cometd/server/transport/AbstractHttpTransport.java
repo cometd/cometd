@@ -137,6 +137,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
             context.messages = messages;
             context.session = session;
+            context.bayeuxContext = new HttpContext(context.request);
             AsyncFoldLeft.run(messages, null, (result, item, loop) -> processMessage(context, (ServerMessageImpl)item, Promise.from(loop::proceed, loop::fail)), Promise.from(y -> {
                 flush(context, promise);
                 if (batch) {
@@ -152,7 +153,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         message.setServerTransport(this);
-        message.setBayeuxContext(new HttpContext(context.request));
+        message.setBayeuxContext(context.bayeuxContext);
         ServerSessionImpl session = context.session;
         if (session != null) {
             session.setServerTransport(this);
@@ -223,11 +224,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         handleMessage(context, message, Promise.from(reply -> {
             ServerSessionImpl session = context.session;
             if (reply.isSuccessful()) {
-                HttpServletRequest request = context.request;
-
-                String id = findBrowserId(request);
+                String id = findBrowserId(context);
                 if (id == null) {
-                    id = setBrowserId(request, context.response);
+                    id = setBrowserId(context);
                 }
                 final String browserId = id;
 
@@ -391,19 +390,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
     }
 
-    protected String findBrowserId(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if (_browserCookieName.equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
-        }
-        return null;
+    protected String findBrowserId(Context context) {
+        return context.bayeuxContext.getCookie(_browserCookieName);
     }
 
-    protected String setBrowserId(HttpServletRequest request, HttpServletResponse response) {
+    protected String setBrowserId(Context context) {
         StringBuilder builder = new StringBuilder();
         while (builder.length() < 16) {
             builder.append(Long.toString(getBayeux().randomLong(), 36));
@@ -418,7 +409,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         cookie.setSecure(_browserCookieSecure);
         cookie.setHttpOnly(_browserCookieHttpOnly);
         cookie.setMaxAge(-1);
-        response.addCookie(cookie);
+        context.response.addCookie(cookie);
         return browserId;
     }
 
@@ -544,7 +535,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     private static class HttpContext implements BayeuxContext {
         final HttpServletRequest _request;
 
-        HttpContext(HttpServletRequest request) {
+        private HttpContext(HttpServletRequest request) {
             _request = request;
         }
 
@@ -813,6 +804,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         public final HttpServletResponse response;
         protected ServerMessage.Mutable[] messages;
         protected ServerSessionImpl session;
+        protected BayeuxContext bayeuxContext;
         protected boolean sendQueue;
         protected boolean scheduleExpiration;
         protected HttpScheduler scheduler;
