@@ -383,7 +383,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     protected void sendError(HttpServletRequest request, HttpServletResponse response, int code, Throwable failure) {
         try {
             request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, failure);
-            response.sendError(code);
+            response.setStatus(code);
         } catch (Throwable x) {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("", x);
