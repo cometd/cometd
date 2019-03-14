@@ -241,7 +241,10 @@ public abstract class AbstractWebSocketEndPoint {
                     if (reply != null) {
                         context.replies.add(reply);
                     }
-                    // Leave sendQueue unchanged.
+                    boolean metaConnectDelivery = _transport.isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
+                    if (!metaConnectDelivery) {
+                        context.sendQueue = true;
+                    }
                     // Leave scheduleExpiration unchanged.
                     promise.succeed(true);
                 }, promise::fail)), promise::fail));
