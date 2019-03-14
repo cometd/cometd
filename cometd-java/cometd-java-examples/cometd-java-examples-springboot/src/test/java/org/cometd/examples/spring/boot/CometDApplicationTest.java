@@ -18,8 +18,13 @@ package org.cometd.examples.spring.boot;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.websocket.ContainerProvider;
+import javax.websocket.WebSocketContainer;
+
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.After;
 import org.junit.Assert;
@@ -36,10 +41,13 @@ public class CometDApplicationTest {
     @LocalServerPort
     public int serverPort;
     private HttpClient httpClient;
+    private WebSocketContainer wsContainer;
 
     @Before
     public void prepare() throws Exception {
         httpClient = new HttpClient();
+        wsContainer = ContainerProvider.getWebSocketContainer();
+        httpClient.addBean(wsContainer);
         httpClient.start();
     }
 
@@ -51,9 +59,18 @@ public class CometDApplicationTest {
     }
 
     @Test
-    public void testSpringBoot() throws Exception {
+    public void testSpringBootWithHTTPTransport() throws Exception {
+        testSpringBoot(new LongPollingTransport(null, httpClient));
+    }
+
+    @Test
+    public void testSpringBootWithWebSocketTransport() throws Exception {
+        testSpringBoot(new WebSocketTransport(null, null, wsContainer));
+    }
+
+    private void testSpringBoot(ClientTransport transport) throws Exception {
         String url = "http://localhost:" + serverPort + "/cometd";
-        BayeuxClient client = new BayeuxClient(url, new LongPollingTransport(null, httpClient));
+        BayeuxClient client = new BayeuxClient(url, transport);
 
         CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.handshake(message -> {

@@ -142,15 +142,14 @@ public abstract class AbstractWebSocketEndPoint {
 
             Context context = new Context(session);
             AsyncFoldLeft.run(messages, true, (result, message, loop) -> {
-                        processMessage(messages, context, (ServerMessageImpl)message, Promise.from(b -> loop.proceed(result && b), loop::fail));
-                    },
-                    Promise.from(flush -> {
-                        if (flush) {
-                            flush(context, promise);
-                        } else {
-                            promise.succeed(null);
-                        }
-                    }, promise::fail));
+                processMessage(messages, context, (ServerMessageImpl)message, Promise.from(b -> loop.proceed(result && b), loop::fail));
+            }, Promise.from(flush -> {
+                if (flush) {
+                    flush(context, promise);
+                } else {
+                    promise.succeed(null);
+                }
+            }, promise::fail));
         }
     }
 
