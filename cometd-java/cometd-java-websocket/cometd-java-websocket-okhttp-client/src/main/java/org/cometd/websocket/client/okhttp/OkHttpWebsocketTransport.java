@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.CookieStore;
 import java.net.HttpCookie;
+import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.channels.UnresolvedAddressException;
@@ -90,7 +91,11 @@ public class OkHttpWebsocketTransport extends AbstractWebSocketTransport {
             }
             this.webSocketConnected = true;
             return delegate;
-        } catch (ConnectException | SocketTimeoutException | TimeoutException | UnresolvedAddressException e) {
+        } catch (ConnectException
+                | SocketTimeoutException
+                | TimeoutException
+                | UnresolvedAddressException
+                | ProtocolException e) { // RealWebSocket#checkResponse throws ProtocolException for certain responses
             listener.onFailure(e, messages);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
