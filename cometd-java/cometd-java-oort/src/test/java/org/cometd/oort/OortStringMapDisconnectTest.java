@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
-import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.server.AbstractService;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
@@ -128,7 +128,7 @@ public class OortStringMapDisconnectTest extends OortTest {
             List<BayeuxClient> clientsPerNode = new ArrayList<>();
             clients.add(clientsPerNode);
             for (int j = 0; j < usersPerNode; j++) {
-                BayeuxClient client = new BayeuxClient(oort.getURL(), scheduler, new LongPollingTransport(null, httpClient));
+                BayeuxClient client = new BayeuxClient(oort.getURL(), scheduler, new JettyHttpClientTransport(null, httpClient));
                 clientsPerNode.add(client);
                 client.handshake();
                 Assert.assertTrue(client.waitFor(15000, BayeuxClient.State.CONNECTED));

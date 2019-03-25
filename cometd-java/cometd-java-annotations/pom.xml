@@ -41,12 +41,12 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>bayeux-api</artifactId>
+      <artifactId>cometd-java-api-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-server</artifactId>
+      <artifactId>cometd-java-server-common</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -69,7 +69,7 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-client</artifactId>
+      <artifactId>cometd-java-client-http-jetty</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

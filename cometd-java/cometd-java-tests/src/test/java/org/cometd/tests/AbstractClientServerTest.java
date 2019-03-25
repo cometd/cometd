@@ -26,15 +26,15 @@ import javax.websocket.WebSocketContainer;
 import okhttp3.OkHttpClient;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.websocket.javax.WebSocketTransport;
+import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
+import org.cometd.client.websocket.okhttp.OkHttpWebsocketTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.cometd.server.transport.AsyncJSONTransport;
 import org.cometd.server.transport.JSONTransport;
-import org.cometd.websocket.client.JettyWebSocketTransport;
-import org.cometd.websocket.client.WebSocketTransport;
-import org.cometd.websocket.client.okhttp.OkHttpWebsocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -170,9 +170,9 @@ public abstract class AbstractClientServerTest {
                 return AsyncJSONTransport.class.getName();
             case JAVAX_WEBSOCKET:
             case OKHTTP_WEBSOCKET:
-                return org.cometd.websocket.server.WebSocketTransport.class.getName();
+                return org.cometd.server.websocket.javax.WebSocketTransport.class.getName();
             case JETTY_WEBSOCKET:
-                return org.cometd.websocket.server.JettyWebSocketTransport.class.getName();
+                return org.cometd.server.websocket.jetty.JettyWebSocketTransport.class.getName();
             default:
                 throw new IllegalArgumentException();
         }
@@ -186,7 +186,7 @@ public abstract class AbstractClientServerTest {
         switch (transport) {
             case LONG_POLLING:
             case ASYNC_LONG_POLLING:
-                return new LongPollingTransport(options, httpClient);
+                return new JettyHttpClientTransport(options, httpClient);
             case JAVAX_WEBSOCKET:
                 return new WebSocketTransport(options, scheduler, wsContainer);
             case JETTY_WEBSOCKET:

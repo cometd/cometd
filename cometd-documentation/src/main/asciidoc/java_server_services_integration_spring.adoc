@@ -130,7 +130,7 @@ object with the WebSocket transport:
     <bean id="bayeux" class="org.cometd.server.BayeuxServerImpl" init-method="start" destroy-method="stop">
         <property name="transports">
             <list>
-                <bean id="websocketTransport" class="org.cometd.websocket.server.WebSocketTransport">
+                <bean id="websocketTransport" class="org.cometd.server.websocket.javax.WebSocketTransport">
                     <constructor-arg ref="bayeux" />
                 </bean>
                 <bean id="jsonTransport" class="org.cometd.server.transport.JSONTransport">

@@ -30,8 +30,8 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
@@ -140,11 +140,11 @@ public class ProxyTest {
         startProxy(null);
         startClient();
 
-        ReverseProxyExtension extension = new ReverseProxyExtension(serverCometDURL, new LongPollingTransport.Factory(proxyHttpClient));
+        ReverseProxyExtension extension = new ReverseProxyExtension(serverCometDURL, new JettyHttpClientTransport.Factory(proxyHttpClient));
         proxyBayeux.addExtension(extension);
 
         CountDownLatch handshakeLatch = new CountDownLatch(1);
-        BayeuxClient client = new BayeuxClient(proxyCometDURL, new LongPollingTransport(null, httpClient));
+        BayeuxClient client = new BayeuxClient(proxyCometDURL, new JettyHttpClientTransport(null, httpClient));
         client.handshake(message -> {
             if (message.isSuccessful()) {
                 handshakeLatch.countDown();
@@ -177,11 +177,11 @@ public class ProxyTest {
         startProxy(null);
         startClient();
 
-        ReverseProxyExtension extension = new ReverseProxyExtension(serverCometDURL, new LongPollingTransport.Factory(proxyHttpClient));
+        ReverseProxyExtension extension = new ReverseProxyExtension(serverCometDURL, new JettyHttpClientTransport.Factory(proxyHttpClient));
         proxyBayeux.addExtension(extension);
 
         String channelName = "/foo";
-        BayeuxClient client = new BayeuxClient(proxyCometDURL, new LongPollingTransport(null, httpClient));
+        BayeuxClient client = new BayeuxClient(proxyCometDURL, new JettyHttpClientTransport(null, httpClient));
         ClientSessionChannel clientChannel = client.getChannel(channelName);
 
         AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));

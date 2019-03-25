@@ -8,23 +8,18 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>cometd-java-server</artifactId>
-  <name>CometD :: Java :: Bayeux Server</name>
+  <packaging>pom</packaging>
+  <name>CometD :: Java :: Server</name>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Automatic-Module-Name>org.cometd.server</Automatic-Module-Name>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+  <modules>
+    <module>cometd-java-server-common</module>
+    <module>cometd-java-server-websocket-common</module>
+    <module>cometd-java-server-websocket-javax</module>
+    <module>cometd-java-server-websocket-jetty</module>
+    <module>cometd-java-server-tests</module>
+  </modules>
 
+<!--
   <dependencies>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -32,7 +27,7 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>bayeux-api</artifactId>
+      <artifactId>cometd-java-api-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -100,5 +95,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+-->
 
 </project>

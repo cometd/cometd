@@ -8,8 +8,16 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>cometd-java-client</artifactId>
-  <name>CometD :: Java :: Bayeux Client</name>
+  <packaging>pom</packaging>
+  <name>CometD :: Java :: Client</name>
 
+  <modules>
+    <module>cometd-java-client-websocket</module>
+    <module>cometd-java-client-common</module>
+    <module>cometd-java-client-http</module>
+  </modules>
+
+<!--
   <build>
     <plugins>
       <plugin>
@@ -127,5 +135,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+-->
 
 </project>

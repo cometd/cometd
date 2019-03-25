@@ -215,7 +215,7 @@ The final content, equivalent to that produced by the Maven way, should be like 
 |   |               |-- CometDInitializer.class
 |   |               `-- HelloService.class
 |   |-- lib
-|   |   |-- bayeux-api-<version>.jar
+|   |   |-- cometd-java-api-server-<version>.jar
 |   |   |-- cometd-java-common-<version>.jar
 |   |   |-- cometd-java-server-<version>.jar
 |   |   |-- cometd-java-websocket-common-server-<version>.jar

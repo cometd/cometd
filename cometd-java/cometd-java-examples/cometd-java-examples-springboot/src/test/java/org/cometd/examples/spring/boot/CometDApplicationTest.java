@@ -22,9 +22,9 @@ import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.websocket.client.WebSocketTransport;
+import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.After;
 import org.junit.Assert;
@@ -60,7 +60,7 @@ public class CometDApplicationTest {
 
     @Test
     public void testSpringBootWithHTTPTransport() throws Exception {
-        testSpringBoot(new LongPollingTransport(null, httpClient));
+        testSpringBoot(new JettyHttpClientTransport(null, httpClient));
     }
 
     @Test

@@ -189,7 +189,7 @@ There are three types of sessions:
 
 * _Client sessions_ – the client half-object on the remote client side.
   Client sessions are represented by the `org.cometd.CometD` object in JavaScript,
-  and by the `org.cometd.bayeux.client.ClientSession` class (but more frequently
+  and by the `ClientSession` class (but more frequently
   by its subclass `org.cometd.bayeux.client.BayeuxClient`) in Java.
   The client creates a client session to establish a Bayeux communication with the
   server, and this allows the client to publish and receive messages.

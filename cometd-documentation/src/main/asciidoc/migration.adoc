@@ -133,7 +133,7 @@ handled by the next transport (typically the `long-polling` transport).
   server transports. In CometD 3 it is a comma separated list of the server
   transports. +
   For example, in CometD 3
-  `transports="org.cometd.websocket.server.JettyWebSocketTransport"`
+  `transports="org.cometd.server.websocket.jetty.JettyWebSocketTransport"`
   defines just one server transport: a `websocket` server transport based on
   Jetty WebSocket APIs.
 

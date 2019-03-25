@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>cometd-java-common</artifactId>
-  <name>CometD :: Java :: Bayeux Common</name>
+  <name>CometD :: Java :: Common</name>
 
   <build>
     <plugins>
@@ -28,7 +28,7 @@
   <dependencies>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>bayeux-api</artifactId>
+      <artifactId>cometd-java-api-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

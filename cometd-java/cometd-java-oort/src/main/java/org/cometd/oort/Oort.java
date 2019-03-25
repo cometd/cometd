@@ -45,13 +45,13 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.ext.AckExtension;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.common.JSONContext;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.ext.BinaryExtension;
-import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -131,7 +131,7 @@ public class Oort extends ContainerLifeCycle {
 
         if (_transportFactories.isEmpty()) {
             _transportFactories.add(new WebSocketTransport.Factory());
-            _transportFactories.add(new LongPollingTransport.Factory(new HttpClient()));
+            _transportFactories.add(new JettyHttpClientTransport.Factory(new HttpClient()));
         }
         for (ClientTransport.Factory factory : _transportFactories) {
             addBean(factory);

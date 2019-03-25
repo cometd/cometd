@@ -27,9 +27,9 @@ import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
 import org.cometd.client.BayeuxClient;
-import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.websocket.client.JettyWebSocketTransport;
-import org.cometd.websocket.client.WebSocketTransport;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
+import org.cometd.client.websocket.javax.WebSocketTransport;
+import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -77,7 +77,7 @@ public class DemoTest {
 
             // Test confidential communication.
             String confidentialURL = "https://localhost:" + httpsPort + contextPath + "/cometd";
-            client = new BayeuxClient(confidentialURL, new LongPollingTransport(null, httpClient));
+            client = new BayeuxClient(confidentialURL, new JettyHttpClientTransport(null, httpClient));
             client.handshake();
             Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 

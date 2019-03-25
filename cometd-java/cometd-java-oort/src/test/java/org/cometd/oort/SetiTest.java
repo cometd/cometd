@@ -38,8 +38,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
@@ -234,7 +234,7 @@ public class SetiTest extends OortTest {
         final AtomicReference<String> session2 = new AtomicReference<>();
         HttpClient httpClient = new HttpClient();
         httpClient.start();
-        BayeuxClient client2 = new BayeuxClient(oort2.getURL(), new LongPollingTransport(null, httpClient)) {
+        BayeuxClient client2 = new BayeuxClient(oort2.getURL(), new JettyHttpClientTransport(null, httpClient)) {
             @Override
             protected void processConnect(Message.Mutable connect) {
                 // Send the login message, so Seti can associate this user

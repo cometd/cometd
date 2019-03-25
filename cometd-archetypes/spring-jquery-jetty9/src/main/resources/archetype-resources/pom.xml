@@ -62,7 +62,7 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>bayeux-api</artifactId>
+      <artifactId>cometd-java-api-server</artifactId>
       <version>${cometd-version}</version>
     </dependency>
     <dependency>

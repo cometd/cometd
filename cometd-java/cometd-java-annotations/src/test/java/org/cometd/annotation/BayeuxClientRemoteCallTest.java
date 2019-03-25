@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.JettyJSONContextServer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -34,14 +34,14 @@ import org.junit.Test;
 public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
     @Test
     public void testHTTPRemoteCallWithResult() throws Exception {
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
+        BayeuxClient client = newBayeuxClient();
         testRemoteCallWithResult(client);
     }
 
     @Test
     public void testHTTPWithAckExtensionRemoteCallWithResult() throws Exception {
         bayeux.addExtension(new AcknowledgedMessagesExtension());
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
+        BayeuxClient client = newBayeuxClient();
         client.addExtension(new AckExtension());
         testRemoteCallWithResult(client);
     }
@@ -177,7 +177,7 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
         JettyJSONContextClient jsonContextClient = new JettyJSONContextClient();
         jsonContextClient.getJSON().addConvertor(Custom.class, new CustomConvertor());
         options.put(ClientTransport.JSON_CONTEXT_OPTION, jsonContextClient);
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(options, httpClient));
+        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(options, httpClient));
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
