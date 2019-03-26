@@ -1,5 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
@@ -14,14 +14,11 @@
 
   <modules>
     <module>common</module>
-    <module>common-test</module>
-    <module>examples-vanilla</module>
     <module>angular</module>
-    <module>examples-angular</module>
     <module>dojo</module>
-    <module>examples-dojo</module>
     <module>jquery</module>
-    <module>examples-jquery</module>
+    <module>examples</module>
+    <module>tests</module>
   </modules>
 
 </project>

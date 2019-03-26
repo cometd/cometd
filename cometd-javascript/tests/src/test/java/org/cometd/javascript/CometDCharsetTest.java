@@ -15,9 +15,9 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 
 public class CometDCharsetTest extends AbstractCometDTransportsTest {
     @Test

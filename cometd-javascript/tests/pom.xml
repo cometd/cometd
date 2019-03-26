@@ -7,9 +7,9 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>cometd-javascript-common-test</artifactId>
+  <artifactId>cometd-javascript-tests</artifactId>
   <packaging>jar</packaging>
-  <name>CometD :: JavaScript :: Common Test</name>
+  <name>CometD :: JavaScript :: Tests</name>
 
   <build>
     <plugins>
