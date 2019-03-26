@@ -18,7 +18,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <Automatic-Module-Name>org.cometd.annotation</Automatic-Module-Name>
+              <Automatic-Module-Name>org.cometd.annotations</Automatic-Module-Name>
             </manifestEntries>
           </archive>
         </configuration>

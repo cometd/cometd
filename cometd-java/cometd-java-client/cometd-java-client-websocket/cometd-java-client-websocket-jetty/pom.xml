@@ -41,15 +41,6 @@
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-client</artifactId>
       <version>${jetty-version}</version>
-<!--
-      <classifier>hybrid</classifier>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty.websocket</groupId>
-          <artifactId>websocket-common</artifactId>
-        </exclusion>
-      </exclusions>
--->
     </dependency>
   </dependencies>
 

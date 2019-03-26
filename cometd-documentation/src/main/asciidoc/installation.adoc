@@ -182,53 +182,6 @@ HTTPS and WebSocket transports:
 include::{resources}/Demo.java[tags=embedded-cometd]
 ----
 
-[NOTE]
-====
-If you application needs to use a WebSocket client to connect to other services,
-you may get `NoSuchMethodError` thrown at startup.
-
-If that is the case, it is due to the fact that artifact (in the Maven format
-`<groupId>:<artifactId>`) `org.cometd.java:cometd-java-websocket-jetty-client`
-depends on the Jetty artifact `org.eclipse.jetty.websocket:websocket-client` with
-classifier `hybrid`.
-
-The `hybrid` version of this artifact is for use inside web applications
-deployed as `war` files, the typical CometD web application deployment.
-
-For use in embedded mode, you must not use the `hybrid` version of the artifact,
-but the regular version of the artifact.
-This is normally accomplished by explicitly excluding the `hybrid` version
-and explicitly including the regular version of the artifact.
-
-For example, using Maven:
-
-[source,xml]
-----
-<dependencies>
-    ...
-    <!-- Explicitly exclude the hybrid dependency. -->
-    <dependency>
-        <groupId>org.cometd.java</groupId>
-        <artifactId>cometd-java-websocket-jetty-client</artifactId>
-        <version>${cometd.version}</version>
-        <exclusions>
-            <exclusion>
-                <groupId>org.eclipse.jetty.websocket</groupId>
-                <artifactId>websocket-client</artifactId>
-            </exclusion>
-        </exclusions>
-    </dependency>
-    <!-- Explicitly include the regular dependency. -->
-    <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-client</artifactId>
-        <version>${jetty.version}</version>
-    </dependency>
-    ...
-</dependencies>
-----
-====
-
 
 ==== Running the Demos with Another Servlet Container
 
