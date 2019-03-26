@@ -69,7 +69,7 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
     @Test
     public void testClientMaxMessageSize() throws Exception {
         // OkHttp has no way to override the max message size.
-        Assume.assumeFalse(transport == Transport.OKHTTP_WEBSOCKET);
+        Assume.assumeFalse(transport == Transport.OKHTTP_WEBSOCKET || transport == Transport.OKHTTP_HTTP);
 
         startServer(serverOptions());
 

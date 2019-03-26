@@ -27,6 +27,7 @@ import okhttp3.OkHttpClient;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
+import org.cometd.client.http.okhttp.OkHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
@@ -90,7 +91,7 @@ public abstract class AbstractClientServerTest {
     public void startServer(Map<String, String> initParams) throws Exception {
         server = new Server();
 
-        connector = new ServerConnector(server);
+        connector = new ServerConnector(server, 1, 1);
         connector.setIdleTimeout(30000);
         server.addConnector(connector);
 
@@ -132,8 +133,8 @@ public abstract class AbstractClientServerTest {
     protected void startClient() throws Exception {
         scheduler = Executors.newSingleThreadScheduledExecutor();
         switch (transport) {
-            case LONG_POLLING:
-            case ASYNC_LONG_POLLING:
+            case JETTY_HTTP:
+            case ASYNC_HTTP:
                 httpClient = new HttpClient();
                 httpClient.start();
                 break;
@@ -146,6 +147,7 @@ public abstract class AbstractClientServerTest {
                 wsClient = new WebSocketClient(httpClient);
                 wsClient.start();
                 break;
+            case OKHTTP_HTTP:
             case OKHTTP_WEBSOCKET:
                 // There's no lifecycle of OkHttp client.
                 okHttpClient = new OkHttpClient();
@@ -164,9 +166,10 @@ public abstract class AbstractClientServerTest {
 
     protected String serverTransport() {
         switch (transport) {
-            case LONG_POLLING:
+            case JETTY_HTTP:
                 return JSONTransport.class.getName();
-            case ASYNC_LONG_POLLING:
+            case ASYNC_HTTP:
+            case OKHTTP_HTTP:
                 return AsyncJSONTransport.class.getName();
             case JAVAX_WEBSOCKET:
             case OKHTTP_WEBSOCKET:
@@ -184,9 +187,11 @@ public abstract class AbstractClientServerTest {
 
     protected ClientTransport newClientTransport(Map<String, Object> options) {
         switch (transport) {
-            case LONG_POLLING:
-            case ASYNC_LONG_POLLING:
+            case JETTY_HTTP:
+            case ASYNC_HTTP:
                 return new JettyHttpClientTransport(options, httpClient);
+            case OKHTTP_HTTP:
+                return new OkHttpClientTransport(options, okHttpClient);
             case JAVAX_WEBSOCKET:
                 return new WebSocketTransport(options, scheduler, wsContainer);
             case JETTY_WEBSOCKET:
@@ -223,6 +228,6 @@ public abstract class AbstractClientServerTest {
     }
 
     public enum Transport {
-        LONG_POLLING, ASYNC_LONG_POLLING, JAVAX_WEBSOCKET, JETTY_WEBSOCKET, OKHTTP_WEBSOCKET
+        JETTY_HTTP, ASYNC_HTTP, OKHTTP_HTTP, JAVAX_WEBSOCKET, JETTY_WEBSOCKET, OKHTTP_WEBSOCKET
     }
 }
