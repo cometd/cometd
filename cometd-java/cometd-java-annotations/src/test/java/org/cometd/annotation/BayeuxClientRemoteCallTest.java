@@ -21,22 +21,36 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.ext.AckExtension;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.JettyJSONContextServer;
+import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
     @Test
-    public void testRemoteCallWithResult() throws Exception {
+    public void testHTTPRemoteCallWithResult() throws Exception {
+        BayeuxClient client = newBayeuxClient();
+        testRemoteCallWithResult(client);
+    }
+
+    @Test
+    public void testHTTPWithAckExtensionRemoteCallWithResult() throws Exception {
+        bayeux.addExtension(new AcknowledgedMessagesExtension());
+        BayeuxClient client = newBayeuxClient();
+        client.addExtension(new AckExtension());
+        testRemoteCallWithResult(client);
+    }
+
+    private void testRemoteCallWithResult(BayeuxClient client) throws Exception {
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
         final String response = "response";
         Assert.assertTrue(processor.process(new RemoteCallWithResultService(response)));
 
-        BayeuxClient client = newBayeuxClient();
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
@@ -163,7 +177,7 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
         JettyJSONContextClient jsonContextClient = new JettyJSONContextClient();
         jsonContextClient.getJSON().addConvertor(Custom.class, new CustomConvertor());
         options.put(ClientTransport.JSON_CONTEXT_OPTION, jsonContextClient);
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(options, httpClient));
+        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(options, httpClient));
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
@@ -219,8 +233,53 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
         }
 
         @Override
+        @SuppressWarnings("rawtypes")
         public Object fromJSON(Map object) {
             return new Custom((String)object.get("payload"));
+        }
+    }
+
+    @Test
+    public void testRemoteCallWithAsyncResult() throws Exception {
+        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
+        final String response = "response";
+        Assert.assertTrue(processor.process(new RemoteCallWithAsyncResultService(response)));
+
+        BayeuxClient client = newBayeuxClient();
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.remoteCall(RemoteCallWithResultService.TARGET, "request", message -> {
+            Assert.assertTrue(message.isSuccessful());
+            Assert.assertEquals(response, message.getData());
+            latch.countDown();
+        });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Service
+    public static class RemoteCallWithAsyncResultService {
+        public static final String TARGET = "/result";
+        private final String response;
+
+        public RemoteCallWithAsyncResultService(String response) {
+            this.response = response;
+        }
+
+        @RemoteCall(TARGET)
+        public void service(final RemoteCall.Caller caller, Object data) {
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000);
+                    caller.result(response);
+                } catch (Throwable x) {
+                    caller.failure(x.toString());
+                }
+            }).start();
         }
     }
 }

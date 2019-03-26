@@ -118,7 +118,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
             });
 
             clients[i].handshake();
-            client.waitFor(5000, BayeuxClient.State.CONNECTED);
+            Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         }
 
         Assert.assertEquals(clients.length, connections.get());

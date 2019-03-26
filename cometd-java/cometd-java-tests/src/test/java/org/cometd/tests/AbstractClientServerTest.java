@@ -23,16 +23,19 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import okhttp3.OkHttpClient;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
+import org.cometd.client.http.okhttp.OkHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.websocket.javax.WebSocketTransport;
+import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
+import org.cometd.client.websocket.okhttp.OkHttpWebsocketTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.cometd.server.transport.AsyncJSONTransport;
 import org.cometd.server.transport.JSONTransport;
-import org.cometd.websocket.client.JettyWebSocketTransport;
-import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -67,7 +70,7 @@ public abstract class AbstractClientServerTest {
         }
     };
     protected final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Transport transport;
+    protected final Transport transport;
     protected Server server;
     protected ServerConnector connector;
     protected ServletContextHandler context;
@@ -78,6 +81,7 @@ public abstract class AbstractClientServerTest {
     private HttpClient httpClient;
     private WebSocketContainer wsContainer;
     private WebSocketClient wsClient;
+    private OkHttpClient okHttpClient;
 
     protected AbstractClientServerTest(Transport transport) {
         this.transport = transport;
@@ -87,7 +91,7 @@ public abstract class AbstractClientServerTest {
     public void startServer(Map<String, String> initParams) throws Exception {
         server = new Server();
 
-        connector = new ServerConnector(server);
+        connector = new ServerConnector(server, 1, 1);
         connector.setIdleTimeout(30000);
         server.addConnector(connector);
 
@@ -95,6 +99,7 @@ public abstract class AbstractClientServerTest {
 
         switch (transport) {
             case JAVAX_WEBSOCKET:
+            case OKHTTP_WEBSOCKET:
                 WebSocketServerContainerInitializer.configureContext(context);
                 break;
             case JETTY_WEBSOCKET:
@@ -128,8 +133,8 @@ public abstract class AbstractClientServerTest {
     protected void startClient() throws Exception {
         scheduler = Executors.newSingleThreadScheduledExecutor();
         switch (transport) {
-            case LONG_POLLING:
-            case ASYNC_LONG_POLLING:
+            case JETTY_HTTP:
+            case ASYNC_HTTP:
                 httpClient = new HttpClient();
                 httpClient.start();
                 break;
@@ -141,6 +146,11 @@ public abstract class AbstractClientServerTest {
                 httpClient.start();
                 wsClient = new WebSocketClient(httpClient);
                 wsClient.start();
+                break;
+            case OKHTTP_HTTP:
+            case OKHTTP_WEBSOCKET:
+                // There's no lifecycle of OkHttp client.
+                okHttpClient = new OkHttpClient();
                 break;
             default:
                 throw new IllegalArgumentException();
@@ -156,14 +166,16 @@ public abstract class AbstractClientServerTest {
 
     protected String serverTransport() {
         switch (transport) {
-            case LONG_POLLING:
+            case JETTY_HTTP:
                 return JSONTransport.class.getName();
-            case ASYNC_LONG_POLLING:
+            case ASYNC_HTTP:
+            case OKHTTP_HTTP:
                 return AsyncJSONTransport.class.getName();
             case JAVAX_WEBSOCKET:
-                return org.cometd.websocket.server.WebSocketTransport.class.getName();
+            case OKHTTP_WEBSOCKET:
+                return org.cometd.server.websocket.javax.WebSocketTransport.class.getName();
             case JETTY_WEBSOCKET:
-                return org.cometd.websocket.server.JettyWebSocketTransport.class.getName();
+                return org.cometd.server.websocket.jetty.JettyWebSocketTransport.class.getName();
             default:
                 throw new IllegalArgumentException();
         }
@@ -175,13 +187,17 @@ public abstract class AbstractClientServerTest {
 
     protected ClientTransport newClientTransport(Map<String, Object> options) {
         switch (transport) {
-            case LONG_POLLING:
-            case ASYNC_LONG_POLLING:
-                return new LongPollingTransport(options, httpClient);
+            case JETTY_HTTP:
+            case ASYNC_HTTP:
+                return new JettyHttpClientTransport(options, httpClient);
+            case OKHTTP_HTTP:
+                return new OkHttpClientTransport(options, okHttpClient);
             case JAVAX_WEBSOCKET:
                 return new WebSocketTransport(options, scheduler, wsContainer);
             case JETTY_WEBSOCKET:
                 return new JettyWebSocketTransport(options, scheduler, wsClient);
+            case OKHTTP_WEBSOCKET:
+                return new OkHttpWebsocketTransport(options, okHttpClient);
             default:
                 throw new IllegalArgumentException();
         }
@@ -212,6 +228,6 @@ public abstract class AbstractClientServerTest {
     }
 
     public enum Transport {
-        LONG_POLLING, ASYNC_LONG_POLLING, JAVAX_WEBSOCKET, JETTY_WEBSOCKET
+        JETTY_HTTP, ASYNC_HTTP, OKHTTP_HTTP, JAVAX_WEBSOCKET, JETTY_WEBSOCKET, OKHTTP_WEBSOCKET
     }
 }

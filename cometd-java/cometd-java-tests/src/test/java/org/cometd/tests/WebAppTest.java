@@ -31,9 +31,9 @@ import javax.websocket.WebSocketContainer;
 
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
-import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.websocket.client.JettyWebSocketTransport;
-import org.cometd.websocket.client.WebSocketTransport;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
+import org.cometd.client.websocket.javax.WebSocketTransport;
+import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpStatus;
@@ -158,7 +158,7 @@ public class WebAppTest {
     public void testWebAppWithHTTPTransport() throws Exception {
         start(baseDir.resolve("src/test/resources/http-web.xml"));
 
-        BayeuxClient client = new BayeuxClient("http://localhost:" + connector.getLocalPort() + contextPath + "/cometd", new LongPollingTransport(null, httpClient));
+        BayeuxClient client = new BayeuxClient("http://localhost:" + connector.getLocalPort() + contextPath + "/cometd", new JettyHttpClientTransport(null, httpClient));
         test(client);
         client.disconnect();
     }

@@ -1,7 +1,7 @@
 #!groovy
 
 def oss = ["linux"]
-def jdks = ["jdk11", "jdk12"]
+def jdks = ["jdk8", "jdk11", "jdk12"]
 
 def builds = [:]
 for (def os in oss) {
@@ -15,7 +15,7 @@ parallel builds
 def newBuild(os, jdk) {
   return {
     node(os) {
-      def mvnName = 'maven3.6'
+      def mvnName = 'maven3.5'
       def settingsName = 'oss-settings.xml'
       def mvnOpts = '-Xms1g -Xmx1g -Djava.awt.headless=true'
 

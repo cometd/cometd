@@ -26,7 +26,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
-import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.eclipse.jetty.client.HttpClient;
 
 public class ConsoleChatClient {
@@ -55,7 +55,7 @@ public class ConsoleChatClient {
         }
 
         while (nickname.trim().length() == 0) {
-            System.err.printf("Enter nickname: ");
+            System.err.print("Enter nickname: ");
             nickname = input.readLine();
             if (nickname == null) {
                 return;
@@ -65,7 +65,7 @@ public class ConsoleChatClient {
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
-        client = new BayeuxClient(url, new LongPollingTransport(null, httpClient));
+        client = new BayeuxClient(url, new JettyHttpClientTransport(null, httpClient));
         client.getChannel(Channel.META_HANDSHAKE).addListener(new InitializerListener());
         client.getChannel(Channel.META_CONNECT).addListener(new ConnectionListener());
 

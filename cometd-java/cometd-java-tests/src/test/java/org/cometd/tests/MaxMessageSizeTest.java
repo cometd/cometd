@@ -27,6 +27,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class MaxMessageSizeTest extends AbstractClientServerTest {
@@ -67,6 +68,9 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
 
     @Test
     public void testClientMaxMessageSize() throws Exception {
+        // OkHttp has no way to override the max message size.
+        Assume.assumeFalse(transport == Transport.OKHTTP_WEBSOCKET || transport == Transport.OKHTTP_HTTP);
+
         startServer(serverOptions());
 
         int maxMessageSize = 512;

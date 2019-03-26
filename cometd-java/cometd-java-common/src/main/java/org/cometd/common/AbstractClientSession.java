@@ -17,11 +17,11 @@ package org.cometd.common;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -242,7 +242,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     public void receive(final Message.Mutable message, Promise<Void> promise) {
         String channelName = message.getChannel();
         if (channelName == null) {
-            promise.fail(new IllegalArgumentException("Bayeux messages must have a channel, " + message));
+            promise.fail(new IllegalArgumentException("Bayeux message must have a channel: " + message));
             return;
         }
 
@@ -262,8 +262,12 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
         extendIncoming(message, Promise.from(pass -> {
             if (pass) {
-                if (!handleRemoteCall(message)) {
+                if (message.isPublishReply() && message.isSuccessful()) {
                     notifyListeners(message);
+                } else {
+                    if (!handleRemoteCall(message)) {
+                        notifyListeners(message);
+                    }
                 }
             }
             promise.succeed(null);
@@ -364,8 +368,10 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
     @Override
     public void dump(Appendable out, String indent) throws IOException {
-        Collection<AbstractSessionChannel> channels = getChannels().values();
-        Dumpable.dumpObjects(out, indent, this, new DumpableCollection("channels", channels));
+        Dumpable.dumpObjects(out, indent, this,
+                _attributes,
+                new DumpableCollection("extensions", _extensions),
+                new DumpableCollection("channels", new TreeMap<>(_channels).values()));
     }
 
     /**
@@ -613,13 +619,20 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         }
 
         @Override
+        public String dumpSelf() {
+            return getId();
+        }
+
+        @Override
         public void dump(Appendable out, String indent) throws IOException {
-            Dumpable.dumpObjects(out, indent, this, new DumpableCollection("listeners", getListeners()), new DumpableCollection("subscribers", getSubscribers()));
+            Dumpable.dumpObjects(out, indent, this,
+                    new DumpableCollection("listeners", _listeners),
+                    new DumpableCollection("subscribers", _subscriptions));
         }
 
         @Override
         public String toString() {
-            return String.format("%s@%x[%s]", _id, hashCode(), AbstractClientSession.this);
+            return String.format("%s@%x[%s][%s]", getClass().getSimpleName(), hashCode(), getChannelId(), AbstractClientSession.this);
         }
     }
 }

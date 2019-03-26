@@ -92,6 +92,7 @@ public class Category implements Cloneable, Comparable<Category>, JSON.Convertib
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public void fromJSON(Map object) {
     }
 

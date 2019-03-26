@@ -16,7 +16,6 @@
 package org.cometd.examples.spring.boot;
 
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
 
 import org.cometd.annotation.AnnotationCometDServlet;
@@ -33,12 +32,14 @@ public class CometDApplication implements ServletContextInitializer {
     }
 
     @Override
-    public void onStartup(ServletContext servletContext) throws ServletException {
+    public void onStartup(ServletContext servletContext) {
         ServletRegistration.Dynamic cometdServlet = servletContext.addServlet("cometd", AnnotationCometDServlet.class);
-        cometdServlet.addMapping("/cometd/*");
+        String mapping = "/cometd/*";
+        cometdServlet.addMapping(mapping);
         cometdServlet.setAsyncSupported(true);
         cometdServlet.setLoadOnStartup(1);
         cometdServlet.setInitParameter("services", ChatService.class.getName());
+        cometdServlet.setInitParameter("ws.cometdURLMapping", mapping);
 
         ServletRegistration.Dynamic demoServlet = servletContext.addServlet("demo", CometDDemoServlet.class);
         demoServlet.addMapping("/demo");

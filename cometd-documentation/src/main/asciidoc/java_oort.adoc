@@ -128,10 +128,10 @@ for example:
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
-         version="3.0">
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
 
     <servlet>
         <servlet-name>cometd</servlet-name>
@@ -262,7 +262,7 @@ the system where CometD is deployed.
 It is only slightly more cumbersome to set up.
 It does not allow dynamic discovery of new nodes, but it is enough to configure
 each node with the well-known URL of an existing, started, node (often named
-"master"). The master node should, of course, be started before all other nodes.
+"primary"). The primary node should, of course, be started before all other nodes.
 
 You can accomplish the static discovery configuration either via code, or by
 configuring an `org.cometd.oort.OortStaticConfigServlet` in `web.xml`, for example:
@@ -271,10 +271,10 @@ configuring an `org.cometd.oort.OortStaticConfigServlet` in `web.xml`, for examp
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
-         version="3.0">
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
 
     <servlet>
         <servlet-name>cometd</servlet-name>
@@ -331,10 +331,10 @@ URL(s) to connect to:
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
-         version="3.0">
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
 
     <servlet>
         <servlet-name>cometd</servlet-name>
@@ -364,9 +364,9 @@ URL(s) to connect to:
 ----
 ====
 
-A "master" node may be configured _without_ the `oort.cloud` parameter.
-The other nodes will be configured with the URL of the "master" node, and when
-they connect to the "master" node, the "master" node will connect back to them,
+A "primary" node may be configured _without_ the `oort.cloud` parameter.
+The other nodes will be configured with the URL of the "primary" node, and when
+they connect to the "primary" node, the "primary" node will connect back to them,
 see <<_java_oort_membership_organization,the membership organization section>>.
 
 Alternatively, it's possible to write custom initialization code (see the section on
@@ -595,10 +595,10 @@ messages are forwarded to the Oort cluster:
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
-         version="3.0">
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
 
     <servlet>
         <servlet-name>cometd</servlet-name>
@@ -647,17 +647,17 @@ channels.
 
 Forwarding of messages may be subject to temporary interruptions in case
 there is a temporary network connectivity failure between two nodes.
-To overcome this problem, it is possible to configure the nodes to enable
-the message acknowledgement extension (see also
-<<_extensions_acknowledge,the acknowledgement extension section>>) so that,
-for short failures, the messages lost can be resent.
+To overcome this problem, the message acknowledgement extension (see also
+<<_extensions_acknowledge,the acknowledgement extension section>>) is enabled
+by default among Oort nodes so that, for short failures, the messages lost
+are resent automatically by the acknowledgement extension.
 Refer to <<_java_oort_common_configuration,the Oort common configuration section>>
 for the configuration details.
 
 Remember that the message acknowledgement extension is not a fully persistent
 solution for lost messages (for example it does not guarantee message
-redelivery in case of long failures). CometD does not provide yet a fully
-persistent solution for messages in case of long failures.
+redelivery in case of long network failures). CometD does not provide yet a fully
+persistent solution for messages in case of long network failures.
 
 Since it has the ability to observe messages published to broadcast channels,
 an Oort cluster can already implement a simple chat application among users

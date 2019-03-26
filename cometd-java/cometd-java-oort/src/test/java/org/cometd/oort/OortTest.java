@@ -31,11 +31,11 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
-import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.server.CometDServlet;
 import org.cometd.server.transport.JSONTransport;
-import org.cometd.websocket.server.JettyWebSocketTransport;
-import org.cometd.websocket.server.WebSocketTransport;
+import org.cometd.server.websocket.javax.WebSocketTransport;
+import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -143,7 +143,7 @@ public abstract class OortTest {
     protected BayeuxClient startClient(Oort oort, Map<String, Object> handshakeFields) throws Exception {
         HttpClient httpClient = new HttpClient();
         httpClient.start();
-        BayeuxClient client = new BayeuxClient(oort.getURL(), new LongPollingTransport(null, httpClient));
+        BayeuxClient client = new BayeuxClient(oort.getURL(), new JettyHttpClientTransport(null, httpClient));
         client.setAttribute(HttpClient.class.getName(), httpClient);
         client.handshake(handshakeFields);
         clients.add(client);
@@ -227,7 +227,7 @@ public abstract class OortTest {
         }
     }
 
-    protected static class CometJoinedListener extends Oort.CometListener.Adapter {
+    protected static class CometJoinedListener implements Oort.CometListener {
         private final CountDownLatch latch;
 
         public CometJoinedListener(CountDownLatch latch) {
@@ -240,7 +240,7 @@ public abstract class OortTest {
         }
     }
 
-    protected static class CometLeftListener extends Oort.CometListener.Adapter {
+    protected static class CometLeftListener implements Oort.CometListener {
         private final CountDownLatch latch;
 
         public CometLeftListener(CountDownLatch latch) {

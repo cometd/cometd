@@ -21,9 +21,7 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.ajax.JSON.Output;
 
 public class Item implements Cloneable, JSON.Convertible {
-    private static final long serialVersionUID = -3390759314943527594L;
     private Integer id;
-    // private String id;
     private String itemName;
     private Category category;
     private String description;
@@ -31,8 +29,6 @@ public class Item implements Cloneable, JSON.Convertible {
 
     public Item() {
     }
-
-    ;
 
     public Item(Integer id, String itemName, Category category, String description, Double initialPrice) {
         setId(id);
@@ -43,7 +39,7 @@ public class Item implements Cloneable, JSON.Convertible {
     }
 
     public String getFormattedAmount() {
-        return Utils.formatCurrency(initialPrice.doubleValue());
+        return Utils.formatCurrency(initialPrice);
     }
 
     public Integer getId() {
@@ -117,6 +113,7 @@ public class Item implements Cloneable, JSON.Convertible {
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public void fromJSON(Map object) {
     }
 

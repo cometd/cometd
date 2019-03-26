@@ -744,6 +744,9 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             if (completed) {
                 ServerMessage.Mutable message = bayeux.newMessage();
                 message.setId(messageId);
+                // The "successful" field lets the client know whether
+                // the reply is a result or a failure, as the "data" field
+                // may be of the same type for both result and failure.
                 message.setSuccessful(successful);
                 message.setChannel(channel);
                 message.setData(data);

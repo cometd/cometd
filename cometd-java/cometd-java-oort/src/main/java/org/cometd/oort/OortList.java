@@ -228,7 +228,8 @@ public class OortList<E> extends OortContainer<List<E>> {
          * @param info     the {@link Info} that was changed by the addition
          * @param elements the elements added
          */
-        public void onAdded(Info<List<E>> info, List<E> elements);
+        public default void onAdded(Info<List<E>> info, List<E> elements) {
+        }
 
         /**
          * Callback method invoked when elements are removed from the entity list.
@@ -236,13 +237,16 @@ public class OortList<E> extends OortContainer<List<E>> {
          * @param info     the {@link Info} that was changed by the removal
          * @param elements the elements removed
          */
-        public void onRemoved(Info<List<E>> info, List<E> elements);
+        public default void onRemoved(Info<List<E>> info, List<E> elements) {
+        }
 
         /**
          * Empty implementation of {@link ElementListener}.
          *
+         * @deprecated use {@link ElementListener} instead
          * @param <E> the element type
          */
+        @Deprecated
         public static class Adapter<E> implements ElementListener<E> {
             @Override
             public void onAdded(Info<List<E>> info, List<E> elements) {

@@ -13,10 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- *
- */
-
 package org.webtide.demo.auction;
 
 import java.util.List;
@@ -49,13 +45,12 @@ public class AuctionService extends AbstractService implements ClientSessionChan
     private final BidderDao _bidderDao = new BidderDao();
     private final CategoryDao _categoryDao = new CategoryDao();
     private final AtomicInteger _bidders = new AtomicInteger(0);
-    private Oort _oort;
     private Seti _seti;
 
     public AuctionService(ServletContext context) {
         super((BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE), "oortion");
 
-        _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
+        Oort _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (_oort == null) {
             throw new RuntimeException("Missing " + Oort.OORT_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
                     "is an Oort servlet declared in web.xml ?");
@@ -87,6 +82,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         Map<String, Object> bidMap = message.getDataAsMap();
         Integer itemId = ((Number)bidMap.get("itemId")).intValue();
         Double amount = Double.parseDouble(bidMap.get("amount").toString());
+        @SuppressWarnings("unchecked")
         Map<String, Object> bidderMap = (Map<String, Object>)bidMap.get("bidder");
         String username = (String)bidderMap.get("username");
         Bidder bidder = _bidderDao.getBidder(username);
@@ -132,18 +128,18 @@ public class AuctionService extends AbstractService implements ClientSessionChan
                     getBayeux().getChannel(AUCTION_ROOT + "item" + itemId).publish(getServerSession(), bid, Promise.noop());
                 }
             }
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException ignored) {
         }
     }
 
     public Bidder bidder(ServerSession source, ServerMessage message) {
         String bidder = (String)message.getData();
-        Integer id = _bidders.incrementAndGet();
+        int id = _bidders.incrementAndGet();
 
         // TODO this is not atomic, but will do for the demo
         String username = bidder.toLowerCase().replace(" ", "");
         while (_bidderDao.getBidder(username) != null) {
-            username = bidder.toLowerCase().replace(" ", "") + "-" + _bidders.incrementAndGet();
+            username = bidder.toLowerCase().replace(" ", "") + "-" + id;
         }
         Bidder b = new Bidder();
         b.setName(bidder);

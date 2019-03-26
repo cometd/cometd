@@ -30,11 +30,11 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
-import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -101,7 +101,7 @@ public class TransportFailureTest {
         bayeux.setAllowedTransports("long-polling");
 
         final ClientTransport webSocketTransport = new WebSocketTransport(null, null, wsClient);
-        final ClientTransport longPollingTransport = new LongPollingTransport(null, httpClient);
+        final ClientTransport longPollingTransport = new JettyHttpClientTransport(null, httpClient);
         final CountDownLatch failureLatch = new CountDownLatch(1);
         final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport) {
             @Override
@@ -173,7 +173,7 @@ public class TransportFailureTest {
         });
 
         final CountDownLatch failureLatch = new CountDownLatch(1);
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
+        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
             @Override
             protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure) {
                 failureLatch.countDown();
@@ -196,7 +196,7 @@ public class TransportFailureTest {
         startServer(null);
         bayeux.setAllowedTransports("websocket");
 
-        final ClientTransport longPollingTransport = new LongPollingTransport(null, httpClient);
+        final ClientTransport longPollingTransport = new JettyHttpClientTransport(null, httpClient);
         final CountDownLatch failureLatch = new CountDownLatch(1);
         final BayeuxClient client = new BayeuxClient(cometdURL, longPollingTransport) {
             @Override
@@ -240,7 +240,7 @@ public class TransportFailureTest {
 
         final String newURL = "http://localhost:" + connector2.getLocalPort() + cometdServletPath;
 
-        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
+        final BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
             private int metaConnects;
 
             @Override
@@ -287,13 +287,13 @@ public class TransportFailureTest {
 
         bayeux.addExtension(new MetaConnectFailureExtension() {
             @Override
-            protected boolean onMetaConnect(int count) throws Exception {
+            protected boolean onMetaConnect(int count) {
                 return count != 2;
             }
         });
 
         final ClientTransport webSocketTransport = new WebSocketTransport(null, null, wsClient);
-        LongPollingTransport longPollingTransport = new LongPollingTransport(null, httpClient);
+        ClientTransport longPollingTransport = new JettyHttpClientTransport(null, httpClient);
         final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport) {
             private int metaConnects;
 

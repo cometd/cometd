@@ -1,5 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.cometd.java</groupId>
     <artifactId>cometd-java</artifactId>
@@ -32,18 +32,23 @@
       <artifactId>javax.servlet-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>javax.websocket</groupId>
+      <artifactId>javax.websocket-client-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-server</artifactId>
+      <artifactId>cometd-java-server-common</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-client</artifactId>
+      <artifactId>cometd-java-client-http-jetty</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-websocket-javax-client</artifactId>
+      <artifactId>cometd-java-client-websocket-javax</artifactId>
       <version>${project.version}</version>
       <exclusions>
         <exclusion>
@@ -53,9 +58,10 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>javax.websocket</groupId>
-      <artifactId>javax.websocket-client-api</artifactId>
-      <scope>provided</scope>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+      <version>${jetty-version}</version>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -82,13 +88,13 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-websocket-javax-server</artifactId>
+      <artifactId>cometd-java-server-websocket-javax</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-websocket-jetty-server</artifactId>
+      <artifactId>cometd-java-server-websocket-jetty</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

@@ -81,6 +81,7 @@ public class Bidder implements Cloneable, JSON.Convertible {
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public void fromJSON(Map object) {
     }
 

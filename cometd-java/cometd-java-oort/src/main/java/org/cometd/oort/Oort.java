@@ -45,13 +45,13 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.ext.AckExtension;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.common.JSONContext;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.ext.BinaryExtension;
-import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -59,7 +59,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,7 +131,7 @@ public class Oort extends ContainerLifeCycle {
 
         if (_transportFactories.isEmpty()) {
             _transportFactories.add(new WebSocketTransport.Factory());
-            _transportFactories.add(new LongPollingTransport.Factory(new HttpClient()));
+            _transportFactories.add(new JettyHttpClientTransport.Factory(new HttpClient()));
         }
         for (ClientTransport.Factory factory : _transportFactories) {
             addBean(factory);
@@ -610,7 +609,7 @@ public class Oort extends ContainerLifeCycle {
 
     @Override
     public void dump(Appendable out, String indent) throws IOException {
-        Dumpable.dumpObjects(out, indent, this, new DumpableCollection("observed channels", getObservedChannels()));
+        dumpObjects(out, indent, new DumpableCollection("observed channels", _channels.keySet()));
     }
 
     @Override
@@ -650,18 +649,22 @@ public class Oort extends ContainerLifeCycle {
          *
          * @param event the comet event
          */
-        public void cometJoined(Event event);
+        public default void cometJoined(Event event) {
+        }
 
         /**
          * Callback method invoked when a comet leaves the cloud
          *
          * @param event the comet event
          */
-        public void cometLeft(Event event);
+        public default void cometLeft(Event event) {
+        }
 
         /**
          * Empty implementation of {@link CometListener}
+         * @deprecated use {@link CometListener} instead
          */
+        @Deprecated
         public static class Adapter implements CometListener {
             @Override
             public void cometJoined(Event event) {

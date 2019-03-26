@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
-import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.server.AbstractService;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
@@ -92,7 +92,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         }
 
         final CountDownLatch presenceLatch = new CountDownLatch(totalEvents);
-        Seti.PresenceListener presenceListener = new Seti.PresenceListener.Adapter() {
+        Seti.PresenceListener presenceListener = new Seti.PresenceListener() {
             @Override
             public void presenceRemoved(Event event) {
                 presenceLatch.countDown();
@@ -106,7 +106,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         final CountDownLatch putLatch = new CountDownLatch(totalEvents);
         final CountDownLatch removedLatch = new CountDownLatch(totalEvents);
         for (final OortStringMap<String> oortStringMap : oortStringMaps) {
-            OortMap.EntryListener<String, String> listener = new OortMap.EntryListener.Adapter<String, String>() {
+            OortMap.EntryListener<String, String> listener = new OortMap.EntryListener<String, String>() {
                 @Override
                 public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                     putLatch.countDown();
@@ -128,7 +128,7 @@ public class OortStringMapDisconnectTest extends OortTest {
             List<BayeuxClient> clientsPerNode = new ArrayList<>();
             clients.add(clientsPerNode);
             for (int j = 0; j < usersPerNode; j++) {
-                BayeuxClient client = new BayeuxClient(oort.getURL(), scheduler, new LongPollingTransport(null, httpClient));
+                BayeuxClient client = new BayeuxClient(oort.getURL(), scheduler, new JettyHttpClientTransport(null, httpClient));
                 clientsPerNode.add(client);
                 client.handshake();
                 Assert.assertTrue(client.waitFor(15000, BayeuxClient.State.CONNECTED));
@@ -166,7 +166,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         int edges = nodes * (nodes - 1);
         // Create the Oorts.
         final CountDownLatch joinLatch = new CountDownLatch(edges);
-        Oort.CometListener joinListener = new Oort.CometListener.Adapter() {
+        Oort.CometListener joinListener = new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
                 joinLatch.countDown();
@@ -215,7 +215,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         for (Oort oort : oorts) {
             OortStringMap<String> users = new OortStringMap<>(oort, name, factory);
             oortStringMaps.add(users);
-            users.addListener(new OortObject.Listener.Adapter<ConcurrentMap<String, String>>() {
+            users.addListener(new OortObject.Listener<ConcurrentMap<String, String>>() {
                 @Override
                 public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo) {
                     if (oldInfo == null) {
@@ -231,9 +231,9 @@ public class OortStringMapDisconnectTest extends OortTest {
         // Verify that the OortStringMaps are setup correctly.
         final String setupKey = "setup";
         final CountDownLatch setupLatch = new CountDownLatch(2 * nodes);
-        OortMap.EntryListener<String, String> setupListener = new OortMap.EntryListener.Adapter<String, String>() {
+        OortMap.EntryListener<String, String> setupListener = new OortMap.EntryListener<String, String>() {
             @Override
-            public void onPut(OortObject.Info info, OortMap.Entry entry) {
+            public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 if (entry.getKey().equals(setupKey)) {
                     setupLatch.countDown();
                 }
@@ -289,14 +289,14 @@ public class OortStringMapDisconnectTest extends OortTest {
             String userName = (String)message.getData();
             session.setAttribute("userName", userName);
             seti.associate(userName, session);
-            oortStringMap.putAndShare(userName, userName, new OortObject.Result.Deferred<String>());
+            oortStringMap.putAndShare(userName, userName, new OortObject.Result.Deferred<>());
         }
 
         @Override
         public void removed(ServerSession session, boolean timeout) {
             String userName = (String)session.getAttribute("userName");
             seti.disassociate(userName, session);
-            oortStringMap.removeAndShare(userName, new OortObject.Result.Deferred<String>());
+            oortStringMap.removeAndShare(userName, new OortObject.Result.Deferred<>());
         }
     }
 }

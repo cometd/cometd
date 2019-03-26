@@ -14,9 +14,9 @@ For the `websocket` transport there exist two transport implementations:
 * one based on the standard Java APIs provided by
   https://jcp.org/en/jsr/detail?id=356[JSR 356]. If these APIs are available,
   CometD will use a `websocket` transport based on the standard WebSocket APIs,
-  whose implementation class is named `org.cometd.websocket.server.WebSocketTransport`
+  whose implementation class is named `org.cometd.server.websocket.javax.WebSocketTransport`
 * one based on the Jetty WebSocket APIs, whose implementation class is named
-  `org.cometd.websocket.server.JettyWebSocketTransport`.
+  `org.cometd.server.websocket.jetty.JettyWebSocketTransport`.
   CometD will _not_ attempt to use this transport automatically; applications
   that want to make use of the extra features provided by this transport
   must explicitly configure it (typically along with a HTTP transport such as

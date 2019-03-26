@@ -44,6 +44,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -525,13 +526,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     }
 
     @Override
-    public String dump() {
-        return Dumpable.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException {
-        Dumpable.dumpObjects(out, indent, this, parts.values());
+        Dumpable.dumpObjects(out, indent, toString(), new DumpableCollection("parts", parts.values()));
     }
 
     @Override
@@ -669,7 +665,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
          * @param oldInfo the {@link Info} before the change, may be null
          * @param newInfo the {@link Info} after the change
          */
-        public void onUpdated(Info<T> oldInfo, Info<T> newInfo);
+        public default void onUpdated(Info<T> oldInfo, Info<T> newInfo) {
+        }
 
         /**
          * Callback method invoked when the object value is removed, for example
@@ -677,13 +674,16 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
          *
          * @param info the {@link Info} before the removal
          */
-        public void onRemoved(Info<T> info);
+        public default void onRemoved(Info<T> info) {
+        }
 
         /**
          * An empty implementation of {@link Listener}.
          *
+         * @deprecated use {@link Listener} instead
          * @param <T> the object type
          */
+        @Deprecated
         public static class Adapter<T> implements Listener<T> {
             @Override
             public void onUpdated(Info<T> oldInfo, Info<T> newInfo) {
@@ -895,18 +895,21 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         }
 
         @Override
-        public String dump() {
-            return Dumpable.dump(this);
-        }
-
-        @Override
         public void dump(Appendable out, String indent) throws IOException {
             Dumpable.dumpObjects(out, indent, this);
         }
 
         @Override
         public String toString() {
-            return String.format("%s@%x[active=%b,updates=%d][%s]", getClass().getSimpleName(), hashCode(), active, updates.size(), info);
+            boolean active;
+            int size;
+            Info<T> info;
+            synchronized (this) {
+                active = this.active;
+                size = this.updates.size();
+                info = this.info;
+            }
+            return String.format("%s@%x[active=%b,updates=%d][%s]", getClass().getSimpleName(), hashCode(), active, size, info);
         }
     }
 

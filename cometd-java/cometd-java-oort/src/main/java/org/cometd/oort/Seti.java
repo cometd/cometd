@@ -16,7 +16,7 @@
 package org.cometd.oort;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
@@ -28,7 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -46,8 +48,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -747,38 +749,23 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     }
 
     @Override
-    public String dump() {
-        return ContainerLifeCycle.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException {
-        ContainerLifeCycle.dumpObject(out, this);
-
-        List<Dumpable> children = new ArrayList<>();
-
-        children.add(new Dumpable() {
-            @Override
-            public String dump() {
-                return null;
+        boolean detailed = ((BayeuxServerImpl)getOort().getBayeuxServer()).isDetailedDump();
+        if (detailed) {
+            List<Map.Entry<String, ? extends Set<Location>>> locations;
+            synchronized (_uid2Location) {
+                locations = new TreeMap<>(_uid2Location).entrySet().stream()
+                        .map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), new HashSet<>(entry.getValue())))
+                        .collect(Collectors.toList());
             }
-
-            @Override
-            public void dump(Appendable out, String indent) throws IOException {
-                List<String> state = new ArrayList<>();
-                synchronized (_uid2Location) {
-                    for (Map.Entry<String, Set<Location>> entry : _uid2Location.entrySet()) {
-                        state.add(String.format("%s @ %s", entry.getKey(), entry.getValue()));
-                    }
-                }
-                ContainerLifeCycle.dumpObject(out, "locations: " + state.size());
-                if (((BayeuxServerImpl)getOort().getBayeuxServer()).isDetailedDump()) {
-                    ContainerLifeCycle.dump(out, indent, state);
-                }
+            Dumpable.dumpObjects(out, indent, this, new DumpableCollection("locations", locations));
+        } else {
+            int size;
+            synchronized (_uid2Location) {
+                size = _uid2Location.size();
             }
-        });
-
-        ContainerLifeCycle.dump(out, indent, children);
+            Dumpable.dumpObjects(out, indent, this, "locations size=" + size);
+        }
     }
 
     @Override
@@ -951,18 +938,23 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
          *
          * @param event the presence event
          */
-        public void presenceAdded(Event event);
+        public default void presenceAdded(Event event) {
+        }
 
         /**
          * Callback method invoked when a presence is removed from a remote Seti
          *
          * @param event the presence event
          */
-        public void presenceRemoved(Event event);
+        public default void presenceRemoved(Event event) {
+        }
 
         /**
          * Empty implementation of {@link PresenceListener}
+         *
+         * @deprecated use {@link PresenceListener} instead
          */
+        @Deprecated
         public static class Adapter implements PresenceListener {
             @Override
             public void presenceAdded(Event event) {

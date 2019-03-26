@@ -17,7 +17,7 @@ package org.cometd.annotation;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
-import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.client.HttpClient;
@@ -73,7 +73,7 @@ public abstract class AbstractClientServerTest {
     }
 
     protected BayeuxClient newBayeuxClient() {
-        return new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
+        return new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient));
     }
 
     protected void disconnectBayeuxClient(BayeuxClient client) {

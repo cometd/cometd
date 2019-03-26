@@ -4,7 +4,7 @@
 
 You can use the CometD client implementation in any JSE(TM) or JEE(TM) application.
 It consists of one main class, `org.cometd.client.BayeuxClient`, which
-implements the `org.cometd.bayeux.client.ClientSession` interface.
+implements the `ClientSession` interface.
 
 Typical uses of the CometD Java client include:
 

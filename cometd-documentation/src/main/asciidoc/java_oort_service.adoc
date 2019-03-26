@@ -157,38 +157,38 @@ public class NameEditService extends OortService<String, Boolean> {
 ----
 ====
 
-[[_java_oort_objects_oort_service_master]]
-===== OortMasterService
+[[_java_oort_objects_oort_service_primary]]
+===== OortPrimaryService
 
 Applications may have data entities that are naturally owned by any node.
 For example, in a chat application a chat room may be created by a user in
 any node, and be owned by the node the user that created it is connected to.
 
 There are cases, however, where entities cannot be owned by any node, but
-instead must be owned by one node only, usually referred to as the _master_ node.
+instead must be owned by one node only, usually referred to as the _primary_ node.
 A typical example of such an entity is a unique (across the cluster) ID
 generator that produces unique number values, or a service that accesses a
 storage for archiving purposes (such as a file system or a database) that is
 only available on a particular node, or a service that must perform the atomic
 creation of certain entities (for example, unique user names), etc.
 
-CometD provides `org.cometd.oort.OortMasterService` that can be subclasses by
+CometD provides `org.cometd.oort.OortPrimaryService` that can be subclasses by
 applications to write services that perform actions on data entities that must
 be owned by a single node only.
-There is one instance of `OortMasterService` with the same name in each node
-(like for other `OortService` instances), but only one of them is the _master_.
+There is one instance of `OortPrimaryService` with the same name in each node
+(like for other `OortService` instances), but only one of them is the _primary_.
 
-CometD provides an out-of-the-box implementation of `OortMasterService`,
-`org.cometd.oort.OortMasterLong`, that can be used as a unique-across-the-cluster
+CometD provides an out-of-the-box implementation of `OortPrimaryService`,
+`org.cometd.oort.OortPrimaryLong`, that can be used as a unique-across-the-cluster
 number generator.
 
-The implementation of an `OortMasterService` subclass is similar to that of
+The implementation of an `OortPrimaryService` subclass is similar to that of
 `OortService` (see also <<_java_oort_objects_oort_service_creation,this section>>),
 but this time the `forward(...)` is always called with the same Oort URL
-(that of the _master_ node) that can be obtained by calling method
-`OortMasterService.getMasterOortURL()`.
+(that of the _primary_ node) that can be obtained by calling method
+`OortPrimaryService.getPrimaryOortURL()`.
 
-Decide whether or not a node is a master node can be done by reading system
+Decide whether or not a node is a primary node can be done by reading system
 properties passed to the command line, or via configuration files, or other
 similar means.
 

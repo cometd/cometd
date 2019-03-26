@@ -312,7 +312,8 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
          * @param info  the {@link Info} that was changed by the put
          * @param entry the entry values
          */
-        public void onPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry);
+        public default void onPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry) {
+        }
 
         /**
          * Callback method invoked after an entry is removed from the entity map.
@@ -320,14 +321,17 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
          * @param info  the {@link Info} that was changed by the remove
          * @param entry the entry values
          */
-        public void onRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry);
+        public default void onRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry) {
+        }
 
         /**
          * Empty implementation of {@link EntryListener}.
          *
+         * @deprecated use {@link EntryListener} instead
          * @param <K> the key type
          * @param <V> the value type
          */
+        @Deprecated
         public static class Adapter<K, V> implements EntryListener<K, V> {
             @Override
             public void onPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry) {

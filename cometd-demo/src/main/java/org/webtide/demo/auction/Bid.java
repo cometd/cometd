@@ -34,7 +34,7 @@ public class Bid implements Cloneable, JSON.Convertible {
             return "";
         }
 
-        return Utils.formatCurrency(getAmount().doubleValue());
+        return Utils.formatCurrency(getAmount());
     }
 
     public void setAmount(Double aAmount) {
@@ -67,6 +67,7 @@ public class Bid implements Cloneable, JSON.Convertible {
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public void fromJSON(Map object) {
     }
 

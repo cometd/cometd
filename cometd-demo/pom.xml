@@ -45,7 +45,7 @@
             </overlay>
             <overlay>
               <groupId>org.cometd.javascript</groupId>
-              <artifactId>cometd-examples-dojo</artifactId>
+              <artifactId>cometd-javascript-examples-dojo</artifactId>
               <excludes>
                 <exclude>META-INF/**</exclude>
                 <exclude>WEB-INF/web.xml</exclude>
@@ -53,7 +53,7 @@
             </overlay>
             <overlay>
               <groupId>org.cometd.javascript</groupId>
-              <artifactId>cometd-examples-jquery</artifactId>
+              <artifactId>cometd-javascript-examples-jquery</artifactId>
               <excludes>
                 <exclude>META-INF/**</exclude>
                 <exclude>WEB-INF/web.xml</exclude>
@@ -61,7 +61,7 @@
             </overlay>
             <overlay>
               <groupId>org.cometd.javascript</groupId>
-              <artifactId>cometd-examples-angular</artifactId>
+              <artifactId>cometd-javascript-examples-angular</artifactId>
               <excludes>
                 <exclude>META-INF/**</exclude>
                 <exclude>WEB-INF/web.xml</exclude>
@@ -69,7 +69,7 @@
             </overlay>
             <overlay>
               <groupId>org.cometd.javascript</groupId>
-              <artifactId>cometd-examples-vanilla</artifactId>
+              <artifactId>cometd-javascript-examples-vanilla</artifactId>
               <excludes>
                 <exclude>META-INF/**</exclude>
                 <exclude>WEB-INF/web.xml</exclude>
@@ -136,25 +136,25 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.javascript</groupId>
-      <artifactId>cometd-examples-dojo</artifactId>
+      <artifactId>cometd-javascript-examples-dojo</artifactId>
       <version>${project.version}</version>
       <type>war</type>
     </dependency>
     <dependency>
       <groupId>org.cometd.javascript</groupId>
-      <artifactId>cometd-examples-jquery</artifactId>
+      <artifactId>cometd-javascript-examples-jquery</artifactId>
       <version>${project.version}</version>
       <type>war</type>
     </dependency>
     <dependency>
       <groupId>org.cometd.javascript</groupId>
-      <artifactId>cometd-examples-angular</artifactId>
+      <artifactId>cometd-javascript-examples-angular</artifactId>
       <version>${project.version}</version>
       <type>war</type>
     </dependency>
     <dependency>
       <groupId>org.cometd.javascript</groupId>
-      <artifactId>cometd-examples-vanilla</artifactId>
+      <artifactId>cometd-javascript-examples-vanilla</artifactId>
       <version>${project.version}</version>
       <type>war</type>
     </dependency>
@@ -170,12 +170,12 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-server</artifactId>
+      <artifactId>cometd-java-server-common</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-websocket-javax-server</artifactId>
+      <artifactId>cometd-java-server-websocket-javax</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -228,7 +228,7 @@
 
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-websocket-jetty-client</artifactId>
+      <artifactId>cometd-java-client-websocket-jetty</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
       <exclusions>

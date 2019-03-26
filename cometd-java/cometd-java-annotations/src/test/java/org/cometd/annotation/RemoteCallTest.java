@@ -120,7 +120,7 @@ public class RemoteCallTest {
             Assert.assertEquals(parameter, m.getData());
             latch.countDown();
         });
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

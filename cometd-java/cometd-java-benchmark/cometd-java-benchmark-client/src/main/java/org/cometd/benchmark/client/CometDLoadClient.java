@@ -20,7 +20,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,13 +59,16 @@ import org.cometd.benchmark.Config;
 import org.cometd.benchmark.MonitoringQueuedThreadPool;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.websocket.javax.WebSocketTransport;
+import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.common.JacksonJSONContextClient;
-import org.cometd.websocket.client.JettyWebSocketTransport;
-import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
@@ -77,6 +82,7 @@ public class CometDLoadClient implements MeasureConverter {
     private static final String START_FIELD = "start";
     private static final String START_DATE_FIELD = "startDate";
 
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").withZone(ZoneId.of("GMT"));
     private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);
     private final PlatformTimer timer = PlatformTimer.detect();
     private final Random random = new Random();
@@ -104,6 +110,7 @@ public class CometDLoadClient implements MeasureConverter {
     private String host = "localhost";
     private int port = 8080;
     private ClientTransportType transport = ClientTransportType.LONG_POLLING;
+    private boolean http2 = false;
     private boolean tls = false;
     private int selectors = 1;
     private int maxThreads = 256;
@@ -137,6 +144,8 @@ public class CometDLoadClient implements MeasureConverter {
                 client.port = Integer.parseInt(arg.substring("--port=".length()));
             } else if (arg.startsWith("--transport=")) {
                 client.transport = ClientTransportType.valueOf(arg.substring("--transport=".length()));
+            } else if (arg.equals("--http2")) {
+                client.http2 = true;
             } else if (arg.equals("--tls")) {
                 client.tls = true;
             } else if (arg.startsWith("--selectors=")) {
@@ -248,6 +257,20 @@ public class CometDLoadClient implements MeasureConverter {
             transport = ClientTransportType.values()[Integer.parseInt(value)];
         }
 
+        boolean http2 = this.http2;
+        if (transport == ClientTransportType.LONG_POLLING) {
+            if (interactive) {
+                System.err.printf("use HTTP/2 [%b]: ", http2);
+                String value = console.readLine().trim();
+                if (value.length() == 0) {
+                    value = String.valueOf(http2);
+                }
+                http2 = Boolean.parseBoolean(value);
+            }
+        } else {
+            http2 = false;
+        }
+
         String contextPath = this.context;
         if (interactive) {
             System.err.printf("context [%s]: ", contextPath);
@@ -310,7 +333,13 @@ public class CometDLoadClient implements MeasureConverter {
         threadPool.start();
         mbeanContainer.beanAdded(null, threadPool);
 
-        httpClient = new HttpClient(new HttpClientTransportOverHTTP(selectors), new SslContextFactory(true));
+        HttpClientTransport httpClientTransport = new HttpClientTransportOverHTTP(selectors);
+        if (http2) {
+            HTTP2Client http2Client = new HTTP2Client();
+            http2Client.setSelectors(selectors);
+            httpClientTransport = new HttpClientTransportOverHTTP2(http2Client);
+        }
+        httpClient = new HttpClient(httpClientTransport, new SslContextFactory(true));
         httpClient.addBean(mbeanContainer);
         httpClient.setMaxConnectionsPerDestination(60000);
         httpClient.setMaxRequestsQueuedPerDestination(10000);
@@ -601,12 +630,13 @@ public class CometDLoadClient implements MeasureConverter {
 
     private long sendBatches(int batchSize, long batchPause, String chat, String channel, LoadBayeuxClient client) {
         long expected = 0;
+        List<Integer> rooms = new ArrayList<>(roomMap.keySet());
         client.startBatch();
         for (int b = 0; b < batchSize; ++b) {
             int room = -1;
             AtomicInteger clientsPerRoom = null;
             while (clientsPerRoom == null || clientsPerRoom.get() == 0) {
-                room = nextRandom(roomMap.size());
+                room = rooms.get(nextRandom(rooms.size()));
                 clientsPerRoom = roomMap.get(room);
             }
             Map<String, Object> message = new HashMap<>(5);
@@ -616,8 +646,7 @@ public class CometDLoadClient implements MeasureConverter {
             message.put("chat", chat);
             // Mandatory fields to record latencies
             message.put(START_FIELD, System.nanoTime());
-            String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").format(System.currentTimeMillis());
-            message.put(START_DATE_FIELD, startDate);
+            message.put(START_DATE_FIELD, formatter.format(Instant.now()));
             message.put(Config.ID_FIELD, ids.incrementAndGet() + channel);
             ClientSessionChannel clientChannel = client.getChannel(getChannelId(channel + "/" + room));
             clientChannel.publish(message);
@@ -639,7 +668,7 @@ public class CometDLoadClient implements MeasureConverter {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
-                return new LongPollingTransport(options, httpClient);
+                return new JettyHttpClientTransport(options, httpClient);
             }
             case JSR_WEBSOCKET: {
                 Map<String, Object> options = new HashMap<>();

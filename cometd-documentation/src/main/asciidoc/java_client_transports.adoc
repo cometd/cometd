@@ -11,9 +11,9 @@ https://www.eclipse.org/jetty/documentation/current/websocket-java.html[WebSocke
 There are two WebSocket transports available:
 
 * one based on https://jcp.org/en/jsr/detail?id=356[JSR 356], the standard Java WebSocket APIs
-  named `org.cometd.websocket.client.WebSocketTransport` and provided by the artifact
+  named `org.cometd.client.websocket.javax.WebSocketTransport` and provided by the artifact
   `org.cometd.java:cometd-java-websocket-javax-client`
-* one based on the Jetty WebSocket APIs named `org.cometd.websocket.client.JettyWebSocketTransport`
+* one based on the Jetty WebSocket APIs named `org.cometd.client.websocket.jetty.JettyWebSocketTransport`
   and provided by the artifact `org.cometd.java:cometd-java-websocket-jetty-client`
 
 You should configure `BayeuxClient` with the `websocket` transport before the

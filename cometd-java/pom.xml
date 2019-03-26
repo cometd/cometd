@@ -14,14 +14,13 @@
   <name>CometD :: Java</name>
 
   <modules>
-    <module>bayeux-api</module>
+    <module>cometd-java-api</module>
     <module>cometd-java-annotations</module>
     <module>cometd-java-client</module>
     <module>cometd-java-common</module>
     <module>cometd-java-examples</module>
     <module>cometd-java-oort</module>
     <module>cometd-java-server</module>
-    <module>cometd-java-websocket</module>
     <module>cometd-java-benchmark</module>
     <module>cometd-java-tests</module>
   </modules>

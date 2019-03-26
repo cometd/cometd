@@ -13,10 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- *
- */
-
 package org.webtide.demo.auction;
 
 import java.util.HashMap;
@@ -88,6 +84,7 @@ public class AuctionChatService extends AbstractService {
                 getBayeux().getChannel(channelName).publish(getServerSession(), members, Promise.noop());
             }
         } else if (data instanceof Map) {
+            @SuppressWarnings("unchecked")
             Map<String, Object> map = (Map<String, Object>)data;
 
             if (Boolean.TRUE.equals(map.get("join"))) {

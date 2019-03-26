@@ -96,9 +96,9 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
         });
 
         final BayeuxClient client = newBayeuxClient();
+        client.setBackOffStrategy(new BayeuxClient.BackOffStrategy.Constant(0));
         client.addExtension(new AckExtension());
         client.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
-        client.setOption(BayeuxClient.BACKOFF_INCREMENT_OPTION, 0);
 
         final CountDownLatch messageLatch1 = new CountDownLatch(1);
         final CountDownLatch messageLatch2 = new CountDownLatch(1);

@@ -38,8 +38,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
@@ -234,7 +234,7 @@ public class SetiTest extends OortTest {
         final AtomicReference<String> session2 = new AtomicReference<>();
         HttpClient httpClient = new HttpClient();
         httpClient.start();
-        BayeuxClient client2 = new BayeuxClient(oort2.getURL(), new LongPollingTransport(null, httpClient)) {
+        BayeuxClient client2 = new BayeuxClient(oort2.getURL(), new JettyHttpClientTransport(null, httpClient)) {
             @Override
             protected void processConnect(Message.Mutable connect) {
                 // Send the login message, so Seti can associate this user
@@ -521,7 +521,7 @@ public class SetiTest extends OortTest {
 
         // Stop Seti1
         final CountDownLatch presenceOffLatch = new CountDownLatch(1);
-        seti2.addPresenceListener(new Seti.PresenceListener.Adapter() {
+        seti2.addPresenceListener(new Seti.PresenceListener() {
             @Override
             public void presenceRemoved(Event event) {
                 presenceOffLatch.countDown();
@@ -1107,7 +1107,7 @@ public class SetiTest extends OortTest {
         Assert.assertEquals(0, ((ServerSessionImpl)session).getListeners().size());
     }
 
-    private static class UserPresentListener extends Seti.PresenceListener.Adapter {
+    private static class UserPresentListener implements Seti.PresenceListener {
         private final CountDownLatch latch;
 
         private UserPresentListener(CountDownLatch latch) {
@@ -1120,7 +1120,7 @@ public class SetiTest extends OortTest {
         }
     }
 
-    private static class UserAbsentListener extends Seti.PresenceListener.Adapter {
+    private static class UserAbsentListener implements Seti.PresenceListener {
         private final CountDownLatch latch;
 
         private UserAbsentListener(CountDownLatch latch) {

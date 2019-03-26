@@ -40,7 +40,7 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <configuration>
-          <executable>java</executable>
+          <executable>/home/simon/opensource/openjdk/jdk12/build/linux-x86_64-server-release/jdk/bin/java</executable>
           <arguments>
             <argument>-showversion</argument>
             <argument>-Xmx2g</argument>
@@ -75,17 +75,17 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-server</artifactId>
+      <artifactId>cometd-java-server-common</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-websocket-javax-server</artifactId>
+      <artifactId>cometd-java-server-websocket-javax</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-websocket-jetty-server</artifactId>
+      <artifactId>cometd-java-server-websocket-jetty</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -96,6 +96,21 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-server</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-java-server</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-server</artifactId>
       <version>${jetty-version}</version>
     </dependency>
     <dependency>
