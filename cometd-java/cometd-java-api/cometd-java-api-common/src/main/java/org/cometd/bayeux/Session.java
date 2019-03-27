@@ -22,15 +22,11 @@ import java.util.Set;
  * <p>This interface is the common base interface for both the server side and the client side
  * representations of a session:</p>
  * <ul>
- * <li>if the remote client is not a Java client, then only a {@link org.cometd.bayeux.server.ServerSession}
- * instance will exist on the server and represents the remote client.</li>
- * <li>if the remote client is a Java client, then a {@link org.cometd.bayeux.client.ClientSession}
- * instance will exist on the client and a {@link org.cometd.bayeux.server.ServerSession}
- * instance will exist on the server, linked by the same clientId.</li>
- * <li>if the client is a Java client, but it is located in the server, then the
- * {@link org.cometd.bayeux.client.ClientSession} instance will be an instance
- * of {@link org.cometd.bayeux.server.LocalSession} and will be associated
- * with a {@link org.cometd.bayeux.server.ServerSession} instance.</li>
+ * <li>on server-side a session represents the remote client.</li>
+ * <li>on a client-side Java client a client session exists, together with a server-side
+ * session on the server, linked by the same session id.</li>
+ * <li>on a server-side Java client the client session is a local session and it is
+ * associated with a server-side session.</li>
  * </ul>
  */
 public interface Session {

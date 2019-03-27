@@ -22,8 +22,7 @@ import java.util.Set;
  * both Bayeux clients and Bayeux server use channels to group listeners that
  * are interested in receiving messages with that channel.</p>
  * <p>This interface is the common root for both the
- * {@link org.cometd.bayeux.client.ClientSessionChannel client side} representation
- * of a channel and the {@link org.cometd.bayeux.server.ServerChannel server side}
+ * client-side representation of a channel and the server-side
  * representation of a channel.</p>
  * <p>Channels are identified with strings that look like paths (e.g. "/foo/bar")
  * called "channel id".
