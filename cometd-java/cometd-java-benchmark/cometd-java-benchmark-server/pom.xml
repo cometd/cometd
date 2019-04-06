@@ -40,7 +40,7 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <configuration>
-          <executable>/home/simon/opensource/openjdk/jdk12/build/linux-x86_64-server-release/jdk/bin/java</executable>
+          <executable>java</executable>
           <arguments>
             <argument>-showversion</argument>
             <argument>-Xmx2g</argument>
