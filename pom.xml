@@ -36,9 +36,9 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>9.2.26.v20180806</jetty-version>
-    <!--<jetty-version>9.3.25.v20180904</jetty-version>-->
-    <!--<jetty-version>9.4.15.v20190215</jetty-version>-->
+    <jetty-version>9.2.27.v20190403</jetty-version>
+    <!--<jetty-version>9.3.26.v20190403</jetty-version>-->
+    <!--<jetty-version>9.4.16.v20190411</jetty-version>-->
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.25</slf4j-version>
     <spring-version>5.1.4.RELEASE</spring-version>
