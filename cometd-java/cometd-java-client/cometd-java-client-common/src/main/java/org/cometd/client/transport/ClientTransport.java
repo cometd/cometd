@@ -92,8 +92,9 @@ public abstract class ClientTransport extends AbstractTransport {
      * such as {@code /meta/connect}s, without waiting for a response.
      *
      * @see org.cometd.client.BayeuxClient#abort()
+     * @param failure the cause of the abort
      */
-    public abstract void abort();
+    public abstract void abort(Throwable failure);
 
     /**
      * Terminates this transport, usually by closing network connections opened directly by this transport.

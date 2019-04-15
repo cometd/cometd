@@ -69,15 +69,15 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
     }
 
     @Override
-    public void abort() {
+    public void abort(Throwable failure) {
         List<Request> requests;
         synchronized (this) {
-            super.abort();
+            super.abort(failure);
             requests = new ArrayList<>(_requests);
             _requests.clear();
         }
         for (Request request : requests) {
-            request.abort(new Exception("Transport " + this + " aborted"));
+            request.abort(failure);
         }
     }
 

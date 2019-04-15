@@ -73,7 +73,7 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
     }
 
     @Override
-    public void abort() {
+    public void abort(Throwable failure) {
         _aborted = true;
     }
 

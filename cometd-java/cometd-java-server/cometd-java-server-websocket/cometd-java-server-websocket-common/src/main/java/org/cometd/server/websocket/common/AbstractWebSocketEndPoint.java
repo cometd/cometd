@@ -165,29 +165,23 @@ public abstract class AbstractWebSocketEndPoint {
             session.setServerTransport(_transport);
         }
 
-        switch (message.getChannel()) {
-            case Channel.META_HANDSHAKE: {
-                if (messages.length > 1) {
-                    promise.fail(new IOException("protocol violation"));
+        String channel = message.getChannel();
+        if (Channel.META_HANDSHAKE.equals(channel)) {
+            if (messages.length > 1) {
+                promise.fail(new IOException("protocol violation"));
+            } else {
+                processMetaHandshake(context, message, promise);
+            }
+        } else if (Channel.META_CONNECT.equals(channel)) {
+            processMetaConnect(context, message, Promise.from(proceed -> {
+                if (proceed) {
+                    resume(context, message, Promise.from(y -> promise.succeed(true), promise::fail));
                 } else {
-                    processMetaHandshake(context, message, promise);
+                    promise.succeed(false);
                 }
-                break;
-            }
-            case Channel.META_CONNECT: {
-                processMetaConnect(context, message, Promise.from(proceed -> {
-                    if (proceed) {
-                        resume(context, message, Promise.from(y -> promise.succeed(true), promise::fail));
-                    } else {
-                        promise.succeed(false);
-                    }
-                }, promise::fail));
-                break;
-            }
-            default: {
-                processMessage(context, message, promise);
-                break;
-            }
+            }, promise::fail));
+        } else {
+            processMessage(context, message, promise);
         }
     }
 

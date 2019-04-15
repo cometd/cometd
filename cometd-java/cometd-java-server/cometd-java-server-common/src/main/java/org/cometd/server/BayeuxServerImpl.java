@@ -701,12 +701,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
     protected String validateMessage(Mutable message) {
         String channel = message.getChannel();
+        if (channel == null) {
+            return "400::channel_missing";
+        }
         if (!validate(channel)) {
-            return "405::invalid_channel";
+            return "405::channel_invalid";
         }
         String id = message.getId();
         if (id != null && !validate(id)) {
-            return "405::invalid_id";
+            return "405::message_id_invalid";
         }
         return null;
     }
@@ -1179,7 +1182,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     protected void unknownSession(Mutable reply) {
-        error(reply, "402::unknown_session");
+        error(reply, "402::session_unknown");
         if (Channel.META_HANDSHAKE.equals(reply.getChannel()) || Channel.META_CONNECT.equals(reply.getChannel())) {
             Map<String, Object> advice = reply.getAdvice(true);
             advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);

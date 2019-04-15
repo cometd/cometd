@@ -36,7 +36,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>9.4.15.v20190215</jetty-version>
+    <jetty-version>9.4.16.v20190411</jetty-version>
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.26</slf4j-version>
     <log4j2-version>2.11.2</log4j2-version>
@@ -504,7 +504,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-perf-helper</artifactId>
-        <version>1.0.5</version>
+        <version>1.0.6</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>

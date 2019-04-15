@@ -159,24 +159,18 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             session.setServerTransport(this);
         }
 
-        switch (message.getChannel()) {
-            case Channel.META_HANDSHAKE: {
-                if (context.messages.length > 1) {
-                    promise.fail(new IOException("bayeux protocol violation"));
-                } else {
-                    processMetaHandshake(context, message, promise);
-                }
-                break;
+        String channel = message.getChannel();
+        if (Channel.META_HANDSHAKE.equals(channel)) {
+            if (context.messages.length > 1) {
+                promise.fail(new IOException("bayeux protocol violation"));
+            } else {
+                processMetaHandshake(context, message, promise);
             }
-            case Channel.META_CONNECT: {
-                boolean canSuspend = context.messages.length == 1;
-                processMetaConnect(context, message, canSuspend, Promise.from(y -> resume(context, message, promise), promise::fail));
-                break;
-            }
-            default: {
-                processMessage1(context, message, promise);
-                break;
-            }
+        } else if (Channel.META_CONNECT.equals(channel)) {
+            boolean canSuspend = context.messages.length == 1;
+            processMetaConnect(context, message, canSuspend, Promise.from(y -> resume(context, message, promise), promise::fail));
+        } else {
+            processMessage1(context, message, promise);
         }
     }
 

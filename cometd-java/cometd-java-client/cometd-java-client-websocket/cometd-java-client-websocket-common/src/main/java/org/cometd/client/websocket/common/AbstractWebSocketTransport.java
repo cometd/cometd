@@ -108,10 +108,10 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     }
 
     @Override
-    public void abort() {
+    public void abort(Throwable failure) {
         Delegate delegate = getDelegate();
         if (delegate != null) {
-            delegate.abort();
+            delegate.abort(failure);
         }
         shutdownScheduler();
     }
@@ -393,8 +393,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             }
         }
 
-        private void abort() {
-            fail(new IOException("Aborted"), "Aborted");
+        private void abort(Throwable failure) {
+            fail(failure, "Aborted");
         }
 
         private void disconnect(String reason) {

@@ -74,10 +74,10 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
     }
 
     @Override
-    public void abort() {
+    public void abort(Throwable failure) {
         List<Call> requests;
         synchronized (this) {
-            super.abort();
+            super.abort(failure);
             requests = new ArrayList<>(_calls);
             _calls.clear();
         }
