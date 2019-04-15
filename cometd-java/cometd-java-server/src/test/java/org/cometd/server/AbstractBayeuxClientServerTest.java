@@ -51,7 +51,7 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
         httpClient.stop();
     }
 
-    protected String extractClientId(ContentResponse handshake) throws UnsupportedEncodingException {
+    protected String extractClientId(ContentResponse handshake) {
         String content = handshake.getContentAsString();
         Matcher matcher = Pattern.compile("\"clientId\"\\s*:\\s*\"([^\"]*)\"").matcher(content);
         Assert.assertTrue(matcher.find());
@@ -76,8 +76,8 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
         return request;
     }
 
-    protected void configureBayeuxRequest(Request request, String requestBody, String encoding) throws UnsupportedEncodingException {
-        request.timeout(555, TimeUnit.SECONDS);
+    protected void configureBayeuxRequest(Request request, String requestBody, String encoding) {
+        request.timeout(5, TimeUnit.SECONDS);
         request.method(HttpMethod.POST);
         request.content(new StringContentProvider("application/json;charset=" + encoding, requestBody, Charset.forName(encoding)));
     }

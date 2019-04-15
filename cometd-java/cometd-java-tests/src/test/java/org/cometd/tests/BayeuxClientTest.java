@@ -21,6 +21,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Promise;
+import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -55,14 +58,14 @@ public class BayeuxClientTest extends AbstractClientServerTest {
 
     @Test
     public void testBatchingAfterHandshake() throws Exception {
-        final BayeuxClient client = newBayeuxClient();
-        final AtomicBoolean connected = new AtomicBoolean();
+        BayeuxClient client = newBayeuxClient();
+        AtomicBoolean connected = new AtomicBoolean();
         client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connected.set(message.isSuccessful()));
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connected.set(false));
         client.handshake();
 
-        final String channelName = "/foo/bar";
-        final BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
+        String channelName = "/foo/bar";
+        BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
         client.batch(() -> {
             // Subscribe and publish must be batched so that they are sent in order,
             // otherwise it's possible that the subscribe arrives to the server after the publish
@@ -82,23 +85,40 @@ public class BayeuxClientTest extends AbstractClientServerTest {
     }
 
     @Test
+    public void testMessageWithoutChannel() {
+        BayeuxClient client = newBayeuxClient();
+        client.addExtension(new ClientSession.Extension() {
+            @Override
+            public void outgoing(ClientSession session, Message.Mutable message, Promise<Boolean> promise) {
+                message.remove(Message.CHANNEL_FIELD);
+                promise.succeed(true);
+            }
+        });
+
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
     public void loadTest() throws Exception {
         boolean stress = Boolean.getBoolean("STRESS");
         Random random = new Random();
 
-        final int rooms = stress ? 100 : 10;
-        final int publish = stress ? 4000 : 100;
-        final int batch = stress ? 10 : 2;
-        final int pause = stress ? 50 : 10;
+        int rooms = stress ? 100 : 10;
+        int publish = stress ? 4000 : 100;
+        int batch = stress ? 10 : 2;
+        int pause = stress ? 50 : 10;
         BayeuxClient[] clients = new BayeuxClient[stress ? 500 : 2 * rooms];
 
-        final AtomicInteger connections = new AtomicInteger();
-        final AtomicInteger received = new AtomicInteger();
+        AtomicInteger connections = new AtomicInteger();
+        AtomicInteger received = new AtomicInteger();
 
         for (int i = 0; i < clients.length; i++) {
-            final AtomicBoolean connected = new AtomicBoolean();
-            final BayeuxClient client = newBayeuxClient();
-            final String room = "/channel/" + (i % rooms);
+            AtomicBoolean connected = new AtomicBoolean();
+            BayeuxClient client = newBayeuxClient();
+            String room = "/channel/" + (i % rooms);
             clients[i] = client;
 
             client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
@@ -125,8 +145,8 @@ public class BayeuxClientTest extends AbstractClientServerTest {
 
         long start0 = System.nanoTime();
         for (int i = 0; i < publish; i++) {
-            final int sender = random.nextInt(clients.length);
-            final String channel = "/channel/" + random.nextInt(rooms);
+            int sender = random.nextInt(clients.length);
+            String channel = "/channel/" + random.nextInt(rooms);
 
             String data = "data from " + sender + " to " + channel;
             clients[sender].getChannel(channel).publish(data);

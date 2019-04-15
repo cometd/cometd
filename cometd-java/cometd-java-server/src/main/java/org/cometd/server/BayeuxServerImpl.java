@@ -701,6 +701,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
     protected String validateMessage(Mutable message) {
         String channel = message.getChannel();
+        if (channel == null) {
+            return "400::channel_missing";
+        }
         if (!validate(channel)) {
             return "405::invalid_channel";
         }

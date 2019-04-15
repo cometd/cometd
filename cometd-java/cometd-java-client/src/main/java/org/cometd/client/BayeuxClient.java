@@ -610,23 +610,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 logger.debug("Processing {}", message);
             }
 
-            switch (message.getChannel()) {
-                case Channel.META_HANDSHAKE: {
-                    processHandshake(message);
-                    break;
-                }
-                case Channel.META_CONNECT: {
-                    processConnect(message);
-                    break;
-                }
-                case Channel.META_DISCONNECT: {
-                    processDisconnect(message);
-                    break;
-                }
-                default: {
-                    processMessage(message);
-                    break;
-                }
+            String channel = message.getChannel();
+            if (Channel.META_HANDSHAKE.equals(channel)) {
+                processHandshake(message);
+            } else if (Channel.META_CONNECT.equals(channel)) {
+                processConnect(message);
+            } else if (Channel.META_DISCONNECT.equals(channel)) {
+                processDisconnect(message);
+            } else {
+                processMessage(message);
             }
         }
     }
@@ -656,23 +648,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 failure.put(Message.CONNECTION_TYPE_FIELD, transport.getName());
             }
 
-            switch (message.getChannel()) {
-                case Channel.META_HANDSHAKE: {
-                    handshakeFailure(failed, cause);
-                    break;
-                }
-                case Channel.META_CONNECT: {
-                    connectFailure(failed, cause);
-                    break;
-                }
-                case Channel.META_DISCONNECT: {
-                    disconnectFailure(failed, cause);
-                    break;
-                }
-                default: {
-                    messageFailure(failed, cause);
-                    break;
-                }
+            String channel = message.getChannel();
+            if (Channel.META_HANDSHAKE.equals(channel)) {
+                handshakeFailure(failed, cause);
+            } else if (Channel.META_CONNECT.equals(channel)) {
+                connectFailure(failed, cause);
+            } else if (Channel.META_DISCONNECT.equals(channel)) {
+                disconnectFailure(failed, cause);
+            } else {
+                messageFailure(failed, cause);
             }
         }
     }
@@ -811,11 +795,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     protected void processMessage(Message.Mutable message) {
-        receive(message, Promise.complete((r, x) -> {
+        receive(message, Promise.from(r -> {
             if (getState() == State.HANDSHAKEN) {
                 sessionState.submit(sessionState::afterHandshaken);
             }
-        }));
+        }, x -> abort()));
     }
 
     private void messageFailure(Message.Mutable message, Throwable failure) {
