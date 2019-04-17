@@ -1138,11 +1138,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         return new ArrayList<>(_transports.values());
     }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     protected AbstractHttpTransport findHttpTransport(HttpServletRequest request) {
-        // Avoid allocation of the Iterator
-        for (int i = 0; i < _allowedTransports.size(); ++i) {
-            String transportName = _allowedTransports.get(i);
+        for (String transportName : _allowedTransports) {
             ServerTransport serverTransport = getTransport(transportName);
             if (serverTransport instanceof AbstractHttpTransport) {
                 AbstractHttpTransport transport = (AbstractHttpTransport)serverTransport;
