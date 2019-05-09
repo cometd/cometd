@@ -26,6 +26,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,6 +42,8 @@ public class BayeuxClientTest extends AbstractClientServerTest {
 
     @Test
     public void testIPv6Address() throws Exception {
+        Assume.assumeTrue(ipv6Available());
+
         cometdURL = cometdURL.replace("localhost", "[::1]");
 
         BayeuxClient client = newBayeuxClient();
