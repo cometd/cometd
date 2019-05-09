@@ -453,7 +453,7 @@ In CometD 3.1.x `BayeuxContext` was stored to and retrieved from a `ThreadLocal`
 because the threading model was synchronous and therefore it allowed `ThreadLocal`
 to be used to provide access to `BayeuxContext` from `BayeuxServer`.
 
-In CometD 4.0.x the APIs allow for an asynchronous threading model and
+In CometD 4.0.x and later the APIs allow for an asynchronous threading model and
 therefore `ThreadLocal` cannot be used anymore.
 For this reason, access to `BayeuxContext` has been moved to `ServerMessage`.
 
