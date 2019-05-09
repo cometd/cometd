@@ -122,7 +122,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         return new WebSocketDelegate();
     }
 
-    protected class WebSocketDelegate extends Delegate implements MessageHandler.Whole<String> {
+    public class WebSocketDelegate extends Delegate implements MessageHandler.Whole<String> {
         private final Endpoint _endpoint = new WebSocketEndpoint();
         private Session _session;
 
@@ -202,7 +202,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
             }
         }
 
-        private class WebSocketEndpoint extends Endpoint {
+        public class WebSocketEndpoint extends Endpoint {
             @Override
             public void onOpen(Session session, EndpointConfig config) {
                 WebSocketDelegate.this.onOpen(session);

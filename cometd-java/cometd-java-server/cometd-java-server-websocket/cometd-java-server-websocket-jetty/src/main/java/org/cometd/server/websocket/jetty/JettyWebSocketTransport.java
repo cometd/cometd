@@ -138,7 +138,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
         }
     }
 
-    private class EndPoint extends JettyWebSocketEndPoint {
+    public class EndPoint extends JettyWebSocketEndPoint {
         public EndPoint(BayeuxContext bayeuxContext) {
             super(JettyWebSocketTransport.this, bayeuxContext);
         }
