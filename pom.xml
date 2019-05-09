@@ -44,7 +44,7 @@
     <spring-version>5.1.6.RELEASE</spring-version>
     <jackson-version>2.9.8</jackson-version>
     <dojo-version>1.15.0</dojo-version>
-    <rhino-version>1.7.10</rhino-version>
+    <rhino-version>1.7R5</rhino-version>
   </properties>
 
   <url>http://cometd.org</url>
