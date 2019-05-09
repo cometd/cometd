@@ -47,6 +47,7 @@ import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class OortObserveCometTest extends OortTest {
@@ -768,6 +769,8 @@ public class OortObserveCometTest extends OortTest {
 
     @Test
     public void testObserveDifferentCometWithDifferentURL() throws Exception {
+        Assume.assumeTrue(ipv6Available());
+
         Server serverA = startServer(0);
         Oort oortA = startOort(serverA);
         Server serverB = startServer(0);
