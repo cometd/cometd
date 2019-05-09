@@ -27,7 +27,7 @@
     } else if (typeof define === 'function' && define.amd) {
         // AMD.
         define([], function() {
-            factory(runtime);
+            return factory(runtime);
         });
     } else {
         // Globals.
