@@ -21,6 +21,8 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.UnresolvedAddressException;
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,17 +36,19 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.common.TransportException;
 import org.cometd.websocket.client.common.AbstractWebSocketTransport;
+import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 
-public class JettyWebSocketTransport extends AbstractWebSocketTransport implements UpgradeListener {
+public class JettyWebSocketTransport extends AbstractWebSocketTransport implements JettyUpgradeListener
+{
     private final WebSocketClient _webSocketClient;
     private boolean _webSocketSupported;
     private boolean _webSocketConnected;
@@ -69,9 +73,9 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         super.init();
 
         _webSocketClient.setConnectTimeout(getConnectTimeout());
-        _webSocketClient.getPolicy().setIdleTimeout(getIdleTimeout());
-        int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClient.getPolicy().getMaxTextMessageSize());
-        _webSocketClient.getPolicy().setMaxTextMessageSize(maxMessageSize);
+        _webSocketClient.setIdleTimeout(Duration.ofMillis(getIdleTimeout()));
+        long maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClient.getMaxTextMessageSize());
+        _webSocketClient.setMaxTextMessageSize(maxMessageSize);
         _webSocketClient.setCookieStore(getCookieStore());
 
         _webSocketSupported = true;
@@ -85,7 +89,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
                 logger.debug("Opening websocket session to {}", uri);
             }
             _webSocketClient.setConnectTimeout(getConnectTimeout());
-            _webSocketClient.getPolicy().setIdleTimeout(getIdleTimeout());
+            _webSocketClient.setIdleTimeout(Duration.ofMillis(getIdleTimeout()));
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             String protocol = getProtocol();
             if (protocol != null) {
@@ -139,12 +143,14 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
     }
 
     @Override
-    public void onHandshakeRequest(UpgradeRequest request) {
-    }
+    public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+    {
+        // TODO: is there a better way to get this, or could we make storeCookies take HttpFields
+        Map<String, List<String>> headerMap = new HashMap<>();
+        for (HttpField field : response.getHeaders())
+            headerMap.put(field.getName(), Arrays.asList(field.getValues()));
 
-    @Override
-    public void onHandshakeResponse(UpgradeResponse response) {
-        storeCookies(response.getHeaders());
+        storeCookies(headerMap);
     }
 
     protected class JettyWebSocketDelegate extends Delegate implements WebSocketListener {
