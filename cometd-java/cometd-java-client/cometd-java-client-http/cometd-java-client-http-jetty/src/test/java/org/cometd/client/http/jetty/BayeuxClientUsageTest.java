@@ -110,25 +110,28 @@ public class BayeuxClientUsageTest extends ClientServerTest {
     public void testClientWithProxyTunnel() throws Exception {
         start(null);
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslServer = new SslContextFactory.Server();
         File keyStoreFile = new File("src/test/resources/keystore.p12");
-        sslContextFactory.setKeyStorePath(keyStoreFile.getAbsolutePath());
-        sslContextFactory.setKeyStoreType("pkcs12");
-        sslContextFactory.setKeyStorePassword("storepwd");
-        ServerConnector sslConnector = new ServerConnector(server, sslContextFactory);
+        sslServer.setKeyStorePath(keyStoreFile.getAbsolutePath());
+        sslServer.setKeyStoreType("pkcs12");
+        sslServer.setKeyStorePassword("storepwd");
+        ServerConnector sslConnector = new ServerConnector(server, sslServer);
         server.addConnector(sslConnector);
         sslConnector.start();
 
         Server proxy = new Server();
         ServerConnector proxyConnector = new ServerConnector(proxy);
         proxy.addConnector(proxyConnector);
-
         ConnectHandler connectHandler = new ConnectHandler();
         proxy.setHandler(connectHandler);
-
         proxy.start();
+
+        SslContextFactory.Client sslClient = new SslContextFactory.Client();
+        sslServer.setKeyStorePath(keyStoreFile.getAbsolutePath());
+        sslServer.setKeyStoreType("pkcs12");
+        sslServer.setKeyStorePassword("storepwd");
         httpClient.stop();
-        httpClient = new HttpClient(sslContextFactory);
+        httpClient = new HttpClient(sslClient);
         httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         httpClient.start();
 

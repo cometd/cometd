@@ -258,13 +258,13 @@ public class CometDLoadServer {
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbeanContainer);
 
-        SslContextFactory sslContextFactory = null;
+        SslContextFactory.Server sslContextFactory = null;
         if (tls) {
             Path keyStoreFile = Paths.get("src/main/resources/keystore.p12");
             if (!Files.exists(keyStoreFile)) {
                 throw new FileNotFoundException(keyStoreFile.toString());
             }
-            sslContextFactory = new SslContextFactory();
+            sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keyStoreFile.toString());
             sslContextFactory.setKeyStoreType("pkcs12");
             sslContextFactory.setKeyStorePassword("storepwd");

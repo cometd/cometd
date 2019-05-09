@@ -48,7 +48,7 @@ public class DemoTest {
         // Start the Server.
         Server server = new Demo(httpPort, httpsPort, contextPath).start();
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStoreType("pkcs12");
         sslContextFactory.setKeyStorePassword("storepwd");

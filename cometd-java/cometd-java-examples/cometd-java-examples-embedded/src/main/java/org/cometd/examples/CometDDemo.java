@@ -50,7 +50,7 @@ public class CometDDemo {
         connector.setAcceptQueueSize(5000);
         server.addConnector(connector);
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/main/resources/keystore.p12");
         sslContextFactory.setKeyStoreType("pkcs12");
         sslContextFactory.setKeyStorePassword("storepwd");
