@@ -136,12 +136,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-client-impl</artifactId>
+      <artifactId>javax-websocket-client</artifactId>
       <version>${jetty-version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-api</artifactId>
+      <artifactId>jetty-websocket-api</artifactId>
       <version>${jetty-version}</version>
     </dependency>
     <dependency>

@@ -27,7 +27,7 @@ import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.ContextLoader;
@@ -39,7 +39,7 @@ public class OortSpringAnnotationTest {
     public void testSpringWiringOfOort() throws Exception {
         Server server = new Server();
         ServletContextHandler context = new ServletContextHandler(server, "/");
-        WebSocketServerContainerInitializer.configureContext(context);
+        JavaxWebSocketServletContainerInitializer.configureContext(context);
         context.addEventListener(new ContextLoaderListener());
         context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:/applicationContext.xml");
         server.start();

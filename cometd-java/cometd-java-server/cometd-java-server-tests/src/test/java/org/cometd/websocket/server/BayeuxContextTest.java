@@ -53,8 +53,8 @@ import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.websocket.ClientServerWebSocketTest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -399,7 +399,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         }
 
         @Override
-        protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response) {
+        protected void modifyUpgrade(JettyServerUpgradeRequest request, JettyServerUpgradeResponse response) {
             response.setHeader("Set-Cookie", COOKIE_NAME + "=" + COOKIE_VALUE);
         }
     }
@@ -428,7 +428,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         }
 
         @Override
-        protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response) {
+        protected void modifyUpgrade(JettyServerUpgradeRequest request, JettyServerUpgradeResponse response) {
             HttpSession session = request.getSession();
             Assert.assertNotNull(session);
             Assert.assertEquals(ATTRIBUTE_VALUE, session.getAttribute(ATTRIBUTE_NAME));
@@ -461,7 +461,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         }
 
         @Override
-        protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response) {
+        protected void modifyUpgrade(JettyServerUpgradeRequest request, JettyServerUpgradeResponse response) {
             onUpgrade(handshakes, enterLatch, proceedLatch);
             super.modifyUpgrade(request, response);
         }

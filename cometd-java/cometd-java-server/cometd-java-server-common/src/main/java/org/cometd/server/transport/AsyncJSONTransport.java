@@ -24,7 +24,6 @@ import java.util.concurrent.TimeoutException;
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
@@ -54,7 +53,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
     }
 
     @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String encoding = request.getCharacterEncoding();
         if (encoding == null) {
             encoding = "UTF-8";
@@ -65,7 +64,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         // that the timeout fires in case of slow reads.
         asyncContext.setTimeout(0);
 
-        Promise<Void> promise = new Promise<Void>() {
+        Promise<Void> promise = new Promise<>() {
             public void succeed(Void result) {
                 asyncContext.complete();
                 if (_logger.isDebugEnabled()) {
@@ -173,7 +172,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Asynchronous read start from {}", input);
             }
-            int maxMessageSize = getMaxMessageSize();
+            long maxMessageSize = getMaxMessageSize();
             byte[] buffer = buffers.get();
             while (input.isReady()) {
                 int read = input.read(buffer);

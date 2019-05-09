@@ -69,6 +69,7 @@ import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
@@ -333,24 +334,26 @@ public class CometDLoadClient implements MeasureConverter {
         threadPool.start();
         mbeanContainer.beanAdded(null, threadPool);
 
-        HttpClientTransport httpClientTransport = new HttpClientTransportOverHTTP(selectors);
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setExecutor(threadPool);
+        clientConnector.setSelectors(selectors);
+        clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
+        HttpClientTransport httpClientTransport = new HttpClientTransportOverHTTP(clientConnector);
         if (http2) {
-            HTTP2Client http2Client = new HTTP2Client();
-            http2Client.setSelectors(selectors);
+            HTTP2Client http2Client = new HTTP2Client(clientConnector);
             httpClientTransport = new HttpClientTransportOverHTTP2(http2Client);
         }
-        httpClient = new HttpClient(httpClientTransport, new SslContextFactory.Client(true));
+        httpClient = new HttpClient(httpClientTransport);
         httpClient.addBean(mbeanContainer);
         httpClient.setMaxConnectionsPerDestination(60000);
         httpClient.setMaxRequestsQueuedPerDestination(10000);
-        httpClient.setExecutor(threadPool);
         httpClient.setIdleTimeout(2 * Config.MAX_NETWORK_DELAY);
         httpClient.setSocketAddressResolver(new SocketAddressResolver.Sync());
         httpClient.start();
         mbeanContainer.beanAdded(null, httpClient);
 
         webSocketClient = new WebSocketClient(httpClient);
-        webSocketClient.getPolicy().setInputBufferSize(8 * 1024);
+        webSocketClient.setInputBufferSize(8 * 1024);
         webSocketClient.addBean(mbeanContainer);
         webSocketClient.start();
         mbeanContainer.beanAdded(null, webSocketClient);

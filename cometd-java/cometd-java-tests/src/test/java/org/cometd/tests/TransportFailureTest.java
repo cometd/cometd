@@ -40,7 +40,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,7 +61,7 @@ public class TransportFailureTest {
 
         ServletContextHandler context = new ServletContextHandler(server, "/");
 
-        WebSocketServerContainerInitializer.configureContext(context);
+        JavaxWebSocketServletContainerInitializer.configureContext(context);
 
         cometdServletPath = "/cometd";
 

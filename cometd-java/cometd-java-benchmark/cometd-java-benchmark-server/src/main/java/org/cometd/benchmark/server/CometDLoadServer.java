@@ -78,7 +78,7 @@ import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 
 public class CometDLoadServer {
     private final MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(0);
@@ -315,7 +315,7 @@ public class CometDLoadServer {
         context.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, BayeuxServer.ATTRIBUTE);
 
-        WebSocketServerContainerInitializer.configureContext(context);
+        JavaxWebSocketServletContainerInitializer.configureContext(context);
 
         // Setup default servlet to serve static files
         context.addServlet(DefaultServlet.class, "/");

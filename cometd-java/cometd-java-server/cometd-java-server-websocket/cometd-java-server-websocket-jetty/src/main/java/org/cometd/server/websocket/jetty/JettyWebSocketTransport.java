@@ -15,6 +15,8 @@
  */
 package org.cometd.server.websocket.jetty;
 
+import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,11 +29,12 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.websocket.common.AbstractBayeuxContext;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 
 public class JettyWebSocketTransport extends AbstractWebSocketTransport {
     public JettyWebSocketTransport(BayeuxServerImpl bayeux) {
@@ -52,25 +55,25 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
             throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING_OPTION + "' parameter");
         }
 
-        NativeWebSocketConfiguration wsConfig = (NativeWebSocketConfiguration)context.getAttribute(NativeWebSocketConfiguration.class.getName());
-        if (wsConfig == null) {
-            throw new IllegalArgumentException("Missing WebSocketConfiguration");
+        ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(context, "JettyWebSocketTransport");
+        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
+        if (container == null) {
+            throw new IllegalArgumentException("Missing JettyWebSocketServerContainer");
         }
 
-        WebSocketPolicy policy = wsConfig.getFactory().getPolicy();
-        int bufferSize = getOption(BUFFER_SIZE_OPTION, policy.getInputBufferSize());
-        policy.setInputBufferSize(bufferSize);
-        int maxMessageSize = getMaxMessageSize();
+        int bufferSize = getOption(BUFFER_SIZE_OPTION, container.getInputBufferSize());
+        container.setInputBufferSize(bufferSize);
+        long maxMessageSize = getMaxMessageSize();
         if (maxMessageSize < 0) {
-            maxMessageSize = policy.getMaxTextMessageSize();
+            maxMessageSize = container.getMaxTextMessageSize();
         }
-        policy.setMaxTextMessageSize(maxMessageSize);
+        container.setMaxTextMessageSize(maxMessageSize);
 
-        long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, policy.getIdleTimeout());
-        policy.setIdleTimeout((int)idleTimeout);
+        long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, container.getIdleTimeout().toMillis());
+        container.setIdleTimeout(Duration.ofMillis(idleTimeout));
 
         for (String mapping : normalizeURLMapping(cometdURLMapping)) {
-            wsConfig.addMapping(mapping, (request, response) -> {
+            container.addMapping(mapping, (request, response) -> {
                 String origin = request.getHeader("Origin");
                 if (origin == null) {
                     origin = request.getHeader("Sec-WebSocket-Origin");
@@ -111,20 +114,20 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
         return new EndPoint(bayeuxContext);
     }
 
-    protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response) {
+    protected void modifyUpgrade(JettyServerUpgradeRequest request, JettyServerUpgradeResponse response) {
     }
 
-    protected boolean checkOrigin(ServletUpgradeRequest request, String origin) {
+    protected boolean checkOrigin(JettyServerUpgradeRequest request, String origin) {
         return true;
     }
 
     private class WebSocketContext extends AbstractBayeuxContext {
         private final Map<String, Object> attributes;
 
-        private WebSocketContext(ServletContext context, ServletUpgradeRequest request) {
-            super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
+        private WebSocketContext(ServletContext context, JettyServerUpgradeRequest request) {
+            super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeadersMap(),
                     request.getParameterMap(), request.getUserPrincipal(), request.getSession(),
-                    request.getLocalSocketAddress(), request.getRemoteSocketAddress(),
+                    (InetSocketAddress)request.getLocalSocketAddress(), (InetSocketAddress)request.getRemoteSocketAddress(),
                     Collections.list(request.getLocales()), "HTTP/1.1", request.isSecure());
             this.attributes = request.getServletAttributes();
         }

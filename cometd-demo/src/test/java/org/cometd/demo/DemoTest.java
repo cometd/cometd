@@ -31,6 +31,8 @@ import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -48,13 +50,16 @@ public class DemoTest {
         // Start the Server.
         Server server = new Demo(httpPort, httpsPort, contextPath).start();
 
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStoreType("pkcs12");
         sslContextFactory.setKeyStorePassword("storepwd");
+        clientConnector.setSslContextFactory(sslContextFactory);
 
         // Starts the HTTP client.
-        HttpClient httpClient = new HttpClient(sslContextFactory);
+        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         httpClient.start();
 
         // Starts the WebSocket client.

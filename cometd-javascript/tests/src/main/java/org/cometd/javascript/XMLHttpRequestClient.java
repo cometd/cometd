@@ -34,7 +34,7 @@ public class XMLHttpRequestClient {
     }
 
     public void start() throws Exception {
-        httpClient = new HttpClient(new HttpClientTransportOverHTTP(1), null);
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP(1));
         httpClient.setMaxConnectionsPerDestination(2);
         httpClient.setIdleTimeout(300000);
         httpClient.setCookieStore(cookieStore.getStore());

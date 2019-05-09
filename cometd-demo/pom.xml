@@ -211,7 +211,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-api</artifactId>
+      <artifactId>jetty-websocket-api</artifactId>
       <version>${jetty-version}</version>
     </dependency>
     <dependency>
@@ -240,7 +240,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-server-impl</artifactId>
+      <artifactId>javax-websocket-server</artifactId>
       <version>${jetty-version}</version>
       <scope>test</scope>
     </dependency>

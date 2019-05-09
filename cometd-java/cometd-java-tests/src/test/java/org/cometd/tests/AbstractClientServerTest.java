@@ -47,8 +47,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
@@ -104,10 +104,10 @@ public abstract class AbstractClientServerTest {
         switch (transport) {
             case JAVAX_WEBSOCKET:
             case OKHTTP_WEBSOCKET:
-                WebSocketServerContainerInitializer.configureContext(context);
+                JavaxWebSocketServletContainerInitializer.configureContext(context);
                 break;
             case JETTY_WEBSOCKET:
-                WebSocketUpgradeFilter.configureContext(context);
+                JettyWebSocketServletContainerInitializer.configureContext(context);
                 break;
             default:
                 break;

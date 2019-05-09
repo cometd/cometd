@@ -34,7 +34,7 @@ public class HTTP2ClientServerTest extends ClientServerTest {
 
     @Override
     protected void startClient() throws Exception {
-        httpClient = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client()), null);
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client()));
         httpClient.start();
     }
 }

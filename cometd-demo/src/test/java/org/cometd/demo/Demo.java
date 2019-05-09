@@ -30,7 +30,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
 
 public class Demo {
     private static final int HTTP_PORT = 8080;
@@ -82,7 +82,7 @@ public class Demo {
         ServletContextHandler context = new ServletContextHandler(server, contextPath);
 
         // Configure WebSocket for the context.
-        WebSocketServerContainerInitializer.configureContext(context);
+        JavaxWebSocketServletContainerInitializer.configureContext(context);
 
         // Setup JMX.
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());

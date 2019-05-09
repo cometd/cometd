@@ -36,6 +36,9 @@ import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.JettyJSONContextServer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.proxy.ConnectHandler;
 import org.eclipse.jetty.proxy.ProxyServlet;
 import org.eclipse.jetty.server.Server;
@@ -126,12 +129,14 @@ public class BayeuxClientUsageTest extends ClientServerTest {
         proxy.setHandler(connectHandler);
         proxy.start();
 
+        httpClient.stop();
+        ClientConnector clientConnector = new ClientConnector();
         SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
         sslServer.setKeyStorePath(keyStoreFile.getAbsolutePath());
         sslServer.setKeyStoreType("pkcs12");
         sslServer.setKeyStorePassword("storepwd");
-        httpClient.stop();
-        httpClient = new HttpClient(sslClient);
+        clientConnector.setSslContextFactory(sslClient);
+        httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, HttpClientConnectionFactory.HTTP11));
         httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         httpClient.start();
 

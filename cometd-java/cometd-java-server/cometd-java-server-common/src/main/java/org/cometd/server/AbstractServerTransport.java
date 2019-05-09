@@ -61,7 +61,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     private JSONContext.Server _jsonContext;
     private boolean _handshakeReconnect;
     private boolean _allowHandshakeDelivery;
-    private int _maxMessageSize;
+    private long _maxMessageSize;
 
     /**
      * <p>The constructor is passed the {@link BayeuxServerImpl} instance for
@@ -138,7 +138,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _allowHandshakeDelivery = allow;
     }
 
-    public int getMaxMessageSize() {
+    public long getMaxMessageSize() {
         return _maxMessageSize;
     }
 
@@ -177,9 +177,9 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     private String read(BufferedReader reader) throws IOException {
-        int maxMessageSize = getMaxMessageSize();
+        long maxMessageSize = getMaxMessageSize();
         StringBuilder builder = new StringBuilder();
-        int total = 0;
+        long total = 0;
         char[] buffer = new char[1024];
         while (true) {
             int read = reader.read(buffer);
