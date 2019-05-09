@@ -27,7 +27,7 @@
   <!-- CometD Servlet -->
   <servlet>
     <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.annotation.AnnotationCometDServlet</servlet-class>
+    <servlet-class>org.cometd.annotation.server.AnnotationCometDServlet</servlet-class>
     <init-param>
       <param-name>timeout</param-name>
       <param-value>20000</param-value>

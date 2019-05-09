@@ -15,7 +15,7 @@
 
   <modules>
     <module>cometd-java-api</module>
-    <module>cometd-java-annotations</module>
+    <module>cometd-java-annotation</module>
     <module>cometd-java-client</module>
     <module>cometd-java-common</module>
     <module>cometd-java-examples</module>

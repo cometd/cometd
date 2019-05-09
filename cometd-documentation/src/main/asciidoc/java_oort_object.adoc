@@ -358,7 +358,7 @@ parameter of the CometD configuration (as explained in
     ...
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.annotation.AnnotationCometDServlet</servlet-class>
+        <servlet-class>org.cometd.annotation.server.AnnotationCometDServlet</servlet-class>
         <init-param>
             <param-name>jsonContext</param-name>
             <param-value>com.acme.MyCustomJSONContextServer</param-value>

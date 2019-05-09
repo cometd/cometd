@@ -9,7 +9,8 @@ client-side and on the server-side.
 ===== Server-Side Annotated Services
 
 Server-side annotated services are defined by annotating class, fields and
-methods with annotations from the `org.cometd.annotation` package.
+methods with annotations from the `org.cometd.annotation` and
+`org.cometd.annotation.server` packages.
 
 Features provided by inherited services are available to annotated services
 although in a slightly different way.
@@ -40,7 +41,7 @@ the same functionality.
 
 Server-side annotated services offer full support for CometD features, and
 limited support for dependency injection and lifecycle management via the
-`org.cometd.annotation.ServerAnnotationProcessor` class.
+`org.cometd.annotation.server.ServerAnnotationProcessor` class.
 
 Annotated service instances are stored in the servlet context under the key
 that correspond to their full qualified class name.
@@ -460,7 +461,7 @@ with a `try/catch` block like shown in the example above.
 
 ===== Annotation Processing
 
-The `org.cometd.annotation.ServerAnnotationProcessor` class performs annotation processing.
+The `org.cometd.annotation.server.ServerAnnotationProcessor` class performs annotation processing.
 
 ====
 [source,java]
@@ -650,7 +651,7 @@ bayeuxClient.getChannel("/foo/*").subscribe(new ClientSessionChannel.MessageList
 
 ===== Annotation Processing
 
-The `org.cometd.annotation.ClientAnnotationProcessor` class does annotation processing.
+The `org.cometd.annotation.client.ClientAnnotationProcessor` class does annotation processing.
 
 ====
 [source,java]

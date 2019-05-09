@@ -24,11 +24,11 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
 
-import org.cometd.annotation.Configure;
 import org.cometd.annotation.Listener;
-import org.cometd.annotation.RemoteCall;
-import org.cometd.annotation.ServerAnnotationProcessor;
 import org.cometd.annotation.Service;
+import org.cometd.annotation.server.Configure;
+import org.cometd.annotation.server.RemoteCall;
+import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;

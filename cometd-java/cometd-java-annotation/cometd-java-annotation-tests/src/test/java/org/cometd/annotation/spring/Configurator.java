@@ -13,40 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.oort.spring;
+package org.cometd.annotation.spring;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.ServletContext;
+import javax.inject.Inject;
 
 import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.SecurityPolicy;
-import org.cometd.oort.Oort;
-import org.cometd.oort.Seti;
 import org.cometd.server.BayeuxServerImpl;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.context.ServletContextAware;
 
+/**
+ * The Spring component that configures CometD services.
+ * <p>
+ * Spring scans the classes and finds this class annotated with Spring's @Configuration
+ * annotation, and makes an instance. Then it notices that it has a bean factory
+ * method (annotated with @Bean) that produces the BayeuxServer instance.
+ * Note that, as per Spring documentation, this class is subclassed by Spring
+ * via CGLIB to invoke bean factory methods only once.
+ * <p>
+ * Implementing {@link DestructionAwareBeanPostProcessor} allows to plug-in
+ * CometD's annotation processor to process the CometD services.
+ */
 @Configuration
-public class OortConfigurator implements DestructionAwareBeanPostProcessor, ServletContextAware {
-    private ServletContext servletContext;
+public class Configurator implements DestructionAwareBeanPostProcessor {
+    private BayeuxServer bayeuxServer;
     private ServerAnnotationProcessor processor;
+
+    @Inject
+    private void setBayeuxServer(BayeuxServer bayeuxServer) {
+        this.bayeuxServer = bayeuxServer;
+    }
 
     @PostConstruct
     private void init() {
-        BayeuxServer bayeuxServer = bayeuxServer();
-        bayeuxServer.setSecurityPolicy(policy());
         this.processor = new ServerAnnotationProcessor(bayeuxServer);
-
-        // Link the cloud, or use OortMulticastConfigurer.
-        Oort oort = oort();
-//        oort.observeComet("http://cloud.cometd.org/cometd");
-
-        // Observe the required channels.
-        oort.observeChannel("/cloud/*");
     }
 
     @Override
@@ -72,36 +76,8 @@ public class OortConfigurator implements DestructionAwareBeanPostProcessor, Serv
         return true;
     }
 
-    @Override
-    public void setServletContext(ServletContext servletContext) {
-        this.servletContext = servletContext;
-    }
-
     @Bean(initMethod = "start", destroyMethod = "stop")
     public BayeuxServer bayeuxServer() {
-        BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
-        bayeuxServer.setOption(ServletContext.class.getName(), servletContext);
-        bayeuxServer.setOption("ws.cometdURLMapping", "/cometd/*");
-        servletContext.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
-        return bayeuxServer;
-    }
-
-    @Bean(initMethod = "start", destroyMethod = "stop")
-    public Oort oort() {
-        Oort oort = new Oort(bayeuxServer(), "http://localhost:8080/cometd");
-        servletContext.setAttribute(Oort.OORT_ATTRIBUTE, oort);
-        return oort;
-    }
-
-    @Bean(initMethod = "start", destroyMethod = "stop")
-    public Seti seti() {
-        Seti seti = new Seti(oort());
-        servletContext.setAttribute(Seti.SETI_ATTRIBUTE, seti);
-        return seti;
-    }
-
-    @Bean
-    public SecurityPolicy policy() {
-        return new OortSecurityPolicy(seti());
+        return new BayeuxServerImpl();
     }
 }

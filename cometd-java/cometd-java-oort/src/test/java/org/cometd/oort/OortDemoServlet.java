@@ -20,7 +20,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 
-import org.cometd.annotation.ServerAnnotationProcessor;
+import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.ext.TimesyncExtension;
 

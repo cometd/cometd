@@ -24,10 +24,10 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.inject.Inject;
 
-import org.cometd.annotation.Configure;
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
+import org.cometd.annotation.server.Configure;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;

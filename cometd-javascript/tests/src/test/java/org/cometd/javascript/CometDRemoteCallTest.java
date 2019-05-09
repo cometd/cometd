@@ -18,9 +18,9 @@ package org.cometd.javascript;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.cometd.annotation.RemoteCall;
-import org.cometd.annotation.ServerAnnotationProcessor;
 import org.cometd.annotation.Service;
+import org.cometd.annotation.server.RemoteCall;
+import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.BinaryData;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.JettyJSONContextServer;

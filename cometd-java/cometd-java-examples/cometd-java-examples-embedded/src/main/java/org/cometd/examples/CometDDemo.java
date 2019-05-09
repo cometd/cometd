@@ -15,7 +15,7 @@
  */
 package org.cometd.examples;
 
-import org.cometd.annotation.AnnotationCometDServlet;
+import org.cometd.annotation.server.AnnotationCometDServlet;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
