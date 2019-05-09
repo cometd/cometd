@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
-    <version>5.0.0-SNAPSHOT</version>
+    <version>6.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -14,7 +14,7 @@
   <properties>
     <html-directory>${project.build.directory}/html/reference</html-directory>
     <resources-directory>${project.build.directory}/resources</resources-directory>
-    <github>https://raw.github.com/cometd/cometd/5.0.x</github>
+    <github>https://raw.github.com/cometd/cometd/6.0.x</github>
   </properties>
 
   <build>

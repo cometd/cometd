@@ -33,7 +33,7 @@ If you want to use the latest code, clone the GitHub repository with the followi
 ----
 $ git clone git://github.com/cometd/cometd.git cometd
 $ cd cometd
-$ git checkout 5.0.x
+$ git checkout 6.0.x
 ----
 
 === Performing the Build
