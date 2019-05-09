@@ -126,7 +126,7 @@ public class BayeuxClientUsageTest extends ClientServerTest {
         proxy.setHandler(connectHandler);
         proxy.start();
 
-        SslContextFactory.Client sslClient = new SslContextFactory.Client();
+        SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
         sslServer.setKeyStorePath(keyStoreFile.getAbsolutePath());
         sslServer.setKeyStoreType("pkcs12");
         sslServer.setKeyStorePassword("storepwd");
