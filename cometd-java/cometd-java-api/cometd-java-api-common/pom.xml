@@ -11,19 +11,4 @@
   <artifactId>cometd-java-api-common</artifactId>
   <name>CometD :: Java API :: Common</name>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Automatic-Module-Name>org.cometd.api.common</Automatic-Module-Name>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
 </project>

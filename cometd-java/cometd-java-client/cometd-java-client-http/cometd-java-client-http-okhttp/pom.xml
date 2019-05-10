@@ -11,21 +11,6 @@
   <artifactId>cometd-java-client-http-okhttp</artifactId>
   <name>CometD :: Java :: Client :: HTTP :: OkHttp</name>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Automatic-Module-Name>org.cometd.client.http.okhttp</Automatic-Module-Name>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.cometd.java</groupId>

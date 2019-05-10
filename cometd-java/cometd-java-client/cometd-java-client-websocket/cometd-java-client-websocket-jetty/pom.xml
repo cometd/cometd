@@ -11,21 +11,6 @@
   <artifactId>cometd-java-client-websocket-jetty</artifactId>
   <name>CometD :: Java :: Client :: WebSocket :: Jetty</name>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Automatic-Module-Name>org.cometd.client.websocket.jetty</Automatic-Module-Name>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.cometd.java</groupId>

@@ -12,21 +12,6 @@
   <artifactId>cometd-java-annotation-client</artifactId>
   <name>CometD :: Java :: Annotation :: Client</name>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Automatic-Module-Name>org.cometd.annotation.client</Automatic-Module-Name>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.cometd.java</groupId>

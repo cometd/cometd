@@ -11,21 +11,6 @@
   <artifactId>cometd-java-client-websocket-javax</artifactId>
   <name>CometD :: Java :: Client :: WebSocket :: JSR 356</name>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Automatic-Module-Name>org.cometd.client.websocket.javax</Automatic-Module-Name>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>javax.websocket</groupId>

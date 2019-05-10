@@ -1,0 +1,27 @@
+/*
+ * Copyright (c) 2008-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+module org.cometd.server.websocket.jetty {
+    exports org.cometd.server.websocket.jetty;
+
+    requires jetty.servlet.api;
+    requires org.cometd.server;
+    requires org.cometd.server.websocket.common;
+    requires org.eclipse.jetty.util;
+    requires org.eclipse.jetty.servlet;
+    requires org.eclipse.jetty.websocket.jetty.api;
+    requires org.eclipse.jetty.websocket.jetty.server;
+    requires org.slf4j;
+}
