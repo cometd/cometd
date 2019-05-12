@@ -14,7 +14,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>javax.inject</groupId>
+      <groupId>com.jwebmp</groupId>
       <artifactId>javax.inject</artifactId>
     </dependency>
     <dependency>
