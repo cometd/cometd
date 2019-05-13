@@ -50,8 +50,8 @@ public class AuctionService extends AbstractService implements ClientSessionChan
     public AuctionService(ServletContext context) {
         super((BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE), "oortion");
 
-        Oort _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
-        if (_oort == null) {
+        Oort oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
+        if (oort == null) {
             throw new RuntimeException("Missing " + Oort.OORT_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
                     "is an Oort servlet declared in web.xml ?");
         }
@@ -61,7 +61,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
                     "is " + SetiServlet.class.getSimpleName() + " declared in web.xml ?");
         }
 
-        _oort.observeChannel(AUCTION_ROOT + "**");
+        oort.observeChannel(AUCTION_ROOT + "**");
 
         getBayeux().addListener(this);
         setSeeOwnPublishes(false);
