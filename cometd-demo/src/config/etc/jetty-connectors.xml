@@ -40,7 +40,7 @@
     </Call>
   </New>
 
-  <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
+  <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
     <Set name="provider">Conscrypt</Set>
     <Set name="KeyStorePath">src/config/etc/keystore.p12</Set>
     <Set name="KeyStorePassword">storepwd</Set>

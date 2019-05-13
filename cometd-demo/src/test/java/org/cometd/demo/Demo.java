@@ -68,7 +68,7 @@ public class Demo {
         server.addConnector(connector);
 
         // Setup and configure a connector for https:// and wss://.
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStoreType("pkcs12");
         sslContextFactory.setKeyStorePassword("storepwd");

@@ -110,7 +110,7 @@ public class BayeuxClientUsageTest extends ClientServerTest {
     public void testClientWithProxyTunnel() throws Exception {
         start(null);
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         File keyStoreFile = new File("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePath(keyStoreFile.getAbsolutePath());
         sslContextFactory.setKeyStoreType("pkcs12");

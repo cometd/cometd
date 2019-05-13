@@ -339,7 +339,7 @@ public class CometDLoadClient implements MeasureConverter {
             http2Client.setSelectors(selectors);
             httpClientTransport = new HttpClientTransportOverHTTP2(http2Client);
         }
-        httpClient = new HttpClient(httpClientTransport, new SslContextFactory(true));
+        httpClient = new HttpClient(httpClientTransport, new SslContextFactory.Client(true));
         httpClient.addBean(mbeanContainer);
         httpClient.setMaxConnectionsPerDestination(60000);
         httpClient.setMaxRequestsQueuedPerDestination(10000);
