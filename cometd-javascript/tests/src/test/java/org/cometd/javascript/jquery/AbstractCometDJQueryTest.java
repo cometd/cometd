@@ -20,7 +20,7 @@ import org.cometd.javascript.AbstractCometDTest;
 public class AbstractCometDJQueryTest extends AbstractCometDTest {
     @Override
     protected void provideCometD() throws Exception {
-        javaScript.evaluate(getClass().getResource("/js/jquery/jquery-3.2.1.js"));
+        javaScript.evaluate(getClass().getResource("/js/jquery/jquery-3.4.1.js"));
         javaScript.evaluate(getClass().getResource("/js/cometd/cometd.js"));
         javaScript.evaluate(getClass().getResource("/js/jquery/jquery.cometd.js"));
         evaluateScript("cometd", "" +

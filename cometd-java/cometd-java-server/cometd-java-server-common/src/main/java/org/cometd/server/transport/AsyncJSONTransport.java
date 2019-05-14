@@ -24,7 +24,6 @@ import java.util.concurrent.TimeoutException;
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
@@ -54,7 +53,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
     }
 
     @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String encoding = request.getCharacterEncoding();
         if (encoding == null) {
             encoding = "UTF-8";
@@ -361,7 +360,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                         reply.put("x-messages", messages.size());
                     }
                     getBayeux().freeze(reply);
-                    output.write(toJSONBytes(reply, "UTF-8"));
+                    output.write(toJSONBytes(reply));
                     needsComma = true;
                     ++replyIndex;
                 }
@@ -384,7 +383,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                             needsComma = false;
                         } else {
                             ServerMessage message = messages.get(messageIndex);
-                            output.write(toJSONBytes(message, "UTF-8"));
+                            output.write(toJSONBytes(message));
                             needsComma = messageIndex < size;
                             ++messageIndex;
                         }
@@ -418,7 +417,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                         needsComma = false;
                     } else {
                         getBayeux().freeze(reply);
-                        output.write(toJSONBytes(reply, "UTF-8"));
+                        output.write(toJSONBytes(reply));
                         needsComma = replyIndex < size;
                         ++replyIndex;
                     }

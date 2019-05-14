@@ -29,15 +29,13 @@ import org.cometd.server.BayeuxServerImpl;
 public class JSONPTransport extends AbstractStreamHttpTransport {
     public final static String PREFIX = "long-polling.jsonp";
     public final static String NAME = "callback-polling";
-    public final static String MIME_TYPE_OPTION = "mimeType";
     public final static String CALLBACK_PARAMETER_OPTION = "callbackParameter";
     public final static String CALLBACK_PARAMETER_MAX_LENGTH_OPTION = "callbackParameterMaxLength";
 
-    private final static Pattern CALLBACK_PATTERN = Pattern.compile("^[a-zA-Z0-9\\._\\-]+$");
+    private final static Pattern CALLBACK_PATTERN = Pattern.compile("^[a-zA-Z0-9._\\-]+$");
     private final static byte[] MESSAGE_BEGIN = new byte[]{'(', '['};
     private final static byte[] MESSAGE_END = new byte[]{']', ')'};
 
-    private String _mimeType = "text/javascript;charset=UTF-8";
     private String _callbackParam = "jsonp";
     private int _callbackMaxLength = 64;
 
@@ -51,7 +49,6 @@ public class JSONPTransport extends AbstractStreamHttpTransport {
         super.init();
         _callbackParam = getOption(CALLBACK_PARAMETER_OPTION, _callbackParam);
         _callbackMaxLength = getOption(CALLBACK_PARAMETER_MAX_LENGTH_OPTION, _callbackMaxLength);
-        _mimeType = getOption(MIME_TYPE_OPTION, _mimeType);
         // This transport must deliver only via /meta/connect
         setMetaConnectDeliveryOnly(true);
     }
@@ -73,7 +70,7 @@ public class JSONPTransport extends AbstractStreamHttpTransport {
 
     @Override
     protected ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        response.setContentType(_mimeType);
+        response.setContentType("text/javascript;charset=UTF-8");
         String callback = request.getParameter(_callbackParam);
         ServletOutputStream output = response.getOutputStream();
         output.write(callback.getBytes(response.getCharacterEncoding()));

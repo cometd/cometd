@@ -214,7 +214,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
     }
 
     protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException {
-        output.write(toJSONBytes(message, response.getCharacterEncoding()));
+        output.write(toJSONBytes(message));
     }
 
     protected abstract ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException;

@@ -17,8 +17,6 @@ package org.cometd.server;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.UnsupportedCharsetException;
 import java.text.ParseException;
 
 import org.cometd.bayeux.Promise;
@@ -241,19 +239,6 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
 
     public void processReply(ServerSessionImpl session, ServerMessage.Mutable reply, Promise<ServerMessage.Mutable> promise) {
         getBayeux().extendReply(session, session, reply, promise);
-    }
-
-    protected byte[] toJSONBytes(ServerMessage msg, String encoding) {
-        try {
-            ServerMessageImpl message = (ServerMessageImpl)(msg instanceof ServerMessageImpl ? msg : _bayeux.newMessage(msg));
-            byte[] bytes = message.getJSONBytes();
-            if (bytes == null) {
-                bytes = toJSON(message).getBytes(encoding);
-            }
-            return bytes;
-        } catch (UnsupportedEncodingException x) {
-            throw new UnsupportedCharsetException(encoding);
-        }
     }
 
     protected String toJSON(ServerMessage msg) {
