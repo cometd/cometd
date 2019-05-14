@@ -480,4 +480,92 @@ have been removed. Use the non-blocking variant of the same APIs.
 | OortList.removeAndShare(E... elements) | OortList.removeAndShare(Result<Boolean> callback, E... elements)
 |===
 
+[[_migration_40_to_50]]
+=== Migrating from CometD 4.0 to CometD 5.0
+
+Migrating from CometD 4.0.x to CometD 5.0.x requires changes in the coordinates
+of the Maven artifact dependencies.
+
+This was necessary to remove the presence of _split packages_ (i.e. two
+different jars containing classes under the same packages), so that future
+versions of CometD will be able to use JPMS modules.
+Furthermore, it was necessary to remove the hard dependency on the Jetty HTTP
+client (therefore allowing different HTTP client implementations).
+
+Few classes have also changed name and package to reflect the changes above.
+
+==== Maven Artifacts Changes
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 4.0 | CometD 5.0
+| `org.cometd.java:**bayeux-api**`
+| `org.cometd.java:**cometd-java-api-server**` (for server-side CometD applications) +
+  `org.cometd.java:**cometd-java-api-client**` (for client-side only CometD applications)
+
+| `org.cometd.java:cometd-java-**annotations**`
+| `org.cometd.java:**cometd-java-annotation-server**` (for server-side CometD applications) +
+  `org.cometd.java:**cometd-java-annotation-client**` (for client-side only CometD applications)
+
+| `org.cometd.java:cometd-java-**websocket-javax-server**`
+| `org.cometd.java:cometd-java-**server-websocket-javax**`
+
+| `org.cometd.java:cometd-java-**websocket-jetty-server**`
+| `org.cometd.java:cometd-java-**server-websocket-jetty**`
+
+| `org.cometd.java:cometd-java-client`
+| `org.cometd.java:cometd-java-client**-common**` +
+  Transports have moved to these artifacts:
+  `org.cometd.java:cometd-java-client**-http-jetty**` or +
+  `org.cometd.java:cometd-java-client**-http-okhttp**`
+
+| `org.cometd.java:cometd-java-**websocket-javax-client**`
+| `org.cometd.java:cometd-java-**client-websocket-javax**`
+
+| `org.cometd.java:cometd-java-**websocket-jetty-client**`
+| `org.cometd.java:cometd-java-**client-websocket-jetty**`
+
+| `org.cometd.java:cometd-java-**websocket-okhttp-client**`
+| `org.cometd.java:cometd-java-**client-websocket-okhttp**`
+|===
+
+==== Class Names Changes
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 4.0 | CometD 5.0
+| `org.cometd.annotation.AnnotationCometDServlet`
+| `org.cometd.annotation.**server**.AnnotationCometDServlet`
+
+| `org.cometd.annotation.Configure`
+| `org.cometd.annotation.**server**.Configure`
+
+| `org.cometd.annotation.RemoteCall`
+| `org.cometd.annotation.**server**.RemoteCall`
+
+| `org.cometd.annotation.ServerAnnotationProcessor`
+| `org.cometd.annotation.**server**.ServerAnnotationProcessor`
+
+| `org.cometd.annotation.ClientAnnotationProcessor`
+| `org.cometd.annotation.**client**.ClientAnnotationProcessor`
+
+| `org.cometd.client.**transport.LongPollingTransport**`
+| `org.cometd.client.**http.jetty.JettyHttpClientTransport**` (replaces class in CometD 4.0) +
+  `org.cometd.client.http.okhttp.OkHttpClientTransport` (new class in CometD 5.0)
+
+| `org.cometd.**websocket.server.WebSocketTransport**`
+| `org.cometd.**server.websocket.javax.WebSocketTransport**`
+
+| `org.cometd.**websocket.server.JettyWebSocketTransport**`
+| `org.cometd.**server.websocket.jetty.JettyWebSocketTransport**`
+
+| `org.cometd.**websocket.client.WebSocketTransport**`
+| `org.cometd.**client.websocket.javax.WebSocketTransport**`
+
+| `org.cometd.**websocket.client.JettyWebSocketTransport**`
+| `org.cometd.**client.websocket.jetty.JettyWebSocketTransport**`
+
+| `org.cometd.**websocket.client.okhttp.OkHttpWebsocketTransport**`
+| `org.cometd.**client.websocket.okhttp.OkHttpWebSocketTransport**`
+|===
 :numbered:

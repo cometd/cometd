@@ -41,7 +41,7 @@ import org.cometd.client.transport.TransportListener;
 import org.cometd.client.websocket.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public class OkHttpWebsocketTransport extends AbstractWebSocketTransport {
+public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
     // We specifically do not want to have a long blocking handshake, to allow for more request retries
     private static final String SEC_WEB_SOCKET_PROTOCOL_HEADER = "Sec-WebSocket-Protocol";
     private static final String SEC_WEB_SOCKET_ACCEPT_HEADER = "Sec-WebSocket-Accept";
@@ -50,11 +50,11 @@ public class OkHttpWebsocketTransport extends AbstractWebSocketTransport {
     private boolean webSocketSupported;
     private boolean webSocketConnected;
 
-    public OkHttpWebsocketTransport(Map<String, Object> options, OkHttpClient okHttpClient) {
+    public OkHttpWebSocketTransport(Map<String, Object> options, OkHttpClient okHttpClient) {
         this(null, options, null, okHttpClient);
     }
 
-    public OkHttpWebsocketTransport(String uri, Map<String, Object> options, ScheduledExecutorService scheduler, OkHttpClient okHttpClient) {
+    public OkHttpWebSocketTransport(String uri, Map<String, Object> options, ScheduledExecutorService scheduler, OkHttpClient okHttpClient) {
         super(uri, options, scheduler);
         OkHttpClient.Builder enrichedClient = okHttpClient.newBuilder()
                 .connectTimeout(getConnectTimeout(), TimeUnit.MILLISECONDS);
@@ -234,7 +234,7 @@ public class OkHttpWebsocketTransport extends AbstractWebSocketTransport {
         @Override
         public ClientTransport newClientTransport(String url, Map<String, Object> options) {
             ScheduledExecutorService scheduler = (ScheduledExecutorService)options.get(ClientTransport.SCHEDULER_OPTION);
-            return new OkHttpWebsocketTransport(url, options, scheduler, okHttpClient);
+            return new OkHttpWebSocketTransport(url, options, scheduler, okHttpClient);
         }
     }
 }
