@@ -323,24 +323,6 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
          */
         public default void onRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry) {
         }
-
-        /**
-         * Empty implementation of {@link EntryListener}.
-         *
-         * @deprecated use {@link EntryListener} instead
-         * @param <K> the key type
-         * @param <V> the value type
-         */
-        @Deprecated
-        public static class Adapter<K, V> implements EntryListener<K, V> {
-            @Override
-            public void onPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry) {
-            }
-
-            @Override
-            public void onRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry) {
-            }
-        }
     }
 
     /**

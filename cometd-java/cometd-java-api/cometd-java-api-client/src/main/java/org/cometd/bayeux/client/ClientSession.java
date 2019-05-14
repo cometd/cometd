@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Bayeux;
-import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
@@ -70,16 +69,6 @@ public interface ClientSession extends Session {
     }
 
     /**
-     * @param template additional fields to add to the handshake message.
-     * @param callback the message listener to notify of the handshake result
-     * @deprecated use {@link #handshake(Map, MessageListener)} instead
-     */
-    @Deprecated
-    default void handshake(Map<String, Object> template, ClientSessionChannel.MessageListener callback) {
-        handshake(template, message -> callback.onMessage(getChannel(Channel.META_HANDSHAKE), message));
-    }
-
-    /**
      * <p>Initiates the bayeux protocol handshake with the server(s).</p>
      * <p>The handshake initiated by this method is asynchronous and
      * does not wait for the handshake response.</p>
@@ -92,15 +81,6 @@ public interface ClientSession extends Session {
     @Override
     default void disconnect() {
         disconnect(MessageListener.NOOP);
-    }
-
-    /**
-     * @param callback the message listener to notify of the disconnect result
-     * @deprecated use {@link #disconnect(MessageListener)} instead
-     */
-    @Deprecated
-    default void disconnect(ClientSessionChannel.MessageListener callback) {
-        disconnect(message -> callback.onMessage(getChannel(Channel.META_DISCONNECT), message));
     }
 
     /**
@@ -252,15 +232,6 @@ public interface ClientSession extends Session {
          */
         default boolean sendMeta(ClientSession session, Message.Mutable message) {
             return true;
-        }
-
-        /**
-         * Empty implementation of {@link Extension}.
-         *
-         * @deprecated Use {@link Extension} instead
-         */
-        @Deprecated
-        public static class Adapter implements Extension {
         }
     }
 }

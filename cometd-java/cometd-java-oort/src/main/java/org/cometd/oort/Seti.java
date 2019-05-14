@@ -950,22 +950,6 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         }
 
         /**
-         * Empty implementation of {@link PresenceListener}
-         *
-         * @deprecated use {@link PresenceListener} instead
-         */
-        @Deprecated
-        public static class Adapter implements PresenceListener {
-            @Override
-            public void presenceAdded(Event event) {
-            }
-
-            @Override
-            public void presenceRemoved(Event event) {
-            }
-        }
-
-        /**
          * Seti presence event object, delivered to {@link PresenceListener} methods.
          */
         public static class Event extends EventObject {

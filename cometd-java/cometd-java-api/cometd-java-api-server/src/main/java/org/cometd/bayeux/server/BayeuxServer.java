@@ -338,14 +338,5 @@ public interface BayeuxServer extends Bayeux {
         default boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
             return true;
         }
-
-        /**
-         * Empty implementation of {@link Extension}.
-         *
-         * @deprecated Use {@link Extension} instead
-         */
-        @Deprecated
-        public static class Adapter implements Extension {
-        }
     }
 }

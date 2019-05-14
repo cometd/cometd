@@ -568,4 +568,87 @@ Few classes have also changed name and package to reflect the changes above.
 | `org.cometd.**websocket.client.okhttp.OkHttpWebsocketTransport**`
 | `org.cometd.**client.websocket.okhttp.OkHttpWebSocketTransport**`
 |===
+
+==== Deprecated API Removed
+
+A number of deprecated APIs (since 4.0) have been removed.
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 4.0 | CometD 5.0
+| `ClientSession.handshake(Map<String, Object>, **ClientSessionChannel**.MessageListener)`
+| `ClientSession.handshake(Map<String, Object>, **ClientSession**.MessageListener)`
+
+| `ClientSession.disconnect(**ClientSessionChannel**.MessageListener)`
+| `ClientSession.disconnect(**ClientSession**.MessageListener)`
+
+| `ClientSession.Extension.Adapter`
+| `ClientSession.Extension`
+
+| `ClientSessionChannel.publish(Object, **ClientSessionChannel**.MessageListener)`
+| `ClientSessionChannel.publish(Object, **ClientSession**.MessageListener)`
+
+| `ClientSessionChannel.publish(Message.Mutable, **ClientSessionChannel**.MessageListener)`
+| `ClientSessionChannel.publish(Message.Mutable, **ClientSession**.MessageListener)`
+
+| `ClientSessionChannel.publish(Message.Mutable, **ClientSessionChannel**.MessageListener)`
+| `ClientSessionChannel.publish(Message.Mutable, **ClientSession**.MessageListener)`
+
+| `ClientSessionChannel.subscribe(MessageListener, **ClientSessionChannel**.MessageListener)`
+| `ClientSessionChannel.subscribe(MessageListener, **ClientSession**.MessageListener)`
+
+| `ClientSessionChannel.unsubscribe(MessageListener, **ClientSessionChannel**.MessageListener)`
+| `ClientSessionChannel.unsubscribe(MessageListener, **ClientSession**.MessageListener)`
+
+| `BayeuxServer.Extension.Adapter`
+| `BayeuxServer.Extension`
+
+| `ServerSession.publish(Session, ServerMessage.Mutable)`
+| `ServerSession.publish(Session, ServerMessage.Mutable, Promise<Boolean>)`
+
+| `ServerChannel.publish(Session, Object)`
+| `ServerChannel.publish(Session, Object, Promise<Boolean>)`
+
+| `ServerSession.deliver(Session, ServerMessage.Mutable)`
+| `ServerSession.deliver(Session, ServerMessage.Mutable, Promise<Boolean>)`
+
+| `ServerSession.deliver(Session, String, Object)`
+| `ServerSession.deliver(Session, String, Object, Promise<Boolean>)`
+
+| `ServerSession.Extension.Adapter`
+| `ServerSession.Extension`
+
+| `BayeuxClient.getBackoff()` +
+  `BayeuxClient.getBackoffIncrement()` +
+  `BayeuxClient.getMaxBackoff()`
+| `BayeuxClient.getBackOffStrategy()`
+
+| `BayeuxClient.handshake(**ClientSessionChannel**.MessageListener)`
+| `BayeuxClient.handshake(**ClientSession**.MessageListener)`
+
+| `Oort.CometListener.Adapter`
+| `Oort.CometListener`
+
+| `OortList.ElementListener.Adapter`
+| `OortList.ElementListener`
+
+| `OortMap.EntryListener.Adapter`
+| `OortMap.EntryListener`
+
+| `OortMasterLong`
+| `OortPrimaryLong`
+
+| `OortMasterService`
+| `OortPrimaryService`
+
+| `OortObject.Listener.Adapter`
+| `OortObject.Listener`
+
+| `OortPrimaryLong.Callback.Adapter`
+| `OortPrimaryLong.Callback`
+
+| `Seti.PresenceListener.Adapter`
+| `Seti.PresenceListener`
+|===
+
 :numbered:

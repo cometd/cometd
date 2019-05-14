@@ -676,23 +676,6 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
          */
         public default void onRemoved(Info<T> info) {
         }
-
-        /**
-         * An empty implementation of {@link Listener}.
-         *
-         * @deprecated use {@link Listener} instead
-         * @param <T> the object type
-         */
-        @Deprecated
-        public static class Adapter<T> implements Listener<T> {
-            @Override
-            public void onUpdated(Info<T> oldInfo, Info<T> newInfo) {
-            }
-
-            @Override
-            public void onRemoved(Info<T> info) {
-            }
-        }
     }
 
     /**
