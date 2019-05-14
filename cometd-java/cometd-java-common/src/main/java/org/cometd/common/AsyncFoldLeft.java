@@ -15,9 +15,12 @@
  */
 package org.cometd.common;
 
-import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntFunction;
 
 import org.cometd.bayeux.Promise;
 
@@ -59,10 +62,12 @@ import org.cometd.bayeux.Promise;
  */
 public class AsyncFoldLeft {
     public static <T, R> void run(T[] array, R zero, Operation<T, R> operation, Promise<R> promise) {
-        if (array.length == 0) {
+        int size = array.length;
+        if (size == 0) {
             promise.succeed(zero);
         } else {
-            run(Arrays.asList(array), zero, operation, promise);
+            IndexedLoop<T, R> loop = new IndexedLoop<>(i -> array[i], size, zero, operation, promise);
+            loop.run();
         }
     }
 
@@ -80,10 +85,21 @@ public class AsyncFoldLeft {
      * @param <R>       the type of the result
      */
     public static <T, R> void run(List<T> list, R zero, Operation<T, R> operation, Promise<R> promise) {
-        if (list.isEmpty()) {
+        int size = list.size();
+        if (size == 0) {
             promise.succeed(zero);
         } else {
-            LoopImpl<T, R> loop = new LoopImpl<>(list, zero, operation, promise);
+            IndexedLoop<T, R> loop = new IndexedLoop<>(list::get, size, zero, operation, promise);
+            loop.run();
+        }
+    }
+
+    public static <T, R> void run(Collection<T> collection, R zero, Operation<T, R> operation, Promise<R> promise) {
+        Iterator<T> iterator = collection.iterator();
+        if (!iterator.hasNext()) {
+            promise.succeed(zero);
+        } else {
+            IteratorLoop<T, R> loop = new IteratorLoop<>(iterator, zero, operation, promise);
             loop.run();
         }
     }
@@ -134,26 +150,29 @@ public class AsyncFoldLeft {
         LOOP, ASYNC, PROCEED, LEAVE, FAIL
     }
 
-    private static class LoopImpl<T, R> implements Loop<R> {
+    private static abstract class AbstractLoop<T, R> implements Loop<R> {
         private final AtomicReference<State> state = new AtomicReference<>(State.LOOP);
         private final AtomicReference<Throwable> failure = new AtomicReference<>();
-        private final List<T> list;
         private final AtomicReference<R> result;
         private final Operation<T, R> operation;
         private final Promise<R> promise;
-        private int index;
 
-        public LoopImpl(List<T> list, R zero, Operation<T, R> operation, Promise<R> promise) {
-            this.list = list;
+        private AbstractLoop(R zero, Operation<T, R> operation, Promise<R> promise) {
             this.result = new AtomicReference<>(zero);
             this.operation = operation;
             this.promise = promise;
         }
 
+        abstract boolean hasCurrent();
+
+        abstract T current();
+
+        abstract void next();
+
         void run() {
-            while (index < list.size()) {
+            while (hasCurrent()) {
                 state.set(State.LOOP);
-                operation.apply(result.get(), list.get(index), this);
+                operation.apply(result.get(), current(), this);
                 loop:
                 while (true) {
                     State current = state.get();
@@ -164,7 +183,7 @@ public class AsyncFoldLeft {
                             }
                             break;
                         case PROCEED:
-                            ++index;
+                            next();
                             break loop;
                         case LEAVE:
                             promise.succeed(result.get());
@@ -193,7 +212,7 @@ public class AsyncFoldLeft {
                         break;
                     case ASYNC:
                         if (state.compareAndSet(current, State.PROCEED)) {
-                            ++index;
+                            next();
                             run();
                             return;
                         }
@@ -243,6 +262,63 @@ public class AsyncFoldLeft {
                         throw new IllegalStateException();
                 }
             }
+        }
+    }
+
+
+    private static class IndexedLoop<T, R> extends AbstractLoop<T, R> {
+        private final IntFunction<T> element;
+        private final int size;
+        private int index;
+
+        private IndexedLoop(IntFunction<T> element, int size, R zero, Operation<T, R> operation, Promise<R> promise) {
+            super(zero, operation, promise);
+            this.element = element;
+            this.size = size;
+        }
+
+        protected boolean hasCurrent() {
+            return index < size;
+        }
+
+        protected T current() {
+            return element.apply(index);
+        }
+
+        @Override
+        void next() {
+            ++index;
+        }
+    }
+
+    private static class IteratorLoop<T, R> extends AbstractLoop<T, R> {
+        private final Iterator<T> iterator;
+        private boolean hasCurrent;
+        private T current;
+
+        private IteratorLoop(Iterator<T> iterator, R zero, Operation<T, R> operation, Promise<R> promise) {
+            super(zero, operation, promise);
+            this.iterator = iterator;
+            next();
+        }
+
+        @Override
+        boolean hasCurrent() {
+            return hasCurrent;
+        }
+
+        @Override
+        T current() {
+            if (!hasCurrent) {
+                throw new NoSuchElementException();
+            }
+            return current;
+        }
+
+        @Override
+        void next() {
+            hasCurrent = iterator.hasNext();
+            current = hasCurrent ? iterator.next() : null;
         }
     }
 }
