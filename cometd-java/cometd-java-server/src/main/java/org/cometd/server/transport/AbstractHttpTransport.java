@@ -17,6 +17,7 @@ package org.cometd.server.transport;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -524,6 +525,15 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
         }
         _lastSweep = now;
+    }
+
+    protected byte[] toJSONBytes(ServerMessage msg) {
+        ServerMessageImpl message = (ServerMessageImpl)(msg instanceof ServerMessageImpl ? msg : getBayeux().newMessage(msg));
+        byte[] bytes = message.getJSONBytes();
+        if (bytes == null) {
+            bytes = toJSON(message).getBytes(StandardCharsets.UTF_8);
+        }
+        return bytes;
     }
 
     private static class HttpContext implements BayeuxContext {

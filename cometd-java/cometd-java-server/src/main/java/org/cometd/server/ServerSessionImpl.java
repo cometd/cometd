@@ -220,7 +220,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
 
         ServerSession serverSession = session;
-        _bayeux.extendOutgoing(session, this, message, Promise.from(b -> {
+        _bayeux.extendOutgoing(serverSession, this, message, Promise.from(b -> {
             if (b) {
                 deliver1(serverSession, message, promise);
             } else {

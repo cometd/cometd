@@ -86,6 +86,9 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
 
     protected void freeze(String json) {
         _json = json;
+        // A message can be queued to different sessions, each with
+        // different transports. WebSocket transports write only strings, not
+        // bytes so these will be wasted, but only if all transports write strings.
         _jsonBytes = json.getBytes(StandardCharsets.UTF_8);
     }
 
