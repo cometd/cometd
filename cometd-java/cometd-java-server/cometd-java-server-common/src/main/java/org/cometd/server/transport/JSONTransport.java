@@ -28,10 +28,8 @@ import org.cometd.server.BayeuxServerImpl;
 public class JSONTransport extends AbstractStreamHttpTransport {
     public final static String PREFIX = "long-polling.json";
     public final static String NAME = "long-polling";
-    public final static String MIME_TYPE_OPTION = "mimeType";
 
     private boolean _jsonDebug = false;
-    private String _mimeType = "application/json;charset=UTF-8";
 
     public JSONTransport(BayeuxServerImpl bayeux) {
         super(bayeux, NAME);
@@ -42,7 +40,6 @@ public class JSONTransport extends AbstractStreamHttpTransport {
     public void init() {
         super.init();
         _jsonDebug = getOption(JSON_DEBUG_OPTION, _jsonDebug);
-        _mimeType = getOption(MIME_TYPE_OPTION, _mimeType);
     }
 
     @Override
@@ -68,7 +65,7 @@ public class JSONTransport extends AbstractStreamHttpTransport {
 
     @Override
     protected ServletOutputStream beginWrite(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        response.setContentType(_mimeType);
+        response.setContentType("application/json;charset=UTF-8");
         ServletOutputStream output = response.getOutputStream();
         output.write('[');
         return output;

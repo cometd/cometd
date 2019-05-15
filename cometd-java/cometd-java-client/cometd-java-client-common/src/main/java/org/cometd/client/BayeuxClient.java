@@ -173,43 +173,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         this.backOffStrategy = backOffStrategy;
     }
 
-    /**
-     * @return the current period of time to wait before trying to reconnect
-     * @deprecated use {@link BackOffStrategy} instead.
-     */
-    @Deprecated
-    public long getBackoff() {
-        return getBackOffStrategy().current();
-    }
-
-    /**
-     * @return the period of time that increments the pause to wait before trying to reconnect
-     * after each failed attempt to connect to the Bayeux server
-     * @deprecated use {@link BackOffStrategy} instead.
-     */
-    @Deprecated
-    public long getBackoffIncrement() {
-        BackOffStrategy strategy = getBackOffStrategy();
-        if (strategy instanceof BackOffStrategy.Linear) {
-            return ((BackOffStrategy.Linear)strategy).increment;
-        }
-        return -1;
-    }
-
-    /**
-     * @return the maximum pause to wait before trying to reconnect after each failed attempt
-     * to connect to the Bayeux server
-     * @deprecated use {@link BackOffStrategy} instead.
-     */
-    @Deprecated
-    public long getMaxBackoff() {
-        BackOffStrategy strategy = getBackOffStrategy();
-        if (strategy instanceof BackOffStrategy.Linear) {
-            return ((BackOffStrategy.Linear)strategy).increment;
-        }
-        return -1;
-    }
-
     public CookieStore getCookieStore() {
         return cookieStore;
     }
@@ -281,13 +244,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
     /**
      * @param callback the message listener to notify of the handshake result
-     * @deprecated use {@link #handshake(MessageListener)} instead
      */
-    @Deprecated
-    public void handshake(ClientSessionChannel.MessageListener callback) {
-        handshake(null, message -> callback.onMessage(getChannel(Channel.META_HANDSHAKE), message));
-    }
-
     public void handshake(MessageListener callback) {
         handshake(null, callback);
     }

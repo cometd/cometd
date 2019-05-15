@@ -661,21 +661,6 @@ public class Oort extends ContainerLifeCycle {
         }
 
         /**
-         * Empty implementation of {@link CometListener}
-         * @deprecated use {@link CometListener} instead
-         */
-        @Deprecated
-        public static class Adapter implements CometListener {
-            @Override
-            public void cometJoined(Event event) {
-            }
-
-            @Override
-            public void cometLeft(Event event) {
-            }
-        }
-
-        /**
          * Comet event object delivered to {@link CometListener} methods.
          */
         public static class Event extends EventObject {

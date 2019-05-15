@@ -76,16 +76,6 @@ public interface ServerChannel extends ConfigurableServerChannel {
     public void publish(Session from, ServerMessage.Mutable message, Promise<Boolean> promise);
 
     /**
-     * @param from    the session from which the message originates
-     * @param message the message to publish
-     * @deprecated use {@link #publish(Session, ServerMessage.Mutable, Promise)} instead
-     */
-    @Deprecated
-    default void publish(Session from, ServerMessage.Mutable message) {
-        publish(from, message, Promise.noop());
-    }
-
-    /**
      * <p>Publishes the given information to this channel.</p>
      *
      * @param from    the session from which the message originates
@@ -94,16 +84,6 @@ public interface ServerChannel extends ConfigurableServerChannel {
      * @see #publish(Session, ServerMessage.Mutable, Promise)
      */
     public void publish(Session from, Object data, Promise<Boolean> promise);
-
-    /**
-     * @param from the session from which the message originates
-     * @param data the data of the message
-     * @deprecated use {@link #publish(Session, Object, Promise)} instead
-     */
-    @Deprecated
-    default void publish(Session from, Object data) {
-        publish(from, data, Promise.noop());
-    }
 
     /**
      * <p>Removes this channel, and all the children channels.</p>

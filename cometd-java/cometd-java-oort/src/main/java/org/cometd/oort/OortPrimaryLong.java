@@ -141,22 +141,6 @@ public class OortPrimaryLong extends OortPrimaryService<Long, OortPrimaryLong.Co
          */
         public default void failed(Object failure) {
         }
-
-        /**
-         * Empty implementation of {@link Callback}
-         *
-         * @deprecated use {@link Callback} instead
-         */
-        @Deprecated
-        public static class Adapter implements Callback {
-            @Override
-            public void succeeded(Long result) {
-            }
-
-            @Override
-            public void failed(Object failure) {
-            }
-        }
     }
 
     protected static class Context {

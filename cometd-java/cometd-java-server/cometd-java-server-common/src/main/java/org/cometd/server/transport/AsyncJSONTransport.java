@@ -360,7 +360,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                         reply.put("x-messages", messages.size());
                     }
                     getBayeux().freeze(reply);
-                    output.write(toJSONBytes(reply, "UTF-8"));
+                    output.write(toJSONBytes(reply));
                     needsComma = true;
                     ++replyIndex;
                 }
@@ -383,7 +383,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                             needsComma = false;
                         } else {
                             ServerMessage message = messages.get(messageIndex);
-                            output.write(toJSONBytes(message, "UTF-8"));
+                            output.write(toJSONBytes(message));
                             needsComma = messageIndex < size;
                             ++messageIndex;
                         }
@@ -417,7 +417,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                         needsComma = false;
                     } else {
                         getBayeux().freeze(reply);
-                        output.write(toJSONBytes(reply, "UTF-8"));
+                        output.write(toJSONBytes(reply));
                         needsComma = replyIndex < size;
                         ++replyIndex;
                     }

@@ -104,16 +104,6 @@ public interface ServerSession extends Session {
     public void deliver(Session sender, ServerMessage.Mutable message, Promise<Boolean> promise);
 
     /**
-     * @param sender  the session delivering the message
-     * @param message the message to deliver
-     * @deprecated use {@link #deliver(Session, ServerMessage.Mutable, Promise)} instead
-     */
-    @Deprecated
-    public default void deliver(Session sender, ServerMessage.Mutable message) {
-        deliver(sender, message, Promise.noop());
-    }
-
-    /**
      * <p>Delivers the given information to this session.</p>
      *
      * @param sender  the session delivering the message
@@ -123,17 +113,6 @@ public interface ServerSession extends Session {
      * @see #deliver(Session, ServerMessage.Mutable, Promise)
      */
     public void deliver(Session sender, String channel, Object data, Promise<Boolean> promise);
-
-    /**
-     * @param sender  the session delivering the message
-     * @param channel the channel of the message
-     * @param data    the data of the message
-     * @deprecated use {@link #deliver(Session, String, Object, Promise)} instead
-     */
-    @Deprecated
-    public default void deliver(Session sender, String channel, Object data) {
-        deliver(sender, channel, data, Promise.noop());
-    }
 
     /**
      * @return the set of channels to which this session is subscribed to
@@ -437,15 +416,6 @@ public interface ServerSession extends Session {
          */
         default boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
             return true;
-        }
-
-        /**
-         * Empty implementation of {@link Extension}.
-         *
-         * @deprecated
-         */
-        @Deprecated
-        public static class Adapter implements Extension {
         }
     }
 }

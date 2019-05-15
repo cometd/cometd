@@ -239,23 +239,6 @@ public class OortList<E> extends OortContainer<List<E>> {
          */
         public default void onRemoved(Info<List<E>> info, List<E> elements) {
         }
-
-        /**
-         * Empty implementation of {@link ElementListener}.
-         *
-         * @deprecated use {@link ElementListener} instead
-         * @param <E> the element type
-         */
-        @Deprecated
-        public static class Adapter<E> implements ElementListener<E> {
-            @Override
-            public void onAdded(Info<List<E>> info, List<E> elements) {
-            }
-
-            @Override
-            public void onRemoved(Info<List<E>> info, List<E> elements) {
-            }
-        }
     }
 
     /**

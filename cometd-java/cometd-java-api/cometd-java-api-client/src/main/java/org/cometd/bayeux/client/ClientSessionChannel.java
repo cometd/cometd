@@ -83,16 +83,6 @@ public interface ClientSessionChannel extends Channel {
     }
 
     /**
-     * @param data     the data to publish
-     * @param callback the message callback to notify of the publish result
-     * @deprecated use {@link #publish(Object, ClientSession.MessageListener)} instead
-     */
-    @Deprecated
-    public default void publish(Object data, MessageListener callback) {
-        publish(data, message -> callback.onMessage(this, message));
-    }
-
-    /**
      * <p>Publishes the given {@code data} onto this channel, notifying the given
      * {@code callback} of the publish result, whether successful or unsuccessful.</p>
      *
@@ -102,16 +92,6 @@ public interface ClientSessionChannel extends Channel {
      * @see #publish(Message.Mutable, ClientSession.MessageListener)
      */
     public void publish(Object data, ClientSession.MessageListener callback);
-
-    /**
-     * @param message  the message to publish
-     * @param callback the message callback to notify of the publish result
-     * @deprecated use {@link #publish(Message.Mutable, ClientSession.MessageListener)} instead
-     */
-    @Deprecated
-    public default void publish(Message.Mutable message, MessageListener callback) {
-        publish(message, m -> callback.onMessage(this, m));
-    }
 
     /**
      * <p>Publishes the given {@code message} onto this channel, notifying the
@@ -132,16 +112,6 @@ public interface ClientSessionChannel extends Channel {
      */
     public default boolean subscribe(MessageListener listener) {
         return subscribe(listener, ClientSession.MessageListener.NOOP);
-    }
-
-    /**
-     * @param listener the listener to register and invoke when a message arrives on this channel
-     * @param callback the callback to notify of the subscribe result
-     * @deprecated use {@link #subscribe(MessageListener, ClientSession.MessageListener)} instead
-     */
-    @Deprecated
-    public default void subscribe(MessageListener listener, MessageListener callback) {
-        subscribe(listener, message -> callback.onMessage(this, message));
     }
 
     /**
@@ -182,16 +152,6 @@ public interface ClientSessionChannel extends Channel {
      */
     public default boolean unsubscribe(MessageListener listener) {
         return unsubscribe(listener, ClientSession.MessageListener.NOOP);
-    }
-
-    /**
-     * @param listener the listener to unsubscribe
-     * @param callback the callback to notify of the unsubscribe result
-     * @deprecated use {@link #unsubscribe(MessageListener, ClientSession.MessageListener)} instead
-     */
-    @Deprecated
-    public default void unsubscribe(MessageListener listener, MessageListener callback) {
-        unsubscribe(listener, message -> callback.onMessage(this, message));
     }
 
     /**

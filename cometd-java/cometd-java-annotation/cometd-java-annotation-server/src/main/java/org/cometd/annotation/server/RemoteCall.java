@@ -44,7 +44,6 @@ import org.cometd.bayeux.server.ServerSession;
  * </pre>
  *
  * @see RemoteCall.Caller
- * @see Listener
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

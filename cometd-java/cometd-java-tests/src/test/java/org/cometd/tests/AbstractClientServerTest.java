@@ -35,7 +35,7 @@ import org.cometd.client.http.okhttp.OkHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
-import org.cometd.client.websocket.okhttp.OkHttpWebsocketTransport;
+import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.cometd.server.transport.AsyncJSONTransport;
@@ -201,7 +201,7 @@ public abstract class AbstractClientServerTest {
             case JETTY_WEBSOCKET:
                 return new JettyWebSocketTransport(options, scheduler, wsClient);
             case OKHTTP_WEBSOCKET:
-                return new OkHttpWebsocketTransport(options, okHttpClient);
+                return new OkHttpWebSocketTransport(options, okHttpClient);
             default:
                 throw new IllegalArgumentException();
         }
