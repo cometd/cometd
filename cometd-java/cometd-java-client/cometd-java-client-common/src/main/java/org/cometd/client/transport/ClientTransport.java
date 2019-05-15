@@ -71,7 +71,7 @@ public abstract class ClientTransport extends AbstractTransport {
                 try {
                     Class<?> jsonContextClass = Thread.currentThread().getContextClassLoader().loadClass((String)jsonContextOption);
                     if (JSONContext.Client.class.isAssignableFrom(jsonContextClass)) {
-                        jsonContext = (JSONContext.Client)jsonContextClass.newInstance();
+                        jsonContext = (JSONContext.Client)jsonContextClass.getConstructor().newInstance();
                     } else {
                         throw new IllegalArgumentException("Invalid implementation of " + JSONContext.Client.class.getName() + " provided: " + jsonContextOption);
                     }

@@ -91,7 +91,7 @@ public class JettyJacksonComparisonTest {
     private final JSONProvider jsonProvider;
 
     public JettyJacksonComparisonTest(final Class<?> jsonProvider) throws Exception {
-        this.jsonProvider = (JSONProvider)jsonProvider.newInstance();
+        this.jsonProvider = (JSONProvider)jsonProvider.getConstructor().newInstance();
     }
 
     @Test

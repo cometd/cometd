@@ -83,7 +83,8 @@ public class AnnotationCometDServlet extends CometDServlet {
     }
 
     protected Object newService(String serviceClassName) throws Exception {
-        return Loader.loadClass(getClass(), serviceClassName).newInstance();
+        Class<?> serviceClass = Loader.loadClass(getClass(), serviceClassName);
+        return serviceClass.getConstructor().newInstance();
     }
 
     protected void registerService(Object service) {

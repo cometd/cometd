@@ -93,7 +93,8 @@ public abstract class OortConfigServlet extends HttpServlet {
 
             String jsonContext = config.getInitParameter(OORT_JSON_CONTEXT_PARAM);
             if (jsonContext != null) {
-                oort.setJSONContextClient((JSONContext.Client)getClass().getClassLoader().loadClass(jsonContext).newInstance());
+                Class<?> klass = getClass().getClassLoader().loadClass(jsonContext);
+                oort.setJSONContextClient((JSONContext.Client)klass.getConstructor().newInstance());
             }
 
             oort.start();

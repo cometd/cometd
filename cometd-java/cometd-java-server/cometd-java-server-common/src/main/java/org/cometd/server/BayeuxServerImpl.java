@@ -191,7 +191,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             if (option instanceof String) {
                 Class<?> jsonContextClass = Thread.currentThread().getContextClassLoader().loadClass((String)option);
                 if (JSONContext.Server.class.isAssignableFrom(jsonContextClass)) {
-                    _jsonContext = (JSONContext.Server)jsonContextClass.newInstance();
+                    _jsonContext = (JSONContext.Server)jsonContextClass.getConstructor().newInstance();
                 } else {
                     throw new IllegalArgumentException("Invalid " + JSONContext.Server.class.getName() + " implementation class");
                 }
