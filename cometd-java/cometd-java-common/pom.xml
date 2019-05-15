@@ -10,6 +10,22 @@
   <artifactId>cometd-java-common</artifactId>
   <name>CometD :: Java :: Common</name>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine}
+            <!-- Jackson is an optional dependency, so it needs
+            to be explicitly added to the module graph. -->
+            --add-modules com.fasterxml.jackson.databind
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.cometd.java</groupId>
@@ -43,7 +59,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
+      <artifactId>log4j-slf4j18-impl</artifactId>
     </dependency>
   </dependencies>
 

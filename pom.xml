@@ -412,7 +412,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>3.0.0-M3</version>
           <configuration>
-            <argLine>@{argLine} -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails -XX:+PrintCommandLineFlags -XX:MaxGCPauseMillis=1000</argLine>
+            <argLine>@{argLine} -showversion -Xmx1g -Xms1g -Xlog:gc* -XX:+PrintCommandLineFlags</argLine>
           </configuration>
         </plugin>
         <plugin>
@@ -514,7 +514,7 @@
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-slf4j-impl</artifactId>
+        <artifactId>log4j-slf4j18-impl</artifactId>
         <version>${log4j2-version}</version>
         <scope>test</scope>
       </dependency>
