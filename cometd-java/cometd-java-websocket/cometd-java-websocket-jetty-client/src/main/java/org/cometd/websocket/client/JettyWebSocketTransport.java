@@ -68,11 +68,14 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
     public void init() {
         super.init();
 
-        _webSocketClient.getHttpClient().setConnectTimeout(getConnectTimeout());
+        // Keep these 2 deprecated methods as is, because calling
+        // _webSocketClient.getHttpClient() throws a LinkageError.
+        _webSocketClient.setConnectTimeout(getConnectTimeout());
+        _webSocketClient.setCookieStore(getCookieStore());
+
         _webSocketClient.getPolicy().setIdleTimeout(getIdleTimeout());
         int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClient.getPolicy().getMaxTextMessageSize());
         _webSocketClient.getPolicy().setMaxTextMessageSize(maxMessageSize);
-        _webSocketClient.getHttpClient().setCookieStore(getCookieStore());
 
         _webSocketSupported = true;
         _webSocketConnected = false;
