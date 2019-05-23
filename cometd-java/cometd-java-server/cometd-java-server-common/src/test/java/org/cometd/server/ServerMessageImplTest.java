@@ -15,11 +15,6 @@
  */
 package org.cometd.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
@@ -28,12 +23,16 @@ import java.util.Map;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.common.JSONContext;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ServerMessageImplTest {
     @Rule
@@ -71,7 +70,7 @@ public class ServerMessageImplTest {
                 "}" +
                 "}";
 
-        JSONContext.Server jsonContext = new JettyJSONContextServer();
+        JSONContextServer jsonContext = new JettyJSONContextServer();
         ServerMessage.Mutable[] messages = jsonContext.parse(originalJSON);
         ServerMessageImpl message = (ServerMessageImpl)messages[0];
 
@@ -204,7 +203,7 @@ public class ServerMessageImplTest {
                 "  }" +
                 "}";
 
-        JSONContext.Server jsonContext = new JettyJSONContextServer();
+        JSONContextServer jsonContext = new JettyJSONContextServer();
         ServerMessage.Mutable[] messages = jsonContext.parse(originalJSON);
         ServerMessageImpl message = (ServerMessageImpl)messages[0];
         Map<String, Object> data = message.getDataAsMap();

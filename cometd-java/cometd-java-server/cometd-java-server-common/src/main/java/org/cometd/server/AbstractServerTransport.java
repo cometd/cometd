@@ -23,7 +23,6 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AbstractTransport;
-import org.cometd.common.JSONContext;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +55,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     private long _timeout = 30000;
     private long _maxLazyTimeout = 5000;
     private boolean _metaConnectDeliveryOnly = false;
-    private JSONContext.Server _jsonContext;
+    private JSONContextServer _jsonContext;
     private boolean _handshakeReconnect;
     private boolean _allowHandshakeDelivery;
     private long _maxMessageSize;
@@ -153,7 +152,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _timeout = getOption(TIMEOUT_OPTION, _timeout);
         _maxLazyTimeout = getOption(MAX_LAZY_TIMEOUT_OPTION, _maxLazyTimeout);
         _metaConnectDeliveryOnly = getOption(META_CONNECT_DELIVERY_OPTION, _metaConnectDeliveryOnly);
-        _jsonContext = (JSONContext.Server)getOption(JSON_CONTEXT_OPTION);
+        _jsonContext = (JSONContextServer)getOption(JSON_CONTEXT_OPTION);
         _handshakeReconnect = getOption(HANDSHAKE_RECONNECT_OPTION, false);
         _allowHandshakeDelivery = getOption(ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, false);
         _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, -1);

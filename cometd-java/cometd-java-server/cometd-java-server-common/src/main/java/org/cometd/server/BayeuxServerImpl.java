@@ -55,7 +55,6 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AsyncFoldLeft;
-import org.cometd.common.JSONContext;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.cometd.server.transport.AsyncJSONTransport;
 import org.cometd.server.transport.JSONPTransport;
@@ -121,7 +120,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private final Map<String, Object> _options = new TreeMap<>();
     private final Scheduler _scheduler = new ScheduledExecutorScheduler("BayeuxServer@" + Integer.toHexString(hashCode()) + "-Scheduler", false);
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
-    private JSONContext.Server _jsonContext;
+    private JSONContextServer _jsonContext;
     private boolean _validation;
     private boolean _broadcastToPublisher;
     private boolean _detailedDump;
@@ -190,15 +189,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         } else {
             if (option instanceof String) {
                 Class<?> jsonContextClass = Thread.currentThread().getContextClassLoader().loadClass((String)option);
-                if (JSONContext.Server.class.isAssignableFrom(jsonContextClass)) {
-                    _jsonContext = (JSONContext.Server)jsonContextClass.getConstructor().newInstance();
+                if (JSONContextServer.class.isAssignableFrom(jsonContextClass)) {
+                    _jsonContext = (JSONContextServer)jsonContextClass.getConstructor().newInstance();
                 } else {
-                    throw new IllegalArgumentException("Invalid " + JSONContext.Server.class.getName() + " implementation class");
+                    throw new IllegalArgumentException("Invalid " + JSONContextServer.class.getName() + " implementation class");
                 }
-            } else if (option instanceof JSONContext.Server) {
-                _jsonContext = (JSONContext.Server)option;
+            } else if (option instanceof JSONContextServer) {
+                _jsonContext = (JSONContextServer)option;
             } else {
-                throw new IllegalArgumentException("Invalid " + JSONContext.Server.class.getName() + " implementation class");
+                throw new IllegalArgumentException("Invalid " + JSONContextServer.class.getName() + " implementation class");
             }
         }
         _options.put(AbstractServerTransport.JSON_CONTEXT_OPTION, _jsonContext);
@@ -376,7 +375,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         return _policy;
     }
 
-    public JSONContext.Server getJSONContext() {
+    public JSONContextServer getJSONContext() {
         return _jsonContext;
     }
 

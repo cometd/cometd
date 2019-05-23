@@ -31,7 +31,7 @@ uses the JSON library to generate JSON from and to parse JSON to
 The JSON library class that performs this generation/parsing on the client
 must implement `org.cometd.common.JSONContext.Client`.
 
-Similarly, on the server, a `org.cometd.common.JSONContext.Server` implementation
+Similarly, on the server, a `org.cometd.server.JSONContextServer` implementation
 generates JSON from and parses JSON to `org.cometd.bayeux.server.ServerMessage` instances.
 
 [[_java_json_client_config]]
@@ -105,7 +105,7 @@ public EchoInfo writeToConfigFile(BayeuxServer bayeuxServer, EchoInfo info) thro
 ===== Server Configuration
 
 On the server, you can specify the fully qualified name of a class implementing
-`org.cometd.common.JSONContext.Server` as init-parameter of the `CometDServlet`
+`org.cometd.server.JSONContextServer` as init-parameter of the `CometDServlet`
 (see also <<_java_server_configuration,the server configuration section>>);
 if omitted, the default Jetty library is used.
 For example:
@@ -140,7 +140,7 @@ For example:
 ====
 
 The class specified must be instantiable using the default parameterless
-constructor, and it must implement `org.cometd.common.JSONContext.Server`.
+constructor, and it must implement `org.cometd.server.JSONContextServer`.
 You can customize it by adding serializers/deserializers as explained above.
 
 [[_java_json_oort_config]]

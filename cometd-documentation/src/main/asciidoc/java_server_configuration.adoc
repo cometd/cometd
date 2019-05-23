@@ -69,7 +69,7 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
 
 | jsonContext
 | `org.cometd.server.JettyJSONContextServer`
-| The full qualified name of a class implementing `org.cometd.common.JSONContext.Server`.
+| The full qualified name of a class implementing `org.cometd.server.JSONContextServer`.
   The class is loaded and instantiated using the default constructor.
 
 | transports
