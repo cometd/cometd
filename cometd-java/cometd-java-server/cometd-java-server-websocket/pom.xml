@@ -16,6 +16,7 @@
     <module>cometd-java-server-websocket-common</module>
     <module>cometd-java-server-websocket-javax</module>
     <module>cometd-java-server-websocket-jetty</module>
+    <module>cometd-java-server-websocket-tests</module>
   </modules>
 
 </project>
