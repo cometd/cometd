@@ -14,7 +14,6 @@
   <modules>
     <module>cometd-java-server-common</module>
     <module>cometd-java-server-websocket</module>
-    <module>cometd-java-server-tests</module>
   </modules>
 
 </project>
