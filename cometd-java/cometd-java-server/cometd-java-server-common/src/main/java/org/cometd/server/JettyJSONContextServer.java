@@ -16,10 +16,9 @@
 package org.cometd.server;
 
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContext;
 
-public class JettyJSONContextServer extends JettyJSONContext<ServerMessage.Mutable> implements JSONContext.Server {
+public class JettyJSONContextServer extends JettyJSONContext<ServerMessage.Mutable> implements JSONContextServer {
     @Override
     protected ServerMessage.Mutable newRoot() {
         return new ServerMessageImpl();

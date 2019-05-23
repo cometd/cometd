@@ -553,6 +553,9 @@ Few classes have also changed name and package to reflect the changes above.
 | `org.cometd.client.**http.jetty.JettyHttpClientTransport**` (replaces class in CometD 4.0) +
   `org.cometd.client.http.okhttp.OkHttpClientTransport` (new class in CometD 5.0)
 
+| `org.cometd.**common.JSONContext.Server**`
+| `org.cometd.**server.JSONContextServer**`
+
 | `org.cometd.**websocket.server.WebSocketTransport**`
 | `org.cometd.**server.websocket.javax.WebSocketTransport**`
 
