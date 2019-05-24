@@ -15,14 +15,6 @@
  */
 package org.cometd.annotation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
@@ -55,6 +46,14 @@ import org.cometd.server.ServerSessionImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ServerAnnotationProcessorTest {
     private BayeuxServerImpl bayeuxServer;
@@ -850,7 +849,7 @@ public class ServerAnnotationProcessorTest {
         @Listener("/foo")
         public Object foo(ServerSession remote, ServerMessage.Mutable message) {
             // Do not unbox it, we are testing exactly this case.
-            return new Boolean(false);
+            return Boolean.valueOf(false);
         }
 
         @Subscription("/foo")
