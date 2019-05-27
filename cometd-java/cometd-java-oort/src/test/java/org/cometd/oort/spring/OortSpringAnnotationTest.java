@@ -15,10 +15,6 @@
  */
 package org.cometd.oort.spring;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.beans.Introspector;
 import java.util.Arrays;
 
 import org.cometd.bayeux.server.BayeuxServer;
@@ -34,6 +30,9 @@ import org.springframework.web.context.ContextLoader;
 import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 public class OortSpringAnnotationTest {
     @Test
     public void testSpringWiringOfOort() throws Exception {
@@ -45,8 +44,10 @@ public class OortSpringAnnotationTest {
         server.start();
 
         ApplicationContext applicationContext = WebApplicationContextUtils.getWebApplicationContext(context.getServletContext());
+        assertNotNull(applicationContext);
 
-        String beanName = Introspector.decapitalize(OortService.class.getSimpleName());
+        String serviceClass = OortService.class.getSimpleName();
+        String beanName = Character.toLowerCase(serviceClass.charAt(0)) + serviceClass.substring(1);
 
         String[] beanNames = applicationContext.getBeanDefinitionNames();
         assertTrue(Arrays.asList(beanNames).contains(beanName));
