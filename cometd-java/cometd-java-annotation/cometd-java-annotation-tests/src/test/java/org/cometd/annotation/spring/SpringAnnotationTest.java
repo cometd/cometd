@@ -15,16 +15,15 @@
  */
 package org.cometd.annotation.spring;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.beans.Introspector;
 import java.util.Arrays;
 
 import org.junit.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class SpringAnnotationTest {
     @Test
@@ -33,7 +32,8 @@ public class SpringAnnotationTest {
         applicationContext.setConfigLocation("classpath:applicationContext.xml");
         applicationContext.refresh();
 
-        String beanName = Introspector.decapitalize(SpringBayeuxService.class.getSimpleName());
+        String serviceClass = SpringBayeuxService.class.getSimpleName();
+        String beanName = Character.toLowerCase(serviceClass.charAt(0)) + serviceClass.substring(1);
 
         String[] beanNames = applicationContext.getBeanDefinitionNames();
         assertTrue(Arrays.asList(beanNames).contains(beanName));
