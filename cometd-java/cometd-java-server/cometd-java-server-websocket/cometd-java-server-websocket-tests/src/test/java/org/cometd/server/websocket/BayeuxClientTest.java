@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.websocket.client;
+package org.cometd.server.websocket;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -48,7 +48,6 @@ import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.DefaultSecurityPolicy;
-import org.cometd.websocket.ClientServerWebSocketTest;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;

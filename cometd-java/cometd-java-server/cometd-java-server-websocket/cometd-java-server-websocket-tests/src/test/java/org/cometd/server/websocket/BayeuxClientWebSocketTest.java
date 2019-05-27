@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.websocket.client;
+package org.cometd.server.websocket;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -48,7 +48,6 @@ import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.transport.JSONTransport;
 import org.cometd.server.websocket.javax.WebSocketTransport;
-import org.cometd.websocket.ClientServerWebSocketTest;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
