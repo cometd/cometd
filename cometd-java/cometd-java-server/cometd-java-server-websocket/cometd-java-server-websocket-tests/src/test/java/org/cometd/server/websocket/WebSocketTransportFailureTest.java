@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.websocket.server;
+package org.cometd.server.websocket;
 
 import java.net.URI;
 import java.util.Collections;

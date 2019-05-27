@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.websocket.server;
+package org.cometd.server.websocket;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -47,7 +47,6 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.websocket.javax.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
-import org.cometd.websocket.ClientServerWebSocketTest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
