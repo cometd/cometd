@@ -59,6 +59,12 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-annotation-server</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
       <artifactId>cometd-java-server-common</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
