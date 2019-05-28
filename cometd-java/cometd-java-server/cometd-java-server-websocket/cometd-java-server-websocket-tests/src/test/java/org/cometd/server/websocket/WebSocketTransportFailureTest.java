@@ -121,19 +121,9 @@ public class WebSocketTransportFailureTest {
         startServer(params);
         startClient();
 
-        final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
-        final JSONContext.Client jsonContext = new JettyJSONContextClient();
-        final Session session = client.connect(new WebSocketAdapter() {
-            @Override
-            public void onWebSocketText(String message) {
-                try {
-                    Message.Mutable[] mutables = jsonContext.parse(message);
-                    Collections.addAll(messages, mutables);
-                } catch (Throwable x) {
-                    disconnect(getSession());
-                }
-            }
-        }, URI.create("ws://localhost:" + connector.getLocalPort() + "/cometd")).get(5, TimeUnit.SECONDS);
+        BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/cometd");
+        Session session = client.connect(new WebSocketEndPoint(messages), uri).get(5, TimeUnit.SECONDS);
 
         String handshake = "[{" +
                 "\"id\":\"1\"," +
@@ -187,6 +177,25 @@ public class WebSocketTransportFailureTest {
             session.disconnect();
         } catch (Throwable x) {
             x.printStackTrace();
+        }
+    }
+
+    public class WebSocketEndPoint extends WebSocketAdapter {
+        private final JSONContext.Client jsonContext = new JettyJSONContextClient();
+        private final BlockingQueue<Message> messages;
+
+        public WebSocketEndPoint(BlockingQueue<Message> messages) {
+            this.messages = messages;
+        }
+
+        @Override
+        public void onWebSocketText(String message) {
+            try {
+                Message.Mutable[] mutables = jsonContext.parse(message);
+                Collections.addAll(messages, mutables);
+            } catch (Throwable x) {
+                disconnect(getSession());
+            }
         }
     }
 }

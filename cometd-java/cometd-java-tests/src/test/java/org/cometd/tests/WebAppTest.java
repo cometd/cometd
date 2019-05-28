@@ -16,24 +16,33 @@
 package org.cometd.tests;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URL;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import org.cometd.annotation.Service;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
+import org.cometd.common.JSONContext;
+import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpStatus;
@@ -75,27 +84,47 @@ public class WebAppTest {
     private HttpClient httpClient;
 
     @Before
-    public void prepare() throws Exception {
+    public void prepare() {
         baseDir = Paths.get(System.getProperty("basedir", System.getProperty("user.dir")));
     }
 
     private void start(Path webXML) throws Exception {
         Path contextDir = baseDir.resolve("target/test-webapp/" + testname.getMethodName());
-        Path webINF = contextDir.resolve("WEB-INF");
-        Path lib = webINF.resolve("lib");
-
         removeDirectory(contextDir);
-        Files.createDirectories(lib);
+        Path webINF = Files.createDirectories(contextDir.resolve("WEB-INF"));
+        Path classes = Files.createDirectory(webINF.resolve("classes"));
+        Files.createDirectory(webINF.resolve("lib"));
 
         Files.copy(webXML, webINF.resolve("web.xml"));
-        // Typical Jetty dependencies in a CometD web application.
-        copyJar(HttpClient.class, lib);
-        copyJar(HttpStatus.class, lib);
-        copyJar(EndPoint.class, lib);
-        copyJar(ObjectMBean.class, lib);
-        copyJar(CrossOriginFilter.class, lib);
-        copyJar(Callback.class, lib);
-        copyJar(JSON.class, lib);
+        // CometD dependencies in a CometD web application.
+        copyWebAppDependency(BayeuxServer.class, webINF);
+        copyWebAppDependency(Service.class, webINF);
+        copyWebAppDependency(JSONContext.class, webINF);
+        copyWebAppDependency(BayeuxClient.class, webINF);
+        copyWebAppDependency(BayeuxServerImpl.class, webINF);
+        copyWebAppDependency(org.cometd.server.websocket.common.AbstractWebSocketTransport.class, webINF);
+        copyWebAppDependency(org.cometd.server.websocket.javax.WebSocketTransport.class, webINF);
+        copyWebAppDependency(org.cometd.server.websocket.jetty.JettyWebSocketTransport.class, webINF);
+        copyWebAppDependency(org.cometd.client.websocket.common.AbstractWebSocketTransport.class, webINF);
+        copyWebAppDependency(org.cometd.client.websocket.javax.WebSocketTransport.class, webINF);
+        copyWebAppDependency(org.cometd.client.websocket.jetty.JettyWebSocketTransport.class, webINF);
+        // Jetty dependencies in a CometD web application.
+        copyWebAppDependency(HttpClient.class, webINF);
+        copyWebAppDependency(HttpStatus.class, webINF);
+        copyWebAppDependency(EndPoint.class, webINF);
+        copyWebAppDependency(ObjectMBean.class, webINF);
+        copyWebAppDependency(CrossOriginFilter.class, webINF);
+        copyWebAppDependency(Callback.class, webINF);
+        copyWebAppDependency(JSON.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.websocket.api.WebSocketPolicy.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.websocket.common.WebSocketSession.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.websocket.client.WebSocketClient.class, webINF);
+        // Application classes.
+        Path testClasses = baseDir.resolve("target/test-classes/");
+        String serviceClass = WebAppService.class.getName().replace('.', '/') + ".class";
+        Path servicePath = classes.resolve(serviceClass);
+        Files.createDirectories(servicePath.getParent());
+        Files.copy(testClasses.resolve(serviceClass), servicePath);
 
         server = new Server();
         connector = new ServerConnector(server, 1, 1);
@@ -141,7 +170,7 @@ public class WebAppTest {
         start(baseDir.resolve("src/test/resources/jetty-ws-web.xml"));
 
         BayeuxClient client = new BayeuxClient("http://localhost:" + connector.getLocalPort() + contextPath + "/cometd", new JettyWebSocketTransport(null, null, wsClient));
-        test(client);
+        subscribePublishReceive(client);
         client.disconnect();
     }
 
@@ -150,7 +179,7 @@ public class WebAppTest {
         start(baseDir.resolve("src/test/resources/jsr-ws-web.xml"));
 
         BayeuxClient client = new BayeuxClient("http://localhost:" + connector.getLocalPort() + contextPath + "/cometd", new WebSocketTransport(null, null, wsContainer));
-        test(client);
+        subscribePublishReceive(client);
         client.disconnect();
     }
 
@@ -159,11 +188,29 @@ public class WebAppTest {
         start(baseDir.resolve("src/test/resources/http-web.xml"));
 
         BayeuxClient client = new BayeuxClient("http://localhost:" + connector.getLocalPort() + contextPath + "/cometd", new JettyHttpClientTransport(null, httpClient));
-        test(client);
+        subscribePublishReceive(client);
         client.disconnect();
     }
 
-    private void test(final BayeuxClient client) throws Exception {
+    @Test
+    public void testWebAppWithService() throws Exception {
+        start(baseDir.resolve("src/test/resources/http-service-web.xml"));
+
+        String uri = "http://localhost:" + connector.getLocalPort() + contextPath + "/cometd";
+        BayeuxClient client = new BayeuxClient(uri, new JettyHttpClientTransport(null, httpClient));
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Stream.of(WebAppService.HTTP_CHANNEL, WebAppService.JAVAX_WS_CHANNEL, WebAppService.JETTY_WS_CHANNEL)
+                .map(channel -> remoteCall(client, channel, uri))
+                .reduce((cf1, cf2) -> CompletableFuture.allOf(cf1, cf2))
+                .get()
+                .get(5, TimeUnit.SECONDS);
+
+        client.disconnect();
+    }
+
+    private void subscribePublishReceive(final BayeuxClient client) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> {
             if (message.isSuccessful()) {
@@ -177,9 +224,21 @@ public class WebAppTest {
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
+    private CompletableFuture<Void> remoteCall(BayeuxClient client, String channel, Object data) {
+        CompletableFuture<Void> completable = new CompletableFuture<>();
+        client.remoteCall(channel, data, response -> {
+            if (response.isSuccessful() && data.equals(response.getData())) {
+                completable.complete(null);
+            } else {
+                completable.completeExceptionally(new CompletionException(response.toString(), null));
+            }
+        });
+        return completable;
+    }
+
     private void removeDirectory(Path dir) throws IOException {
         if (Files.exists(dir)) {
-            Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
+            Files.walkFileTree(dir, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     Files.delete(file);
@@ -195,9 +254,26 @@ public class WebAppTest {
         }
     }
 
-    private void copyJar(Class<?> klass, Path target) throws Exception {
+    private void copyWebAppDependency(Class<?> klass, Path target) throws Exception {
         URL location = klass.getProtectionDomain().getCodeSource().getLocation();
         Path source = Paths.get(location.toURI());
-        Files.copy(source, target.resolve(source.getFileName()));
+        if (Files.isDirectory(source)) {
+            Files.walk(source).forEach(path -> {
+                Path relative = source.relativize(path);
+                Path destination = target.resolve("classes").resolve(relative);
+                copyPath(path, destination);
+            });
+        } else {
+            copyPath(source, target.resolve("lib").resolve(source.getFileName()));
+        }
+    }
+
+    private void copyPath(Path source, Path target) {
+        try {
+            Files.copy(source, target);
+        } catch (FileAlreadyExistsException ignored) {
+        } catch (IOException x) {
+            throw new UncheckedIOException(x);
+        }
     }
 }

@@ -71,11 +71,11 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
     public void init() {
         super.init();
 
-        _webSocketClient.getHttpClient().setConnectTimeout(getConnectTimeout());
+        _webSocketClient.setConnectTimeout(getConnectTimeout());
+        _webSocketClient.setCookieStore(getCookieStore());
         _webSocketClient.setIdleTimeout(Duration.ofMillis(getIdleTimeout()));
         long maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClient.getMaxTextMessageSize());
         _webSocketClient.setMaxTextMessageSize(maxMessageSize);
-        _webSocketClient.getHttpClient().setCookieStore(getCookieStore());
 
         _webSocketSupported = true;
         _webSocketConnected = false;
