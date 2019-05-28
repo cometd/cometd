@@ -35,9 +35,13 @@ import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
 import org.cometd.annotation.Service;
+import org.cometd.annotation.server.RemoteCall;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.http.common.AbstractHttpClientTransport;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
@@ -97,14 +101,19 @@ public class WebAppTest {
 
         Files.copy(webXML, webINF.resolve("web.xml"));
         // CometD dependencies in a CometD web application.
-        copyWebAppDependency(BayeuxServer.class, webINF);
         copyWebAppDependency(Service.class, webINF);
+        copyWebAppDependency(RemoteCall.class, webINF);
+        copyWebAppDependency(Message.class, webINF);
+        copyWebAppDependency(ClientSession.class, webINF);
+        copyWebAppDependency(BayeuxServer.class, webINF);
         copyWebAppDependency(JSONContext.class, webINF);
-        copyWebAppDependency(BayeuxClient.class, webINF);
         copyWebAppDependency(BayeuxServerImpl.class, webINF);
         copyWebAppDependency(org.cometd.server.websocket.common.AbstractWebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.server.websocket.javax.WebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.server.websocket.jetty.JettyWebSocketTransport.class, webINF);
+        copyWebAppDependency(BayeuxClient.class, webINF);
+        copyWebAppDependency(AbstractHttpClientTransport.class, webINF);
+        copyWebAppDependency(JettyHttpClientTransport.class, webINF);
         copyWebAppDependency(org.cometd.client.websocket.common.AbstractWebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.client.websocket.javax.WebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.client.websocket.jetty.JettyWebSocketTransport.class, webINF);
