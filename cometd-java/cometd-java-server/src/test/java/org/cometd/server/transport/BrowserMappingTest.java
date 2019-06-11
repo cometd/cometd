@@ -17,10 +17,12 @@ package org.cometd.server.transport;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.ServerSessionImpl;
@@ -254,10 +256,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
 
         HttpFields headers = response.getHeaders();
         String cookie = headers.get(HttpHeader.SET_COOKIE);
-        String[] parts = cookie.split(";");
-        for (int i = 0; i < parts.length; ++i) {
-            parts[i] = parts[i].trim();
-        }
+        List<String> parts = Arrays.stream(cookie.split(";")).map(String::trim).collect(Collectors.toList());
         boolean hasCookieName = false;
         for (String part : parts) {
             if (part.startsWith(cookieName + "=")) {
@@ -265,8 +264,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
             }
         }
         Assert.assertTrue(hasCookieName);
-        Assert.assertTrue(Arrays.asList(parts).contains("Path=" + cookiePath));
-        Assert.assertTrue(Arrays.asList(parts).contains("Domain=" + cookieDomain));
+        Assert.assertTrue(parts.contains("Path=" + cookiePath));
+        Assert.assertTrue(parts.contains("Domain=" + cookieDomain));
     }
 
     private boolean isSuccessful(ContentResponse response) {
