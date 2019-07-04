@@ -17,24 +17,18 @@
 /* CometD Version ${project.version} */
 
 (function(root, factory) {
-    var runtime = this['cometdRuntime'];
-    if (!runtime) {
-        runtime = window;
-    }
     if (typeof exports === 'object') {
         // CommonJS.
-        module.exports = factory(runtime);
+        module.exports = factory();
     } else if (typeof define === 'function' && define.amd) {
         // AMD.
-        define([], function() {
-            return factory(runtime);
-        });
+        define([], factory);
     } else {
         // Globals.
         root.org = root.org || {};
-        root.org.cometd = factory(runtime);
+        root.org.cometd = factory();
     }
-}(this, function(runtime) {
+}(this, function() {
     /**
      * Browsers may throttle the Window scheduler,
      * so we may replace it with a Worker scheduler.
@@ -53,10 +47,10 @@
             return funktion;
         };
         this.setTimeout = function(funktion, delay) {
-            return runtime.setTimeout(funktion, delay);
+            return window.setTimeout(funktion, delay);
         };
         this.clearTimeout = function(id) {
-            runtime.clearTimeout(id);
+            window.clearTimeout(id);
         };
     };
 
@@ -565,7 +559,7 @@
                 try {
                     var state = xhr.readyState;
                     xhr.abort();
-                    return state !== runtime.XMLHttpRequest.UNSENT;
+                    return state !== window.XMLHttpRequest.UNSENT;
                 } catch (x) {
                     this._debug(x);
                 }
@@ -599,7 +593,7 @@
         };
 
         _self.newXMLHttpRequest = function() {
-            return new runtime.XMLHttpRequest();
+            return new window.XMLHttpRequest();
         };
 
         _self.xhrSend = function(packet) {
@@ -624,7 +618,7 @@
                     packet.onError(xhr.statusText);
                 }
             };
-            xhr.onerror = function() {
+            xhr.onabort = xhr.onerror = function() {
                 packet.onError(xhr.statusText);
             };
             xhr.send(packet.body);
@@ -722,9 +716,9 @@
             var script = document.createElement('script');
 
             var callbackName = '_cometd_jsonp_' + jsonp++;
-            runtime[callbackName] = function(responseText) {
+            window[callbackName] = function(responseText) {
                 head.removeChild(script);
-                delete runtime[callbackName];
+                delete window[callbackName];
                 packet.onSuccess(responseText);
             };
 
@@ -934,7 +928,7 @@
 
             try {
                 var protocol = _cometd.getConfiguration().protocol;
-                context.webSocket = protocol ? new runtime.WebSocket(url, protocol) : new runtime.WebSocket(url);
+                context.webSocket = protocol ? new window.WebSocket(url, protocol) : new window.WebSocket(url);
                 _connecting = context;
             } catch (x) {
                 _webSocketSupported = false;
@@ -1201,7 +1195,7 @@
         _self.accept = function(version, crossDomain, url) {
             this._debug('Transport', this.getType(), 'accept, supported:', _webSocketSupported);
             // Using !! to return a boolean (and not the WebSocket object).
-            return _webSocketSupported && !!runtime.WebSocket && _cometd.websocketEnabled !== false;
+            return _webSocketSupported && !!window.WebSocket && _cometd.websocketEnabled !== false;
         };
 
         _self.send = function(envelope, metaConnect) {
@@ -1365,13 +1359,13 @@
         }
 
         function _log(level, args) {
-            if (runtime.console) {
-                var logger = runtime.console[level];
+            if (window.console) {
+                var logger = window.console[level];
                 if (_isFunction(logger)) {
                     var now = new Date();
                     [].splice.call(args, 0, 0, _zeroPad(now.getHours(), 2) + ':' + _zeroPad(now.getMinutes(), 2) + ':' +
                         _zeroPad(now.getSeconds(), 2) + '.' + _zeroPad(now.getMilliseconds(), 3));
-                    logger.apply(runtime.console, args);
+                    logger.apply(window.console, args);
                 }
             }
         }
@@ -1415,9 +1409,9 @@
          * @return whether the given hostAndPort is cross domain
          */
         this._isCrossDomain = function(hostAndPort) {
-            if (runtime.location && runtime.location.host) {
+            if (window.location && window.location.host) {
                 if (hostAndPort) {
-                    return hostAndPort !== runtime.location.host;
+                    return hostAndPort !== window.location.host;
                 }
             }
             return false;
@@ -1469,15 +1463,15 @@
                 }
             }
 
-            if (runtime.Worker && runtime.Blob && runtime.URL && _config.useWorkerScheduler) {
+            if (window.Worker && window.Blob && window.URL && _config.useWorkerScheduler) {
                 var code = WorkerScheduler.toString();
                 // Remove the function declaration, the opening brace and the closing brace.
                 code = code.substring(code.indexOf('{') + 1, code.lastIndexOf('}'));
-                var blob = new runtime.Blob([code], {
+                var blob = new window.Blob([code], {
                     type: 'application/json'
                 });
-                var blobURL = runtime.URL.createObjectURL(blob);
-                var worker = new runtime.Worker(blobURL);
+                var blobURL = window.URL.createObjectURL(blob);
+                var worker = new window.Worker(blobURL);
                 _scheduler.setTimeout = function(funktion, delay) {
                     var id = _scheduler.register(funktion);
                     worker.postMessage({
@@ -3296,7 +3290,7 @@
         };
 
         // Initialize transports.
-        if (runtime.WebSocket) {
+        if (window.WebSocket) {
             this.registerTransport('websocket', new WebSocketTransport());
         }
         this.registerTransport('long-polling', new LongPollingTransport());
