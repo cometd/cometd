@@ -158,15 +158,23 @@ public class XMLHttpRequestExchange extends ScriptableObject {
          * @param sync whether the call should be synchronous
          */
         private void notifyReadyStateChange(boolean sync) {
-            threads.invoke(sync, thiz, thiz, "onreadystatechange");
+            notify(sync, "readystatechange");
         }
 
         private void notifyLoad() {
-            threads.invoke(false, thiz, thiz, "onload");
+            notify(false, "load");
         }
 
         private void notifyError() {
-            threads.invoke(false, thiz, thiz, "onerror");
+            notify(false, "error");
+        }
+
+        private void notifyAbort() {
+            notify(false, "abort");
+        }
+
+        private void notify(boolean sync, String event) {
+            threads.invoke(sync, thiz, thiz, "on" + event);
         }
 
         public void send() throws Exception {
@@ -187,7 +195,7 @@ public class XMLHttpRequestExchange extends ScriptableObject {
             if (async && (readyState == ReadyState.HEADERS_RECEIVED || readyState == ReadyState.LOADING)) {
                 readyState = ReadyState.DONE;
                 notifyReadyStateChange(true);
-                notifyError();
+                notifyAbort();
             }
             readyState = ReadyState.UNSENT;
         }

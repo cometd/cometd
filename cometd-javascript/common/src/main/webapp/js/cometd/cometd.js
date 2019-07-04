@@ -618,7 +618,7 @@
                     packet.onError(xhr.statusText);
                 }
             };
-            xhr.onerror = function() {
+            xhr.onabort = xhr.onerror = function() {
                 packet.onError(xhr.statusText);
             };
             xhr.send(packet.body);
