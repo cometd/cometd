@@ -19,6 +19,7 @@ import java.io.BufferedWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +35,6 @@ import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Constraint;
 import org.junit.Assert;
 import org.junit.Test;
@@ -82,7 +82,8 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
             @Override
             protected void customize(Request request) {
                 String authorization = userName + ":" + password;
-                authorization = B64Code.encode(authorization);
+                byte[] bytes = Base64.getEncoder().encode(authorization.getBytes(StandardCharsets.UTF_8));
+                authorization = new String(bytes, StandardCharsets.UTF_8);
                 request.header("Authorization", "Basic " + authorization);
             }
         };

@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.EventListener;
 import java.util.EventObject;
 import java.util.HashMap;
@@ -53,7 +54,6 @@ import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.ext.BinaryExtension;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -363,8 +363,9 @@ public class Oort extends ContainerLifeCycle {
 
     protected String encodeSecret(String secret) {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-1");
-            return new String(B64Code.encode(digest.digest(secret.getBytes(StandardCharsets.UTF_8))));
+            MessageDigest digest = MessageDigest.getInstance("SHA-512");
+            byte[] bytes = digest.digest(secret.getBytes(StandardCharsets.UTF_8));
+            return new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
         } catch (Exception x) {
             throw new IllegalArgumentException(x);
         }
