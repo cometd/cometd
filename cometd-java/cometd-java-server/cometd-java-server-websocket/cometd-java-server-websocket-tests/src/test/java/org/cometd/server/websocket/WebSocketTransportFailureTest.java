@@ -166,7 +166,7 @@ public class WebSocketTransportFailureTest {
         ServerSession serverSession = bayeux.getSession(clientId);
         Assert.assertNull(serverSession);
 
-        ServerContainer container = (ServerContainer)context.getAttribute(javax.websocket.server.ServerContainer.class.getName());
+        ServerContainer container = (ServerContainer)context.getServletContext().getAttribute(javax.websocket.server.ServerContainer.class.getName());
         Assert.assertTrue(container.getOpenSessions().isEmpty());
     }
 
