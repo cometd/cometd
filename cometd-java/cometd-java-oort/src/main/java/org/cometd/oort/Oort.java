@@ -363,8 +363,9 @@ public class Oort extends ContainerLifeCycle {
 
     protected String encodeSecret(String secret) {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-1");
-            return Base64.getEncoder().encodeToString(digest.digest(secret.getBytes(StandardCharsets.UTF_8)));
+            MessageDigest digest = MessageDigest.getInstance("SHA-512");
+            byte[] bytes = digest.digest(secret.getBytes(StandardCharsets.UTF_8));
+            return new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
         } catch (Exception x) {
             throw new IllegalArgumentException(x);
         }

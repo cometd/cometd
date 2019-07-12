@@ -7,6 +7,16 @@
 
 These instructions are only for CometD committers that want to perform a CometD release.
 
+[[_release_test]]
+=== Testing the Release
+
+Before creating the release, the following tests should be performed:
+
+* The <<_installation_demos,CometD Demo>> works
+* The <<_benchmarking,CometD Benchmark>> works and yields good results
+* The https://github.com/cometd/cometd-nodejs-client[CometD NodeJS Client] works
+* The https://github.com/cometd/cometd-nodejs-server[CometD NodeJS Server] works
+
 [[_release_create]]
 === Creating the Release
 
@@ -37,7 +47,7 @@ Below the manual steps that needs to be done to finish the release process.
 [[_release_repository]]
 === Managing the Repository
 
-Login to http://oss.sonatype.org[Sonatype OSS].
+Login to https://oss.sonatype.org[Sonatype OSS].
 
 Click on "Staging Repositories" and you should see the staged project just
 uploaded by the `mvn release:perform` command issued above, with status "open".

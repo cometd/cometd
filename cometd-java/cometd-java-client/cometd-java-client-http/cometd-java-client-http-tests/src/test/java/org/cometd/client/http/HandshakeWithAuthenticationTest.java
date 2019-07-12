@@ -84,7 +84,8 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
             @Override
             protected void customize(Request request) {
                 String authorization = userName + ":" + password;
-                authorization = Base64.getEncoder().encodeToString(authorization.getBytes(StandardCharsets.UTF_8));
+                byte[] bytes = Base64.getEncoder().encode(authorization.getBytes(StandardCharsets.UTF_8));
+                authorization = new String(bytes, StandardCharsets.UTF_8);
                 request.header("Authorization", "Basic " + authorization);
             }
         };

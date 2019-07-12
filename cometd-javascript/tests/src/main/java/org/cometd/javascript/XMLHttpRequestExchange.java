@@ -16,7 +16,6 @@
 package org.cometd.javascript;
 
 import java.io.EOFException;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +44,7 @@ public class XMLHttpRequestExchange {
         return exchange.getRequest().getMethod();
     }
 
-    public void setRequestContent(String data) throws UnsupportedEncodingException {
+    public void setRequestContent(String data) {
         exchange.setRequestContent(data);
     }
 
@@ -103,7 +102,7 @@ public class XMLHttpRequestExchange {
         private final ScriptObjectMirror thiz;
         private final boolean async;
         private volatile boolean aborted;
-        private volatile ReadyState readyState = ReadyState.UNSENT;
+        private volatile ReadyState readyState;
         private volatile String requestText;
         private volatile String responseText;
         private volatile int responseStatus;
@@ -139,18 +138,26 @@ public class XMLHttpRequestExchange {
             if (logger.isDebugEnabled()) {
                 logger.debug("Notifying onreadystatechange ({}) {}", readyState, getRequest().getURI());
             }
-            javaScript.invoke(sync, thiz, "onreadystatechange");
+            notify(sync, "readystatechange");
         }
 
         private void notifyLoad() {
-            javaScript.invoke(true, thiz, "onload");
+            notify(true, "load");
         }
 
-        private void notifyError(boolean sync) {
-            javaScript.invoke(sync, thiz, "onerror");
+        private void notifyError() {
+            notify(true, "error");
         }
 
-        public void send() throws Exception {
+        private void notifyAbort() {
+            notify(false, "abort");
+        }
+
+        private void notify(boolean sync, String event) {
+            javaScript.invoke(sync, thiz, "on" + event);
+        }
+
+        public void send() {
             if (logger.isDebugEnabled()) {
                 logger.debug("Submitted {}", this);
             }
@@ -169,7 +176,7 @@ public class XMLHttpRequestExchange {
                 readyState = ReadyState.DONE;
                 if (isAsynchronous()) {
                     notifyReadyStateChange(false);
-                    notifyError(false);
+                    notifyAbort();
                 }
             } else {
                 readyState = ReadyState.UNSENT;
@@ -261,7 +268,7 @@ public class XMLHttpRequestExchange {
                 readyState = ReadyState.DONE;
                 if (isAsynchronous()) {
                     notifyReadyStateChange(true);
-                    notifyError(true);
+                    notifyError();
                 }
             }
             super.onComplete(result);
