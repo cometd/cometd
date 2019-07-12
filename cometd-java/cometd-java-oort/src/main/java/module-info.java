@@ -17,13 +17,9 @@ module org.cometd.oort {
     exports org.cometd.oort;
     exports org.cometd.oort.jmx;
 
-    requires org.cometd.api.server;
-    requires org.cometd.client;
-    requires org.cometd.client.websocket.javax;
-    requires org.cometd.client.http.jetty;
-    requires org.cometd.common;
-    requires org.cometd.server;
-    requires org.eclipse.jetty.client;
+    requires transitive org.cometd.client.websocket.javax;
+    requires transitive org.cometd.client.http.jetty;
+    requires transitive org.cometd.server;
     requires org.eclipse.jetty.util;
 
     requires static jetty.servlet.api;

@@ -315,7 +315,7 @@ public class CometDLoadServer {
         context.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, BayeuxServer.ATTRIBUTE);
 
-        JavaxWebSocketServletContainerInitializer.configureContext(context);
+        JavaxWebSocketServletContainerInitializer.initialize(context);
 
         // Setup default servlet to serve static files
         context.addServlet(DefaultServlet.class, "/");

@@ -18,10 +18,10 @@ module org.cometd.server.websocket.jetty {
 
     requires jetty.servlet.api;
     requires org.cometd.server;
-    requires org.cometd.server.websocket.common;
-    requires org.eclipse.jetty.util;
+    requires transitive org.cometd.server.websocket.common;
+    requires transitive org.eclipse.jetty.util;
     requires org.eclipse.jetty.servlet;
-    requires org.eclipse.jetty.websocket.jetty.api;
-    requires org.eclipse.jetty.websocket.jetty.server;
+    requires transitive org.eclipse.jetty.websocket.jetty.api;
+    requires transitive org.eclipse.jetty.websocket.jetty.server;
     requires org.slf4j;
 }

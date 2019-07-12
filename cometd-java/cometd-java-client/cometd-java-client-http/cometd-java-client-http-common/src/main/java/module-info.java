@@ -16,6 +16,5 @@
 module org.cometd.client.http.common {
     exports org.cometd.client.http.common;
 
-    requires org.cometd.client;
-    requires org.cometd.common;
+    requires transitive org.cometd.client;
 }

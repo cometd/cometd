@@ -16,11 +16,12 @@
 module org.cometd.common {
     exports org.cometd.common;
 
-    requires transitive org.cometd.api.server;
-    requires org.eclipse.jetty.util;
-    requires org.eclipse.jetty.util.ajax;
+    requires transitive org.cometd.api.client;
+    requires transitive org.eclipse.jetty.util;
     requires org.slf4j;
 
+    // Only required when using Jetty's JSON.
+    requires static org.eclipse.jetty.util.ajax;
     // Only required when using Jackson.
     requires static com.fasterxml.jackson.databind;
 }

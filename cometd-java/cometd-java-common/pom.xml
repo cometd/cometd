@@ -19,8 +19,9 @@
         <configuration>
           <argLine>
             @{argLine}
-            <!-- Jackson is an optional dependency, so it needs
-            to be explicitly added to the module graph. -->
+            <!-- Jetty's JSON and Jackson are optional dependencies, so
+            they need to be explicitly added to the module graph. -->
+            --add-modules org.eclipse.jetty.util.ajax
             --add-modules com.fasterxml.jackson.databind
           </argLine>
         </configuration>
@@ -40,13 +41,14 @@
       <version>${jetty-version}</version>
     </dependency>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
       <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

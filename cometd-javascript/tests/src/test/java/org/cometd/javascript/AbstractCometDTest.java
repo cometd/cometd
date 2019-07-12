@@ -20,8 +20,14 @@ import java.net.CookieStore;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import javax.servlet.ServletException;
 
 import jdk.nashorn.api.scripting.JSObject;
 import org.cometd.server.BayeuxServerImpl;
@@ -102,7 +108,17 @@ public abstract class AbstractCometDTest {
         String contextPath = "/cometd";
         context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
 
-        JavaxWebSocketServletContainerInitializer.configureContext(context);
+        ServletContainerInitializer initializer = new JavaxWebSocketServletContainerInitializer();
+        context.addEventListener(new ServletContextListener() {
+            @Override
+            public void contextInitialized(ServletContextEvent sce) {
+                try {
+                    initializer.onStartup(Set.of(), sce.getServletContext());
+                } catch (ServletException x) {
+                    throw new RuntimeException(x);
+                }
+            }
+        });
 
         // Setup default servlet to serve static files
         context.addServlet(DefaultServlet.class, "/");

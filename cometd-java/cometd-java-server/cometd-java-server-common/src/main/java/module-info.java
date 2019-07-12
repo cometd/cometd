@@ -24,7 +24,7 @@ module org.cometd.server {
     requires jetty.servlet.api;
     requires transitive org.cometd.api.server;
     requires transitive org.cometd.common;
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.util;
     requires org.slf4j;
 
     // Only required if using JMX.

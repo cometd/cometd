@@ -16,8 +16,14 @@
 package org.cometd.server.websocket;
 
 import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import javax.servlet.ServletException;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
@@ -30,7 +36,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -75,16 +81,25 @@ public class MultipleURLMappingsTest {
 
         context = new ServletContextHandler(server, "/", true, false);
 
-        switch (wsTransportClass) {
-            case JSR_WS_TRANSPORT:
-                JavaxWebSocketServletContainerInitializer.configureContext(context);
-                break;
-            case JETTY_WS_TRANSPORT:
-                JettyWebSocketServletContainerInitializer.configureContext(context);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported transport " + wsTransportClass);
+        ServletContainerInitializer initializer;
+        if (JSR_WS_TRANSPORT.equals(wsTransportClass)) {
+            initializer = new JavaxWebSocketServletContainerInitializer();
+        } else if (JETTY_WS_TRANSPORT.equals(wsTransportClass)) {
+            initializer = new JettyWebSocketServletContainerInitializer();
+        } else {
+            throw new IllegalArgumentException("Unsupported transport " + wsTransportClass);
         }
+
+        context.addEventListener(new ServletContextListener() {
+            @Override
+            public void contextInitialized(ServletContextEvent sce) {
+                try {
+                    initializer.onStartup(Set.of(), sce.getServletContext());
+                } catch (ServletException x) {
+                    throw new RuntimeException(x);
+                }
+            }
+        });
 
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("transports", wsTransportClass);

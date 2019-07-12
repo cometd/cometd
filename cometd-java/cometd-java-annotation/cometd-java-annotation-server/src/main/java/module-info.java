@@ -16,12 +16,14 @@
 module org.cometd.annotation.server {
     exports org.cometd.annotation.server;
 
+    requires java.annotation;
     requires javax.inject;
     requires transitive org.cometd.annotation;
     requires transitive org.cometd.api.server;
-    requires org.cometd.server;
     requires org.eclipse.jetty.util;
+    requires org.slf4j;
 
     // Only required if using AnnotationCometDServlet.
     requires static jetty.servlet.api;
+    requires static org.cometd.server;
 }

@@ -15,6 +15,8 @@
  */
 package org.cometd.server.websocket;
 
+import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
@@ -25,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.WebSocketContainer;
 
@@ -54,8 +57,6 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
 
 public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     public BayeuxClientWebSocketTest(String implementation) {
@@ -159,7 +160,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         int port = connector.getLocalPort();
         stopServer();
         Assert.assertTrue(disconnectedLatch.get().await(10, TimeUnit.SECONDS));
-        Assert.assertTrue(!client.isConnected());
+        Assert.assertFalse(client.isConnected());
 
         // restart server
         connectedLatch.set(new CountDownLatch(1));
@@ -234,7 +235,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         int port = connector.getLocalPort();
         server.stop();
         Assert.assertTrue(disconnectedLatch.get().await(10, TimeUnit.SECONDS));
-        Assert.assertTrue(!client.isConnected());
+        Assert.assertFalse(client.isConnected());
 
         // restart server
         connector.setPort(port);

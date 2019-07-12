@@ -22,7 +22,7 @@
 
   <filter>
     <filter-name>wsuf</filter-name>
-    <filter-class>org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter</filter-class>
+    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>
 

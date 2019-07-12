@@ -83,7 +83,7 @@ public class WebSocketTransportFailureTest {
         server.addConnector(connector);
 
         context = new ServletContextHandler(server, "/");
-        JavaxWebSocketServletContainerInitializer.configureContext(context);
+        JavaxWebSocketServletContainerInitializer.initialize(context);
 
         String cometdURLMapping = "/cometd/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
@@ -168,7 +168,7 @@ public class WebSocketTransportFailureTest {
         ServerSession serverSession = bayeux.getSession(clientId);
         Assert.assertNull(serverSession);
 
-        JavaxWebSocketServerContainer container = (JavaxWebSocketServerContainer)context.getAttribute(ServerContainer.class.getName());
+        JavaxWebSocketServerContainer container = (JavaxWebSocketServerContainer)context.getServletContext().getAttribute(ServerContainer.class.getName());
         Assert.assertTrue(container.getOpenSessions().isEmpty());
     }
 

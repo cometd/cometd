@@ -254,7 +254,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
 
         HttpFields headers = response.getHeaders();
         String cookie = headers.get(HttpHeader.SET_COOKIE);
-        String[] parts = cookie.split(";");
+        String[] parts = cookie.trim().split("\\s*;\\s*");
         boolean hasCookieName = false;
         for (String part : parts) {
             if (part.startsWith(cookieName + "=")) {

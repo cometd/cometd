@@ -17,7 +17,5 @@ module org.cometd.client.http.okhttp {
     exports org.cometd.client.http.okhttp;
 
     requires okhttp3;
-    requires org.cometd.client;
-    requires org.cometd.client.http.common;
-    requires org.eclipse.jetty.util;
+    requires transitive org.cometd.client.http.common;
 }

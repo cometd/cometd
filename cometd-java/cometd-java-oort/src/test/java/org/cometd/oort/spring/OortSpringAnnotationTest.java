@@ -15,6 +15,9 @@
  */
 package org.cometd.oort.spring;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Arrays;
 
 import org.cometd.bayeux.server.BayeuxServer;
@@ -30,15 +33,12 @@ import org.springframework.web.context.ContextLoader;
 import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 public class OortSpringAnnotationTest {
     @Test
     public void testSpringWiringOfOort() throws Exception {
         Server server = new Server();
         ServletContextHandler context = new ServletContextHandler(server, "/");
-        JavaxWebSocketServletContainerInitializer.configureContext(context);
+        JavaxWebSocketServletContainerInitializer.initialize(context);
         context.addEventListener(new ContextLoaderListener());
         context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:/applicationContext.xml");
         server.start();

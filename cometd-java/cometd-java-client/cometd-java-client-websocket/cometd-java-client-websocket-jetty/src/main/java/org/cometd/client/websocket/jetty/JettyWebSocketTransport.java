@@ -72,7 +72,6 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         super.init();
 
         _webSocketClient.setConnectTimeout(getConnectTimeout());
-        _webSocketClient.setCookieStore(getCookieStore());
         _webSocketClient.setIdleTimeout(Duration.ofMillis(getIdleTimeout()));
         long maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClient.getMaxTextMessageSize());
         _webSocketClient.setMaxTextMessageSize(maxMessageSize);
@@ -88,6 +87,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
                 logger.debug("Opening websocket session to {}", uri);
             }
             ClientUpgradeRequest request = new ClientUpgradeRequest();
+            request.setCookies(getCookieStore().get(URI.create(uri)));
             String protocol = getProtocol();
             if (protocol != null) {
                 request.setSubProtocols(protocol);
@@ -191,14 +191,8 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
                 }
 
                 // Blocking async sends for the client to allow concurrent sends.
-                // The send() should be failed by the implementation, but
-                // will use Future.get(timeout) to avoid implementation bugs.
-                long timeout = getIdleTimeout() + 1000;
-                session.getRemote().sendStringByFuture(content).get(timeout, TimeUnit.MILLISECONDS);
-            } catch (TimeoutException x) {
-                fail(x, "Timeout");
-            } catch (ExecutionException x) {
-                fail(x.getCause(), "Exception");
+                // TODO: do we need to block here?
+                session.getRemote().sendString(content);
             } catch (Throwable x) {
                 fail(x, "Failure");
             }

@@ -17,7 +17,6 @@ module org.cometd.client.websocket.okhttp {
     exports org.cometd.client.websocket.okhttp;
 
     requires okhttp3;
-    requires org.cometd.client;
-    requires org.cometd.client.websocket.common;
-    requires org.eclipse.jetty.util;
+    requires transitive org.cometd.client;
+    requires transitive org.cometd.client.websocket.common;
 }

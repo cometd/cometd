@@ -18,5 +18,6 @@ module org.cometd.annotation.client {
 
     requires java.annotation;
     requires transitive org.cometd.annotation;
-    requires org.cometd.api.client;
+    requires transitive org.cometd.api.client;
+    requires org.slf4j;
 }

@@ -52,8 +52,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.jmx.ObjectMBean;
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -61,13 +59,11 @@ import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.FragmentConfiguration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.webapp.JndiConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketConfiguration;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -128,6 +124,7 @@ public class WebAppTest {
         copyWebAppDependency(org.eclipse.jetty.websocket.api.WebSocketPolicy.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.common.WebSocketSession.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.client.WebSocketClient.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.websocket.core.client.WebSocketCoreClient.class, webINF);
         // Application classes.
         Path testClasses = baseDir.resolve("target/test-classes/");
         String serviceClass = WebAppService.class.getName().replace('.', '/') + ".class";
@@ -144,14 +141,12 @@ public class WebAppTest {
         WebAppContext webApp = new WebAppContext();
         webApp.setContextPath(contextPath);
         webApp.setBaseResource(Resource.newResource(contextDir.toUri()));
-        webApp.setConfigurations(new Configuration[]{
+        webApp.addConfiguration(
                 new AnnotationConfiguration(),
-                new WebXmlConfiguration(),
-                new WebInfConfiguration(),
-                new PlusConfiguration(),
-                new MetaInfConfiguration(),
-                new FragmentConfiguration(),
-                new EnvConfiguration()});
+                new JavaxWebSocketConfiguration(),
+                new JettyWebSocketConfiguration(),
+                new JndiConfiguration()
+        );
 
         contexts.addHandler(webApp);
 

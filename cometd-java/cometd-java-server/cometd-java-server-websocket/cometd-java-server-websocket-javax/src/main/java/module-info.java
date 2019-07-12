@@ -19,7 +19,7 @@ module org.cometd.server.websocket.javax {
     requires jetty.servlet.api;
     requires jetty.websocket.api;
     requires org.cometd.server;
-    requires org.cometd.server.websocket.common;
+    requires transitive org.cometd.server.websocket.common;
     requires org.eclipse.jetty.util;
     requires org.slf4j;
 }

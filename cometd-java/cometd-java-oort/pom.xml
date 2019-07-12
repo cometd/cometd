@@ -13,6 +13,21 @@
   <packaging>jar</packaging>
   <name>CometD :: Java :: Oort</name>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine}
+            --add-opens org.cometd.oort/org.cometd.oort.spring=ALL-UNNAMED
+            --add-modules org.eclipse.jetty.jmx
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -94,6 +109,12 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
+      <version>${jetty-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util-ajax</artifactId>
       <version>${jetty-version}</version>
       <scope>test</scope>
     </dependency>

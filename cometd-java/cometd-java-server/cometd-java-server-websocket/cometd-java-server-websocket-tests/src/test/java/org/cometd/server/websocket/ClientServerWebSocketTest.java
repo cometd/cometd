@@ -17,6 +17,12 @@ package org.cometd.server.websocket;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
+
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import javax.servlet.ServletException;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
@@ -37,7 +43,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
@@ -127,16 +133,25 @@ public abstract class ClientServerWebSocketTest {
 
         context = new ServletContextHandler(server, "/", true, false);
 
-        switch (wsTransportType) {
-            case WEBSOCKET_JSR_356:
-                JavaxWebSocketServletContainerInitializer.configureContext(context);
-                break;
-            case WEBSOCKET_JETTY:
-                JettyWebSocketServletContainerInitializer.configureContext(context);
-                break;
-            default:
-                throw new IllegalArgumentException();
+        ServletContainerInitializer initializer;
+        if (WEBSOCKET_JSR_356.equals(wsTransportType)) {
+            initializer = new JavaxWebSocketServletContainerInitializer();
+        } else if (WEBSOCKET_JETTY.equals(wsTransportType)) {
+            initializer = new JettyWebSocketServletContainerInitializer();
+        } else {
+            throw new IllegalArgumentException("Unsupported transport " + wsTransportType);
         }
+
+        context.addEventListener(new ServletContextListener() {
+            @Override
+            public void contextInitialized(ServletContextEvent sce) {
+                try {
+                    initializer.onStartup(Set.of(), sce.getServletContext());
+                } catch (ServletException x) {
+                    throw new RuntimeException(x);
+                }
+            }
+        });
 
         // CometD servlet
         cometdServletPath = servletPath;

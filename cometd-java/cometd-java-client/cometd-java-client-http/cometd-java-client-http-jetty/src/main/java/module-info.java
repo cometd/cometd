@@ -16,9 +16,8 @@
 module org.cometd.client.http.jetty {
     exports org.cometd.client.http.jetty;
 
-    requires org.cometd.client;
-    requires org.cometd.client.http.common;
-    requires org.eclipse.jetty.client;
+    requires transitive org.cometd.client.http.common;
+    requires transitive org.eclipse.jetty.client;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.util;
 }

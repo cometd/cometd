@@ -16,5 +16,5 @@
 module org.cometd.client.websocket.common {
     exports org.cometd.client.websocket.common;
 
-    requires org.cometd.client;
+    requires transitive org.cometd.client;
 }

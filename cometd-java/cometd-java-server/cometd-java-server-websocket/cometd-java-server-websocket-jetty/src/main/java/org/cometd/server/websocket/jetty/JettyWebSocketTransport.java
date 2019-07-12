@@ -29,12 +29,10 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.websocket.common.AbstractBayeuxContext;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
 
 public class JettyWebSocketTransport extends AbstractWebSocketTransport {
     public JettyWebSocketTransport(BayeuxServerImpl bayeux) {
@@ -55,8 +53,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
             throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING_OPTION + "' parameter");
         }
 
-        ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(context, "JettyWebSocketTransport");
-        JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.configureContext(contextHandler);
+        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.ensureContainer(context);
         if (container == null) {
             throw new IllegalArgumentException("Missing JettyWebSocketServerContainer");
         }

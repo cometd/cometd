@@ -61,7 +61,7 @@ public class TransportFailureTest {
 
         ServletContextHandler context = new ServletContextHandler(server, "/");
 
-        JavaxWebSocketServletContainerInitializer.configureContext(context);
+        JavaxWebSocketServletContainerInitializer.initialize(context);
 
         cometdServletPath = "/cometd";
 

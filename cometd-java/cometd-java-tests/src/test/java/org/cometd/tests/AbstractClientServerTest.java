@@ -21,9 +21,14 @@ import java.net.NetworkInterface;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import javax.servlet.ServletException;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
@@ -48,7 +53,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
@@ -101,16 +106,31 @@ public abstract class AbstractClientServerTest {
 
         context = new ServletContextHandler(server, "/");
 
+        ServletContainerInitializer initializer;
         switch (transport) {
             case JAVAX_WEBSOCKET:
             case OKHTTP_WEBSOCKET:
-                JavaxWebSocketServletContainerInitializer.configureContext(context);
+                initializer = new JavaxWebSocketServletContainerInitializer();
                 break;
             case JETTY_WEBSOCKET:
-                JettyWebSocketServletContainerInitializer.configureContext(context);
+                initializer = new JettyWebSocketServletContainerInitializer();
                 break;
             default:
+                initializer = null;
                 break;
+        }
+
+        if (initializer != null) {
+            context.addEventListener(new ServletContextListener() {
+                @Override
+                public void contextInitialized(ServletContextEvent sce) {
+                    try {
+                        initializer.onStartup(Set.of(), sce.getServletContext());
+                    } catch (ServletException x) {
+                        throw new RuntimeException(x);
+                    }
+                }
+            });
         }
 
         // CometD servlet

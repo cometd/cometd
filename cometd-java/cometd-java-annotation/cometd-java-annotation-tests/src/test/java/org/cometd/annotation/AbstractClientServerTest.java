@@ -27,12 +27,24 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public abstract class AbstractClientServerTest {
     protected Server server;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
     protected HttpClient httpClient;
+
+    @Rule
+    public final TestWatcher testName = new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+            super.starting(description);
+            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
+        }
+    };
 
     @Before
     public void prepare() throws Exception {
