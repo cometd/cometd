@@ -38,13 +38,13 @@
     <!-- tag::jetty-version[] -->
     <jetty-version>9.4.20.v20190809</jetty-version>
     <!-- end::jetty-version[] -->
-    <slf4j-version>1.7.26</slf4j-version>
-    <log4j2-version>2.11.2</log4j2-version>
-    <spring-version>5.1.6.RELEASE</spring-version>
-    <spring-boot-version>2.1.4.RELEASE</spring-boot-version>
-    <jackson-version>2.9.8</jackson-version>
+    <slf4j-version>1.7.28</slf4j-version>
+    <log4j2-version>2.12.1</log4j2-version>
+    <spring-version>5.1.9.RELEASE</spring-version>
+    <spring-boot-version>2.1.7.RELEASE</spring-boot-version>
+    <jackson-version>2.9.9.3</jackson-version>
     <dojo-version>1.15.0</dojo-version>
-    <okhttp-version>3.14.1</okhttp-version>
+    <okhttp-version>4.0.1</okhttp-version>
   </properties>
 
   <url>https://cometd.org</url>
@@ -418,7 +418,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.7.1</version>
+          <version>3.8.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -514,7 +514,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20190618</version>
+        <version>v20190729</version>
       </dependency>
 
       <dependency>
