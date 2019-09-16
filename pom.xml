@@ -36,7 +36,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>9.4.20.v20190813</jetty-version>
+    <jetty-version>9.4.21.v20190916</jetty-version>
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.28</slf4j-version>
     <log4j2-version>2.12.1</log4j2-version>
