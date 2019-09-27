@@ -50,7 +50,7 @@ def getBuild(jettyVersion, mainBuild) {
       }
 
       stage("Javadoc ${jettyVersion}") {
-        timeout(time: 5, unit: 'MINUTES') {
+        timeout(time: 15, unit: 'MINUTES') {
           withMaven(maven: mvnName,
                   jdk: jdk,
                   publisherStrategy: 'EXPLICIT',
