@@ -43,7 +43,7 @@ def newBuild(os, jdk) {
       }
 
       stage("Javadoc - ${jdk}") {
-        timeout(time: 5, unit: 'MINUTES') {
+        timeout(time: 15, unit: 'MINUTES') {
           withMaven(maven: mvnName,
                   jdk: jdk,
                   publisherStrategy: 'EXPLICIT',
