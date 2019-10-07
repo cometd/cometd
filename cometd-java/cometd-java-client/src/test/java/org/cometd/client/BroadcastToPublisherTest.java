@@ -20,11 +20,14 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.ServerChannelImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.junit.Assert;
 import org.junit.Test;
@@ -45,15 +48,13 @@ public class BroadcastToPublisherTest extends ClientServerTest {
         options.put(BayeuxServerImpl.BROADCAST_TO_PUBLISHER_OPTION, String.valueOf(broadcast));
         start(options);
 
-        final String channelName = "/own";
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        final CountDownLatch messageLatch = new CountDownLatch(1);
-        final BayeuxClient client = newBayeuxClient();
+        String channelName = "/own";
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch messageLatch = new CountDownLatch(1);
+        BayeuxClient client = newBayeuxClient();
         client.handshake(message -> {
             if (message.isSuccessful()) {
-                client.getChannel(channelName).subscribe((c, m) -> {
-                    messageLatch.countDown();
-                }, m -> subscribeLatch.countDown());
+                client.getChannel(channelName).subscribe((c, m) -> messageLatch.countDown(), m -> subscribeLatch.countDown());
             }
         });
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
@@ -83,7 +84,7 @@ public class BroadcastToPublisherTest extends ClientServerTest {
         session.handshake();
 
         String channelName = "/test";
-        final CountDownLatch messageLatch = new CountDownLatch(1);
+        CountDownLatch messageLatch = new CountDownLatch(1);
         session.getChannel(channelName).subscribe((channel, message) -> messageLatch.countDown());
 
         session.getChannel(channelName).publish("test");
@@ -91,5 +92,36 @@ public class BroadcastToPublisherTest extends ClientServerTest {
         Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         session.disconnect();
+    }
+
+    @Test
+    public void testBroadcastToPublisherWithServerChannel() throws Exception {
+        start(null);
+
+        ServerChannel noBroadcastChannel = bayeux.createChannelIfAbsent("/no_broadcast/deep").getReference();
+        ((ServerChannelImpl)noBroadcastChannel).setBroadcastToPublisher(false);
+        ServerChannel noBroadcastWildChannel = bayeux.createChannelIfAbsent("/no_broadcast/*").getReference();
+        ((ServerChannelImpl)noBroadcastWildChannel).setBroadcastToPublisher(false);
+
+        LocalSession session = bayeux.newLocalSession("test");
+        session.handshake();
+
+        CountDownLatch noBroadcastLatch = new CountDownLatch(1);
+        ClientSessionChannel noBroadcastClientChannel = session.getChannel(noBroadcastChannel.getId());
+        ClientSessionChannel noBroadcastWildClientChannel = session.getChannel(noBroadcastWildChannel.getId());
+        session.batch(() -> {
+            noBroadcastClientChannel.subscribe((channel, message) -> noBroadcastLatch.countDown());
+            noBroadcastWildClientChannel.subscribe((channel, message) -> noBroadcastLatch.countDown());
+            noBroadcastClientChannel.publish("no_broadcast");
+        });
+        Assert.assertFalse(noBroadcastLatch.await(1, TimeUnit.SECONDS));
+
+        ClientSessionChannel broadcastClientChannel = session.getChannel("/test");
+        CountDownLatch broadcastLatch = new CountDownLatch(1);
+        session.batch(() -> {
+            broadcastClientChannel.subscribe((channel, message) -> broadcastLatch.countDown());
+            broadcastClientChannel.publish("broadcast");
+        });
+        Assert.assertTrue(broadcastLatch.await(5, TimeUnit.SECONDS));
     }
 }
