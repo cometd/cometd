@@ -86,7 +86,7 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
         // Jetty 9.2 JSR client does not support extensions.
         Assume.assumeThat(wsTransportType, Matchers.equalTo(WEBSOCKET_JETTY));
 
-        // Disable permessage-deflate on server.
+        // Disable the identity extension on server.
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "identity", "false");
         prepareAndStart(serverOptions);
