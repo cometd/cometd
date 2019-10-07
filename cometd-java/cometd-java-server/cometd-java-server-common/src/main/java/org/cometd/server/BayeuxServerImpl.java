@@ -912,7 +912,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                         }
                         AsyncFoldLeft.run(subscribers, true, (r, subscriber, loop) -> {
                             if (wildSubscribers.add(subscriber.getId())) {
-                                ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(b -> loop.proceed(true), loop::fail));
+                                if (subscriber == session && !channel.isBroadcastToPublisher()) {
+                                    loop.proceed(true);
+                                } else {
+                                    ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(b -> loop.proceed(true), loop::fail));
+                                }
                             } else {
                                 loop.proceed(r);
                             }
@@ -925,7 +929,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                     }
                     AsyncFoldLeft.run(subscribers, true, (result, subscriber, loop) -> {
                         if (!wildSubscribers.contains(subscriber.getId())) {
-                            ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(y -> loop.proceed(true), loop::fail));
+                            if (subscriber == session && !channel.isBroadcastToPublisher()) {
+                                loop.proceed(true);
+                            } else {
+                                ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(y -> loop.proceed(true), loop::fail));
+                            }
                         } else {
                             loop.proceed(true);
                         }

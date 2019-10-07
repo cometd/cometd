@@ -55,6 +55,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
     private boolean _lazy;
     private long _lazyTimeout = -1;
     private boolean _persistent;
+    private boolean _broadcastToPublisher = true;
 
     protected ServerChannelImpl(BayeuxServerImpl bayeux, ChannelId id) {
         _bayeux = bayeux;
@@ -258,6 +259,14 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
     public void addListener(ServerChannelListener listener) {
         resetSweeperPasses();
         _listeners.add(listener);
+    }
+
+    public boolean isBroadcastToPublisher() {
+        return _broadcastToPublisher;
+    }
+
+    public void setBroadcastToPublisher(boolean broadcastToPublisher) {
+        _broadcastToPublisher = broadcastToPublisher;
     }
 
     @Override
