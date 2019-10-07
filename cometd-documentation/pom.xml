@@ -15,6 +15,7 @@
     <html-directory>${project.build.directory}/html/reference</html-directory>
     <resources-directory>${project.build.directory}/resources</resources-directory>
     <github>https://raw.github.com/cometd/cometd/4.0.x</github>
+    <javadocs>https://docs.cometd.org/current4/apidocs</javadocs>
   </properties>
 
   <build>
@@ -85,6 +86,7 @@
                 <version>${project.version}</version>
                 <resources>${resources-directory}</resources>
                 <linkcss>true</linkcss>
+                <javadocs>${javadocs}</javadocs>
               </attributes>
             </configuration>
           </execution>

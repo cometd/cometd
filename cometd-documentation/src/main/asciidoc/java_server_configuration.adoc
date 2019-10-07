@@ -66,6 +66,7 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
 | When a publisher is also subscribed to the channel it publishes a message to,
   this parameter controls whether `BayeuxServer` should broadcast the message
   to all subscribers (including the publisher), or only to the other subscribers.
+  This property can be overridden at the channel level and at the session level.
 
 | jsonContext
 | `org.cometd.server.JettyJSONContextServer`
@@ -101,7 +102,7 @@ For example, the parameter `timeout` has no prefix, and hence it is valid for
 all transports; the parameter `callback-polling.jsonp.timeout` overrides the
 `timeout` parameter for the `callback-polling` transport only, while `ws.timeout`
 overrides it for the `websocket` transport (see `org.cometd.bayeux.Transport`
-http://docs.cometd.org/apidocs/org/cometd/bayeux/Transport.html[javadocs] for details).
+{javadocs}/org/cometd/bayeux/Transport.html[javadocs] for details).
 
 Here is the list of configuration init parameters (to be specified in `web.xml`)
 that different server transports accept:
