@@ -25,6 +25,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
+import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,7 +42,7 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
         final CountDownLatch repliesLatch = new CountDownLatch(1);
         ClientTransport transport;
         switch (wsTransportType) {
-            case WEBSOCKET_JSR_356:
+            case WEBSOCKET_JSR356:
                 transport = new org.cometd.client.websocket.javax.WebSocketTransport(null, null, null, wsClientContainer) {
                     @Override
                     protected WebSocketDelegate newDelegate() {
@@ -63,6 +64,23 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
                     @Override
                     protected Delegate newDelegate() {
                         return new JettyWebSocketDelegate() {
+                            @Override
+                            protected void onMessages(List<Message.Mutable> messages) {
+                                super.onMessages(messages);
+                                if (messages.size() > 1) {
+                                    batch.set(messages);
+                                    repliesLatch.countDown();
+                                }
+                            }
+                        };
+                    }
+                };
+                break;
+            case WEBSOCKET_OKHTTP:
+                transport = new OkHttpWebSocketTransport(null, okHttpClient) {
+                    @Override
+                    protected OkHttpWebSocketTransport.OkHttpDelegate newDelegate() {
+                        return new OkHttpDelegate() {
                             @Override
                             protected void onMessages(List<Message.Mutable> messages) {
                                 super.onMessages(messages);

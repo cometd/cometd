@@ -36,7 +36,7 @@ public class SpringFrameworkConfigurationTest extends ClientServerWebSocketTest 
         prepareServer(0, null, false);
         // Add Spring listener
         context.addEventListener(new ContextLoaderListener());
-        String config = WEBSOCKET_JSR_356.equals(wsTransportType) ?
+        String config = WEBSOCKET_JSR356.equals(wsTransportType) ?
                 "applicationContext-javax-websocket.xml" : "applicationContext-jetty-websocket.xml";
         context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:/" + config);
         startServer();

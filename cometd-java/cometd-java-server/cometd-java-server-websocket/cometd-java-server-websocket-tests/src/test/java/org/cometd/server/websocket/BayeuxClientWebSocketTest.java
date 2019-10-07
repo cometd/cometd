@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -44,7 +45,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
+import org.cometd.client.transport.TransportListener;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
+import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -53,7 +56,9 @@ import org.cometd.server.websocket.javax.WebSocketTransport;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -159,7 +164,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         int port = connector.getLocalPort();
         stopServer();
         Assert.assertTrue(disconnectedLatch.get().await(10, TimeUnit.SECONDS));
-        Assert.assertTrue(!client.isConnected());
+        Assert.assertFalse(client.isConnected());
 
         // restart server
         connectedLatch.set(new CountDownLatch(1));
@@ -181,7 +186,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         // However, since it connected before this fatal exception, the transport is not disabled.
         ClientTransport webSocketTransport;
         switch (wsTransportType) {
-            case WEBSOCKET_JSR_356:
+            case WEBSOCKET_JSR356:
                 webSocketTransport = new org.cometd.client.websocket.javax.WebSocketTransport(null, null, wsClientContainer) {
                     @Override
                     protected Delegate connect(WebSocketContainer container, ClientEndpointConfig configuration, String uri) throws IOException {
@@ -204,6 +209,30 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
                             // Convert recoverable exception to unrecoverable.
                             throw new IOException(x);
                         }
+                    }
+                };
+                break;
+            case WEBSOCKET_OKHTTP:
+                webSocketTransport = new OkHttpWebSocketTransport(null, okHttpClient) {
+                    @Override
+                    protected Delegate connect(String uri, TransportListener listener, List<Message.Mutable> messages) {
+                        return super.connect(uri, new TransportListener() {
+                            @Override
+                            public void onSending(List<? extends Message> messages) {
+                                listener.onSending(messages);
+                            }
+
+                            @Override
+                            public void onMessages(List<Message.Mutable> messages) {
+                                listener.onMessages(messages);
+                            }
+
+                            @Override
+                            public void onFailure(Throwable failure, List<? extends Message> messages) {
+                                // Convert recoverable exception to unrecoverable.
+                                listener.onFailure(new IOException(failure), messages);
+                            }
+                        }, messages);
                     }
                 };
                 break;
@@ -234,7 +263,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         int port = connector.getLocalPort();
         server.stop();
         Assert.assertTrue(disconnectedLatch.get().await(10, TimeUnit.SECONDS));
-        Assert.assertTrue(!client.isConnected());
+        Assert.assertFalse(client.isConnected());
 
         // restart server
         connector.setPort(port);
@@ -584,7 +613,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         long timeout = 5000;
         initParams.put("timeout", String.valueOf(timeout));
         switch (wsTransportType) {
-            case WEBSOCKET_JSR_356:
+            case WEBSOCKET_JSR356:
+            case WEBSOCKET_OKHTTP:
                 initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
                 break;
             case WEBSOCKET_JETTY:
@@ -685,7 +715,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
 
         Map<String, String> initParams = new HashMap<>();
         switch (wsTransportType) {
-            case WEBSOCKET_JSR_356:
+            case WEBSOCKET_JSR356:
+            case WEBSOCKET_OKHTTP:
                 initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
                 break;
             case WEBSOCKET_JETTY:
@@ -704,7 +735,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         client.disconnect();
 
         switch (wsTransportType) {
-            case WEBSOCKET_JSR_356:
+            case WEBSOCKET_JSR356:
+            case WEBSOCKET_OKHTTP:
                 CloseLatchWebSocketTransport jsrTransport = (CloseLatchWebSocketTransport)bayeux.getTransport("websocket");
                 Assert.assertTrue(jsrTransport.latch.await(5, TimeUnit.SECONDS));
                 break;
@@ -723,7 +755,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
 
         Map<String, String> initParams = new HashMap<>();
         switch (wsTransportType) {
-            case WEBSOCKET_JSR_356:
+            case WEBSOCKET_JSR356:
+            case WEBSOCKET_OKHTTP:
                 initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
                 break;
             case WEBSOCKET_JETTY:
@@ -742,7 +775,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         client.disconnect(1000);
 
         switch (wsTransportType) {
-            case WEBSOCKET_JSR_356:
+            case WEBSOCKET_JSR356:
+            case WEBSOCKET_OKHTTP:
                 CloseLatchWebSocketTransport jsrTransport = (CloseLatchWebSocketTransport)bayeux.getTransport("websocket");
                 Assert.assertTrue(jsrTransport.latch.await(5, TimeUnit.SECONDS));
                 break;
@@ -928,6 +962,9 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
 
     @Test
     public void testExtensionIsInvokedAfterNetworkFailure() throws Exception {
+        // No way to stop OkHttpClient.
+        Assume.assumeThat(wsTransportType, Matchers.not(WEBSOCKET_OKHTTP));
+
         bayeux.addExtension(new AcknowledgedMessagesExtension());
 
         final BayeuxClient client = newBayeuxClient();

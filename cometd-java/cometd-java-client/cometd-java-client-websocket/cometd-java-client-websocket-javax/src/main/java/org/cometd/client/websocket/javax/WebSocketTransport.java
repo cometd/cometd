@@ -122,6 +122,36 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         return new WebSocketDelegate();
     }
 
+    protected void onHandshakeRequest(Map<String, List<String>> headers) {
+        CookieStore cookieStore = getCookieStore();
+        List<HttpCookie> cookies = cookieStore.get(URI.create(getURL()));
+        if (!cookies.isEmpty()) {
+            List<String> cookieHeader = headers.get(COOKIE_HEADER);
+            if (cookieHeader == null) {
+                cookieHeader = headers.get(COOKIE_HEADER.toLowerCase(Locale.ENGLISH));
+            }
+            if (cookieHeader == null) {
+                headers.put(COOKIE_HEADER, cookieHeader = new ArrayList<>());
+            }
+            for (HttpCookie cookie : cookies) {
+                cookieHeader.add(cookie.getName() + "=" + cookie.getValue());
+            }
+        }
+    }
+
+    protected void onHandshakeResponse(HandshakeResponse response) {
+        Map<String, List<String>> headers = response.getHeaders();
+        storeCookies(headers);
+        _webSocketSupported = false;
+        // Must do case-insensitive search.
+        for (String name : headers.keySet()) {
+            if (HandshakeResponse.SEC_WEBSOCKET_ACCEPT.equalsIgnoreCase(name)) {
+                _webSocketSupported = true;
+                break;
+            }
+        }
+    }
+
     protected class WebSocketDelegate extends Delegate implements MessageHandler.Whole<String> {
         private final Endpoint _endpoint = new WebSocketEndpoint();
         private Session _session;
@@ -223,36 +253,12 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     private class Configurator extends ClientEndpointConfig.Configurator {
         @Override
         public void beforeRequest(Map<String, List<String>> headers) {
-            CookieStore cookieStore = getCookieStore();
-            List<HttpCookie> cookies = cookieStore.get(URI.create(getURL()));
-            if (!cookies.isEmpty()) {
-                List<String> cookieHeader = headers.get(COOKIE_HEADER);
-                if (cookieHeader == null) {
-                    cookieHeader = headers.get(COOKIE_HEADER.toLowerCase(Locale.ENGLISH));
-                }
-                if (cookieHeader == null) {
-                    headers.put(COOKIE_HEADER, cookieHeader = new ArrayList<>());
-                }
-                for (HttpCookie cookie : cookies) {
-                    cookieHeader.add(cookie.getName() + "=" + cookie.getValue());
-                }
-            }
+            onHandshakeRequest(headers);
         }
 
         @Override
         public void afterResponse(HandshakeResponse hr) {
-            Map<String, List<String>> headers = hr.getHeaders();
-
-            storeCookies(headers);
-
-            _webSocketSupported = false;
-            // Must do case-insensitive search.
-            for (String name : headers.keySet()) {
-                if (HandshakeResponse.SEC_WEBSOCKET_ACCEPT.equalsIgnoreCase(name)) {
-                    _webSocketSupported = true;
-                    break;
-                }
-            }
+            onHandshakeResponse(hr);
         }
     }
 
