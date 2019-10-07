@@ -21,6 +21,7 @@ import java.util.Map;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import okhttp3.OkHttpClient;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
@@ -28,6 +29,7 @@ import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.cometd.server.transport.JSONTransport;
+import org.cometd.websocket.client.okhttp.OkHttpWebsocketTransport;
 import org.cometd.websocket.server.JettyWebSocketTransport;
 import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
@@ -50,15 +52,17 @@ import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
 public abstract class ClientServerWebSocketTest {
-    protected static final String WEBSOCKET_JSR_356 = "JSR 356";
+    protected static final String WEBSOCKET_JSR356 = "JSR356";
     protected static final String WEBSOCKET_JETTY = "JETTY";
+    protected static final String WEBSOCKET_OKHTTP = "OKHTTP";
 
     @Parameterized.Parameters(name = "{index}: WebSocket implementation: {0}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]
                 {
-                        {WEBSOCKET_JSR_356},
-                        {WEBSOCKET_JETTY}
+                        {WEBSOCKET_JSR356},
+                        {WEBSOCKET_JETTY},
+                        {WEBSOCKET_OKHTTP}
                 }
         );
     }
@@ -80,6 +84,7 @@ public abstract class ClientServerWebSocketTest {
     protected HttpClient httpClient;
     protected WebSocketContainer wsClientContainer;
     protected WebSocketClient wsClient;
+    protected OkHttpClient okHttpClient;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
 
@@ -105,7 +110,8 @@ public abstract class ClientServerWebSocketTest {
     protected void prepareServer(int port, String servletPath, Map<String, String> initParams, boolean eager) throws Exception {
         String wsTransportClass;
         switch (wsTransportType) {
-            case WEBSOCKET_JSR_356:
+            case WEBSOCKET_JSR356:
+            case WEBSOCKET_OKHTTP:
                 wsTransportClass = WebSocketTransport.class.getName();
                 break;
             case WEBSOCKET_JETTY:
@@ -129,7 +135,8 @@ public abstract class ClientServerWebSocketTest {
         context = new ServletContextHandler(server, "/", true, false);
 
         switch (wsTransportType) {
-            case WEBSOCKET_JSR_356:
+            case WEBSOCKET_JSR356:
+            case WEBSOCKET_OKHTTP:
                 WebSocketServerContainerInitializer.configureContext(context);
                 break;
             case WEBSOCKET_JETTY:
@@ -170,13 +177,16 @@ public abstract class ClientServerWebSocketTest {
         httpClient = new HttpClient();
         httpClient.setExecutor(clientThreads);
         switch (wsTransportType) {
-            case WEBSOCKET_JSR_356:
+            case WEBSOCKET_JSR356:
                 wsClientContainer = ContainerProvider.getWebSocketContainer();
                 httpClient.addBean(wsClientContainer, true);
                 break;
             case WEBSOCKET_JETTY:
                 wsClient = new WebSocketClient(httpClient);
                 httpClient.addBean(wsClient, true);
+                break;
+            case WEBSOCKET_OKHTTP:
+                okHttpClient = new OkHttpClient();
                 break;
             default:
                 throw new IllegalArgumentException();
@@ -209,16 +219,31 @@ public abstract class ClientServerWebSocketTest {
     protected ClientTransport newWebSocketTransport(String url, Map<String, Object> options) {
         ClientTransport result;
         switch (wsTransportType) {
-            case WEBSOCKET_JSR_356:
-                result = new org.cometd.websocket.client.WebSocketTransport(url, options, null, wsClientContainer);
+            case WEBSOCKET_JSR356:
+                result = newWebSocketTransport(url, options, wsClientContainer);
                 break;
             case WEBSOCKET_JETTY:
-                result = new org.cometd.websocket.client.JettyWebSocketTransport(url, options, null, wsClient);
+                result = newJettyWebSocketTransport(url, options, wsClient);
+                break;
+            case WEBSOCKET_OKHTTP:
+                result = newOkHttpWebsocketTransport(url, options, okHttpClient);
                 break;
             default:
                 throw new IllegalArgumentException();
         }
         return result;
+    }
+
+    protected org.cometd.websocket.client.WebSocketTransport newWebSocketTransport(String url, Map<String, Object> options, WebSocketContainer wsContainer) {
+        return new org.cometd.websocket.client.WebSocketTransport(url, options, null, wsContainer);
+    }
+
+    protected org.cometd.websocket.client.JettyWebSocketTransport newJettyWebSocketTransport(String url, Map<String, Object> options, WebSocketClient wsClient) {
+        return new org.cometd.websocket.client.JettyWebSocketTransport(url, options, null, wsClient);
+    }
+
+    protected OkHttpWebsocketTransport newOkHttpWebsocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
+        return new OkHttpWebsocketTransport(url, options, null, okHttpClient);
     }
 
     protected void disconnectBayeuxClient(BayeuxClient client) {
@@ -232,11 +257,14 @@ public abstract class ClientServerWebSocketTest {
     }
 
     protected void stopServer() throws Exception {
-        server.stop();
-        server.join();
+        if (server != null) {
+            server.stop();
+        }
     }
 
     protected void stopClient() throws Exception {
-        httpClient.stop();
+        if (httpClient != null) {
+            httpClient.stop();
+        }
     }
 }
