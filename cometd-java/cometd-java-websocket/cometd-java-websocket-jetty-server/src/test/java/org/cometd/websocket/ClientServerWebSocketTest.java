@@ -226,7 +226,7 @@ public abstract class ClientServerWebSocketTest {
                 result = newJettyWebSocketTransport(url, options, wsClient);
                 break;
             case WEBSOCKET_OKHTTP:
-                result = newOkHttpWebsocketTransport(url, options, okHttpClient);
+                result = newOkHttpWebSocketTransport(url, options, okHttpClient);
                 break;
             default:
                 throw new IllegalArgumentException();
@@ -242,7 +242,7 @@ public abstract class ClientServerWebSocketTest {
         return new org.cometd.websocket.client.JettyWebSocketTransport(url, options, null, wsClient);
     }
 
-    protected OkHttpWebsocketTransport newOkHttpWebsocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
+    protected OkHttpWebsocketTransport newOkHttpWebSocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
         return new OkHttpWebsocketTransport(url, options, null, okHttpClient);
     }
 

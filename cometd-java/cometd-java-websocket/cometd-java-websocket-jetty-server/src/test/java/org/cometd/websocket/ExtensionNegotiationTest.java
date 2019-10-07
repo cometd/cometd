@@ -82,7 +82,7 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
     }
 
     @Override
-    protected OkHttpWebsocketTransport newOkHttpWebsocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
+    protected OkHttpWebsocketTransport newOkHttpWebSocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
         return new OkHttpWebsocketTransport(url, options, null, okHttpClient) {
             @Override
             protected void onHandshakeRequest(String uri, Request.Builder upgradeRequest) {

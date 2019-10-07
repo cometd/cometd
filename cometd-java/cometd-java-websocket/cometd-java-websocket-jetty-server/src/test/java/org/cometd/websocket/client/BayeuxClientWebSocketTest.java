@@ -165,7 +165,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         int port = connector.getLocalPort();
         stopServer();
         Assert.assertTrue(disconnectedLatch.get().await(10, TimeUnit.SECONDS));
-        Assert.assertTrue(!client.isConnected());
+        Assert.assertFalse(client.isConnected());
 
         // restart server
         connectedLatch.set(new CountDownLatch(1));
