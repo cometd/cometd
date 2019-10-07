@@ -790,10 +790,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         _advisedTransport = null;
     }
 
+    @Override
     public boolean isBroadcastToPublisher() {
         return _broadcastToPublisher;
     }
 
+    @Override
     public void setBroadcastToPublisher(boolean value) {
         _broadcastToPublisher = value;
     }
@@ -846,10 +848,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
+    @Override
     public void setMetaConnectDeliveryOnly(boolean meta) {
         _metaConnectDelivery = meta;
     }
 
+    @Override
     public boolean isMetaConnectDeliveryOnly() {
         return _metaConnectDelivery;
     }

@@ -15,6 +15,8 @@
  */
 package org.cometd.server.websocket;
 
+import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
@@ -25,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.WebSocketContainer;
 
@@ -44,7 +47,6 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.transport.JSONTransport;
 import org.cometd.server.websocket.javax.WebSocketTransport;
@@ -54,8 +56,6 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
 
 public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     public BayeuxClientWebSocketTest(String implementation) {
@@ -404,7 +404,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
                     if (to != null && !to.isLocalSession()) {
-                        ((ServerSessionImpl)to).setMetaConnectDeliveryOnly(true);
+                        to.setMetaConnectDeliveryOnly(true);
                     }
                 }
                 return true;

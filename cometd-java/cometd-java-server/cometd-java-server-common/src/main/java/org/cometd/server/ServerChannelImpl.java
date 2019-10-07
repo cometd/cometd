@@ -261,10 +261,12 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
         _listeners.add(listener);
     }
 
+    @Override
     public boolean isBroadcastToPublisher() {
         return _broadcastToPublisher;
     }
 
+    @Override
     public void setBroadcastToPublisher(boolean broadcastToPublisher) {
         _broadcastToPublisher = broadcastToPublisher;
     }

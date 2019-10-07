@@ -28,8 +28,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerChannelImpl;
-import org.cometd.server.ServerSessionImpl;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -73,7 +71,7 @@ public class BroadcastToPublisherTest extends ClientServerTest {
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                ((ServerSessionImpl)session).setBroadcastToPublisher(false);
+                session.setBroadcastToPublisher(false);
             }
 
             @Override
@@ -100,9 +98,9 @@ public class BroadcastToPublisherTest extends ClientServerTest {
         start(null);
 
         ServerChannel noBroadcastChannel = bayeux.createChannelIfAbsent("/no_broadcast/deep").getReference();
-        ((ServerChannelImpl)noBroadcastChannel).setBroadcastToPublisher(false);
+        noBroadcastChannel.setBroadcastToPublisher(false);
         ServerChannel noBroadcastWildChannel = bayeux.createChannelIfAbsent("/no_broadcast/*").getReference();
-        ((ServerChannelImpl)noBroadcastWildChannel).setBroadcastToPublisher(false);
+        noBroadcastWildChannel.setBroadcastToPublisher(false);
 
         LocalSession session = bayeux.newLocalSession("test");
         session.handshake();
