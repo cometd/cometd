@@ -210,15 +210,23 @@ public abstract class ClientServerWebSocketTest {
         ClientTransport result;
         switch (wsTransportType) {
             case WEBSOCKET_JSR_356:
-                result = new org.cometd.websocket.client.WebSocketTransport(url, options, null, wsClientContainer);
+                result = newWebSocketTransport(url, options, wsClientContainer);
                 break;
             case WEBSOCKET_JETTY:
-                result = new org.cometd.websocket.client.JettyWebSocketTransport(url, options, null, wsClient);
+                result = newJettyWebSocketTransport(url, options, wsClient);
                 break;
             default:
                 throw new IllegalArgumentException();
         }
         return result;
+    }
+
+    protected org.cometd.websocket.client.WebSocketTransport newWebSocketTransport(String url, Map<String, Object> options, WebSocketContainer wsContainer) {
+        return new org.cometd.websocket.client.WebSocketTransport(url, options, null, wsContainer);
+    }
+
+    protected org.cometd.websocket.client.JettyWebSocketTransport newJettyWebSocketTransport(String url, Map<String, Object> options, WebSocketClient wsClient) {
+        return new org.cometd.websocket.client.JettyWebSocketTransport(url, options, null, wsClient);
     }
 
     protected void disconnectBayeuxClient(BayeuxClient client) {
@@ -232,11 +240,14 @@ public abstract class ClientServerWebSocketTest {
     }
 
     protected void stopServer() throws Exception {
-        server.stop();
-        server.join();
+        if (server != null) {
+            server.stop();
+        }
     }
 
     protected void stopClient() throws Exception {
-        httpClient.stop();
+        if (httpClient != null) {
+            httpClient.stop();
+        }
     }
 }

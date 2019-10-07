@@ -18,9 +18,11 @@ package org.cometd.websocket.server;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -244,15 +246,20 @@ public class WebSocketTransport extends AbstractWebSocketTransport<Session> {
 
         @Override
         public List<Extension> getNegotiatedExtensions(List<Extension> installed, List<Extension> requested) {
-            List<Extension> negotiated = new ArrayList<>();
-            for (Extension extension : requested) {
-                String name = extension.getName();
+            Set<Extension> negotiated = new LinkedHashSet<>();
+            for (Extension requestedExtension : requested) {
+                String name = requestedExtension.getName();
                 boolean option = getOption(ENABLE_EXTENSION_PREFIX_OPTION + name, true);
                 if (option) {
-                    negotiated.add(extension);
+                    for (Extension installedExtension : installed) {
+                        if (installedExtension.getName().equals(name)) {
+                            negotiated.add(requestedExtension);
+                            break;
+                        }
+                    }
                 }
             }
-            return negotiated;
+            return new ArrayList<>(negotiated);
         }
 
         @Override
