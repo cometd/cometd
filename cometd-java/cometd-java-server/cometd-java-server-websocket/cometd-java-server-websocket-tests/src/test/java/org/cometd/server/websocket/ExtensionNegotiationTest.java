@@ -81,6 +81,7 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
         };
     }
 
+    @Override
     protected OkHttpWebSocketTransport newOkHttpWebSocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
         return new OkHttpWebSocketTransport(url, options, null, okHttpClient) {
             @Override
@@ -99,7 +100,7 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
 
     @Test
     public void testExtensionNegotiation() throws Exception {
-        // Disable identity on server.
+        // Disable the identity extension on server.
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "identity", "false");
         prepareAndStart(serverOptions);
