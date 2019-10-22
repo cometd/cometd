@@ -38,7 +38,7 @@
     <!-- tag::jetty-version[] -->
     <jetty-version>9.2.28.v20190418</jetty-version>
     <!--<jetty-version>9.3.27.v20190418</jetty-version>-->
-    <!--<jetty-version>9.4.22.v20191003</jetty-version>-->
+    <!--<jetty-version>9.4.22.v20191022</jetty-version>-->
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.28</slf4j-version>
     <spring-version>5.1.9.RELEASE</spring-version>
