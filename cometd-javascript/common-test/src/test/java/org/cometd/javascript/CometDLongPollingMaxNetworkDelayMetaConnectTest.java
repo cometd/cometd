@@ -80,12 +80,12 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
         // Third connect returns immediately
         // Fourth connect (id=5) is held
         // Second connect is processed on server (time = metaConnectPeriod + 2 * maxNetworkDelay)
-        //  + Fourth connect is replied with a 408
+        //  + Fourth connect is replied with a 500
         //  + Second connect is held
         // Client sends fifth connect (id=6)
         // Fifth connect returns immediately
         // Client sends sixth connect (id=7) and it is processed on server:
-        //  + Second connect is replied with a 408, but connection is already closed by the client
+        //  + Second connect is replied with a 500, but connection is already closed by the client
         //  + Sixth connect is held
         // Sixth connect returns (time = 2 * metaConnectPeriod + 2 * maxNetworkDelay)
 

@@ -76,6 +76,6 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest {
 
         // Expect the connect to be back with an exception
         response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
-        Assert.assertEquals(HttpStatus.REQUEST_TIMEOUT_408, response.getStatus());
+        Assert.assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
     }
 }

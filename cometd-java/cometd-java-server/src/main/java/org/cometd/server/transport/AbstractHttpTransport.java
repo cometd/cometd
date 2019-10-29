@@ -752,7 +752,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Duplicate /meta/connect, cancelling {}", reply);
                 }
-                error(HttpServletResponse.SC_REQUEST_TIMEOUT);
+                error(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
         }
 

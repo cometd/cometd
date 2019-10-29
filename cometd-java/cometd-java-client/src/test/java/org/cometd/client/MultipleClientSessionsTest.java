@@ -42,6 +42,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 
 /**
@@ -404,7 +405,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
                     @Override
                     public void onComplete(Result result) {
                         assertTrue(result.isSucceeded());
-                        assertEquals(408, result.getResponse().getStatus());
+                        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, result.getResponse().getStatus());
                         abortedConnectLatch.countDown();
                     }
                 });
