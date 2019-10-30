@@ -17,7 +17,6 @@ package org.cometd.websocket.client;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.SocketTimeoutException;
 import java.net.URI;
@@ -123,8 +122,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     }
 
     protected void onHandshakeRequest(Map<String, List<String>> headers) {
-        CookieStore cookieStore = getCookieStore();
-        List<HttpCookie> cookies = cookieStore.get(URI.create(getURL()));
+        List<HttpCookie> cookies = getCookies(URI.create(getURL()));
         if (!cookies.isEmpty()) {
             List<String> cookieHeader = headers.get(COOKIE_HEADER);
             if (cookieHeader == null) {

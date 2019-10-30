@@ -17,8 +17,6 @@ package org.cometd.websocket.client.common;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.net.CookieManager;
-import java.net.CookiePolicy;
 import java.net.URI;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -185,14 +183,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     protected abstract Delegate connect(String uri, TransportListener listener, List<Mutable> messages);
 
     protected void storeCookies(Map<String, List<String>> headers) {
-        try {
-            CookieManager cookieManager = new CookieManager(getCookieStore(), CookiePolicy.ACCEPT_ALL);
-            cookieManager.put(URI.create(getURL()), headers);
-        } catch (IOException x) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Could not parse cookies", x);
-            }
-        }
+        storeCookies(URI.create(getURL()), headers);
     }
 
     protected abstract class Delegate {
