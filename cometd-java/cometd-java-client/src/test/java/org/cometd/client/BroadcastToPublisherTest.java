@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -109,5 +110,33 @@ public class BroadcastToPublisherTest extends ClientServerTest {
         Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         session.disconnect();
+    }
+
+    @Test
+    public void testDontBroadcastToPublisherThenServerSideDisconnect() throws Exception {
+        Map<String, String> options = new HashMap<>();
+        options.put(BayeuxServerImpl.BROADCAST_TO_PUBLISHER_OPTION, "false");
+        startServer(options);
+
+        BayeuxClient client = newBayeuxClient();
+        final CountDownLatch disconnectLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_DISCONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                disconnectLatch.countDown();
+            }
+        });
+
+        client.handshake();
+
+        // Wait for the /meta/connect to be held.
+        Thread.sleep(1000);
+
+        ServerSession session = bayeux.getSession(client.getId());
+        session.disconnect();
+
+        Assert.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
     }
 }

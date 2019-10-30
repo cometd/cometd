@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.LocalSession;
@@ -239,7 +240,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     protected void doDeliver(ServerSession sender, ServerMessage.Mutable mutable) {
-        if (sender == this && !isBroadcastToPublisher()) {
+        if (sender == this && !isBroadcastToPublisher() && ChannelId.isBroadcast(mutable.getChannel())) {
             return;
         }
 
