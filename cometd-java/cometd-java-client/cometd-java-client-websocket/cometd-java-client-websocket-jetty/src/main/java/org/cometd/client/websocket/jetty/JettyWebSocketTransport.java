@@ -145,7 +145,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
 
     @Override
     public void onHandshakeResponse(UpgradeResponse response) {
-        storeCookies(response.getHeaders());
+        storeCookies(URI.create(getURL()), response.getHeaders());
     }
 
     protected class JettyWebSocketDelegate extends Delegate implements WebSocketListener {

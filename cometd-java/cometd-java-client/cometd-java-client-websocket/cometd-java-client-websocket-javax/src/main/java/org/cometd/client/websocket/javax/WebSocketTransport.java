@@ -17,7 +17,6 @@ package org.cometd.client.websocket.javax;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.SocketTimeoutException;
 import java.net.URI;
@@ -123,8 +122,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     }
 
     protected void onHandshakeRequest(Map<String, List<String>> headers) {
-        CookieStore cookieStore = getCookieStore();
-        List<HttpCookie> cookies = cookieStore.get(URI.create(getURL()));
+        List<HttpCookie> cookies = getCookies(URI.create(getURL()));
         if (!cookies.isEmpty()) {
             List<String> cookieHeader = headers.get(COOKIE_HEADER);
             if (cookieHeader == null) {
@@ -141,7 +139,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
 
     protected void onHandshakeResponse(HandshakeResponse response) {
         Map<String, List<String>> headers = response.getHeaders();
-        storeCookies(headers);
+        storeCookies(URI.create(getURL()), headers);
         _webSocketSupported = false;
         // Must do case-insensitive search.
         for (String name : headers.keySet()) {

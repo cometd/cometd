@@ -125,8 +125,7 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
         if (protocol != null && !protocol.isEmpty()) {
             upgradeRequest.header(SEC_WEB_SOCKET_PROTOCOL_HEADER, protocol);
         }
-        CookieStore cookieStore = getCookieStore();
-        List<HttpCookie> cookies = cookieStore.get(URI.create(uri));
+        List<HttpCookie> cookies = getCookies(URI.create(uri));
         for (HttpCookie cookie : cookies) {
             String cookieValue = cookie.getName() + "=" + cookie.getValue();
             upgradeRequest.addHeader(COOKIE_HEADER, cookieValue);
@@ -135,7 +134,7 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
 
     protected void onHandshakeResponse(Response response) {
         webSocketSupported = response.header(SEC_WEB_SOCKET_ACCEPT_HEADER) != null;
-        storeCookies(headersToMap(response.headers()));
+        storeCookies(URI.create(getURL()), headersToMap(response.headers()));
     }
 
     public static Map<String, List<String>> headersToMap(Headers headers) {

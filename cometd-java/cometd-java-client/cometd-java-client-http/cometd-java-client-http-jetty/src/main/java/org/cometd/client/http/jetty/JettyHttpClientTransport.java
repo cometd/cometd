@@ -89,7 +89,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
         request.header(HttpHeader.CONTENT_TYPE.asString(), "application/json;charset=UTF-8");
 
         URI cookieURI = URI.create(getURL());
-        List<HttpCookie> cookies = retrieveCookies(cookieURI);
+        List<HttpCookie> cookies = getCookies(cookieURI);
         StringBuilder value = new StringBuilder(cookies.size() * 32);
         for (HttpCookie cookie : cookies) {
             if (value.length() > 0) {
