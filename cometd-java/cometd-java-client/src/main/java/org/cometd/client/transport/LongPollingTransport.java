@@ -15,9 +15,6 @@
  */
 package org.cometd.client.transport;
 
-import java.io.IOException;
-import java.net.CookieManager;
-import java.net.CookiePolicy;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.text.ParseException;
@@ -59,7 +56,6 @@ public class LongPollingTransport extends HttpClientTransport {
     private volatile boolean _aborted;
     private volatile int _maxMessageSize;
     private volatile boolean _appendMessageType;
-    private volatile CookieManager _cookieManager;
     private volatile Map<String, Object> _advice;
 
     public LongPollingTransport(Map<String, Object> options, HttpClient httpClient) {
@@ -97,16 +93,15 @@ public class LongPollingTransport extends HttpClientTransport {
             String afterPath = uriMatcher.group(9);
             _appendMessageType = afterPath == null || afterPath.trim().length() == 0;
         }
-        _cookieManager = new CookieManager(getCookieStore(), CookiePolicy.ACCEPT_ALL);
     }
 
     @Override
     public void abort() {
-        List<Request> requests = new ArrayList<>();
+        List<Request> requests;
         synchronized (this) {
-            _aborted = true;
-            requests.addAll(_requests);
+            requests = new ArrayList<>(_requests);
             _requests.clear();
+            _aborted = true;
         }
         for (Request request : requests) {
             request.abort(new Exception("Transport " + this + " aborted"));
@@ -131,7 +126,7 @@ public class LongPollingTransport extends HttpClientTransport {
         final Request request = _httpClient.newRequest(url).method(HttpMethod.POST);
         request.header(HttpHeader.CONTENT_TYPE.asString(), "application/json;charset=UTF-8");
 
-        List<HttpCookie> cookies = getCookieStore().get(uri);
+        List<HttpCookie> cookies = getCookies(uri);
         StringBuilder value = new StringBuilder(cookies.size() * 32);
         for (HttpCookie cookie : cookies) {
             if (value.length() > 0) {
@@ -185,7 +180,7 @@ public class LongPollingTransport extends HttpClientTransport {
             @Override
             public boolean onHeader(Response response, HttpField field) {
                 HttpHeader header = field.getHeader();
-                if (header != null && (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2)) {
+                if (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2) {
                     // We do not allow cookies to be handled by HttpClient, since one
                     // HttpClient instance is shared by multiple BayeuxClient instances.
                     // Instead, we store the cookies in the BayeuxClient instance.
@@ -195,16 +190,6 @@ public class LongPollingTransport extends HttpClientTransport {
                     return false;
                 }
                 return true;
-            }
-
-            private void storeCookies(URI uri, Map<String, List<String>> cookies) {
-                try {
-                    _cookieManager.put(uri, cookies);
-                } catch (IOException x) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("", x);
-                    }
-                }
             }
 
             @Override
