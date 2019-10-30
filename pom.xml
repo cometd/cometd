@@ -6,7 +6,7 @@
   <artifactId>cometd-project</artifactId>
   <packaging>pom</packaging>
   <name>CometD</name>
-  <version>3.1.11-SNAPSHOT</version>
+  <version>3.1.11</version>
 
   <repositories>
     <repository>
@@ -113,7 +113,7 @@
     <connection>scm:git:git://github.com/cometd/cometd.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/cometd/cometd.git</developerConnection>
     <url>https://github.com/cometd/cometd</url>
-    <tag>HEAD</tag>
+    <tag>3.1.11</tag>
   </scm>
 
   <organization>
