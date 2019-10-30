@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
@@ -238,7 +239,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     protected void deliver1(ServerSession sender, ServerMessage.Mutable mutable, Promise<Boolean> promise) {
-        if (sender == this && !isBroadcastToPublisher()) {
+        if (sender == this && !isBroadcastToPublisher() && ChannelId.isBroadcast(mutable.getChannel())) {
             promise.succeed(false);
         } else {
             extendOutgoing(mutable, Promise.from(message -> {
