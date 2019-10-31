@@ -186,7 +186,7 @@
             if (interval <= 0) {
                 interval = 1;
             }
-            return cometdModule.Utils.setTimeout(_cometd, callback, interval);
+            return _cometd.setTimeout(callback, interval);
         };
     };
 }));

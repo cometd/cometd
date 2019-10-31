@@ -56,6 +56,7 @@
 
     /**
      * The scheduler code that will run in the Worker.
+     * Workers have a built-in `self` variable similar to `window`.
      */
     function WorkerScheduler() {
         var _tasks = {};
