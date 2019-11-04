@@ -72,8 +72,8 @@ $ dd if=$HOME/.m2/archetype-catalog.xml | ssh <user>@cometd.org "sudo -u www-dat
 ----
 
 [[_release_issues]]
-=== Close the GitHub Issues Milestone
+=== Close the GitHub Issues Project
 
-Close the https://github.com/cometd/cometd/milestones[GitHub Issues Milestone].
+Close the https://github.com/cometd/cometd/projects[GitHub Issues Project].
 
 :numbered:
