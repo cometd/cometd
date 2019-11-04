@@ -572,6 +572,22 @@ Few classes have also changed name and package to reflect the changes above.
 | `org.cometd.**client.websocket.okhttp.OkHttpWebSocketTransport**`
 |===
 
+==== API Changes
+API method name changes and parameter list changes.
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 4.0 | CometD 5.0
+| `ServerSession.Extension.outgoing(ServerSession, ServerMessage.Mutable, Promise<ServerMessage.Mutable>)`
+| `ServerSession.Extension.outgoing(**ServerSession,** ServerSession, ServerMessage.Mutable, Promise<ServerMessage.Mutable>)`
+
+| `ServerSession.Extension.sendMeta(ServerSession, ServerMessage.Mutable)`
+| `ServerSession.Extension.sendMeta(**ServerSession,** ServerSession, ServerMessage.Mutable)`
+
+| `ServerSession.Extension.send(ServerSession, ServerMessage)`
+| `ServerSession.Extension.send(**ServerSession,** ServerSession, ServerMessage)`
+|===
+
 ==== Deprecated API Removed
 
 A number of deprecated APIs (since 4.0) have been removed.

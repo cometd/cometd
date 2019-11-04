@@ -402,15 +402,16 @@ public interface ServerSession extends Session {
         /**
          * <p>Callback method invoked every time a message is outgoing.</p>
          *
+         * @param sender  the session that sent the message or null
          * @param session the session receiving the message
          * @param message the outgoing message
          * @param promise the promise to notify with the message to send or null to not send the message
          */
-        public default void outgoing(ServerSession session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
+        public default void outgoing(ServerSession sender, ServerSession session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
             if (message.isMeta()) {
-                promise.succeed(sendMeta(session, message) ? message : null);
+                promise.succeed(sendMeta(sender, session, message) ? message : null);
             } else {
-                ServerMessage result = send(session, message);
+                ServerMessage result = send(sender, session, message);
                 if (result instanceof ServerMessage.Mutable) {
                     promise.succeed((ServerMessage.Mutable)result);
                 } else if (result == null) {
@@ -422,26 +423,28 @@ public interface ServerSession extends Session {
         }
 
         /**
-         * <p>Blocking version of {@link #outgoing(ServerSession, ServerMessage.Mutable, Promise)}
+         * <p>Blocking version of {@link #outgoing(ServerSession, ServerSession, ServerMessage.Mutable, Promise)}
          * for non-meta messages.</p>
          *
+         * @param sender  the session that sent the message or null
          * @param session the session receiving the message
          * @param message the outgoing message
          * @return the message to send or null to not send the message
          */
-        public default ServerMessage send(ServerSession session, ServerMessage message) {
+        public default ServerMessage send(ServerSession sender, ServerSession session, ServerMessage message) {
             return message;
         }
 
         /**
-         * <p>Blocking version of {@link #outgoing(ServerSession, ServerMessage.Mutable, Promise)}
+         * <p>Blocking version of {@link #outgoing(ServerSession, ServerSession, ServerMessage.Mutable, Promise)}
          * for meta messages.</p>
          *
+         * @param sender  the session that sent the message or null
          * @param session the session receiving the message
          * @param message the outgoing message
          * @return whether message processing should continue
          */
-        public default boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
+        public default boolean sendMeta(ServerSession sender, ServerSession session, ServerMessage.Mutable message) {
             return true;
         }
     }

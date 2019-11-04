@@ -242,7 +242,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         if (sender == this && !isBroadcastToPublisher() && ChannelId.isBroadcast(mutable.getChannel())) {
             promise.succeed(false);
         } else {
-            extendOutgoing(mutable, Promise.from(message -> {
+            extendOutgoing(sender, mutable, Promise.from(message -> {
                 if (message == null) {
                     promise.succeed(false);
                 } else {
@@ -303,12 +303,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    protected void extendOutgoing(ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
+    protected void extendOutgoing(ServerSession sender, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
         List<Extension> extensions = new ArrayList<>(_extensions);
         Collections.reverse(extensions);
         AsyncFoldLeft.run(extensions, message, (result, extension, loop) -> {
             try {
-                extension.outgoing(this, result, Promise.from(m -> {
+                extension.outgoing(sender, this, result, Promise.from(m -> {
                     if (m != null) {
                         loop.proceed(m);
                     } else {

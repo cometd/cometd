@@ -240,7 +240,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
         }
 
         @Override
-        public ServerMessage send(ServerSession session, ServerMessage message) {
+        public ServerMessage send(ServerSession sender, ServerSession session, ServerMessage message) {
             try {
                 if (message.isPublishReply()) {
                     return message;
@@ -270,7 +270,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
         }
 
         @Override
-        public ServerMessage send(ServerSession session, ServerMessage message) {
+        public ServerMessage send(ServerSession sender, ServerSession session, ServerMessage message) {
             if (message.isPublishReply()) {
                 return message;
             } else {

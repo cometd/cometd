@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.cometd.bayeux.Channel;
@@ -1074,7 +1075,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         extendOutgoing(sender, session, reply, Promise.from(b -> {
             if (b) {
                 if (session != null) {
-                    session.extendOutgoing(reply, promise);
+                    session.extendOutgoing(sender, reply, promise);
                 } else {
                     promise.succeed(reply);
                 }

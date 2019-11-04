@@ -93,7 +93,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     }
 
     @Override
-    public ServerMessage send(ServerSession session, ServerMessage message) {
+    public ServerMessage send(ServerSession sender, ServerSession session, ServerMessage message) {
         // Too early to do anything with the message.
         // Other extensions and/or listener may modify/veto it.
         return message;
@@ -112,7 +112,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     }
 
     @Override
-    public boolean sendMeta(ServerSession to, Mutable message) {
+    public boolean sendMeta(ServerSession sender, ServerSession to, Mutable message) {
         String channel = message.getChannel();
         Map<String, Object> ext = message.getExt(true);
         if (channel.equals(Channel.META_HANDSHAKE)) {
