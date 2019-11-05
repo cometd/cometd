@@ -595,6 +595,12 @@ A number of deprecated APIs (since 4.0) have been removed.
 [cols="1a,1a", options="header"]
 |===
 | CometD 4.0 | CometD 5.0
+
+| `Message.getJSON()`
+| No replacement. +
+  Use an implementation of `JSONContext.Client.generate(message)` on the client,
+  or an implementation of `JSONContextServer.generate(message)` on the server.
+
 | `ClientSession.handshake(Map<String, Object>, **ClientSessionChannel**.MessageListener)`
 | `ClientSession.handshake(Map<String, Object>, **ClientSession**.MessageListener)`
 
