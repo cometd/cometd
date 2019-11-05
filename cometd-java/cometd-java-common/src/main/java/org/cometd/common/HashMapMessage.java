@@ -78,11 +78,6 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
     }
 
     @Override
-    public String getJSON() {
-        return new JettyJSONContextClient().generate(this);
-    }
-
-    @Override
     public Map<String, Object> getAdvice(boolean create) {
         Map<String, Object> advice = getAdvice();
         if (create && advice == null) {

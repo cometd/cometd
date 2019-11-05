@@ -96,7 +96,6 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
         return _json != null;
     }
 
-    @Override
     public String getJSON() {
         return _json;
     }
