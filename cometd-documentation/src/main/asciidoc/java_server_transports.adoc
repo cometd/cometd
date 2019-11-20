@@ -6,10 +6,26 @@
 `long-polling` and `callback-polling`.
 These two transports are automatically configured in the `BayeuxServer`
 instance, and there is no need to explicitly specify them in the configuration.
-The respective implementation classes are named `org.cometd.server.transport.JSONTransport`
-and `org.cometd.server.transport.JSONPTransport`.
 
-For the `websocket` transport there exist two transport implementations:
+For the `long-polling` transport there exist two implementations:
+
+* `org.cometd.server.transport.AsyncJSONTransport`, which uses Servlet 3.1
+  non-blocking I/O and it is only available when the CometD web application
+  is deployed to Servlet Containers that support Servlet 3.1
+* `org.cometd.server.transport.JSONTransport`, which depends on Servlet 3.0
+  and uses blocking I/O
+
+The CometD server tries to lookup the presence of Servlet 3.1 via reflection
+on startup; if it is available, then `AsyncJSONTransport` is preferred over
+`JSONTransport`, as it is more scalable in the case of a large number of
+clients because it uses non-blocking I/O.
+
+For the `callback-polling` transport the implementation class is
+`org.cometd.server.transport.JSONPTransport`.
+This transport uses blocking I/O and it is the least efficient; the CometD
+server only uses it when all other transports cannot be used.
+
+For the `websocket` transport there exist two implementations:
 
 * one based on the standard Java APIs provided by
   https://jcp.org/en/jsr/detail?id=356[JSR 356]. If these APIs are available,
