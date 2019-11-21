@@ -236,11 +236,13 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         String cookieName = "cookie_name";
         String cookieDomain = "cookie_domain";
         String cookiePath = "cookie_path";
+        String cookieSameSite = "Lax";
 
         Map<String, String> options = new HashMap<>();
         options.put(JSONTransport.BROWSER_COOKIE_NAME_OPTION, cookieName);
         options.put(JSONTransport.BROWSER_COOKIE_DOMAIN_OPTION, cookieDomain);
         options.put(JSONTransport.BROWSER_COOKIE_PATH_OPTION, cookiePath);
+        options.put(JSONTransport.BROWSER_COOKIE_SAME_SITE_OPTION, cookieSameSite);
         startServer(options);
 
         Request handshake = newBayeuxRequest("" +
@@ -266,6 +268,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         Assert.assertTrue(hasCookieName);
         Assert.assertTrue(parts.contains("Path=" + cookiePath));
         Assert.assertTrue(parts.contains("Domain=" + cookieDomain));
+        Assert.assertTrue(parts.contains("HttpOnly"));
+        Assert.assertTrue(parts.contains("SameSite=" + cookieSameSite));
     }
 
     private boolean isSuccessful(ContentResponse response) {
