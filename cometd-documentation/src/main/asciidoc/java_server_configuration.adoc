@@ -91,6 +91,7 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
 
 |===
 
+[[_java_server_configuration_transports]]
 ===== Configuring Server Transports
 
 CometD server transports are pluggable; the CometD implementation provides
@@ -205,13 +206,21 @@ that different server transports accept:
 
 | browserCookieSecure
 | false
-| Whether to add the `Secure` attribute to the cookie used to identify multiple
-  sessions (see also <<_java_server_multiple_sessions,this section>>).
+| Whether to add the `Secure` attribute to the cookie used to identify
+  <<_java_server_multiple_sessions,multiple sessions>>, see also
+  <<_java_server_configuration_advanced_cookies,this section>>.
 
 | browserCookieHttpOnly
 | true
-| Whether to add the `HttpOnly` attribute to the cookie used to identify multiple
-  sessions (see also <<_java_server_multiple_sessions,this section>>).
+| Whether to add the `HttpOnly` attribute to the cookie used to identify
+  <<_java_server_multiple_sessions,multiple sessions>>.
+
+| browserCookieSameSite
+|
+| The value of the `SameSite` attribute of the cookie used to identify
+  <<_java_server_multiple_sessions,multiple sessions>>, see also
+  <<_java_server_configuration_advanced_cookies,this section>>.
+  Meaningful values are `Strict`, `Lax` and `None`.
 |===
 
 .WebSocket `ServerTransport` Configuration Parameters
@@ -263,10 +272,33 @@ that different server transports accept:
 |===
 
 [[_java_server_configuration_advanced]]
-===== Configuring the `CrossOriginFilter`
+===== Advanced Configuration for the Java Server
 
-Independently from the Servlet Container you are using, Jetty provides a standard, portable,
-`org.eclipse.jetty.servlets.CrossOriginFilter`.
+The simplest way to setup a CometD server is to deploy your CometD application
+under context path `/`, and the CometD Servlet mapped to e.g. `/cometd/*`.
+In this way resources such as HTML, CSS and - more importantly - JavaScript
+files (in particular `cometd.js`) will belong to the same domain.
+This minimize the server configuration to make browser work easily with CometD.
+
+A more complex setup is to have your main application deployed to domain
+`app.domain.com` and the CometD server to `cometd.domain.com`.
+The JavaScript file `cometd.js` will be served from domain `app.domain.com`,
+while CometD messages will be sent to and received from domain `cometd.domain.com`.
+
+This is a cross-domain deployment and requires configuring the `CrossOriginFilter`
+(see <<_java_server_configuration_advanced_cross_origin_filter,this section>>).
+to allow the JavaScript file downloaded from `app.domain.com` to be able to
+communicate with the `cometd.domain.com` server.
+
+Furthermore, a cross-domain deployment may require a more advanced configuration
+of the HTTP cookies that the CometD server sends to clients, see
+<<_java_server_configuration_advanced_cookies,this section>>.
+
+[[_java_server_configuration_advanced_cross_origin_filter]]
+====== Configuring the `CrossOriginFilter`
+
+Independently from the Servlet Container you are using, Jetty provides a standard,
+portable, `org.eclipse.jetty.servlets.CrossOriginFilter`.
 This filter implements the http://www.w3.org/TR/access-control/[Cross-Origin Resource Sharing]
 specification, and allows recent browsers that implement it to perform cross-domain JavaScript
 requests (see also <<_javascript_transports,the JavaScript transports section>>).
@@ -314,8 +346,21 @@ Here is an example of `web.xml` configuration for the `CrossOriginFilter`:
 Refer to the https://www.eclipse.org/jetty/documentation/current/cross-origin-filter.html[Jetty Cross Origin Filter documentation]
 for the filter configuration.
 
+[[_java_server_configuration_advanced_cookies]]
+====== Configuring Cookies
+
+Modern browsers may require that cookies sent by a server have the `SameSite` attribute.
+
+In particular, in the case of cross-domain deployment, the CometD server should be configured
+to send cookies that have both the `Secure` attribute and the `SameSite=None` attribute.
+In turn, the `Secure` attribute requires that the CometD server is deployed over `https`
+(otherwise the browser won't send the cookie, causing the CometD communication to break).
+
+Refer to the CometD <<_java_server_configuration_transports,server configuration section>>
+for the cookie configuration in the CometD server.
+
 [[_java_server_configuration_servlet_30]]
-===== Configuring Servlet 3 Asynchronous Features
+===== Configuring Servlet 3.0 or later Asynchronous Features
 
 The CometD libraries are portable across Servlet Containers because they use
 the standard Servlet 3 APIs.
