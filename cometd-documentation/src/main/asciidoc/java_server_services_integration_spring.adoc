@@ -127,23 +127,23 @@ object with the WebSocket transport:
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean id="bayeux" class="org.cometd.server.BayeuxServerImpl" init-method="start" destroy-method="stop">
-        <property name="transports">
-            <list>
-                <bean id="websocketTransport" class="org.cometd.server.websocket.javax.WebSocketTransport">
-                    <constructor-arg ref="bayeux" />
-                </bean>
-                <bean id="jsonTransport" class="org.cometd.server.transport.JSONTransport">
-                    <constructor-arg ref="bayeux" />
-                </bean>
-                <bean id="jsonpTransport" class="org.cometd.server.transport.JSONPTransport">
-                    <constructor-arg ref="bayeux" />
-                </bean>
-            </list>
-        </property>
-    </bean>
+  <bean id="bayeux" class="org.cometd.server.BayeuxServerImpl" init-method="start" destroy-method="stop">
+    <property name="transports">
+      <list>
+        <bean id="websocketTransport" class="org.cometd.server.websocket.javax.WebSocketTransport">
+          <constructor-arg ref="bayeux" />
+        </bean>
+        <bean id="jsonTransport" class="org.cometd.server.http.JSONTransport">
+          <constructor-arg ref="bayeux" />
+        </bean>
+        <bean id="jsonpTransport" class="org.cometd.server.http.JSONPTransport">
+          <constructor-arg ref="bayeux" />
+        </bean>
+      </list>
+    </property>
+  </bean>
 
-    ... as before ...
+  ... as before ...
 
 </beans>
 ----

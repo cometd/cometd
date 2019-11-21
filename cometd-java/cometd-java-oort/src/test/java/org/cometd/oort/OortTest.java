@@ -37,7 +37,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.server.CometDServlet;
-import org.cometd.server.transport.JSONTransport;
+import org.cometd.server.http.JSONTransport;
 import org.cometd.server.websocket.javax.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;

@@ -26,12 +26,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.transport.AbstractHttpTransport;
+import org.cometd.server.http.AbstractHttpTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>The CometD Servlet maps HTTP requests to the {@link org.cometd.server.transport.AbstractHttpTransport}
+ * <p>The CometD Servlet maps HTTP requests to the {@link org.cometd.server.http.AbstractHttpTransport}
  * of a {@link BayeuxServer} instance.</p>
  * <p>The {@link BayeuxServer} instance is searched in the servlet context under the {@link BayeuxServer#ATTRIBUTE}
  * attribute; if it is found then it is used without further configuration, otherwise a new {@link BayeuxServer}

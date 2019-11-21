@@ -27,10 +27,10 @@ instance, and there is no need to explicitly specify them in the configuration.
 
 For the `long-polling` transport there exist two implementations:
 
-* `org.cometd.server.transport.AsyncJSONTransport`, which uses Servlet 3.1
+* `org.cometd.server.http.AsyncJSONTransport`, which uses Servlet 3.1
   non-blocking I/O and it is only available when the CometD web application
   is deployed to Servlet Containers that support Servlet 3.1
-* `org.cometd.server.transport.JSONTransport`, which depends on Servlet 3.0
+* `org.cometd.server.http.JSONTransport`, which depends on Servlet 3.0
   and uses blocking I/O
 
 The CometD server tries to lookup the presence of Servlet 3.1 via reflection
@@ -39,7 +39,7 @@ on startup; if it is available, then `AsyncJSONTransport` is preferred over
 clients because it uses non-blocking I/O.
 
 For the `callback-polling` transport the implementation class is
-`org.cometd.server.transport.JSONPTransport`.
+`org.cometd.server.http.JSONPTransport`.
 This transport uses blocking I/O and it is the least efficient; the CometD
 server only uses it when all other transports cannot be used.
 
