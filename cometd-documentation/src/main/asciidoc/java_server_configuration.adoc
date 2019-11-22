@@ -350,6 +350,8 @@ for the filter configuration.
 ====== Configuring Cookies
 
 Modern browsers may require that cookies sent by a server have the `SameSite` attribute.
+https://web.dev/samesite-cookies-explained/[This article] is a good resource that explains
+how the `SameSite` attribute works.
 
 In particular, in the case of cross-domain deployment, the CometD server should be configured
 to send cookies that have both the `Secure` attribute and the `SameSite=None` attribute.
