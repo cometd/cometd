@@ -68,7 +68,6 @@ import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
-import org.eclipse.jetty.toolchain.perf.PlatformTimer;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -78,7 +77,6 @@ public class CometDLoadClient implements MeasureConverter {
     private static final String START_DATE_FIELD = "startDate";
 
     private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);
-    private final PlatformTimer timer = PlatformTimer.detect();
     private final Random random = new Random();
     private final PlatformMonitor monitor = new PlatformMonitor();
     private final AtomicLong ids = new AtomicLong();
@@ -174,11 +172,6 @@ public class CometDLoadClient implements MeasureConverter {
     }
 
     public void run() throws Exception {
-        System.err.println("detecting timer resolution...");
-        System.err.printf("native timer resolution: %d \u00B5s%n", timer.getNativeResolution());
-        System.err.printf("emulated timer resolution: %d \u00B5s%n", timer.getEmulatedResolution());
-        System.err.println();
-
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
 
         String host = this.host;
@@ -480,7 +473,7 @@ public class CometDLoadClient implements MeasureConverter {
             System.err.printf("Sending %d batches of %dx%d bytes messages every %d \u00B5s%n", batches, batchSize, messageSize, batchPause);
 
             long begin = System.nanoTime();
-            long expected = runBatches(batches, batchSize, batchPause, chat, randomize, channel);
+            long expected = runBatches(batches, batchSize, TimeUnit.MICROSECONDS.toNanos(batchPause), chat, randomize, channel);
             long end = System.nanoTime();
 
             PlatformMonitor.Stop stop = monitor.stop();
@@ -580,10 +573,14 @@ public class CometDLoadClient implements MeasureConverter {
         scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
     }
 
-    private long runBatches(int batchCount, int batchSize, long batchPause, String chat, boolean randomize, String channel) {
+    private long runBatches(int batchCount, int batchSize, long batchPauseNanos, String chat, boolean randomize, String channel) {
+        long begin = System.nanoTime();
         int clientIndex = -1;
         long expected = 0;
-        for (int i = 0; i < batchCount; ++i) {
+        for (int i = 1; i <= batchCount; ++i) {
+            long pause = begin + i * batchPauseNanos - System.nanoTime();
+            nanoSleep(pause);
+
             if (randomize) {
                 clientIndex = nextRandom(bayeuxClients.size());
             } else {
@@ -593,12 +590,21 @@ public class CometDLoadClient implements MeasureConverter {
                 }
             }
             LoadBayeuxClient client = bayeuxClients.get(clientIndex);
-            expected += sendBatches(batchSize, batchPause, chat, channel, client);
+            expected += sendBatch(batchSize, chat, channel, client);
         }
         return expected;
     }
 
-    private long sendBatches(int batchSize, long batchPause, String chat, String channel, LoadBayeuxClient client) {
+    private void nanoSleep(long pause) {
+        try {
+            TimeUnit.NANOSECONDS.sleep(pause);
+        } catch (InterruptedException x) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(x);
+        }
+    }
+
+    private long sendBatch(int batchSize, String chat, String channel, LoadBayeuxClient client) {
         long expected = 0;
         List<Integer> rooms = new ArrayList<>(roomMap.keySet());
         client.startBatch();
@@ -625,11 +631,6 @@ public class CometDLoadClient implements MeasureConverter {
             expected += clientsPerRoom.get();
         }
         client.endBatch();
-
-        if (batchPause > 0) {
-            timer.sleep(batchPause);
-        }
-
         return expected;
     }
 
