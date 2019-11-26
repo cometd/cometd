@@ -66,14 +66,16 @@ import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.common.JacksonJSONContextClient;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
-import org.eclipse.jetty.toolchain.perf.PlatformTimer;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -84,7 +86,6 @@ public class CometDLoadClient implements MeasureConverter {
 
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").withZone(ZoneId.of("GMT"));
     private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);
-    private final PlatformTimer timer = PlatformTimer.detect();
     private final Random random = new Random();
     private final PlatformMonitor monitor = new PlatformMonitor();
     private final AtomicLong ids = new AtomicLong();
@@ -106,6 +107,9 @@ public class CometDLoadClient implements MeasureConverter {
     private HttpClient httpClient;
     private WebSocketClient webSocketClient;
     private WebSocketContainer webSocketContainer;
+    private LatencyListener latencyListener;
+    private HandshakeListener handshakeListener;
+    private DisconnectListener disconnectListener;
     private boolean interactive = true;
     private String host = "localhost";
     private int port = 8080;
@@ -121,6 +125,7 @@ public class CometDLoadClient implements MeasureConverter {
     private boolean ackExtension = false;
     private int iterations = 5;
     private int clients = 1000;
+    private int clientTurnover = 0;
     private int batches = 1000;
     private int batchSize = 10;
     private long batchPause = 10000;
@@ -166,6 +171,8 @@ public class CometDLoadClient implements MeasureConverter {
                 client.iterations = Integer.parseInt(arg.substring("--iterations=".length()));
             } else if (arg.startsWith("--clients=")) {
                 client.clients = Integer.parseInt(arg.substring("--clients=".length()));
+            } else if (arg.startsWith("--clientTurnover=")) {
+                client.clientTurnover = Integer.parseInt(arg.substring("--clientTurnover=".length()));
             } else if (arg.startsWith("--batches=")) {
                 client.batches = Integer.parseInt(arg.substring("--batches=".length()));
             } else if (arg.startsWith("--batchSize=")) {
@@ -183,11 +190,6 @@ public class CometDLoadClient implements MeasureConverter {
     }
 
     public void run() throws Exception {
-        System.err.println("detecting timer resolution...");
-        System.err.printf("native timer resolution: %d \u00B5s%n", timer.getNativeResolution());
-        System.err.printf("emulated timer resolution: %d \u00B5s%n", timer.getEmulatedResolution());
-        System.err.println();
-
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
 
         String host = this.host;
@@ -360,14 +362,15 @@ public class CometDLoadClient implements MeasureConverter {
         httpClient.addBean(webSocketContainer, true);
         mbeanContainer.beanAdded(null, webSocketContainer);
 
-        HandshakeListener handshakeListener = new HandshakeListener(channel, rooms, roomsPerClient);
-        DisconnectListener disconnectListener = new DisconnectListener();
-        LatencyListener latencyListener = new LatencyListener();
+        latencyListener = new LatencyListener();
+        handshakeListener = new HandshakeListener(channel, rooms, roomsPerClient);
+        disconnectListener = new DisconnectListener();
 
-        LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(transport), null, false);
+        LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(transport));
         statsClient.handshake();
 
         int clients = this.clients;
+        int clientTurnover = this.clientTurnover;
         int batches = this.batches;
         int batchSize = this.batchSize;
         long batchPause = this.batchPause;
@@ -399,58 +402,31 @@ public class CometDLoadClient implements MeasureConverter {
             int currentClients = bayeuxClients.size();
             if (currentClients < clients) {
                 for (int i = 0; i < clients - currentClients; ++i) {
-                    LoadBayeuxClient client = new LoadBayeuxClient(url, scheduler, newClientTransport(transport), latencyListener, ackExtension);
-                    client.getChannel(Channel.META_HANDSHAKE).addListener(handshakeListener);
-                    client.getChannel(Channel.META_DISCONNECT).addListener(disconnectListener);
-                    client.handshake();
-                    // Give some time to the server to accept connections
-                    // and reply to handshakes, connects and subscribes.
-                    if (i % 10 == 0) {
-                        Thread.sleep(50);
-                    }
+                    bayeuxClients.add(handshakeClient(url, transport, ackExtension));
                 }
             } else if (currentClients > clients) {
                 for (int i = 0; i < currentClients - clients; ++i) {
-                    LoadBayeuxClient client = bayeuxClients.get(currentClients - i - 1);
-                    client.disconnect();
-                    // Give some time to the server to process the disconnects.
-                    if (i % 10 == 0) {
-                        Thread.sleep(50);
-                    }
+                    disconnectClient(bayeuxClients.remove(currentClients - i - 1));
                 }
             }
 
-            int maxRetries = 50;
-            int retries = maxRetries;
-            int lastSize = 0;
             int currentSize = bayeuxClients.size();
-            while (currentSize != clients) {
-                Thread.sleep(250);
-                System.err.printf("Waiting for clients %d/%d%n", currentSize, clients);
-                if (lastSize == currentSize) {
-                    --retries;
-                    if (retries == 0) {
-                        break;
-                    }
-                } else {
-                    lastSize = currentSize;
-                    retries = maxRetries;
-                }
-                currentSize = bayeuxClients.size();
-            }
-            if (currentSize != clients) {
-                System.err.printf("Clients not ready, only %d/%d%n", currentSize, clients);
+            if (currentSize == 0) {
+                System.err.println("All clients disconnected, exiting");
                 break;
-            } else {
-                if (currentSize == 0) {
-                    System.err.println("All clients disconnected, exiting");
-                    break;
-                }
-
-                System.err.printf("Clients ready: %d%n", clients);
             }
+            System.err.printf("Clients ready: %d%n", currentSize);
 
             reset();
+
+            if (interactive) {
+                System.err.printf("client turnover (clients/s) [%d]: ", clientTurnover);
+                String value = console.readLine().trim();
+                if (value.length() == 0) {
+                    value = String.valueOf(clientTurnover);
+                }
+                clientTurnover = Integer.parseInt(value);
+            }
 
             if (interactive) {
                 System.err.printf("batch count [%d]: ", batches);
@@ -510,7 +486,7 @@ public class CometDLoadClient implements MeasureConverter {
             System.err.printf("Sending %d batches of %dx%d bytes messages every %d \u00B5s%n", batches, batchSize, messageSize, batchPause);
 
             long begin = System.nanoTime();
-            long expected = runBatches(batches, batchSize, batchPause, chat, randomize, channel);
+            long expected = runBatches(url, transport, ackExtension, channel, clientTurnover, batches, batchSize, TimeUnit.MICROSECONDS.toNanos(batchPause), chat, randomize);
             long end = System.nanoTime();
 
             PlatformMonitor.Stop stop = monitor.stop();
@@ -610,25 +586,70 @@ public class CometDLoadClient implements MeasureConverter {
         scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
     }
 
-    private long runBatches(int batchCount, int batchSize, long batchPause, String chat, boolean randomize, String channel) {
-        int clientIndex = -1;
+    private long runBatches(String url, ClientTransportType transport, boolean ackExtension, String channel, int clientTurnover, int batchCount, int batchSize, long batchPauseNanos, String chat, boolean randomize) {
+        long begin = System.nanoTime();
+        int index = -1;
         long expected = 0;
-        for (int i = 0; i < batchCount; ++i) {
+        long turnover = 0;
+        for (int i = 1; i <= batchCount; ++i) {
+            long pause = begin + i * batchPauseNanos - System.nanoTime();
+            if (pause > 0) {
+                nanoSleep(pause);
+            }
+
             if (randomize) {
-                clientIndex = nextRandom(bayeuxClients.size());
+                index = nextRandom(bayeuxClients.size());
             } else {
-                ++clientIndex;
-                if (clientIndex >= bayeuxClients.size()) {
-                    clientIndex = 0;
+                ++index;
+                if (index == bayeuxClients.size()) {
+                    index = 0;
                 }
             }
-            LoadBayeuxClient client = bayeuxClients.get(clientIndex);
-            expected += sendBatches(batchSize, batchPause, chat, channel, client);
+            LoadBayeuxClient client = bayeuxClients.get(index);
+            expected += sendBatch(client, channel, batchSize, chat);
+
+            if (clientTurnover > 0) {
+                long elapsed = System.nanoTime() - begin;
+                if (elapsed > 0) {
+                    long currentTurnover = clientTurnover * elapsed / TimeUnit.SECONDS.toNanos(1);
+                    for (int j = 0; j < currentTurnover - turnover; ++j) {
+                        int idx = nextRandom(bayeuxClients.size());
+                        disconnectClient(bayeuxClients.set(idx, handshakeClient(url, transport, ackExtension)));
+                    }
+                    turnover = currentTurnover;
+                }
+            }
         }
         return expected;
     }
 
-    private long sendBatches(int batchSize, long batchPause, String chat, String channel, LoadBayeuxClient client) {
+    protected LoadBayeuxClient handshakeClient(String url, ClientTransportType transport, boolean ackExtension) {
+        LoadBayeuxClient client = new LoadBayeuxClient(url, scheduler, newClientTransport(transport));
+        if (ackExtension) {
+            client.addExtension(new AckExtension());
+        }
+        client.getChannel(Channel.META_HANDSHAKE).addListener(handshakeListener);
+        client.getChannel(Channel.META_DISCONNECT).addListener(disconnectListener);
+        client.handshake();
+        client.waitForInit();
+        return client;
+    }
+
+    protected void disconnectClient(LoadBayeuxClient client) {
+        client.disconnect();
+        client.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+    }
+
+    private void nanoSleep(long pause) {
+        try {
+            TimeUnit.NANOSECONDS.sleep(pause);
+        } catch (InterruptedException x) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(x);
+        }
+    }
+
+    private long sendBatch(LoadBayeuxClient client, String channel, int batchSize, String chat) {
         long expected = 0;
         List<Integer> rooms = new ArrayList<>(roomMap.keySet());
         client.startBatch();
@@ -654,11 +675,6 @@ public class CometDLoadClient implements MeasureConverter {
             expected += clientsPerRoom.get();
         }
         client.endBatch();
-
-        if (batchPause > 0) {
-            timer.sleep(batchPause);
-        }
-
         return expected;
     }
 
@@ -668,7 +684,15 @@ public class CometDLoadClient implements MeasureConverter {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
-                return new JettyHttpClientTransport(options, httpClient);
+                return new JettyHttpClientTransport(options, httpClient) {
+                    @Override
+                    protected void customize(Request request) {
+                        super.customize(request);
+                        if (request.getPath().endsWith("/disconnect")) {
+                            request.header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+                        }
+                    }
+                };
             }
             case JSR_WEBSOCKET: {
                 Map<String, Object> options = new HashMap<>();
@@ -804,7 +828,7 @@ public class CometDLoadClient implements MeasureConverter {
     }
 
     private class HandshakeListener implements ClientSessionChannel.MessageListener {
-        private static final String SESSION_ID_ATTRIBUTE = "handshook";
+        private static final String SESSION_ID_ATTRIBUTE = "session_id";
         private final String channel;
         private final int rooms;
         private final int roomsPerClient;
@@ -816,15 +840,12 @@ public class CometDLoadClient implements MeasureConverter {
         }
 
         @Override
-        public void onMessage(ClientSessionChannel channel, Message message) {
-            if (message.isSuccessful()) {
-                final LoadBayeuxClient client = (LoadBayeuxClient)channel.getSession();
-
+        public void onMessage(ClientSessionChannel handshakeChannel, Message handshakeReply) {
+            if (handshakeReply.isSuccessful()) {
+                LoadBayeuxClient client = (LoadBayeuxClient)handshakeChannel.getSession();
                 String sessionId = (String)client.getAttribute(SESSION_ID_ATTRIBUTE);
                 if (sessionId == null) {
                     client.setAttribute(SESSION_ID_ATTRIBUTE, client.getId());
-                    bayeuxClients.add(client);
-
                     client.batch(() -> {
                         List<Integer> roomsSubscribedTo = new ArrayList<>();
                         for (int j = 0; j < roomsPerClient; ++j) {
@@ -834,8 +855,10 @@ public class CometDLoadClient implements MeasureConverter {
                                 room = nextRandom(rooms);
                             }
                             roomsSubscribedTo.add(room);
-                            client.init(HandshakeListener.this.channel, room);
+                            client.setupRoom(room);
+                            client.getChannel(channel + "/" + room).subscribe(latencyListener);
                         }
+                        client.init();
                     });
                 } else {
                     System.err.printf("Second handshake for client %s: old session %s, new session %s%n", this, sessionId, client.getId());
@@ -849,7 +872,6 @@ public class CometDLoadClient implements MeasureConverter {
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (message.isSuccessful()) {
                 LoadBayeuxClient client = (LoadBayeuxClient)channel.getSession();
-                bayeuxClients.remove(client);
                 client.destroy();
             }
         }
@@ -894,21 +916,13 @@ public class CometDLoadClient implements MeasureConverter {
 
     private class LoadBayeuxClient extends BayeuxClient {
         private final List<Integer> subscriptions = new ArrayList<>();
-        private final ClientSessionChannel.MessageListener latencyListener;
+        private final CountDownLatch initLatch = new CountDownLatch(1);
 
-        private LoadBayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport, ClientSessionChannel.MessageListener listener, boolean enableAckExtension) {
+        private LoadBayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport) {
             super(url, scheduler, transport);
-            this.latencyListener = listener;
-            if (enableAckExtension) {
-                addExtension(new AckExtension());
-            }
         }
 
-        public void init(String channel, int room) {
-            if (latencyListener != null) {
-                getChannel(getChannelId(channel + "/" + room)).subscribe(latencyListener);
-            }
-
+        public void setupRoom(int room) {
             AtomicInteger clientsPerRoom = roomMap.get(room);
             if (clientsPerRoom == null) {
                 clientsPerRoom = new AtomicInteger();
@@ -918,8 +932,20 @@ public class CometDLoadClient implements MeasureConverter {
                 }
             }
             clientsPerRoom.incrementAndGet();
-
             subscriptions.add(room);
+        }
+
+        public void init() {
+            getChannel("/service/init").publish(new HashMap<>(), message -> initLatch.countDown());
+        }
+
+        public void waitForInit() {
+            try {
+                initLatch.await();
+            } catch (InterruptedException x) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(x);
+            }
         }
 
         public void destroy() {
