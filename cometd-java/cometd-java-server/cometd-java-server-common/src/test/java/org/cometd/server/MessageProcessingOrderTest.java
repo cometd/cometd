@@ -315,7 +315,7 @@ public class MessageProcessingOrderTest {
         }
 
         @Override
-        public ServerMessage send(ServerSession session, ServerMessage message) {
+        public ServerMessage send(ServerSession sender, ServerSession session, ServerMessage message) {
             if (message.isPublishReply()) {
                 events.offer(id + ".srv.ssn.ext.snd.rpy");
             } else {

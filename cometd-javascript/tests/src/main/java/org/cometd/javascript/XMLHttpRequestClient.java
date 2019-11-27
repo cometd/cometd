@@ -58,7 +58,7 @@ public class XMLHttpRequestClient {
         }
 
         @Override
-        protected Thread newThread(Runnable runnable) {
+        public Thread newThread(Runnable runnable) {
             return factory.newThread(runnable);
         }
     }

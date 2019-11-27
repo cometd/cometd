@@ -62,7 +62,7 @@ public class BinarySessionExtension implements ServerSession.Extension {
     }
 
     @Override
-    public ServerMessage send(ServerSession session, ServerMessage message) {
+    public ServerMessage send(ServerSession sender, ServerSession session, ServerMessage message) {
         Object data = message.getData();
         if (data instanceof BinaryData) {
             ServerMessage.Mutable result = bayeuxServer.newMessage();

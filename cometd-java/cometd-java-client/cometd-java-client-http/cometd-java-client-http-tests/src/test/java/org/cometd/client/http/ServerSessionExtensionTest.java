@@ -46,7 +46,7 @@ public class ServerSessionExtensionTest extends ClientServerTest {
         ServerSession session = bayeux.getSession(client.getId());
         session.addExtension(new ServerSession.Extension() {
             @Override
-            public ServerMessage send(ServerSession session, ServerMessage message) {
+            public ServerMessage send(ServerSession sender, ServerSession session, ServerMessage message) {
                 if (message.getChannel().equals(channelName)) {
                     return null;
                 }

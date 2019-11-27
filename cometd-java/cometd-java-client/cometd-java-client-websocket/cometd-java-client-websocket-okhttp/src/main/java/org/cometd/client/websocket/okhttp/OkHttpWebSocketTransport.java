@@ -17,12 +17,12 @@ package org.cometd.client.websocket.okhttp;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.channels.UnresolvedAddressException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -30,6 +30,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -81,11 +82,10 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
     protected Delegate connect(String uri, TransportListener listener, List<Message.Mutable> messages) {
         try {
             // We must make the okhttp call blocking for CometD to handshake properly.
-            CompletableFuture<Throwable> connectCompletable = new CompletableFuture<>();
-            OkHttpDelegate delegate = new OkHttpDelegate(connectCompletable);
+            OkHttpDelegate delegate = newDelegate();
             Request upgradeRequest = buildUpgradeRequest(uri);
             okHttpClient.newWebSocket(upgradeRequest, delegate.listener);
-            Throwable connectFailure = connectCompletable.get(getConnectTimeout(), TimeUnit.MILLISECONDS);
+            Throwable connectFailure = delegate.connectFuture.get(getConnectTimeout(), TimeUnit.MILLISECONDS);
             if (connectFailure != null) {
                 throw connectFailure;
             }
@@ -107,36 +107,54 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
         return null;
     }
 
+    protected OkHttpDelegate newDelegate() {
+        return new OkHttpDelegate();
+    }
+
     private Request buildUpgradeRequest(String uri) {
+        Request.Builder upgradeRequest = new Request.Builder();
+        onHandshakeRequest(uri, upgradeRequest);
+        return upgradeRequest.build();
+    }
+
+    protected void onHandshakeRequest(String uri, Request.Builder upgradeRequest) {
+        upgradeRequest.url(uri);
         String protocol = getProtocol();
-        Request.Builder upgradeRequest = new Request.Builder().url(uri);
         if (protocol != null && !protocol.isEmpty()) {
             upgradeRequest.header(SEC_WEB_SOCKET_PROTOCOL_HEADER, protocol);
         }
-        CookieStore cookieStore = getCookieStore();
-        List<HttpCookie> cookies = cookieStore.get(URI.create(uri));
+        List<HttpCookie> cookies = getCookies(URI.create(uri));
         for (HttpCookie cookie : cookies) {
             String cookieValue = cookie.getName() + "=" + cookie.getValue();
             upgradeRequest.addHeader(COOKIE_HEADER, cookieValue);
         }
-        return upgradeRequest.build();
     }
 
-    private class OkHttpDelegate extends Delegate {
+    protected void onHandshakeResponse(Response response) {
+        webSocketSupported = response.header(SEC_WEB_SOCKET_ACCEPT_HEADER) != null;
+        storeCookies(URI.create(getURL()), headersToMap(response.headers()));
+    }
+
+    public static Map<String, List<String>> headersToMap(Headers headers) {
+        // We want to keep the header name case, so we cannot use Headers.toMultiMap().
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        headers.names().forEach(name -> result.put(name, headers.values(name)));
+        return result;
+    }
+
+    protected class OkHttpDelegate extends Delegate {
         private final WebSocketListener listener = new OkHttpListener();
-        private final CompletableFuture<Throwable> connectCompletable;
+        private final CompletableFuture<Throwable> connectFuture = new CompletableFuture<>();
         private WebSocket webSocket;
 
-        private OkHttpDelegate(CompletableFuture<Throwable> connectCompletable) {
-            this.connectCompletable = connectCompletable;
+        public OkHttpDelegate() {
         }
 
         private void onOpen(WebSocket webSocket, Response response) {
             synchronized (this) {
                 this.webSocket = webSocket;
             }
-            webSocketSupported = response.header(SEC_WEB_SOCKET_ACCEPT_HEADER) != null;
-            storeCookies(response.headers().toMultimap());
+            onHandshakeResponse(response);
             if (logger.isDebugEnabled()) {
                 logger.debug("Opened {}", webSocket);
             }
@@ -202,7 +220,7 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
             @Override
             public void onOpen(WebSocket webSocket, Response response) {
                 OkHttpDelegate.this.onOpen(webSocket, response);
-                connectCompletable.complete(null);
+                connectFuture.complete(null);
             }
 
             @Override
@@ -217,7 +235,7 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
 
             @Override
             public void onFailure(WebSocket webSocket, Throwable failure, Response response) {
-                if (!connectCompletable.complete(failure))
+                if (!connectFuture.complete(failure))
                     OkHttpDelegate.this.failMessages(failure);
             }
         }

@@ -34,25 +34,25 @@ public interface ConfigurableServerChannel extends Channel {
      * @param listener the listener to add
      * @see #removeListener(ServerChannelListener)
      */
-    void addListener(ServerChannelListener listener);
+    public void addListener(ServerChannelListener listener);
 
     /**
      * @param listener the listener to remove
      * @see #addListener(ServerChannelListener)
      */
-    void removeListener(ServerChannelListener listener);
+    public void removeListener(ServerChannelListener listener);
 
     /**
      * @return an immutable list of listeners
      * @see #addListener(ServerChannelListener)
      */
-    List<ServerChannelListener> getListeners();
+    public List<ServerChannelListener> getListeners();
 
     /**
      * @return whether the channel is lazy
      * @see #setLazy(boolean)
      */
-    boolean isLazy();
+    public boolean isLazy();
 
     /**
      * A lazy channel marks all messages published to it as lazy.
@@ -60,13 +60,13 @@ public interface ConfigurableServerChannel extends Channel {
      * @param lazy whether the channel is lazy
      * @see #isLazy()
      */
-    void setLazy(boolean lazy);
+    public void setLazy(boolean lazy);
 
     /**
      * @return the lazy timeout for this channel
      * @see #setLazyTimeout(long)
      */
-    long getLazyTimeout();
+    public long getLazyTimeout();
 
     /**
      * Sets the lazy timeout for this channel.
@@ -75,13 +75,13 @@ public interface ConfigurableServerChannel extends Channel {
      * @param lazyTimeout the lazy timeout for this channel
      * @see #setLazy(boolean)
      */
-    void setLazyTimeout(long lazyTimeout);
+    public void setLazyTimeout(long lazyTimeout);
 
     /**
      * @return whether the channel is persistent
      * @see #setPersistent(boolean)
      */
-    boolean isPersistent();
+    public boolean isPersistent();
 
     /**
      * A persistent channel is not removed when the last subscription is removed
@@ -89,7 +89,20 @@ public interface ConfigurableServerChannel extends Channel {
      * @param persistent whether the channel is persistent
      * @see #isPersistent()
      */
-    void setPersistent(boolean persistent);
+    public void setPersistent(boolean persistent);
+
+    /**
+     * @return whether the channel broadcasts messages back to the publisher
+     */
+    public boolean isBroadcastToPublisher();
+
+    /**
+     * Sets whether a publisher that is also a subscriber to the channel
+     * will receive the messages it publishes on that channel.
+     *
+     * @param broadcastToPublisher whether the channel broadcasts messages back to the publisher
+     */
+    public void setBroadcastToPublisher(boolean broadcastToPublisher);
 
     /**
      * <p>Adds the given {@link Authorizer} that grants or denies operations on this channel.</p>
@@ -124,7 +137,7 @@ public interface ConfigurableServerChannel extends Channel {
          *
          * @param channel the channel to configure
          */
-        void configureChannel(ConfigurableServerChannel channel);
+        public void configureChannel(ConfigurableServerChannel channel);
 
         /**
          * Utility class that initializes channels to be persistent

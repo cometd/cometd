@@ -15,7 +15,13 @@
  */
 package org.cometd.client.transport;
 
+import java.io.IOException;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.net.CookieStore;
+import java.net.HttpCookie;
+import java.net.URI;
+import java.util.List;
 import java.util.Map;
 
 public abstract class HttpClientTransport extends ClientTransport {
@@ -31,5 +37,20 @@ public abstract class HttpClientTransport extends ClientTransport {
 
     public void setCookieStore(CookieStore cookieStore) {
         this.cookieStore = cookieStore;
+    }
+
+    protected List<HttpCookie> getCookies(URI uri) {
+        return getCookieStore().get(uri);
+    }
+
+    protected void storeCookies(URI uri, Map<String, List<String>> cookies) {
+        try {
+            CookieManager cookieManager = new CookieManager(getCookieStore(), CookiePolicy.ACCEPT_ALL);
+            cookieManager.put(uri, cookies);
+        } catch (IOException x) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Could not parse cookies", x);
+            }
+        }
     }
 }

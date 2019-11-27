@@ -55,10 +55,10 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AsyncFoldLeft;
-import org.cometd.server.transport.AbstractHttpTransport;
-import org.cometd.server.transport.AsyncJSONTransport;
-import org.cometd.server.transport.JSONPTransport;
-import org.cometd.server.transport.JSONTransport;
+import org.cometd.server.http.AbstractHttpTransport;
+import org.cometd.server.http.AsyncJSONTransport;
+import org.cometd.server.http.JSONPTransport;
+import org.cometd.server.http.JSONTransport;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -913,7 +913,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                         }
                         AsyncFoldLeft.run(subscribers, true, (r, subscriber, loop) -> {
                             if (wildSubscribers.add(subscriber.getId())) {
-                                ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(b -> loop.proceed(true), loop::fail));
+                                if (subscriber == session && !channel.isBroadcastToPublisher()) {
+                                    loop.proceed(true);
+                                } else {
+                                    ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(b -> loop.proceed(true), loop::fail));
+                                }
                             } else {
                                 loop.proceed(r);
                             }
@@ -926,7 +930,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                     }
                     AsyncFoldLeft.run(subscribers, true, (result, subscriber, loop) -> {
                         if (!wildSubscribers.contains(subscriber.getId())) {
-                            ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(y -> loop.proceed(true), loop::fail));
+                            if (subscriber == session && !channel.isBroadcastToPublisher()) {
+                                loop.proceed(true);
+                            } else {
+                                ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(y -> loop.proceed(true), loop::fail));
+                            }
                         } else {
                             loop.proceed(true);
                         }
@@ -1067,7 +1075,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         extendOutgoing(sender, session, reply, Promise.from(b -> {
             if (b) {
                 if (session != null) {
-                    session.extendOutgoing(reply, promise);
+                    session.extendOutgoing(sender, reply, promise);
                 } else {
                     promise.succeed(reply);
                 }

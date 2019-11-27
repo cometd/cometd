@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
@@ -41,7 +42,7 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AsyncFoldLeft;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.AbstractServerTransport.Scheduler;
-import org.cometd.server.transport.AbstractHttpTransport;
+import org.cometd.server.http.AbstractHttpTransport;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -238,10 +239,10 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     protected void deliver1(ServerSession sender, ServerMessage.Mutable mutable, Promise<Boolean> promise) {
-        if (sender == this && !isBroadcastToPublisher()) {
+        if (sender == this && !isBroadcastToPublisher() && ChannelId.isBroadcast(mutable.getChannel())) {
             promise.succeed(false);
         } else {
-            extendOutgoing(mutable, Promise.from(message -> {
+            extendOutgoing(sender, mutable, Promise.from(message -> {
                 if (message == null) {
                     promise.succeed(false);
                 } else {
@@ -302,12 +303,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    protected void extendOutgoing(ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
+    protected void extendOutgoing(ServerSession sender, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
         List<Extension> extensions = new ArrayList<>(_extensions);
         Collections.reverse(extensions);
         AsyncFoldLeft.run(extensions, message, (result, extension, loop) -> {
             try {
-                extension.outgoing(this, result, Promise.from(m -> {
+                extension.outgoing(sender, this, result, Promise.from(m -> {
                     if (m != null) {
                         loop.proceed(m);
                     } else {
@@ -790,10 +791,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         _advisedTransport = null;
     }
 
+    @Override
     public boolean isBroadcastToPublisher() {
         return _broadcastToPublisher;
     }
 
+    @Override
     public void setBroadcastToPublisher(boolean value) {
         _broadcastToPublisher = value;
     }
@@ -846,10 +849,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
+    @Override
     public void setMetaConnectDeliveryOnly(boolean meta) {
         _metaConnectDelivery = meta;
     }
 
+    @Override
     public boolean isMetaConnectDeliveryOnly() {
         return _metaConnectDelivery;
     }

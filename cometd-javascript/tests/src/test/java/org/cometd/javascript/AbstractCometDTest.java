@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

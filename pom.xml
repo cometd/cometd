@@ -36,15 +36,15 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>10.0.0-alpha0</jetty-version>
+    <jetty-version>10.0.0.alpha1</jetty-version>
     <!-- end::jetty-version[] -->
     <slf4j-version>1.8.0-beta4</slf4j-version>
-    <log4j2-version>2.11.2</log4j2-version>
-    <spring-version>5.1.6.RELEASE</spring-version>
-    <spring-boot-version>2.1.4.RELEASE</spring-boot-version>
-    <jackson-version>2.9.8</jackson-version>
+    <log4j2-version>2.12.1</log4j2-version>
+    <spring-version>5.2.0.RELEASE</spring-version>
+    <spring-boot-version>2.1.7.RELEASE</spring-boot-version>
+    <jackson-version>2.9.10.1</jackson-version>
     <dojo-version>1.15.0</dojo-version>
-    <okhttp-version>3.14.1</okhttp-version>
+    <okhttp-version>4.0.1</okhttp-version>
   </properties>
 
   <url>https://cometd.org</url>
@@ -320,7 +320,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-archetype-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.1.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -346,6 +346,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
           <version>3.0.0-M1</version>
+          <configuration>
+            <retryFailedDeploymentCount>8</retryFailedDeploymentCount>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -400,7 +403,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.7.1</version>
+          <version>3.8.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -410,17 +413,10 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0-M3</version>
+          <version>3.0.0-M4</version>
           <configuration>
             <argLine>@{argLine} -showversion -Xmx1g -Xms1g -Xlog:gc* -XX:+PrintCommandLineFlags</argLine>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.codehaus.plexus</groupId>
-              <artifactId>plexus-java</artifactId>
-              <version>1.0.4-SNAPSHOT</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -440,7 +436,7 @@
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>4.2.0</version>
+          <version>4.2.1</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -455,7 +451,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.4</version>
+          <version>0.8.5</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -498,7 +494,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20190618</version>
+        <version>v20191027</version>
       </dependency>
 
       <dependency>

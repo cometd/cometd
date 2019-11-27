@@ -59,7 +59,7 @@ public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServ
                         private final AtomicInteger connects = new AtomicInteger();
 
                         @Override
-                        public void outgoing(ServerSession session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
+                        public void outgoing(ServerSession sender, ServerSession session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
                             if (Channel.META_CONNECT.equals(message.getChannel())) {
                                 if (connects.incrementAndGet() == 2) {
                                     // Delay the second connect.

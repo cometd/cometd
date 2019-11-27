@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.JndiConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketConfiguration;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration;
 import org.junit.After;
 import org.junit.Assert;

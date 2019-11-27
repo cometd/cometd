@@ -36,7 +36,7 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.cometd.server.ServerMessageImpl;
-import org.cometd.server.transport.AsyncJSONTransport;
+import org.cometd.server.http.AsyncJSONTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;

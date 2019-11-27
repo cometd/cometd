@@ -24,6 +24,7 @@ import java.nio.channels.UnresolvedAddressException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -38,7 +39,7 @@ import org.cometd.client.websocket.common.AbstractWebSocketTransport;
 import org.cometd.common.TransportException;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
@@ -140,11 +141,21 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
     }
 
     @Override
+    public void onHandshakeRequest(HttpRequest request) {
+    }
+
+    @Override
     public void onHandshakeResponse(HttpRequest request, HttpResponse response) {
-        Map<String, List<String>> headerMap = new HashMap<>();
-        for (HttpField field : response.getHeaders())
-            headerMap.put(field.getName(), Arrays.asList(field.getValues()));
-        storeCookies(headerMap);
+        storeCookies(URI.create(getURL()), headersToMap(response.getHeaders()));
+    }
+
+    public static Map<String, List<String>> headersToMap(HttpFields headers) {
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        headers.forEach(field -> {
+            String name = field.getName();
+            result.put(name, Arrays.asList(field.getValues()));
+        });
+        return result;
     }
 
     protected class JettyWebSocketDelegate extends Delegate implements WebSocketListener {

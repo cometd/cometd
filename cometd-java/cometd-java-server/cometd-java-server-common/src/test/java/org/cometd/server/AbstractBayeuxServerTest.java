@@ -19,8 +19,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.cometd.server.transport.AsyncJSONTransport;
-import org.cometd.server.transport.JSONTransport;
+import org.cometd.server.http.AsyncJSONTransport;
+import org.cometd.server.http.JSONTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;

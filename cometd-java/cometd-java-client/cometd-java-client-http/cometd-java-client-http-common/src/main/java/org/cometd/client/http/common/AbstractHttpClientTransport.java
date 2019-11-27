@@ -104,20 +104,6 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
         return url;
     }
 
-    protected List<HttpCookie> retrieveCookies(URI uri) {
-        return getCookieStore().get(uri);
-    }
-
-    protected void storeCookies(URI uri, Map<String, List<String>> cookies) {
-        try {
-            _cookieManager.put(uri, cookies);
-        } catch (IOException x) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("", x);
-            }
-        }
-    }
-
     protected Map<String, Object> getAdvice() {
         return _advice;
     }

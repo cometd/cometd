@@ -156,16 +156,43 @@ public interface ServerSession extends Session {
      * the session when the client does not send messages to the server, or -1 if the default
      * value is used
      */
-    public default long getMaxInterval() {
-        return -1;
-    }
+    public long getMaxInterval();
 
     /**
      * @param maxInterval the max period of time, in milliseconds, that the server waits
      *                    before expiring the session
      */
-    public default void setMaxInterval(long maxInterval) {
-    }
+    public void setMaxInterval(long maxInterval);
+
+    /**
+     * @return whether delivery of messages only happens via the {@code /meta/connect} channel
+     */
+    public boolean isMetaConnectDeliveryOnly();
+
+    /**
+     * <p>Sets whether delivery of messages only happen via the {@code /meta/connect} channel.</p>
+     * <p>Transports that use more than one connection to the server (e.g. HTTP transports)
+     * may deliver some messages in one connection and some in another connection, causing
+     * messages to arrive out-of-order.</p>
+     * <p>Forcing messages to be delivered only via the {@code /meta/connect} channel guarantees
+     * server-to-client message ordering.</p>
+     *
+     * @param metaConnectDeliveryOnly whether delivery of messages only happens via the
+     *                                {@code /meta/connect} channel
+     */
+    public void setMetaConnectDeliveryOnly(boolean metaConnectDeliveryOnly);
+
+    /**
+     * @return whether this session sends messages back to itself
+     */
+    public boolean isBroadcastToPublisher();
+
+    /**
+     * Sets whether this session sends messages back to itself.
+     *
+     * @param broadcastToPublisher whether this session sends messages back to itself
+     */
+    public void setBroadcastToPublisher(boolean broadcastToPublisher);
 
     /**
      * <p>Common interface for {@link ServerSession} listeners.</p>
@@ -344,7 +371,7 @@ public interface ServerSession extends Session {
          * @param message the incoming message
          * @param promise the promise to notify whether message processing should continue
          */
-        default void incoming(ServerSession session, ServerMessage.Mutable message, Promise<Boolean> promise) {
+        public default void incoming(ServerSession session, ServerMessage.Mutable message, Promise<Boolean> promise) {
             promise.succeed(message.isMeta() ? rcvMeta(session, message) : rcv(session, message));
         }
 
@@ -356,7 +383,7 @@ public interface ServerSession extends Session {
          * @param message the incoming message
          * @return whether message processing should continue
          */
-        default boolean rcv(ServerSession session, ServerMessage.Mutable message) {
+        public default boolean rcv(ServerSession session, ServerMessage.Mutable message) {
             return true;
         }
 
@@ -368,22 +395,23 @@ public interface ServerSession extends Session {
          * @param message the incoming message
          * @return whether message processing should continue
          */
-        default boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
+        public default boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
             return true;
         }
 
         /**
          * <p>Callback method invoked every time a message is outgoing.</p>
          *
+         * @param sender  the session that sent the message or null
          * @param session the session receiving the message
          * @param message the outgoing message
          * @param promise the promise to notify with the message to send or null to not send the message
          */
-        default void outgoing(ServerSession session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
+        public default void outgoing(ServerSession sender, ServerSession session, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
             if (message.isMeta()) {
-                promise.succeed(sendMeta(session, message) ? message : null);
+                promise.succeed(sendMeta(sender, session, message) ? message : null);
             } else {
-                ServerMessage result = send(session, message);
+                ServerMessage result = send(sender, session, message);
                 if (result instanceof ServerMessage.Mutable) {
                     promise.succeed((ServerMessage.Mutable)result);
                 } else if (result == null) {
@@ -395,26 +423,28 @@ public interface ServerSession extends Session {
         }
 
         /**
-         * <p>Blocking version of {@link #outgoing(ServerSession, ServerMessage.Mutable, Promise)}
+         * <p>Blocking version of {@link #outgoing(ServerSession, ServerSession, ServerMessage.Mutable, Promise)}
          * for non-meta messages.</p>
          *
+         * @param sender  the session that sent the message or null
          * @param session the session receiving the message
          * @param message the outgoing message
          * @return the message to send or null to not send the message
          */
-        default ServerMessage send(ServerSession session, ServerMessage message) {
+        public default ServerMessage send(ServerSession sender, ServerSession session, ServerMessage message) {
             return message;
         }
 
         /**
-         * <p>Blocking version of {@link #outgoing(ServerSession, ServerMessage.Mutable, Promise)}
+         * <p>Blocking version of {@link #outgoing(ServerSession, ServerSession, ServerMessage.Mutable, Promise)}
          * for meta messages.</p>
          *
+         * @param sender  the session that sent the message or null
          * @param session the session receiving the message
          * @param message the outgoing message
          * @return whether message processing should continue
          */
-        default boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
+        public default boolean sendMeta(ServerSession sender, ServerSession session, ServerMessage.Mutable message) {
             return true;
         }
     }

@@ -94,6 +94,19 @@ public class AsyncFoldLeft {
         }
     }
 
+    /**
+     * <p>Processes the given {@code collection} of elements.</p>
+     * <p>The initial result {@code zero} is returned if the collection is empty.</p>
+     * <p>For each element the {@link Operation#apply(Object, Object, Loop) operation}
+     * function is invoked.</p>
+     *
+     * @param collection the elements to process
+     * @param zero       the initial result
+     * @param operation  the operation to invoke for each element
+     * @param promise    the promise to notify of the final result
+     * @param <T>        the type of element
+     * @param <R>        the type of the result
+     */
     public static <T, R> void run(Collection<T> collection, R zero, Operation<T, R> operation, Promise<R> promise) {
         Iterator<T> iterator = collection.iterator();
         if (!iterator.hasNext()) {
@@ -136,12 +149,27 @@ public class AsyncFoldLeft {
      * @param <R> the type of the result
      */
     public interface Loop<R> {
+        /**
+         * <p>Makes the loop proceed to the next element (or the end of the loop).</p>
+         *
+         * @param r the result computed in the current iteration
+         */
         public default void proceed(R r) {
         }
 
+        /**
+         * <p>Makes the loop exit (similarly to the {@code break} statement).</p>
+         *
+         * @param r the result computed in the current iteration
+         */
         public default void leave(R r) {
         }
 
+        /**
+         * <p>Makes the loop fail (similarly to throwing an exception).</p>
+         *
+         * @param failure the failure of the current iteration
+         */
         public default void fail(Throwable failure) {
         }
     }
@@ -230,8 +258,13 @@ public class AsyncFoldLeft {
                 State current = state.get();
                 switch (current) {
                     case LOOP:
+                        if (state.compareAndSet(current, State.LEAVE)) {
+                            return;
+                        }
+                        break;
                     case ASYNC:
                         if (state.compareAndSet(current, State.LEAVE)) {
+                            promise.succeed(result.get());
                             return;
                         }
                         break;

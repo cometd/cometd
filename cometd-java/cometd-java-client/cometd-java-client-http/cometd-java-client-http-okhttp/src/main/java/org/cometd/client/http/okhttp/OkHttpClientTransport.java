@@ -91,7 +91,7 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
                 .post(RequestBody.create(JSON_MEDIA_TYPE, generateJSON(messages)));
 
         URI cookieURI = URI.create(getURL());
-        String cookies = retrieveCookies(cookieURI).stream()
+        String cookies = getCookies(cookieURI).stream()
                 .map(cookie -> cookie.getName() + "=" + cookie.getValue())
                 .collect(Collectors.joining(";"));
         if (!cookies.isEmpty()) {

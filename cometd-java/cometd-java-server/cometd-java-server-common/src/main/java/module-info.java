@@ -18,8 +18,8 @@ module org.cometd.server {
     exports org.cometd.server.authorizer;
     exports org.cometd.server.ext;
     exports org.cometd.server.filter;
+    exports org.cometd.server.http;
     exports org.cometd.server.jmx;
-    exports org.cometd.server.transport;
 
     requires jetty.servlet.api;
     requires transitive org.cometd.api.server;

@@ -47,8 +47,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -168,7 +168,7 @@ public class WebSocketTransportFailureTest {
         ServerSession serverSession = bayeux.getSession(clientId);
         Assert.assertNull(serverSession);
 
-        JavaxWebSocketServerContainer container = (JavaxWebSocketServerContainer)context.getServletContext().getAttribute(ServerContainer.class.getName());
+        JavaxWebSocketContainer container = (JavaxWebSocketContainer)context.getServletContext().getAttribute(ServerContainer.class.getName());
         Assert.assertTrue(container.getOpenSessions().isEmpty());
     }
 

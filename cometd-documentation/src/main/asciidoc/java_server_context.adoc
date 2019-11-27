@@ -60,7 +60,7 @@ public class OneClientPerAddressSecurityPolicy extends DefaultSecurityPolicy {
 ----
 ====
 
-Refer to the http://docs.cometd.org/apidocs[Javadoc documentation]
+Refer to the {javadocs}[Javadoc documentation]
 for further information about methods available in `BayeuxContext`.
 
 It is recommended to always call `ServerMessage.getBayeuxContext()` to obtain the

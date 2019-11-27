@@ -36,7 +36,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JettyJSONContextClient;
-import org.cometd.server.transport.JSONTransport;
+import org.cometd.server.http.JSONTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.io.EofException;

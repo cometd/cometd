@@ -36,7 +36,7 @@
     <servlet-class>org.cometd.server.CometDServlet</servlet-class>
     <init-param>
       <param-name>transports</param-name>
-      <param-value>org.cometd.server.websocket.jetty.JettyWebSocketTransport,org.cometd.server.transport.AsyncJSONTransport
+      <param-value>org.cometd.server.websocket.jetty.JettyWebSocketTransport,org.cometd.server.http.AsyncJSONTransport
       </param-value>
     </init-param>
     <init-param>

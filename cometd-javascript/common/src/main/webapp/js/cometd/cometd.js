@@ -56,6 +56,7 @@
 
     /**
      * The scheduler code that will run in the Worker.
+     * Workers have a built-in `self` variable similar to `window`.
      */
     function WorkerScheduler() {
         var _tasks = {};
@@ -596,10 +597,20 @@
             return new window.XMLHttpRequest();
         };
 
+        function _copyContext(xhr) {
+            try {
+                // Copy external context, to be used in other environments.
+                xhr.context = _self.context;
+            } catch (e) {
+                // May happen if XHR is wrapped by Object.seal(),
+                // Object.freeze(), or Object.preventExtensions().
+                this._debug('Could not copy transport context into XHR', e);
+            }
+        }
+
         _self.xhrSend = function(packet) {
             var xhr = _self.newXMLHttpRequest();
-            // Copy external context, to be used in other environments.
-            xhr.context = _self.context;
+            _copyContext(xhr);
             xhr.withCredentials = true;
             xhr.open('POST', packet.url, packet.sync !== true);
             var headers = packet.headers;
@@ -2059,14 +2070,16 @@
                 if (message.channel === '/meta/handshake') {
                     if (!failureInfo.transport) {
                         // The transport is invalid, try to negotiate again.
+                        var oldTransportType = _transport ? _transport.getType() : null;
                         var newTransport = transports.negotiateTransport(transportTypes, version, crossDomain, url);
                         if (!newTransport) {
                             this._warn('Could not negotiate transport, client=[' + transportTypes + ']');
-                            _notifyTransportException(_transport.getType(), null, message.failure);
+                            _notifyTransportException(oldTransportType, null, message.failure);
                             failureInfo.action = 'none';
                         } else {
-                            this._debug('Transport', _transport.getType(), '->', newTransport.getType());
-                            _notifyTransportException(_transport.getType(), newTransport.getType(), message.failure);
+                            var newTransportType = newTransport.getType();
+                            this._debug('Transport', oldTransportType, '->', newTransportType);
+                            _notifyTransportException(oldTransportType, newTransportType, message.failure);
                             failureInfo.action = 'handshake';
                             failureInfo.transport = newTransport;
                         }

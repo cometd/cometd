@@ -26,7 +26,7 @@ import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.ContextLoader;

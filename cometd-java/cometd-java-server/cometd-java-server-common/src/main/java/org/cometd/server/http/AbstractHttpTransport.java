@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.transport;
+package org.cometd.server.http;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -71,6 +71,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String BROWSER_COOKIE_PATH_OPTION = "browserCookiePath";
     public final static String BROWSER_COOKIE_SECURE_OPTION = "browserCookieSecure";
     public final static String BROWSER_COOKIE_HTTP_ONLY_OPTION = "browserCookieHttpOnly";
+    public final static String BROWSER_COOKIE_SAME_SITE_OPTION = "browserCookieSameSite";
     public final static String MAX_SESSIONS_PER_BROWSER_OPTION = "maxSessionsPerBrowser";
     public final static String HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION = "http2MaxSessionsPerBrowser";
     public final static String MULTI_SESSION_INTERVAL_OPTION = "multiSessionInterval";
@@ -84,6 +85,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     private String _browserCookiePath;
     private boolean _browserCookieSecure;
     private boolean _browserCookieHttpOnly;
+    private String _browserCookieSameSite;
     private int _maxSessionsPerBrowser;
     private int _http2MaxSessionsPerBrowser;
     private long _multiSessionInterval;
@@ -103,6 +105,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         _browserCookiePath = getOption(BROWSER_COOKIE_PATH_OPTION, "/");
         _browserCookieSecure = getOption(BROWSER_COOKIE_SECURE_OPTION, false);
         _browserCookieHttpOnly = getOption(BROWSER_COOKIE_HTTP_ONLY_OPTION, true);
+        _browserCookieSameSite = getOption(BROWSER_COOKIE_SAME_SITE_OPTION, null);
         _maxSessionsPerBrowser = getOption(MAX_SESSIONS_PER_BROWSER_OPTION, 1);
         _http2MaxSessionsPerBrowser = getOption(HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION, -1);
         _multiSessionInterval = getOption(MULTI_SESSION_INTERVAL_OPTION, 2000);
@@ -396,15 +399,27 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
         builder.setLength(16);
         String browserId = builder.toString();
-        Cookie cookie = new Cookie(_browserCookieName, browserId);
+
+        // Need to support the SameSite attribute so build the cookie manually.
+        builder.setLength(0);
+        builder.append(_browserCookieName).append("=").append(browserId);
         if (_browserCookieDomain != null) {
-            cookie.setDomain(_browserCookieDomain);
+            builder.append("; Domain=").append(_browserCookieDomain);
         }
-        cookie.setPath(_browserCookiePath);
-        cookie.setSecure(_browserCookieSecure);
-        cookie.setHttpOnly(_browserCookieHttpOnly);
-        cookie.setMaxAge(-1);
-        context.response.addCookie(cookie);
+        if (_browserCookiePath != null) {
+            builder.append("; Path=").append(_browserCookiePath);
+        }
+        if (_browserCookieHttpOnly) {
+            builder.append("; HttpOnly");
+        }
+        if (context.request.isSecure() && _browserCookieSecure) {
+            builder.append("; Secure");
+        }
+        if (_browserCookieSameSite != null) {
+            builder.append("; SameSite=").append(_browserCookieSameSite);
+        }
+        context.response.addHeader("Set-Cookie", builder.toString());
+
         return browserId;
     }
 
@@ -415,6 +430,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
      * @param http2   whether the HTTP protocol is HTTP/2
      * @return true if the count is below the max sessions per browser value.
      * If false is returned, the count is not incremented.
+     *
      * @see #decBrowserId(ServerSessionImpl, boolean)
      */
     protected boolean incBrowserId(ServerSessionImpl session, boolean http2) {

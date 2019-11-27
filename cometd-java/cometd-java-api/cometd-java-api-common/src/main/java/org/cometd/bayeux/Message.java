@@ -130,13 +130,6 @@ public interface Message extends Map<String, Object> {
     String getId();
 
     /**
-     * @return this message as a JSON string
-     * @deprecated use JSONContext.Client.generate() instead.
-     */
-    @Deprecated
-    String getJSON();
-
-    /**
      * The mutable version of a {@link Message}
      */
     interface Mutable extends Message {

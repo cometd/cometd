@@ -2,14 +2,54 @@
 [[_java_server_transports]]
 ==== Server Transports
 
-<<_bayeux,The Bayeux protocol>> defines two mandatory transports:
+The CometD server can send and receive Bayeux messages.
+These messages may be transported to/from the CometD server using
+different wire transports. The most common wire transports are HTTP
+(both HTTP/1.1 and HTTP/2) and WebSocket.
+
+[NOTE]
+====
+The CometD project borrows many libraries from the http://eclipse.org/jetty[Jetty]
+project, but all the Jetty libraries required by CometD are portable across
+Servlet Containers, so you can deploy your CometD web application to _any_
+Servlet Container.
+Servlet Containers provide HTTP and WebSocket wire transports that the CometD
+server uses to send and receive Bayeux messages.
+====
+
+[[_java_server_transports_http]]
+===== HTTP Server Transports
+
+<<_bayeux,The Bayeux protocol>> defines two mandatory transports based on HTTP:
 `long-polling` and `callback-polling`.
 These two transports are automatically configured in the `BayeuxServer`
 instance, and there is no need to explicitly specify them in the configuration.
-The respective implementation classes are named `org.cometd.server.transport.JSONTransport`
-and `org.cometd.server.transport.JSONPTransport`.
 
-For the `websocket` transport there exist two transport implementations:
+For the `long-polling` transport there exist two implementations:
+
+* `org.cometd.server.http.AsyncJSONTransport`, which uses Servlet 3.1
+  non-blocking I/O and it is only available when the CometD web application
+  is deployed to Servlet Containers that support Servlet 3.1
+* `org.cometd.server.http.JSONTransport`, which depends on Servlet 3.0
+  and uses blocking I/O
+
+The CometD server tries to lookup the presence of Servlet 3.1 via reflection
+on startup; if it is available, then `AsyncJSONTransport` is preferred over
+`JSONTransport`, as it is more scalable in the case of a large number of
+clients because it uses non-blocking I/O.
+
+For the `callback-polling` transport the implementation class is
+`org.cometd.server.http.JSONPTransport`.
+This transport uses blocking I/O and it is the least efficient; the CometD
+server only uses it when all other transports cannot be used.
+
+HTTP transports may require a more advanced configuration described
+in <<_java_server_configuration_advanced,this section>>.
+
+[[_java_server_transports_websocket]]
+===== WebSocket Server Transports
+
+For the `websocket` transport there exist two implementations:
 
 * one based on the standard Java APIs provided by
   https://jcp.org/en/jsr/detail?id=356[JSR 356]. If these APIs are available,
@@ -25,13 +65,6 @@ For the `websocket` transport there exist two transport implementations:
 
 The order of preference for the server transport is:
 `[websocket, long-polling, callback-polling]`.
-
-[NOTE]
-====
-The CometD project borrows many libraries from the http://eclipse.org/jetty[Jetty]
-project, but all of them are portable across Servlet Containers, so you can
-deploy your CometD web application to _any_ Servlet Container.
-====
 
 [IMPORTANT]
 ====
@@ -55,14 +88,15 @@ JSR 356 APIs.
 [IMPORTANT]
 ====
 Remember that the availability of the JSR 356 APIs is not enough, you need to
-make sure that your web application contains the required CometD dependencies.
-====
+make sure that your web application contains the required CometD WebSocket
+dependencies.
 
 The JSR 356 `websocket` transport requires the dependency
 `org.cometd.java:cometd-java-websocket-javax-server` (and transitive dependencies).
 
 The Jetty `websocket` transport requires the dependency
 `org.cometd.java:cometd-java-websocket-jetty-server` (and transitive dependencies).
+====
 
 Including the right dependencies in your web application is very easy if you
 use Maven: just declare the above dependency in your web application's `pom.xml`

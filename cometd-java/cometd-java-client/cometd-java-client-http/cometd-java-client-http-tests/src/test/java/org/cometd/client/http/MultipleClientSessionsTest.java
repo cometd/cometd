@@ -15,6 +15,12 @@
  */
 package org.cometd.client.http;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.HashMap;
@@ -31,17 +37,12 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
-import org.cometd.server.transport.AbstractHttpTransport;
+import org.cometd.server.http.AbstractHttpTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Simulates a browser opening multiple tabs to the same Bayeux server
@@ -369,7 +370,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
                 .timeout(5, TimeUnit.SECONDS)
                 .send(result -> {
                     assertTrue(result.isSucceeded());
-                    assertEquals(408, result.getResponse().getStatus());
+                    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, result.getResponse().getStatus());
                     abortedConnectLatch.countDown();
                 });
 

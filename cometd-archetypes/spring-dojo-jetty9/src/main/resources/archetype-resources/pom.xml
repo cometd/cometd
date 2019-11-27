@@ -20,7 +20,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.0</version>
+        <version>3.8.1</version>
         <configuration>
           <source>1.7</source>
           <target>1.7</target>
@@ -28,7 +28,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-war-plugin</artifactId>
-        <version>3.2.2</version>
+        <version>3.2.3</version>
         <configuration>
           <overlays>
             <overlay />
@@ -111,6 +111,11 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
       <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>${spring-version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>

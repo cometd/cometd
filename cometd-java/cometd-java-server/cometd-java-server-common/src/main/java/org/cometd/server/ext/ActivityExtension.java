@@ -158,7 +158,7 @@ public class ActivityExtension implements BayeuxServer.Extension {
         }
 
         @Override
-        public ServerMessage send(ServerSession session, ServerMessage message) {
+        public ServerMessage send(ServerSession sender, ServerSession session, ServerMessage message) {
             if (activity == Activity.CLIENT_SERVER) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Marking active session {}, sending message {}", session, message);
@@ -169,7 +169,7 @@ public class ActivityExtension implements BayeuxServer.Extension {
         }
 
         @Override
-        public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
+        public boolean sendMeta(ServerSession sender, ServerSession session, ServerMessage.Mutable message) {
             if (!Channel.META_CONNECT.equals(message.getChannel()) && activity == Activity.CLIENT_SERVER) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Marking active session {}, sending meta message {}", session, message);

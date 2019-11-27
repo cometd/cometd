@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.transport;
+package org.cometd.server.http;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletOutputStream;
@@ -63,9 +62,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
 
             @Override
             public void fail(Throwable failure) {
-                int code = failure instanceof TimeoutException ?
-                        HttpServletResponse.SC_REQUEST_TIMEOUT :
-                        HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+                int code = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
                 sendError(request, response, code, failure);
                 asyncContext.complete();
                 if (_logger.isDebugEnabled()) {

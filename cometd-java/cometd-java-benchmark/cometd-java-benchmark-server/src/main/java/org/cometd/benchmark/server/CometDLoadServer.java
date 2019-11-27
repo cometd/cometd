@@ -52,8 +52,8 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.cometd.server.transport.AsyncJSONTransport;
-import org.cometd.server.transport.JSONTransport;
+import org.cometd.server.http.AsyncJSONTransport;
+import org.cometd.server.http.JSONTransport;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
 import org.cometd.server.websocket.javax.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
@@ -78,7 +78,7 @@ import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 
 public class CometDLoadServer {
     private final MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(0);
