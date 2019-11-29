@@ -49,7 +49,7 @@ def newBuild(os, jdk) {
                   publisherStrategy: 'EXPLICIT',
                   globalMavenSettingsConfig: settingsName,
                   mavenOpts: mvnOpts) {
-            sh "mvn -V -B javadoc:javadoc -e"
+            sh "mvn -V -B install -DskipTests javadoc:javadoc -e"
           }
         }
       }
