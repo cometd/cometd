@@ -9,18 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>cometd-java-server-common</artifactId>
   <name>CometD :: Java :: Server :: Common</name>
-
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <forkCount>0</forkCount>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
+  
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
