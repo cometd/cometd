@@ -413,10 +413,17 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0-M4</version>
+          <version>3.0.0-SNAPSHOT</version>
           <configuration>
             <argLine>@{argLine} -showversion -Xmx1g -Xms1g -Xlog:gc* -XX:+PrintCommandLineFlags</argLine>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.codehaus.plexus</groupId>
+              <artifactId>plexus-java</artifactId>
+              <version>1.0.4-SNAPSHOT</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
