@@ -31,16 +31,6 @@
         <enabled>false</enabled>
       </snapshots>
     </pluginRepository>
-    <pluginRepository>
-      <id>plexus.snapshots</id>
-      <url>https://oss.sonatype.org/content/repositories/plexus-snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </pluginRepository>
   </pluginRepositories>
 
   <properties>
@@ -433,7 +423,7 @@
             <dependency>
               <groupId>org.codehaus.plexus</groupId>
               <artifactId>plexus-java</artifactId>
-              <version>1.0.4-SNAPSHOT</version>
+              <version>1.0.4</version>
             </dependency>
           </dependencies>
         </plugin>
