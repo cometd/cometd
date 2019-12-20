@@ -23,7 +23,6 @@ import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.channels.UnresolvedAddressException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -141,8 +140,7 @@ public class OkHttpWebsocketTransport extends AbstractWebSocketTransport {
     public static Map<String, List<String>> headersToMap(Headers headers) {
         // We want to keep the header name case, so we cannot use Headers.toMultiMap().
         Map<String, List<String>> result = new LinkedHashMap<>();
-        headers.iterator().forEachRemaining(entry ->
-                result.compute(entry.getFirst(), (k, v) -> v != null ? v : new ArrayList<>()).add(entry.getSecond()));
+        headers.names().forEach(name -> result.put(name, headers.values(name)));
         return result;
     }
 
