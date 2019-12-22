@@ -43,7 +43,7 @@
     <spring-version>5.2.2.RELEASE</spring-version>
     <spring-boot-version>2.2.2.RELEASE</spring-boot-version>
     <jackson-version>2.10.1</jackson-version>
-    <dojo-version>1.15.0</dojo-version>
+    <dojo-version>1.16.0</dojo-version>
     <okhttp-version>4.2.2</okhttp-version>
   </properties>
 
