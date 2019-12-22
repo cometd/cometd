@@ -43,7 +43,7 @@
     <slf4j-version>1.7.28</slf4j-version>
     <spring-version>5.2.2.RELEASE</spring-version>
     <jackson-version>2.10.1</jackson-version>
-    <dojo-version>1.15.0</dojo-version>
+    <dojo-version>1.16.0</dojo-version>
     <rhino-version>1.7R5</rhino-version>
   </properties>
 
