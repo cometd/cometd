@@ -20,8 +20,8 @@ module org.cometd.oort {
     requires transitive org.cometd.client.websocket.javax;
     requires transitive org.cometd.client.http.jetty;
     requires transitive org.cometd.server;
-    requires org.eclipse.jetty.util;
+    requires org.slf4j;
 
-    requires static jetty.servlet.api;
+    // Only required when using JMX.
     requires static org.eclipse.jetty.jmx;
 }

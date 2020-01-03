@@ -36,15 +36,15 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>10.0.0.alpha1</jetty-version>
+    <jetty-version>10.0.0-SNAPSHOT</jetty-version>
     <!-- end::jetty-version[] -->
     <slf4j-version>1.8.0-beta4</slf4j-version>
     <log4j2-version>2.12.1</log4j2-version>
     <spring-version>5.2.0.RELEASE</spring-version>
     <spring-boot-version>2.1.7.RELEASE</spring-boot-version>
-    <jackson-version>2.9.10.1</jackson-version>
+    <jackson-version>2.10.1</jackson-version>
     <dojo-version>1.15.0</dojo-version>
-    <okhttp-version>4.0.1</okhttp-version>
+    <okhttp-version>4.3.0</okhttp-version>
   </properties>
 
   <url>https://cometd.org</url>
@@ -471,13 +471,13 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-servlet-api</artifactId>
-        <version>4.0.2</version>
+        <version>4.0.3</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-javax-websocket-api</artifactId>
-        <version>1.1.1</version>
+        <version>1.1.2</version>
         <scope>provided</scope>
       </dependency>
       <dependency>

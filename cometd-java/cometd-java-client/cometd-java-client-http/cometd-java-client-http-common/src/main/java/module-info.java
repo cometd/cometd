@@ -17,4 +17,5 @@ module org.cometd.client.http.common {
     exports org.cometd.client.http.common;
 
     requires transitive org.cometd.client;
+    requires org.slf4j;
 }

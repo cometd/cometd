@@ -16,10 +16,7 @@
 module org.cometd.server.websocket.common {
     exports org.cometd.server.websocket.common;
 
-    requires jetty.servlet.api;
     requires transitive org.cometd.server;
-    requires org.cometd.common;
     requires org.slf4j;
     requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.util;
 }

@@ -19,6 +19,5 @@ module org.cometd.client {
     exports org.cometd.client.transport;
 
     requires transitive org.cometd.common;
-    requires transitive org.cometd.api.client;
-    requires transitive org.slf4j;
+    requires org.slf4j;
 }

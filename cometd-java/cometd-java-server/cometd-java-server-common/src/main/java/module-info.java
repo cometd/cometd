@@ -21,12 +21,11 @@ module org.cometd.server {
     exports org.cometd.server.http;
     exports org.cometd.server.jmx;
 
-    requires jetty.servlet.api;
+    requires transitive jetty.servlet.api;
     requires transitive org.cometd.api.server;
     requires transitive org.cometd.common;
-    requires transitive org.eclipse.jetty.util;
     requires org.slf4j;
 
-    // Only required if using JMX.
+    // Only required when using JMX.
     requires static org.eclipse.jetty.jmx;
 }

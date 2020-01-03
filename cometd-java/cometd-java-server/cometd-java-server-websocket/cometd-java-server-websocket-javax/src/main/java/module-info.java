@@ -16,10 +16,7 @@
 module org.cometd.server.websocket.javax {
     exports org.cometd.server.websocket.javax;
 
-    requires jetty.servlet.api;
-    requires jetty.websocket.api;
-    requires org.cometd.server;
+    requires transitive jetty.websocket.api;
     requires transitive org.cometd.server.websocket.common;
-    requires org.eclipse.jetty.util;
     requires org.slf4j;
 }
