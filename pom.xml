@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.cometd</groupId>
@@ -67,7 +69,7 @@
     <rhino-version>1.7R5</rhino-version>
   </properties>
 
-  <url>http://cometd.org</url>
+  <url>https://cometd.org</url>
   <description>
     The CometD project is a scalable web messaging bus that uses WebSocket
     and HTTP AJAX push technology patterns known as "Comet" techniques
@@ -77,17 +79,17 @@
 
   <issueManagement>
     <system>GitHub</system>
-    <url>http://bugs.cometd.org</url>
+    <url>https://bugs.cometd.org</url>
   </issueManagement>
 
   <mailingLists>
     <mailingList>
       <name>CometD Dev List</name>
-      <archive>http://groups.google.com/group/cometd-dev/</archive>
+      <archive>https://groups.google.com/group/cometd-dev/</archive>
     </mailingList>
     <mailingList>
       <name>CometD User List</name>
-      <archive>http://groups.google.com/group/cometd-users/</archive>
+      <archive>https://groups.google.com/group/cometd-users/</archive>
     </mailingList>
   </mailingLists>
 
@@ -96,23 +98,22 @@
       <id>gregw</id>
       <name>Greg Wilkins</name>
       <email>gregw@webtide.com</email>
-      <url>http://www.mortbay.com/mortbay/people/gregw</url>
       <organization>Webtide</organization>
-      <organizationUrl>http://www.webtide.com</organizationUrl>
+      <organizationUrl>https://www.webtide.com</organizationUrl>
     </developer>
     <developer>
       <id>sbordet</id>
       <name>Simone Bordet</name>
       <email>sbordet@webtide.com</email>
       <organization>Webtide</organization>
-      <organizationUrl>http://www.webtide.com</organizationUrl>
+      <organizationUrl>https://www.webtide.com</organizationUrl>
     </developer>
   </developers>
 
   <licenses>
     <license>
       <name>Apache License Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
     </license>
   </licenses>
 
@@ -247,7 +248,7 @@
             <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
             <Bundle-ContactAddress>${project.url}</Bundle-ContactAddress>
             <Bundle-Description>${project.description}</Bundle-Description>
-            <Bundle-DocURL>http://docs.cometd.org</Bundle-DocURL>
+            <Bundle-DocURL>https://docs.cometd.org</Bundle-DocURL>
             <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
             <Bundle-Version>${project.version}</Bundle-Version>
             <Import-Package>org.eclipse.jetty.*;version="[9.2,10)",*</Import-Package>
