@@ -84,10 +84,9 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
         <configuration>
-          <requestLog implementation="org.eclipse.jetty.server.Slf4jRequestLog" />
           <stopPort>8989</stopPort>
           <stopKey>QUIT</stopKey>
-          <jettyXml>src/config/etc/jetty-jmx.xml,src/config/etc/jetty-connectors.xml</jettyXml>
+          <jettyXmls>src/config/etc/jetty-jmx.xml,src/config/etc/jetty-connectors.xml</jettyXmls>
           <webApp>
             <contextPath>/</contextPath>
           </webApp>
@@ -204,16 +203,10 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlets</artifactId>
       <version>${jetty-version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-continuation</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-api</artifactId>
+      <artifactId>websocket-jetty-api</artifactId>
       <version>${jetty-version}</version>
     </dependency>
     <dependency>
@@ -233,16 +226,10 @@
       <artifactId>cometd-java-client-websocket-jetty</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty.websocket</groupId>
-          <artifactId>websocket-client</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-server</artifactId>
+      <artifactId>websocket-javax-server</artifactId>
       <version>${jetty-version}</version>
       <scope>test</scope>
     </dependency>
