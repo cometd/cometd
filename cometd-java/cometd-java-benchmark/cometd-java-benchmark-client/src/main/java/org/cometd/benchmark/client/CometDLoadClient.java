@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -77,7 +76,6 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 public class CometDLoadClient implements MeasureConverter {
     private static final String START_FIELD = "start";
-    private static final String START_DATE_FIELD = "startDate";
 
     private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);
     private final Random random = new Random();
@@ -611,8 +609,6 @@ public class CometDLoadClient implements MeasureConverter {
             message.put("chat", chat);
             // Mandatory fields to record latencies
             message.put(START_FIELD, System.nanoTime());
-            String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").format(System.currentTimeMillis());
-            message.put(START_DATE_FIELD, startDate);
             message.put(Config.ID_FIELD, ids.incrementAndGet() + channel);
             ClientSessionChannel clientChannel = client.getChannel(getChannelId(channel + "/" + room));
             clientChannel.publish(message);
