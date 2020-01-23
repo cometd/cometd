@@ -73,28 +73,7 @@ public abstract class OortConfigServlet extends HttpServlet {
 
         try {
             Oort oort = newOort(bayeux, url);
-
-            String secret = config.getInitParameter(OORT_SECRET_PARAM);
-            if (secret != null) {
-                oort.setSecret(secret);
-            }
-
-            String enableAckExtension = config.getInitParameter(OORT_ENABLE_ACK_EXTENSION_PARAM);
-            if (enableAckExtension == null) {
-                enableAckExtension = "true";
-            }
-            oort.setAckExtensionEnabled(Boolean.parseBoolean(enableAckExtension));
-
-            String enableBinaryExtension = config.getInitParameter(OORT_ENABLE_BINARY_EXTENSION_PARAM);
-            if (enableBinaryExtension == null) {
-                enableBinaryExtension = "true";
-            }
-            oort.setBinaryExtensionEnabled(Boolean.parseBoolean(enableBinaryExtension));
-
-            String jsonContext = config.getInitParameter(OORT_JSON_CONTEXT_PARAM);
-            if (jsonContext != null) {
-                oort.setJSONContextClient((JSONContext.Client)getClass().getClassLoader().loadClass(jsonContext).newInstance());
-            }
+            configureOort(config, oort);
 
             oort.start();
             servletContext.setAttribute(Oort.OORT_ATTRIBUTE, oort);
@@ -125,6 +104,37 @@ public abstract class OortConfigServlet extends HttpServlet {
      */
     protected Oort newOort(BayeuxServer bayeux, String url) {
         return new Oort(bayeux, url);
+    }
+
+    /**
+     * <p>Configures the Oort instance with servlet init parameters.</p>
+     *
+     * @param config the Servlet configuration
+     * @param oort the Oort instance to configure
+     * @throws Exception if the Oort instance cannot be configured
+     */
+    protected void configureOort(ServletConfig config, Oort oort) throws Exception {
+        String secret = config.getInitParameter(OORT_SECRET_PARAM);
+        if (secret != null) {
+            oort.setSecret(secret);
+        }
+
+        String enableAckExtension = config.getInitParameter(OORT_ENABLE_ACK_EXTENSION_PARAM);
+        if (enableAckExtension == null) {
+            enableAckExtension = "true";
+        }
+        oort.setAckExtensionEnabled(Boolean.parseBoolean(enableAckExtension));
+
+        String enableBinaryExtension = config.getInitParameter(OORT_ENABLE_BINARY_EXTENSION_PARAM);
+        if (enableBinaryExtension == null) {
+            enableBinaryExtension = "true";
+        }
+        oort.setBinaryExtensionEnabled(Boolean.parseBoolean(enableBinaryExtension));
+
+        String jsonContext = config.getInitParameter(OORT_JSON_CONTEXT_PARAM);
+        if (jsonContext != null) {
+            oort.setJSONContextClient((JSONContext.Client)getClass().getClassLoader().loadClass(jsonContext).newInstance());
+        }
     }
 
     /**
