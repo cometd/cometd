@@ -92,8 +92,7 @@ public class Category implements Cloneable, Comparable<Category>, JSON.Convertib
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public void fromJSON(Map object) {
+    public void fromJSON(Map<String, Object> object) {
     }
 
     @Override
@@ -105,6 +104,6 @@ public class Category implements Cloneable, Comparable<Category>, JSON.Convertib
 
     @Override
     public String toString() {
-        return JSON.toString(this);
+        return new JSON().toJSON(this);
     }
 }

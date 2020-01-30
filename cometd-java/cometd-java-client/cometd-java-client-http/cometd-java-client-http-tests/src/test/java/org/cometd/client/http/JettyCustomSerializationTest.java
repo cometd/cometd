@@ -187,8 +187,7 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         }
 
         @Override
-        @SuppressWarnings("rawtypes")
-        public Object fromJSON(Map map) {
+        public Object fromJSON(Map<String, Object> map) {
             String content = (String)map.get("content");
             return new Data(content);
         }
@@ -203,8 +202,7 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         }
 
         @Override
-        @SuppressWarnings("rawtypes")
-        public Object fromJSON(Map map) {
+        public Object fromJSON(Map<String, Object> map) {
             String content = (String)map.get("content");
             return new Extra(content);
         }

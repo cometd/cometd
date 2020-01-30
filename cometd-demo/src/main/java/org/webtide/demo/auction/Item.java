@@ -113,8 +113,7 @@ public class Item implements Cloneable, JSON.Convertible {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public void fromJSON(Map object) {
+    public void fromJSON(Map<String, Object> object) {
     }
 
     @Override
@@ -127,6 +126,6 @@ public class Item implements Cloneable, JSON.Convertible {
 
     @Override
     public String toString() {
-        return JSON.toString(this);
+        return new JSON().toJSON(this);
     }
 }

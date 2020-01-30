@@ -206,7 +206,7 @@
           <release>11</release>
           <showDeprecation>true</showDeprecation>
           <showWarnings>true</showWarnings>
-          <compilerArgument>-Xlint:all,-serial,-unchecked</compilerArgument>
+          <compilerArgument>-Xlint:all,-serial</compilerArgument>
         </configuration>
       </plugin>
       <plugin>

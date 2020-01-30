@@ -231,7 +231,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         }
     }
 
-    private class CustomConvertor implements JSON.Convertor {
+    private static class CustomConvertor implements JSON.Convertor {
         @Override
         public void toJSON(Object obj, JSON.Output out) {
             Custom custom = (Custom)obj;
@@ -239,8 +239,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         }
 
         @Override
-        @SuppressWarnings("rawtypes")
-        public Object fromJSON(Map object) {
+        public Object fromJSON(Map<String, Object> object) {
             return new Custom((String)object.get("payload"));
         }
     }

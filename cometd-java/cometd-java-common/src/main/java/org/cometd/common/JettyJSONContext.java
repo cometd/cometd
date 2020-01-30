@@ -93,13 +93,12 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
         return new JSONGenerator();
     }
 
-    private class FieldJSON extends JSON {
+    private static class FieldJSON extends JSON {
         // Allows for optimizations
 
         // Overridden for visibility
         @Override
-        @SuppressWarnings("rawtypes")
-        protected Convertor getConvertor(Class forClass) {
+        protected Convertor getConvertor(Class<?> forClass) {
             return super.getConvertor(forClass);
         }
     }
@@ -116,8 +115,7 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
         }
 
         @Override
-        @SuppressWarnings("rawtypes")
-        protected Convertor getConvertor(Class forClass) {
+        protected Convertor getConvertor(Class<?> forClass) {
             return _jsonParser.getConvertor(forClass);
         }
     }
@@ -144,8 +142,7 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
         }
 
         @Override
-        @SuppressWarnings("rawtypes")
-        protected Convertor getConvertor(Class forClass) {
+        protected Convertor getConvertor(Class<?> forClass) {
             return _messageParser.getConvertor(forClass);
         }
     }
@@ -153,8 +150,8 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
     private class JSONParser implements JSONContext.Parser {
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T parse(Reader reader, Class<T> type) throws ParseException {
-            return (T)getJSON().parse(new JSON.ReaderSource(reader));
+        public <R> R parse(Reader reader, Class<R> type) {
+            return (R)getJSON().parse(new JSON.ReaderSource(reader));
         }
     }
 
