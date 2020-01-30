@@ -20,9 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -82,9 +79,7 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 public class CometDLoadClient implements MeasureConverter {
     private static final String START_FIELD = "start";
-    private static final String START_DATE_FIELD = "startDate";
 
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").withZone(ZoneId.of("GMT"));
     private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);
     private final Random random = new Random();
     private final PlatformMonitor monitor = new PlatformMonitor();
@@ -125,7 +120,6 @@ public class CometDLoadClient implements MeasureConverter {
     private boolean ackExtension = false;
     private int iterations = 5;
     private int clients = 1000;
-    private int clientTurnover = 0;
     private int batches = 1000;
     private int batchSize = 10;
     private long batchPause = 10000;
@@ -171,8 +165,6 @@ public class CometDLoadClient implements MeasureConverter {
                 client.iterations = Integer.parseInt(arg.substring("--iterations=".length()));
             } else if (arg.startsWith("--clients=")) {
                 client.clients = Integer.parseInt(arg.substring("--clients=".length()));
-            } else if (arg.startsWith("--clientTurnover=")) {
-                client.clientTurnover = Integer.parseInt(arg.substring("--clientTurnover=".length()));
             } else if (arg.startsWith("--batches=")) {
                 client.batches = Integer.parseInt(arg.substring("--batches=".length()));
             } else if (arg.startsWith("--batchSize=")) {
@@ -370,7 +362,6 @@ public class CometDLoadClient implements MeasureConverter {
         statsClient.handshake();
 
         int clients = this.clients;
-        int clientTurnover = this.clientTurnover;
         int batches = this.batches;
         int batchSize = this.batchSize;
         long batchPause = this.batchPause;
@@ -418,15 +409,6 @@ public class CometDLoadClient implements MeasureConverter {
             System.err.printf("Clients ready: %d%n", currentSize);
 
             reset();
-
-            if (interactive) {
-                System.err.printf("client turnover (clients/s) [%d]: ", clientTurnover);
-                String value = console.readLine().trim();
-                if (value.length() == 0) {
-                    value = String.valueOf(clientTurnover);
-                }
-                clientTurnover = Integer.parseInt(value);
-            }
 
             if (interactive) {
                 System.err.printf("batch count [%d]: ", batches);
@@ -486,7 +468,7 @@ public class CometDLoadClient implements MeasureConverter {
             System.err.printf("Sending %d batches of %dx%d bytes messages every %d \u00B5s%n", batches, batchSize, messageSize, batchPause);
 
             long begin = System.nanoTime();
-            long expected = runBatches(url, transport, ackExtension, channel, clientTurnover, batches, batchSize, TimeUnit.MICROSECONDS.toNanos(batchPause), chat, randomize);
+            long expected = runBatches(channel, batches, batchSize, TimeUnit.MICROSECONDS.toNanos(batchPause), chat, randomize);
             long end = System.nanoTime();
 
             PlatformMonitor.Stop stop = monitor.stop();
@@ -586,11 +568,10 @@ public class CometDLoadClient implements MeasureConverter {
         scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
     }
 
-    private long runBatches(String url, ClientTransportType transport, boolean ackExtension, String channel, int clientTurnover, int batchCount, int batchSize, long batchPauseNanos, String chat, boolean randomize) {
+    private long runBatches(String channel, int batchCount, int batchSize, long batchPauseNanos, String chat, boolean randomize) {
         long begin = System.nanoTime();
         int index = -1;
         long expected = 0;
-        long turnover = 0;
         for (int i = 1; i <= batchCount; ++i) {
             long pause = begin + i * batchPauseNanos - System.nanoTime();
             if (pause > 0) {
@@ -607,18 +588,6 @@ public class CometDLoadClient implements MeasureConverter {
             }
             LoadBayeuxClient client = bayeuxClients.get(index);
             expected += sendBatch(client, channel, batchSize, chat);
-
-            if (clientTurnover > 0) {
-                long elapsed = System.nanoTime() - begin;
-                if (elapsed > 0) {
-                    long currentTurnover = clientTurnover * elapsed / TimeUnit.SECONDS.toNanos(1);
-                    for (int j = 0; j < currentTurnover - turnover; ++j) {
-                        int idx = nextRandom(bayeuxClients.size());
-                        disconnectClient(bayeuxClients.set(idx, handshakeClient(url, transport, ackExtension)));
-                    }
-                    turnover = currentTurnover;
-                }
-            }
         }
         return expected;
     }
@@ -667,7 +636,6 @@ public class CometDLoadClient implements MeasureConverter {
             message.put("chat", chat);
             // Mandatory fields to record latencies
             message.put(START_FIELD, System.nanoTime());
-            message.put(START_DATE_FIELD, formatter.format(Instant.now()));
             message.put(Config.ID_FIELD, ids.incrementAndGet() + channel);
             ClientSessionChannel clientChannel = client.getChannel(getChannelId(channel + "/" + room));
             clientChannel.publish(message);

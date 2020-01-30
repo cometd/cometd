@@ -26,7 +26,6 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -89,7 +88,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         start(null);
 
         String channelName = "/echo";
-        bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH));
+        bayeux.createChannelIfAbsent(channelName, channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH));
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();

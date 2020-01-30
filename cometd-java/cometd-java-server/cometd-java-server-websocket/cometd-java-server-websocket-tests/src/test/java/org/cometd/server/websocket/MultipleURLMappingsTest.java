@@ -77,10 +77,10 @@ public class MultipleURLMappingsTest {
 
         switch (wsTransportClass) {
             case JSR_WS_TRANSPORT:
-                WebSocketServerContainerInitializer.configureContext(context);
+                WebSocketServerContainerInitializer.configure(context, null);
                 break;
             case JETTY_WS_TRANSPORT:
-                WebSocketUpgradeFilter.configureContext(context);
+                WebSocketUpgradeFilter.configure(context);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported transport " + wsTransportClass);

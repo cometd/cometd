@@ -81,6 +81,7 @@ public abstract class AbstractWebSocketTransport extends AbstractServerTransport
     }
 
     // Overridden for visibility.
+    @Override
     protected String toJSON(ServerMessage message) {
         return super.toJSON(message);
     }

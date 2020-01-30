@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -99,7 +100,7 @@ public class JettyHttpClientTransportTest {
                                     "Content-Type: application/json;charset=UTF-8\r\n" +
                                     "Content-Length: 2\r\n" +
                                     "\r\n" +
-                                    "[]").getBytes("UTF-8"));
+                                    "[]").getBytes(StandardCharsets.UTF_8));
                     output.flush();
                     socket.close();
                 } catch (Exception x) {
@@ -164,7 +165,7 @@ public class JettyHttpClientTransportTest {
                     output.write((
                             "HTTP/1.1 500 Internal Server Error\r\n" +
                                     "Connection: close\r\n" +
-                                    "\r\n").getBytes("UTF-8"));
+                                    "\r\n").getBytes(StandardCharsets.UTF_8));
                     output.flush();
 
                     socket.close();
@@ -317,7 +318,7 @@ public class JettyHttpClientTransportTest {
                                     "Content-Type: application/json;charset=UTF-8\r\n" +
                                     "Content-Length: 2\r\n" +
                                     "\r\n" +
-                                    "[]").getBytes("UTF-8"));
+                                    "[]").getBytes(StandardCharsets.UTF_8));
                     output.flush();
 
                     socket.close();

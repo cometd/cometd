@@ -81,7 +81,7 @@ public class WebSocketTransportFailureTest {
         server.addConnector(connector);
 
         context = new ServletContextHandler(server, "/");
-        WebSocketServerContainerInitializer.configureContext(context);
+        WebSocketServerContainerInitializer.configure(context, null);
 
         String cometdURLMapping = "/cometd/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);

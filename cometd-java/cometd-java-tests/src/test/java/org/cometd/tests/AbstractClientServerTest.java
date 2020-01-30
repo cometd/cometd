@@ -104,10 +104,10 @@ public abstract class AbstractClientServerTest {
         switch (transport) {
             case JAVAX_WEBSOCKET:
             case OKHTTP_WEBSOCKET:
-                WebSocketServerContainerInitializer.configureContext(context);
+                WebSocketServerContainerInitializer.configure(context, null);
                 break;
             case JETTY_WEBSOCKET:
-                WebSocketUpgradeFilter.configureContext(context);
+                WebSocketUpgradeFilter.configure(context);
                 break;
             default:
                 break;

@@ -102,9 +102,9 @@ public abstract class OortTest {
         ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
 
         if (serverTransport.equals(WebSocketTransport.class.getName())) {
-            WebSocketServerContainerInitializer.configureContext(context);
+            WebSocketServerContainerInitializer.configure(context, null);
         } else if (serverTransport.equals(JettyWebSocketTransport.class.getName())) {
-            WebSocketUpgradeFilter.configureContext(context);
+            WebSocketUpgradeFilter.configure(context);
         } else {
             throw new IllegalArgumentException("Unsupported transport " + serverTransport);
         }

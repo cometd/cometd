@@ -310,11 +310,13 @@ public class AsyncFoldLeft {
             this.size = size;
         }
 
-        protected boolean hasCurrent() {
+        @Override
+        boolean hasCurrent() {
             return index < size;
         }
 
-        protected T current() {
+        @Override
+        T current() {
             return element.apply(index);
         }
 

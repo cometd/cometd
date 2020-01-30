@@ -29,7 +29,6 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
@@ -57,7 +56,7 @@ public class MessageFlowControlTest extends ClientServerTest {
         bayeux.addExtension(new TimestampExtension("yyyyMMddHHmmss"));
 
         final String channelName = "/test";
-        bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> {
+        bayeux.createChannelIfAbsent(channelName, channel -> {
             channel.setPersistent(true);
             if (lazyChannel) {
                 channel.setLazy(true);

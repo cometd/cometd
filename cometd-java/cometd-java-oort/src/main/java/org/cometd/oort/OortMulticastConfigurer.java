@@ -348,7 +348,7 @@ public class OortMulticastConfigurer extends AbstractLifeCycle {
             }
             try {
                 final String cometURL = oort.getURL();
-                byte[] cometURLBytes = cometURL.getBytes("UTF-8");
+                byte[] cometURLBytes = cometURL.getBytes(StandardCharsets.UTF_8);
                 if (cometURLBytes.length > getMaxTransmissionLength()) {
                     logger.warn("Oort URL {} exceeds max transmission unit and will not be advertised", cometURL);
                     return;

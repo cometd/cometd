@@ -26,7 +26,6 @@ import javax.servlet.ServletContext;
 
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -56,8 +55,8 @@ public class AuctionChatService extends AbstractService {
                     "is " + SetiServlet.class.getSimpleName() + " declared in web.xml ?");
         }
 
-        getBayeux().createChannelIfAbsent("/auction/chat/**", (ConfigurableServerChannel.Initializer)channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_ALL));
-        getBayeux().createChannelIfAbsent("/service/auction/chat", (ConfigurableServerChannel.Initializer)channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_ALL));
+        getBayeux().createChannelIfAbsent("/auction/chat/**", channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_ALL));
+        getBayeux().createChannelIfAbsent("/service/auction/chat", channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_ALL));
         addService("/auction/chat/**", "trackMembers");
         addService("/service/auction/chat", "privateChat");
     }
