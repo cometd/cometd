@@ -90,11 +90,11 @@ public class ServerChannelTest {
     public void testCreateChildChannelAfterParent() throws Exception {
         final CountDownLatch latch = new CountDownLatch(2);
         String channelName = "/root";
-        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> {
+        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName, channel -> {
             channel.setPersistent(true);
             latch.countDown();
         }).isMarked());
-        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName + "/1", (ConfigurableServerChannel.Initializer)channel -> {
+        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName + "/1", channel -> {
             channel.setPersistent(true);
             latch.countDown();
         }).isMarked());
@@ -452,7 +452,7 @@ public class ServerChannelTest {
 
         final ServerChannel.ServerChannelListener listener = new L();
         final String channelName = "/weak";
-        _bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> {
+        _bayeux.createChannelIfAbsent(channelName, channel -> {
             channel.addListener(listener);
             channel.addListener(new W());
         });

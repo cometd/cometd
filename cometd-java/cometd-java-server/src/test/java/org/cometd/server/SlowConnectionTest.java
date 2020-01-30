@@ -20,6 +20,7 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -240,7 +241,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
-                "}]").getBytes("UTF-8");
+                "}]").getBytes(StandardCharsets.UTF_8);
         String request = "" +
                 "POST " + new URI(cometdURL).getPath() + "/connect HTTP/1.1\r\n" +
                 "Host: localhost:" + port + "\r\n" +
@@ -248,7 +249,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "Content-Length: " + content.length + "\r\n" +
                 "Cookie: " + cookieName + "=" + browserId + "\r\n" +
                 "\r\n";
-        output.write(request.getBytes("UTF-8"));
+        output.write(request.getBytes(StandardCharsets.UTF_8));
         output.write(content);
         output.flush();
 
@@ -316,7 +317,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
-                "}]").getBytes("UTF-8");
+                "}]").getBytes(StandardCharsets.UTF_8);
         String request = "" +
                 "POST " + new URI(cometdURL).getPath() + "/connect HTTP/1.1\r\n" +
                 "Host: localhost:" + port + "\r\n" +
@@ -324,7 +325,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "Content-Length: " + content.length + "\r\n" +
                 "Cookie: " + cookieName + "=" + browserId + "\r\n" +
                 "\r\n";
-        output.write(request.getBytes("UTF-8"));
+        output.write(request.getBytes(StandardCharsets.UTF_8));
         output.write(content);
         output.flush();
 

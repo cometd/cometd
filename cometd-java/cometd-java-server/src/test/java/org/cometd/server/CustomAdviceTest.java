@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -57,7 +56,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
 
         String channelName = "/connect";
         final long newTimeout = timeout / 2;
-        bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> channel.addListener(new ServerChannel.MessageListener() {
+        bayeux.createChannelIfAbsent(channelName, channel -> channel.addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 from.setTimeout(newTimeout);
@@ -128,7 +127,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
 
         String channelName = "/interval";
         final long newInterval = 1000;
-        bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> channel.addListener(new ServerChannel.MessageListener() {
+        bayeux.createChannelIfAbsent(channelName, channel -> channel.addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 from.setInterval(newInterval);

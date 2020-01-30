@@ -15,6 +15,8 @@
  */
 package org.cometd.server;
 
+import java.nio.charset.StandardCharsets;
+
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -48,7 +50,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest {
 
         String clientId = extractClientId(response);
 
-        final String data = new String(new byte[]{(byte)0xC3, (byte)0xA9}, "UTF-8");
+        final String data = new String(new byte[]{(byte)0xC3, (byte)0xA9}, StandardCharsets.UTF_8);
         String channelName = "/test_charset";
         bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
             @Override

@@ -29,7 +29,6 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -328,7 +327,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
     public void testAuthorizerDenyingPublishRemovesCallback() throws Exception {
         final String channelName = "/deny_publish";
 
-        bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel ->
+        bayeux.createChannelIfAbsent(channelName, channel ->
                 channel.addAuthorizer((operation, channel1, session, message) ->
                         operation == Authorizer.Operation.PUBLISH ? Authorizer.Result.deny("denied") : Authorizer.Result.grant()));
 
