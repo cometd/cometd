@@ -38,9 +38,8 @@ import org.slf4j.LoggerFactory;
  * instance is created and configured using the init parameters of this servlet.</p>
  */
 public class CometDServlet extends HttpServlet {
-    private static final long serialVersionUID = 3637310585741732936L;
+    private static final Logger LOGGER = LoggerFactory.getLogger(CometDServlet.class);
 
-    protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private BayeuxServerImpl _bayeux;
 
     @Override
@@ -117,8 +116,8 @@ public class CometDServlet extends HttpServlet {
         try {
             _bayeux.stop();
         } catch (Exception x) {
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("", x);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("", x);
             }
         } finally {
             _bayeux = null;

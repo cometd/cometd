@@ -26,8 +26,6 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * {@link ClientTransport}s are used by {@link org.cometd.client.BayeuxClient} to send and receive Bayeux messages.
@@ -39,7 +37,6 @@ public abstract class ClientTransport extends AbstractTransport {
     public static final String SCHEDULER_OPTION = "scheduler";
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
     private String url;
     private long maxNetworkDelay;
     private JSONContext.Client jsonContext;

@@ -25,6 +25,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A specialized oort object whose entity is a {@link ConcurrentMap}.</p>
@@ -63,9 +65,11 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
     private static final String VALUE_FIELD = "oort.map.value";
 
     private final List<EntryListener<K, V>> listeners = new CopyOnWriteArrayList<>();
+    private final Logger logger;
 
     protected OortMap(Oort oort, String name, Factory<ConcurrentMap<K, V>> factory) {
         super(oort, name, factory);
+        this.logger = LoggerFactory.getLogger(Oort.loggerName(getClass(), oort.getURL(), name));
     }
 
     public void addEntryListener(EntryListener<K, V> listener) {

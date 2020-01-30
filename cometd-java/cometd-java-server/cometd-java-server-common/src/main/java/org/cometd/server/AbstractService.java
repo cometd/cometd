@@ -61,11 +61,6 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractService {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractService.class);
 
-    /**
-     * @deprecated use your own logging framework instead
-     */
-    @Deprecated
-    protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private final Map<String, Invoker> invokers = new ConcurrentHashMap<>();
     private final String _name;
     private final BayeuxServerImpl _bayeux;

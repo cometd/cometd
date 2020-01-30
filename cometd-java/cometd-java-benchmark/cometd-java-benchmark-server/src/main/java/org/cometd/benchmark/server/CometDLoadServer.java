@@ -435,8 +435,7 @@ public class CometDLoadServer {
                     if (!server.interactive) {
                         server.server.stop();
                     }
-                } catch (Throwable x) {
-                    _logger.trace("", x);
+                } catch (Throwable ignored) {
                 }
             }).start();
         }

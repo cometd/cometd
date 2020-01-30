@@ -43,8 +43,12 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JettyWebSocketTransport extends AbstractWebSocketTransport implements UpgradeListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JettyWebSocketTransport.class);
+
     private final WebSocketClient _webSocketClient;
     private boolean _webSocketSupported;
     private boolean _webSocketConnected;
@@ -84,8 +88,8 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
     @Override
     protected Delegate connect(String uri, TransportListener listener, List<Mutable> messages) {
         try {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Opening websocket session to {}", uri);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Opening websocket session to {}", uri);
             }
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             String protocol = getProtocol();
@@ -156,8 +160,8 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
             synchronized (this) {
                 _session = session;
             }
-            if (logger.isDebugEnabled()) {
-                logger.debug("Opened websocket session {}", session);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Opened websocket session {}", session);
             }
         }
 
@@ -213,8 +217,8 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
                 close();
             }
             if (session != null) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Closing websocket session {}", session);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Closing websocket session {}", session);
                 }
                 session.close(NORMAL_CLOSE_CODE, reason);
             }

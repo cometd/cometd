@@ -15,11 +15,8 @@
  */
 package org.cometd.client.http.common;
 
-import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
-import java.net.HttpCookie;
-import java.net.URI;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
@@ -33,10 +30,13 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.common.TransportException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractHttpClientTransport extends HttpClientTransport {
     public static final String NAME = "long-polling";
     public static final String PREFIX = "long-polling.json";
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHttpClientTransport.class);
 
     private boolean _aborted;
     private int _maxMessageSize;
@@ -138,8 +138,8 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
         if (content != null && content.length() > 0) {
             try {
                 List<Message.Mutable> messages = parseMessages(content);
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Received messages {}", messages);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Received messages {}", messages);
                 }
                 for (Message.Mutable message : messages) {
                     if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel())) {

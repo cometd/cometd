@@ -39,8 +39,12 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.websocket.common.AbstractBayeuxContext;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebSocketTransport extends AbstractWebSocketTransport {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketTransport.class);
+
     public WebSocketTransport(BayeuxServerImpl bayeux) {
         super(bayeux);
     }
@@ -155,7 +159,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
             if (context.protocolMatches) {
                 return super.getNegotiatedSubprotocol(supported, requested);
             }
-            _logger.warn("Could not negotiate WebSocket SubProtocols: server{} != client{}", supported, requested);
+            LOGGER.warn("Could not negotiate WebSocket SubProtocols: server{} != client{}", supported, requested);
             return null;
         }
 

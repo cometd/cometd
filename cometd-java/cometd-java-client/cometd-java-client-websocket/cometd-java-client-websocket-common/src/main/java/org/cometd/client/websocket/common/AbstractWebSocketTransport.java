@@ -17,7 +17,6 @@ package org.cometd.client.websocket.common;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.net.URI;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,6 +35,8 @@ import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractWebSocketTransport extends HttpClientTransport implements MessageClientTransport {
     public static final String PREFIX = "ws";
@@ -47,6 +48,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     public static final int MAX_CLOSE_REASON_LENGTH = 30;
     public static final int NORMAL_CLOSE_CODE = 1000;
     protected static final String COOKIE_HEADER = "Cookie";
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractWebSocketTransport.class);
 
     private ScheduledExecutorService _scheduler;
     private String _protocol;
@@ -169,8 +171,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             // The onSending() callback must be invoked before the actual send
             // otherwise we may have a race condition where the response is so
             // fast that it arrives before the onSending() is called.
-            if (logger.isDebugEnabled()) {
-                logger.debug("Sending messages {}", content);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Sending messages {}", content);
             }
             listener.onSending(messages);
 
@@ -190,8 +192,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
         protected void onClose(int code, String reason) {
             if (detach()) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Closed websocket connection {}/{}", code, reason);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Closed websocket connection {}/{}", code, reason);
                 }
                 close();
                 failMessages(new EOFException("Connection closed " + code + " " + reason));
@@ -202,13 +204,13 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             try {
                 List<Mutable> messages = parseMessages(data);
                 if (isAttached()) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Received messages {}", data);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Received messages {}", data);
                     }
                     onMessages(messages);
                 } else {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Discarded messages {}", data);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Discarded messages {}", data);
                     }
                 }
             } catch (ParseException x) {
@@ -237,8 +239,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
                         exchange.listener.onMessages(new ArrayList<>(Collections.singletonList(message)));
                     } else {
                         // If the exchange is missing, then the message has expired, and we do not notify
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Could not find request for reply {}", message);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Could not find request for reply {}", message);
                         }
                     }
 
@@ -307,12 +309,12 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             ScheduledFuture<?> task = _scheduler.schedule(() -> {
                 long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                 long delay = now - expiration;
-                if (logger.isDebugEnabled()) {
+                if (LOGGER.isDebugEnabled()) {
                     // TODO: make the max delay a parameter ?
                     if (delay > 5000) {
-                        logger.debug("Message {} expired {} ms too late", message, delay);
+                        LOGGER.debug("Message {} expired {} ms too late", message, delay);
                     }
-                    logger.debug("Expiring message {}", message);
+                    LOGGER.debug("Expiring message {}", message);
                 }
                 fail(new TimeoutException(), "Expired");
             }, maxNetworkDelay, TimeUnit.MILLISECONDS);
@@ -321,8 +323,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             // Message responses must have the same messageId as the requests
 
             WebSocketExchange exchange = new WebSocketExchange(message, listener, task);
-            if (logger.isDebugEnabled()) {
-                logger.debug("Registering {}", exchange);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Registering {}", exchange);
             }
             Object existing = _exchanges.put(message.getId(), exchange);
             // Paranoid check
@@ -343,8 +345,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             if (messageId != null) {
                 exchange = _exchanges.remove(messageId);
             }
-            if (logger.isDebugEnabled()) {
-                logger.debug("Deregistering {} for message {}", exchange, message);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Deregistering {} for message {}", exchange, message);
             }
 
             if (exchange != null) {

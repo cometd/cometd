@@ -31,11 +31,14 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The base class for HTTP transports that use blocking stream I/O.</p>
  */
 public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStreamHttpTransport.class);
     private static final String CONTEXT_ATTRIBUTE = "org.cometd.transport.context";
     private static final String HEARTBEAT_TIMEOUT_ATTRIBUTE = "org.cometd.transport.heartbeat.timeout";
 
@@ -55,8 +58,8 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             @Override
             public void succeed(Void result) {
                 asyncContext.complete();
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Handling successful");
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Handling successful");
                 }
             }
 
@@ -65,8 +68,8 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                 int code = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
                 sendError(request, response, code, failure);
                 asyncContext.complete();
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Handling failed", failure);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Handling failed", failure);
                 }
             }
         };
@@ -86,8 +89,8 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
         try {
             try {
                 ServerMessage.Mutable[] messages = parseMessages(request);
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Parsed {} messages", messages == null ? -1 : messages.length);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Parsed {} messages", messages == null ? -1 : messages.length);
                 }
                 if (messages != null) {
                     processMessages(context, messages, promise);
@@ -108,8 +111,8 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
         HttpServletRequest request = context.request;
         context.scheduler = newHttpScheduler(context, promise, message, timeout);
         request.setAttribute(CONTEXT_ATTRIBUTE, context);
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Suspended {}", message);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Suspended {}", message);
         }
         context.session.notifySuspended(message, timeout);
         return context.scheduler;
@@ -203,8 +206,8 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             promise.succeed(null);
             writeComplete(context, messages);
         } catch (Throwable x) {
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("Failure writing messages", x);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Failure writing messages", x);
             }
             promise.fail(x);
         }

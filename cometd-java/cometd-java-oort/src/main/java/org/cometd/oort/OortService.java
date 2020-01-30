@@ -101,7 +101,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     private final String broadcastChannelName;
     private final String resultChannelName;
     private final LocalSession session;
-    protected final Logger logger;
+    private final Logger logger;
     private volatile long timeout = 5000;
 
     /**
@@ -117,7 +117,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         this.broadcastChannelName = "/oort/service/" + name;
         this.resultChannelName = forwardChannelName + "/result";
         this.session = oort.getBayeuxServer().newLocalSession(name);
-        this.logger = LoggerFactory.getLogger(getClass().getName() + "." + Oort.replacePunctuation(oort.getURL(), '_') + name);
+        this.logger = LoggerFactory.getLogger(Oort.loggerName(getClass(), oort.getURL(), name));
     }
 
     /**

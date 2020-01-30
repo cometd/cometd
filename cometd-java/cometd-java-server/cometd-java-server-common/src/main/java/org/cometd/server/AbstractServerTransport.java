@@ -24,8 +24,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AbstractTransport;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>The base class of all server transports.</p>
@@ -48,7 +46,6 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     public static final String ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE = "allowMessageDeliveryDuringHandshake";
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
 
-    protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private final BayeuxServerImpl _bayeux;
     private long _interval = 0;
     private long _maxInterval = 10000;

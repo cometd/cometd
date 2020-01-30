@@ -38,6 +38,8 @@ import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Processes annotations in client-side service objects.</p>
@@ -63,6 +65,8 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  * </pre>
  */
 public class ClientAnnotationProcessor extends AnnotationProcessor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientAnnotationProcessor.class);
+
     private final ConcurrentMap<Object, ClientSessionChannel.MessageListener> handshakeListeners = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<>();
@@ -207,8 +211,8 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
                     if (field.getType().isAssignableFrom(clientSession.getClass())) {
                         setField(bean, field, clientSession);
                         result = true;
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Injected {} to field {} on bean {}", clientSession, field, bean);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Injected {} to field {} on bean {}", clientSession, field, bean);
                         }
                     }
                 }
@@ -222,8 +226,8 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
                 if (parameterTypes[0].isAssignableFrom(clientSession.getClass())) {
                     invokePrivate(bean, method, clientSession);
                     result = true;
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Injected {} to method {} on bean {}", clientSession, method, bean);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Injected {} to method {} on bean {}", clientSession, method, bean);
                     }
                 }
             }
@@ -272,8 +276,8 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
                     }
                     callbacks.add(listenerCallback);
                     result = true;
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }
@@ -340,8 +344,8 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
                     }
                     callbacks.add(subscriptionCallback);
                     result = true;
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }
