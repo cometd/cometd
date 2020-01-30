@@ -59,6 +59,12 @@ import org.slf4j.LoggerFactory;
  * @see BayeuxServer#newLocalSession(String)
  */
 public abstract class AbstractService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractService.class);
+
+    /**
+     * @deprecated use your own logging framework instead
+     */
+    @Deprecated
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private final Map<String, Invoker> invokers = new ConcurrentHashMap<>();
     private final String _name;
@@ -191,8 +197,8 @@ public abstract class AbstractService {
      * @see #removeService(String, String)
      */
     protected void addService(String channelName, String methodName) {
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Mapping {}#{} to {}", _name, methodName, channelName);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Mapping {}#{} to {}", _name, methodName, channelName);
         }
 
         Method candidate = null;
@@ -295,12 +301,12 @@ public abstract class AbstractService {
      * @param x       the exception thrown
      */
     protected void exception(String method, ServerSession session, LocalSession local, ServerMessage message, Throwable x) {
-        _logger.info("Exception while invoking " + _name + "#" + method + " from " + session + " with " + message, x);
+        LOGGER.info("Exception while invoking " + _name + "#" + method + " from " + session + " with " + message, x);
     }
 
     private void invoke(final Method method, final ServerSession fromClient, final ServerMessage msg) {
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Invoking {}#{} from {} with {}", _name, method.getName(), fromClient, msg);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Invoking {}#{} from {} with {}", _name, method.getName(), fromClient, msg);
         }
 
         ThreadPool threadPool = getThreadPool();
