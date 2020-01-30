@@ -87,6 +87,8 @@ import org.slf4j.LoggerFactory;
  * </pre>
  */
 public class ServerAnnotationProcessor extends AnnotationProcessor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerAnnotationProcessor.class);
+
     private final ConcurrentMap<Object, LocalSession> sessions = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<>();
@@ -147,8 +149,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             String[] channels = configure.value();
             for (String channelName : channels) {
                 final Initializer init = channel -> {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
                     }
                     invokePrivate(bean, method, channel);
                 };
@@ -157,15 +159,15 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
 
                 if (!initializedChannel.isMarked()) {
                     if (configure.configureIfExists()) {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Configure again channel {} with method {} on bean {}", channelName, method, bean);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Configure again channel {} with method {} on bean {}", channelName, method, bean);
                         }
                         init.configureChannel(initializedChannel.getReference());
                     } else if (configure.errorIfExists()) {
                         throw new IllegalStateException("Channel already configured: " + channelName);
                     } else {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Channel {} already initialized. Not called method {} on bean {}", channelName, method, bean);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Channel {} already initialized. Not called method {} on bean {}", channelName, method, bean);
                         }
                     }
                 }
@@ -329,8 +331,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
                     if (value != null) {
                         setField(bean, field, value);
                         result = true;
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Injected {} to field {} on bean {}", value, field, bean);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Injected {} to field {} on bean {}", value, field, bean);
                         }
                     }
                 }
@@ -351,8 +353,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
                 if (value != null) {
                     invokePrivate(bean, method, value);
                     result = true;
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Injected {} to method {} on bean {}", value, method, bean);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Injected {} to method {} on bean {}", value, method, bean);
                     }
                 }
             }
@@ -407,8 +409,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
                     }
                     callbacks.add(listenerCallback);
                     result = true;
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }
@@ -483,8 +485,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
                     }
                     callbacks.add(subscriptionCallback);
                     result = true;
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }
@@ -558,8 +560,8 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
                     }
                     callbacks.add(remoteCallCallback);
                     result = true;
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Registered remote call for channel {} to method {} on bean {}", target, method, bean);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Registered remote call for channel {} to method {} on bean {}", target, method, bean);
                     }
                 }
             }

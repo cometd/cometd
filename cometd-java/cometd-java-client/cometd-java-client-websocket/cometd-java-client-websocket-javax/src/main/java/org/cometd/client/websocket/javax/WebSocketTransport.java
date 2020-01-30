@@ -48,8 +48,12 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.websocket.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebSocketTransport extends AbstractWebSocketTransport {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketTransport.class);
+
     private final WebSocketContainer _webSocketContainer;
     private boolean _webSocketSupported;
     private boolean _webSocketConnected;
@@ -85,8 +89,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     @Override
     protected Delegate connect(String uri, TransportListener listener, List<Mutable> messages) {
         try {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Opening websocket session to {}", uri);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Opening websocket session to {}", uri);
             }
             _webSocketContainer.setDefaultMaxSessionIdleTimeout(getIdleTimeout());
             ClientEndpointConfig.Configurator configurator = new Configurator();
@@ -159,8 +163,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
                 _session = session;
             }
             session.addMessageHandler(this);
-            if (logger.isDebugEnabled()) {
-                logger.debug("Opened websocket session {}", session);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Opened websocket session {}", session);
             }
         }
 
@@ -203,15 +207,15 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
                 close();
             }
             if (session != null) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Closing ({}) websocket session {}", reason, session);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Closing ({}) websocket session {}", reason, session);
                 }
                 try {
                     // Limits of the WebSocket APIs, otherwise an exception is thrown.
                     reason = trimCloseReason(reason);
                     session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, reason));
                 } catch (Throwable x) {
-                    logger.trace("Could not close websocket session " + session, x);
+                    LOGGER.trace("Could not close websocket session " + session, x);
                 }
             }
         }

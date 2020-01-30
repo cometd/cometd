@@ -23,6 +23,8 @@ import javax.servlet.ServletException;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.util.Loader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A specialized version of {@link CometDServlet} that can be configured with the init-parameter
@@ -44,6 +46,8 @@ import org.eclipse.jetty.util.Loader;
  * </pre>
  */
 public class AnnotationCometDServlet extends CometDServlet {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationCometDServlet.class);
+
     private final List<Object> services = new ArrayList<>();
     private volatile ServerAnnotationProcessor processor;
 
@@ -72,12 +76,12 @@ public class AnnotationCometDServlet extends CometDServlet {
         try {
             Object service = newService(serviceClassName);
             processor.process(service);
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("Processed annotated service {}", service);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Processed annotated service {}", service);
             }
             return service;
         } catch (Exception x) {
-            _logger.warn("Failed to create annotated service " + serviceClassName, x);
+            LOGGER.warn("Failed to create annotated service " + serviceClassName, x);
             throw new ServletException(x);
         }
     }
@@ -89,8 +93,8 @@ public class AnnotationCometDServlet extends CometDServlet {
 
     protected void registerService(Object service) {
         getServletContext().setAttribute(service.getClass().getName(), service);
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Registered annotated service {} in servlet context", service);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Registered annotated service {} in servlet context", service);
         }
     }
 
@@ -105,15 +109,15 @@ public class AnnotationCometDServlet extends CometDServlet {
 
     protected void deregisterService(Object service) {
         getServletContext().removeAttribute(service.getClass().getName());
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Deregistered annotated service {}", service);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Deregistered annotated service {}", service);
         }
     }
 
     protected void deprocessService(ServerAnnotationProcessor processor, Object service) {
         processor.deprocess(service);
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Deprocessed annotated service {}", service);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Deprocessed annotated service {}", service);
         }
     }
 

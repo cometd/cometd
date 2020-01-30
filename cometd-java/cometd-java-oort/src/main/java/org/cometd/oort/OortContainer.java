@@ -22,13 +22,18 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class OortContainer<T> extends OortObject<T> {
     private static final Map<String, Object> STALE_UPDATE = new HashMap<>();
 
     private final Map<String, Updater> updaters = new ConcurrentHashMap<>();
+    private final Logger logger;
 
     public OortContainer(Oort oort, String name, Factory<T> factory) {
         super(oort, name, factory);
+        this.logger = LoggerFactory.getLogger(Oort.loggerName(getClass(), oort.getURL(), name));
     }
 
     @Override

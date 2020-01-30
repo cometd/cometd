@@ -115,7 +115,7 @@ public class Oort extends ContainerLifeCycle {
         _bayeux = bayeux;
         _url = url;
         _id = UUID.randomUUID().toString();
-        _logger = LoggerFactory.getLogger(getClass().getName() + "." + replacePunctuation(_url, '_'));
+        _logger = LoggerFactory.getLogger(loggerName(getClass(), url, null));
         _oortSession = bayeux.newLocalSession("oort");
         _membership = new OortMembership(this);
         addBean(_membership);
@@ -581,7 +581,7 @@ public class Oort extends ContainerLifeCycle {
 
     protected void joinComets(Message message) {
         Object data = message.getData();
-        Object[] array = data instanceof List ? ((List)data).toArray() : (Object[])data;
+        Object[] array = data instanceof List ? ((List<?>)data).toArray() : (Object[])data;
         for (Object element : array) {
             observeComet((String)element);
         }
@@ -600,6 +600,14 @@ public class Oort extends ContainerLifeCycle {
      */
     public LocalSession getOortSession() {
         return _oortSession;
+    }
+
+    static String loggerName(Class<?> klass, String oortURL, String name) {
+        String result = klass.getName() + "." + replacePunctuation(oortURL, '_');
+        if (name != null) {
+            result += "." + name;
+        }
+        return result;
     }
 
     protected static String replacePunctuation(String source, char replacement) {

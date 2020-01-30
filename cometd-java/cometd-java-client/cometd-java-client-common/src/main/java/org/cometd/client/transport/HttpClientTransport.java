@@ -24,7 +24,12 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class HttpClientTransport extends ClientTransport {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpClientTransport.class);
+
     private volatile CookieStore cookieStore;
 
     protected HttpClientTransport(String name, String url, Map<String, Object> options) {
@@ -48,8 +53,8 @@ public abstract class HttpClientTransport extends ClientTransport {
             CookieManager cookieManager = new CookieManager(getCookieStore(), CookiePolicy.ACCEPT_ALL);
             cookieManager.put(uri, cookies);
         } catch (IOException x) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Could not parse cookies", x);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Could not parse cookies", x);
             }
         }
     }

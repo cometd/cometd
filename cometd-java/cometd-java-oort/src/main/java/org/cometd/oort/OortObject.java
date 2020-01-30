@@ -132,7 +132,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
     private final ConcurrentMap<String, ObjectPart> parts = new ConcurrentHashMap<>();
     private final List<Listener<T>> listeners = new CopyOnWriteArrayList<>();
-    protected final Logger logger;
+    private final Logger logger;
     private final Oort oort;
     private final String name;
     private final Factory<T> factory;
@@ -147,7 +147,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         this.oort = oort;
         this.name = name;
         this.factory = factory;
-        this.logger = LoggerFactory.getLogger(getClass().getName() + "." + Oort.replacePunctuation(oort.getURL(), '_') + "." + name);
+        this.logger = LoggerFactory.getLogger(Oort.loggerName(getClass(), oort.getURL(), name));
         this.sender = oort.getBayeuxServer().newLocalSession(getClass().getSimpleName() + "." + name);
         this.broadcastChannel = OORT_OBJECTS_CHANNEL + "/" + name;
         this.broadcastListener = new BroadcastListener();

@@ -41,9 +41,11 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.websocket.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
-    // We specifically do not want to have a long blocking handshake, to allow for more request retries
+    private static final Logger LOGGER = LoggerFactory.getLogger(OkHttpWebSocketTransport.class);
     private static final String SEC_WEB_SOCKET_PROTOCOL_HEADER = "Sec-WebSocket-Protocol";
     private static final String SEC_WEB_SOCKET_ACCEPT_HEADER = "Sec-WebSocket-Accept";
 
@@ -155,8 +157,8 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
                 this.webSocket = webSocket;
             }
             onHandshakeResponse(response);
-            if (logger.isDebugEnabled()) {
-                logger.debug("Opened {}", webSocket);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Opened {}", webSocket);
             }
         }
 
@@ -175,7 +177,7 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
                     throw new IOException("Not enqueued! Current queue size: " + webSocket.queueSize());
                 }
             } catch (Throwable throwable) {
-                logger.warn("Failure sending " + payload, throwable);
+                LOGGER.warn("Failure sending " + payload, throwable);
                 fail(throwable, "Exception");
             }
         }
@@ -204,14 +206,14 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
 
             if (webSocket != null) {
                 int code = NORMAL_CLOSE_CODE;
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Closing websocket {}/{}", code, reason);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Closing websocket {}/{}", code, reason);
                 }
                 try {
                     reason = trimCloseReason(reason);
                     webSocket.close(code, reason);
                 } catch (Throwable t) {
-                    logger.warn(String.format("Unable to close websocket %d/%s", code, reason), t);
+                    LOGGER.warn(String.format("Unable to close websocket %d/%s", code, reason), t);
                 }
             }
         }

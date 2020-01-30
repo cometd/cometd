@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * Base class for common functionality in annotation processors
  */
 public class AnnotationProcessor {
-    protected final Logger logger = LoggerFactory.getLogger(getClass().getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationProcessor.class);
 
     protected boolean processPostConstruct(Object bean) {
         if (bean == null) {
@@ -66,8 +66,8 @@ public class AnnotationProcessor {
                 invokePrivate(bean, method);
                 result = true;
             } catch (RuntimeException x) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Exception while invoking @PreDestroy method " + method + ", ignoring", x);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Exception while invoking @PreDestroy method " + method + ", ignoring", x);
                 }
             }
         }
@@ -288,16 +288,16 @@ public class AnnotationProcessor {
                     if (field.getType().isAssignableFrom(injectable.getClass())) {
                         Object value = getField(bean, field);
                         if (value != null) {
-                            if (logger.isDebugEnabled()) {
-                                logger.debug("Avoid injection of field {} on bean {}, it's already injected with {}", field, bean, value);
+                            if (LOGGER.isDebugEnabled()) {
+                                LOGGER.debug("Avoid injection of field {} on bean {}, it's already injected with {}", field, bean, value);
                             }
                             continue;
                         }
 
                         setField(bean, field, injectable);
                         result = true;
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Injected {} to field {} on bean {}", injectable, field, bean);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Injected {} to field {} on bean {}", injectable, field, bean);
                         }
                     }
                 }
@@ -311,8 +311,8 @@ public class AnnotationProcessor {
                 if (parameterTypes[0].isAssignableFrom(injectable.getClass())) {
                     invokePrivate(bean, method, injectable);
                     result = true;
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Injected {} to method {} on bean {}", injectable, method, bean);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Injected {} to method {} on bean {}", injectable, method, bean);
                     }
                 }
             }

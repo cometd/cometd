@@ -34,8 +34,12 @@ import org.cometd.oort.Seti;
 import org.cometd.oort.SetiServlet;
 import org.cometd.server.AbstractService;
 import org.cometd.server.authorizer.GrantAuthorizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AuctionChatService extends AbstractService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuctionChatService.class);
+
     // A map(channel, map(userName, clientId))
     private final ConcurrentMap<String, Set<String>> _members = new ConcurrentHashMap<>();
     private Oort _oort;
@@ -78,7 +82,7 @@ public class AuctionChatService extends AbstractService {
                 added |= members.add(user.toString());
             }
             if (added) {
-                _logger.info("Members: {}", members);
+                LOGGER.info("Members: {}", members);
                 // Broadcast the members to all existing members
                 getBayeux().getChannel(channelName).publish(getServerSession(), members, Promise.noop());
             }
@@ -120,7 +124,7 @@ public class AuctionChatService extends AbstractService {
                     }
                 });
 
-                _logger.info("Members: {}", members);
+                LOGGER.info("Members: {}", members);
                 // Broadcast the members to all existing members
                 getBayeux().getChannel(channelName).publish(getServerSession(), members, Promise.noop());
 
@@ -139,7 +143,7 @@ public class AuctionChatService extends AbstractService {
                 String userName = (String)map.get("user");
                 members.remove(userName);
 
-                _logger.info("Members: {}", members);
+                LOGGER.info("Members: {}", members);
                 // Broadcast the members to all existing members
                 getBayeux().getChannel(channelName).publish(getServerSession(), members, Promise.noop());
             }

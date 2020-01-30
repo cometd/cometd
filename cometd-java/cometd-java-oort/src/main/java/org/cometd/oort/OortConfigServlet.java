@@ -54,7 +54,7 @@ public abstract class OortConfigServlet extends HttpServlet {
     public static final String OORT_ENABLE_ACK_EXTENSION_PARAM = "enableAckExtension";
     public static final String OORT_ENABLE_BINARY_EXTENSION_PARAM = "enableBinaryExtension";
     public static final String OORT_JSON_CONTEXT_PARAM = "jsonContext";
-    protected static final Logger LOG = LoggerFactory.getLogger(OortConfigServlet.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OortConfigServlet.class);
 
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -178,8 +178,8 @@ public abstract class OortConfigServlet extends HttpServlet {
         public void run() {
             // Connect to myself until success. If the handshake fails,
             // the normal BayeuxClient retry mechanism will kick-in.
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Connecting to self: {}", oort);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Connecting to self: {}", oort);
             }
             Map<String, Object> fields = oort.newOortHandshakeFields(oort.getURL(), null);
             oortComet.handshake(fields, message -> {
@@ -187,8 +187,8 @@ public abstract class OortConfigServlet extends HttpServlet {
                 // reached the server but was denied e.g. by a SecurityPolicy.
                 Map<String, Object> advice = message.getAdvice();
                 if (message.isSuccessful() || advice != null) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Connected to self: {}", oort);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Connected to self: {}", oort);
                     }
                     oortComet.disconnect();
                     joinCloud();
@@ -198,8 +198,8 @@ public abstract class OortConfigServlet extends HttpServlet {
 
         private void joinCloud() {
             try {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Joining cloud: {}", oort);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Joining cloud: {}", oort);
                 }
 
                 configureCloud(config, oort);
@@ -215,7 +215,7 @@ public abstract class OortConfigServlet extends HttpServlet {
                     }
                 }
             } catch (Throwable x) {
-                LOG.warn("Could not start Oort", x);
+                LOGGER.warn("Could not start Oort", x);
                 destroy();
             }
         }

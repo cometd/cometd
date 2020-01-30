@@ -25,6 +25,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A specialized oort object whose entity is a {@link List}.</p>
@@ -47,9 +49,11 @@ public class OortList<E> extends OortContainer<List<E>> {
     private static final String ACTION_FIELD_REMOVE_VALUE = "oort.list.remove";
 
     private final List<ElementListener<E>> listeners = new CopyOnWriteArrayList<>();
+    private final Logger logger;
 
     public OortList(Oort oort, String name, Factory<List<E>> factory) {
         super(oort, name, factory);
+        this.logger = LoggerFactory.getLogger(Oort.loggerName(getClass(), oort.getURL(), name));
     }
 
     public void addElementListener(ElementListener<E> listener) {

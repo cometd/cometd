@@ -57,6 +57,8 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>HTTP ServerTransport base class, used by ServerTransports that use
@@ -76,6 +78,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION = "http2MaxSessionsPerBrowser";
     public final static String MULTI_SESSION_INTERVAL_OPTION = "multiSessionInterval";
     public final static String TRUST_CLIENT_SESSION = "trustClientSession";
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHttpTransport.class);
 
     private final Map<String, Collection<ServerSessionImpl>> _sessions = new HashMap<>();
     private final ConcurrentMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<>();
@@ -131,8 +134,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             Collection<ServerSessionImpl> sessions = findCurrentSessions(context.request);
             ServerMessage.Mutable message = messages[0];
             ServerSessionImpl session = findSession(sessions, message);
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("Processing {} messages for session {}", messages.length, session);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Processing {} messages for session {}", messages.length, session);
             }
             boolean batch = session != null && !Channel.META_CONNECT.equals(message.getChannel());
             if (batch) {
@@ -152,8 +155,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     }
 
     private void processMessage(Context context, ServerMessageImpl message, Promise<Void> promise) {
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Processing {}", message);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Processing {}", message);
         }
 
         message.setServerTransport(this);
@@ -344,15 +347,15 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         if (context.sendQueue && session != null) {
             messages = session.takeQueue(context.replies);
         }
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Flushing {}, replies={}, messages={}", session, context.replies, messages);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Flushing {}, replies={}, messages={}", session, context.replies, messages);
         }
         write(context, messages, promise);
     }
 
     protected void resume(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Resumed {}", message);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Resumed {}", message);
         }
 
         ServerMessage.Mutable reply = message.getAssociated();
@@ -382,8 +385,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, failure);
             response.setStatus(code);
         } catch (Throwable x) {
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("", x);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("", x);
             }
         }
     }
@@ -465,8 +468,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             result = false;
         }
 
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("client {} {} sessions for {}", browserId, sessions, session);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("client {} {} sessions for {}", browserId, sessions, session);
         }
 
         return result;
@@ -489,13 +492,13 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             _browserSweep.put(browserId, new AtomicInteger(0));
         }
 
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("client {} {} sessions for {}", browserId, sessions, session);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("client {} {} sessions for {}", browserId, sessions, session);
         }
     }
 
     protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable failure) throws IOException {
-        _logger.warn("Could not parse JSON: " + json, failure);
+        LOGGER.warn("Could not parse JSON: " + json, failure);
         sendError(request, response, HttpServletResponse.SC_BAD_REQUEST, failure);
     }
 
@@ -507,8 +510,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         try {
             return request.getAsyncContext();
         } catch (Throwable x) {
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("Could not retrieve AsyncContext for " + request, x);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Could not retrieve AsyncContext for " + request, x);
             }
             return null;
         }
@@ -533,8 +536,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                     // remove it from both browser Maps
                     if (_browserSweep.remove(key) == count && _browserMap.get(key).get() == 0) {
                         _browserMap.remove(key);
-                        if (_logger.isDebugEnabled()) {
-                            _logger.debug("Swept browserId {}", key);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Swept browserId {}", key);
                         }
                     }
                 }
@@ -745,8 +748,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         @Override
         public void schedule() {
             if (cancelTimeout()) {
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Resuming /meta/connect after schedule");
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Resuming /meta/connect after schedule");
                 }
                 resume(false);
             }
@@ -755,8 +758,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         @Override
         public void cancel() {
             if (cancelTimeout()) {
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Cancelling {}", message);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Cancelling {}", message);
                 }
                 error(new TimeoutException());
             }
@@ -780,8 +783,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         public void run() {
             if (cancelTimeout()) {
                 context.session.setScheduler(null);
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Resuming /meta/connect after timeout");
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Resuming /meta/connect after timeout");
                 }
                 resume(true);
             }

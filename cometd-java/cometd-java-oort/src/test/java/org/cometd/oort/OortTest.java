@@ -77,7 +77,7 @@ public abstract class OortTest {
             System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
     };
-    protected Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final List<Server> servers = new ArrayList<>();
     protected final List<Oort> oorts = new ArrayList<>();
     private final List<BayeuxClient> clients = new ArrayList<>();

@@ -33,8 +33,12 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JettyWebSocketTransport extends AbstractWebSocketTransport {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JettyWebSocketTransport.class);
+
     public JettyWebSocketTransport(BayeuxServerImpl bayeux) {
         super(bayeux);
     }
@@ -93,13 +97,13 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
                         WebSocketContext handshake = new WebSocketContext(context, request);
                         return newWebSocketEndPoint(handshake);
                     } else {
-                        if (_logger.isDebugEnabled()) {
-                            _logger.debug("Transport not those allowed: {}", allowedTransports);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Transport not those allowed: {}", allowedTransports);
                         }
                     }
                 } else {
-                    if (_logger.isDebugEnabled()) {
-                        _logger.debug("Origin check failed for origin {}", origin);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Origin check failed for origin {}", origin);
                     }
                 }
                 return null;
