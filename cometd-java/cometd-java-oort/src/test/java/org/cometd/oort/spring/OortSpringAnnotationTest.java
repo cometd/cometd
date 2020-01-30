@@ -39,7 +39,7 @@ public class OortSpringAnnotationTest {
     public void testSpringWiringOfOort() throws Exception {
         Server server = new Server();
         ServletContextHandler context = new ServletContextHandler(server, "/");
-        WebSocketServerContainerInitializer.configureContext(context);
+        WebSocketServerContainerInitializer.configure(context, null);
         context.addEventListener(new ContextLoaderListener());
         context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:/applicationContext.xml");
         server.start();

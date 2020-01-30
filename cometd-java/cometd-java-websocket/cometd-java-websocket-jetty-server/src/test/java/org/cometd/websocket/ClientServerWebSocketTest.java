@@ -137,10 +137,10 @@ public abstract class ClientServerWebSocketTest {
         switch (wsTransportType) {
             case WEBSOCKET_JSR356:
             case WEBSOCKET_OKHTTP:
-                WebSocketServerContainerInitializer.configureContext(context);
+                WebSocketServerContainerInitializer.configure(context, null);
                 break;
             case WEBSOCKET_JETTY:
-                WebSocketUpgradeFilter.configureContext(context);
+                WebSocketUpgradeFilter.configure(context);
                 break;
             default:
                 throw new IllegalArgumentException();

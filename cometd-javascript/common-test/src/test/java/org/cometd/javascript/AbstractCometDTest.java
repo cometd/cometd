@@ -102,7 +102,7 @@ public abstract class AbstractCometDTest {
         String contextPath = "/cometd";
         context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
 
-        WebSocketServerContainerInitializer.configureContext(context);
+        WebSocketServerContainerInitializer.configure(context, null);
 
         // Setup default servlet to serve static files
         context.addServlet(DefaultServlet.class, "/");
