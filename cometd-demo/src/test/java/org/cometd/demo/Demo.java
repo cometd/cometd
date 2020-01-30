@@ -82,7 +82,7 @@ public class Demo {
         ServletContextHandler context = new ServletContextHandler(server, contextPath);
 
         // Configure WebSocket for the context.
-        JavaxWebSocketServletContainerInitializer.initialize(context);
+        JavaxWebSocketServletContainerInitializer.configure(context, null);
 
         // Setup JMX.
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());

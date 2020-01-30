@@ -18,7 +18,7 @@ package org.cometd.common;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +43,7 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
     protected abstract T[] newRootArray(int size);
 
     public T[] parse(InputStream stream) throws ParseException {
-        return parse(new InputStreamReader(stream, Charset.forName("UTF-8")));
+        return parse(new InputStreamReader(stream, StandardCharsets.UTF_8));
     }
 
     public T[] parse(Reader reader) throws ParseException {

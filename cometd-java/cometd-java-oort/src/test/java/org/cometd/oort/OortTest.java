@@ -24,16 +24,10 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.ServletException;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -107,25 +101,13 @@ public abstract class OortTest {
 
         ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
 
-        ServletContainerInitializer initializer;
         if (serverTransport.equals(WebSocketTransport.class.getName())) {
-            initializer = new JavaxWebSocketServletContainerInitializer();
+            JavaxWebSocketServletContainerInitializer.configure(context, null);
         } else if (serverTransport.equals(JettyWebSocketTransport.class.getName())) {
-            initializer = new JettyWebSocketServletContainerInitializer();
+            JettyWebSocketServletContainerInitializer.configure(context, null);
         } else {
             throw new IllegalArgumentException("Unsupported transport " + serverTransport);
         }
-
-        context.addEventListener(new ServletContextListener() {
-            @Override
-            public void contextInitialized(ServletContextEvent sce) {
-                try {
-                    initializer.onStartup(Set.of(), sce.getServletContext());
-                } catch (ServletException x) {
-                    throw new RuntimeException(x);
-                }
-            }
-        });
 
         // CometD servlet
         String cometdServletPath = "/cometd";

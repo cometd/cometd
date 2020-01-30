@@ -23,8 +23,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import javax.websocket.server.ServerContainer;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -47,8 +45,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketServerContainer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -83,7 +81,7 @@ public class WebSocketTransportFailureTest {
         server.addConnector(connector);
 
         context = new ServletContextHandler(server, "/");
-        JavaxWebSocketServletContainerInitializer.initialize(context);
+        JavaxWebSocketServletContainerInitializer.configure(context, null);
 
         String cometdURLMapping = "/cometd/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
@@ -168,7 +166,7 @@ public class WebSocketTransportFailureTest {
         ServerSession serverSession = bayeux.getSession(clientId);
         Assert.assertNull(serverSession);
 
-        JavaxWebSocketContainer container = (JavaxWebSocketContainer)context.getServletContext().getAttribute(ServerContainer.class.getName());
+        JavaxWebSocketServerContainer container = (JavaxWebSocketServerContainer)context.getServletContext().getAttribute(javax.websocket.server.ServerContainer.class.getName());
         Assert.assertTrue(container.getOpenSessions().isEmpty());
     }
 

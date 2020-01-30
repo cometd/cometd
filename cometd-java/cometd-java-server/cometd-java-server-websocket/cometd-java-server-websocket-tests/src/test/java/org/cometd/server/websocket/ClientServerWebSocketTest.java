@@ -17,12 +17,7 @@ package org.cometd.server.websocket;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Set;
 
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.ServletException;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
@@ -139,29 +134,17 @@ public abstract class ClientServerWebSocketTest {
 
         context = new ServletContextHandler(server, "/", true, false);
 
-        ServletContainerInitializer initializer;
         switch (wsTransportType) {
             case WEBSOCKET_JSR356:
             case WEBSOCKET_OKHTTP:
-                initializer = new JavaxWebSocketServletContainerInitializer();
+                JavaxWebSocketServletContainerInitializer.configure(context, null);
                 break;
             case WEBSOCKET_JETTY:
-                initializer = new JettyWebSocketServletContainerInitializer();
+                JettyWebSocketServletContainerInitializer.configure(context, null);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported transport " + wsTransportType);
         }
-
-        context.addEventListener(new ServletContextListener() {
-            @Override
-            public void contextInitialized(ServletContextEvent sce) {
-                try {
-                    initializer.onStartup(Set.of(), sce.getServletContext());
-                } catch (ServletException x) {
-                    throw new RuntimeException(x);
-                }
-            }
-        });
 
         // CometD servlet
         cometdServletPath = servletPath;

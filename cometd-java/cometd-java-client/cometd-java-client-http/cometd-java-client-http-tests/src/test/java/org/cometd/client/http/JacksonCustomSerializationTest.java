@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.server.LocalSession;
@@ -121,13 +122,13 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
 
     public static class TestJacksonJSONContextServer extends JacksonJSONContextServer {
         public TestJacksonJSONContextServer() {
-            getObjectMapper().enableDefaultTyping(ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
+            getObjectMapper().activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
 
     public static class TestJacksonJSONContextClient extends JacksonJSONContextClient {
         public TestJacksonJSONContextClient() {
-            getObjectMapper().enableDefaultTyping(ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
+            getObjectMapper().activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
 

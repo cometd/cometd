@@ -77,7 +77,7 @@ public class OortStartupTest {
         ServletContextHandler context = new ServletContextHandler(server, "/");
         contexts.put(port1, context);
 
-        JavaxWebSocketServletContainerInitializer.initialize(context);
+        JavaxWebSocketServletContainerInitializer.configure(context, null);
 
         // CometD servlet.
         String cometdServletPath = "/cometd";

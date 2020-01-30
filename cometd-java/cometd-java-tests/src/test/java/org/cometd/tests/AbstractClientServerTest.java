@@ -21,14 +21,9 @@ import java.net.NetworkInterface;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.ServletException;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
@@ -106,31 +101,16 @@ public abstract class AbstractClientServerTest {
 
         context = new ServletContextHandler(server, "/");
 
-        ServletContainerInitializer initializer;
         switch (transport) {
             case JAVAX_WEBSOCKET:
             case OKHTTP_WEBSOCKET:
-                initializer = new JavaxWebSocketServletContainerInitializer();
+                JavaxWebSocketServletContainerInitializer.configure(context, null);
                 break;
             case JETTY_WEBSOCKET:
-                initializer = new JettyWebSocketServletContainerInitializer();
+                JettyWebSocketServletContainerInitializer.configure(context, null);
                 break;
             default:
-                initializer = null;
                 break;
-        }
-
-        if (initializer != null) {
-            context.addEventListener(new ServletContextListener() {
-                @Override
-                public void contextInitialized(ServletContextEvent sce) {
-                    try {
-                        initializer.onStartup(Set.of(), sce.getServletContext());
-                    } catch (ServletException x) {
-                        throw new RuntimeException(x);
-                    }
-                }
-            });
         }
 
         // CometD servlet

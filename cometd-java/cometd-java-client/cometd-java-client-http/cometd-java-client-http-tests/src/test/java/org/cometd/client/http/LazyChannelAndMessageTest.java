@@ -26,7 +26,6 @@ import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -45,7 +44,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         }});
 
         String channelName = "/testLazy";
-        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)c -> {
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, c -> {
             c.setPersistent(true);
             c.setLazy(true);
         });
@@ -93,7 +92,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         }});
 
         String channelName = "/testLazy";
-        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)c -> {
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, c -> {
             c.setLazyTimeout(channelLazyTimeout);
             c.setPersistent(true);
         });
@@ -142,13 +141,13 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         }});
 
         String shortLazyChannelName = "/shortLazy";
-        MarkedReference<ServerChannel> shortLazyChannel = bayeux.createChannelIfAbsent(shortLazyChannelName, (ConfigurableServerChannel.Initializer)channel -> {
+        MarkedReference<ServerChannel> shortLazyChannel = bayeux.createChannelIfAbsent(shortLazyChannelName, channel -> {
             channel.setLazyTimeout(channelLazyTimeout);
             channel.setPersistent(true);
         });
 
         String longLazyChannelName = "/longLazy";
-        MarkedReference<ServerChannel> longLazyChannel = bayeux.createChannelIfAbsent(longLazyChannelName, (ConfigurableServerChannel.Initializer)channel -> {
+        MarkedReference<ServerChannel> longLazyChannel = bayeux.createChannelIfAbsent(longLazyChannelName, channel -> {
             channel.setLazyTimeout(globalLazyTimeout);
             channel.setPersistent(true);
         });
@@ -205,7 +204,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         }});
 
         String channelName = "/lazyDeliverData";
-        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)c -> {
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, c -> {
             c.setPersistent(true);
             c.addListener(new ServerChannel.MessageListener() {
                 @Override
@@ -262,7 +261,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         }});
 
         String channelName = "/lazyDeliverMessage";
-        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)c -> {
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, c -> {
             c.setPersistent(true);
             c.addListener(new ServerChannel.MessageListener() {
                 @Override
@@ -325,7 +324,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         }});
 
         final String channelName = "/testQueueLazy";
-        final MarkedReference<ServerChannel> serverChannel = bayeux.createChannelIfAbsent(channelName, (ConfigurableServerChannel.Initializer)channel -> {
+        final MarkedReference<ServerChannel> serverChannel = bayeux.createChannelIfAbsent(channelName, channel -> {
             channel.setLazy(true);
             channel.setPersistent(true);
         });
@@ -378,13 +377,13 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
         String parentChannelName = "/foo";
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeux.createChannelIfAbsent(parentChannelName, (ConfigurableServerChannel.Initializer)channel -> {
+        bayeux.createChannelIfAbsent(parentChannelName, channel -> {
             channel.setPersistent(true);
             channel.setLazy(true);
         });
 
         String childChannelName = parentChannelName + "/bar";
-        MarkedReference<ServerChannel> childChannel = bayeux.createChannelIfAbsent(childChannelName, (ConfigurableServerChannel.Initializer)channel -> {
+        MarkedReference<ServerChannel> childChannel = bayeux.createChannelIfAbsent(childChannelName, channel -> {
             channel.setPersistent(true);
             channel.addListener(new ServerChannel.MessageListener() {
                 @Override
@@ -410,13 +409,13 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         String parentChannelName = "/foo";
         String wildChannelName = parentChannelName + "/*";
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeux.createChannelIfAbsent(wildChannelName, (ConfigurableServerChannel.Initializer)channel -> {
+        bayeux.createChannelIfAbsent(wildChannelName, channel -> {
             channel.setPersistent(true);
             channel.setLazy(true);
         });
 
         String childChannelName = parentChannelName + "/bar";
-        MarkedReference<ServerChannel> childChannel = bayeux.createChannelIfAbsent(childChannelName, (ConfigurableServerChannel.Initializer)channel -> {
+        MarkedReference<ServerChannel> childChannel = bayeux.createChannelIfAbsent(childChannelName, channel -> {
             channel.setPersistent(true);
             channel.addListener(new ServerChannel.MessageListener() {
                 @Override

@@ -64,6 +64,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         asyncContext.setTimeout(0);
 
         Promise<Void> promise = new Promise<>() {
+            @Override
             public void succeed(Void result) {
                 asyncContext.complete();
                 if (_logger.isDebugEnabled()) {

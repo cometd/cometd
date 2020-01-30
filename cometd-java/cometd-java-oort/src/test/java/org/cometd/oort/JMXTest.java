@@ -50,7 +50,7 @@ public class JMXTest {
 
         ServletContextHandler context = new ServletContextHandler(server, "/");
 
-        JavaxWebSocketServletContainerInitializer.initialize(context);
+        JavaxWebSocketServletContainerInitializer.configure(context, null);
 
         String value = BayeuxServerImpl.ATTRIBUTE + "," + Oort.OORT_ATTRIBUTE + "," + Seti.SETI_ATTRIBUTE;
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);
@@ -112,7 +112,7 @@ public class JMXTest {
 
         ServletContextHandler context = new ServletContextHandler(server, "/");
 
-        JavaxWebSocketServletContainerInitializer.initialize(context);
+        JavaxWebSocketServletContainerInitializer.configure(context, null);
 
         String value = BayeuxServerImpl.ATTRIBUTE + "," + Oort.OORT_ATTRIBUTE + "," + Seti.SETI_ATTRIBUTE;
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);

@@ -62,11 +62,11 @@
     <!-- end::jetty-version[] -->
     <slf4j-version>1.8.0-beta4</slf4j-version>
     <log4j2-version>2.13.0</log4j2-version>
-    <spring-version>5.2.2.RELEASE</spring-version>
-    <spring-boot-version>2.2.2.RELEASE</spring-boot-version>
-    <jackson-version>2.10.1</jackson-version>
+    <spring-version>5.2.3.RELEASE</spring-version>
+    <spring-boot-version>2.2.3.RELEASE</spring-boot-version>
+    <jackson-version>2.10.2</jackson-version>
     <dojo-version>1.16.0</dojo-version>
-    <okhttp-version>4.3.0</okhttp-version>
+    <okhttp-version>4.3.1</okhttp-version>
   </properties>
 
   <url>https://cometd.org</url>
@@ -525,7 +525,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20191111</version>
+        <version>v20200112</version>
       </dependency>
 
       <dependency>
