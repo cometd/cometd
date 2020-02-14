@@ -15,10 +15,14 @@
  */
 package org.cometd.common;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 
 import org.cometd.bayeux.Promise;
@@ -141,6 +145,54 @@ public class AsyncFoldLeftTest {
             Assert.fail();
         } catch (ExecutionException x) {
             Assert.assertSame(failure, x.getCause());
+        }
+    }
+
+    @Test
+    public void testConcurrencySafeCollectionsNotBecomeConcurrencyUnsafe() throws Exception {
+        List<String> elements = new CopyOnWriteArrayList<>(new String[] {"1", "2", "3"});
+        Promise.Completable<Integer> promise = new Promise.Completable<>();
+        AsyncFoldLeft.run(elements, Integer.valueOf(0), (result, element, loop) -> {
+            if(Integer.valueOf(1).equals(result)) {
+                // after one iteration modify elements
+                elements.remove(0);
+            }
+            loop.proceed(Integer.valueOf(result + 1));
+        }, promise);
+        
+        // CopyOnWriteArrayList ensures, that modifications are not visible by previously created Iterators
+        // AsyncFoldLeft should behave in the same way
+        Assert.assertSame(Integer.valueOf(3), promise.get());
+    }
+
+    @Test
+    public void testConcurrentModificationDoesNotBreakWithWrongResult() throws Exception {
+        // depending on the underlying list the modification can be
+        // - visible
+        // - invisible
+        // - forbidden (ConcurrentModificationException)
+        //
+        // all three results are valid for AsyncFoldLeft#run as it is not supposed to add any
+        // guarantuees.
+        HashSet<Integer> validResults = new HashSet<>(Arrays.asList(3,2));
+        
+        List<String> elements = new ArrayList<>(Arrays.asList("1", "2", "3"));
+        Promise.Completable<Integer> promise = new Promise.Completable<>();
+        AsyncFoldLeft.run(elements, Integer.valueOf(0), (result, element, loop) -> {
+            if(Integer.valueOf(1).equals(result)) {
+                // after one iteration modify elements
+                elements.remove(0);
+            }
+            loop.proceed(Integer.valueOf(result + 1));
+        }, promise);
+        
+        try {
+            Integer result = promise.get();
+            Assert.assertTrue(validResults.contains(result));
+        } catch (ConcurrentModificationException e) {
+            // this is fine
+        } catch (IndexOutOfBoundsException e) {
+            Assert.fail();
         }
     }
 
