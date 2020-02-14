@@ -72,6 +72,8 @@ public class AsyncFoldLeft {
     }
 
     /**
+     * @deprecated use {@link #run(Collection, Object, Operation, Promise)} for IteratorBased foldleft
+     * 
      * <p>Processes the given {@code list} of elements.</p>
      * <p>The initial result {@code zero} is returned if the list is empty.</p>
      * <p>For each element the {@link Operation#apply(Object, Object, Loop) operation}
@@ -84,14 +86,9 @@ public class AsyncFoldLeft {
      * @param <T>       the type of element
      * @param <R>       the type of the result
      */
+    @Deprecated
     public static <T, R> void run(List<T> list, R zero, Operation<T, R> operation, Promise<R> promise) {
-        int size = list.size();
-        if (size == 0) {
-            promise.succeed(zero);
-        } else {
-            IndexedLoop<T, R> loop = new IndexedLoop<>(list::get, size, zero, operation, promise);
-            loop.run();
-        }
+        AsyncFoldLeft.run((Collection<T>) list, zero, operation, promise);
     }
 
     /**
