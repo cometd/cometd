@@ -77,7 +77,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String MAX_SESSIONS_PER_BROWSER_OPTION = "maxSessionsPerBrowser";
     public final static String HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION = "http2MaxSessionsPerBrowser";
     public final static String MULTI_SESSION_INTERVAL_OPTION = "multiSessionInterval";
-    public final static String TRUST_CLIENT_SESSION = "trustClientSession";
+    public final static String TRUST_CLIENT_SESSION_OPTION = "trustClientSession";
+    public final static String DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION = "duplicateMetaConnectHttpResponseCode";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHttpTransport.class);
 
     private final Map<String, Collection<ServerSessionImpl>> _sessions = new HashMap<>();
@@ -93,6 +94,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     private int _http2MaxSessionsPerBrowser;
     private long _multiSessionInterval;
     private boolean _trustClientSession;
+    private int _duplicateMetaConnectHttpResponseCode;
     private long _lastSweep;
 
     protected AbstractHttpTransport(BayeuxServerImpl bayeux, String name) {
@@ -112,11 +114,20 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         _maxSessionsPerBrowser = getOption(MAX_SESSIONS_PER_BROWSER_OPTION, 1);
         _http2MaxSessionsPerBrowser = getOption(HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION, -1);
         _multiSessionInterval = getOption(MULTI_SESSION_INTERVAL_OPTION, 2000);
-        _trustClientSession = getOption(TRUST_CLIENT_SESSION, false);
+        _trustClientSession = getOption(TRUST_CLIENT_SESSION_OPTION, false);
+        _duplicateMetaConnectHttpResponseCode = getOption(DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        if (_duplicateMetaConnectHttpResponseCode < 400) {
+            throw new IllegalArgumentException("Option '" + DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION +
+                    "' must be greater or equal to 400, not " + _duplicateMetaConnectHttpResponseCode);
+        }
     }
 
     protected long getMultiSessionInterval() {
         return _multiSessionInterval;
+    }
+
+    protected int getDuplicateMetaConnectHttpResponseCode() {
+        return _duplicateMetaConnectHttpResponseCode;
     }
 
     public abstract boolean accept(HttpServletRequest request);

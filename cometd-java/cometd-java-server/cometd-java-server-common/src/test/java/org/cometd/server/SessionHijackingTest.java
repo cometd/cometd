@@ -39,7 +39,7 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest {
     @Test
     public void testSessionHijackingAllowed() throws Exception {
         Map<String, String> settings = new HashMap<>();
-        settings.put(AbstractHttpTransport.TRUST_CLIENT_SESSION, String.valueOf(true));
+        settings.put(AbstractHttpTransport.TRUST_CLIENT_SESSION_OPTION, String.valueOf(true));
         startServer(settings);
 
         // Message should succeed.

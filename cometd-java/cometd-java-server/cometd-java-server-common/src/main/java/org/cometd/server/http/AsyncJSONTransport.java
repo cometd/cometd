@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
@@ -78,7 +79,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
             @Override
             public void fail(Throwable failure) {
                 request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, failure);
-                int code = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+                int code = failure instanceof TimeoutException ?
+                        getDuplicateMetaConnectHttpResponseCode() :
+                        HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
                 sendError(request, response, code, failure);
                 asyncContext.complete();
                 if (LOGGER.isDebugEnabled()) {
