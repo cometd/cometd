@@ -138,7 +138,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
     @Test
     public void testSameDomainWithoutCookieTrustClientSessionHoldsConnect() throws Exception {
         Map<String, String> options = new HashMap<>();
-        options.put(AbstractHttpTransport.TRUST_CLIENT_SESSION, String.valueOf(true));
+        options.put(AbstractHttpTransport.TRUST_CLIENT_SESSION_OPTION, String.valueOf(true));
         startServer(options);
 
         Request handshake = newBayeuxRequest("" +
@@ -183,7 +183,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
     @Test
     public void testDifferentDomainWithoutCookieTrustClientSessionHoldsConnect() throws Exception {
         Map<String, String> options = new HashMap<>();
-        options.put(AbstractHttpTransport.TRUST_CLIENT_SESSION, String.valueOf(true));
+        options.put(AbstractHttpTransport.TRUST_CLIENT_SESSION_OPTION, String.valueOf(true));
         startServer(options);
 
         Request handshake = newBayeuxRequest("" +

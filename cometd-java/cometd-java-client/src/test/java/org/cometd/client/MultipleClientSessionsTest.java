@@ -345,9 +345,11 @@ public class MultipleClientSessionsTest extends ClientServerTest {
     @Test
     public void testMultipleClientSession_WhenSameClientSendsTwoConnects() throws Exception {
         long multiSessionInterval = 1500;
+        final int duplicateMetaConnectHttpCode = HttpStatus.BAD_REQUEST_400;
         Map<String, String> options = serverOptions();
         options.put(AbstractHttpTransport.MAX_SESSIONS_PER_BROWSER_OPTION, "1");
         options.put(AbstractHttpTransport.MULTI_SESSION_INTERVAL_OPTION, String.valueOf(multiSessionInterval));
+        options.put(AbstractHttpTransport.DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION, String.valueOf(duplicateMetaConnectHttpCode));
         startServer(options);
 
         JSONContext.Client parser = new JettyJSONContextClient();
@@ -405,7 +407,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
                     @Override
                     public void onComplete(Result result) {
                         assertTrue(result.isSucceeded());
-                        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, result.getResponse().getStatus());
+                        assertEquals(duplicateMetaConnectHttpCode, result.getResponse().getStatus());
                         abortedConnectLatch.countDown();
                     }
                 });
