@@ -83,15 +83,11 @@ public class AsyncFoldLeft {
      * @param promise   the promise to notify of the final result
      * @param <T>       the type of element
      * @param <R>       the type of the result
+     * @deprecated use {@link #run(Collection, Object, Operation, Promise)} instead.
      */
+    @Deprecated
     public static <T, R> void run(List<T> list, R zero, Operation<T, R> operation, Promise<R> promise) {
-        int size = list.size();
-        if (size == 0) {
-            promise.succeed(zero);
-        } else {
-            IndexedLoop<T, R> loop = new IndexedLoop<>(list::get, size, zero, operation, promise);
-            loop.run();
-        }
+        run((Collection<T>)list, zero, operation, promise);
     }
 
     /**
@@ -99,6 +95,9 @@ public class AsyncFoldLeft {
      * <p>The initial result {@code zero} is returned if the collection is empty.</p>
      * <p>For each element the {@link Operation#apply(Object, Object, Loop) operation}
      * function is invoked.</p>
+     * <p>The {@code collection} should have a "stable" iterator, i.e. it should not be
+     * affected if the collection is modified concurrently by another thread, or by the
+     * same thread in th {@code operation} during the iteration.</p>
      *
      * @param collection the elements to process
      * @param zero       the initial result
