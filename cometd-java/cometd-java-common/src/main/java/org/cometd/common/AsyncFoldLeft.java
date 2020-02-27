@@ -17,7 +17,6 @@ package org.cometd.common;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
@@ -72,33 +71,13 @@ public class AsyncFoldLeft {
     }
 
     /**
-     * <p>Processes the given {@code list} of elements.</p>
-     * <p>The initial result {@code zero} is returned if the list is empty.</p>
-     * <p>For each element the {@link Operation#apply(Object, Object, Loop) operation}
-     * function is invoked.</p>
-     *
-     * @param list      the elements to process
-     * @param zero      the initial result
-     * @param operation the operation to invoke for each element
-     * @param promise   the promise to notify of the final result
-     * @param <T>       the type of element
-     * @param <R>       the type of the result
-     */
-    public static <T, R> void run(List<T> list, R zero, Operation<T, R> operation, Promise<R> promise) {
-        int size = list.size();
-        if (size == 0) {
-            promise.succeed(zero);
-        } else {
-            IndexedLoop<T, R> loop = new IndexedLoop<>(list::get, size, zero, operation, promise);
-            loop.run();
-        }
-    }
-
-    /**
      * <p>Processes the given {@code collection} of elements.</p>
      * <p>The initial result {@code zero} is returned if the collection is empty.</p>
      * <p>For each element the {@link Operation#apply(Object, Object, Loop) operation}
      * function is invoked.</p>
+     * <p>The {@code collection} should have a "stable" iterator, i.e. it should not be
+     * affected if the collection is modified concurrently by another thread, or by the
+     * same thread in th {@code operation} during the iteration.</p>
      *
      * @param collection the elements to process
      * @param zero       the initial result
