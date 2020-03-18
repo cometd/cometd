@@ -1,7 +1,7 @@
 #!groovy
 
 def oss = ["linux"]
-def jdks = ["jdk11", "jdk13"]
+def jdks = ["jdk11", "jdk14"]
 
 def builds = [:]
 for (def os in oss) {
