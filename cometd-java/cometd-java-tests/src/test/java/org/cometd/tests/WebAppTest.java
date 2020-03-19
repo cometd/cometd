@@ -125,6 +125,7 @@ public class WebAppTest {
         copyWebAppDependency(org.eclipse.jetty.websocket.common.WebSocketSession.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.client.WebSocketClient.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.core.client.WebSocketCoreClient.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.websocket.util.InvalidSignatureException.class, webINF);
         // Application classes.
         Path testClasses = baseDir.resolve("target/test-classes/");
         String serviceClass = WebAppService.class.getName().replace('.', '/') + ".class";
