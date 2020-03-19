@@ -233,7 +233,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         }
     }
 
-    private class EndPoint extends WebSocketEndPoint {
+    public class EndPoint extends WebSocketEndPoint {
         public EndPoint(BayeuxContext bayeuxContext) {
             super(WebSocketTransport.this, bayeuxContext);
         }
