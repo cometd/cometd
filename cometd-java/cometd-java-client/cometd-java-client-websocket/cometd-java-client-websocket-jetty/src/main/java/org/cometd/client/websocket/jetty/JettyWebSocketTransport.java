@@ -162,7 +162,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         return result;
     }
 
-    protected class JettyWebSocketDelegate extends Delegate implements WebSocketListener {
+    public class JettyWebSocketDelegate extends Delegate implements WebSocketListener {
         private Session _session;
 
         @Override

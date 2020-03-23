@@ -43,55 +43,13 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
         ClientTransport transport;
         switch (wsTransportType) {
             case WEBSOCKET_JSR356:
-                transport = new org.cometd.client.websocket.javax.WebSocketTransport(null, null, null, wsClientContainer) {
-                    @Override
-                    protected WebSocketDelegate newDelegate() {
-                        return new WebSocketDelegate() {
-                            @Override
-                            protected void onMessages(List<Message.Mutable> messages) {
-                                super.onMessages(messages);
-                                if (messages.size() > 1) {
-                                    batch.set(messages);
-                                    repliesLatch.countDown();
-                                }
-                            }
-                        };
-                    }
-                };
+                transport = new WSTransport(batch, repliesLatch);
                 break;
             case WEBSOCKET_JETTY:
-                transport = new org.cometd.client.websocket.jetty.JettyWebSocketTransport(null, null, null, wsClient) {
-                    @Override
-                    protected Delegate newDelegate() {
-                        return new JettyWebSocketDelegate() {
-                            @Override
-                            protected void onMessages(List<Message.Mutable> messages) {
-                                super.onMessages(messages);
-                                if (messages.size() > 1) {
-                                    batch.set(messages);
-                                    repliesLatch.countDown();
-                                }
-                            }
-                        };
-                    }
-                };
+                transport = new JettyWSTransport(batch, repliesLatch);
                 break;
             case WEBSOCKET_OKHTTP:
-                transport = new OkHttpWebSocketTransport(null, okHttpClient) {
-                    @Override
-                    protected OkHttpWebSocketTransport.OkHttpDelegate newDelegate() {
-                        return new OkHttpDelegate() {
-                            @Override
-                            protected void onMessages(List<Message.Mutable> messages) {
-                                super.onMessages(messages);
-                                if (messages.size() > 1) {
-                                    batch.set(messages);
-                                    repliesLatch.countDown();
-                                }
-                            }
-                        };
-                    }
-                };
+                transport = new OkWSTransport(batch, repliesLatch);
                 break;
             default:
                 throw new IllegalArgumentException();
@@ -120,5 +78,86 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
         Assert.assertEquals(channelName, messages.get(1).getChannel());
 
         disconnectBayeuxClient(client);
+    }
+
+    public class WSTransport extends org.cometd.client.websocket.javax.WebSocketTransport {
+        private final AtomicReference<List<Message.Mutable>> batch;
+        private final CountDownLatch repliesLatch;
+
+        public WSTransport(AtomicReference<List<Message.Mutable>> batch, CountDownLatch repliesLatch) {
+            super(null, null, null, BatchedRepliesWebSocketTest.this.wsClientContainer);
+            this.batch = batch;
+            this.repliesLatch = repliesLatch;
+        }
+
+        @Override
+        protected WebSocketDelegate newDelegate() {
+            return new WSDelegate();
+        }
+
+        public class WSDelegate extends WebSocketDelegate {
+            @Override
+            protected void onMessages(List<Message.Mutable> messages) {
+                super.onMessages(messages);
+                if (messages.size() > 1) {
+                    batch.set(messages);
+                    repliesLatch.countDown();
+                }
+            }
+        }
+    }
+
+    public class JettyWSTransport extends org.cometd.client.websocket.jetty.JettyWebSocketTransport {
+        private final AtomicReference<List<Message.Mutable>> batch;
+        private final CountDownLatch repliesLatch;
+
+        public JettyWSTransport(AtomicReference<List<Message.Mutable>> batch, CountDownLatch repliesLatch) {
+            super(null, null, null, BatchedRepliesWebSocketTest.this.wsClient);
+            this.batch = batch;
+            this.repliesLatch = repliesLatch;
+        }
+
+        @Override
+        protected Delegate newDelegate() {
+            return new JettyWSDelegate();
+        }
+
+        public class JettyWSDelegate extends JettyWebSocketDelegate {
+            @Override
+            protected void onMessages(List<Message.Mutable> messages) {
+                super.onMessages(messages);
+                if (messages.size() > 1) {
+                    batch.set(messages);
+                    repliesLatch.countDown();
+                }
+            }
+        }
+    }
+
+    public class OkWSTransport extends OkHttpWebSocketTransport {
+        private final AtomicReference<List<Message.Mutable>> batch;
+        private final CountDownLatch repliesLatch;
+
+        public OkWSTransport(AtomicReference<List<Message.Mutable>> batch, CountDownLatch repliesLatch) {
+            super(null, BatchedRepliesWebSocketTest.this.okHttpClient);
+            this.batch = batch;
+            this.repliesLatch = repliesLatch;
+        }
+
+        @Override
+        protected OkHttpDelegate newDelegate() {
+            return new OkWSDelegate();
+        }
+
+        public class OkWSDelegate extends OkHttpDelegate {
+            @Override
+            protected void onMessages(List<Message.Mutable> messages) {
+                super.onMessages(messages);
+                if (messages.size() > 1) {
+                    batch.set(messages);
+                    repliesLatch.countDown();
+                }
+            }
+        }
     }
 }
