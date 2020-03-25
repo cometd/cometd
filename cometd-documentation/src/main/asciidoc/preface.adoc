@@ -4,7 +4,7 @@
 [preface]
 == Preface
 
-http://cometd.org/[CometD] is a scalable web event routing bus that allows you
+https://cometd.org/[CometD] is a scalable web event routing bus that allows you
 to write low-latency, server-side, event-driven web applications.
 Typical examples of such applications are stock trading applications, web chat
 applications, online games, and monitoring consoles.
@@ -13,14 +13,14 @@ CometD provides you APIs to implement these messaging patterns: publish/subscrib
 peer-to-peer (via a server), and remote procedure call.
 This is achieved using a transport-independent protocol,
 <<_bayeux,the Bayeux protocol>>, that can be carried over HTTP or
-over http://en.wikipedia.org/wiki/WebSocket[WebSocket] (or other transport
+over https://en.wikipedia.org/wiki/WebSocket[WebSocket] (or other transport
 protocols), so that your application is not bound to a specific transport
 technology.
 
 CometD leverages WebSocket when it can (because it's the most
 efficient web messaging protocol), and makes use of an
-http://en.wikipedia.org/wiki/AJAX[Ajax] push technology
-pattern known as http://en.wikipedia.org/wiki/Comet_(programming)[Comet]
+https://en.wikipedia.org/wiki/AJAX[Ajax] push technology
+pattern known as https://en.wikipedia.org/wiki/Comet_(programming)[Comet]
 when using HTTP.
 
 The CometD project provides Java and JavaScript libraries that allow you to
@@ -42,9 +42,9 @@ If you are new to CometD, you can follow this learning path:
 You can contribute to the CometD project and be involved in the CometD community,
 including:
 
-* Trying it out and reporting issues at http://bugs.cometd.org
-* Participating in the http://groups.google.com/group/cometd-users/[CometD Users]
-and http://groups.google.com/group/cometd-dev/[CometD Development] mailing lists.
+* Trying it out and reporting issues at https://bugs.cometd.org
+* Participating in the https://groups.google.com/group/cometd-users/[CometD Users]
+and https://groups.google.com/group/cometd-dev/[CometD Development] mailing lists.
 * Helping out with the documentation by contacting the mailing lists or by reporting issues.
 * Spreading the word about CometD in your organization.
 

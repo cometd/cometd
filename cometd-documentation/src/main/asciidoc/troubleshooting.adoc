@@ -64,7 +64,7 @@ By default, SLF4J comes with with a simple binding that _does not_ log statement
 produced at debug level.
 
 Therefore you must configure SLF4J with a more advanced binding such as
-https://logging.apache.org/log4j/2.x/[Log4J2] or http://logback.qos.ch/[Logback].
+https://logging.apache.org/log4j/2.x/[Log4J2] or https://logback.qos.ch/[Logback].
 Refer to the SLF4J documentation and the binding implementation documentation on
 how to configure logging when using these advanced bindings.
 

@@ -22,7 +22,7 @@ or reloads the same CometD page in the browser, the same CometD session is used
 without having to go through a disconnect/handshake cycle, to add to every
 message metadata fields such as the timestamp, to detect whether the client and
 the server have a time offset (for example when only one of them is synchronized
-with http://en.wikipedia.org/wiki/Network_Time_Protocol[NTP]), etc.
+with https://en.wikipedia.org/wiki/Network_Time_Protocol[NTP]), etc.
 
 If you do not have such concerns or requirements, you should not use the
 extensions, as they add a minimal overhead without bringing value.

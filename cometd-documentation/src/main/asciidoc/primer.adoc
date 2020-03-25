@@ -6,11 +6,10 @@
 
 Working on a project that uses the CometD API requires preparation, especially
 regarding tools, that can save you a huge amount of time.
-One tool that should not be missing is http://getfirebug.com/[Firebug]
-(if you're using Firefox for development), or the equivalent for Internet Explorer,
-called http://msdn.microsoft.com/en-us/library/dd565622(VS.85).aspx[Developer Tools].
+Each browser has its own version of the Developer Tools, where you typically have
+a JavaScript console tool available, a network trace tool, a CSS editor tool, etc.
 
-The CometD project is built using http://maven.apache.org[Maven], and using Maven
+The CometD project is built using https://maven.apache.org[Maven], and using Maven
 to also build your application is a natural fit.
 This Primer uses Maven as the basis for the setup, build and run of your application,
 but other build tools can apply the same concepts.
@@ -42,7 +41,7 @@ file (otherwise you will get a Maven error), for example an empty directory:
 
 ----
 $ cd /tmp
-$ mvn org.apache.maven.plugins:maven-archetype-plugin:2.4:generate -DarchetypeCatalog=http://cometd.org
+$ mvn org.apache.maven.plugins:maven-archetype-plugin:2.4:generate -DarchetypeCatalog=https://cometd.org
 ...
 Choose archetype:
 1: local -> org.cometd.archetypes:cometd-archetype-dojo-jetty9
@@ -164,7 +163,7 @@ bindings WAR file, `cometd-javascript-dojo-<version>.war`, but here you must do 
 manually (the `cometd-javascript-dojo-<version>.war` is located in the
 `cometd-javascript/dojo/target` directory of the CometD distribution).
 
-. Download Dojo from http://dojotoolkit.org
+. Download Dojo from https://dojotoolkit.org
 . Unpack the `dojo-release-<version>.tar.gz` file to a directory, for example `/tmp`,
   so that you have the `/tmp/dojo-release-<version>` directory, called `$DOJO` below.
 . Delete the `$DOJO/dojox/cometd.js` and `$DOJO/dojox/cometd.js.uncompressed.js` files
@@ -302,6 +301,6 @@ Notice the following:
   to be called more than once if, for example, you experience temporary network
   failures or if the server restarts. +
   Therefore the code that you put in the `_connectionEstablished()` function must
-  be http://en.wikipedia.org/wiki/Idempotent[idempotent].
+  be https://en.wikipedia.org/wiki/Idempotent[idempotent].
   In other words, make sure that if the `_connectionEstablished()` function is
   called more than one time, it will behave exactly as if it is called only once.

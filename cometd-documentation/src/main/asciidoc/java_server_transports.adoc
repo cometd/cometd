@@ -9,7 +9,7 @@ different wire transports. The most common wire transports are HTTP
 
 [NOTE]
 ====
-The CometD project borrows many libraries from the http://eclipse.org/jetty[Jetty]
+The CometD project borrows many libraries from the https://eclipse.org/jetty[Jetty]
 project, but all the Jetty libraries required by CometD are portable across
 Servlet Containers, so you can deploy your CometD web application to _any_
 Servlet Container.

@@ -59,7 +59,7 @@ the default `cometd` object under the name "timesync".
 The timesync extension allows the client and server to exchange time information
 on every handshake and connect message so that the client can calculate an
 approximate offset from its own clock epoch to that of the server.
-The algorithm used is very similar to the http://en.wikipedia.org/wiki/Network_Time_Protocol[NTP algorithm].
+The algorithm used is very similar to the https://en.wikipedia.org/wiki/Network_Time_Protocol[NTP algorithm].
 
 With each handshake or connect, the extension sends timestamps within the
 ext field, for example:

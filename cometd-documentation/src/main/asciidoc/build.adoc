@@ -9,8 +9,8 @@
 
 Building the CometD project has 2 minimum requirements:
 
-* http://java.sun.com[JDK 8] or greater, to compile the Java code
-* http://maven.apache.org[Maven 3] or greater, the build tool
+* https://java.oracle.com[JDK 8] or greater, to compile the Java code
+* https://maven.apache.org[Maven 3] or greater, the build tool
 
 Make sure that the `mvn` executable is in your path, and that your `JAVA_HOME`
 environment variable points to the directory where Java is installed.
@@ -21,7 +21,7 @@ You can obtain the source code from either the distribution tarball or by
 checking out the source from the GitHub repository.
 
 If you want to use the distribution tarball, download it from
-http://download.cometd.org/[here], then unpack it with the following commands:
+https://download.cometd.org/[here], then unpack it with the following commands:
 
 ----
 $ tar zxvf cometd-<version>-distribution.tar.gz

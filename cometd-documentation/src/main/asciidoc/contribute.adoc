@@ -15,11 +15,11 @@ CometD mailing lists. There are two mailing lists:
 
 * *cometd-users@googlegroups.com*, to be used for discussions about how to use CometD.
   This is a low traffic mailing list.
-  To subscribe to this list, go to the http://groups.google.com/group/cometd-users/[mailing list home page]
+  To subscribe to this list, go to the https://groups.google.com/group/cometd-users/[mailing list home page]
   and follow the instructions to apply for membership.
 * *cometd-dev@googlegroups.com*, to be used for discussions about the CometD implementation.
   This is a low traffic mailing list.
-  To subscribe to this list, go to the http://groups.google.com/group/cometd-dev/[mailing list home page]
+  To subscribe to this list, go to the https://groups.google.com/group/cometd-dev/[mailing list home page]
   and follow the instructions to apply for membership.
   New members can join immediately the mailing list and receive messages,
   but their first post will be subject to moderation.
@@ -52,12 +52,12 @@ You can build the CometD project yourself by following the instruction in
 In order to contribute code or documentation, you need to comply with the following two
 requirements:
 
-* You must certify the http://developercertificate.org/[Developer Certificate of Origin]
+* You must certify the https://developercertificate.org/[Developer Certificate of Origin]
 and sign-off your `git` commits using `git commit --signoff`.
 By signing off your `git` commits, you agree that you can certify
 what stated by the Developer Certificate of Origin.
 * You must license your contributed code under the
-http://www.apache.org/licenses/LICENSE-2.0[CometD project license], i.e. the Apache
+https://www.apache.org/licenses/LICENSE-2.0[CometD project license], i.e. the Apache
 License version 2.0.
 
 Complying with these two requirements is enough for the CometD project to accept your
@@ -74,7 +74,7 @@ include::{resources}/developercertificate.txt[lines=14..50]
 
 To contribute code or documentation, follow these steps:
 
-* Create an issue at http://bugs.cometd.org.
+* Create an issue at https://bugs.cometd.org.
 * Commit your changes:
 ** If you have multiple commits, consider squashing them into one commit only.
 ** Make sure that the email in the `Author` field of the commits

@@ -299,7 +299,7 @@ of the HTTP cookies that the CometD server sends to clients, see
 
 Independently from the Servlet Container you are using, Jetty provides a standard,
 portable, `org.eclipse.jetty.servlets.CrossOriginFilter`.
-This filter implements the http://www.w3.org/TR/access-control/[Cross-Origin Resource Sharing]
+This filter implements the https://www.w3.org/TR/access-control/[Cross-Origin Resource Sharing]
 specification, and allows recent browsers that implement it to perform cross-domain JavaScript
 requests (see also <<_javascript_transports,the JavaScript transports section>>).
 
@@ -428,7 +428,7 @@ CometD to run out of the box, Tomcat is not, by default, configured with a
 non-blocking connector.
 You must first enable the non-blocking connector in Tomcat in order for CometD
 to work properly.
-Please refer to the http://tomcat.apache.org[Tomcat documentation] for how to
+Please refer to the https://tomcat.apache.org[Tomcat documentation] for how to
 configure a non-blocking connector in Tomcat.
 ====
 

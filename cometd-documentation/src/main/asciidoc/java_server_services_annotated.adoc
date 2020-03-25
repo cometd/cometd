@@ -50,7 +50,7 @@ that correspond to their full qualified class name.
 
 The CometD project offers limited support for dependency injection, since
 normally this is accomplished by other frameworks such as
-http://www.springsource.org[Spring], http://code.google.com/p/google-guice[Guice]
+https://spring.io/[Spring], https://github.com/google/guice[Guice]
 or http://cdi-spec.org/[CDI].
 
 In particular, it supports only the injection of the BayeuxServer object on
@@ -94,17 +94,17 @@ public class EchoService extends AbstractService {
 
 The service class is annotated with `@Service` and specifies the (optional)
 service name "echoService". The BayeuxServer field is annotated with the
-standard http://jcp.org/en/jsr/detail?id=330[JSR 330] `@Inject` annotation.
+standard https://jcp.org/en/jsr/detail?id=330[JSR 330] `@Inject` annotation.
 The `@Inject` annotation is supported (for example, by Spring 3 or greater) for
 standard dependency injection as specified by JSR 330.
 
 ===== Lifecycle Management Support
 
 The CometD project provides lifecycle management via the standard
-http://jcp.org/en/jsr/detail?id=250[JSR 250] `@PostConstruct` and
+https://jcp.org/en/jsr/detail?id=250[JSR 250] `@PostConstruct` and
 `@PreDestroy` annotations.
 CometD offers this support for those that do not use a dependency injection
-container with lifecycle management such as http://www.springsource.org[Spring].
+container with lifecycle management such as https://spring.io[Spring].
 
 ===== Channel Configuration Support
 
@@ -548,7 +548,7 @@ bayeuxClient.getChannel("/foo").subscribe(new ClientSessionChannel.MessageListen
 ===== Dependency Injection and Lifecycle Management Support
 
 The CometD project does not offer dependency injection for client-side services,
-but supports lifecycle management via the standard http://jcp.org/en/jsr/detail?id=250[JSR 250]
+but supports lifecycle management via the standard https://jcp.org/en/jsr/detail?id=250[JSR 250]
 `@PostConstruct` and `@PreDestroy` annotations.
 Client-side services usually have a shorter lifecycle than server-side services
 and their dependencies are usually injected directly while creating the client-side
