@@ -29,7 +29,27 @@ portable way.
 You can therefore concentrate on the business side of your application rather
 than worrying about low-level details such as the transport (HTTP or WebSocket),
 the scalability and the robustness.
-The CometD libraries provide these latter characteristics. 
+The CometD libraries provide these latter characteristics.
+
+.CometD Versions
+[cols="1a,1a,1a,1a", options="header"]
+|===
+| CometD Version | Required Java Version | Jetty Version | Status
+| CometD 6.0.x | Java 11 | Jetty 10.0.x | Experimental
+
+| CometD 5.0.x | Java 8 | Jetty 9.4.x | Stable
+
+| CometD 4.0.x | Java 8 | Jetty 9.4.x | End-Of-Life
+
+| CometD 3.1.x | Java 7 | Jetty 9.4.x +
+Jetty 9.3.x +
+Jetty 9.2.x | End-Of-Life
+
+| CometD 3.0.x | Java 7 | Jetty 9.2.x | End-Of-Life
+
+| CometD 2.x | Java 5 | Jetty 8.1.x +
+Jetty 7.6.x | End-Of-Life
+|===
 
 If you are new to CometD, you can follow this learning path: 
 
