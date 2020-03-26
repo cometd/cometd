@@ -238,7 +238,10 @@ public class OkHttpWebsocketTransport extends AbstractWebSocketTransport {
             @Override
             public void onFailure(WebSocket webSocket, Throwable failure, Response response) {
                 if (!connectFuture.complete(failure))
-                    OkHttpDelegate.this.failMessages(failure);
+                    // We fail because OkHttp effectively breaks the websocket connection when this callback
+                    // is invoked. If we just failMessages, the next time a send() call comes around it will
+                    // fail enqueuing the message to the OkHttp Websocket.
+                    OkHttpDelegate.this.fail(failure, "WebSocketListener.onFailure");
             }
         }
     }
