@@ -27,7 +27,7 @@ server and web clients.
 ==== Purpose
 
 The primary purpose of Bayeux is to support responsive bidirectional interactions
-between web clients, for example using using http://en.wikipedia.org/wiki/AJAX[AJAX],
+between web clients, for example using using https://en.wikipedia.org/wiki/AJAX[AJAX],
 and the web server.
 
 Bayeux is a protocol for transporting asynchronous messages (primarily over HTTP),
@@ -115,7 +115,7 @@ JSON::
   It is easy for machines to parse and generate.
   It is based on a subset of the JavaScript Programming Language, Standard
   ECMA-262 3rd Edition – December 1999.
-  JSON is described at http://www.json.org/.
+  JSON is described at https://www.json.org/.
 
 [[_bayeux_operation]]
 === Overall Operation
@@ -178,8 +178,8 @@ The rest of this document speaks as though HTTP will be used for message transpo
 
 Bayeux clients implemented in JavaScript that run within the security framework
 of a browser MUST adhere to the restrictions imposed by the browser, such as the
-http://en.wikipedia.org/wiki/Same_origin_policy[same origin policy] or the
-http://www.w3.org/TR/access-control/[CORS] specification, or the threading model.
+https://en.wikipedia.org/wiki/Same_origin_policy[same origin policy] or the
+https://www.w3.org/TR/access-control/[CORS] specification, or the threading model.
 These restrictions are normally enforced by the browser itself, but nonetheless
 the client implementation must be aware of these restrictions and adhere to them.
 

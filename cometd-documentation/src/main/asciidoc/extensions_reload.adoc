@@ -24,16 +24,11 @@ require(["dojox/cometd", "dojox/cometd/reload"], function(cometd) {
 The example above is valid also when using the `require()` syntax with jQuery.
 
 The file `jquery.cometd-reload.js` provides the client-side extension
-binding for jQuery.
-When you are not using the `require()` syntax, you must include the
-the http://plugins.jquery.com/project/Cookie[jQuery cookie plugin],
-the implementation file and the jQuery extension binding
-in the HTML page via the `<script>` tag:
+binding for jQuery:
 
 ====
 [source,javascript]
 ----
-<script type="text/javascript" src="jquery.cookie.js"></script>
 <script type="text/javascript" src="ReloadExtension.js"></script>
 <script type="text/javascript" src="jquery.cometd-reload.js"></script>
 ----

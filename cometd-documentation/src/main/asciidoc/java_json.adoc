@@ -14,7 +14,7 @@ Distinctions between them include:
 * The Jetty library allows you to plug in custom serializers and deserializers,
   to fine control the conversion from object to JSON and vice versa, via a custom API.
   Refer to the `org.eclipse.jetty.util.ajax.JSON`
-  http://download.eclipse.org/jetty/stable-7/apidocs/org/eclipse/jetty/util/ajax/JSON.html[javadocs]
+  https://eclipse.org/jetty/javadoc/current/org/eclipse/jetty/util/ajax/JSON.html[javadocs]
   for further information.
 * The Jackson library offers a rich API based on annotations to customize
   JSON generation, but less so to customize JSON parsing and obtain objects

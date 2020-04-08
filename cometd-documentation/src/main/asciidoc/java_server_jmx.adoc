@@ -4,9 +4,7 @@
 
 Server-side CometD components may be exposed as JMX MBeans and visible via
 monitoring tools such as
-http://www.oracle.com/technetwork/java/javaseproducts/mission-control/index.html[Java Mission Control],
-http://docs.oracle.com/javase/7/docs/technotes/tools/share/jvisualvm.html[JVisualVM] or
-http://docs.oracle.com/javase/7/docs/technotes/guides/management/jconsole.html[JConsole].
+https://jdk.java.net/jmc/[Java Mission Control], JVisualVM or JConsole.
 
 CometD MBeans build on Jetty's JMX support, and are portable across Servlet Containers.
 

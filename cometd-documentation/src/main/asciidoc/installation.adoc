@@ -6,7 +6,7 @@
 
 In order to run CometD applications, you need the Java Development Kit
 (JDK) – version 8 or greater, and a compliant Servlet 3.0 or greater
-Servlet Container such as http://eclipse.org/jetty[Jetty].
+Servlet Container such as https://eclipse.org/jetty[Jetty].
 
 The CometD implementation depends on few Jetty libraries, such as
 `jetty-util-ajax-<version>.jar` and others.
@@ -25,7 +25,7 @@ include::{resources}/pom.xml[tags=jetty-version]
 
 === Downloading and Installing
 
-You can download the CometD distribution from http://download.cometd.org/.
+You can download the CometD distribution from https://download.cometd.org/.
 
 Then unpack the distribution in a directory of your choice:
 
@@ -82,7 +82,7 @@ able to continue to the CometD Demos main page.
 When you develop a CometD application, you develop a standard Java EE Web Application
 that is then packaged into a `.war` file.
 You can follow <<_primer,the Primer section>> or the
-http://docs.cometd.org/tutorials[CometD Tutorials] for examples of how to build
+https://docs.cometd.org/tutorials[CometD Tutorials] for examples of how to build
 and package your CometD application.
 
 Once you have your CometD application packaged into a `.war` file, you can
@@ -97,7 +97,7 @@ information and for specific instructions related to deployment on Servlet 3.0
 
 The instructions below describe a very minimal Jetty setup that is needed
 to run CometD applications.
-Refer to the official http://www.eclipse.org/jetty/documentation/current/[Jetty documentation]
+Refer to the official https://eclipse.org/jetty/documentation/current/[Jetty documentation]
 for further details about configuring Jetty.
 
 Follow these steps to deploy your CometD application into Jetty.
@@ -105,7 +105,7 @@ These instructions are valid for Unix/Linux operative systems,
 but can be easily translated for the Windows operative system.
 
 Download the Jetty distribution from the
-http://download.eclipse.org/jetty[Eclipse Jetty Downloads].
+https://download.eclipse.org/jetty[Eclipse Jetty Downloads].
 
 Then unpack the Jetty distribution in a directory of your choice,
 for example `/tmp`:

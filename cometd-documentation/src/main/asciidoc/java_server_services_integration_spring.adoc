@@ -2,7 +2,7 @@
 [[_java_server_services_integration_spring]]
 ===== Services Integration with Spring
 
-Integration of CometD services with http://springframework.org[Spring] is
+Integration of CometD services with https://spring.io/[Spring] is
 particularly interesting, since most of the time your Bayeux services require
 other _beans_ to perform their service.
 Not all Bayeux services are as simple as the `EchoService` (see also
@@ -165,10 +165,10 @@ Spring 3 or greater supports annotation-based configuration, and
 <<_java_server_services_annotated,the annotated services section>> integrate
 nicely with Spring, version 3 or greater.
 Spring 3 or greater is required because it supports injection via
-http://jcp.org/en/jsr/detail?id=330[JSR 330].
+https://jcp.org/en/jsr/detail?id=330[JSR 330].
 Prerequisite to making Spring work with CometD annotated services is to have
 JSR 330's `javax.inject` classes in the classpath along with
-http://jcp.org/en/jsr/detail?id=250[JSR 250's] `javax.annotation` classes.
+https://jcp.org/en/jsr/detail?id=250[JSR 250's] `javax.annotation` classes.
 
 [NOTE]
 ====

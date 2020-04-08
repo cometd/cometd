@@ -3,7 +3,7 @@
 == Java Libraries
 
 The CometD Java implementation is based on the popular
-http://eclipse.org/jetty[Jetty Http Server and Servlet Container],
+https://eclipse.org/jetty[Jetty Http Server and Servlet Container],
 for both the client and the server, version 9 or greater.
 
 === CometD Java Libraries and Servlet 3.0

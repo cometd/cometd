@@ -7,12 +7,12 @@
 
 The JavaScript CometD implementation implements these two transports and
 supports also the `websocket` transport (based on HTML 5
-http://en.wikipedia.org/wiki/WebSockets[WebSockets]).
+https://en.wikipedia.org/wiki/WebSockets[WebSockets]).
 
 [NOTE]
 ====
 At the time of this writing, the IETF has finalized the WebSocket
-protocol into http://www.ietf.org/rfc/rfc6455.txt[RFC 6455].
+protocol into https://www.ietf.org/rfc/rfc6455.txt[RFC 6455].
 However, most of the browsers still implement earlier drafts of the
 WebSocket protocol, so browser support varies (most notably, Microsoft's
 Internet Explorer only supports WebSocket out of the box in version 10).

@@ -156,7 +156,7 @@ for each transport.
 
 ===== Long-polling Transport Dependencies
 
-If you are building your application with http://maven.apache.org[Maven]
+If you are building your application with https://maven.apache.org[Maven]
 (the recommended way), your application just needs to declare dependencies for:
 
 * `org.cometd.java:cometd-java-client` (Maven automatically pulls the Jetty

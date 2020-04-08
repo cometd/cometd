@@ -2,9 +2,9 @@
 [[_concepts]]
 == Concepts and Architecture
 
-The CometD project implements various http://en.wikipedia.org/wiki/Comet_%28programming%29[Comet techniques]
+The CometD project implements various https://en.wikipedia.org/wiki/Comet_%28programming%29[Comet techniques]
 to provide a scalable web messaging system, one that can run over HTTP or over
-other emerging web protocols such as http://en.wikipedia.org/wiki/WebSocket[WebSocket].
+other emerging web protocols such as https://en.wikipedia.org/wiki/WebSocket[WebSocket].
 
 [[_concepts_definitions]]
 === Definitions
@@ -24,7 +24,7 @@ logical _conduit_ between one client and the server.
 
 The CometD project uses the Bayeux protocol (see also <<_bayeux,the Bayeux protocol section>>)
 to exchange information between the client and the server.
-The unit of information exchanged is a Bayeux _message_ formatted in http://json.org[JSON].
+The unit of information exchanged is a Bayeux _message_ formatted in https://json.org[JSON].
 A message contains several _fields_, some of which are mandated by the Bayeux protocol,
 and others may be added by applications.
 A field is a key/value pair; saying that a message has a _foo_ field means
@@ -117,7 +117,7 @@ A template channel cannot be also a wildcard channel, so these are invalid chann
 === The High Level View
 
 CometD implements a web messaging system, in particular a web messaging system based
-on the http://en.wikipedia.org/wiki/Publish/subscribe[publish/subscribe] paradigm.
+on the https://en.wikipedia.org/wiki/Publish/subscribe[publish/subscribe] paradigm.
 
 In a publish/subscribe messaging system publishers send messages, which are characterized
 in classes.
@@ -164,7 +164,7 @@ The following sections take a deeper look at how the CometD implementation works
 It should be clear by now that CometD, at its heart, is a client/server system
 that communicates via a protocol, the Bayeux protocol.
 
-In the CometD implementation, the http://c2.com/cgi/wiki?HalfObjectPlusProtocol[half-object plus protocol]
+In the CometD implementation, the https://c2.com/cgi/wiki?HalfObjectPlusProtocol[half-object plus protocol]
 pattern captures the client/server communication: when a half-object on the
 client establishes a communication conduit with the server, its correspondent
 half-object is created on the server, and the two can – logically – communicate.
