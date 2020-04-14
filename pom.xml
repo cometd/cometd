@@ -63,9 +63,9 @@
     <!--<jetty-version>9.4.28.v20200408</jetty-version>-->
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.30</slf4j-version>
-    <spring-version>5.2.4.RELEASE</spring-version>
-    <jackson-version>2.10.2</jackson-version>
-    <dojo-version>1.16.1</dojo-version>
+    <spring-version>5.2.5.RELEASE</spring-version>
+    <jackson-version>2.10.3</jackson-version>
+    <dojo-version>1.16.2</dojo-version>
     <rhino-version>1.7R5</rhino-version>
   </properties>
 
@@ -384,7 +384,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.1.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -417,7 +417,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.2.0</version>
           <configuration>
             <source>8</source>
           </configuration>
@@ -440,12 +440,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.2.1</version>
+          <version>3.2.3</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.8.2</version>
+          <version>3.9.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -541,7 +541,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20200112</version>
+        <version>v20200406</version>
       </dependency>
 
       <dependency>
@@ -559,7 +559,7 @@
       <dependency>
         <groupId>com.google.inject</groupId>
         <artifactId>guice</artifactId>
-        <version>4.2.2</version>
+        <version>4.2.3</version>
         <scope>test</scope>
       </dependency>
       <dependency>
