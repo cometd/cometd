@@ -89,7 +89,8 @@ response::
 message::
   A message is a JSON encoded object exchanged between client and server for the
   purpose of implementing the Bayeux protocol as defined by
-  xref:_bayeux_message_fields,the message fields section>>[<<_bayeux_meta_message,the meta messages section] and
+  xref:_bayeux_message_fields[the message fields section],
+  xref:_bayeux_meta_message[the meta messages section] and
   xref:_bayeux_event_message[the event messages section].
 
 event::

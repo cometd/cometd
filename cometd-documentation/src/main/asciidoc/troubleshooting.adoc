@@ -8,7 +8,7 @@
 The CometD libraries emit log statements at `INFO` and `DEBUG` levels.
 Very little, if anything, is produced at `INFO` level: typically only unexpected
 application exceptions detected by the CometD libraries, such as exceptions thrown by
-xref:_concept_listeners,listeners>> and <<_extensions[extensions].
+xref:_concepts_listeners[listeners] and xref:_extensions[extensions].
 
 The CometD Java libraries (both client and server) use http://slf4j.org[SLF4J]
 as logging framework.

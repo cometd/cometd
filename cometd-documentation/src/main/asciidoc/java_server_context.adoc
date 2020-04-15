@@ -2,7 +2,8 @@
 [[_java_server_context]]
 ==== Contextual Information
 
-Server-side components such as services (see also xref:_java_server_services,the services section>>)[extensions (see also <<_extensions,the extensions section]) or authorizers (see also
+Server-side components such as services (see also xref:_java_server_services[the services section]),
+extensions (see also xref:_extensions[the extensions section]) or authorizers (see also
 xref:_java_server_authorizers[the authorizers section]) may need to access contextual
 information, that is information provided by the Servlet environment such as
 request attributes, HTTP session attributes, servlet context attributes or

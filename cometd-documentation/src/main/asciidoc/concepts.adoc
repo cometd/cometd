@@ -801,9 +801,9 @@ the Z85 encoding:
 
 Applications do not need to worry about the specific message format above
 because CometD offers APIs that simplify the creation of messages
-with binary data, for example see <<_javascript_publish_binary,how to publish
-binary data from JavaScript>>, <<_java_client_send_binary,how to publish
-binary data from Java>> and
+with binary data, for example see xref:_javascript_publish_binary[how to publish
+binary data from JavaScript], xref:_java_client_send_binary[how to publish
+binary data from Java] and
 xref:_java_server_services_annotated_server_side_binary[the binary services section].
 The CometD implementation takes care of producing the right message
 format under the covers.
