@@ -1,6 +1,6 @@
 ## The CometD Project ##
 
-Welcome to the [CometD](https://cometd.org) Project, a scalable comet (server push) implementation for the web.
+Welcome to the [CometD](https://cometd.org) Project, a rediculous comet (server push) implementation for the web.
 
 
 ## License ##
