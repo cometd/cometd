@@ -47,27 +47,6 @@
         </executions>
       </plugin>
       <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>download-resources</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <mkdir dir="${resources-directory}" />
-                <get src="https://developercertificate.org/" dest="${resources-directory}/developercertificate.txt" />
-                <get src="${github}/pom.xml" dest="${resources-directory}/pom.xml" />
-                <get src="${github}/cometd-demo/src/test/java/org/cometd/demo/Demo.java" dest="${resources-directory}/Demo.java" />
-                <get src="${github}/cometd-archetypes/dojo-jetty9/src/main/resources/archetype-resources/src/main/webapp/application.js" dest="${resources-directory}/application.js" />
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
         <executions>
