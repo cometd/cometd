@@ -37,7 +37,9 @@ import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
@@ -100,6 +102,9 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
 
     @Test
     public void testExtensionNegotiation() throws Exception {
+        // OkHttp does not support specifying WebSocket extensions.
+        Assume.assumeThat(wsTransportType, Matchers.not(WEBSOCKET_OKHTTP));
+
         // Disable the identity extension on server.
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "identity", "false");

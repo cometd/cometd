@@ -237,8 +237,9 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
 
             @Override
             public void onFailure(WebSocket webSocket, Throwable failure, Response response) {
-                if (!connectFuture.complete(failure))
-                    OkHttpDelegate.this.failMessages(failure);
+                if (!connectFuture.complete(failure)) {
+                    OkHttpDelegate.this.fail(failure, "WebSocketListener Failure");
+                }
             }
         }
     }
