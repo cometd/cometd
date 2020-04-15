@@ -2,7 +2,7 @@
 [[_javascript_transports]]
 === JavaScript Transports
 
-<<_bayeux,The Bayeux protocol section>> defines two mandatory transports:
+xref:_bayeux[The Bayeux protocol section] defines two mandatory transports:
 `long-polling` and `callback-polling`.
 
 The JavaScript CometD implementation implements these two transports and
@@ -25,7 +25,7 @@ The `long-polling` transport is the default transport if the browser and the
 server do not support WebSockets.
 This transport is used when the communication with the Bayeux server happens
 on the same domain, and also in the cross-domain mode for recent browsers,
-such as Firefox 3.5+ (see also <<_javascript_transports_cross_origin,the cross origin section>>).
+such as Firefox 3.5+ (see also xref:_javascript_transports_cross_origin[the cross origin section]).
 The data is sent to the server by means of a POST request with `Content-Type: application/json;charset=UTF-8`
 via a plain XMLHttpRequest call.
 
@@ -33,7 +33,7 @@ via a plain XMLHttpRequest call.
 
 The `callback-polling` transport is used when the communication with the
 Bayeux server happens on a different domain and when the cross-domain mode
-is not supported (see also <<_javascript_transports_cross_origin,the cross origin section>>).
+is not supported (see also xref:_javascript_transports_cross_origin[the cross origin section]).
 
 The JavaScript `XMLHttpRequest` object used to have restrictions when the
 invocation was directed to a domain different from the one to which the script
@@ -42,7 +42,7 @@ had been downloaded.
 Recent browsers implement now a version of `XMLHttpRequest` object that supports
 cross domain invocations, but for the invocation to succeed the server must
 collaborate, typically by deploying a
-<<_java_server_configuration_advanced,cross origin servlet filter>>.
+xref:_java_server_configuration_advanced[cross origin servlet filter].
 
 In case of older browsers or servers that do not deploy a cross origin solution,
 the `callback-polling` transport uses the JSONP script injection, which
@@ -100,12 +100,12 @@ cometd.init('http://localhost:8080/cometd');
 ====
 
 An alternative way of disabling the `websocket` transport is to unregister its transport,
-see also <<_javascript_transports_unregistering,the transport unregistering section>>.
+see also xref:_javascript_transports_unregistering[the transport unregistering section].
 
 [IMPORTANT]
 ====
 Remember that enabling the `websocket` transport on the client is not enough: you must also enable it on the server.
-Follow <<_java_server_transports,the server transports section>> for configuring `websocket` on the server.
+Follow xref:_java_server_transports[the server transports section] for configuring `websocket` on the server.
 ====
 
 [[_javascript_transports_unregistering]]
@@ -138,7 +138,7 @@ towards a different domain (see https://developer.mozilla.org/En/HTTP_access_con
 The JavaScript CometD implementation also supports this, with no configuration
 necessary on the client (if the browser supports `XMLHttpRequest` cross-domain calls,
 CometD uses them) and with a bit of configuration for the server, explained in
-<<_java_server_configuration_advanced,this section>>.
+xref:_java_server_configuration_advanced[this section].
 
 To use the cross-domain mode, you need: 
 

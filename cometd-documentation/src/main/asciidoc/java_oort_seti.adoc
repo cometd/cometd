@@ -62,7 +62,7 @@ A configuration example follows:
 ==== Associating and Disassociating Users
 
 `Seti` allows you to associate a unique string representation of a user with
-one or more `ServerSessions` (see also <<_concepts,the concepts section>> for
+one or more `ServerSessions` (see also xref:_concepts[the concepts section] for
 more details on `ServerSession`).
 
 This normally occurs when the user first logs in to the application, and the
@@ -73,7 +73,7 @@ The same `userId` may log in multiple times (for example from a desktop computer
 and from a mobile device), so it is associated to multiple `ServerSessions`.
 
 In practice, the best way to associate a `userId` with a `ServerSession` is in a
-`SecurityPolicy` during <<_java_server_authentication,authentication>>, for example:
+`SecurityPolicy` during xref:_java_server_authentication[authentication], for example:
 
 ====
 [source,java]
@@ -109,13 +109,13 @@ public class MySecurityPolicy extends DefaultSecurityPolicy {
 ====
 
 Alternatively, you can perform the association in a `BayeuxServer.Extension`
-or in a CometD service (see also <<_java_server_services,the services section>>),
+or in a CometD service (see also xref:_java_server_services[the services section]),
 in response to a specific message that the client always sends after a
 successful handshake.
 
 When a `Seti` instance first associates a `userId` with a session, it broadcasts
 a _presence_ message on the cluster (on channel `/seti/all`, (see also
-<<_java_oort_seti_listeners,the Seti listeners section>>) that tells all the
+xref:_java_oort_seti_listeners[the Seti listeners section]) that tells all the
 other nodes where this `userId` is located.
 
 In this way, all the nodes in the cluster know where a particular `userId` resides.
@@ -213,7 +213,7 @@ In the example below, `clientA` wants to send a message to `clientC`
 but not to `clientB`.
 Therefore `clientA` sends a message to the server it is connected to using a
 service channel so that the message is not broadcast, and then a specialized
-service (see also <<_java_server_services,the services section>>) routes the
+service (see also xref:_java_server_services[the services section]) routes the
 message to the appropriate user using `Seti` (see code snippet above).
 The `Seti` on `nodeA` knows that the target user is on `nodeC`
 (thanks to the association) and forwards the message to `nodeC`, which in

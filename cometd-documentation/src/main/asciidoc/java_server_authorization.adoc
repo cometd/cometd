@@ -11,7 +11,7 @@ allows almost any operation.
 The `org.cometd.bayeux.server.SecurityPolicy` interface has a default
 implementation in `org.cometd.server.DefaultSecurityPolicy`, that is useful
 as a base class to customize the `SecurityPolicy`
-(see <<_java_server_authentication,the authentication section>> for an example).
+(see xref:_java_server_authentication[the authentication section] for an example).
 
 The `org.cometd.bayeux.server.SecurityPolicy` methods are:
 
@@ -34,14 +34,14 @@ a subscription to a channel or a publish to a channel are to be authorized.
 [IMPORTANT]
 ====
 The `SecurityPolicy` methods are invoked for `ServerSession` that correspond
-to both local clients and remote clients (see also <<_concepts_sessions,the sessions section>>).
+to both local clients and remote clients (see also xref:_concepts_sessions[the sessions section]).
 
 Application code can determine whether a `ServerSession` correspond to a
 local client by calling method `ServerSession.isLocalSession()`.
 
 In almost all cases, local clients should be authorized because they are
 created on the server by the application (for example, by services – see also
-<<_java_server_services_inherited,the inherited services section>>) and
+xref:_java_server_services_inherited[the inherited services section]) and
 therefore are trusted clients.
 ====
 
@@ -79,7 +79,7 @@ public class CustomSecurityPolicy extends DefaultSecurityPolicy {
 ====
 
 To understand how to install your custom `SecurityPolicy` on the `BayeuxServer`
-object, see how it is done in <<_java_server_authentication,the authentication section>>.
+object, see how it is done in xref:_java_server_authentication[the authentication section].
 
-Follow also <<_java_server_authorizers,the authorizers section>> for further
+Follow also xref:_java_server_authorizers[the authorizers section] for further
 information about authorization.

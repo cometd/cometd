@@ -42,7 +42,7 @@ var cometd = dojox.cometd;
 ----
 ====
 
-If you followed <<_primer,the primer>>, you might have noticed that the skeleton
+If you followed xref:_primer[the primer], you might have noticed that the skeleton
 project proposes you to reference both the portable implementation, under
 `cometd/cometd.js`, and one binding – for example Dojo's – under `dojox/cometd.js`.
 For jQuery, the binding is under `jquery/jquery.cometd.js`.

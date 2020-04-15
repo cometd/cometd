@@ -4,8 +4,8 @@
 
 CometD allows you to send messages in two ways:
 
-. by <<_java_client_publish,publishing>> a message onto a channel
-. by performing a <<_java_client_rpc,remote procedure call>>
+. by xref:_java_client_publish[publishing] a message onto a channel
+. by performing a xref:_java_client_rpc[remote procedure call]
 
 The first case is covered by the `ClientSessionChannel.publish(...)` API.
 The second case is covered by the `ClientSession.remoteCall()` API.
@@ -98,7 +98,7 @@ You can send binary data such as a `byte[]` or a `ByteBuffer` by using the
 `org.cometd.bayeux.BinaryData` class.
 
 Remember that you must have the binary extension enabled as specified
-in <<_extensions_binary,the binary extension section>>.
+in xref:_extensions_binary[the binary extension section].
 
 ====
 [source,java]
@@ -111,7 +111,7 @@ client.getChannel("/channel").publish(new BinaryData(bytes, true, null));
 ----
 ====
 
-As explained in the <<_concepts_binary_data,concepts section>>, CometD takes care
+As explained in the xref:_concepts_binary_data[concepts section], CometD takes care
 of converting the `BinaryData` object into the right format and adds the binary
 extension to the message.
 
@@ -148,7 +148,7 @@ of it as the action you want to perform.
 It may or may not have a leading `/` character, and may be composed of multiple
 segments such as `target/subtarget`.
 It must match a server-side service annotated with `@RemoteCall` as explained
-<<_java_server_services_annotated_server_side_remote_call,in this section>>.
+xref:_java_server_services_annotated_server_side_remote_call[in this section].
 
 The second argument of `remoteCall()` is an object with the arguments of the
 remote call.
@@ -168,7 +168,7 @@ Similarly to publishing messages with binary data, it is possible to perform
 remote calls with binary data.
 
 Remember that you must have the binary extension enabled in the client as specified
-in <<_extensions_binary,the binary extension section>>.
+in xref:_extensions_binary[the binary extension section].
 
 Here is an example that sends a `ByteBuffer`:
 

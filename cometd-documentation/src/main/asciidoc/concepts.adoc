@@ -22,7 +22,7 @@ Depending on the Comet technique employed, a client might open more than one
 physical connection to the server, but you can assume there exists only one
 logical _conduit_ between one client and the server.
 
-The CometD project uses the Bayeux protocol (see also <<_bayeux,the Bayeux protocol section>>)
+The CometD project uses the Bayeux protocol (see also xref:_bayeux[the Bayeux protocol section])
 to exchange information between the client and the server.
 The unit of information exchanged is a Bayeux _message_ formatted in https://json.org[JSON].
 A message contains several _fields_, some of which are mandated by the Bayeux protocol,
@@ -60,7 +60,7 @@ can create as many as it needs, and can do so at any time.
 The CometD implementation creates meta channels; applications _cannot_ create new
 meta channels.
 Meta channels provide to applications information about the Bayeux protocol (see
-<<_concepts_bayeux_protocol,this section>>); for example, whether handshakes have
+xref:_concepts_bayeux_protocol[this section]); for example, whether handshakes have
 been successful or not, or whether the connection with the server is broken or
 has been re-established.
 
@@ -99,8 +99,8 @@ Channels with segment parameters are also called _template_ channels, because th
 define a template that a real channel may match, with the result of binding
 the template channel parameters to actual values.
 Template channels are used in annotated services, see their usage in
-<<_java_server_services_annotated_server_side_listener,annotated listeners>>
-and <<_java_server_services_annotated_server_side_subscription,annotated subscribers>>.
+xref:_java_server_services_annotated_server_side_listener[annotated listeners]
+and xref:_java_server_services_annotated_server_side_subscription[annotated subscribers].
 For example, when `/news/{category}` is bound to the channel `/news/sport`, then
 the parameter `category` will be bound to the string `"sport"`.
 
@@ -231,7 +231,7 @@ There are three types of sessions:
   sessions). The server delivers messages sent to a channel to all server sessions
   that subscribe to that channel, no matter if they are remote client sessions or
   local sessions. +
-  For further information on services, see also <<_java_server_services,the services section>>.
+  For further information on services, see also xref:_java_server_services[the services section].
 
 [[_concepts_server]]
 ==== The Server
@@ -239,7 +239,7 @@ There are three types of sessions:
 The _server_ is represented by an instance of `org.cometd.bayeux.server.BayeuxServer`.
 The `BayeuxServer` object acts as a:
 
-* Repository for server sessions, see also <<_concepts_sessions,the concepts sessions section>>.
+* Repository for server sessions, see also xref:_concepts_sessions[the concepts sessions section].
 * Repository for _server transports_ – represented by the `org.cometd.bayeux.server.ServerTransport` class.
   A server transport is a server-side component that handles the details of the communication
   with the client.
@@ -252,7 +252,7 @@ The `BayeuxServer` object acts as a:
 * Repository for _extensions_ – represented by the `org.cometd.bayeux.server.BayeuxServer.Extension` class.
   Extensions allow applications to interact with the Bayeux protocol by modifying
   or even deleting or replaying incoming and/or outgoing Bayeux messages. +
-  For further information about extensions, see also <<_extensions,the extensions section>>.
+  For further information about extensions, see also xref:_extensions[the extensions section].
 * Central authorization authority, via an instance of the _security policy_ –
   represented by the `org.cometd.bayeux.server.SecurityPolicy` class.
   CometD interrogates the security policy to authorize any sensible operation
@@ -260,13 +260,13 @@ The `BayeuxServer` object acts as a:
   and channel publishing.
   Applications can provide their own security policy to implement their own authorization logic. +
   For further information about the security policy, see
-  <<_java_server_authorization,the authorization section>>.
+  xref:_java_server_authorization[the authorization section].
 * _Authorizers_ – represented by the `org.cometd.bayeux.server.Authorizer`
   class allow you to apply more fine-grained authorization policies. +
-  For further information on authorizers, see also <<_java_server_authorizers,the authorizers section>>.
+  For further information on authorizers, see also xref:_java_server_authorizers[the authorizers section].
 * Message processor, by coordinating the work of server transports, extensions
   and security policy, and by implementing a message flow algorithm (see
-  <<_concepts_message_processing,the message processing section>>) that
+  xref:_concepts_message_processing[the message processing section]) that
   allows applications to interact with messages and channels to implement
   their application logic.
 
@@ -341,14 +341,14 @@ sent to the server.
 At the end of extension processing, the messages pass to the client transport.
 
 The client transport converts the messages to JSON (for the Java client, this
-is done by a `JSONContext.Client` instance, see also <<_java_json_api,the JSON section>>),
+is done by a `JSONContext.Client` instance, see also xref:_java_json_api[the JSON section]),
 establishes the conduit with the server transport and then sends the JSON string
 over the conduit, as the payload of a transport-specific envelope (for example,
 an HTTP request or a WebSocket message).
 
 The envelope travels to the server, where the server transport receives it.
 The server transport converts the messages from the JSON format back to message
-objects (through a `JSONContext.Server` instance, see also <<_java_json_api,the JSON section>>),
+objects (through a `JSONContext.Server` instance, see also xref:_java_json_api[the JSON section]),
 then passes them to the `BayeuxServer` instance for processing.
 
 The `BayeuxServer` processes each message in the following steps:
@@ -384,7 +384,7 @@ The `BayeuxServer` processes each message in the following steps:
   last chance to discard the message for that session; then the server session queue
   listeners (`MaxQueueListener` and `QueueListener`) are invoked and finally the
   message is added to the server session queue for delivery.
-. If the message is a lazy message (see also <<_java_server_lazy_messages,the lazy messages section>>),
+. If the message is a lazy message (see also xref:_java_server_lazy_messages[the lazy messages section]),
   it is sent on first occasion, otherwise the message is delivered immediately.
   If the server session onto which the message is queued corresponds to a remote
   client session, it is assigned a thread to deliver the messages in its queue
@@ -397,12 +397,12 @@ The `BayeuxServer` processes each message in the following steps:
 . For both broadcast and non-broadcast messages, a reply message is created, passes
   through `BayeuxServer` extensions and `ServerSession` extensions (method `outgoing()`).
   It then passes to the server transport, which converts it to JSON
-  through a `JSONContext.Server` instance (see also <<_java_json_api,the JSON section>>),
+  through a `JSONContext.Server` instance (see also xref:_java_json_api[the JSON section]),
   and sends it on the conduit as the payload of a transport-specific envelope (for
   example, an HTTP response or a WebSocket message).
 . The envelope travels back to the client, where the client transport receives it.
   The client transport converts the messages from the JSON format back to message
-  objects, for the Java client via a `JSONContext.Client` instance (see also <<_java_json_api,the JSON section>>).
+  objects, for the Java client via a `JSONContext.Client` instance (see also xref:_java_json_api[the JSON section]).
 . Each message then passes through the `ClientSession` extensions (method `incoming()`),
   and channel listeners and subscribers are notified of the message.
 
@@ -446,10 +446,10 @@ an answer to the CometD implementation, it must arrange things in a way that
 either the external service is invoked in a separate thread, or invoking the
 external service is itself non-blocking and based on callbacks (or another
 similar mechanism).
-See the <<_concepts_application_authentication,asynchronous authentication examples>>
+See the xref:_concepts_application_authentication[asynchronous authentication examples]
 below.
 
-Services (see also <<_java_server_services,the java server services section>>) are an
+Services (see also xref:_java_server_services[the java server services section]) are an
 easy way to setup server-side listeners but share the same threading model with
 normal server-side listeners: if they need to perform time consuming tasks, they
 need to do so in a separate thread, for example:
@@ -574,19 +574,19 @@ listeners, and therefore must use such listeners to perform its business logic.
 You can add server channel listeners in the following ways:
 
 * Directly via the API at initialization time (see
-  <<_java_server_services_integration,the services integration section>>).
+  xref:_java_server_services_integration[the services integration section]).
 * Indirectly by using inherited services (see
-  <<_java_server_services_inherited,the inherited services section>>).
+  xref:_java_server_services_inherited[the inherited services section]).
   You accomplish this by calling `AbstractService.addService(...)`
   or via annotated services (see
-  <<_java_server_services_annotated,the annotated services section>>) using
+  xref:_java_server_services_annotated[the annotated services section]) using
   `@Listener` annotations.
 
 [IMPORTANT]
 ====
 Applications that need to perform time consuming tasks in server-side listeners
 should do so in a separate thread to avoid blocking the processing of other
-incoming messages (see also <<_concepts_threading,the threading section>>).
+incoming messages (see also xref:_concepts_threading[the threading section]).
 ====
 
 [[_concepts_application_broadcast_messages]]
@@ -598,16 +598,16 @@ Applications can interact with broadcast messages via server channel listeners
 (in the same way as with non-broadcast messages, see above), or by using a
 `LocalSession` that subscribes to the message's channel.
 You can use this latter solution directly via the API at initialization time (see
-<<_java_server_services_integration,the services integration section>>), or
+xref:_java_server_services_integration[the services integration section]), or
 indirectly via annotated services (see
-<<_java_server_services_inherited,the inherited services section>>) using
+xref:_java_server_services_inherited[the inherited services section]) using
 `@Subscription` annotations.
 
 [IMPORTANT]
 ====
 Applications that need to perform time consuming tasks in server-side listeners
 should do so in a separate thread to avoid blocking the processing of other
-incoming messages (see also <<_concepts_threading,the threading section>>).
+incoming messages (see also xref:_concepts_threading[the threading section]).
 ====
 
 [[_concepts_application_peer_communication]]
@@ -625,7 +625,7 @@ that `client1` declared to be "Bob" and `client2` declared to be "Alice".
 The application could have used a `SecurityPolicy` or a
 `BayeuxServer.SessionListener` to perform a mapping between the `userId`
 and the server session's id, like explained in
-<<_java_server_authentication,the authentication section>>.
+xref:_java_server_authentication[the authentication section].
 
 Now Bob wants to send a private message only to Alice.
 
@@ -734,7 +734,7 @@ any broadcast channel (even if it is not subscribed to that channel).
 [[_concepts_binary_data]]
 ==== Binary Data
 
-The <<_bayeux,Bayeux protocol>> message format is the JSON format, because the
+The xref:_bayeux[Bayeux protocol] message format is the JSON format, because the
 Bayeux protocol was designed when JavaScript did not have binary data types.
 
 Recent versions of JavaScript have
@@ -760,7 +760,7 @@ encoding/decoding and by using a specific format for the `data` field of a messa
 
 The encoding/decoding to/from the binary representation is performed by
 CometD extensions on both the client and the server, see
-<<_extensions_binary,the binary extension section>>.
+xref:_extensions_binary[the binary extension section].
 
 When transporting binary data, the format of the `data` field of a message is
 a specific one, represented by the `org.cometd.bayeux.BinaryData` class in Java
@@ -804,7 +804,7 @@ because CometD offers APIs that simplify the creation of messages
 with binary data, for example see <<_javascript_publish_binary,how to publish
 binary data from JavaScript>>, <<_java_client_send_binary,how to publish
 binary data from Java>> and
-<<_java_server_services_annotated_server_side_binary,the binary services section>>.
+xref:_java_server_services_annotated_server_side_binary[the binary services section].
 The CometD implementation takes care of producing the right message
 format under the covers.
 

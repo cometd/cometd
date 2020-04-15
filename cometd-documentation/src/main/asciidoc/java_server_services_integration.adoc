@@ -76,7 +76,7 @@ public class ConfigurationServlet extends GenericServlet {
 ----
 ====
 
-See also <<_java_server_services_inherited,this section>> about the `EchoService`.
+See also xref:_java_server_services_inherited[this section] about the `EchoService`.
 
 ===== Integration via Configuration Listener
 
@@ -143,7 +143,7 @@ public class BayeuxInitializer implements ServletContextAttributeListener {
 ===== Integration of Annotated Services
 
 If you prefer to use annotated services (see also
-<<_java_server_services_annotated,the annotated services section>>, you still
+xref:_java_server_services_annotated[the annotated services section], you still
 have to integrate them into your web application.
 The procedure is very similar to the procedures above, but it requires use of
 the annotation processor to process the annotations in your services.

@@ -52,13 +52,13 @@ Each Oort object instance _owns_ only its local part.
 In the example, the user name `A2` is present in all the nodes, but it is
 _owned_ only by the Oort object in `nodeA`.
 Anyone that wants to modify or remove `A2` must perform this action in `nodeA`.
-<<_java_oort_objects_oort_service,the `OortService` section>> shows how to
+xref:_java_oort_objects_oort_service[the `OortService` section] shows how to
 forward service actions from one node to another.
 
 `OortObject` allows applications to add/remove `OortObject.Listener` that
 are notified of modification of a part, either local or remote.
 Your application can implement these listeners to perform custom logic, see
-also <<_java_oort_objects_oort_object_listeners,the `OortObject` listeners section>>.
+also xref:_java_oort_objects_oort_object_listeners[the `OortObject` listeners section].
 
 [[_java_oort_objects_oort_object_specializations]]
 ===== OortObject Specializations
@@ -86,7 +86,7 @@ entry addition/removal, either local or remote. `OortList` provides an
 either local or remote.
 Applications can implement these listeners to be notified of entry or element
 updates in order to perform custom logic, see also
-<<_java_oort_objects_oort_object_listeners,the `OortObject` listeners section>>.
+xref:_java_oort_objects_oort_object_listeners[the `OortObject` listeners section].
 
 [[_java_oort_objects_oort_object_creation]]
 ===== OortObject Creation
@@ -234,7 +234,7 @@ instances correctly (by default, CometD just calls `toString()` to convert
 such non natively representable objects to JSON).
 
 In order to serialize correctly instances of `UserInfo`, you must configure
-Oort as explained in <<_java_json_oort_config,the Oort JSON configuration section>>.
+Oort as explained in xref:_java_json_oort_config[the Oort JSON configuration section].
 This is done by creating a custom implementation of `JSONContent.Client`:
 
 ====
@@ -286,12 +286,12 @@ public class UserInfoConvertor implements JSON.Convertor {
 ====
 
 Class `UserInfoConvertor` depends on the Jetty JSON library; a similar class
-can be written for the Jackson library (refer to <<_java_json,the JSON section>>
+can be written for the Jackson library (refer to xref:_java_json[the JSON section]
 for further information).
 
 Finally, you must specify class `MyCustomJSONContextClient` as the `jsonContext`
 parameter of the Oort configuration (as explained in
-<<_java_oort_common_configuration,the Oort common configuration section>>) in
+xref:_java_oort_common_configuration[the Oort common configuration section]) in
 the `web.xml` file, for example:
 
 ====
@@ -322,7 +322,7 @@ the `web.xml` file, for example:
 ====
 
 Similarly, in order to deserialize correctly instances of `UserInfo`, you must
-configure CometD, again as explained in <<_java_json_oort_config,the Oort JSON configuration section>>.
+configure CometD, again as explained in xref:_java_json_oort_config[the Oort JSON configuration section].
 This is done by creating a custom implementation of `JSONContext.Server`:
 
 ====
@@ -348,7 +348,7 @@ therefore used for both serialization and deserialization.
 
 You must specify class `MyCustomJSONContextServer` as the `jsonContext`
 parameter of the CometD configuration (as explained in
-<<_java_server_configuration,the server configuration section>>) in the
+xref:_java_server_configuration[the server configuration section]) in the
 `web.xml` file, for example:
 
 ====
@@ -383,7 +383,7 @@ The node that receive it will deserialize the received JSON into a plain
 `UserInfoConvertor.fromJSON(...)` method.
 Finally the plain `Map` object will be passed to the Oort object factory
 (see also
-<<_java_oort_objects_oort_object_creation,the `OortObjects` creation section>>)
+xref:_java_oort_objects_oort_object_creation[the `OortObjects` creation section])
 to be converted into a `ConcurrentMap`.
 
 [[_java_oort_objects_oort_object_merging]]
@@ -466,7 +466,7 @@ Class `org.cometd.oort.OortObject.Info` represents a data entity part of an
 the node that it represent.
 For this particular example, the `Info` objects are not important, since you
 are only interested in the total user count, that can be obtained by merging
-(see also <<_java_oort_objects_oort_object_merging,the `OortObject` merging section>>).
+(see also xref:_java_oort_objects_oort_object_merging[the `OortObject` merging section]).
 They can be used, however, to compute the difference before and after the update if needed.
 
 Similarly, `OortMap` supports registration of `OortMap.EntryListener` that
@@ -516,7 +516,7 @@ If your application stores large data entities, it is highly recommended to
 estimate the size of the JSON representation of the data entity in bytes, and
 configure an appropriate WebSocket max message size via the configuration
 parameter `ws.maxMessageSize` as explained in the
-<<_java_server_configuration>> section.
+xref:_java_server_configuration[] section.
 
 `Oort` will use the `ws.maxMessageSize` parameter for both the sending and
 receiving WebSocket messages, so that large data entities can be replicated

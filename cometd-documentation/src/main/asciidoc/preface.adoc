@@ -12,7 +12,7 @@ applications, online games, and monitoring consoles.
 CometD provides you APIs to implement these messaging patterns: publish/subscribe,
 peer-to-peer (via a server), and remote procedure call.
 This is achieved using a transport-independent protocol,
-<<_bayeux,the Bayeux protocol>>, that can be carried over HTTP or
+xref:_bayeux[the Bayeux protocol], that can be carried over HTTP or
 over https://en.wikipedia.org/wiki/WebSocket[WebSocket] (or other transport
 protocols), so that your application is not bound to a specific transport
 technology.
@@ -53,9 +53,9 @@ Jetty 7.6.x | End-Of-Life
 
 If you are new to CometD, you can follow this learning path: 
 
-. Read <<_installation,the installation section>> to download, install CometD and to try out its demos.
-. Read <<_primer,the primer section>> to get your hands dirty with CometD with a step-by-step tutorial.
-. Read <<_concepts,the concepts section>> to understand the abstractions that CometD defines.
+. Read xref:_installation[the installation section] to download, install CometD and to try out its demos.
+. Read xref:_primer[the primer section] to get your hands dirty with CometD with a step-by-step tutorial.
+. Read xref:_concepts[the concepts section] to understand the abstractions that CometD defines.
 . Study the CometD demos that ship with the CometD distribution . 
 . Read the rest of this reference book for further details.
 

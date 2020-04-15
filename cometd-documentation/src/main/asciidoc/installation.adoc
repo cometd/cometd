@@ -42,14 +42,14 @@ The CometD Demos contain:
 * Four full chat applications (one developed with vanilla Javascript, on with Dojo, one with jQuery and one with Angular 1).
 * Examples of extensions such as message acknowledgement, reload, timesync and timestamp.
 * An example of how to echo private messages to a particular client only.
-* A clustered auction demo (using the <<_oort,Oort clustering>>).
+* A clustered auction demo (using the xref:_oort[Oort clustering]).
 
 ==== Running the Demos with Maven
 
 This mode of running the CometD Demos is suggested if you want to take a quick
 look at the CometD Demos and if you are prototyping/experimenting with your
 application, but it's not the recommended way to deploy a CometD application
-in production. See the <<_installation_jetty,next section>> for the suggested
+in production. See the xref:_installation_jetty[next section] for the suggested
 way to deploy your CometD application in production.
 
 Maven requires you to set up the `JAVA_HOME` environment variable to point to
@@ -81,14 +81,14 @@ able to continue to the CometD Demos main page.
 
 When you develop a CometD application, you develop a standard Java EE Web Application
 that is then packaged into a `.war` file.
-You can follow <<_primer,the Primer section>> or the
+You can follow xref:_primer[the Primer section] or the
 https://docs.cometd.org/tutorials[CometD Tutorials] for examples of how to build
 and package your CometD application.
 
 Once you have your CometD application packaged into a `.war` file, you can
 deploy it to a any Servlet Container that supports Servlet 3.0 or greater.
 
-Refer to <<_java_server_configuration_servlet_30,this section>> for further
+Refer to xref:_java_server_configuration_servlet_30[this section] for further
 information and for specific instructions related to deployment on Servlet 3.0
 (or greater) Containers.
 
@@ -173,9 +173,8 @@ You can also deploy your CometD application programmatically, using the Jetty
 APIs to embed your web application as a normal Java application that you
 would start via command line.
 
-Below you can find an {github}/cometd-demo/src/test/java/org/cometd/demo/Demo.java[example] 
-that shows how to setup Jetty embedded and CometD with support for HTTP, 
-HTTPS and WebSocket transports:
+Below you can find an example that shows how to setup Jetty embedded and
+CometD with support for HTTP, HTTPS and WebSocket transports:
 
 [source,java,indent=0]
 ----

@@ -2,7 +2,7 @@
 [[_javascript_configure]]
 === Configuring and Initializing
 
-After you set up your skeleton project following <<_primer,the primer>>, you
+After you set up your skeleton project following xref:_primer[the primer], you
 probably want to fully understand how to customize and configure the parameters
 that govern the behavior of the CometD implementation.
 
@@ -22,7 +22,7 @@ usage of the WebSocket protocol.
 
 One `cometd` object connects to one Bayeux server.
 If you need to connect to multiple Bayeux servers, see
-<<_javascript_configure_multiple_objects,this section>>.
+xref:_javascript_configure_multiple_objects[this section].
 
 There are two ways of passing the URL parameter:
 
@@ -134,11 +134,11 @@ However, the second way allows you to pass other configuration parameters, curre
 |===
 
 After you have configured the `cometd` object, the Bayeux communication does
-not start until you call `handshake()` (see also <<_javascript_handshake,the javascript handshake section>>).
+not start until you call `handshake()` (see also xref:_javascript_handshake[the javascript handshake section]).
 
 Previous users of the JavaScript CometD implementation called a function named `init()`.
 This function still exists, and it is a shorthand for calling `configure()` followed by `handshake()`.
-Follow the advice in <<_javascript_handshake,the handshake section>> as it applies as well to `init()`.
+Follow the advice in xref:_javascript_handshake[the handshake section] as it applies as well to `init()`.
 
 [[_javascript_configure_multiple_objects]]
 ==== Configuring and Initializing Multiple Objects
@@ -175,7 +175,7 @@ Note how the two `cometd` objects are initialized with different URLs.
 ==== Configuring Extensions in Multiple Objects
 
 Configuring extensions in the default `cometd` object is covered in
-<<_extensions,the extensions section>>.
+xref:_extensions[the extensions section].
 To configure extensions for the additional `cometd` objects must be
 done manually in the following way:
 
@@ -199,7 +199,7 @@ cometd2.registerExtension('reload', new org.cometd.ReloadExtension());
 ====
 
 You should not configure the extensions for the default `cometd` object in
-this way, but instead follow <<_extensions,the extensions section>>.
+this way, but instead follow xref:_extensions[the extensions section].
 
 You should configure extension manually like shown above only for additional
 `cometd` objects.

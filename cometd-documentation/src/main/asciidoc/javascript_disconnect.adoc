@@ -3,7 +3,7 @@
 === Disconnecting
 
 The JavaScript CometD implementation performs automatic reconnect in case of
-network or Bayeux server failures. <<_javascript_configure,The javascript configure section>>
+network or Bayeux server failures. xref:_javascript_configure[The javascript configure section]
 describes the reconnect parameters.
 
 Calling the JavaScript CometD API `disconnect()` results in a message being
@@ -56,15 +56,15 @@ cometd.disconnect(additional, function(disconnectReply) {
 ----
 ====
 
-See also <<_javascript_handshake,the javascript handshake section>> for
+See also xref:_javascript_handshake[the javascript handshake section] for
 further information about passing additional objects.
 
 ==== Short Network Failures
 
 In case of temporary network failures, the client is notified through the
-`/meta/connect` channel (see also <<_javascript_subscribe,the javascript subscribe section>>
+`/meta/connect` channel (see also xref:_javascript_subscribe[the javascript subscribe section]
 about meta channels) with messages that have the `successful` field set to
-false (see also the archetypes in <<_primer,the primer section>> as an example).
+false (see also the archetypes in xref:_primer[the primer section] as an example).
 However, the Bayeux server might be able to keep the client's state, and when
 the network resumes the Bayeux server might behave as if nothing happened.
 The client in this case just re-establishes the long poll, but any message the

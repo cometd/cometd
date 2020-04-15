@@ -115,7 +115,7 @@ public class GameService extends AbstractService {
 Note how mappings can be removed using method `removeService()`.
 
 Each time a service instance is created, an associated `LocalSession` (see also
-<<_concepts_sessions,this section>>) is created within the service itself: the
+xref:_concepts_sessions[this section]) is created within the service itself: the
 service is a local client.
 The `LocalSession` has an associated `ServerSession` and as such it is treated
 by the server in the same way a remote client (that also creates a
@@ -131,5 +131,5 @@ to the class name of the service, and no further action is taken by CometD.
 ====
 
 Once you have written your Bayeux services it is time to set them up in your
-web application, see either <<_java_server_services_integration,the services integration section>>
-or <<_java_server_services_integration_spring,the Spring Framework services integration section>>.
+web application, see either xref:_java_server_services_integration[the services integration section]
+or xref:_java_server_services_integration_spring[the Spring Framework services integration section].

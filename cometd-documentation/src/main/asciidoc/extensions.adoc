@@ -5,11 +5,11 @@
 The CometD implementation includes the ability to add/remove _extensions_.
 An extension is a function that the CometD implementation calls; it allows
 you to modify a message just after receiving it but before the rest of the
-<<_concepts_message_processing,message processing>> (an _incoming_ extension),
+xref:_concepts_message_processing[message processing] (an _incoming_ extension),
 or just before sending it (an _outgoing_ extension).
 
 An extension normally adds fields to the message being sent or received in
-the <<_bayeux_ext,`ext` object>> that the Bayeux protocol specification defines.
+the xref:_bayeux_ext[`ext` object] that the Bayeux protocol specification defines.
 
 An extension is not a way to add business fields to a message, but rather a
 way to process all messages, including the meta messages the Bayeux protocol
@@ -227,7 +227,7 @@ logged at level "info" and the CometD implementation does not break.
 [NOTE]
 ====
 To learn about a similar mechanism for listeners and subscribers, see also
-<<_javascript_configure,the JavaScript library configuration section>>.
+xref:_javascript_configure[the JavaScript library configuration section].
 ====
 
 The next sections explain in detail the use of the extensions CometD provides.

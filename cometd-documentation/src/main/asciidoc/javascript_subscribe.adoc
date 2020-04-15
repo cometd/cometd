@@ -7,7 +7,7 @@ with the JavaScript library.
 
 Depending on the type of channel, subscribing and unsubscribing to a channel
 have different meanings.
-Refer to <<_concepts_channels,the channels concept section>> for the channel
+Refer to xref:_concepts_channels[the channels concept section] for the channel
 type definitions.
 
 [[_javascript_subscribe_meta_channels]]
@@ -15,7 +15,7 @@ type definitions.
 
 It is not possible to subscribe to meta channels: the server replies with an error message.
 It is possible to listen to meta channels (see
-<<_javascript_subscribe_vs_listen,this section>> for an explanation of the difference
+xref:_javascript_subscribe_vs_listen[this section] for an explanation of the difference
 between subscribers and listeners). You cannot (and it makes no sense to) publish messages
 to meta channels: only the Bayeux protocol implementation creates and sends messages on meta channels.
 Meta channels are useful on the client to listen for error messages like handshake
@@ -44,8 +44,8 @@ Broadcast channels have the semantic of a messaging topic and are used in the ca
 of publish/subscribe style of communication.
 Usually, it is possible to subscribe to broadcast channels and to publish to
 broadcast channels; this can only be forbidden using a security policy on the Bayeux
-server (see also <<_java_server_authorization,the java server authorization section>>) or
-by using authorizers (see also <<_java_server_authorizers,the authorizers section>>).
+server (see also xref:_java_server_authorization[the java server authorization section]) or
+by using authorizers (see also xref:_java_server_authorizers[the authorizers section]).
 Broadcast channels are useful to broadcast messages to all subscribed clients, for
 example in case of a stock price change.
 
@@ -119,7 +119,7 @@ Remember that the subscribe message is sent to the server only when subscribing
 to a channel for the first time.
 Additional subscriptions to the same channel will not result in a message being
 sent to the server.
-See also <<_javascript_handshake,the javascript handshake section>> for further
+See also xref:_javascript_handshake[the javascript handshake section] for further
 information about passing additional objects.
 
 Both `addListener()` and `subscribe()` return a subscription object that is
@@ -163,7 +163,7 @@ cometd.unsubscribe(subscription1, additional, function(unsubscribeReply) {
 
 Similarly to `subscribe()`, the unsubscribe message is sent to the server only
 when unsubscribing from a channel for the last time.
-See also <<_javascript_handshake,the javascript handshake section>> for further
+See also xref:_javascript_handshake[the javascript handshake section] for further
 information about passing additional objects.
 
 The major difference between listeners and subscribers is that subscribers are
@@ -319,7 +319,7 @@ cometd.onListenerException = function(exception, subscriptionHandle, isListener,
 It is possible to send messages to the server from the listener exception handler.
 If the listener exception handler itself throws an exception, this exception is
 logged at level "info" and the CometD implementation does not break.
-Notice that a similar mechanism exists for extensions, see also <<_extensions,the extensions section>>.
+Notice that a similar mechanism exists for extensions, see also xref:_extensions[the extensions section].
 
 [[_javascript_subscribe_wildcard]]
 ==== Wildcard Subscriptions

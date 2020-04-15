@@ -89,9 +89,8 @@ response::
 message::
   A message is a JSON encoded object exchanged between client and server for the
   purpose of implementing the Bayeux protocol as defined by
-  <<_bayeux_message_fields,the message fields section>>,
-  <<_bayeux_meta_message,the meta messages section>> and
-  <<_bayeux_event_message,the event messages section>>.
+  xref:_bayeux_message_fields,the message fields section>>[<<_bayeux_meta_message,the meta messages section] and
+  xref:_bayeux_event_message[the event messages section].
 
 event::
   Application specific data that is sent over the Bayeux protocol.
@@ -266,7 +265,7 @@ On receipt of the HTTP response containing M1, the Bayeux client issues a
 new Bayeux message M2 either immediately or after an interval in anticipation
 of more events to be delivered from server to client.
 Bayeux implementations MUST support a specific style of polling transport
-called _long polling_ (see also <<_bayeux_long_polling,the long polling transport section>>).
+called _long polling_ (see also xref:_bayeux_long_polling[the long polling transport section]).
 
 ==== Streaming transports
 
@@ -296,7 +295,7 @@ as they requires incomplete HTTP responses to be delivered to the Bayeux client.
 ==== Two connection operation
 
 In order to achieve bidirectional communication, a Bayeux client uses 2 HTTP
-connections (see also <<_bayeux_http_transport,the http transport section>>)
+connections (see also xref:_bayeux_http_transport[the http transport section])
 to a Bayeux server so that both server to client and client to server messaging
 may occur asynchronously:
 
@@ -368,7 +367,7 @@ BC ----------------------------------------- BS
 ==== Unconnected operation
 
 OPTIONALLY, messages can be sent without a prior handshake (see also
-<<_bayeux_publish,the publish section>>).
+xref:_bayeux_publish[the publish section]).
 
 ----
 BC ----------------------------------------- BS
@@ -444,9 +443,9 @@ path segments separated by a single slash `/` character.
 Within a path segment, the character `/` is reserved.
 
 Channel names commencing with `/meta/` are reserved for the Bayeux protocol (see also
-<<_bayeux_meta_channels,the meta channels section>>). Channel names commencing with
+xref:_bayeux_meta_channels[the meta channels section]). Channel names commencing with
 `/service/` have a special meaning for the Bayeux protocol (see also
-<<_bayeux_service_channels,the service channels section>>).
+xref:_bayeux_service_channels[the service channels section]).
 Example non-meta channel names are:
 
 `/foo/bar`::
@@ -481,7 +480,7 @@ Example channel patterns are:
 The channels commencing with the `/meta/` segment are the channels used by
 the Bayeux protocol itself.
 Local server-side Bayeux clients MAY, and remote Bayeux clients SHOULD NOT,
-subscribe (see also <<_bayeux_meta_subscribe,the bayeux subscribe section>>) to meta channels.
+subscribe (see also xref:_bayeux_meta_subscribe[the bayeux subscribe section]) to meta channels.
 Messages published to meta channels MUST NOT be distributed to remote clients
 by Bayeux servers.
 A server side handler of a meta channel MAY publish response messages that are
@@ -503,7 +502,7 @@ If a message published to a service channel contains an id field, then any
 response messages SHOULD contain an id field with the same value or a value
 derived from the request id.
 Request/response operations are described in detail in
-<<_bayeux_service_channel_operation,the service channel operation section>>.
+xref:_bayeux_service_channel_operation[the service channel operation section].
 
 ==== Version
 
@@ -531,7 +530,7 @@ random algorithm that contains at least 128 truly random bits.
 Servers MUST ensure that client IDs are unique and SHOULD attempt to avoid
 reuse of client IDs.
 Client IDs are encoded for delivery as strings.
-See also <<_bayeux_clientid,the `clientId` field section>>.
+See also xref:_bayeux_clientid[the `clientId` field section].
 
 ==== Messages
 
@@ -594,10 +593,10 @@ The value is an array of strings, with each string representing a transport name
 Defined connection types include:
 
 `long-polling`::
-  This transport is defined in <<_bayeux_long_polling,the long polling transport section>>.
+  This transport is defined in xref:_bayeux_long_polling[the long polling transport section].
 
 `callback-polling`::
-  This transport is defined in <<_bayeux_callback_polling,the callback polling transport section>>
+  This transport is defined in xref:_bayeux_callback_polling[the callback polling transport section]
 
 `iframe`::
   OPTIONAL transport using the document content of a hidden iframe element.
@@ -615,7 +614,7 @@ All other connection types are OPTIONAL.
 The `clientId` message field uniquely identifies a client to the Bayeux server.
 The `clientId` message field MUST be included in every message sent to the server
 except for messages sent to the `/meta/handshake` channel and MAY be omitted in a
-publish message (see also <<_bayeux_event_message,the event message section>>).
+publish message (see also xref:_bayeux_event_message[the event message section]).
 The `clientId` message field MAY be returned in message responses except for failed
 handshake requests and for publish message responses that were sent without `clientId`.
 However, care must be taken to not _leak_ the `clientId` to other clients when
@@ -641,8 +640,8 @@ transport specific parameters.
 Advice fields may occur either in the top level of an advice object or within
 a transport specific section of the advice object.
 
-Unless otherwise specified in <<_bayeux_event_message,the event message section>>
-and <<_bayeux_transports,the transports section>>, any Bayeux response message
+Unless otherwise specified in xref:_bayeux_event_message[the event message section]
+and xref:_bayeux_transports[the transports section], any Bayeux response message
 may contain an advice field.
 Advice received always supersedes any previous received advice.
 
@@ -740,7 +739,7 @@ The `connectionType` message field specifies the type of transport the
 client requires for communication.
 The `connectionType` message field MUST be included in request messages
 to the `/meta/connect` channel.
-Connection types are listed in <<_bayeux_supported_connections,the supported connections section>>.
+Connection types are listed in xref:_bayeux_supported_connections[the supported connections section].
 
 [[_bayeux_id]]
 ==== `id`
@@ -865,7 +864,7 @@ A handshake request MUST contain the following message fields:
 `supportedConnectionTypes`::
   An array of the connection types supported by the client for the purposes
   of the connection being negotiated (see also
-  <<_bayeux_supported_connections,the supported connections section>>).
+  xref:_bayeux_supported_connections[the supported connections section]).
   This list MAY be a subset of the connection types actually supported if the
   client wishes to negotiate a specific connection type.
 
@@ -875,10 +874,10 @@ A handshake request MAY contain the message fields:
   The minimum version of the protocol supported by the client
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 `id`::
-  The <<_bayeux_id,message id>>
+  The xref:_bayeux_id[message id]
 
 A client SHOULD NOT send any other message in the request with a handshake message.
 A server MUST ignore any other message sent in the same request as a handshake message.
@@ -933,10 +932,10 @@ A successful handshake response MAY contain the message fields:
   The minimum version of the protocol supported by the server
 
 `advice`::
-  The <<_bayeux_advice,advice object>>
+  The xref:_bayeux_advice[advice object]
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 `id`::
   The same value as request message id
@@ -985,7 +984,7 @@ An unsuccessful handshake response MAY contain the message fields:
   the server wishes to negotiate a specific connection type.
 
 `advice`::
-  The <<_bayeux_advice,advice object>>
+  The xref:_bayeux_advice[advice object]
 
 `version`::
   The version of the protocol that was negotiated
@@ -994,7 +993,7 @@ An unsuccessful handshake response MAY contain the message fields:
   The minimum version of the protocol supported by the server
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 `id`::
   The same value as request message id
@@ -1052,10 +1051,10 @@ A connect request MUST contain the message fields:
 A connect request MAY contain the message fields:
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 `id`::
-  The <<_bayeux_id,message id>>
+  The xref:_bayeux_id[message id]
 
 A client MAY send other messages in the same HTTP request with a connection message.
 
@@ -1099,10 +1098,10 @@ A connect response MAY contain the message fields:
   A string with the description of the reason for the failure
 
 `advice`::
-  The <<_bayeux_advice,advice object>>
+  The xref:_bayeux_advice[advice object]
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 `clientId`::
   The client ID returned in the handshake response
@@ -1155,10 +1154,10 @@ A disconnect request MUST contain the message fields:
 A disconnect request MAY contain the message fields:
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 `id`::
-  The <<_bayeux_id,message id>>
+  The xref:_bayeux_id[message id]
 
 An example disconnect request is:
 
@@ -1193,7 +1192,7 @@ A disconnect response MAY contain the message fields:
   A string with the description of the reason for the failure
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 `id`::
   The same value as request message id
@@ -1232,10 +1231,10 @@ A subscribe request MUST contain the message fields:
 A subscribe request MAY contain the message fields:
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 `id`::
-  The <<_bayeux_id,message id>>
+  The xref:_bayeux_id[message id]
 
 An example subscribe request is:
 
@@ -1274,10 +1273,10 @@ A subscribe response MAY contain the message fields:
   A string with the description of the reason for the failure
 
 `advice`::
-  The <<_bayeux_advice,advice object>>
+  The xref:_bayeux_advice[advice object]
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 `clientId`::
   The client ID returned in the handshake response
@@ -1338,10 +1337,10 @@ An unsubscribe request MUST contain the message fields:
 An unsubscribe request MAY contain the message fields:
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 `id`::
-  The <<_bayeux_id,message id>>
+  The xref:_bayeux_id[message id]
 
 An example unsubscribe request is:
 
@@ -1382,10 +1381,10 @@ A unsubscribe response MAY contain the message fields:
   A string with the description of the reason for the failure
 
 `advice`::
-  The <<_bayeux_advice,advice object>>
+  The xref:_bayeux_advice[advice object]
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 `clientId`::
   The client ID returned in the handshake response
@@ -1446,7 +1445,7 @@ A publish event message MAY contain the message fields:
   A unique ID for the message generated by the client
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 An example event message is:
 
@@ -1478,13 +1477,13 @@ A publish event message response MUST contain the message fields:
 A publish event response MAY contain the message fields:
 
 `id`::
-  The <<_bayeux_id,message id>>
+  The xref:_bayeux_id[message id]
 
 `error`::
   A string with the description of the reason for the failure
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 An example event response message is:
 
@@ -1524,10 +1523,10 @@ A deliver event response MAY contain the message fields:
   Unique message ID from the publisher
 
 `ext`::
-  The <<_bayeux_ext,extension object>>
+  The xref:_bayeux_ext[extension object]
 
 `advice`::
-  The <<_bayeux_advice,advice object>>
+  The xref:_bayeux_advice[advice object]
 
 An example event deliver message is:
 

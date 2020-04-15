@@ -82,7 +82,7 @@ client.handshake(handshake -> {
 ----
 ====
 
-As in <<_javascript_subscribe,the JavaScript subscribe section>>, a good place
+As in xref:_javascript_subscribe[the JavaScript subscribe section], a good place
 to perform subscriptions is a `handshake(...)` callback or a `/meta/handshake`
 listener, because they are invoked transparently if the server requests a new handshake.
 

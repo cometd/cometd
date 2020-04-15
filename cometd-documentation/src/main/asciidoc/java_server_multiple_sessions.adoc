@@ -33,7 +33,7 @@ user with the doubt that interaction with the user interface really happened,
 causing frustration in using the application.
 
 The CometD Server implements the `multiple-clients` advice (see also
-<<_bayeux_multiple_clients_advice,this section>>).
+xref:_bayeux_multiple_clients_advice[this section]).
 The server uses `BAYEUX_BROWSER` cookie to detect multiple CometD sessions from
 the same browser.
 
@@ -41,14 +41,14 @@ When the CometD server detects multiple sessions, it uses the parameter
 `maxSessionsPerBrowser` (by default set to 1) to decide how many sessions (or,
 equivalently, how many long polls) are allowed for that client when it uses the
 HTTP/1.1 protocol (see also
-<<_java_server_configuration,the server configuration section>>).
+xref:_java_server_configuration[the server configuration section]).
 Additional long poll requests will be returned immediately by the server
 with the `multiple-clients` field of the `advice` object set to true.
 A negative value for `maxSessionsPerBrowser` allows unlimited number of long polls.
 
 The `advice` object also contains an `interval` field set to the value of the
 `multiSessionInterval` parameter (see also
-<<_java_server_configuration,the server configuration section>>).
+xref:_java_server_configuration[the server configuration section]).
 This instructs the client not to send another poll until that interval has elapsed.
 The effect of this `advice` is that additional client sessions will perform
 normal polls (not long polls) to the server with a period of `multiSessionInterval`.
@@ -64,7 +64,7 @@ Non-browser clients should handle the `BAYEUX_BROWSER` cookie with the same
 semantic of browsers: store the cookies and send them along with subsequent
 requests to the corresponding domains.
 This ensures two things: that the server can recognize valid sessions (see
-<<_security,the security section>>), and that the server can detect multiple
+xref:_security[the security section]), and that the server can detect multiple
 sessions from the same client.
 
 ==== Multiple Sessions with HTTP/2
@@ -78,7 +78,7 @@ as many long poll requests as the client wants.
 The parameter `http2MaxSessionsPerBrowser` (by default set to -1) controls
 the number of sessions (or, equivalently, how many long polls) that are allowed
 for that client when it uses the HTTP/2 protocol (see also
-<<_java_server_configuration,the server configuration section>>).
+xref:_java_server_configuration[the server configuration section]).
 
 A negative value of `http2MaxSessionsPerBrowser` allows an unlimited number of
 sessions; a positive value restricts the max number of session allowed per client.

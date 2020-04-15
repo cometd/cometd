@@ -47,7 +47,7 @@ visiting https://github.com/join[this link].
 The CometD project code is hosted at https://github.com/cometd[GitHub CometD Organization].
 The repository for the CometD libraries is https://github.com/cometd/cometd.
 You can build the CometD project yourself by following the instruction in
-<<_build,the build section>>.
+xref:_build[the build section].
 
 In order to contribute code or documentation, you need to comply with the following two
 requirements:

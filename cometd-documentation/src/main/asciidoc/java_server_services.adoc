@@ -9,11 +9,11 @@ CometD invokes a callback method to execute user-specific code.
 
 CometD services can be of two kinds:
 
-* <<_java_server_services_inherited,inherited>>
-* <<_java_server_services_annotated,annotated>>
+* xref:_java_server_services_inherited[inherited]
+* xref:_java_server_services_annotated[annotated]
 
 You can also integrate CometD services with the Spring Framework as explained
-in <<_java_server_services_integration_spring,the Spring Framework integration section>>.
+in xref:_java_server_services_integration_spring[the Spring Framework integration section].
 
 The following sections present details about Java Server Services. 
 

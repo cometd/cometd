@@ -10,7 +10,7 @@ to deliver them immediately: they are queued into the `ServerSession` message
 queue, but their delivery can be postponed to the first occasion.
 
 In CometD, "first occasion" means whichever of the following things occurs first
-(see also <<_java_server_configuration,the server configuration section>> for
+(see also xref:_java_server_configuration[the server configuration section] for
 information about configuring the following parameters):
 
 * the channel's lazy timeout expires
@@ -86,7 +86,7 @@ public class LazyService {
 
 When a server channel is marked lazy, by default it has a lazy timeout
 specified by the global `maxLazyTimeout` parameter (see also
-<<_java_server_configuration,the server configuration section>>).
+xref:_java_server_configuration[the server configuration section]).
 
 In more sophisticated cases, you may want to specify different lazy timeouts
 for different server channels, for example:

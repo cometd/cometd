@@ -114,7 +114,7 @@ subscriptions, the CometD API provides the
 method, which allows you to pass initializers that configure the given channel.
 Furthermore, it is useful to have a configuration step for channels that happens
 before any subscription or listener addition, for example, to configure
-authorizers on the channel (see also <<_java_server_authorizers,the authorizers section>>.
+authorizers on the channel (see also xref:_java_server_authorizers[the authorizers section].
 
 In annotated services, you can use the `@Configure` annotation on methods:
 
@@ -176,7 +176,7 @@ using the same sessions in two different services).
 For server-side services, methods annotated with `@Listener` represent
 callbacks that are invoked during the server-side processing of the message.
 The channel specified by the `@Listener` annotation may be a
-<<_concepts_channels_parameters,template channel>>.
+xref:_concepts_channels_parameters[template channel].
 
 The CometD implementation invokes `@Listener` methods with the following parameters:
 
@@ -244,7 +244,7 @@ to the class name of the service, and no further action is taken by CometD.
 ====
 
 The channel specified by the `@Listener` annotation may be a
-<<_concepts_channels_parameters,template channel>>.
+xref:_concepts_channels_parameters[template channel].
 In this case, you must add the corresponding number of parameters (of type
 `String`) to the signature of the service method, and annotate each additional
 parameters with `@org.cometd.annotation.Param`, making sure to match the
@@ -327,9 +327,9 @@ public class EchoService {
 ====
 
 The channel specified by the `@Subscription` annotation may be a
-<<_concepts_channels_parameters,template channel>> similarly to
+xref:_concepts_channels_parameters[template channel] similarly to
 what already documented in the
-<<_java_server_services_annotated_server_side_listener,listener section>>.
+xref:_java_server_services_annotated_server_side_listener[listener section].
 
 [[_java_server_services_annotated_server_side_binary]]
 ===== Server-Side Annotated Service with Binary Data
@@ -337,7 +337,7 @@ what already documented in the
 Services that receives binary data are similar to other annotated services.
 
 Remember that you must have the binary extension enabled as specified
-in <<_extensions_binary,the binary extension section>>.
+in xref:_extensions_binary[the binary extension section].
 
 The only difference is that the `data` field of the message is an object
 of type `org.cometd.bayeux.BinaryData`.
@@ -380,7 +380,7 @@ public class UploadService {
 ===== Remote Call Configuration Support
 
 For server-side services only, methods annotated with `@RemoteCall` represent
-targets of <<_javascript_rpc,client remote calls>>.
+targets of xref:_javascript_rpc[client remote calls].
 
 Remote calls are particularly useful for clients that want to perform
 server-side actions that may not involve messaging (although they could).
@@ -393,7 +393,7 @@ The CometD implementation takes care of correlating the request with the
 response and takes care of the handling of failure cases.
 Applications are exposed to a much simpler API, but the underlying mechanism
 is a sender that publishes a Bayeux message on a service channel (the request),
-along with the <<_concepts_application_peer_communication,delivery>> of the
+along with the xref:_concepts_application_peer_communication[delivery] of the
 response Bayeux message back to the sender.
 
 ====
@@ -433,7 +433,7 @@ as `contacts/active`.
 The target string specified by the `@RemoteCall` annotation may have parameters
 such as `contacts/{userId}`, and the signature of the method annotated with
 `@RemoteCall` must change with the same rules explained for `@Listener`
-<<_java_server_services_annotated_server_side_listener,methods>>.
+xref:_java_server_services_annotated_server_side_listener[methods].
 
 The method `retrieveContacts` takes two parameters:
 
@@ -445,7 +445,7 @@ client, while the `data` object represent the Bayeux message `data` field.
 
 The type of the second parameter may be any class that is deserialized as the `data`
 field of the Bayeux message, even a custom application class.
-For more information about custom deserialization, see <<_java_json,the JSON section>>.
+For more information about custom deserialization, see xref:_java_json[the JSON section].
 
 The application may implement the `retrieveContacts` method as it wishes,
 provided that it replies to the client by calling either `RemoteCall.Caller.result()`
