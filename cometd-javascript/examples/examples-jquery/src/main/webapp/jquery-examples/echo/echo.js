@@ -23,7 +23,7 @@ require({
             var phrase = $("#phrase");
             phrase.attr("autocomplete", "OFF");
             phrase.on("keyup", function(e) {
-                if (e.keyCode == 13) {
+                if (e.key === 'Enter') {
                     echoRpc(phrase.val());
                     phrase.val("");
                     return false;
