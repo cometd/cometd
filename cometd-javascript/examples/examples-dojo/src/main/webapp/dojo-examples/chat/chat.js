@@ -17,7 +17,7 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
                 dojo.query("#username").attr({
                     "autocomplete": "off"
                 }).onkeyup(function(e) {
-                    if (e.keyCode == dojo.keys.ENTER) {
+                    if (e.keyCode === dojo.keys.ENTER) {
                         room.join(dojo.byId('username').value);
                     }
                 });
@@ -29,7 +29,7 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
                 dojo.query("#phrase").attr({
                     "autocomplete": "off"
                 }).onkeyup(function(e) {
-                    if (e.keyCode == dojo.keys.ENTER) {
+                    if (e.keyCode === dojo.keys.ENTER) {
                         room.chat();
                     }
                 });
@@ -57,13 +57,14 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
             join: function(name) {
                 room._disconnecting = false;
 
-                if (name == null || name.length == 0) {
+                if (name == null || name.length === 0) {
                     alert('Please enter a username');
                     return;
                 }
 
                 cometd.ackEnabled = dojo.byId("ackEnabled").checked;
 
+                cometd.websocketEnabled = false;
                 var cometdURL = location.protocol + "//" + location.host + config.contextPath + "/cometd";
                 cometd.init({
                     url: cometdURL,
@@ -142,7 +143,7 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
                 var membership = message.data.join || message.data.leave;
                 var text = message.data.chat;
 
-                if (!membership && fromUser == room._lastUser) {
+                if (!membership && fromUser === room._lastUser) {
                     fromUser = "...";
                 } else {
                     room._lastUser = fromUser;
@@ -153,7 +154,7 @@ require(["dojo", "dojox/cometd", "dojox/cometd/timestamp", "dojox/cometd/ack", "
                 if (membership) {
                     chat.innerHTML += "<span class=\"membership\"><span class=\"from\">" + fromUser + "&nbsp;</span><span class=\"text\">" + text + "</span></span><br/>";
                     room._lastUser = null;
-                } else if (message.data.scope == "private") {
+                } else if (message.data.scope === "private") {
                     chat.innerHTML += "<span class=\"private\"><span class=\"from\">" + fromUser + "&nbsp;</span><span class=\"text\">[private]&nbsp;" + text + "</span></span><br/>";
                 } else {
                     chat.innerHTML += "<span class=\"from\">" + fromUser + "&nbsp;</span><span class=\"text\">" + text + "</span><br/>";

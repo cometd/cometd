@@ -25,13 +25,13 @@
         $('#leaveButton').click(chat.leave);
         $('#username').prop('autocomplete', 'off').focus();
         $('#username').keyup(function(e) {
-            if (e.keyCode == 13) {
+            if (e.key === 'Enter') {
                 chat.join($('#username').val());
             }
         });
         $('#phrase').prop('autocomplete', 'off');
         $('#phrase').keyup(function(e) {
-            if (e.keyCode == 13) {
+            if (e.key === 'Enter') {
                 chat.send();
             }
         });
@@ -58,7 +58,7 @@
             var useServer = $('#useServer').prop('checked');
             if (useServer) {
                 var altServer = $('#altServer').val();
-                if (altServer.length == 0) {
+                if (altServer.length === 0) {
                     alert('Please enter a server address');
                     return;
                 }
@@ -124,7 +124,7 @@
             var membership = message.data.membership;
             var text = message.data.chat;
 
-            if (!membership && fromUser == _lastUser) {
+            if (!membership && fromUser === _lastUser) {
                 fromUser = '...';
             } else {
                 _lastUser = fromUser;
@@ -135,7 +135,7 @@
             if (membership) {
                 chat.append('<span class=\"membership\"><span class=\"from\">' + fromUser + '&nbsp;</span><span class=\"text\">' + text + '</span></span><br/>');
                 _lastUser = null;
-            } else if (message.data.scope == 'private') {
+            } else if (message.data.scope === 'private') {
                 chat.append('<span class=\"private\"><span class=\"from\">' + fromUser + '&nbsp;</span><span class=\"text\">[private]&nbsp;' + text + '</span></span><br/>');
             } else {
                 chat.append('<span class=\"from\">' + fromUser + '&nbsp;</span><span class=\"text\">' + text + '</span><br/>');
