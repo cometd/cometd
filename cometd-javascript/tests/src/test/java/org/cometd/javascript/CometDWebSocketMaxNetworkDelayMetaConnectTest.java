@@ -15,18 +15,28 @@
  */
 package org.cometd.javascript;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.AbstractServerTransport;
+import org.eclipse.jetty.io.Connection;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractCometDWebSocketTest {
+    @Override
+    public void initCometDServer() {
+    }
+
     @Test
     public void testMaxNetworkDelay() throws Exception {
+        initCometDServer(new HashMap<>());
+
         long maxNetworkDelay = 2000;
         long backOffIncrement = 1000;
 
@@ -81,7 +91,63 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         disconnect();
     }
 
-    private class DelayingExtension implements BayeuxServer.Extension {
+    @Test
+    public void testReconnectAfterServerExpiration() throws Exception {
+        long maxInterval = 1500;
+        Map<String, String> options = new HashMap<>();
+        options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
+        initCometDServer(options);
+
+        AtomicInteger opened = new AtomicInteger();
+        AtomicInteger closed = new AtomicInteger();
+        connector.addBean(new Connection.Listener()
+        {
+            @Override
+            public void onOpened(Connection connection) {
+                opened.incrementAndGet();
+            }
+
+            @Override
+            public void onClosed(Connection connection) {
+                closed.incrementAndGet();
+            }
+        });
+
+        long maxNetworkDelay = 2000;
+        long backOffIncrement = 1000;
+
+        long delay = metaConnectPeriod + backOffIncrement + maxNetworkDelay + maxNetworkDelay / 2;
+        bayeuxServer.addExtension(new DelayingExtension(delay));
+
+        evaluateScript("cometd.configure({" +
+                "url: '" + cometdURL + "', " +
+                "backoffIncrement: " + backOffIncrement + ", " +
+                "maxNetworkDelay: " + maxNetworkDelay + ", " +
+                "logLevel: '" + getLogLevel() + "'" +
+                "});");
+
+        evaluateScript("cometd.handshake();");
+
+        // The second /meta/connect will be delayed on server.
+        // The server will expire the session, so further messages will trigger re-handshake.
+        // The client will timeout the second /meta/connect and try again.
+        // The third /meta/connect will be replied with an error "unknown_session".
+        // The client will /meta/handshake again and /meta/connect again successfully.
+        // Only 2 WebSocket connections should be opened.
+
+        Thread.sleep(delay + 1000);
+
+        // For each WebSocketConnection there is also a HttpConnection for the upgrade.
+        Assert.assertEquals(4, opened.get());
+
+        disconnect();
+        // Wait for the /meta/connect to return.
+        Thread.sleep(1000);
+
+        Assert.assertEquals(4, closed.get());
+    }
+
+    private static class DelayingExtension implements BayeuxServer.Extension {
         private final AtomicInteger connects = new AtomicInteger();
         private final long delay;
 
