@@ -33,7 +33,7 @@
      * </ul>
      *
      * <p>
-     * A cometd server that supports timesync, can respond with an ext
+     * A CometD server that supports timesync, can respond with an ext
      * field like: <code>{ext:{timesync:{tc:12345567890,ts:1234567900,p:123,a:3},...},...}</code>
      * where:<ul>
      *  <li>tc is the client timestamp of when the message was sent,
@@ -44,7 +44,7 @@
      *
      * <p>
      * The relationship between tc, ts & l is given by <code>ts=tc+o+l</code> (the
-     * time the server received the messsage is the client time plus the offset plus the
+     * time the server received the message is the client time plus the offset plus the
      * network lag).   Thus the accuracy of the o and l settings can be determined with
      * <code>a=(tc+o+l)-ts</code>.
      * </p>
