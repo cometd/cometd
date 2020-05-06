@@ -21,6 +21,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
+import org.cometd.client.http.jetty.JettyAsyncClientTransport;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.HttpClientTransport;
@@ -45,8 +47,28 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class JettyHttpClientTransportTest {
+    @Parameters(name = "{index}: JettyClient: {0}")
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[][]
+                {
+                        {JettyHttpClientTransport.Factory.class},
+                        {JettyAsyncClientTransport.Factory.class}
+                }
+        );
+    }
+
+    private final Class<?> clientFactoryClass;
+
+    public JettyHttpClientTransportTest(final Class<?> clientFactoryClass) {
+        this.clientFactoryClass = clientFactoryClass;
+    }
+
     @Rule
     public final TestWatcher testName = new TestWatcher() {
         @Override
@@ -70,13 +92,13 @@ public class JettyHttpClientTransportTest {
 
     @Test
     public void testType() {
-        ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
+        ClientTransport transport = newClientTransport();
         Assert.assertEquals("long-polling", transport.getName());
     }
 
     @Test
     public void testAccept() throws Exception {
-        ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
+        ClientTransport transport = newClientTransport();
         Assert.assertTrue(transport.accept("1.0"));
     }
 
@@ -362,5 +384,10 @@ public class JettyHttpClientTransportTest {
             Assert.assertNull(serverException.get());
             serverSocket.close();
         }
+    }
+
+    private ClientTransport newClientTransport() {
+        ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
+        return transport;
     }
 }

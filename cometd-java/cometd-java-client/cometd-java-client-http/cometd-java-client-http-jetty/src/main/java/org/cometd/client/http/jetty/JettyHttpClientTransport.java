@@ -15,19 +15,14 @@
  */
 package org.cometd.client.http.jetty;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpCookie;
 import java.net.URI;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -38,7 +33,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -132,19 +127,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
             }
         }
 
-        AtomicInteger status = new AtomicInteger();
-        CountDownLatch waitForOK = new CountDownLatch(1);
-        InputStreamResponseListener responseListener = new InputStreamResponseListener() {
-            @Override
-            public void onHeaders(Response response) {
-                int responseStatus = response.getStatus();
-                if (responseStatus != HttpStatus.OK_200) {
-                    processWrongResponseCode(listener, messages, responseStatus);
-                }
-                status.set(responseStatus);
-                waitForOK.countDown();
-            }
-
+        request.send(new BufferingResponseListener(getMaxMessageSize()) {
             @Override
             public boolean onHeader(Response response, HttpField field) {
                 if (response.getStatus() == HttpStatus.OK_200) {
@@ -172,28 +155,16 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
                     listener.onFailure(result.getFailure(), messages);
                     return;
                 }
-            }
-        };
-        request.send(responseListener);
-        try {
-            waitForOK.await(maxNetworkDelay, TimeUnit.MILLISECONDS);
-            if (status.get() == HttpStatus.OK_200) {
-                processResponseStream(listener, messages, responseListener);
-            }
-        } catch (Exception e) {
-            listener.onFailure(e, messages);
-        }
-    }
 
-    protected void processResponseStream(TransportListener transportListener, List<Message.Mutable> requestMessages, InputStreamResponseListener responseListener) throws IOException, ParseException {
-        try (InputStream is = responseListener.getInputStream()) {
-            List<Message.Mutable> responseMessages = parseMessages(is);
-            if (responseMessages.size() == 0) {
-                processNoContent(transportListener, requestMessages);
-            } else {
-                processResponseContent(transportListener, responseMessages);
+                Response response = result.getResponse();
+                int status = response.getStatus();
+                if (status == HttpStatus.OK_200) {
+                    processResponseContent(listener, messages, getContentAsString());
+                } else {
+                    processWrongResponseCode(listener, messages, status);
+                }
             }
-        }
+        });
     }
 
     protected void customize(Request request) {
