@@ -138,28 +138,36 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
         if (content != null && content.length() > 0) {
             try {
                 List<Message.Mutable> messages = parseMessages(content);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Received messages {}", messages);
-                }
-                for (Message.Mutable message : messages) {
-                    if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel())) {
-                        Map<String, Object> advice = message.getAdvice();
-                        if (advice != null && advice.containsKey("timeout")) {
-                            setAdvice(advice);
-                        }
-                    }
-                }
-                listener.onMessages(messages);
+                processResponseContent(listener, messages);
             } catch (ParseException x) {
                 listener.onFailure(x, requestMessages);
             }
         } else {
-            Map<String, Object> failure = new HashMap<>(2);
-            // Convert the 200 into 204 (no content)
-            failure.put("httpCode", 204);
-            TransportException x = new TransportException(failure);
-            listener.onFailure(x, requestMessages);
+            processNoContent(listener, requestMessages);
         }
+    }
+
+    protected void processNoContent(TransportListener listener, List<Message.Mutable> requestMessages) {
+        Map<String, Object> failure = new HashMap<>(2);
+        // Convert the 200 into 204 (no content)
+        failure.put("httpCode", 204);
+        TransportException x = new TransportException(failure);
+        listener.onFailure(x, requestMessages);
+    }
+
+    protected void processResponseContent(TransportListener listener, List<Message.Mutable> responseMessages) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Received messages {}", responseMessages);
+        }
+        for (Message.Mutable message : responseMessages) {
+            if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel())) {
+                Map<String, Object> advice = message.getAdvice();
+                if (advice != null && advice.containsKey("timeout")) {
+                    setAdvice(advice);
+                }
+            }
+        }
+        listener.onMessages(responseMessages);
     }
 
     protected void processWrongResponseCode(TransportListener listener, List<Message.Mutable> messages, int code) {

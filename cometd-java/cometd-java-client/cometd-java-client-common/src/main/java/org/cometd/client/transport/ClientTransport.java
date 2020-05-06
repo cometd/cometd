@@ -15,6 +15,7 @@
  */
 package org.cometd.client.transport;
 
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -107,6 +108,10 @@ public abstract class ClientTransport extends AbstractTransport {
 
     protected List<Message.Mutable> parseMessages(String content) throws ParseException {
         return new ArrayList<>(Arrays.asList(jsonContext.parse(content)));
+    }
+
+    protected List<Message.Mutable> parseMessages(InputStream stream) throws ParseException {
+        return new ArrayList<>(Arrays.asList(jsonContext.parse(stream)));
     }
 
     protected String generateJSON(List<Message.Mutable> messages) {
