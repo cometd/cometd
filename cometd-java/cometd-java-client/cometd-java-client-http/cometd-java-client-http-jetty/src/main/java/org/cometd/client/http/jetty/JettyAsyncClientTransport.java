@@ -51,6 +51,10 @@ public class JettyAsyncClientTransport extends AbstractHttpClientTransport {
     private final List<Request> _requests = new ArrayList<>();
     private final ExecutorService _parsingThread;
 
+    public JettyAsyncClientTransport(Map<String, Object> options, HttpClient httpClient) {
+        this(null, options, httpClient, Executors.newCachedThreadPool());
+    }
+
     public JettyAsyncClientTransport(Map<String, Object> options, HttpClient httpClient, ExecutorService parsingThread) {
         this(null, options, httpClient, parsingThread);
     }

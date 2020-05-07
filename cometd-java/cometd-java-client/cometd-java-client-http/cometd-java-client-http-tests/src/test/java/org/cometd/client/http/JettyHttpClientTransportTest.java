@@ -53,20 +53,28 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class JettyHttpClientTransportTest {
+    private static ClientTransportFactory BUFFERING_JETTY_TRANSPORT = JettyHttpClientTransportTest::newJettyClientTransport;
+    private static ClientTransportFactory ASYNC_JETTY_TRANSPORT = JettyHttpClientTransportTest::newAsyncJettyClientTransport;
+    
     @Parameters(name = "{index}: JettyClient: {0}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]
                 {
-                        {JettyHttpClientTransport.Factory.class},
-                        {JettyAsyncClientTransport.Factory.class}
+                    {JettyHttpClientTransport.class.getSimpleName(), BUFFERING_JETTY_TRANSPORT },
+                    {JettyAsyncClientTransport.class.getSimpleName(), ASYNC_JETTY_TRANSPORT}
                 }
         );
     }
+    
+    @FunctionalInterface
+    private static interface ClientTransportFactory {
+        HttpClientTransport create(Map<String, Object> options, HttpClient h);
+    }
+    
+    private final ClientTransportFactory clientFactory;
 
-    private final Class<?> clientFactoryClass;
-
-    public JettyHttpClientTransportTest(final Class<?> clientFactoryClass) {
-        this.clientFactoryClass = clientFactoryClass;
+    public JettyHttpClientTransportTest(String clientTransportName, ClientTransportFactory clientFactory) {
+        this.clientFactory = clientFactory;
     }
 
     @Rule
@@ -92,13 +100,13 @@ public class JettyHttpClientTransportTest {
 
     @Test
     public void testType() {
-        ClientTransport transport = newClientTransport();
+        ClientTransport transport = newClientTransport(httpClient);
         Assert.assertEquals("long-polling", transport.getName());
     }
 
     @Test
     public void testAccept() throws Exception {
-        ClientTransport transport = newClientTransport();
+        ClientTransport transport = newClientTransport(httpClient);
         Assert.assertTrue(transport.accept("1.0"));
     }
 
@@ -139,7 +147,7 @@ public class JettyHttpClientTransportTest {
 
             try {
                 final CountDownLatch latch = new CountDownLatch(1);
-                HttpClientTransport transport = new JettyHttpClientTransport(null, httpClient);
+                HttpClientTransport transport = newClientTransport(httpClient);
                 transport.setURL(serverURL);
                 transport.setCookieStore(new HttpCookieStore());
                 transport.init();
@@ -204,7 +212,7 @@ public class JettyHttpClientTransportTest {
             httpClient.start();
 
             try {
-                HttpClientTransport transport = new JettyHttpClientTransport(null, httpClient);
+                HttpClientTransport transport = newClientTransport(httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
                 transport.setCookieStore(new HttpCookieStore());
@@ -244,7 +252,7 @@ public class JettyHttpClientTransportTest {
         httpClient.start();
 
         try {
-            HttpClientTransport transport = new JettyHttpClientTransport(null, httpClient);
+            HttpClientTransport transport = newClientTransport(httpClient);
             final CountDownLatch latch = new CountDownLatch(1);
             transport.setURL(serverURL);
             transport.setCookieStore(new HttpCookieStore());
@@ -292,7 +300,7 @@ public class JettyHttpClientTransportTest {
             httpClient.start();
 
             try {
-                HttpClientTransport transport = new JettyHttpClientTransport(null, httpClient);
+                HttpClientTransport transport = newClientTransport(httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
                 transport.setCookieStore(new HttpCookieStore());
@@ -360,7 +368,7 @@ public class JettyHttpClientTransportTest {
 
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, timeout);
-                HttpClientTransport transport = new JettyHttpClientTransport(options, httpClient);
+                HttpClientTransport transport = newClientTransport(options, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
                 transport.setCookieStore(new HttpCookieStore());
@@ -385,9 +393,20 @@ public class JettyHttpClientTransportTest {
             serverSocket.close();
         }
     }
+    
+    private HttpClientTransport newClientTransport(Map<String, Object> options, HttpClient client) {
+        return clientFactory.create(options, client);
+    }
 
-    private ClientTransport newClientTransport() {
-        ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
-        return transport;
+    private HttpClientTransport newClientTransport(HttpClient client) {
+        return clientFactory.create(null, client);
+    }
+
+    private static HttpClientTransport newJettyClientTransport(Map<String, Object> options, HttpClient client) {
+        return new JettyHttpClientTransport(options, client);
+    }
+
+    private static HttpClientTransport newAsyncJettyClientTransport(Map<String, Object> options, HttpClient client) {
+        return new JettyAsyncClientTransport(options, client);
     }
 }
