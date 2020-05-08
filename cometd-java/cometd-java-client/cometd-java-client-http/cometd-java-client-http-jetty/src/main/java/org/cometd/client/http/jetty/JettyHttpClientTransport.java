@@ -15,8 +15,11 @@
  */
 package org.cometd.client.http.jetty;
 
+import java.io.ByteArrayOutputStream;
 import java.net.HttpCookie;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,9 +32,11 @@ import org.cometd.bayeux.Promise;
 import org.cometd.client.http.common.AbstractHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
+import org.cometd.common.JSONContext.NonBlockingParser;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
@@ -101,10 +106,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
 
         request.content(new StringContentProvider(generateJSON(messages)));
 
-        customize(request, Promise.from(
-                customizedRequest -> send(listener, messages, cookieURI, customizedRequest),
-                error -> listener.onFailure(error, messages)
-        ));
+        customize(request, Promise.from(customizedRequest -> send(listener, messages, cookieURI, customizedRequest), error -> listener.onFailure(error, messages)));
     }
 
     private void send(TransportListener listener, List<Message.Mutable> messages, URI cookieURI, Request request) {
@@ -127,44 +129,78 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
             }
         }
 
-        request.send(new BufferingResponseListener(getMaxMessageSize()) {
-            @Override
-            public boolean onHeader(Response response, HttpField field) {
-                if (response.getStatus() == HttpStatus.OK_200) {
-                    HttpHeader header = field.getHeader();
-                    if (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2) {
-                        // We do not allow cookies to be handled by HttpClient, since one
-                        // HttpClient instance is shared by multiple BayeuxClient instances.
-                        // Instead, we store the cookies in the BayeuxClient instance.
-                        Map<String, List<String>> cookies = new HashMap<>(1);
-                        cookies.put(field.getName(), Collections.singletonList(field.getValue()));
-                        storeCookies(cookieURI, cookies);
-                        return false;
+        if (this.supportsNonBlockingParser()) {
+            request.send(new Listener.Adapter() {
+                private NonBlockingParser<Message.Mutable> nonBlockingParser = newNonBlockingParser();
+
+                @Override
+                public boolean onHeader(Response response, HttpField field) {
+                    return JettyHttpClientTransport.this.onHeader(cookieURI, response, field);
+                }
+
+                @Override
+                public void onContent(Response response, ByteBuffer content) {
+                    try {
+                    	byte[] block = new byte[content.limit()];
+                    	content.get(block);
+                        processResponseContent(listener, nonBlockingParser.feed(block));
+                    } catch (ParseException e) {
+                        listener.onFailure(e, messages);
                     }
                 }
-                return true;
-            }
 
-            @Override
-            public void onComplete(Result result) {
-                synchronized (JettyHttpClientTransport.this) {
-                    _requests.remove(result.getRequest());
+                @Override
+                public void onComplete(Result result) {
+                    synchronized (JettyHttpClientTransport.this) {
+                        _requests.remove(result.getRequest());
+                    }
+
+                    if (result.isFailed()) {
+                        listener.onFailure(result.getFailure(), messages);
+                        return;
+                    }
+
+                    Response response = result.getResponse();
+                    int status = response.getStatus();
+                    if (status == HttpStatus.OK_200) {
+                        try {
+                            processResponseContent(listener, nonBlockingParser.done());
+                        } catch (ParseException e) {
+                            listener.onFailure(e, messages);
+                        }
+                    } else {
+                        processWrongResponseCode(listener, messages, status);
+                    }
+                }
+            });
+        } else {
+            request.send(new BufferingResponseListener(getMaxMessageSize()) {
+                @Override
+                public boolean onHeader(Response response, HttpField field) {
+                    return JettyHttpClientTransport.this.onHeader(cookieURI, response, field);
                 }
 
-                if (result.isFailed()) {
-                    listener.onFailure(result.getFailure(), messages);
-                    return;
-                }
+                @Override
+                public void onComplete(Result result) {
+                    synchronized (JettyHttpClientTransport.this) {
+                        _requests.remove(result.getRequest());
+                    }
 
-                Response response = result.getResponse();
-                int status = response.getStatus();
-                if (status == HttpStatus.OK_200) {
-                    processResponseContent(listener, messages, getContentAsString());
-                } else {
-                    processWrongResponseCode(listener, messages, status);
+                    if (result.isFailed()) {
+                        listener.onFailure(result.getFailure(), messages);
+                        return;
+                    }
+
+                    Response response = result.getResponse();
+                    int status = response.getStatus();
+                    if (status == HttpStatus.OK_200) {
+                        processResponseContent(listener, messages, getContentAsString());
+                    } else {
+                        processWrongResponseCode(listener, messages, status);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     protected void customize(Request request) {
@@ -177,6 +213,22 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
         } catch (Throwable x) {
             promise.fail(x);
         }
+    }
+
+    private boolean onHeader(URI cookieURI, Response response, HttpField field) {
+        if (response.getStatus() == HttpStatus.OK_200) {
+            HttpHeader header = field.getHeader();
+            if (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2) {
+                // We do not allow cookies to be handled by HttpClient, since one
+                // HttpClient instance is shared by multiple BayeuxClient instances.
+                // Instead, we store the cookies in the BayeuxClient instance.
+                Map<String, List<String>> cookies = new HashMap<>(1);
+                cookies.put(field.getName(), Collections.singletonList(field.getValue()));
+                storeCookies(cookieURI, cookies);
+                return false;
+            }
+        }
+        return true;
     }
 
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {

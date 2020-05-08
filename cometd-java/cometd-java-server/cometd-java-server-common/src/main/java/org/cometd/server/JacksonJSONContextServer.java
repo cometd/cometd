@@ -23,4 +23,9 @@ public class JacksonJSONContextServer extends JacksonJSONContext<ServerMessage.M
     protected Class<ServerMessageImpl[]> rootArrayClass() {
         return ServerMessageImpl[].class;
     }
+
+    @Override
+    public boolean supportsNonBlockingParser() {
+        return false;
+    }
 }

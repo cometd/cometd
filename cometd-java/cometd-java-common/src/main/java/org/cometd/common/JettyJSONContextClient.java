@@ -15,7 +15,10 @@
  */
 package org.cometd.common;
 
+import java.io.IOException;
+
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Message.Mutable;
 
 public class JettyJSONContextClient extends JettyJSONContext<Message.Mutable> implements JSONContext.Client {
     @Override
@@ -26,5 +29,15 @@ public class JettyJSONContextClient extends JettyJSONContext<Message.Mutable> im
     @Override
     protected Message.Mutable[] newRootArray(int size) {
         return new Message.Mutable[size];
+    }
+
+    @Override
+    public NonBlockingParser<Mutable> newNonBlockingParser() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean supportsNonBlockingParser() {
+        return false;
     }
 }

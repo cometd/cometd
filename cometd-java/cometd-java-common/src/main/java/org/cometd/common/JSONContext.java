@@ -34,7 +34,11 @@ public interface JSONContext<T extends Message.Mutable> {
     public String generate(List<T> messages);
 
     public Parser getParser();
-
+    
+    public NonBlockingParser<T> newNonBlockingParser();
+    
+    public boolean supportsNonBlockingParser();
+    
     public Generator getGenerator();
 
     public interface Client extends JSONContext<Message.Mutable> {
@@ -42,6 +46,12 @@ public interface JSONContext<T extends Message.Mutable> {
 
     public interface Parser {
         public <T> T parse(Reader reader, Class<T> type) throws ParseException;
+    }
+    
+    public interface NonBlockingParser<T> {
+        public List<T> feed(byte[] block) throws ParseException;
+
+        public List<T> done() throws ParseException;
     }
 
     public interface Generator {

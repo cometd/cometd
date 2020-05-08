@@ -15,11 +15,19 @@
  */
 package org.cometd.common;
 
+import java.text.ParseException;
+
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Message.Mutable;
 
 public class JacksonJSONContextClient extends JacksonJSONContext<Message.Mutable, HashMapMessage> implements JSONContext.Client {
     @Override
     protected Class<HashMapMessage[]> rootArrayClass() {
         return HashMapMessage[].class;
+    }
+
+    @Override
+    public boolean supportsNonBlockingParser() {
+        return true;
     }
 }

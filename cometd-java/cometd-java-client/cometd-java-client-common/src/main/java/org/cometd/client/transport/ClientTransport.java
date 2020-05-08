@@ -26,7 +26,8 @@ import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.JSONContext;
-import org.cometd.common.JettyJSONContextClient;
+import org.cometd.common.JSONContext.NonBlockingParser;
+import org.cometd.common.JacksonJSONContextClient;
 
 /**
  * {@link ClientTransport}s are used by {@link org.cometd.client.BayeuxClient} to send and receive Bayeux messages.
@@ -63,7 +64,7 @@ public abstract class ClientTransport extends AbstractTransport {
 
         Object jsonContextOption = getOption(JSON_CONTEXT_OPTION);
         if (jsonContextOption == null) {
-            jsonContext = new JettyJSONContextClient();
+            jsonContext = new JacksonJSONContextClient();
         } else {
             if (jsonContextOption instanceof String) {
                 try {
@@ -112,6 +113,14 @@ public abstract class ClientTransport extends AbstractTransport {
 
     protected List<Message.Mutable> parseMessages(InputStream stream) throws ParseException {
         return new ArrayList<>(Arrays.asList(jsonContext.parse(stream)));
+    }
+    
+    protected NonBlockingParser<Message.Mutable> newNonBlockingParser() {
+        return jsonContext.newNonBlockingParser();
+    }
+    
+    protected boolean supportsNonBlockingParser() {
+        return jsonContext.supportsNonBlockingParser();
     }
 
     protected String generateJSON(List<Message.Mutable> messages) {
