@@ -15,8 +15,6 @@
  */
 package org.cometd.client.http.common;
 
-import java.net.CookieManager;
-import java.net.CookiePolicy;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +39,6 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
     private boolean _aborted;
     private int _maxMessageSize;
     private boolean _appendMessageType;
-    private CookieManager _cookieManager;
     private Map<String, Object> _advice;
 
     protected AbstractHttpClientTransport(String url, Map<String, Object> options) {
@@ -68,8 +65,6 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
             String afterPath = uriMatcher.group(9);
             _appendMessageType = afterPath == null || afterPath.trim().length() == 0;
         }
-
-        _cookieManager = new CookieManager(getCookieStore(), CookiePolicy.ACCEPT_ALL);
     }
 
     @Override
