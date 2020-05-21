@@ -18,6 +18,9 @@ package org.cometd.server;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.JSONContext;
 
+/**
+ * <p>Server specific {@link JSONContext} that binds to {@link ServerMessage.Mutable}.</p>
+ */
 public interface JSONContextServer extends JSONContext<ServerMessage.Mutable>
 {
 }

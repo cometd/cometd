@@ -49,7 +49,7 @@ public class JettyJacksonComparisonTest {
         String generate(Message.Mutable message) throws Exception;
     }
 
-    public static class JacksonJSONProvider implements JSONProvider {
+    public static final class JacksonJSONProvider implements JSONProvider {
         private final JacksonJSONContextClient jacksonContextClient = new JacksonJSONContextClient();
 
         @Override
@@ -63,13 +63,13 @@ public class JettyJacksonComparisonTest {
         }
 
         @Override
-        public String generate(Message.Mutable message) throws Exception {
+        public String generate(Message.Mutable message) {
             return jacksonContextClient.generate(message);
         }
     }
 
     public static final class JettyJSONProvider implements JSONProvider {
-        private JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
+        private final JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
 
         @Override
         public String getName() {
@@ -82,7 +82,7 @@ public class JettyJacksonComparisonTest {
         }
 
         @Override
-        public String generate(Message.Mutable message) throws Exception {
+        public String generate(Message.Mutable message) {
             return jettyJSONContextClient.generate(message);
         }
     }
@@ -91,7 +91,7 @@ public class JettyJacksonComparisonTest {
     private final JSONProvider jsonProvider;
 
     public JettyJacksonComparisonTest(final Class<?> jsonProvider) throws Exception {
-        this.jsonProvider = (JSONProvider)jsonProvider.newInstance();
+        this.jsonProvider = (JSONProvider)jsonProvider.getConstructor().newInstance();
     }
 
     @Test

@@ -158,6 +158,10 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     public void destroy() {
     }
 
+    protected JSONContextServer getJSONContextServer() {
+        return _jsonContext;
+    }
+
     protected ServerMessage.Mutable[] parseMessages(BufferedReader reader, boolean jsonDebug) throws ParseException, IOException {
         if (jsonDebug || getMaxMessageSize() > 0) {
             return parseMessages(read(reader));

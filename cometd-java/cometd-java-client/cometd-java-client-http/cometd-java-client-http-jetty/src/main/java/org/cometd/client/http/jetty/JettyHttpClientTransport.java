@@ -17,6 +17,7 @@ package org.cometd.client.http.jetty;
 
 import java.net.HttpCookie;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,11 +30,12 @@ import org.cometd.bayeux.Promise;
 import org.cometd.client.http.common.AbstractHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
+import org.cometd.common.JSONContext;
+import org.cometd.common.internal.BufferingJSONAsyncParser;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -42,8 +44,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public class JettyHttpClientTransport extends AbstractHttpClientTransport {
-    private final HttpClient _httpClient;
     private final List<Request> _requests = new ArrayList<>();
+    private final HttpClient _httpClient;
 
     public JettyHttpClientTransport(Map<String, Object> options, HttpClient httpClient) {
         this(null, options, httpClient);
@@ -127,44 +129,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
             }
         }
 
-        request.send(new BufferingResponseListener(getMaxMessageSize()) {
-            @Override
-            public boolean onHeader(Response response, HttpField field) {
-                if (response.getStatus() == HttpStatus.OK_200) {
-                    HttpHeader header = field.getHeader();
-                    if (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2) {
-                        // We do not allow cookies to be handled by HttpClient, since one
-                        // HttpClient instance is shared by multiple BayeuxClient instances.
-                        // Instead, we store the cookies in the BayeuxClient instance.
-                        Map<String, List<String>> cookies = new HashMap<>(1);
-                        cookies.put(field.getName(), Collections.singletonList(field.getValue()));
-                        storeCookies(cookieURI, cookies);
-                        return false;
-                    }
-                }
-                return true;
-            }
-
-            @Override
-            public void onComplete(Result result) {
-                synchronized (JettyHttpClientTransport.this) {
-                    _requests.remove(result.getRequest());
-                }
-
-                if (result.isFailed()) {
-                    listener.onFailure(result.getFailure(), messages);
-                    return;
-                }
-
-                Response response = result.getResponse();
-                int status = response.getStatus();
-                if (status == HttpStatus.OK_200) {
-                    processResponseContent(listener, messages, getContentAsString());
-                } else {
-                    processWrongResponseCode(listener, messages, status);
-                }
-            }
-        });
+        request.send(new ResponseListener(listener, messages, cookieURI));
     }
 
     protected void customize(Request request) {
@@ -190,6 +155,90 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
         @Override
         public ClientTransport newClientTransport(String url, Map<String, Object> options) {
             return new JettyHttpClientTransport(url, options, httpClient);
+        }
+    }
+
+    private class ResponseListener implements Response.Listener {
+        private final TransportListener listener;
+        private final List<Message.Mutable> outgoing;
+        private final URI cookieURI;
+        private long contentLength;
+        private JSONContext.AsyncParser parser;
+
+        public ResponseListener(TransportListener listener, List<Message.Mutable> messages, URI cookieURI) {
+            this.listener = listener;
+            this.outgoing = messages;
+            this.cookieURI = cookieURI;
+        }
+
+        @Override
+        public boolean onHeader(Response response, HttpField field) {
+            if (response.getStatus() == HttpStatus.OK_200) {
+                HttpHeader header = field.getHeader();
+                if (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2) {
+                    // We do not allow cookies to be handled by HttpClient, since one
+                    // HttpClient instance is shared by multiple BayeuxClient instances.
+                    // Instead, we store the cookies in the BayeuxClient instance.
+                    Map<String, List<String>> cookies = new HashMap<>(1);
+                    cookies.put(field.getName(), Collections.singletonList(field.getValue()));
+                    storeCookies(cookieURI, cookies);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public void onHeaders(Response response) {
+            JSONContext.Client jsonContext = getJSONContextClient();
+            parser = jsonContext.newAsyncParser();
+            if (parser == null) {
+                parser = new BufferingJSONAsyncParser(jsonContext);
+            }
+        }
+
+        @Override
+        public void onContent(Response response, ByteBuffer content) {
+            contentLength += content.remaining();
+            int maxLength = getMaxMessageSize();
+            if (maxLength > 0 && contentLength > maxLength) {
+                response.abort(new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded"));
+            } else {
+                parse(response, content);
+            }
+        }
+
+        @Override
+        public void onComplete(Result result) {
+            synchronized (JettyHttpClientTransport.this) {
+                _requests.remove(result.getRequest());
+            }
+
+            if (result.isFailed()) {
+                listener.onFailure(result.getFailure(), outgoing);
+                return;
+            }
+
+            try {
+                Response response = result.getResponse();
+                int status = response.getStatus();
+                if (status == HttpStatus.OK_200) {
+                    List<Message.Mutable> incoming = parser.complete();
+                    processResponseMessages(listener, incoming);
+                } else {
+                    processWrongResponseCode(listener, outgoing, status);
+                }
+            } catch (Throwable x) {
+                listener.onFailure(x, outgoing);
+            }
+        }
+
+        private void parse(Response response, ByteBuffer content) {
+            try {
+                parser.parse(content);
+            } catch (Throwable x) {
+                response.abort(x);
+            }
         }
     }
 }
