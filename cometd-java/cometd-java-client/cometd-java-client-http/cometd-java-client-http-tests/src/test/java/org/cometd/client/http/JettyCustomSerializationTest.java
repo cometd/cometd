@@ -157,8 +157,8 @@ public class JettyCustomSerializationTest extends ClientServerTest {
 
     public static class TestJettyJSONContextServer extends JettyJSONContextServer {
         public TestJettyJSONContextServer() {
-            getJSON().addConvertor(Data.class, new DataConvertor());
-            getJSON().addConvertor(Extra.class, new ExtraConvertor());
+            putConvertor(Data.class.getName(), new DataConvertor());
+            putConvertor(Extra.class.getName(), new ExtraConvertor());
         }
     }
 

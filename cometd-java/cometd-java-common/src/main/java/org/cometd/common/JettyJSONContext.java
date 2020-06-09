@@ -105,7 +105,12 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
         return new JSONGenerator();
     }
 
-    private static class FieldJSON extends JSON {
+    public void putConvertor(String className, JSON.Convertor convertor) {
+        getJSON().addConvertorFor(className, convertor);
+        getAsyncJSONFactory().putConvertor(className, convertor);
+    }
+
+    private class FieldJSON extends JSON {
         // Allows for optimizations
 
         // Overridden for visibility
@@ -113,6 +118,17 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
         @SuppressWarnings("rawtypes")
         protected Convertor getConvertor(Class forClass) {
             return super.getConvertor(forClass);
+        }
+
+        @Override
+        public void addConvertor(Class klass, Convertor convertor) {
+            addConvertorFor(klass.getName(), convertor);
+        }
+
+        @Override
+        public void addConvertorFor(String name, Convertor convertor) {
+            super.addConvertorFor(name, convertor);
+            getAsyncJSONFactory().putConvertor(name, convertor);
         }
     }
 

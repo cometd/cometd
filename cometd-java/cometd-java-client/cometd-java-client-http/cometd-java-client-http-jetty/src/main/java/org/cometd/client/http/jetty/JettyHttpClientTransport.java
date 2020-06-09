@@ -190,21 +190,25 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
 
         @Override
         public void onHeaders(Response response) {
-            JSONContext.Client jsonContext = getJSONContextClient();
-            parser = jsonContext.newAsyncParser();
-            if (parser == null) {
-                parser = new BufferingJSONAsyncParser(jsonContext);
+            if (response.getStatus() == HttpStatus.OK_200) {
+                JSONContext.Client jsonContext = getJSONContextClient();
+                parser = jsonContext.newAsyncParser();
+                if (parser == null) {
+                    parser = new BufferingJSONAsyncParser(jsonContext);
+                }
             }
         }
 
         @Override
         public void onContent(Response response, ByteBuffer content) {
-            contentLength += content.remaining();
-            int maxLength = getMaxMessageSize();
-            if (maxLength > 0 && contentLength > maxLength) {
-                response.abort(new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded"));
-            } else {
-                parse(response, content);
+            if (response.getStatus() == HttpStatus.OK_200) {
+                contentLength += content.remaining();
+                int maxLength = getMaxMessageSize();
+                if (maxLength > 0 && contentLength > maxLength) {
+                    response.abort(new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded"));
+                } else {
+                    parse(response, content);
+                }
             }
         }
 
