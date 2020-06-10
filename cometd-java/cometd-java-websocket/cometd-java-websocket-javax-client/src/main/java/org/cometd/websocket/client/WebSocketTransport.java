@@ -154,7 +154,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         private Session _session;
 
         private void onOpen(Session session) {
-            synchronized (this) {
+            synchronized (_lock) {
                 _session = session;
             }
             session.addMessageHandler(this);
@@ -171,7 +171,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         @Override
         public void send(String content) {
             Session session;
-            synchronized (this) {
+            synchronized (_lock) {
                 session = _session;
             }
             try {
@@ -197,7 +197,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         @Override
         protected void shutdown(String reason) {
             Session session;
-            synchronized (this) {
+            synchronized (_lock) {
                 session = _session;
                 close();
             }
@@ -217,14 +217,14 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
 
         @Override
         protected boolean isOpen() {
-            synchronized (this) {
-                return _session != null;
+            synchronized (_lock) {
+                return super.isOpen() && _session != null;
             }
         }
 
         @Override
         protected void close() {
-            synchronized (this) {
+            synchronized (_lock) {
                 _session = null;
             }
         }

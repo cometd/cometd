@@ -45,6 +45,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     public final static String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public final static String STICKY_RECONNECT_OPTION = "stickyReconnect";
 
+    protected final Object _lock = this;
+    private boolean _open;
     private ScheduledExecutorService _scheduler;
     private String _protocol;
     private long _connectTimeout;
@@ -73,17 +75,18 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     @Override
     public void init() {
         super.init();
-
-        if (_scheduler == null) {
-            int threads = Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
-            _scheduler = new WebSocketTransportScheduler(threads);
-        }
-
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
         setMaxNetworkDelay(15000L);
         _connectTimeout = 30000L;
         _idleTimeout = 60000L;
         _stickyReconnect = getOption(STICKY_RECONNECT_OPTION, true);
+        synchronized (_lock) {
+            _open = true;
+            if (_scheduler == null) {
+                int threads = Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
+                _scheduler = new WebSocketTransportScheduler(threads);
+            }
+        }
     }
 
     public String getProtocol() {
@@ -104,20 +107,28 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
     @Override
     public void abort() {
-        Delegate delegate = getDelegate();
+        Delegate delegate;
+        synchronized (_lock) {
+            _open = false;
+            shutdownScheduler();
+            delegate = getDelegate();
+        }
         if (delegate != null) {
             delegate.abort();
         }
-        shutdownScheduler();
     }
 
     @Override
     public void terminate() {
-        Delegate delegate = getDelegate();
+        Delegate delegate;
+        synchronized (_lock) {
+            _open = false;
+            shutdownScheduler();
+            delegate = getDelegate();
+        }
         if (delegate != null) {
             delegate.terminate();
         }
-        shutdownScheduler();
         super.terminate();
     }
 
@@ -129,7 +140,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     }
 
     protected Delegate getDelegate() {
-        synchronized (this) {
+        synchronized (_lock) {
             return _delegate;
         }
     }
@@ -148,7 +159,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
                 return;
             }
 
-            synchronized (this) {
+            synchronized (_lock) {
                 if (_delegate != null) {
                     // We connected concurrently, keep only one.
                     delegate.shutdown("Extra");
@@ -260,9 +271,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             if (message.isMeta()) {
                 // Check if it's a server-side disconnect.
                 if (Channel.META_DISCONNECT.equals(message.getChannel())) {
-                    if (message.getId() == null) {
-                        return false;
-                    }
+                    return message.getId() != null;
                 }
                 return true;
             }
@@ -270,9 +279,9 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             return false;
         }
 
-        private void registerMessages(TransportListener listener, List<Mutable> messages) {
+        protected void registerMessages(TransportListener listener, List<Mutable> messages) {
             boolean open;
-            synchronized (this) {
+            synchronized (_lock) {
                 // Check whether it is active and register messages atomically.
                 open = isOpen();
                 if (open) {
@@ -390,13 +399,13 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
         }
 
         private boolean isAttached() {
-            synchronized (AbstractWebSocketTransport.this) {
+            synchronized (_lock) {
                 return this == _delegate;
             }
         }
 
         private boolean detach() {
-            synchronized (AbstractWebSocketTransport.this) {
+            synchronized (_lock) {
                 boolean attached = this == _delegate;
                 if (attached) {
                     _delegate = null;
@@ -405,7 +414,11 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             }
         }
 
-        protected abstract boolean isOpen();
+        protected boolean isOpen() {
+            synchronized (_lock) {
+                return _open;
+            }
+        }
 
         protected abstract void close();
 

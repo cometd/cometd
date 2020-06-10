@@ -152,7 +152,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
 
         @Override
         public void onWebSocketConnect(Session session) {
-            synchronized (this) {
+            synchronized (_lock) {
                 _session = session;
             }
             if (logger.isDebugEnabled()) {
@@ -182,7 +182,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         @Override
         public void send(String content) {
             Session session;
-            synchronized (this) {
+            synchronized (_lock) {
                 session = _session;
             }
             try {
@@ -207,7 +207,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         @Override
         protected void shutdown(String reason) {
             Session session;
-            synchronized (this) {
+            synchronized (_lock) {
                 session = _session;
                 close();
             }
@@ -221,14 +221,14 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
 
         @Override
         protected boolean isOpen() {
-            synchronized (this) {
-                return _session != null;
+            synchronized (_lock) {
+                return super.isOpen() && _session != null;
             }
         }
 
         @Override
         protected void close() {
-            synchronized (this) {
+            synchronized (_lock) {
                 _session = null;
             }
         }
