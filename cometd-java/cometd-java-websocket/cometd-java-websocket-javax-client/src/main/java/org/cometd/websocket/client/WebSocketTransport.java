@@ -155,9 +155,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         private Session _session;
 
         private void onOpen(Session session) {
-            synchronized (this) {
-                _session = session;
-            }
+            locked(() -> _session = session);
             session.addMessageHandler(this);
             if (logger.isDebugEnabled()) {
                 logger.debug("Opened websocket session {}", session);
@@ -171,10 +169,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
 
         @Override
         public void send(String content) {
-            Session session;
-            synchronized (this) {
-                session = _session;
-            }
+            Session session = locked(() -> _session);
             try {
                 if (session == null) {
                     throw new IOException("Unconnected");
@@ -197,11 +192,11 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
 
         @Override
         protected void shutdown(String reason) {
-            Session session;
-            synchronized (this) {
-                session = _session;
+            Session session = locked(() -> {
+                Session result = _session;
                 close();
-            }
+                return result;
+            });
             if (session != null) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Closing ({}) websocket session {}", reason, session);
@@ -218,16 +213,12 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
 
         @Override
         protected boolean isOpen() {
-            synchronized (this) {
-                return _session != null;
-            }
+            return locked(() -> super.isOpen() && _session != null);
         }
 
         @Override
         protected void close() {
-            synchronized (this) {
-                _session = null;
-            }
+            locked(() -> _session = null);
         }
 
         private class WebSocketEndpoint extends Endpoint {

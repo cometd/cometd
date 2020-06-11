@@ -29,6 +29,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -48,6 +49,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     public static final int NORMAL_CLOSE_CODE = 1000;
     protected static final String COOKIE_HEADER = "Cookie";
 
+    private final Object _lock = this;
+    private boolean _open;
     private ScheduledExecutorService _scheduler;
     private String _protocol;
     private long _connectTimeout;
@@ -76,17 +79,31 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     @Override
     public void init() {
         super.init();
-
-        if (_scheduler == null) {
-            int threads = Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
-            _scheduler = new WebSocketTransportScheduler(threads);
-        }
-
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
         setMaxNetworkDelay(15000L);
         _connectTimeout = 30000L;
         _idleTimeout = 60000L;
         _stickyReconnect = getOption(STICKY_RECONNECT_OPTION, true);
+        locked(() -> {
+            _open = true;
+            if (_scheduler == null) {
+                int threads = Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
+                _scheduler = new WebSocketTransportScheduler(threads);
+            }
+        });
+    }
+
+    protected void locked(Runnable block) {
+        locked(() -> {
+            block.run();
+            return null;
+        });
+    }
+
+    protected <T> T locked(Supplier<T> block) {
+        synchronized (_lock) {
+            return block.get();
+        }
     }
 
     public String getProtocol() {
@@ -107,20 +124,26 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
     @Override
     public void abort() {
-        Delegate delegate = getDelegate();
+        Delegate delegate = locked(() -> {
+            _open = false;
+            shutdownScheduler();
+            return getDelegate();
+        });
         if (delegate != null) {
             delegate.abort();
         }
-        shutdownScheduler();
     }
 
     @Override
     public void terminate() {
-        Delegate delegate = getDelegate();
+        Delegate delegate = locked(() -> {
+            _open = false;
+            shutdownScheduler();
+            return getDelegate();
+        });
         if (delegate != null) {
             delegate.terminate();
         }
-        shutdownScheduler();
         super.terminate();
     }
 
@@ -132,9 +155,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     }
 
     protected Delegate getDelegate() {
-        synchronized (this) {
-            return _delegate;
-        }
+        return locked(() -> _delegate);
     }
 
     @Override
@@ -145,20 +166,21 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             String url = getURL();
             url = url.replaceFirst("^http", "ws");
 
-            delegate = connect(url, listener, messages);
+            Delegate newDelegate = connect(url, listener, messages);
 
-            if (delegate == null) {
+            if (newDelegate == null) {
                 return;
             }
 
-            synchronized (this) {
-                if (_delegate != null) {
+            delegate = locked(() -> {
+                if (_delegate == null) {
+                    return _delegate = newDelegate;
+                } else {
                     // We connected concurrently, keep only one.
-                    delegate.shutdown("Extra");
-                    delegate = _delegate;
+                    newDelegate.shutdown("Extra");
+                    return _delegate;
                 }
-                _delegate = delegate;
-            }
+            });
         }
 
         delegate.registerMessages(listener, messages);
@@ -271,17 +293,17 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             return false;
         }
 
-        private void registerMessages(TransportListener listener, List<Mutable> messages) {
-            boolean open;
-            synchronized (this) {
+        protected void registerMessages(TransportListener listener, List<Mutable> messages) {
+            boolean open = locked(() -> {
                 // Check whether it is active and register messages atomically.
-                open = isOpen();
-                if (open) {
+                if (isOpen()) {
                     for (Mutable message : messages) {
                         registerMessage(message, listener);
                     }
+                    return true;
                 }
-            }
+                return false;
+            });
             if (!open) {
                 listener.onFailure(new IOException("Unconnected"), messages);
             }
@@ -395,22 +417,22 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
         }
 
         private boolean isAttached() {
-            synchronized (AbstractWebSocketTransport.this) {
-                return this == _delegate;
-            }
+            return locked(() -> this == _delegate);
         }
 
         private boolean detach() {
-            synchronized (AbstractWebSocketTransport.this) {
+            return locked(() -> {
                 boolean attached = this == _delegate;
                 if (attached) {
                     _delegate = null;
                 }
                 return attached;
-            }
+            });
         }
 
-        protected abstract boolean isOpen();
+        protected boolean isOpen() {
+            return locked(() -> _open);
+        }
 
         protected abstract void close();
 

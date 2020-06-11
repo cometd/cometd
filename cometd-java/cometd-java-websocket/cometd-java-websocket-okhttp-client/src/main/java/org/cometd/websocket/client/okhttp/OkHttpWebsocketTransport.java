@@ -153,9 +153,7 @@ public class OkHttpWebsocketTransport extends AbstractWebSocketTransport {
         }
 
         private void onOpen(WebSocket webSocket, Response response) {
-            synchronized (this) {
-                this.webSocket = webSocket;
-            }
+            locked(() -> this.webSocket = webSocket);
             onHandshakeResponse(response);
             if (logger.isDebugEnabled()) {
                 logger.debug("Opened {}", webSocket);
@@ -164,10 +162,7 @@ public class OkHttpWebsocketTransport extends AbstractWebSocketTransport {
 
         @Override
         protected void send(String payload) {
-            final WebSocket webSocket;
-            synchronized (this) {
-                webSocket = this.webSocket;
-            }
+            WebSocket webSocket = locked(() -> this.webSocket);
             try {
                 if (webSocket == null) {
                     throw new IOException("Unconnected!");
@@ -184,26 +179,21 @@ public class OkHttpWebsocketTransport extends AbstractWebSocketTransport {
 
         @Override
         protected boolean isOpen() {
-            synchronized (this) {
-                return webSocket != null;
-            }
+            return locked(() -> super.isOpen() && webSocket != null);
         }
 
         @Override
         protected void close() {
-            synchronized (this) {
-                webSocket = null;
-            }
+            locked(() -> webSocket = null);
         }
 
         @Override
         protected void shutdown(String reason) {
-            final WebSocket webSocket;
-            synchronized (this) {
-                webSocket = this.webSocket;
+            WebSocket webSocket = locked(() -> {
+                WebSocket result = this.webSocket;
                 close();
-            }
-
+                return result;
+            });
             if (webSocket != null) {
                 int code = NORMAL_CLOSE_CODE;
                 if (logger.isDebugEnabled()) {
