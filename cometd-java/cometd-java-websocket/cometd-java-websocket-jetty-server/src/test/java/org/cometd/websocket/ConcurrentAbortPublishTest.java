@@ -22,11 +22,13 @@ import java.util.concurrent.TimeUnit;
 
 import javax.websocket.WebSocketContainer;
 
+import okhttp3.OkHttpClient;
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.websocket.client.JettyWebSocketTransport;
 import org.cometd.websocket.client.WebSocketTransport;
+import org.cometd.websocket.client.okhttp.OkHttpWebsocketTransport;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.Assert;
 import org.junit.Test;
@@ -75,6 +77,35 @@ public class ConcurrentAbortPublishTest extends ClientServerWebSocketTest {
             @Override
             protected Delegate newDelegate() {
                 return new JettyWebSocketDelegate() {
+                    @Override
+                    protected void registerMessages(TransportListener listener, List<Message.Mutable> messages) {
+                        if (_abort) {
+                            _transport.abort();
+                        }
+                        super.registerMessages(listener, messages);
+                    }
+
+                    @Override
+                    protected void shutdown(String reason) {
+                        // If we are aborting from the test,
+                        // skip the shutdown to simulate concurrency.
+                        if (!_abort) {
+                            super.shutdown(reason);
+                        }
+                    }
+                };
+            }
+        };
+    }
+
+    @Override
+    protected OkHttpWebsocketTransport newOkHttpWebSocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
+        return new OkHttpWebsocketTransport(url, options, null, okHttpClient) {
+            private final OkHttpWebsocketTransport _transport = this;
+
+            @Override
+            protected OkHttpDelegate newDelegate() {
+                return new OkHttpDelegate() {
                     @Override
                     protected void registerMessages(TransportListener listener, List<Message.Mutable> messages) {
                         if (_abort) {
