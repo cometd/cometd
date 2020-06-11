@@ -133,18 +133,7 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
         if (content != null && content.length() > 0) {
             try {
                 List<Message.Mutable> messages = parseMessages(content);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Received messages {}", messages);
-                }
-                for (Message.Mutable message : messages) {
-                    if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel())) {
-                        Map<String, Object> advice = message.getAdvice();
-                        if (advice != null && advice.containsKey("timeout")) {
-                            setAdvice(advice);
-                        }
-                    }
-                }
-                listener.onMessages(messages);
+                processResponseMessages(listener, messages);
             } catch (ParseException x) {
                 listener.onFailure(x, requestMessages);
             }
@@ -155,6 +144,21 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
             TransportException x = new TransportException(failure);
             listener.onFailure(x, requestMessages);
         }
+    }
+
+    protected void processResponseMessages(TransportListener listener, List<Message.Mutable> messages) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Received messages {}", messages);
+        }
+        for (Message.Mutable message : messages) {
+            if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel())) {
+                Map<String, Object> advice = message.getAdvice();
+                if (advice != null && advice.containsKey("timeout")) {
+                    setAdvice(advice);
+                }
+            }
+        }
+        listener.onMessages(messages);
     }
 
     protected void processWrongResponseCode(TransportListener listener, List<Message.Mutable> messages, int code) {

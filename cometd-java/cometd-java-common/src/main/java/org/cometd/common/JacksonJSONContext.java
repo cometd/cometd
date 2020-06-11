@@ -18,14 +18,22 @@ package org.cometd.common;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.nio.ByteBuffer;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.List;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.async.ByteArrayFeeder;
+import com.fasterxml.jackson.core.async.ByteBufferFeeder;
+import com.fasterxml.jackson.core.async.NonBlockingInputFeeder;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 import org.cometd.bayeux.Message;
 
-public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T> {
+public abstract class JacksonJSONContext<M extends Message.Mutable, I extends M> {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final JavaType rootArrayType;
 
@@ -39,7 +47,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
 
     protected abstract Class<I[]> rootArrayClass();
 
-    public T[] parse(InputStream stream) throws ParseException {
+    public M[] parse(InputStream stream) throws ParseException {
         try {
             return getObjectMapper().readValue(stream, rootArrayType);
         } catch (IOException x) {
@@ -47,7 +55,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
         }
     }
 
-    public T[] parse(Reader reader) throws ParseException {
+    public M[] parse(Reader reader) throws ParseException {
         try {
             return getObjectMapper().readValue(reader, rootArrayType);
         } catch (IOException x) {
@@ -55,7 +63,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
         }
     }
 
-    public T[] parse(String json) throws ParseException {
+    public M[] parse(String json) throws ParseException {
         try {
             return getObjectMapper().readValue(json, rootArrayType);
         } catch (IOException x) {
@@ -63,7 +71,16 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
         }
     }
 
-    public String generate(T message) {
+    public JSONContext.AsyncParser newAsyncParser() {
+        try {
+            JsonParser jsonParser = objectMapper.getFactory().createNonBlockingByteArrayParser();
+            return new AsyncJsonParser(jsonParser);
+        } catch (Throwable x) {
+            return null;
+        }
+    }
+
+    public String generate(M message) {
         try {
             return getObjectMapper().writeValueAsString(message);
         } catch (IOException x) {
@@ -71,7 +88,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
         }
     }
 
-    public String generate(List<T> messages) {
+    public String generate(List<M> messages) {
         try {
             Message.Mutable[] mutables = new Message.Mutable[messages.size()];
             messages.toArray(mutables);
@@ -91,7 +108,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
 
     private class ObjectMapperParser implements JSONContext.Parser {
         @Override
-        public <T> T parse(Reader reader, Class<T> type) throws ParseException {
+        public <R> R parse(Reader reader, Class<R> type) throws ParseException {
             try {
                 return getObjectMapper().readValue(reader, type);
             } catch (IOException x) {
@@ -107,6 +124,81 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
                 return getObjectMapper().writeValueAsString(object);
             } catch (IOException x) {
                 throw new RuntimeException(x);
+            }
+        }
+    }
+
+    private class AsyncJsonParser implements JSONContext.AsyncParser {
+        private final JsonParser jsonParser;
+        private final TokenBuffer tokenBuffer;
+
+        public AsyncJsonParser(JsonParser jsonParser) {
+            this.jsonParser = jsonParser;
+            this.tokenBuffer = new TokenBuffer(jsonParser);
+        }
+
+        @Override
+        public void parse(byte[] bytes, int offset, int length) {
+            try {
+                NonBlockingInputFeeder feeder = jsonParser.getNonBlockingInputFeeder();
+                if (feeder instanceof ByteArrayFeeder) {
+                    ((ByteArrayFeeder)feeder).feedInput(bytes, offset, offset + length);
+                    parseInput();
+                } else if (feeder instanceof ByteBufferFeeder) {
+                    parse(ByteBuffer.wrap(bytes, offset, length));
+                } else {
+                    throw new UnsupportedOperationException();
+                }
+            } catch (IOException x) {
+                throw new IllegalStateException(x);
+            }
+        }
+
+        @Override
+        public void parse(ByteBuffer buffer) {
+            try {
+                NonBlockingInputFeeder feeder = jsonParser.getNonBlockingInputFeeder();
+                if (feeder instanceof ByteBufferFeeder) {
+                    ((ByteBufferFeeder)feeder).feedInput(buffer);
+                    parseInput();
+                } else if (feeder instanceof ByteArrayFeeder) {
+                    if (buffer.hasArray()) {
+                        parse(buffer.array(), buffer.arrayOffset(), buffer.remaining());
+                    } else {
+                        byte[] bytes = new byte[buffer.remaining()];
+                        buffer.get(bytes);
+                        parse(bytes, 0, bytes.length);
+                    }
+                } else {
+                    throw new UnsupportedOperationException();
+                }
+            } catch (IOException x) {
+                throw new IllegalStateException(x);
+            }
+        }
+
+        private void parseInput() throws IOException {
+            while (true) {
+                JsonToken jsonToken = jsonParser.nextToken();
+                if (jsonToken == JsonToken.NOT_AVAILABLE) {
+                    break;
+                }
+                tokenBuffer.copyCurrentEvent(jsonParser);
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public <R> R complete() {
+            try {
+                NonBlockingInputFeeder feeder = jsonParser.getNonBlockingInputFeeder();
+                feeder.endOfInput();
+                jsonParser.nextToken();
+                M[] result = objectMapper.readValue(tokenBuffer.asParser(), objectMapper.constructType(rootArrayClass()));
+                return (R)Arrays.asList(result);
+            } catch (IOException x) {
+                // TODO: perhaps this should be IllegalArgumentException, as we can only fail if the input is malformed.
+                throw new IllegalStateException(x);
             }
         }
     }

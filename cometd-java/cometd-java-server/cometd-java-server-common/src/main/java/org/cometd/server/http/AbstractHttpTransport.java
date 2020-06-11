@@ -138,15 +138,15 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     protected abstract void write(Context context, List<ServerMessage> messages, Promise<Void> promise);
 
-    protected void processMessages(Context context, ServerMessage.Mutable[] messages, Promise<Void> promise) {
-        if (messages.length == 0) {
+    protected void processMessages(Context context, List<ServerMessage.Mutable> messages, Promise<Void> promise) {
+        if (messages.isEmpty()) {
             promise.fail(new IOException("protocol violation"));
         } else {
             Collection<ServerSessionImpl> sessions = findCurrentSessions(context.request);
-            ServerMessage.Mutable message = messages[0];
+            ServerMessage.Mutable message = messages.get(0);
             ServerSessionImpl session = findSession(sessions, message);
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Processing {} messages for session {}", messages.length, session);
+                LOGGER.debug("Processing {} messages for session {}", messages.size(), session);
             }
             boolean batch = session != null && !Channel.META_CONNECT.equals(message.getChannel());
             if (batch) {
@@ -179,13 +179,13 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
         String channel = message.getChannel();
         if (Channel.META_HANDSHAKE.equals(channel)) {
-            if (context.messages.length > 1) {
+            if (context.messages.size() > 1) {
                 promise.fail(new IOException("bayeux protocol violation"));
             } else {
                 processMetaHandshake(context, message, promise);
             }
         } else if (Channel.META_CONNECT.equals(channel)) {
-            boolean canSuspend = context.messages.length == 1;
+            boolean canSuspend = context.messages.size() == 1;
             processMetaConnect(context, message, canSuspend, Promise.from(y -> resume(context, message, promise), promise::fail));
         } else {
             processMessage1(context, message, promise);
@@ -836,7 +836,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         protected final List<ServerMessage.Mutable> replies = new ArrayList<>();
         public final HttpServletRequest request;
         public final HttpServletResponse response;
-        protected ServerMessage.Mutable[] messages;
+        protected List<ServerMessage.Mutable> messages;
         protected ServerSessionImpl session;
         protected BayeuxContext bayeuxContext;
         protected boolean sendQueue;
