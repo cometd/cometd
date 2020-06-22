@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript</artifactId>
-    <version>3.1.14-SNAPSHOT</version>
+    <version>3.1.14</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
