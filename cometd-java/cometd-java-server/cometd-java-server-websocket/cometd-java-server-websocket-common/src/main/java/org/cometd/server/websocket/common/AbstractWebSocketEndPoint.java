@@ -23,6 +23,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.TimeoutException;
 
@@ -254,8 +255,14 @@ public abstract class AbstractWebSocketEndPoint {
     private void resume(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
         ServerMessage.Mutable reply = message.getAssociated();
         ServerSessionImpl session = context.session;
-        if (session != null && session.isDisconnected()) {
-            reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+        if (session != null) {
+            Map<String, Object> advice = session.takeAdvice(_transport);
+            if (advice != null) {
+                reply.put(Message.ADVICE_FIELD, advice);
+            }
+            if (session.isDisconnected()) {
+                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+            }
         }
         _transport.processReply(session, reply, Promise.from(r -> {
             if (r != null) {

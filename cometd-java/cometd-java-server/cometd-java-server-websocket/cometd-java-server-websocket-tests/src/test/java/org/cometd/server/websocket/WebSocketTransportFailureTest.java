@@ -170,6 +170,61 @@ public class WebSocketTransportFailureTest {
         Assert.assertTrue(container.getOpenSessions().isEmpty());
     }
 
+    @Test
+    public void testMetaConnectConcurrentWithExpiration() throws Exception {
+        long maxInterval = 2000;
+        Map<String, String> params = new HashMap<>();
+        params.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
+        startServer(params);
+        startClient();
+
+        BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/cometd");
+        Session session = client.connect(new WebSocketEndPoint(messages), uri).get(5, TimeUnit.SECONDS);
+
+        String handshake = "[{" +
+                "\"id\":\"1\"," +
+                "\"channel\": \"/meta/handshake\"," +
+                "\"version\": \"1.0\"," +
+                "\"minimumVersion\": \"1.0\"," +
+                "\"supportedConnectionTypes\": [\"websocket\"]" +
+                "}]";
+        session.getRemote().sendString(handshake);
+
+        Message message = messages.poll(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(message);
+        Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
+        Assert.assertTrue(message.isSuccessful());
+
+        // Expire the session when receiving the first /meta/connect.
+        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
+            @Override
+            public boolean onMessage(ServerSession sender, ServerChannel channel, ServerMessage.Mutable message) {
+                // Simulate that the session expired exactly when this message was received.
+                bayeux.removeServerSession(sender, true);
+                return true;
+            }
+        });
+
+        String clientId = message.getClientId();
+        String connect = "[{" +
+                "\"id\":\"2\"," +
+                "\"channel\":\"/meta/connect\"," +
+                "\"connectionType\":\"long-polling\"," +
+                "\"clientId\":\"" + clientId + "\"," +
+                "\"advice\": {\"timeout\":0}" +
+                "}]";
+        session.getRemote().sendString(connect);
+
+        message = messages.poll(2 * maxInterval, TimeUnit.MILLISECONDS);
+        Assert.assertNotNull(message);
+        Assert.assertEquals(Channel.META_CONNECT, message.getChannel());
+        Assert.assertFalse(message.isSuccessful());
+        Map<String, Object> advice = message.getAdvice();
+        Assert.assertNotNull(advice);
+        Assert.assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));
+    }
+
     private void disconnect(Session session) {
         try {
             session.disconnect();
