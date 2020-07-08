@@ -345,7 +345,7 @@ public class CometDLoadClient implements MeasureConverter {
         httpClient.setMaxConnectionsPerDestination(60000);
         httpClient.setMaxRequestsQueuedPerDestination(10000);
         httpClient.setExecutor(threadPool);
-        httpClient.setIdleTimeout(2 * Config.MAX_NETWORK_DELAY);
+        httpClient.setIdleTimeout(Config.META_CONNECT_TIMEOUT + 2 * Config.MAX_NETWORK_DELAY);
         httpClient.setSocketAddressResolver(new SocketAddressResolver.Sync());
         httpClient.start();
         mbeanContainer.beanAdded(null, httpClient);
@@ -659,6 +659,7 @@ public class CometDLoadClient implements MeasureConverter {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
+                options.put(ClientTransport.MAX_MESSAGE_SIZE_OPTION, -1);
                 return new JettyHttpClientTransport(options, httpClient) {
                     @Override
                     protected void customize(Request request) {
@@ -673,6 +674,7 @@ public class CometDLoadClient implements MeasureConverter {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
+                options.put(ClientTransport.MAX_MESSAGE_SIZE_OPTION, -1);
                 // Differently from HTTP where the idle timeout is adjusted if it is a /meta/connect
                 // for WebSocket we need an idle timeout that is longer than the /meta/connect timeout.
                 options.put(WebSocketTransport.IDLE_TIMEOUT_OPTION, Config.META_CONNECT_TIMEOUT + httpClient.getIdleTimeout());
@@ -682,6 +684,7 @@ public class CometDLoadClient implements MeasureConverter {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
+                options.put(ClientTransport.MAX_MESSAGE_SIZE_OPTION, -1);
                 // Differently from HTTP where the idle timeout is adjusted if it is a /meta/connect
                 // for WebSocket we need an idle timeout that is longer than the /meta/connect timeout.
                 options.put(JettyWebSocketTransport.IDLE_TIMEOUT_OPTION, Config.META_CONNECT_TIMEOUT + httpClient.getIdleTimeout());

@@ -274,7 +274,7 @@ public class CometDLoadServer {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         httpConfiguration.setDelayDispatchUntilContent(true);
         ConnectionFactory http = new HttpConnectionFactory(httpConfiguration);
-        ConnectionFactory http2 = tls ? new HTTP2ServerConnectionFactory(httpConfiguration) : new HTTP2CServerConnectionFactory(httpConfiguration);
+        HTTP2ServerConnectionFactory http2 = tls ? new HTTP2ServerConnectionFactory(httpConfiguration) : new HTTP2CServerConnectionFactory(httpConfiguration);
         ConnectionFactory[] factories = {http, http2};
         if (tls) {
             ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
@@ -286,7 +286,7 @@ public class CometDLoadServer {
         // see http://cometd.org/documentation/howtos/loadtesting
         connector.setAcceptQueueSize(2048);
         // Make sure the server timeout on a TCP connection is large
-        connector.setIdleTimeout(50 * Config.MAX_NETWORK_DELAY);
+        connector.setIdleTimeout(Config.META_CONNECT_TIMEOUT + 10 * Config.MAX_NETWORK_DELAY);
         connector.setPort(port);
         server.addConnector(connector);
 
