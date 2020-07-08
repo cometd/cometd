@@ -254,7 +254,7 @@ public abstract class AbstractWebSocketEndPoint {
     private void resume(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
         ServerMessage.Mutable reply = message.getAssociated();
         ServerSessionImpl session = context.session;
-        if (session != null && session.isTerminated()) {
+        if (session != null && session.isDisconnected()) {
             reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
         }
         _transport.processReply(session, reply, Promise.from(r -> {
