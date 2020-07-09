@@ -200,6 +200,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
      * @param key the key mapped to the value to return
      * @return the value mapped to the given key, or
      * {@code null} if the maps do not contain the given key
+     * @see #get(Object)
      */
     public V find(K key) {
         for (Info<ConcurrentMap<K, V>> info : this) {
