@@ -5,35 +5,26 @@
 Disconnecting is straightforward:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxClient client = ...;
-client.disconnect();
+include::{doc_code}/client/ClientDisconnectDocs.java[tags=simpleDisconnect]
 ----
 ====
 
-Like the other APIs, you can pass a callback `MessageListener` to be notified
-that the server received and processed the disconnect request:
+Like the other APIs, you can pass a callback `MessageListener` to be notified that the server received and processed the disconnect request:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxClient client = ...;
-client.disconnect(message -> {
-    if (message.isSuccessful()) {
-        // Server processed the disconnect request.
-    }
-});
+include::{doc_code}/client/ClientDisconnectDocs.java[tags=callbackDisconnect]
 ----
 ====
 
 Alternatively, you can block and wait for the disconnect to complete:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxClient client = ...;
-client.disconnect();
-client.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+include::{doc_code}/client/ClientDisconnectDocs.java[tags=blockingDisconnect]
 ----
 ====
