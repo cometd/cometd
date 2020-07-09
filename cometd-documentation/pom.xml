@@ -20,29 +20,6 @@
     <defaultGoal>install</defaultGoal>
     <plugins>
       <plugin>
-        <artifactId>maven-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-assets</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <resources>
-                <resource>
-                  <directory>src/main/resources</directory>
-                  <includes>
-                    <include>**</include>
-                  </includes>
-                </resource>
-              </resources>
-              <outputDirectory>${html-directory}</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
         <executions>
@@ -56,12 +33,11 @@
               <backend>html5</backend>
               <doctype>book</doctype>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <imagesDir>images</imagesDir>
               <outputDirectory>${html-directory}</outputDirectory>
               <sourceHighlighter>coderay</sourceHighlighter>
               <attributes>
-                <version>${project.version}</version>
                 <linkcss>true</linkcss>
+                <version>${project.version}</version>
                 <javadocs>${javadocs}</javadocs>
               </attributes>
             </configuration>
