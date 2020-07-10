@@ -46,7 +46,7 @@ constants `Oort.OORT_ATTRIBUTE` and `Seti.SETI_ATTRIBUTE`, equivalent to the
 strings `org.cometd.oort.Oort` and `org.cometd.oort.Seti` respectively.
 
 Optionally, remember that annotated service instances (see also
-<<_java_server_services_annotated_server_side,the annotated services section>>)
+xref:_java_server_services_annotated_server_side[the annotated services section])
 are stored in the servlet context, and as such are candidate to use the same
 mechanism to be exposed as MBeans, provided that you define the right Jetty
 JMX MBean metadata descriptors.
@@ -72,7 +72,7 @@ create the CometD MBeans.
 Exporting CometD MBeans in other Servlet Containers require a little bit
 more setup than what is needed in Jetty, but it is easily done with a
 small initializer class.
-Refer to <<_java_server_services_integration,the services integration section>>
+Refer to xref:_java_server_services_integration[the services integration section]
 for a broader discussion of how to initialize CometD components.
 
 A simple example of such initializer class is the following:

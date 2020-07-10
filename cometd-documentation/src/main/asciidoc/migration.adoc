@@ -105,7 +105,7 @@ Only the WebSocket artifacts have changed.
 ====
 The `load-on-startup` element is now required in order to use the `websocket` transport,
 unless Spring is used to configure the `BayeuxServer` object (see
-<<_java_server_services_integration_spring_xml_based_spring_configuration,this section>>).
+xref:_java_server_services_integration_spring_xml_based_spring_configuration[this section]).
 If `load-on-startup` is not specified, the first request will lazily start the CometD Servlet,
 which will start the `BayeuxServer` object, which will configure the `websocket` transport, but
 at this point it is too late for the `websocket` transport to handle the request, which will be
@@ -228,13 +228,13 @@ Handshaking should be performed only once, and applications should enforce this
 by using once events such as `DOMContentLoaded`, or by guarding the handshake
 with a `boolean` field.
 For further information, see
-<<_javascript_handshake,the JavaScript handshake section>> or the
-<<_java_client_handshake,the Java client handshake section>>.
+xref:_javascript_handshake[the JavaScript handshake section] or the
+xref:_java_client_handshake[the Java client handshake section].
 
 ==== Binary Data
 
 CometD now allows to send/receive messages with binary data, see
-<<_concepts_binary_data,the binary data section>>.
+xref:_concepts_binary_data[the binary data section].
 
 ==== Message Processing Order Changes
 
@@ -278,20 +278,20 @@ performing the long poll.
 
 |
 | maxProcessing
-| Added, see <<_java_server_configuration,the server configuration section>>
+| Added, see xref:_java_server_configuration[the server configuration section]
 
 |
 | http2MaxSessionsPerBrowser
-| Added, see <<_java_server_configuration,the server configuration section>>
+| Added, see xref:_java_server_configuration[the server configuration section]
 
 |
 | ws.enableExtension.<extension_name>
-| Added, see <<_java_server_configuration,the server configuration section>>
+| Added, see xref:_java_server_configuration[the server configuration section]
 |===
 
 ==== CometD APIs Additions
 
-* `org.cometd.bayeux.BinaryData`, to support <<_concepts_binary_data,binary data>>.
+* `org.cometd.bayeux.BinaryData`, to support xref:_concepts_binary_data[binary data].
 * `boolean BayeuxServer.removeSession(ServerSession session)`
 * `void ClientSession.remoteCall(String target, Object data, MessageListener callback)`
 
@@ -408,7 +408,7 @@ require({
 ====
 |===
 
-The <<_extensions_reload,reload extension>> has been rewritten to use the
+The xref:_extensions_reload[reload extension] has been rewritten to use the
 `SessionStorage` rather than using short-lived cookies.
 
 Two new APIs are available to simplify sending messages with binary data:

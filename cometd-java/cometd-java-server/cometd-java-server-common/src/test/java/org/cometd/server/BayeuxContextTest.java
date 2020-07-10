@@ -103,8 +103,8 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        handshake.header(name, value1);
-        handshake.header(name, value2);
+        handshake.headers(headers -> headers.put(name, value1));
+        handshake.headers(headers -> headers.put(name, value2));
         ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
@@ -119,7 +119,7 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
         context.stop();
         context.addFilter(new FilterHolder(new Filter() {
             @Override
-            public void init(FilterConfig filterConfig) throws ServletException {
+            public void init(FilterConfig filterConfig) {
             }
 
             @Override
@@ -168,7 +168,7 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
         context.stop();
         context.addFilter(new FilterHolder(new Filter() {
             @Override
-            public void init(FilterConfig filterConfig) throws ServletException {
+            public void init(FilterConfig filterConfig) {
             }
 
             @Override

@@ -12,8 +12,8 @@ These instructions are only for CometD committers that want to perform a CometD 
 
 Before creating the release, the following tests should be performed:
 
-* The <<_installation_demos,CometD Demo>> works
-* The <<_benchmarking,CometD Benchmark>> works and yields good results
+* The xref:_installation_demos[CometD Demo] works
+* The xref:_benchmarking[CometD Benchmark] works and yields good results
 * The https://github.com/cometd/cometd-nodejs-client[CometD NodeJS Client] works
 * The https://github.com/cometd/cometd-nodejs-server[CometD NodeJS Server] works
 

@@ -95,7 +95,7 @@ for each transport.
 | jsonContext
 | no
 | `org.cometd.common.JettyJSONContextClient`
-| The `JSONContext.Client` class name (see also <<_java_json,the JSON section>>)
+| The `JSONContext.Client` class name (see also xref:_java_json[the JSON section])
 |===
 
 .Long Polling Client Transport Parameters

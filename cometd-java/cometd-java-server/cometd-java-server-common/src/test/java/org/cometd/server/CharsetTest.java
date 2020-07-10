@@ -68,7 +68,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest {
                 "}]");
         // In some cross domain configuration (for example IE9 using XDomainRequest),
         // the Content-Type header is not sent, and we must behave well even if it's missing
-        publish.onResponseBegin(r -> publish.header(HttpHeader.CONTENT_TYPE, null));
+        publish.onResponseBegin(r -> publish.headers(headers -> headers.remove(HttpHeader.CONTENT_TYPE)));
         response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 

@@ -85,8 +85,8 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
             protected void customize(Request request) {
                 String authorization = userName + ":" + password;
                 byte[] bytes = Base64.getEncoder().encode(authorization.getBytes(StandardCharsets.UTF_8));
-                authorization = new String(bytes, StandardCharsets.UTF_8);
-                request.header("Authorization", "Basic " + authorization);
+                String encoded = new String(bytes, StandardCharsets.UTF_8);
+                request.headers(headers -> headers.put("Authorization", "Basic " + encoded));
             }
         };
         BayeuxClient client = new BayeuxClient(cometdURL, transport);

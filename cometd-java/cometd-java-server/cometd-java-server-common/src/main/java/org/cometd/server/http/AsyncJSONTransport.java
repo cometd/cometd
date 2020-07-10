@@ -18,6 +18,7 @@ package org.cometd.server.http;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -33,8 +34,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.common.JSONContext;
+import org.cometd.common.BufferingJSONAsyncParser;
 import org.cometd.server.BayeuxServerImpl;
-import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.cometd.server.JSONContextServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,13 +110,21 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Parsed {} messages", messages == null ? -1 : messages.length);
                 }
-                if (messages != null) {
-                    processMessages(context, messages, promise);
-                } else {
-                    promise.succeed(null);
-                }
+                process(messages == null ? null : Arrays.asList(messages), context, promise);
             } catch (ParseException x) {
                 handleJSONParseException(context.request, context.response, json, x);
+                promise.succeed(null);
+            }
+        } catch (Throwable x) {
+            promise.fail(x);
+        }
+    }
+
+    private void process(List<ServerMessage.Mutable> messages, Context context, Promise<Void> promise) {
+        try {
+            if (messages != null) {
+                processMessages(context, messages, promise);
+            } else {
                 promise.succeed(null);
             }
         } catch (Throwable x) {
@@ -204,17 +215,19 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
 
         protected abstract void append(byte[] buffer, int offset, int length);
 
-        @Override
-        public void onAllDataRead() throws IOException {
-            ServletInputStream input = context.request.getInputStream();
-            String json = finish();
+        protected void finish(List<ServerMessage.Mutable> messages) throws IOException {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Asynchronous read end from {}: {}", input, json);
+                LOGGER.debug("Asynchronous read end from {}: {}", context.request.getInputStream(), messages);
+            }
+            process(messages, context, promise);
+        }
+
+        protected void finish(String json) throws IOException {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Asynchronous read end from {}: {}", context.request.getInputStream(), json);
             }
             process(json, context, promise);
         }
-
-        protected abstract String finish();
 
         @Override
         public void onError(Throwable failure) {
@@ -223,20 +236,27 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
     }
 
     protected class UTF8Reader extends AbstractReader {
-        private final Utf8StringBuilder content = new Utf8StringBuilder(BUFFER_CAPACITY);
+        private final JSONContext.AsyncParser parser;
 
         protected UTF8Reader(Context context, Promise<Void> promise) {
             super(context, promise);
+            JSONContextServer jsonContext = getJSONContextServer();
+            JSONContext.AsyncParser asyncParser = jsonContext.newAsyncParser();
+            if (asyncParser == null) {
+                asyncParser = new BufferingJSONAsyncParser(jsonContext);
+            }
+            this.parser = asyncParser;
         }
 
         @Override
-        protected void append(byte[] buffer, int offset, int length) {
-            content.append(buffer, offset, length);
+        protected void append(byte[] bytes, int offset, int length) {
+            parser.parse(bytes, offset, length);
         }
 
         @Override
-        protected String finish() {
-            return content.toString();
+        public void onAllDataRead() throws IOException {
+            List<ServerMessage.Mutable> messages = parser.complete();
+            finish(messages);
         }
     }
 
@@ -273,8 +293,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         }
 
         @Override
-        protected String finish() {
-            return new String(content, 0, count, charset);
+        public void onAllDataRead() throws IOException {
+            finish(new String(content, 0, count, charset));
         }
     }
 

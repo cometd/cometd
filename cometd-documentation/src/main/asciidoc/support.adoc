@@ -27,7 +27,7 @@ The services provided are provided directly by the CometD committers, ensuring t
   its performance and suggest the best changes to apply to make it scale better.
 * CometD clustering review. +
   If you need to scale horizontally, CometD provides a scalability cluster, see
-  <<_java_oort,the Oort section>>.
+  xref:_java_oort[the Oort section].
   Clustering is never easy, but we can suggest the right approach to make your
   application clusterable.
 * Any other CometD-related service that you may need, we can provide it.

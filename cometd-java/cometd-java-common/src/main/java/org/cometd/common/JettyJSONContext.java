@@ -18,18 +18,21 @@ package org.cometd.common;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
+import org.eclipse.jetty.util.ajax.AsyncJSON;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public abstract class JettyJSONContext<T extends Message.Mutable> {
+public abstract class JettyJSONContext<M extends Message.Mutable> {
     private final FieldJSON _jsonParser = new FieldJSON();
     private final FieldJSON _messageParser = new MessageJSON();
     private final FieldJSON _messagesParser = new MessagesJSON();
+    private final AsyncJSON.Factory _jsonFactory = new AsyncJSONFactory();
 
     protected JettyJSONContext() {
     }
@@ -38,15 +41,19 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
         return _jsonParser;
     }
 
-    protected abstract T newRoot();
+    public AsyncJSON.Factory getAsyncJSONFactory() {
+        return _jsonFactory;
+    }
 
-    protected abstract T[] newRootArray(int size);
+    protected abstract M newRoot();
 
-    public T[] parse(InputStream stream) throws ParseException {
+    protected abstract M[] newRootArray(int size);
+
+    public M[] parse(InputStream stream) throws ParseException {
         return parse(new InputStreamReader(stream, StandardCharsets.UTF_8));
     }
 
-    public T[] parse(Reader reader) throws ParseException {
+    public M[] parse(Reader reader) throws ParseException {
         try {
             Object object = _messagesParser.parse(new JSON.ReaderSource(reader));
             return adapt(object);
@@ -55,7 +62,7 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
         }
     }
 
-    public T[] parse(String json) throws ParseException {
+    public M[] parse(String json) throws ParseException {
         try {
             Object object = _messagesParser.parse(new JSON.StringSource(json));
             return adapt(object);
@@ -64,24 +71,29 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
         }
     }
 
+    public JSONContext.AsyncParser newAsyncParser() {
+        AsyncJSON asyncJSON = getAsyncJSONFactory().newAsyncJSON();
+        return new AsyncJSONParser(asyncJSON);
+    }
+
     @SuppressWarnings("unchecked")
-    private T[] adapt(Object object) {
+    private M[] adapt(Object object) {
         if (object == null) {
             return null;
         }
         if (object.getClass().isArray()) {
-            return (T[])object;
+            return (M[])object;
         }
-        T[] result = newRootArray(1);
-        result[0] = (T)object;
+        M[] result = newRootArray(1);
+        result[0] = (M)object;
         return result;
     }
 
-    public String generate(T message) {
+    public String generate(M message) {
         return _messageParser.toJSON(message);
     }
 
-    public String generate(List<T> messages) {
+    public String generate(List<M> messages) {
         return _messagesParser.toJSON(messages);
     }
 
@@ -93,13 +105,29 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
         return new JSONGenerator();
     }
 
-    private static class FieldJSON extends JSON {
+    public void putConvertor(String className, JSON.Convertor convertor) {
+        getJSON().addConvertorFor(className, convertor);
+        getAsyncJSONFactory().putConvertor(className, convertor);
+    }
+
+    private class FieldJSON extends JSON {
         // Allows for optimizations
 
         // Overridden for visibility
         @Override
         protected Convertor getConvertor(Class<?> forClass) {
             return super.getConvertor(forClass);
+        }
+
+        @Override
+        public void addConvertor(Class<?> klass, Convertor convertor) {
+            addConvertorFor(klass.getName(), convertor);
+        }
+
+        @Override
+        public void addConvertorFor(String name, Convertor convertor) {
+            super.addConvertorFor(name, convertor);
+            getAsyncJSONFactory().putConvertor(name, convertor);
         }
     }
 
@@ -155,10 +183,72 @@ public abstract class JettyJSONContext<T extends Message.Mutable> {
         }
     }
 
+    private static class AsyncJSONParser implements JSONContext.AsyncParser {
+        private final AsyncJSON asyncJSON;
+
+        private AsyncJSONParser(AsyncJSON asyncJSON) {
+            this.asyncJSON = asyncJSON;
+        }
+
+        @Override
+        public void parse(ByteBuffer buffer) {
+            asyncJSON.parse(buffer);
+        }
+
+        @Override
+        public <R> R complete() {
+            return asyncJSON.complete();
+        }
+    }
+
     private class JSONGenerator implements JSONContext.Generator {
         @Override
         public String generate(Object object) {
             return getJSON().toJSON(object);
+        }
+    }
+
+    protected class AsyncJSONFactory extends AsyncJSON.Factory {
+        public AsyncJSONFactory() {
+            cache("1.0");
+            cache("advice");
+            cache("callback-polling");
+            cache("channel");
+            cache("clientId");
+            cache("data");
+            cache("error");
+            cache("ext");
+            cache("id");
+            cache("interval");
+            cache("long-polling");
+            cache("/meta/connect");
+            cache("/meta/disconnect");
+            cache("/meta/handshake");
+            cache("/meta/subscribe");
+            cache("/meta/unsubscribe");
+            cache("minimumVersion");
+            cache("none");
+            cache("reconnect");
+            cache("retry");
+            cache("subscription");
+            cache("successful");
+            cache("timeout");
+            cache("supportedConnectionTypes");
+            cache("version");
+            cache("websocket");
+        }
+
+        @Override
+        public AsyncJSON newAsyncJSON() {
+            return new AsyncJSON(this) {
+                @Override
+                protected Map<String, Object> newObject(Context context) {
+                    if (context.depth() == 1) {
+                        return newRoot();
+                    }
+                    return super.newObject(context);
+                }
+            };
         }
     }
 }

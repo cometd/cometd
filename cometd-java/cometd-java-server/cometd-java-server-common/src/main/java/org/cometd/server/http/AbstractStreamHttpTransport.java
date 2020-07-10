@@ -96,7 +96,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                     LOGGER.debug("Parsed {} messages", messages == null ? -1 : messages.length);
                 }
                 if (messages != null) {
-                    processMessages(context, messages, promise);
+                    processMessages(context, Arrays.asList(messages), promise);
                 } else {
                     promise.succeed(null);
                 }

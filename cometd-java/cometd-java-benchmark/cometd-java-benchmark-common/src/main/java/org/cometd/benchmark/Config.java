@@ -18,7 +18,7 @@ package org.cometd.benchmark;
 public class Config {
     public static final String CONTEXT_PATH = "/cometd";
     public static final String SERVLET_PATH = "/cometd";
-    public static final String ID_FIELD = "ID";
+    public static final String ID_FIELD = "msg_id";
     public static final String CHANNEL_PREFIX = "/bench/";
 
     public static final long META_CONNECT_TIMEOUT = 20000;

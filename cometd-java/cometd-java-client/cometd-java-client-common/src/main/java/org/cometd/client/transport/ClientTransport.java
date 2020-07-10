@@ -84,6 +84,10 @@ public abstract class ClientTransport extends AbstractTransport {
         setOption(JSON_CONTEXT_OPTION, jsonContext);
     }
 
+    protected JSONContext.Client getJSONContextClient() {
+        return jsonContext;
+    }
+
     /**
      * Aborts this transport, usually by cancelling all pending Bayeux messages that require a response,
      * such as {@code /meta/connect}s, without waiting for a response.

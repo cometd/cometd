@@ -24,9 +24,9 @@ Use a base path such as "C:\CometD\" instead.
 
 === Setting Up the Project
 
-You can set up the project in two ways: using <<_primer_maven_way,the Maven way>>
-or <<_primer_non_maven_way,the non Maven way>>.
-For both, you can follow <<_primer_setup_details,setup section>>
+You can set up the project in two ways: using xref:_primer_maven_way[the Maven way]
+or xref:_primer_non_maven_way[the non Maven way].
+For both, you can follow xref:_primer_setup_details[setup section]
 to see how some of the files of the project are set up.
 
 [[_primer_maven_way]]
@@ -240,7 +240,7 @@ The second step is to configure the server side.
 If you use Java, this means that you have to set up the CometD servlet that
 responds to messages from clients.
 The details of the server side configuration and service development are explained in
-<<_java_server,the Java server library section>>.
+xref:_java_server[the Java server library section].
 
 The last step is to write a JSP (or HTML) file that downloads the JavaScript
 dependencies and the JavaScript application, as explained in the following section.
@@ -278,9 +278,9 @@ the `cometd` object and starts the application.
 The archetypes provide:
 
 ====
-[source,javascript]
+[source,javascript,indent=0]
 ----
-include::{resources}/application.js[]
+include::../../../../cometd-archetypes/dojo-jetty9/src/main/resources/archetype-resources/src/main/webapp/application.js[]
 ----
 ====
 

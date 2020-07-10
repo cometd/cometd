@@ -4,7 +4,7 @@
 
 The timesync extension uses the messages exchanged between a client and a
 server to calculate the offset between the client's clock and the server's clock.
-This is independent from <<_extensions_timestamp,the timestamp extension section>>,
+This is independent from xref:_extensions_timestamp[the timestamp extension section],
 which uses the local clock for all timestamps.
 This extension requires both a client-side extension and a server-side extension.
 The server-side extension is available in Java.

@@ -3,7 +3,7 @@
 ==== OortService
 
 An `org.cometd.oort.OortService` is a named CometD service (see also
-<<_java_server_services,the services section>>) that forwards actions from a
+xref:_java_server_services[the services section]) that forwards actions from a
 _requesting_ node to the node in the cluster that owns the data onto which
 the action must be performed, called the _owner_ node, and receives the
 action result back.
@@ -54,7 +54,7 @@ The typical workflow of an `OortService` is the following:
 `OortService` are uniquely named across the cluster, and are usually created
 at startup by subclassing them.
 Since they are CometD services, they are usually annotated to listen for messages
-on certain channels (see also <<_java_server_services_annotated,the annotated services section>>
+on certain channels (see also xref:_java_server_services_annotated[the annotated services section]
 for further details on service annotations):
 
 ====
@@ -183,7 +183,7 @@ CometD provides an out-of-the-box implementation of `OortPrimaryService`,
 number generator.
 
 The implementation of an `OortPrimaryService` subclass is similar to that of
-`OortService` (see also <<_java_oort_objects_oort_service_creation,this section>>),
+`OortService` (see also xref:_java_oort_objects_oort_service_creation[this section]),
 but this time the `forward(...)` is always called with the same Oort URL
 (that of the _primary_ node) that can be obtained by calling method
 `OortPrimaryService.getPrimaryOortURL()`.

@@ -210,8 +210,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect1.header(HttpHeader.HOST.asString(), "http://127.0.0.1:" + port);
-        connect1.header("Origin", "http://localhost:" + port);
+        connect1.headers(headers -> headers.put(HttpHeader.HOST, "http://127.0.0.1:" + port));
+        connect1.headers(headers -> headers.put("Origin", "http://localhost:" + port));
         response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(isSuccessful(response));
@@ -222,8 +222,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect2.header(HttpHeader.HOST.asString(), "http://127.0.0.1:" + port);
-        connect2.header("Origin", "http://localhost:" + port);
+        connect2.headers(headers -> headers.put(HttpHeader.HOST, "http://127.0.0.1:" + port));
+        connect2.headers(headers -> headers.put("Origin", "http://localhost:" + port));
         response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(isSuccessful(response));

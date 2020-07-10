@@ -2,12 +2,12 @@
 [[_java_oort_objects]]
 === Distributed Objects and Services
 
-The <<_java_oort,Oort section>> described how it is possible to link nodes to
+The xref:_java_oort[Oort section] described how it is possible to link nodes to
 form an Oort cluster.
 Oort nodes are all connected to each other so that they are aware of all the
 other peer nodes.
 Additionally, each node can forward messages that have been published to
-broadcast channels (see also <<_concepts_channels,this section>>) to other nodes.
+broadcast channels (see also xref:_concepts_channels[this section]) to other nodes.
 
 Your application may need to maintain information, on each node, that is
 distributed across all nodes.
@@ -25,11 +25,11 @@ For example, your application may need to access a database system that is
 only accessible from a specific node for security reasons.
 This feature is named "service forwarding".
 
-Oort and Seti (see also <<_java_oort_seti,the java oort seti section>>) alone
+Oort and Seti (see also xref:_java_oort_seti[the java oort seti section]) alone
 do not offer data distribution or service forwarding out of the box, but it
 is possible to build on Oort features to implement them, and this is exactly
-what CometD offers, respectively, with <<_java_oort_objects_oort_object,`OortObject`>>
-and <<_java_oort_objects_oort_service,`OortService`>>.
+what CometD offers, respectively, with xref:_java_oort_objects_oort_object[`OortObject`]
+and xref:_java_oort_objects_oort_service[`OortService`].
 
 include::java_oort_object.adoc[]
 include::java_oort_service.adoc[]

@@ -28,6 +28,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.junit.After;
 import org.junit.Assert;
@@ -79,6 +80,6 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
     protected void configureBayeuxRequest(Request request, String requestBody, String encoding) {
         request.timeout(5, TimeUnit.SECONDS);
         request.method(HttpMethod.POST);
-        request.content(new StringContentProvider("application/json;charset=" + encoding, requestBody, Charset.forName(encoding)));
+        request.body(new StringRequestContent("application/json;charset=" + encoding, requestBody, Charset.forName(encoding)));
     }
 }

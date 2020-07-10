@@ -86,7 +86,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
         // what it produces for the standalone object that allows correct deserialization, of this form:
         // { field: ["className", {object}] }
         // It is way easier to have Jetty serialize and deserialize this form than make Jackson use Jetty's form.
-        // They problem is that Jackson tries to be "smart" in figuring out the typing, but with a Map<String, Object>
+        // The problem is that Jackson tries to be "smart" in figuring out the typing, but with a Map<String, Object>
         // there is no way to have type information for the values, so Jackson defaults to a basic deserializer
         // that either is not very flexible, or it's very difficult to configure, so much that I could not so far.
 

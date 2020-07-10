@@ -25,7 +25,7 @@ transparently to any node.
 The load balancer should implement stickyness, which can be based on:
 
 * The remote IP address (recommended)
-* CometD's BAYEUX_BROWSER cookie (see also <<_bayeux_multiple_clients,the multiple clients section>>)
+* CometD's BAYEUX_BROWSER cookie (see also xref:_bayeux_multiple_clients[the multiple clients section])
   which will only work for HTTP transports
 * Some other mechanism the load balancer supports.
 
@@ -92,7 +92,7 @@ discovery and static configuration servlets share:
 | random string
 | The pre-shared secret that authenticates connections from other Oort comets.
   It is mandatory when applications want to authenticate other Oort comets,
-  see also <<_java_oort_authentication,the Oort authentication section>>.
+  see also xref:_java_oort_authentication[the Oort authentication section].
 
 | oort.channels
 | no
@@ -103,7 +103,7 @@ discovery and static configuration servlets share:
 | no
 | true
 | Whether to enable the message acknowledgement extension (see also
-  <<_extensions_acknowledge,The acknowledgement extension>>) in the BayeuxServer
+  xref:_extensions_acknowledge[The acknowledgement extension]) in the BayeuxServer
   instance and in the OortComet instances
 
 | clientDebug
@@ -232,7 +232,7 @@ on the specified multicast address and port (`oort.multicast.groupAddress` and
 (`oort.multicast.timeToLive`). Advertisements continue until the web application
 is stopped, and only serve to advertise that a new node has appeared.
 `Oort` has a built-in mechanism that takes care of membership organization
-(see also <<_java_oort_membership_organization,the membership organization section>>
+(see also xref:_java_oort_membership_organization[the membership organization section]
 for details).
 
 When enabling the Oort automatic discovery mechanism, you must be sure that:
@@ -367,10 +367,10 @@ URL(s) to connect to:
 A "primary" node may be configured _without_ the `oort.cloud` parameter.
 The other nodes will be configured with the URL of the "primary" node, and when
 they connect to the "primary" node, the "primary" node will connect back to them,
-see <<_java_oort_membership_organization,the membership organization section>>.
+see xref:_java_oort_membership_organization[the membership organization section].
 
 Alternatively, it's possible to write custom initialization code (see the section on
-<<_java_server_services_integration,the services integration section>> for suggestions
+xref:_java_server_services_integration[the services integration section] for suggestions
 on how to do so) that links the node to the Oort cluster (this might be useful if
 Oort node URLs cannot be known a priori, but can be known at runtime), for example:
 
@@ -402,7 +402,7 @@ public class OortConfigurationServlet extends GenericServlet {
 ====
 
 The `OortComet` instance that `Oort.observeComet(url)` returns is a specialized
-version of `BayeuxClient`, see also <<_java_client,the Java client section>>.
+version of `BayeuxClient`, see also xref:_java_client[the Java client section].
 
 [[_java_oort_membership_organization]]
 ==== Membership Organization
@@ -521,7 +521,7 @@ The `oortURL` field is the URL of the node that initiates the handshake; the
 `cometURL` field is the URL of the node that receives the handshake; the
 `oortSecret` is the base64 encoding of the SHA-1 digested bytes of the
 pre-shared secret of the initiating Oort node (see the earlier section,
-<<_java_oort_common_configuration,the Oort common configuration section>>).
+xref:_java_oort_common_configuration[the Oort common configuration section]).
 
 These extension fields provide a way for an Oort node to distinguish a
 handshake of a remote client (which might be subject to authentication checks)
@@ -529,7 +529,7 @@ from a handshake performed by a remote node.
 For example, assume that remote clients always send an extension field
 containing an authentication token; then it is possible to write an
 implementation of `SecurityPolicy` as follows (see also
-<<_java_server_authentication,the authentication section>>):
+xref:_java_server_authentication[the authentication section]):
 
 ====
 [source,java]
@@ -576,7 +576,7 @@ string that is different for each Oort node.
 ==== Broadcast Messages Forwarding
 
 Broadcast messages (that is, messages sent to non-meta and non-service channels,
-(see also <<_javascript_subscribe,this section>> for further details) are by
+(see also xref:_javascript_subscribe[this section] for further details) are by
 definition messages that all clients subscribing to the channel the message is
 being sent to should receive.
 
@@ -648,10 +648,10 @@ channels.
 Forwarding of messages may be subject to temporary interruptions in case
 there is a temporary network connectivity failure between two nodes.
 To overcome this problem, the message acknowledgement extension (see also
-<<_extensions_acknowledge,the acknowledgement extension section>>) is enabled
+xref:_extensions_acknowledge[the acknowledgement extension section]) is enabled
 by default among Oort nodes so that, for short failures, the messages lost
 are resent automatically by the acknowledgement extension.
-Refer to <<_java_oort_common_configuration,the Oort common configuration section>>
+Refer to xref:_java_oort_common_configuration[the Oort common configuration section]
 for the configuration details.
 
 Remember that the message acknowledgement extension is not a fully persistent
@@ -676,7 +676,7 @@ other nodes, an `Oort` instance is all you need.
 If you need to send messages directly to particular clients (for example, `clientA`
 wants to send a message to `clientC` but not to `clientB`, then you need to
 set up an additional component of the Oort clustering called _Seti_, see also
-<<_java_oort_seti,the Seti section>>.
+xref:_java_oort_seti[the Seti section].
 
 include::java_oort_seti.adoc[]
 include::java_oort_objects.adoc[]

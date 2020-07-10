@@ -80,7 +80,7 @@ public class BayeuxClientTest extends ClientServerTest {
                     @Override
                     public void onBegin(Request request) {
                         // Remove the host header so the request will fail
-                        request.header(HttpHeader.HOST, null);
+                        request.headers(headers -> headers.remove(HttpHeader.HOST));
                     }
                 });
             }
@@ -613,7 +613,7 @@ public class BayeuxClientTest extends ClientServerTest {
         server.stop();
         Assert.assertTrue(unconnectedLatch.get().await(5, TimeUnit.SECONDS));
         Assert.assertTrue(client.waitFor(5000, State.UNCONNECTED));
-        Assert.assertTrue(!client.isConnected());
+        Assert.assertFalse(client.isConnected());
 
         // restart server
         connector.setPort(port);
@@ -754,7 +754,7 @@ public class BayeuxClientTest extends ClientServerTest {
                     request.listener(new Request.Listener.Adapter() {
                         @Override
                         public void onBegin(Request request) {
-                            request.header(HttpHeader.HOST, null);
+                            request.headers(headers -> headers.remove(HttpHeader.HOST));
                         }
                     });
                 }

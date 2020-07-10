@@ -24,7 +24,8 @@ import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,7 @@ public class XMLHttpRequestExchange {
     }
 
     public void addRequestHeader(String name, String value) {
-        exchange.getRequest().header(name, value);
+        exchange.getRequest().headers(headers -> headers.put(name, value));
     }
 
     public String getMethod() {
@@ -171,7 +172,7 @@ public class XMLHttpRequestExchange {
             }
             aborted = true;
             responseText = null;
-            getRequest().getHeaders().clear();
+            getRequest().headers(HttpFields.Mutable::clear);
             if (readyState == ReadyState.HEADERS_RECEIVED || readyState == ReadyState.LOADING) {
                 readyState = ReadyState.DONE;
                 if (isAsynchronous()) {
@@ -201,7 +202,7 @@ public class XMLHttpRequestExchange {
 
         public void setRequestContent(String content) {
             requestText = content;
-            getRequest().content(new StringContentProvider(content));
+            getRequest().body(new StringRequestContent(content));
         }
 
         public String getAllResponseHeaders() {

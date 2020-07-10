@@ -15,12 +15,6 @@
  */
 package org.cometd.client.http;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.HashMap;
@@ -39,10 +33,16 @@ import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.http.AbstractHttpTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Simulates a browser opening multiple tabs to the same Bayeux server
@@ -330,7 +330,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         ContentResponse handshake = httpClient.newRequest("localhost", connector.getLocalPort())
                 .method(HttpMethod.POST)
                 .path(cometdServletPath)
-                .content(new StringContentProvider(handshakeContent), "application/json;charset=UTF-8")
+                .body(new StringRequestContent(handshakeContent, "application/json;charset=UTF-8"))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         assertEquals(200, handshake.getStatus());
@@ -352,7 +352,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         ContentResponse connect1 = httpClient.newRequest("localhost", connector.getLocalPort())
                 .method(HttpMethod.POST)
                 .path(cometdServletPath)
-                .content(new StringContentProvider(connectContent1), "application/json;charset=UTF-8")
+                .body(new StringRequestContent(connectContent1, "application/json;charset=UTF-8"))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         assertEquals(200, connect1.getStatus());
@@ -368,7 +368,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         httpClient.newRequest("localhost", connector.getLocalPort())
                 .method(HttpMethod.POST)
                 .path(cometdServletPath)
-                .content(new StringContentProvider(connectContent2), "application/json;charset=UTF-8")
+                .body(new StringRequestContent(connectContent2, "application/json;charset=UTF-8"))
                 .timeout(5, TimeUnit.SECONDS)
                 .send(result -> {
                     assertTrue(result.isSucceeded());
@@ -390,7 +390,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         ContentResponse connect3 = httpClient.newRequest("localhost", connector.getLocalPort())
                 .method(HttpMethod.POST)
                 .path(cometdServletPath)
-                .content(new StringContentProvider(connectContent3), "application/json;charset=UTF-8")
+                .body(new StringRequestContent(connectContent3, "application/json;charset=UTF-8"))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         assertEquals(200, connect3.getStatus());
@@ -407,7 +407,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         ContentResponse connect4 = httpClient.newRequest("localhost", connector.getLocalPort())
                 .method(HttpMethod.POST)
                 .path(cometdServletPath)
-                .content(new StringContentProvider(connectContent4), "application/json;charset=UTF-8")
+                .body(new StringRequestContent(connectContent4, "application/json;charset=UTF-8"))
                 .timeout(2 * timeout, TimeUnit.MILLISECONDS)
                 .send();
         assertEquals(200, connect4.getStatus());

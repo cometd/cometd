@@ -14,7 +14,7 @@ require(["dojo", "dojo/on", "dojo/keys", "dojox/cometd", "dojox/cometd/timestamp
         var phrase = dojo.byId("phrase");
         phrase.setAttribute("autocomplete", "OFF");
         on(phrase, "keyup", function(e) {
-            if (e.keyCode == keys.ENTER) {
+            if (e.keyCode === keys.ENTER) {
                 echoRpc(phrase.value);
                 phrase.value = "";
                 return false;

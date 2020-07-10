@@ -15,8 +15,6 @@
  */
 package org.cometd.client.http.common;
 
-import java.net.CookieManager;
-import java.net.CookiePolicy;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +39,6 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
     private boolean _aborted;
     private int _maxMessageSize;
     private boolean _appendMessageType;
-    private CookieManager _cookieManager;
     private Map<String, Object> _advice;
 
     protected AbstractHttpClientTransport(String url, Map<String, Object> options) {
@@ -68,8 +65,6 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
             String afterPath = uriMatcher.group(9);
             _appendMessageType = afterPath == null || afterPath.trim().length() == 0;
         }
-
-        _cookieManager = new CookieManager(getCookieStore(), CookiePolicy.ACCEPT_ALL);
     }
 
     @Override
@@ -138,18 +133,7 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
         if (content != null && content.length() > 0) {
             try {
                 List<Message.Mutable> messages = parseMessages(content);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Received messages {}", messages);
-                }
-                for (Message.Mutable message : messages) {
-                    if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel())) {
-                        Map<String, Object> advice = message.getAdvice();
-                        if (advice != null && advice.containsKey("timeout")) {
-                            setAdvice(advice);
-                        }
-                    }
-                }
-                listener.onMessages(messages);
+                processResponseMessages(listener, messages);
             } catch (ParseException x) {
                 listener.onFailure(x, requestMessages);
             }
@@ -160,6 +144,21 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
             TransportException x = new TransportException(failure);
             listener.onFailure(x, requestMessages);
         }
+    }
+
+    protected void processResponseMessages(TransportListener listener, List<Message.Mutable> messages) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Received messages {}", messages);
+        }
+        for (Message.Mutable message : messages) {
+            if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel())) {
+                Map<String, Object> advice = message.getAdvice();
+                if (advice != null && advice.containsKey("timeout")) {
+                    setAdvice(advice);
+                }
+            }
+        }
+        listener.onMessages(messages);
     }
 
     protected void processWrongResponseCode(TransportListener listener, List<Message.Mutable> messages, int code) {

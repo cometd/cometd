@@ -105,7 +105,7 @@ CometD session that is not to be lost just because the user refreshed the page,
 or navigated to another part of the same CometD web application.
 A typical example of this stateful context is when the server needs to
 guarantee message delivery (see also
-<<_extensions_acknowledge,the acknowledge extension section>>). In this case,
+xref:_extensions_acknowledge[the acknowledge extension section]). In this case,
 the server has a list of messages that have not been acknowledged by the client,
 and if the client reloads the page, without the reload extension this list of
 messages will be lost, causing the client to potentially loose important messages.
@@ -122,7 +122,7 @@ application code must call `cometd.reload()` (for example, on the page
 _unload_ event handler, see note below). When `cometd.reload()` is called, the
 reload extension saves the CometD session state details in the
 https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage[`SessionStorage`]
-under the name specified by the <<_extensions_reload_configuration,configuration>>.
+under the name specified by the xref:_extensions_reload_configuration[configuration].
 
 When the new page loads up, it will execute the same code executed on the first
 page load, namely the code that configured CometD, that registered channel

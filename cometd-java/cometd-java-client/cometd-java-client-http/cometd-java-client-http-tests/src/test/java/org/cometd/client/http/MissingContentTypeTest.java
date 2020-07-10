@@ -30,7 +30,7 @@ public class MissingContentTypeTest extends ClientServerTest {
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient) {
             @Override
             protected void customize(Request request) {
-                request.header(HttpHeader.CONTENT_TYPE, null);
+                request.headers(headers -> headers.remove(HttpHeader.CONTENT_TYPE));
             }
         });
 

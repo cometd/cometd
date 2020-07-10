@@ -96,7 +96,7 @@ angular.module('cometdAngularChat', ['cometd-reload'])
             var membership = message.data.membership;
             var text = message.data.chat;
 
-            if (!membership && fromUser == $scope.lastUser) {
+            if (!membership && fromUser === $scope.lastUser) {
                 fromUser = '...';
             } else {
                 $scope.lastUser = fromUser;
@@ -110,7 +110,7 @@ angular.module('cometdAngularChat', ['cometd-reload'])
                     text: text
                 });
                 $scope.lastUser = null;
-            } else if (message.data.scope == 'private') {
+            } else if (message.data.scope === 'private') {
                 $scope.messages.push({
                     type: 'private',
                     user: fromUser,

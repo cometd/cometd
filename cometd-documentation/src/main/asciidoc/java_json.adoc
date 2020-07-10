@@ -25,7 +25,7 @@ Distinctions between them include:
 [[_java_json_api]]
 ==== JSONContext API
 
-The CometD Java client implementation (see also <<_java_client,the client section>>)
+The CometD Java client implementation (see also xref:_java_client[the client section])
 uses the JSON library to generate JSON from and to parse JSON to
 `org.cometd.bayeux.Message` instances.
 The JSON library class that performs this generation/parsing on the client
@@ -70,7 +70,7 @@ hardcode the usage of a specific implementation library.
 Class `JSONContext.Parser` can be used to convert into objects any JSON that
 the application needs to read for other purposes, for example from configuration
 files, and of course convert into custom objects (see also
-<<_java_json_customization,the JSON customization section>>):
+xref:_java_json_customization[the JSON customization section]):
 
 ====
 [source,java]
@@ -106,7 +106,7 @@ public EchoInfo writeToConfigFile(BayeuxServer bayeuxServer, EchoInfo info) thro
 
 On the server, you can specify the fully qualified name of a class implementing
 `org.cometd.server.JSONContextServer` as init-parameter of the `CometDServlet`
-(see also <<_java_server_configuration,the server configuration section>>);
+(see also xref:_java_server_configuration[the server configuration section]);
 if omitted, the default Jetty library is used.
 For example:
 
@@ -146,16 +146,16 @@ You can customize it by adding serializers/deserializers as explained above.
 [[_java_json_oort_config]]
 ===== Oort Configuration
 
-In the Oort clustering (see also <<_java_oort,the Oort section>>), an `Oort`
+In the Oort clustering (see also xref:_java_oort[the Oort section]), an `Oort`
 instance need to have both the server and the client `JSONContext`: the server
 one to deserialize messages that other Oort comets send, and the client one
 to serialize messages to send to other Oort comets.
 
 The `Oort` instance will use the `JSONContext.Server` already configured for
-the server, as explained in <<_java_json_server_config,the JSON server configuration section>>.
+the server, as explained in xref:_java_json_server_config[the JSON server configuration section].
 
 The `Oort` instance will use of the `JSONContext.Client` specified in the
-configuration (see also <<_java_oort_common_configuration,the Oort common configuration section>>).
+configuration (see also xref:_java_oort_common_configuration[the Oort common configuration section]).
 
 [[_java_json_portability]]
 ==== Portability Considerations
@@ -222,9 +222,9 @@ cometd.publish('/echo', {
 ====
 
 On the server, in the `web.xml` file, you register the `org.cometd.server.JettyJSONContextServer`
-as `jsonContext` (see also <<_java_json_server_config,the JSON server configuration section>>),
+as `jsonContext` (see also xref:_java_json_server_config[the JSON server configuration section]),
 and at startup you add a custom converter for the `org.cometd.example.EchoInfo`
-class (see also <<_java_server_services_integration,the services integration section>>
+class (see also xref:_java_server_services_integration[the services integration section]
 for more details about configuring CometD at startup).
 
 ====
@@ -278,7 +278,7 @@ public class EchoInfo {
 
 If, instead of using the JavaScript client, you are using the Java client,
 it is possible to configure the Java client to perform the serialization/deserialization
-of JSON objects in the same way (see also <<_java_json_client_config,the JSON client configuration section>>):
+of JSON objects in the same way (see also xref:_java_json_client_config[the JSON client configuration section]):
 
 ====
 [source,java]

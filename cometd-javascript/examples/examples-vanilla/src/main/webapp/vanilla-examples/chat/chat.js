@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', function() {
             var useServer = _id('useServer').checked;
             if (useServer) {
                 var altServer = _id('altServer').value;
-                if (altServer.length == 0) {
+                if (altServer.length === 0) {
                     alert('Please enter a server address');
                     return;
                 }
@@ -115,7 +115,7 @@ window.addEventListener('DOMContentLoaded', function() {
             var membership = message.data.membership;
             var text = message.data.chat;
 
-            if (!membership && fromUser == _lastUser) {
+            if (!membership && fromUser === _lastUser) {
                 fromUser = '...';
             } else {
                 _lastUser = fromUser;
@@ -139,7 +139,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 spanMembership.appendChild(spanText);
                 chat.appendChild(spanMembership);
                 _lastUser = null;
-            } else if (message.data.scope == 'private') {
+            } else if (message.data.scope === 'private') {
                 var spanPrivate = document.createElement('span');
                 spanPrivate.className = 'private';
                 spanPrivate.appendChild(spanFrom);
@@ -307,13 +307,13 @@ window.addEventListener('DOMContentLoaded', function() {
     _id('username').autocomplete = 'off';
     _id('username').focus();
     _id('username').onkeyup = function(e) {
-        if (e.keyCode == 13) {
+        if (e.key === 'Enter') {
             chat.join(_id('username').value);
         }
     };
     _id('phrase').autocomplete = 'off';
     _id('phrase').onkeyup = function(e) {
-        if (e.keyCode == 13) {
+        if (e.key === 'Enter') {
             chat.send();
         }
     };

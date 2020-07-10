@@ -893,7 +893,9 @@
                 _webSocketConnected = false;
             }
             _stickyReconnect = true;
-            _context = null;
+            if (init) {
+                _context = null;
+            }
             _connecting = null;
             _connected = false;
         };

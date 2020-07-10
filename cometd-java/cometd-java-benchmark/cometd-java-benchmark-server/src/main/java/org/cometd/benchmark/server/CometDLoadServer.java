@@ -23,9 +23,11 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -38,7 +40,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.HdrHistogram.AtomicHistogram;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -273,7 +274,7 @@ public class CometDLoadServer {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         httpConfiguration.setDelayDispatchUntilContent(true);
         ConnectionFactory http = new HttpConnectionFactory(httpConfiguration);
-        ConnectionFactory http2 = tls ? new HTTP2ServerConnectionFactory(httpConfiguration) : new HTTP2CServerConnectionFactory(httpConfiguration);
+        HTTP2ServerConnectionFactory http2 = tls ? new HTTP2ServerConnectionFactory(httpConfiguration) : new HTTP2CServerConnectionFactory(httpConfiguration);
         ConnectionFactory[] factories = {http, http2};
         if (tls) {
             ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
@@ -285,7 +286,7 @@ public class CometDLoadServer {
         // see http://cometd.org/documentation/howtos/loadtesting
         connector.setAcceptQueueSize(2048);
         // Make sure the server timeout on a TCP connection is large
-        connector.setIdleTimeout(50 * Config.MAX_NETWORK_DELAY);
+        connector.setIdleTimeout(Config.META_CONNECT_TIMEOUT + 10 * Config.MAX_NETWORK_DELAY);
         connector.setPort(port);
         server.addConnector(connector);
 
@@ -515,7 +516,12 @@ public class CometDLoadServer {
     }
 
     private static class RequestLatencyHandler extends HandlerWrapper implements MeasureConverter {
-        private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MINUTES.toNanos(1), 3);
+        private final Collection<Histogram> allHistograms = new CopyOnWriteArrayList<>();
+        private final ThreadLocal<Histogram> histogram = ThreadLocal.withInitial(() -> {
+            Histogram histogram = new Histogram(TimeUnit.MINUTES.toNanos(1), 3);
+            allHistograms.add(histogram);
+            return histogram;
+        });
         private final ThreadLocal<Boolean> currentEnabled = ThreadLocal.withInitial(() -> Boolean.TRUE);
 
         @Override
@@ -541,16 +547,20 @@ public class CometDLoadServer {
         }
 
         private void reset() {
-            histogram.reset();
+            allHistograms.forEach(Histogram::reset);
         }
 
         private void updateLatencies(long begin, long end) {
-            histogram.recordValue(end - begin);
+            histogram.get().recordValue(end - begin);
         }
 
         private void print() {
+            Histogram histogram = allHistograms.stream().reduce(new Histogram(TimeUnit.MINUTES.toNanos(1), 3), (h1, h2) -> {
+                h1.add(h2);
+                return h1;
+            });
             if (histogram.getTotalCount() > 0) {
-                System.err.println(new HistogramSnapshot(histogram.copy(), 20, "Requests - Latency", "\u00B5s", this));
+                System.err.println(new HistogramSnapshot(histogram, 20, "Requests - Latency", "\u00B5s", this));
             }
         }
 

@@ -67,7 +67,7 @@ This parameter, called `max threads`, is by default 256 and may be too small
 for benchmarks with a large number of clients.
 
 The `max threads` parameter can be configured when you run the
-<<_benchmarking_server,server>> and the <<_benchmarking_client,client>>.
+xref:_benchmarking_server[server] and the xref:_benchmarking_client[client].
 
 Another important parameter that you want to tune, especially for benchmarks
 with a large number of users, is the JVM max heap size.

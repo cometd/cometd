@@ -44,8 +44,8 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 public class OkHttpClientTransport extends AbstractHttpClientTransport {
     private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json;charset=UTF-8");
 
+    private final List<Call> _calls = new ArrayList<>();
     private final OkHttpClient _client;
-    private List<Call> _calls = new ArrayList<>();
 
     public OkHttpClientTransport(Map<String, Object> options, OkHttpClient client) {
         this(null, options, client);
@@ -88,7 +88,7 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
     public void send(TransportListener listener, List<Message.Mutable> messages) {
         Request.Builder request = new Request.Builder()
                 .url(newRequestURI(messages))
-                .post(RequestBody.create(JSON_MEDIA_TYPE, generateJSON(messages)));
+                .post(RequestBody.create(generateJSON(messages), JSON_MEDIA_TYPE));
 
         URI cookieURI = URI.create(getURL());
         String cookies = getCookies(cookieURI).stream()

@@ -17,6 +17,7 @@ Licensed under a https://creativecommons.org/licenses/by-sa/4.0/[Creative Common
 
 image::https://licensebuttons.net/l/by-sa/4.0/88x31.png[link="https://creativecommons.org/licenses/by-sa/4.0/"]
 
+include::.asciidoctorconfig[]
 include::preface.adoc[]
 include::support.adoc[]
 include::contribute.adoc[]

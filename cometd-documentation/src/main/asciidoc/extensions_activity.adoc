@@ -8,7 +8,7 @@ This is a server-side only extension implemented by class
 `org.cometd.server.ext.ActivityExtension`.
 
 This extension is useful because the Bayeux Protocol (see also
-<<_bayeux,the Bayeux protocol section>>) uses a heart-beat mechanism (over the
+xref:_bayeux[the Bayeux protocol section]) uses a heart-beat mechanism (over the
 `/meta/connect` channel) that prevents servers to declare resources such as
 connections or transport sessions (for example, Servlet's `HttpSession`) as
 idle, and therefore prevents servers to close or destroy resources when they
@@ -88,7 +88,7 @@ public class MyPolicy extends DefaultSecurityPolicy {
 ====
 
 In the example above, a custom `SecurityPolicy` (see also
-<<_java_server_authorization,the server authorization section>>) checks whether
+xref:_java_server_authorization[the server authorization section]) checks whether
 the handshake is that of an administrator user, and installs the activity
 extension only for non-administrators, with an inactivity timeout of 10 minutes.
 

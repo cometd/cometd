@@ -167,9 +167,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
 
         @Override
         public void onWebSocketConnect(Session session) {
-            synchronized (this) {
-                _session = session;
-            }
+            locked(() -> _session = session);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Opened websocket session {}", session);
             }
@@ -196,10 +194,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
 
         @Override
         public void send(String content) {
-            Session session;
-            synchronized (this) {
-                session = _session;
-            }
+            Session session = locked(() -> _session);
             try {
                 if (session == null) {
                     throw new IOException("Unconnected");
@@ -215,11 +210,11 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
 
         @Override
         protected void shutdown(String reason) {
-            Session session;
-            synchronized (this) {
-                session = _session;
+            Session session = locked(() -> {
+                Session result = _session;
                 close();
-            }
+                return result;
+            });
             if (session != null) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Closing websocket session {}", session);
@@ -230,16 +225,12 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
 
         @Override
         protected boolean isOpen() {
-            synchronized (this) {
-                return _session != null;
-            }
+            return locked(() -> super.isOpen() && _session != null);
         }
 
         @Override
         protected void close() {
-            synchronized (this) {
-                _session = null;
-            }
+            locked(() -> _session = null);
         }
     }
 

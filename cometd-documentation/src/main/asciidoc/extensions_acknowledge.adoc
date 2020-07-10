@@ -11,7 +11,7 @@ reliability to the Bayeux protocol for messages sent from server to client.
 This extension requires both a client-side extension and a server-side extension.
 The server-side extension is available in Java.
 If you are interested only in message ordering (and not reliability), see also
-<<_extensions_acknowledge_ordering,the ordering section>>.
+xref:_extensions_acknowledge_ordering[the ordering section].
 
 ==== Enabling the Server-side Message Acknowledgment Extension
 
@@ -167,7 +167,7 @@ that browsers could as well be source of uncertainty).
 
 To enable just server-to-client message ordering (but not reliability), you
 need to configure the server with the `metaConnectDeliverOnly` parameter, as
-explained in <<_java_server_configuration,the java server configuration section>>.
+explained in xref:_java_server_configuration[the java server configuration section].
 
 When server-to-client message ordering is enabled, all messages will be
 delivered through `meta/connect` responses.
@@ -186,7 +186,7 @@ before being delivered), and slightly more activity for the server (since
 
 There is an example of acknowledged messages in the Dojo chat demo that comes
 bundled with the CometD distribution, and instruction on how to run the CometD
-demos in <<_installation_demos,the installation demos section>>.
+demos in xref:_installation_demos[the installation demos section].
 
 To run the acknowledgement demo, follow these steps:
 

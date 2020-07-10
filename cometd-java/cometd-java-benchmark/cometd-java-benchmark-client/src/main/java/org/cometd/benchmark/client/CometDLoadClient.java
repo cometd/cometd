@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,7 +47,6 @@ import javax.websocket.WebSocketContainer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.HdrHistogram.AtomicHistogram;
 import org.HdrHistogram.Histogram;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -81,7 +82,12 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 public class CometDLoadClient implements MeasureConverter {
     private static final String START_FIELD = "start";
 
-    private final AtomicHistogram histogram = new AtomicHistogram(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);
+    private final Collection<Histogram> allHistograms = new CopyOnWriteArrayList<>();
+    private final ThreadLocal<Histogram> histogram = ThreadLocal.withInitial(() -> {
+        Histogram histogram = new Histogram(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3);
+        allHistograms.add(histogram);
+        return histogram;
+    });
     private final Random random = new Random();
     private final PlatformMonitor monitor = new PlatformMonitor();
     private final AtomicLong ids = new AtomicLong();
@@ -341,7 +347,7 @@ public class CometDLoadClient implements MeasureConverter {
         httpClient.addBean(mbeanContainer);
         httpClient.setMaxConnectionsPerDestination(60000);
         httpClient.setMaxRequestsQueuedPerDestination(10000);
-        httpClient.setIdleTimeout(2 * Config.MAX_NETWORK_DELAY);
+        httpClient.setIdleTimeout(Config.META_CONNECT_TIMEOUT + 2 * Config.MAX_NETWORK_DELAY);
         httpClient.setSocketAddressResolver(new SocketAddressResolver.Sync());
         httpClient.start();
         mbeanContainer.beanAdded(null, httpClient);
@@ -655,12 +661,13 @@ public class CometDLoadClient implements MeasureConverter {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
+                options.put(ClientTransport.MAX_MESSAGE_SIZE_OPTION, -1);
                 return new JettyHttpClientTransport(options, httpClient) {
                     @Override
                     protected void customize(Request request) {
                         super.customize(request);
                         if (request.getPath().endsWith("/disconnect")) {
-                            request.header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+                            request.headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
                         }
                     }
                 };
@@ -669,6 +676,7 @@ public class CometDLoadClient implements MeasureConverter {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
+                options.put(ClientTransport.MAX_MESSAGE_SIZE_OPTION, -1);
                 // Differently from HTTP where the idle timeout is adjusted if it is a /meta/connect
                 // for WebSocket we need an idle timeout that is longer than the /meta/connect timeout.
                 options.put(WebSocketTransport.IDLE_TIMEOUT_OPTION, Config.META_CONNECT_TIMEOUT + httpClient.getIdleTimeout());
@@ -678,6 +686,7 @@ public class CometDLoadClient implements MeasureConverter {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
+                options.put(ClientTransport.MAX_MESSAGE_SIZE_OPTION, -1);
                 // Differently from HTTP where the idle timeout is adjusted if it is a /meta/connect
                 // for WebSocket we need an idle timeout that is longer than the /meta/connect timeout.
                 options.put(JettyWebSocketTransport.IDLE_TIMEOUT_OPTION, Config.META_CONNECT_TIMEOUT + httpClient.getIdleTimeout());
@@ -697,7 +706,7 @@ public class CometDLoadClient implements MeasureConverter {
 
     private void updateLatencies(long startTime, long sendTime, long arrivalTime, long endTime) {
         long wallLatency = endTime - startTime;
-        histogram.recordValue(wallLatency);
+        histogram.get().recordValue(wallLatency);
 
         long latency = TimeUnit.MICROSECONDS.toNanos(TimeUnit.NANOSECONDS.toMicros(arrivalTime - sendTime));
         Atomics.updateMin(minLatency, latency);
@@ -744,7 +753,10 @@ public class CometDLoadClient implements MeasureConverter {
             );
         }
 
-        AtomicHistogram histogram = this.histogram.copy();
+        Histogram histogram = allHistograms.stream().reduce(new Histogram(TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MINUTES.toNanos(1), 3), (h1, h2) -> {
+            h1.add(h2);
+            return h1;
+        });
         System.err.println(new HistogramSnapshot(histogram, 20, "Messages - Latency", "\u00B5s", this));
 
         System.err.printf("Messages - Network Latency Min/Ave/Max = %d/%d/%d ms%n",
@@ -784,7 +796,7 @@ public class CometDLoadClient implements MeasureConverter {
     }
 
     private void reset() {
-        histogram.reset();
+        allHistograms.forEach(Histogram::reset);
         threadPool.reset();
         start.set(0L);
         end.set(0L);

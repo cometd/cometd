@@ -5,7 +5,7 @@
 In order to initiate the communication with the Bayeux server, you must call
 either the `handshake()` or the `init()` functions on the `cometd` object.
 The `init()` function is a shorthand for a call to `configure()` (see
-<<_javascript_configure,the javascript configuration section>>) followed by
+xref:_javascript_configure[the javascript configuration section]) followed by
 a call to `handshake()`.
 
 Calling `handshake()` effectively sends a handshake message request to the
@@ -64,7 +64,7 @@ cometd.init(function(handshakeReply) {
 ====
 
 Passing a callback function to `handshake()` is equivalent to register a
-`/meta/handshake` listener (see also <<_javascript_subscribe_vs_listen,this section>>).
+`/meta/handshake` listener (see also xref:_javascript_subscribe_vs_listen[this section]).
 
 The handshake might fail for several reasons:
 
@@ -99,7 +99,7 @@ cometd.publish('/foo', { foo: 'bar' });
 ====
 
 It is not a good idea because there is no guarantee that the call to `publish()` (see
-<<_javascript_publish,the javascript publish section>>) can actually succeed in contacting
+xref:_javascript_publish[the javascript publish section]) can actually succeed in contacting
 the Bayeux server.
 Since the API is asynchronous, you have no way of knowing synchronously (that is, by having
 `handshake()` function return an error code or by throwing an exception) that the handshake failed.
@@ -152,7 +152,7 @@ The additional object will be _merged_ into the handshake message.
 
 The server will be able to access the message (but not yet the session)
 from a `/meta/handshake` listener, for example using annotated services
-(see also <<_java_server_services_annotated,the annotated services section>>):
+(see also xref:_java_server_services_annotated[the annotated services section]):
 
 ====
 [source,java]
@@ -172,15 +172,15 @@ public class MyService {
 
 For more advanced processing of the handshake message that require the
 availability of the `ServerSession`, see
-<<_java_server_authentication,the authentication section>>.
+xref:_java_server_authentication[the authentication section].
 
 The additional object must not be used to tamper the handshake message by using
-reserved fields defined by the Bayeux protocol (see also <<_bayeux,the Bayeux protocol section>>).
+reserved fields defined by the Bayeux protocol (see also xref:_bayeux[the Bayeux protocol section]).
 Instead, you should use field names that are unique to your application, better
 yet when fully qualified like `com.acme.credentials`.
 
 The CometD JavaScript API offer an easy way to receive notifications about the
 details of the Bayeux protocol message exchange: either by adding listeners to
 special channels (called _meta channels_), explained in
-<<_javascript_subscribe,the javascript subscribe section>>, or by passing callback
+xref:_javascript_subscribe[the javascript subscribe section], or by passing callback
 functions to the API like you did for `handshake()` in the example above.
