@@ -33,7 +33,6 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.HttpCookieStore;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
@@ -43,6 +42,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractCometDTest {
     @Rule
@@ -146,7 +146,7 @@ public abstract class AbstractCometDTest {
     }
 
     protected String getLogLevel() {
-        String property = Log.getLogger("org.cometd.javascript").isDebugEnabled() ? "debug" : "info";
+        String property = LoggerFactory.getLogger("org.cometd.javascript").isDebugEnabled() ? "debug" : "info";
         return property.toLowerCase(Locale.ENGLISH);
     }
 
