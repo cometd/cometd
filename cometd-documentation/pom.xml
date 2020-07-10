@@ -9,7 +9,6 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>cometd-documentation</artifactId>
   <name>CometD :: Reference Book</name>
-  <packaging>pom</packaging>
 
   <properties>
     <html-directory>${project.build.directory}/html/reference</html-directory>

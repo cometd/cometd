@@ -8,7 +8,7 @@ CometD allows you to send messages in two ways:
 . by performing a xref:_java_client_rpc[remote procedure call]
 
 The first case is covered by the `ClientSessionChannel.publish(...)` API.
-The second case is covered by the `ClientSession.remoteCall()` API.
+The second case is covered by the `ClientSession.remoteCall(...)` API.
 
 [[_java_client_publish]]
 ===== Publishing
@@ -16,44 +16,26 @@ The second case is covered by the `ClientSession.remoteCall()` API.
 The following is a typical example of publishing a message on a channel:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-ClientTransport transport = ...
-ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transport);
-client.handshake();
-
-Map<String, Object> data = new HashMap<String, Object>();
-// Fill in the data
-
-ClientSessionChannel channel = client.getChannel("/game/table/1");
-channel.publish(data);
+include::{doc_code}/client/ClientSendDocs.java[tags=simplePublish]
 ----
 ====
 
 Publishing data on a channel is an asynchronous operation.
 
-When the message you published arrives to the server, the server replies to
-the client with a publish acknowledgment; this allows clients to be sure that
-the message reached the server.
-The publish acknowledgment arrives on the same channel the message was published
-to, with the same message `id`, with a `successful` field.
-If the message publish fails for any reason, for example because server cannot
-be reached, then a publish failure will be emitted, similarly to publish acknowledgments.
+When the message you published arrives to the server, the server replies to the client with a publish acknowledgment; this allows clients to be sure that the message reached the server.
 
-In order to be notified of publish acknowledgments or failures, you can use
-this variant of the `publish()` method:
+The publish acknowledgment arrives on the same channel the message was published to, with the same message `id`, with a `successful` field.
+
+If the message publish fails for any reason, for example because server cannot be reached, then a publish failure will be emitted, similarly to publish acknowledgments.
+
+In order to be notified of publish acknowledgments or failures, you can use this variant of the `publish()` method:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-Map<String, Object> data = new HashMap<String, Object>();
-// Fill in the data
-
-client.getChannel("/game/table/1").publish(data, message -> {
-    if (message.isSuccessful()) {
-        // The message reached the server
-    }
-});
+include::{doc_code}/client/ClientSendDocs.java[tags=callbackPublish]
 ----
 ====
 
@@ -65,126 +47,72 @@ Calling `publish()` _does not_ mean that you have published the message when `pu
 Message batching is also available:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-final ClientSession client = ...;
-client.handshake();
-
-client.batch (() -> {
-    Map<String, Object> data1 = new HashMap<String, Object>();
-    // Fill in the data1 map object
-    client.getChannel("/game/table/1").publish(data1);
-
-    Map<String, Object> data2 = new HashMap<String, Object>();
-    // Fill in the data2 map object<
-    client.getChannel("/game/chat/1").publish(data2);
-});
+include::{doc_code}/client/ClientSendDocs.java[tags=batchPublish]
 ----
 ====
 
 [WARNING]
 ====
-The `ClientSession` API also allows you to batch using `startBatch()` and
-`endBatch()`, but remember to call `endBatch()` after having called `startBatch()`,
-for example in a `finally` block.
-If you don't, your messages continue to queue up, and your application
-does not work as expected.
+The `ClientSession` API also allows you to batch using `startBatch()` and `endBatch()`, but remember to call `endBatch()` after having called `startBatch()`, for example in a `finally` block.
+
+If you do not call `endBatch()`, your messages will continue to queue up, and your application will not work as expected.
 ====
 
 [[_java_client_send_binary]]
 ===== Publishing Binary Data
 
-You can send binary data such as a `byte[]` or a `ByteBuffer` by using the
-`org.cometd.bayeux.BinaryData` class.
+You can send binary data such as a `byte[]` or a `ByteBuffer` by using the `org.cometd.bayeux.BinaryData` class.
 
-Remember that you must have the binary extension enabled as specified
-in xref:_extensions_binary[the binary extension section].
+Remember that you must have the binary extension enabled as specified in xref:_extensions_binary[the binary extension section].
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-ClientSession client = ...;
-client.handshake();
-
-byte[] bytes = ...;
-client.getChannel("/channel").publish(new BinaryData(bytes, true, null));
+include::{doc_code}/client/ClientSendDocs.java[tags=binaryPublish]
 ----
 ====
 
-As explained in the xref:_concepts_binary_data[concepts section], CometD takes care
-of converting the `BinaryData` object into the right format and adds the binary
-extension to the message.
+As explained in the xref:_concepts_binary_data[concepts section], CometD takes care of converting the `BinaryData` object into the right format and adds the binary extension to the message.
 
 [[_java_client_rpc]]
 ===== Remote Calls
 
-Remote calls are used when the client only wants to call the server to
-perform some action, rather than sending a message to other clients.
+Remote calls are used when the client only wants to call the server to perform some action, rather than sending a message to other clients.
 
 The typical usage is the following:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-ClientSession client = ...;
-client.handshake();
-
-...
-Object data = ...;
-client.remoteCall("target", data, message -> {
-    if (message.isSuccessful()) {
-        String result = (String)message.getData();
-        // Use the result.
-    } else {
-        // Remote call failed.
-    }
-}
+include::{doc_code}/client/ClientSendDocs.java[tags=remoteCall]
 ----
 ====
 
 The first argument of `remoteCall()` is the _target_ of the remote call.
-You can think of it as a method name to invoke on the server, or you can think
-of it as the action you want to perform.
-It may or may not have a leading `/` character, and may be composed of multiple
-segments such as `target/subtarget`.
-It must match a server-side service annotated with `@RemoteCall` as explained
-xref:_java_server_services_annotated_server_side_remote_call[in this section].
+You can think of it as a method name to invoke on the server, or you can think of it as the action you want to perform.
+It may or may not have a leading `/` character, and may be composed of multiple segments such as `target/subtarget`.
+It must match a server-side service annotated with `@RemoteCall` as explained xref:_java_server_services_annotated_server_side_remote_call[in this section].
 
-The second argument of `remoteCall()` is an object with the arguments of the
-remote call.
-You can think of it as the arguments of the remote method call, reified as
-an object, or you can think of it as the data needed to perform the action.
+The second argument of `remoteCall()` is an object with the arguments of the remote call.
+You can think of it as the arguments of the remote method call, reified as an object, or you can think of it as the data needed to perform the action.
 
-The third argument of `remoteCall()` is the callback invoked when the remote
-call returns, or when it fails (for example due to network failures), with
-the response message.
-Data returned by the server via `RemoteCall.Caller.result()` or
-`RemoteCall.Caller.failure()` will be available in the response message.
+The third argument of `remoteCall()` is the callback invoked when the remote call returns, or when it fails (for example due to network failures), with the response message.
+Data returned by the server via `RemoteCall.Caller.result()` or `RemoteCall.Caller.failure()` will be available in the response message.
 
 [[_java_client_rpc_binary]]
 ===== Remote Calls with Binary Data
 
-Similarly to publishing messages with binary data, it is possible to perform
-remote calls with binary data.
+Similarly to publishing messages with binary data, it is possible to perform remote calls with binary data.
 
-Remember that you must have the binary extension enabled in the client as specified
-in xref:_extensions_binary[the binary extension section].
+Remember that you must have the binary extension enabled in the client as specified in xref:_extensions_binary[the binary extension section].
 
 Here is an example that sends a `ByteBuffer`:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-ClientSession client = ...;
-client.handshake();
-
-ByteBuffer buffer = ...;
-client.remoteCall("target", new BinaryData(buffer, true, null), message -> {
-    if (message.isSuccessful()) {
-        // Use the result.
-    } else {
-        // Remote call failed.
-    }
-}
+include::{doc_code}/client/ClientSendDocs.java[tags=binaryRemoteCall]
 ----
 ====
