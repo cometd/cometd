@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.common.internal;
+package org.cometd.common;
 
 import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.util.Arrays;
 
 import org.cometd.bayeux.Message;
-import org.cometd.common.JSONContext;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
 /**
