@@ -6,57 +6,31 @@ The following sections provide information about subscribing and unsubscribing t
 
 ===== Subscribing to Broadcast Channels
 
-Subscribing (or unsubscribing) involves first retrieving the channel you want
-to subscribe to (or unsubscribe from) and then calling the `subscribe()` (or
-`unsubscribe()`) methods:
+Subscribing (or unsubscribing) involves first retrieving the channel you want to subscribe to (or unsubscribe from) and then calling the `subscribe()` (or `unsubscribe()`) methods.
+
+Subscribing (or unsubscribing) sends a message to the CometD server so that the server knows that any server-side event on that channel must be delivered to the client.
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class Example {
-    private static final String CHANNEL = "/foo";
-    private final ClientSessionChannel.MessageListener fooListener = new FooListener();
+include::{doc_code}/client/ClientSubscribeDocs.java[tags=simpleSubscribe]
+----
+====
 
-    public void attach() {
-        ClientTransport transport = ...
-        ClientSession client = new BayeuxClient("http://localhost:8080/cometd", transport);
-        client.handshake();
-        boolean handshaken = client.waitFor(1000, BayeuxClient.State.CONNECTED);
-        if (handshaken) {
-            client.getChannel(CHANNEL).subscribe(fooListener);
-        }
-    }
+Unsubscribing is straightforward: if you unsubscribe from a channel, the CometD server does not deliver messages on that channel to message listeners:
 
-    private static class FooListener implements ClientSessionChannel.MessageListener {
-        public void onMessage(ClientSessionChannel channel, Message message) {
-            // Here you received a message on the channel
-        }
-    }
-}
+====
+[source,java,indent=0]
+----
+include::{doc_code}/client/ClientSubscribeDocs.java[tags=simpleUnsubscribe]
 ----
 ====
 
 [NOTE]
 ====
-You can subscribe and unsubscribe only after the handshake is completed.
+You can subscribe and unsubscribe only after the handshake is successful.
 Calling `subscribe()` (or `unsubscribe()` _does not_ mean that you have completed
 the subscription (or unsubscription) with the server when the method returns.
-====
-
-Unsubscribing is straightforward: if you unsubscribe to a channel, CometD does
-not deliver messages on that channel to message listeners.
-Using the `Example` class above:
-
-====
-[source,java]
-----
-public class Example {
-    ...
-    public void detach() {
-        client.getChannel(CHANNEL).unsubscribe(fooListener);
-    }
-}
-----
 ====
 
 If you need to know whether your subscription (or unsubscription) was received
@@ -64,48 +38,26 @@ and processed by the server, you can pass a callback `MessageListener` to the
 `subscribe()` (or `unsubscribe()`) methods:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxClient client = ...;
-ClientSessionChannel.MessageListener messageHandler = ...;
-client.handshake(handshake -> {
-        if (handshake.isSuccessful()) {
-            // Subscribe.
-            client.getChannel("/foo").subscribe(messageHandler, subscribe -> {
-                if (subscribe.isSuccessful()) {
-                    // Subscription successful.
-                }
-            }
-        }
-    }
-});
+include::{doc_code}/client/ClientSubscribeDocs.java[tags=callbackSubscribe]
 ----
 ====
 
-As in xref:_javascript_subscribe[the JavaScript subscribe section], a good place
-to perform subscriptions is a `handshake(...)` callback or a `/meta/handshake`
-listener, because they are invoked transparently if the server requests a new handshake.
+As in xref:_javascript_subscribe[the JavaScript subscribe section], a good place to perform subscriptions is a `handshake(...)` callback or a `/meta/handshake` listener, because they are invoked transparently if the server requests a new handshake.
 
-Applications do not need to unsubscribe in case of re-handshake; the CometD library
-removes the subscriptions upon re-handshake, so that when the `/meta/handshake`
-listener executes again the subscriptions are correctly restored (and not duplicated).
+Applications do not need to unsubscribe in case of re-handshake; the CometD library removes the subscriptions upon re-handshake, so that when the `/meta/handshake` listener executes again the subscriptions are correctly restored (and not duplicated).
 
 ===== Listening to Meta Channels
 
-The internal implementation of the Bayeux protocol uses meta channels, and it
-does not make any sense to subscribe to them because they are not broadcast channels.
-It does make sense, however, to listen to messages that arrive on those channels.
+The internal implementation of the Bayeux protocol uses meta channels, and it does not make any sense to subscribe to them because they are not broadcast channels.
+It does make sense, however, to listen to messages that arrive on those channels, for example to know whether the connectivity with the server breaks or whether the server requested a re-handshake.
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class Example {
-    public void init() {
-        ClientSession client = ...;
-        client.getChannel(Channel.META_HANDSHAKE).addListener((channel, message) -> {
-            // Here you received a handshake response message
-        });
-    }
-}
+include::{doc_code}/client/ClientSubscribeDocs.java[tags=metaListener]
 ----
 ====
+
+Refer to xref:_javascript_subscribe_vs_listen[this section] for more information about the difference between a listener and a subscription, and in what cases you should use one or the other.
