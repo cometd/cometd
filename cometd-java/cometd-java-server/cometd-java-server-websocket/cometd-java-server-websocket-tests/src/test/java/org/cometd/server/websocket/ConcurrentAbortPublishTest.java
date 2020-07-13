@@ -43,89 +43,17 @@ public class ConcurrentAbortPublishTest extends ClientServerWebSocketTest {
 
     @Override
     protected WebSocketTransport newWebSocketTransport(String url, Map<String, Object> options, WebSocketContainer wsContainer) {
-        return new WebSocketTransport(url, options, null, wsContainer) {
-            private final WebSocketTransport _transport = this;
-
-            @Override
-            protected WebSocketDelegate newDelegate() {
-                return new WebSocketDelegate() {
-                    @Override
-                    protected void registerMessages(TransportListener listener, List<Message.Mutable> messages) {
-                        if (_abort != null) {
-                            _transport.abort(_abort);
-                        }
-                        super.registerMessages(listener, messages);
-                    }
-
-                    @Override
-                    protected void shutdown(String reason) {
-                        // If we are aborting from the test,
-                        // skip the shutdown to simulate concurrency.
-                        if (_abort == null) {
-                            super.shutdown(reason);
-                        }
-                    }
-                };
-            }
-        };
+        return new WSTransport(url, options, wsContainer);
     }
 
     @Override
     protected JettyWebSocketTransport newJettyWebSocketTransport(String url, Map<String, Object> options, WebSocketClient wsClient) {
-        return new JettyWebSocketTransport(url, options, null, wsClient) {
-            private final JettyWebSocketTransport _transport = this;
-
-            @Override
-            protected Delegate newDelegate() {
-                return new JettyWebSocketDelegate() {
-                    @Override
-                    protected void registerMessages(TransportListener listener, List<Message.Mutable> messages) {
-                        if (_abort != null) {
-                            _transport.abort(_abort);
-                        }
-                        super.registerMessages(listener, messages);
-                    }
-
-                    @Override
-                    protected void shutdown(String reason) {
-                        // If we are aborting from the test,
-                        // skip the shutdown to simulate concurrency.
-                        if (_abort == null) {
-                            super.shutdown(reason);
-                        }
-                    }
-                };
-            }
-        };
+        return new JettyWSTransport(url, options, wsClient);
     }
 
     @Override
     protected OkHttpWebSocketTransport newOkHttpWebSocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
-        return new OkHttpWebSocketTransport(url, options, null, okHttpClient) {
-            private final OkHttpWebSocketTransport _transport = this;
-
-            @Override
-            protected OkHttpDelegate newDelegate() {
-                return new OkHttpDelegate() {
-                    @Override
-                    protected void registerMessages(TransportListener listener, List<Message.Mutable> messages) {
-                        if (_abort != null) {
-                            _transport.abort(_abort);
-                        }
-                        super.registerMessages(listener, messages);
-                    }
-
-                    @Override
-                    protected void shutdown(String reason) {
-                        // If we are aborting from the test,
-                        // skip the shutdown to simulate concurrency.
-                        if (_abort == null) {
-                            super.shutdown(reason);
-                        }
-                    }
-                };
-            }
-        };
+        return new OkHttpWSTransport(url, options, okHttpClient);
     }
 
     @Test
@@ -152,5 +80,95 @@ public class ConcurrentAbortPublishTest extends ClientServerWebSocketTest {
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
+    }
+
+    public class WSTransport extends WebSocketTransport {
+        public WSTransport(String url, Map<String, Object> options, WebSocketContainer wsContainer) {
+            super(url, options, null, wsContainer);
+        }
+
+        @Override
+        protected WebSocketDelegate newDelegate() {
+            return new WSDelegate();
+        }
+
+        public class WSDelegate extends WebSocketDelegate {
+            @Override
+            protected void registerMessages(TransportListener listener, List<Message.Mutable> messages) {
+                if (_abort != null) {
+                    abort(_abort);
+                }
+                super.registerMessages(listener, messages);
+            }
+
+            @Override
+            protected void shutdown(String reason) {
+                // If we are aborting from the test,
+                // skip the shutdown to simulate concurrency.
+                if (_abort == null) {
+                    super.shutdown(reason);
+                }
+            }
+        }
+    }
+
+    public class JettyWSTransport extends JettyWebSocketTransport {
+        public JettyWSTransport(String url, Map<String, Object> options, WebSocketClient wsClient) {
+            super(url, options, null, wsClient);
+        }
+
+        @Override
+        protected Delegate newDelegate() {
+            return new JettyWSDelegate();
+        }
+
+        public class JettyWSDelegate extends JettyWebSocketTransport.JettyWebSocketDelegate {
+            @Override
+            protected void registerMessages(TransportListener listener, List<Message.Mutable> messages) {
+                if (_abort != null) {
+                    abort(_abort);
+                }
+                super.registerMessages(listener, messages);
+            }
+
+            @Override
+            protected void shutdown(String reason) {
+                // If we are aborting from the test,
+                // skip the shutdown to simulate concurrency.
+                if (_abort == null) {
+                    super.shutdown(reason);
+                }
+            }
+        }
+    }
+
+    public class OkHttpWSTransport extends OkHttpWebSocketTransport {
+        public OkHttpWSTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
+            super(url, options, null, okHttpClient);
+        }
+
+        @Override
+        protected OkHttpDelegate newDelegate() {
+            return new OkHttpDelegate();
+        }
+
+        public class OkHttpDelegate extends OkHttpWebSocketTransport.OkHttpDelegate {
+            @Override
+            protected void registerMessages(TransportListener listener, List<Message.Mutable> messages) {
+                if (_abort != null) {
+                    abort(_abort);
+                }
+                super.registerMessages(listener, messages);
+            }
+
+            @Override
+            protected void shutdown(String reason) {
+                // If we are aborting from the test,
+                // skip the shutdown to simulate concurrency.
+                if (_abort == null) {
+                    super.shutdown(reason);
+                }
+            }
+        }
     }
 }

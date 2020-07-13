@@ -104,7 +104,7 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         handshake.headers(headers -> headers.put(name, value1));
-        handshake.headers(headers -> headers.put(name, value2));
+        handshake.headers(headers -> headers.add(name, value2));
         ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
