@@ -330,7 +330,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         ContentResponse handshake = httpClient.newRequest("localhost", connector.getLocalPort())
                 .method(HttpMethod.POST)
                 .path(cometdServletPath)
-                .body(new StringRequestContent(handshakeContent, "application/json;charset=UTF-8"))
+                .body(new StringRequestContent("application/json;charset=UTF-8", handshakeContent))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         assertEquals(200, handshake.getStatus());
@@ -352,7 +352,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         ContentResponse connect1 = httpClient.newRequest("localhost", connector.getLocalPort())
                 .method(HttpMethod.POST)
                 .path(cometdServletPath)
-                .body(new StringRequestContent(connectContent1, "application/json;charset=UTF-8"))
+                .body(new StringRequestContent("application/json;charset=UTF-8", connectContent1))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         assertEquals(200, connect1.getStatus());
@@ -368,7 +368,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         httpClient.newRequest("localhost", connector.getLocalPort())
                 .method(HttpMethod.POST)
                 .path(cometdServletPath)
-                .body(new StringRequestContent(connectContent2, "application/json;charset=UTF-8"))
+                .body(new StringRequestContent("application/json;charset=UTF-8", connectContent2))
                 .timeout(5, TimeUnit.SECONDS)
                 .send(result -> {
                     assertTrue(result.isSucceeded());
@@ -390,7 +390,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         ContentResponse connect3 = httpClient.newRequest("localhost", connector.getLocalPort())
                 .method(HttpMethod.POST)
                 .path(cometdServletPath)
-                .body(new StringRequestContent(connectContent3, "application/json;charset=UTF-8"))
+                .body(new StringRequestContent("application/json;charset=UTF-8", connectContent3))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         assertEquals(200, connect3.getStatus());
@@ -407,7 +407,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         ContentResponse connect4 = httpClient.newRequest("localhost", connector.getLocalPort())
                 .method(HttpMethod.POST)
                 .path(cometdServletPath)
-                .body(new StringRequestContent(connectContent4, "application/json;charset=UTF-8"))
+                .body(new StringRequestContent("application/json;charset=UTF-8", connectContent4))
                 .timeout(2 * timeout, TimeUnit.MILLISECONDS)
                 .send();
         assertEquals(200, connect4.getStatus());
