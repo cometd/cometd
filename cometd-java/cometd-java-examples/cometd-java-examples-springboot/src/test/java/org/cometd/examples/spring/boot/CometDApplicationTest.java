@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,6 +38,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Ignore("Spring Boot 2.x depends on Jetty 9.4.x")
 public class CometDApplicationTest {
     @LocalServerPort
     public int serverPort;
