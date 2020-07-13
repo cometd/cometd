@@ -22,7 +22,7 @@
 
   <filter>
     <filter-name>wsuf</filter-name>
-    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
+    <filter-class>org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>
 
@@ -36,7 +36,8 @@
     <servlet-class>org.cometd.server.CometDServlet</servlet-class>
     <init-param>
       <param-name>transports</param-name>
-      <param-value>org.cometd.server.websocket.jetty.JettyWebSocketTransport,org.cometd.server.http.AsyncJSONTransport
+      <param-value>
+        org.cometd.server.websocket.jetty.JettyWebSocketTransport,org.cometd.server.http.AsyncJSONTransport
       </param-value>
     </init-param>
     <init-param>
