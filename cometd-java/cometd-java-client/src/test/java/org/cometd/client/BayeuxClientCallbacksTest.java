@@ -15,8 +15,6 @@
  */
 package org.cometd.client;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +48,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
     public void testHandshakeCallback() throws Exception {
         BayeuxClient client = newBayeuxClient();
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> latch.countDown());
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -60,7 +58,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
     @Test
     public void testHandshakeCallbackIsInvokedOnReHandshake() throws Exception {
-        final AtomicBoolean canHandshake = new AtomicBoolean();
+        AtomicBoolean canHandshake = new AtomicBoolean();
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
             public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
@@ -75,8 +73,8 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
 
-        final CountDownLatch successLatch = new CountDownLatch(1);
-        final CountDownLatch failureLatch = new CountDownLatch(1);
+        CountDownLatch successLatch = new CountDownLatch(1);
+        CountDownLatch failureLatch = new CountDownLatch(1);
         client.handshake(message -> {
             if (message.isSuccessful()) {
                 successLatch.countDown();
@@ -93,9 +91,9 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
     @Test
     public void testDisconnectCallback() throws Exception {
-        final BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient();
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> client.disconnect(m -> latch.countDown()));
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -103,10 +101,10 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
     @Test
     public void testSubscriptionAllowedInvokesCallback() throws Exception {
-        final BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient();
 
-        final String channelName = "/bar";
-        final CountDownLatch latch = new CountDownLatch(1);
+        String channelName = "/bar";
+        CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> client.getChannel(channelName).subscribe(new MessageListenerAdapter(), m -> latch.countDown()));
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -116,7 +114,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
     @Test
     public void testSubscriptionDeniedInvokesCallback() throws Exception {
-        final String channelName = "/bar";
+        String channelName = "/bar";
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
             public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
@@ -124,9 +122,9 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
             }
         });
 
-        final BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient();
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> client.getChannel(channelName).subscribe(new MessageListenerAdapter(), m -> latch.countDown()));
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -136,12 +134,12 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
     @Test
     public void testUnsubscriptionInvokesCallback() throws Exception {
-        final BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient();
 
-        final String channelName = "/bar";
-        final CountDownLatch latch = new CountDownLatch(1);
+        String channelName = "/bar";
+        CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> {
-            final MessageListenerAdapter listener = new MessageListenerAdapter();
+            MessageListenerAdapter listener = new MessageListenerAdapter();
             client.getChannel(channelName).subscribe(listener, m -> client.getChannel(channelName).unsubscribe(listener, r -> latch.countDown()));
         });
 
@@ -154,9 +152,9 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
     public void testPublishSuccessfulInvokesCallback() throws Exception {
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
+        AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap<>(), message -> {
             Assert.assertTrue(message.isSuccessful());
@@ -185,9 +183,9 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
+        AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap<>(), message -> {
             Assert.assertFalse(message.isSuccessful());
@@ -209,10 +207,12 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         });
 
         BayeuxClient client = newBayeuxClient();
+        // Handshake will fail.
         client.handshake();
 
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
+        AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
+        // Publish will fail because we did not handshake.
         channel.publish(new HashMap<>(), message -> {
             Assert.assertFalse(message.isSuccessful());
             latch.get().countDown();
@@ -227,11 +227,11 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
     public void testPublishWithServerDownInvokesCallback() throws Exception {
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         server.stop();
 
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
+        AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap<>(), message -> {
             Assert.assertFalse(message.isSuccessful());
@@ -245,10 +245,10 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
     @Test
     public void testPublishDeletedRemovesCallback() throws Exception {
-        final String channelName = "/delete";
+        String channelName = "/delete";
 
-        final AtomicReference<String> messageIdRef = new AtomicReference<>();
-        final CountDownLatch unregisterLatch = new CountDownLatch(1);
+        AtomicReference<String> messageIdRef = new AtomicReference<>();
+        CountDownLatch unregisterLatch = new CountDownLatch(1);
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
             @Override
             protected MessageListener unregisterCallback(String messageId) {
@@ -268,12 +268,14 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
                 return true;
             }
         });
-        client.handshake();
-
         CountDownLatch publishLatch = new CountDownLatch(1);
-        client.getChannel(channelName).publish("data", message -> {
-            if (!message.isSuccessful()) {
-                publishLatch.countDown();
+        client.handshake(reply -> {
+            if (reply.isSuccessful()) {
+                client.getChannel(channelName).publish("data", message -> {
+                    if (!message.isSuccessful()) {
+                        publishLatch.countDown();
+                    }
+                });
             }
         });
 
@@ -284,11 +286,47 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
     }
 
     @Test
-    public void testSubscribeDeletedRemovesListener() throws Exception {
-        final String channelName = "/delete";
+    public void testPublishReplyDeletedRemovesCallback() throws Exception {
+        String channelName = "/delete";
 
-        final AtomicReference<String> messageIdRef = new AtomicReference<>();
-        final CountDownLatch unregisterLatch = new CountDownLatch(1);
+        AtomicReference<String> messageIdRef = new AtomicReference<>();
+        CountDownLatch unregisterLatch = new CountDownLatch(1);
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
+            @Override
+            protected MessageListener unregisterCallback(String messageId) {
+                if (messageId.equals(messageIdRef.get())) {
+                    unregisterLatch.countDown();
+                }
+                return super.unregisterCallback(messageId);
+            }
+        };
+        client.addExtension(new ClientSession.Extension() {
+            @Override
+            public boolean rcv(ClientSession session, Message.Mutable message) {
+                if (channelName.equals(message.getChannel())) {
+                    messageIdRef.set(message.getId());
+                    return false;
+                }
+                return true;
+            }
+        });
+        client.handshake(reply -> {
+            if (reply.isSuccessful()) {
+                client.getChannel(channelName).publish("data", ClientSession.MessageListener.NOOP);
+            }
+        });
+
+        Assert.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testSubscribeDeletedRemovesListener() throws Exception {
+        String channelName = "/delete";
+
+        AtomicReference<String> messageIdRef = new AtomicReference<>();
+        CountDownLatch unregisterLatch = new CountDownLatch(1);
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
             @Override
             protected ClientSessionChannel.MessageListener unregisterSubscriber(String messageId) {
@@ -308,12 +346,14 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
                 return true;
             }
         });
-        client.handshake();
-
         CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(channelName).subscribe(new MessageListenerAdapter(), message -> {
-            if (!message.isSuccessful()) {
-                subscribeLatch.countDown();
+        client.handshake(reply -> {
+            if (reply.isSuccessful()) {
+                client.getChannel(channelName).subscribe(new MessageListenerAdapter(), message -> {
+                    if (!message.isSuccessful()) {
+                        subscribeLatch.countDown();
+                    }
+                });
             }
         });
 
@@ -325,14 +365,14 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
     @Test
     public void testAuthorizerDenyingPublishRemovesCallback() throws Exception {
-        final String channelName = "/deny_publish";
+        String channelName = "/deny_publish";
 
         bayeux.createChannelIfAbsent(channelName, channel ->
                 channel.addAuthorizer((operation, channel1, session, message) ->
                         operation == Authorizer.Operation.PUBLISH ? Authorizer.Result.deny("denied") : Authorizer.Result.grant()));
 
-        final AtomicReference<String> messageIdRef = new AtomicReference<>();
-        final CountDownLatch unregisterLatch = new CountDownLatch(1);
+        AtomicReference<String> messageIdRef = new AtomicReference<>();
+        CountDownLatch unregisterLatch = new CountDownLatch(1);
         LocalSession session = new LocalSessionImpl(bayeux, "test") {
             @Override
             protected MessageListener unregisterCallback(String messageId) {
@@ -366,7 +406,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         session.disconnect();
     }
 
-    private class MessageListenerAdapter implements ClientSessionChannel.MessageListener {
+    private static class MessageListenerAdapter implements ClientSessionChannel.MessageListener {
         @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
         }
