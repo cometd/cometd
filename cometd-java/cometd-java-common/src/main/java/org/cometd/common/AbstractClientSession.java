@@ -239,7 +239,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
      * @param message the message received.
      * @param promise the promise notified of the receive processing
      */
-    public void receive(final Message.Mutable message, Promise<Void> promise) {
+    public void receive(Message.Mutable message, Promise<Void> promise) {
         String channelName = message.getChannel();
         if (channelName == null) {
             promise.fail(new IllegalArgumentException("Bayeux message must have a channel: " + message));
@@ -269,6 +269,8 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
                         notifyListeners(message);
                     }
                 }
+            } else {
+                unregisterCallback(message.getId());
             }
             promise.succeed(null);
         }, promise::fail));
