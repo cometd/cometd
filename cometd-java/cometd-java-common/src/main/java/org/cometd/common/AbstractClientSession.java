@@ -100,11 +100,13 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     }
 
     protected boolean extendRcv(Message.Mutable message) {
+        String messageId = message.getId();
         for (Extension extension : _extensions) {
             boolean proceed = message.isMeta() ?
                     extension.rcvMeta(this, message) :
                     extension.rcv(this, message);
             if (!proceed) {
+                unregisterCallback(messageId);
                 return false;
             }
         }
