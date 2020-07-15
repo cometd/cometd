@@ -36,7 +36,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-javax-websocket-api</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
