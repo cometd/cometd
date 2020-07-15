@@ -292,7 +292,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
         AtomicReference<String> messageIdRef = new AtomicReference<>();
         CountDownLatch unregisterLatch = new CountDownLatch(1);
-        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)) {
+        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
             @Override
             protected MessageListener unregisterCallback(String messageId) {
                 if (messageId.equals(messageIdRef.get())) {
