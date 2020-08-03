@@ -2,43 +2,26 @@
 [[_java_server_services_inherited]]
 ===== Inherited Services
 
-A CometD inherited service is a Java class that extends the CometD class
-`org.cometd.server.AbstractService`, which specifies the Bayeux channels of
-interest to the service, and adheres to the contract the `AbstractService`
-class defines:
+A CometD inherited service is a Java class that extends the CometD class `org.cometd.server.AbstractService`, which specifies the Bayeux channels of interest to the service, and adheres to the contract the `AbstractService` class defines:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class EchoService extends AbstractService { <1>
-    public EchoService(BayeuxServer bayeuxServer) { <2>
-        super(bayeuxServer, "echo"); <3>
-        addService("/echo", "processEcho"); <4>
-    }
-
-    public void processEcho(ServerSession remote, ServerMessage message) { <5>
-        remote.deliver(getServerSession(), "/echo", message.getData(), Promise.noop()); <6>
-    }
-}
+include::{doc_code}/server/ServerServiceDocs.java[tags=inherited]
 ----
 ====
 
-This is a simple echo service that returns the message sent by the remote
-client on channel `/echo` to the remote client itself. Notice the following:
+This is a simple echo service that returns the message sent by the remote client on channel `/echo` to the remote client itself.
+Notice the following:
 
-<1> Extends from `org.cometd.server.AbstractService.`
-<2> Creates a constructor that takes a `org.cometd.bayeux.server.BayeuxServer` object.
-<3> Calls the superclass constructor, passing the BayeuxServer object and an
-    arbitrary name of the service, in this case "echo".
-<4> Subscribes to channel `/echo`, and specifies the name of a method that
-    must be called when a message arrives to that channel, via `addService(...)`.
-<5> Defines a method with the same name specified in (4), and with an appropriate
-    signature (see below).
-<6> Uses the `org.cometd.bayeux.server.ServerSession` API to echo the message
-    back to that particular client.
+<1> The class is `public` and extends from `org.cometd.server.AbstractService`.
+<2> Defines a constructor that takes an `org.cometd.bayeux.server.BayeuxServer` object.
+<3> Calls the superclass constructor, passing the BayeuxServer object and an arbitrary name of the service, in this case "echo".
+<4> Subscribes to channel `/echo`, and specifies the name of a method that must be called when a message arrives to that channel, via `addService(...)`.
+<5> Defines a method with the same name specified in (4), and with an appropriate signature (see below).
+<6> Uses the `org.cometd.bayeux.server.ServerSession` API to echo the message back to that particular client.
 
-The contract that the `BayeuxService` class requires for callback methods is
-that the methods must have the following signature:
+The contract that the `BayeuxService` class requires for callback methods is that the methods must have the following signature:
 
 ====
 [source,java]
@@ -47,8 +30,7 @@ public void processEcho(ServerSession remote, ServerMessage message)
 ----
 ====
 
-Notice that the channel name specified in the `addService()` method may be a
-wildcard, for example:
+Notice that the channel name specified to the `addService(...)` method may be a wildcard, for example:
 
 ====
 [source,java]
