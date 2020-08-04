@@ -15,13 +15,6 @@
  */
 package org.cometd.annotation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +34,13 @@ import org.cometd.client.BayeuxClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
     private BayeuxClient bayeuxClient;
@@ -87,7 +87,7 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
     @Service
     public static class InjectClientSessionOnFieldService {
         @Session
-        private ClientSession session;
+        private BayeuxClient session;
     }
 
     @Test
