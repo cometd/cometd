@@ -34,7 +34,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
@@ -98,7 +97,8 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
         private CountDownLatch latch;
 
         public void handle(Object jsMessage) {
-            Map<String, Object> message = (ScriptObjectMirror)jsMessage;
+            @SuppressWarnings("unchecked")
+            Map<String, Object> message = (Map<String, Object>)jsMessage;
             Boolean successful = (Boolean)message.get("successful");
             ++id;
             if (id == 1) {

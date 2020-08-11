@@ -57,7 +57,7 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTransportsTes
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "cometd.addListener('/meta/connect', function() {" +
-                "   if (connectLatch.count == 2) {" +
+                "   if (connectLatch.getCount() === 2) {" +
                 "       cometd.disconnect();" +
                 "   }" +
                 "   connectLatch.countDown();" +

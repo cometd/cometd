@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.FutureResponseListener;
@@ -30,11 +29,15 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>This class is the underlying implementation of JavaScript's
+ * {@code window.XMLHttpRequest} in {@code browser.js}.</p>
+ */
 public class XMLHttpRequestExchange {
     private final CometDExchange exchange;
 
-    public XMLHttpRequestExchange(Object client, JavaScript javaScript, ScriptObjectMirror thiz, String method, String url, boolean async) {
-        exchange = new CometDExchange((XMLHttpRequestClient)client, javaScript, thiz, method, url, async);
+    public XMLHttpRequestExchange(Object client, JavaScript javaScript, Object jsThis, String httpMethod, String url, boolean async) {
+        exchange = new CometDExchange((XMLHttpRequestClient)client, javaScript, jsThis, httpMethod, url, async);
     }
 
     public void addRequestHeader(String name, String value) {
@@ -100,7 +103,7 @@ public class XMLHttpRequestExchange {
 
         private final Logger logger = LoggerFactory.getLogger(getClass().getName());
         private final JavaScript javaScript;
-        private final ScriptObjectMirror thiz;
+        private final Object jsThis;
         private final boolean async;
         private volatile boolean aborted;
         private volatile ReadyState readyState;
@@ -109,11 +112,11 @@ public class XMLHttpRequestExchange {
         private volatile int responseStatus;
         private volatile String responseStatusText;
 
-        public CometDExchange(XMLHttpRequestClient client, JavaScript javaScript, ScriptObjectMirror thiz, String method, String url, boolean async) {
+        public CometDExchange(XMLHttpRequestClient client, JavaScript javaScript, Object jsThis, String httpMethod, String url, boolean async) {
             super(client.getHttpClient().newRequest(url));
-            getRequest().method(HttpMethod.fromString(method));
+            getRequest().method(HttpMethod.fromString(httpMethod));
             this.javaScript = javaScript;
-            this.thiz = thiz;
+            this.jsThis = jsThis;
             this.async = async;
             this.aborted = false;
             this.readyState = ReadyState.OPENED;
@@ -155,7 +158,7 @@ public class XMLHttpRequestExchange {
         }
 
         private void notify(boolean sync, String event) {
-            javaScript.invoke(sync, thiz, "on" + event);
+            javaScript.invoke(sync, jsThis, "on" + event);
         }
 
         public void send() {

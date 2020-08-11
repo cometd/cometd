@@ -18,32 +18,37 @@ package org.cometd.javascript;
 import java.net.URL;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
-import javax.script.Bindings;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
-import jdk.nashorn.api.scripting.URLReader;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JavaScript implements Runnable {
-    private static final ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(Executors.privilegedThreadFactory());
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final BlockingQueue<FutureTask<?>> queue = new LinkedBlockingQueue<>();
     private final Thread thread = new Thread(this, "javascript");
-    private final Bindings bindings;
+    private final Context context;
+    private final Value bindings;
     private volatile boolean running;
 
     public JavaScript() {
-        bindings = engine.createBindings();
-        bindings.put("javaScript", this);
+        context = Context.newBuilder("js").allowAllAccess(true).build();
+        bindings = context.getBindings("js");
+        bindings.putMember("javaScript", this);
+    }
+
+    public Value bindings() {
+        return bindings;
     }
 
     public void init() {
@@ -59,7 +64,8 @@ public class JavaScript implements Runnable {
         }
         thread.interrupt();
         thread.join();
-        bindings.clear();
+        context.close();
+        scheduler.shutdown();
     }
 
     @Override
@@ -75,32 +81,41 @@ public class JavaScript implements Runnable {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T invoke(boolean sync, ScriptObjectMirror thiz, Object function, Object... arguments) {
+    public <T> T invoke(boolean sync, Object jsThis, Object function, Object... arguments) {
         FutureTask<T> task = new FutureTask<>(() -> {
+            context.enter();
             try {
-                if (function instanceof ScriptObjectMirror) {
-                    return (T)((ScriptObjectMirror)function).call(thiz, arguments);
-                } else {
-                    String name = function.toString();
-                    if (thiz.hasMember(name)) {
-                        Object member = thiz.getMember(name);
-                        if (member instanceof ScriptObjectMirror) {
-                            if (logger.isDebugEnabled()) {
-                                logger.debug("Invoking function {}", name);
-                            }
-                            return (T)((ScriptObjectMirror)member).call(thiz, arguments);
-                        } else {
-                            logger.info("Function {} not defined in {}", name, thiz);
-                            return null;
+                Value self = Value.asValue(jsThis);
+                Value funktion = Value.asValue(function);
+
+                if (funktion.canExecute()) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Invoking function {}", function);
+                    }
+                    return (T)funktion.getMember("call").execute(coalesce(self, arguments));
+                }
+
+                String name = funktion.asString();
+                if (self.hasMember(name)) {
+                    Value member = self.getMember(name);
+                    if (member.canExecute()) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Invoking object+function {}", name);
                         }
+                        return (T)member.getMember("call").execute(coalesce(self, arguments));
                     } else {
-                        logger.info("Function {} not a member of {}", name, thiz);
+                        logger.info("Member {} not a function in {}", name, jsThis);
                         return null;
                     }
+                } else {
+                    logger.info("{} not a member in {}", name, jsThis);
+                    return null;
                 }
             } catch (Throwable x) {
                 logger.info("Exception while trying to invoke " + function, x);
                 throw x;
+            } finally {
+                context.leave();
             }
         });
         submit(task);
@@ -112,27 +127,40 @@ public class JavaScript implements Runnable {
         return result(task);
     }
 
+    private Object[] coalesce(Object item, Object... rest) {
+        int length = rest.length;
+        Object[] args = new Object[length + 1];
+        args[0] = item;
+        if (length > 0) {
+            System.arraycopy(rest, 0, args, 1, length);
+        }
+        return args;
+    }
+
     @SuppressWarnings("unchecked")
     public <T> T evaluate(URL url) {
         FutureTask<T> task = new FutureTask<>(() -> {
-            try(URLReader r = new URLReader(url)) {
-                return (T)engine.eval(r, bindings);
-            } catch (ScriptException x) {
+            context.enter();
+            try {
+                return (T)context.eval(Source.newBuilder("js", url).build());
+            } catch (Throwable x) {
                 throw new JavaScriptException(x);
+            } finally {
+                context.leave();
             }
         });
         return submitTask(task);
     }
 
-    @SuppressWarnings("unchecked")
     public <T> T evaluate(String name, String code) {
-        String script = name == null ? code : String.format("//# sourceURL=%s%n%s", name, code);
         FutureTask<T> task = new FutureTask<>(() -> {
+            context.enter();
             try {
-                bindings.put(ScriptEngine.FILENAME, name);
-                return (T)engine.eval(script, bindings);
-            } catch (ScriptException x) {
+                return convert(context.eval(Source.newBuilder("js", code, name).build()));
+            } catch (Throwable x) {
                 throw new JavaScriptException(x);
+            } finally {
+                context.leave();
             }
         });
         return submitTask(task);
@@ -144,18 +172,42 @@ public class JavaScript implements Runnable {
     }
 
     public <T> T get(String key) {
-        FutureTask<T> task = new FutureTask<>(() -> getAsync(key));
+        FutureTask<T> task = new FutureTask<>(() -> {
+            context.enter();
+            try {
+                return convert(bindings.getMember(key));
+            } finally {
+                context.leave();
+            }
+        });
         submit(task);
         return result(task);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> T getAsync(String key) {
-        return (T)bindings.get(key);
+    public void put(String key, Object value) {
+        bindings.putMember(key, value);
     }
 
-    public void putAsync(String key, Object value) {
-        bindings.put(key, value);
+    @SuppressWarnings("unchecked")
+    private <T> T convert(Value value) {
+        if (value == null || value.isNull()) {
+            return null;
+        }
+        if (value.isHostObject()) {
+            return value.asHostObject();
+        }
+        if (value.isBoolean()) {
+            Boolean result = value.asBoolean();
+            return (T)result;
+        }
+        if (value.isNumber()) {
+            Double result = value.asDouble();
+            return (T)result;
+        }
+        if (value.isString()) {
+            return (T)value.asString();
+        }
+        return (T)value.as(Object.class);
     }
 
     private void submit(FutureTask<?> task) {
@@ -182,5 +234,32 @@ public class JavaScript implements Runnable {
             }
             throw (RuntimeException)xx;
         }
+    }
+
+    /**
+     * Invoked from {@code browser.js}.
+     *
+     * @param jsThis the JavaScript {@code this} reference
+     * @param function the function to invoke after the given delay
+     * @param delay the delay after which the function is invoked, in milliseconds
+     * @return a task representing the scheduled execution
+     */
+    public ScheduledFuture<?> schedule(Object jsThis, Object function, long delay) {
+        return scheduler.schedule(() -> {
+            invoke(false, jsThis, function);
+        }, delay, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Invoked from {@code browser.js}.
+     *
+     * @param jsThis the JavaScript {@code this} reference
+     * @param function the function to invoke after the given delay
+     * @param initialDelay the delay of the first execution, in milliseconds
+     * @param delay the delay after which the function is invoked, in milliseconds
+     * @return a task representing the scheduled execution
+     */
+    public ScheduledFuture<?> scheduleWithFixedDelay(Object jsThis, Object function, long initialDelay, long delay) {
+        return scheduler.scheduleWithFixedDelay(() -> invoke(false, jsThis, function), initialDelay, delay, TimeUnit.MILLISECONDS);
     }
 }

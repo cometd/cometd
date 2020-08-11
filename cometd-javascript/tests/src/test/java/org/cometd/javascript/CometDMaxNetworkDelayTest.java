@@ -22,7 +22,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -77,7 +76,8 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTransportsTest {
         private CountDownLatch latch;
 
         public void handle(Object jsMessage) {
-            Map<String, Object> message = (ScriptObjectMirror)jsMessage;
+            @SuppressWarnings("unchecked")
+            Map<String, Object> message = (Map<String, Object>)jsMessage;
             if ((Boolean)message.get("successful")) {
                 failures.get().add(new AssertionError("Publish"));
             }

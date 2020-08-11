@@ -2,14 +2,10 @@
 [[_java_server_configuration]]
 ==== Configuring the Java Server
 
-You can specify `BayeuxServer` parameters and server transport parameters
-in `web.xml` as init parameters of the `org.cometd.server.CometDServlet`.
-If the CometD servlet creates the `BayeuxServer` instance, the servlet
-init parameters are passed to the `BayeuxServer` instance, which in turn
-configures the server transports.
+You can specify `BayeuxServer` parameters and server transport parameters in `web.xml` as init parameters of the `org.cometd.server.CometDServlet`.
+If the CometD servlet creates the `BayeuxServer` instance, the servlet init parameters are passed to the `BayeuxServer` instance, which in turn configures the server transports.
 
-If you followed xref:_primer[the primer], Maven has configured the `web.xml`
-file for you; here are details its configuration, a sample `web.xml`:
+If you followed xref:_primer[the primer], Maven has configured the `web.xml` file for you; here are details its configuration, a sample `web.xml`:
 
 ====
 [source,xml]
@@ -20,29 +16,27 @@ file for you; here are details its configuration, a sample `web.xml`:
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
 
-    <servlet>
-        <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
-        <init-param>
-            <param-name>timeout</param-name>
-            <param-value>60000</param-value>
-        </init-param>
-        <load-on-startup>1</load-on-startup>
-        <async-supported>true</async-supported>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>cometd</servlet-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </servlet-mapping>
+  <servlet>
+    <servlet-name>cometd</servlet-name>
+    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <init-param>
+      <param-name>timeout</param-name>
+      <param-value>60000</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>cometd</servlet-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </servlet-mapping>
 
 </web-app>
 ----
 ====
 
-You must define and map the `org.cometd.server.CometDServlet` in `web.xml`
-to enable the server to interpret the Bayeux protocol.
-It is normally mapped to `+/cometd/*+`, but you can change the `url-pattern` mapping
-if you prefer, or even have multiple mappings.
+You must define and map the `org.cometd.server.CometDServlet` in `web.xml` to enable the server to interpret the Bayeux protocol.
+It is normally mapped to `+/cometd/*+`, but you can change the `url-pattern` mapping if you prefer, or even have multiple mappings.
 
 [[_java_server_configuration_bayeux]]
 ==== Configuring `BayeuxServer`
@@ -63,9 +57,7 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
 
 | broadcastToPublisher
 | true
-| When a publisher is also subscribed to the channel it publishes a message to,
-  this parameter controls whether `BayeuxServer` should broadcast the message
-  to all subscribers (including the publisher), or only to the other subscribers.
+| When a publisher is also subscribed to the channel it publishes a message to, this parameter controls whether `BayeuxServer` should broadcast the message to all subscribers (including the publisher), or only to the other subscribers.
   This property can be overridden at the channel level and at the session level.
 
 | jsonContext
@@ -75,15 +67,11 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
 
 | transports
 | ""
-| A comma-separated list of `ServerTransport` implementation class names
-  (that take a `org.cometd.server.BayeuxServerImpl` as only constructor
-  parameter) that define the server transports.
+| A comma-separated list of `ServerTransport` implementation class names (that take a `org.cometd.server.BayeuxServerImpl` as only constructor parameter) that define the server transports.
 
 | validateMessageFields
 | true
-| Whether message fields such as `channel`, `id` and `subscription` should be
-  validated to contain legal characters as defined in
-  xref:_bayeux_protocol_elements[the Bayeux specification].
+| Whether message fields such as `channel`, `id` and `subscription` should be validated to contain legal characters as defined in xref:_bayeux_protocol_elements[the Bayeux specification].
 
 | sweepPeriod
 | 997
@@ -94,19 +82,13 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
 [[_java_server_configuration_transports]]
 ===== Configuring Server Transports
 
-CometD server transports are pluggable; the CometD implementation provides
-commonly used transports such as HTTP or WebSocket, but you can write your own.
-You can configure the server transports using parameters that may have a prefix
-that specifies the transport the parameter refers to.
+CometD server transports are pluggable; the CometD implementation provides commonly used transports such as HTTP or WebSocket, but you can write your own.
+You can configure the server transports using parameters that may have a prefix that specifies the transport the parameter refers to.
 
-For example, the parameter `timeout` has no prefix, and hence it is valid for
-all transports; the parameter `callback-polling.jsonp.timeout` overrides the
-`timeout` parameter for the `callback-polling` transport only, while `ws.timeout`
-overrides it for the `websocket` transport (see `org.cometd.bayeux.Transport`
+For example, the parameter `timeout` has no prefix, and hence it is valid for all transports; the parameter `callback-polling.jsonp.timeout` overrides the `timeout` parameter for the `callback-polling` transport only, while `ws.timeout` overrides it for the `websocket` transport (see `org.cometd.bayeux.Transport`
 {javadocs}/org/cometd/bayeux/Transport.html[javadocs] for details).
 
-Here is the list of configuration init parameters (to be specified in `web.xml`)
-that different server transports accept:
+Here is the list of configuration init parameters (to be specified in `web.xml`) that different server transports accept:
 
 .`ServerTransport` Common Configuration Parameters
 [cols="^2,^3,<10"]
@@ -117,49 +99,38 @@ that different server transports accept:
 
 | timeout
 | 30000
-| The time, in milliseconds, that a server waits for a message before replying to a
-  `/meta/connect` with an empty reply.
+| The time, in milliseconds, that a server waits for a message before replying to a `/meta/connect` with an empty reply.
 
 | interval
 | 0
-| The time, in milliseconds, that the client must wait between the
-  end of one `/meta/connect` request and the start of the next.
+| The time, in milliseconds, that the client must wait between the end of one `/meta/connect` request and the start of the next.
 
 | maxInterval
 | 10000
-| The maximum period of time, in milliseconds, that the server waits for a new
-  `/meta/connect` message from a client before that client is considered invalid
-  and is removed.
+| The maximum period of time, in milliseconds, that the server waits for a new `/meta/connect` message from a client before that client is considered invalid and is removed.
 
 | maxProcessing
 | -1
-| The maximum period of time, in milliseconds, that the server waits for the
-  processing of a message before considering the session invalid and removing it.
+| The maximum period of time, in milliseconds, that the server waits for the processing of a message before considering the session invalid and removing it.
   A negative value means to wait forever.
 
 | maxLazyTimeout
 | 5000
-| The maximum period of time, in milliseconds, that the server waits before delivering
-  or publishing lazy messages.
+| The maximum period of time, in milliseconds, that the server waits before delivering or publishing lazy messages.
 
 | metaConnectDeliverOnly
 | false
-| Whether the transport should deliver the messages only via `/meta/connect`
-  (enables server-to-client strict message ordering – but not reliability).
-  Enabling this option allows for server-to-client strict message ordering at
-  the cost of a slightly chattier protocol (because delivery via `/meta/connect`
-  may require waking up pending replies).
+| Whether the transport should deliver the messages only via `/meta/connect` (enables server-to-client strict message ordering – but not reliability).
+  Enabling this option allows for server-to-client strict message ordering at the cost of a slightly chattier protocol (because delivery via `/meta/connect` may require waking up pending replies).
 
 | maxQueue
 | -1
 | The maximum size of the `ServerSession` queue. A value of -1 means no queue size limit.
-  A positive value triggers the invocation of
-  `org.cometd.bayeux.server.ServerSession.MaxQueueListener` when the max queue size is exceeded.
+  A positive value triggers the invocation of `org.cometd.bayeux.server.ServerSession.MaxQueueListener` when the max queue size is exceeded.
 
 | maxMessageSize
 | <impl>
-| The maximum size, in bytes, of an incoming transport message (the HTTP body
-  or the WebSocket message - both may contain multiple Bayeux messages).
+| The maximum size, in bytes, of an incoming transport message (the HTTP body or the WebSocket message - both may contain multiple Bayeux messages).
   The default value depends on the transport implementation.
 |===
 
@@ -172,54 +143,40 @@ that different server transports accept:
 
 | maxSessionsPerBrowser
 | 1
-| The max number of sessions (tabs/frames) allowed to long poll from the same browser
-  using the HTTP/1.1 protocol; a negative value allows unlimited sessions (see also
-  xref:_java_server_multiple_sessions[this section]).
+| The max number of sessions (tabs/frames) allowed to long poll from the same browserusing the HTTP/1.1 protocol; a negative value allows unlimited sessions (see also xref:_java_server_multiple_sessions[this section]).
 
 | http2MaxSessionsPerBrowser
 | -1
-| The max number of sessions (tabs/frames) allows to long poll from the same browser
-  using the HTTP/2 protocol; a negative value allows unlimited sessions (see also
-  xref:_java_server_multiple_sessions[this section]).
+| The max number of sessions (tabs/frames) allows to long poll from the same browser using the HTTP/2 protocol; a negative value allows unlimited sessions (see also xref:_java_server_multiple_sessions[this section]).
 
 | multiSessionInterval
 | 2000
-| The period of time, in milliseconds, that specifies the client normal polling
-  period in case the server detects more sessions (tabs/frames) connected from
-  the same browser than allowed by the `maxSessionsPerBrowser` parameter.
+| The period of time, in milliseconds, that specifies the client normal polling period in case the server detects more sessions (tabs/frames) connected from the same browser than allowed by the `maxSessionsPerBrowser` parameter.
   A non-positive value means that additional sessions are disconnected.
 
 | browserCookieName
 | BAYEUX_BROWSER
-| The name of the cookie used to identify multiple sessions (see also
-  xref:_java_server_multiple_sessions[this section]).
+| The name of the cookie used to identify multiple sessions (see also xref:_java_server_multiple_sessions[this section]).
 
 | browserCookieDomain
 |
-| The domain of the cookie used to identify multiple sessions (see also
-  xref:_java_server_multiple_sessions[this section]). By default there is no domain.
+| The domain of the cookie used to identify multiple sessions (see also xref:_java_server_multiple_sessions[this section]). By default there is no domain.
 
 | browserCookiePath
 | /
-| The path of the cookie used to identify multiple sessions (see also
-  xref:_java_server_multiple_sessions[this section]).
+| The path of the cookie used to identify multiple sessions (see also xref:_java_server_multiple_sessions[this section]).
 
 | browserCookieSecure
 | false
-| Whether to add the `Secure` attribute to the cookie used to identify
-  xref:_java_server_multiple_sessions[multiple sessions], see also
-  xref:_java_server_configuration_advanced_cookies[this section].
+| Whether to add the `Secure` attribute to the cookie used to identify xref:_java_server_multiple_sessions[multiple sessions], see also xref:_java_server_configuration_advanced_cookies[this section].
 
 | browserCookieHttpOnly
 | true
-| Whether to add the `HttpOnly` attribute to the cookie used to identify
-  xref:_java_server_multiple_sessions[multiple sessions].
+| Whether to add the `HttpOnly` attribute to the cookie used to identify xref:_java_server_multiple_sessions[multiple sessions].
 
 | browserCookieSameSite
 |
-| The value of the `SameSite` attribute of the cookie used to identify
-  xref:_java_server_multiple_sessions[multiple sessions], see also
-  xref:_java_server_configuration_advanced_cookies[this section].
+| The value of the `SameSite` attribute of the cookie used to identify xref:_java_server_multiple_sessions[multiple sessions], see also xref:_java_server_configuration_advanced_cookies[this section].
   Meaningful values are `Strict`, `Lax` and `None`.
 |===
 
@@ -232,76 +189,53 @@ that different server transports accept:
 
 | ws.cometdURLMapping
 |
-| *Mandatory*. A comma separated list of `url-pattern` strings defined by the
-  `servlet-mapping` of the CometD Servlet.
+| *Mandatory*. A comma separated list of `url-pattern` strings defined by the `servlet-mapping` of the CometD Servlet.
 
 | ws.messagesPerFrame
 | 1
 | How many Bayeux messages should be sent per WebSocket frame.
-  Setting this parameter too high may result in WebSocket frames that may be
-  rejected by the recipient because they are too big.
+  Setting this parameter too high may result in WebSocket frames that may be rejected by the recipient because they are too big.
 
 | ws.bufferSize
 | <impl>
 | The size, in bytes, of the buffer used to read and write WebSocket frames.
-  The default value depends on the implementation. For the Jetty WebSocket
-  implementation, this value is 4096.
+  The default value depends on the implementation. For the Jetty WebSocket implementation, this value is 4096.
 
 | ws.idleTimeout
 | <impl>
 | The idle timeout, in milliseconds, for the WebSocket connection.
-  The default value depends on the implementation. For the Jetty WebSocket
-  implementation this value is 300000.
+  The default value depends on the implementation. For the Jetty WebSocket implementation this value is 300000.
 
 | ws.requireHandshakePerConnection
 | false
-| Whether every new WebSocket connection requires a handshake, see
-  xref:_security[the security section].
+| Whether every new WebSocket connection requires a handshake, see xref:_security[the security section].
 
 | ws.enableExtension.<extension_name>
 | true
-| Whether the WebSocket extension with the given `extension_name` (for example
-  `ws.enableExtension.permessage-deflate`) should be enabled if client and
-  server could negotiate it.
-  If either the client or the server does not support the extension, then the
-  extension cannot be negotiated and this option has no effect.
-  Otherwise, both client and server support the extension, which is negotiated
-  only if this option evaluates to true (i.e. either this option is absent or
-  explicitly set to `true`); if this option evaluates to `false`, the extension
-  is not negotiated.
+| Whether the WebSocket extension with the given `extension_name` (for example `ws.enableExtension.permessage-deflate`) should be enabled if client and server could negotiate it.
+  If either the client or the server does not support the extension, then the extension cannot be negotiated and this option has no effect.
+  Otherwise, both client and server support the extension, which is negotiated only if this option evaluates to true (i.e. either this option is absent or explicitly set to `true`); if this option evaluates to `false`, the extension is not negotiated.
 |===
 
 [[_java_server_configuration_advanced]]
 ===== Advanced Configuration for the Java Server
 
-The simplest way to setup a CometD server is to deploy your CometD application
-under context path `/`, and the CometD Servlet mapped to e.g. `/cometd/*`.
-In this way resources such as HTML, CSS and - more importantly - JavaScript
-files (in particular `cometd.js`) will belong to the same domain.
-This minimize the server configuration to make browser work easily with CometD.
+The simplest way to setup a CometD server is to deploy your CometD application under context path `/`, and the CometD Servlet mapped to e.g. `/cometd/*`.
+In this way resources such as HTML, CSS and - more importantly - JavaScript files (in particular `cometd.js`) will belong to the same domain.
+This minimizes the server configuration to make browser work easily with CometD.
 
-A more complex setup is to have your main application deployed to domain
-`app.domain.com` and the CometD server to `cometd.domain.com`.
-The JavaScript file `cometd.js` will be served from domain `app.domain.com`,
-while CometD messages will be sent to and received from domain `cometd.domain.com`.
+A more complex setup is to have your main application deployed to domain `app.domain.com` and the CometD server to `cometd.domain.com`.
+The JavaScript file `cometd.js` will be served from domain `app.domain.com`, while CometD messages will be sent to and received from domain `cometd.domain.com`.
 
-This is a cross-domain deployment and requires configuring the `CrossOriginFilter`
-(see xref:_java_server_configuration_advanced_cross_origin_filter[this section]).
-to allow the JavaScript file downloaded from `app.domain.com` to be able to
-communicate with the `cometd.domain.com` server.
+This is a cross-domain deployment and requires configuring the `CrossOriginFilter` (see xref:_java_server_configuration_advanced_cross_origin_filter[this section]) to allow the JavaScript file downloaded from `app.domain.com` to be able to communicate with the `cometd.domain.com` server.
 
-Furthermore, a cross-domain deployment may require a more advanced configuration
-of the HTTP cookies that the CometD server sends to clients, see
-xref:_java_server_configuration_advanced_cookies[this section].
+Furthermore, a cross-domain deployment may require a more advanced configuration of the HTTP cookies that the CometD server sends to clients, see xref:_java_server_configuration_advanced_cookies[this section].
 
 [[_java_server_configuration_advanced_cross_origin_filter]]
 ====== Configuring the `CrossOriginFilter`
 
-Independently from the Servlet Container you are using, Jetty provides a standard,
-portable, `org.eclipse.jetty.servlets.CrossOriginFilter`.
-This filter implements the https://www.w3.org/TR/access-control/[Cross-Origin Resource Sharing]
-specification, and allows recent browsers that implement it to perform cross-domain JavaScript
-requests (see also xref:_javascript_transports[the JavaScript transports section]).
+Independently of the Servlet Container you are using, Jetty provides a standard, portable, `org.eclipse.jetty.servlets.CrossOriginFilter`.
+This filter implements the https://www.w3.org/TR/access-control/[Cross-Origin Resource Sharing] specification, and allows recent browsers that implement it to perform cross-domain JavaScript requests (see also xref:_javascript_transports[the JavaScript transports section]).
 
 Here is an example of `web.xml` configuration for the `CrossOriginFilter`:
 
@@ -314,64 +248,57 @@ Here is an example of `web.xml` configuration for the `CrossOriginFilter`:
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
 
-    <servlet>
-        <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
-        <init-param>
-            <param-name>timeout</param-name>
-            <param-value>60000</param-value>
-        </init-param>
-        <load-on-startup>1</load-on-startup>
-        <async-supported>true</async-supported>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>cometd</servlet-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </servlet-mapping>
+  <servlet>
+    <servlet-name>cometd</servlet-name>
+    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <init-param>
+      <param-name>timeout</param-name>
+      <param-value>60000</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>cometd</servlet-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </servlet-mapping>
 
-    <filter>
-        <filter-name>cross-origin</filter-name>
-        <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
-        <async-supported>true</async-supported>
-    </filter>
-    <filter-mapping>
-        <filter-name>cross-origin</filter-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </filter-mapping>
+  <filter>
+    <filter-name>cross-origin</filter-name>
+    <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+    <async-supported>true</async-supported>
+  </filter>
+  <filter-mapping>
+    <filter-name>cross-origin</filter-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </filter-mapping>
 
 </web-app>
 ----
 ====
 
-Refer to the https://www.eclipse.org/jetty/documentation/current/cross-origin-filter.html[Jetty Cross Origin Filter documentation]
-for the filter configuration.
+Refer to the https://www.eclipse.org/jetty/documentation/current/cross-origin-filter.html[Jetty Cross Origin Filter documentation] for the filter configuration.
 
 [[_java_server_configuration_advanced_cookies]]
 ====== Configuring Cookies
 
 Modern browsers may require that cookies sent by a server have the `SameSite` attribute.
-https://web.dev/samesite-cookies-explained/[This article] is a good resource that explains
-how the `SameSite` attribute works.
+https://web.dev/samesite-cookies-explained/[This article] is a good resource that explains how the `SameSite` attribute works.
 
-In particular, in the case of cross-domain deployment, the CometD server should be configured
-to send cookies that have both the `Secure` attribute and the `SameSite=None` attribute.
-In turn, the `Secure` attribute requires that the CometD server is deployed over `https`
-(otherwise the browser won't send the cookie, causing the CometD communication to break).
+In particular, in the case of cross-domain deployment, the CometD server should be configured to send cookies that have both the `Secure` attribute and the `SameSite=None` attribute.
+In turn, the `Secure` attribute requires that the CometD server is deployed over `https` (otherwise the browser won't send the cookie, causing the CometD communication to break).
 
-Refer to the CometD xref:_java_server_configuration_transports[server configuration section]
-for the cookie configuration in the CometD server.
+Refer to the CometD xref:_java_server_configuration_transports[server configuration section] for the cookie configuration in the CometD server.
 
 [[_java_server_configuration_servlet_30]]
 ===== Configuring Servlet 3.0 or later Asynchronous Features
 
-The CometD libraries are portable across Servlet Containers because they use
-the standard Servlet 3 APIs.
+The CometD libraries are portable across Servlet Containers because they use the standard Servlet 3 APIs.
 
 To enable the Servlet 3 asynchronous features, you need to:
 
-* Make sure that in `web.xml` the `version` attribute of the `web-app` element is 3.0 <1>.
-* Add the `async-supported` element to filters that might execute before the `CometDServlet`
-  _and_ to the `CometDServlet` itself <2>.
+* Make sure that in `web.xml` the `version` attribute of the `web-app` element is 3.0 or greater <1>.
+* Add the `async-supported` element to filters that might execute before the `CometDServlet` _and_ to the `CometDServlet` itself <2>.
 
 [NOTE]
 ====
@@ -389,33 +316,32 @@ For example:
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1"> <1>
 
-    <servlet>
-        <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
-        <load-on-startup>1</load-on-startup>
-        <async-supported>true</async-supported> <2>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>cometd</servlet-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </servlet-mapping>
+  <servlet>
+    <servlet-name>cometd</servlet-name>
+    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported> <2>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>cometd</servlet-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </servlet-mapping>
 
-    <filter>
-        <filter-name>cross-origin</filter-name>
-        <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
-        <async-supported>true</async-supported> <2>
-    </filter>
-    <filter-mapping>
-        <filter-name>cross-origin</filter-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </filter-mapping>
+  <filter>
+    <filter-name>cross-origin</filter-name>
+    <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+    <async-supported>true</async-supported> <2>
+  </filter>
+  <filter-mapping>
+    <filter-name>cross-origin</filter-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </filter-mapping>
 
 </web-app>
 ----
 ====
 
-The typical error that you get if you do not enable the Servlet 3 asynchronous
-features is the following:
+The typical error that you get if you do not enable the Servlet 3 asynchronous features is the following:
 
 ----
 IllegalStateException: the servlet does not support async operations for this request
@@ -423,140 +349,73 @@ IllegalStateException: the servlet does not support async operations for this re
 
 [NOTE]
 ====
-While Jetty is configured by default with a non-blocking connector that allows
-CometD to run out of the box, Tomcat is not, by default, configured with a
-non-blocking connector.
-You must first enable the non-blocking connector in Tomcat in order for CometD
-to work properly.
-Please refer to the https://tomcat.apache.org[Tomcat documentation] for how to
-configure a non-blocking connector in Tomcat.
+While Jetty is configured by default with a non-blocking connector that allows CometD to run out of the box, Tomcat is not, by default, configured with a non-blocking connector.
+You must first enable the non-blocking connector in Tomcat in order for CometD to work properly.
+Please refer to the https://tomcat.apache.org[Tomcat documentation] for how to configure a non-blocking connector in Tomcat.
 ====
 
 [[_java_server_configuration_channels]]
 ===== Configuring `ServerChannel`
 
-Server channels are used to broadcast messages to multiple clients, and are a
-central concept of CometD (see also xref:_concepts[the concepts section]).
-Class `org.cometd.bayeux.server.ServerChannel` represents server channels;
-instances of server channels can be obtained from a `BayeuxServer` instance.
+Server channels are used to broadcast messages to multiple clients, and are a central concept of CometD (see also xref:_concepts[the concepts section]).
+Class `org.cometd.bayeux.server.ServerChannel` represents server channels; instances of server channels can be obtained from a `BayeuxServer` instance.
 
-With the default security policy, server channels may be created simply by
-publishing to a channel: if the channel does not exist, it is created on-the-fly.
-This may open up for creation of a large number of server channel, for example
-when messages are published to channels created with a random name, such as
-`/topic/atyd9834o329`, and for race conditions during channel creation (since
-the same server channel may be created concurrently by two remote clients
-publishing to that channel at the same time).
+With the default security policy, server channels may be created simply by publishing to a channel: if the channel does not exist, it is created on-the-fly.
+This may open up for creation of a large number of server channel, for example when messages are published to channels created with a random name, such as `/topic/atyd9834o329`, and for race conditions during channel creation (since the same server channel may be created concurrently by two remote clients publishing to that channel at the same time).
 
-To avoid that these transient server channels grow indefinitely and occupy a
-lot of memory, the CometD server aggressively sweeps server channels
-removing all channels that are not in use by the application anymore.
-The sweep period can be controlled by the `sweepPeriod` parameter, see
-xref:_java_server_configuration_bayeux[].
+To avoid that these transient server channels grow indefinitely and occupy a lot of memory, the CometD server aggressively sweeps server channels removing all channels that are not in use by the application anymore.
+The sweep period can be controlled by the `sweepPeriod` parameter, see xref:_java_server_configuration_bayeux[this section].
 
 Given the above, you need to solve two problems:
 
 * how to atomically create and configure a server channel
-* how to avoid that channels that the application knows they will be used at a
-  later time are swept prematurely
+* how to avoid that channels that the application knows they will be used at a later time are swept prematurely
 
-The solution offered by the CometD API for the first problem is to provide a
-method that atomically creates and initializes server channels:
+The solution offered by the CometD API for the first problem is to provide a method that atomically creates and initializes server channels:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxServer bayeuxServer = ...;
-MarkedReference<ServerChannel> ref = bayeuxServer.createChannelIfAbsent("/my/channel", new ServerChannel.Initializer() {
-    public void configureChannel(ConfigurableServerChannel channel) {
-        // Here configure the channel
-    }
-});
+include::{doc_code}/server/ServerConfigDocs.java[tags=init]
 ----
 ====
 
-Method `BayeuxServer.createChannelIfAbsent(String channelName, Initializer... initializers)`
-atomically creates the channel, and returns a `MarkedReference` that contains
-the `ServerChannel` reference and a boolean that indicates whether the channel
-was created or if it existed already.
-The `Initializer` callback is called only if the channel is created by the
-invocation to `BayeuxServer.createChannelIfAbsent()`.
+Method `BayeuxServer.createChannelIfAbsent(String channelName, Initializer... initializers)` atomically creates the channel, and returns a `MarkedReference` that contains the `ServerChannel` reference and a boolean that indicates whether the channel was created or if it existed already.
+The `Initializer` callback is called only if the channel is created by the invocation to `BayeuxServer.createChannelIfAbsent()`.
 
-The solution to the second problem is to configure the channel as _persistent_,
-so that the sweeper does not remove the channel:
+The solution to the second problem is to configure the channel as _persistent_, so that the sweeper does not remove the channel:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxServer bayeuxServer = ...;
-MarkedReference<ServerChannel> ref = bayeuxServer.createChannelIfAbsent("/my/channel", new ServerChannel.Initializer() {
-    public void configureChannel(ConfigurableServerChannel channel) {
-        channel.setPersistent(true);
-    }
-});
+include::{doc_code}/server/ServerConfigDocs.java[tags=persist]
 ----
 ====
 
-You can not only configure `ServerChannel` instances to be persistent, but to
-be _lazy_ (see also xref:_java_server_lazy_messages[this section]), you can add
-listeners, and you can add `Authorizer` (see also
-xref:_java_server_authorizers[the authorizers section]).
+Not only you can configure `ServerChannel` instances to be persistent, but to be _lazy_ (see also xref:_java_server_lazy_messages[this section]), you can add
+listeners, and you can add `Authorizer` (see also xref:_java_server_authorizers[the authorizers section]).
 
-Creating a server channel returns a `MarkedReference` that contains
-the `ServerChannel` reference and a boolean that indicates whether the channel
-was created or if it existed already:
+Creating a server channel returns a `MarkedReference` that contains the `ServerChannel` reference and a boolean that indicates whether the channel was created or if it existed already:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxServer bayeuxServer = ...;
-String channelName = "/my/channel";
-MarkedReference<ServerChannel> ref = bayeuxServer.createChannelIfAbsent(channelName, new ServerChannel.Initializer() {
-    public void configureChannel(ConfigurableServerChannel channel) {
-        channel.setPersistent(true);
-    }
-});
-
-// Was the channel created atomically by this thread ?
-boolean created = ref.isMarked();
-
-// Guaranteed to never be null: either it's the channel
-// just created, or it has been created concurrently
-// by some other thread.
-ServerChannel channel = ref.getReference();
+include::{doc_code}/server/ServerConfigDocs.java[tags=reference]
 ----
 ====
 
-The code above creates the channel, configures it to be persistent and then
-obtains a reference to it, that is guaranteed to be non-null.
+The code above creates the channel, configures it to be persistent and then obtains a reference to it, that is guaranteed to be non-null.
 
-A typical error in CometD applications is to create the channel without making
-it persistent, and then trying to obtain a reference to it without checking if it's null:
+A typical error in CometD applications is to create the channel without making it persistent, and then trying to obtain a reference to it without checking if it's null:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxServer bayeuxServer = ...;
-String channelName = "/my/channel";
-
-// Wrong, channel not marked as persistent, but used later
-bayeuxServer.createChannelIfAbsent(channelName);
-
-// Other application code here
-
-ServerChannel channel = bayeuxServer.getChannel(channelName);
-channel.publish(...); // May throw NullPointerException
+include::{doc_code}/server/ServerConfigDocs.java[tags=wrong]
 ----
 ====
 
 Between the `BayeuxServer.createChannelIfAbsent()` call and the
-`BayeuxServer.getChannel()` call there is
-application code that may take a while to complete (therefore allowing the
-sweeper to sweep the just created server channel), so it is always safer to
-mark the channel as persistent, and when it is not needed anymore mark the
-server channel as non persistent (by calling `channel.setPersistent(false)`),
-to allow the sweeper to sweep it.
+`BayeuxServer.getChannel()` call there is application code that may take a while to complete (therefore allowing the sweeper to sweep the just created server channel), so it is always safer to mark the channel as persistent, and when it is not needed anymore mark the server channel as non persistent (by calling `channel.setPersistent(false)`), to allow the sweeper to sweep it.
 
-The server channel sweeper will sweep channels that are non-persistent, have
-no subscribers, have no listeners, have no authorizers and have no children
-channels, and only after these conditions are met for three consecutive sweeper passes.
+The server channel sweeper will sweep channels that are non-persistent, have no subscribers, have no listeners, have no authorizers and have no children channels, and only after these conditions are met for three consecutive sweeper passes.

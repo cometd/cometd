@@ -1,21 +1,36 @@
 /*
- * Simulated browser environment for Nashorn
+ * Simulated browser environment for GraalJS.
  * Based on the work by by John Resig <http://ejohn.org/> under the MIT License.
  */
+'use strict';
 
 // The window global object.
-var window = this;
+const window = this;
 
 // Objects used also on the Java side.
-var scheduler;
+// The var keyword is necessary for these definitions,
+// to guarantee interoperability with the Java side.
 var cookies;
 var xhrClient;
 var wsConnector;
 var sessionStorage;
 
-var Latch = Java.type('org.cometd.javascript.Latch');
+const Latch = Java.type('org.cometd.javascript.Latch');
 
-(function() {
+(() => {
+    function _equalsIgnoreCase(s1, s2) {
+        if (s1 === s2) {
+            return true;
+        }
+        if (s1 !== undefined && s1 !== null) {
+            if (s2 !== undefined && s2 !== null) {
+                return s1.toUpperCase() === s2.toUpperCase();
+            }
+        }
+        return false;
+    }
+
+
     // Browser Navigator
     window.navigator = {
         get appVersion() {
@@ -31,10 +46,10 @@ var Latch = Java.type('org.cometd.javascript.Latch');
 
 
     // Setup location properties
-    var _location;
+    let _location;
     Object.defineProperty(window, 'location', {
-        set: function(url) {
-            var urlParts = /(^https?:)\/\/(([^:\/\?#]+)(:(\d+))?)([^\?#]*)?(\?[^#]*)?(#.*)?/.exec(url);
+        set(url) {
+            const urlParts = /(^https?:)\/\/(([^:\/?#]+)(:(\d+))?)([^?#]*)?(\?[^#]*)?(#.*)?/.exec(url);
             _location = {
                 href: url,
                 protocol: urlParts[1],
@@ -46,14 +61,14 @@ var Latch = Java.type('org.cometd.javascript.Latch');
                 hash: urlParts[8] || ''
             };
         },
-        get: function() {
+        get() {
             return _location;
         }
     });
 
 
     // The output console
-    window.console = function() {
+    window.console = (() => {
         // Converts JavaScript objects to JSON.
         // We cannot use Crockford's JSON because it cannot handle
         // cyclic data structures properly, so we redo it here.
@@ -71,16 +86,16 @@ var Latch = Java.type('org.cometd.javascript.Latch');
                     if (!object) {
                         return 'null';
                     } else if (Array.isArray(object)) {
-                        for (var aid = 0; aid < ids.length; ++aid) {
+                        for (let aid = 0; aid < ids.length; ++aid) {
                             if (ids[aid] === object) {
                                 return undefined;
                             }
                         }
                         ids.push(object);
 
-                        var arrayResult = '[';
-                        for (var i = 0; i < object.length; ++i) {
-                            var arrayValue = _toJSON(object[i], ids);
+                        let arrayResult = '[';
+                        for (let i = 0; i < object.length; ++i) {
+                            const arrayValue = _toJSON(object[i], ids);
                             if (arrayValue !== undefined) {
                                 if (i > 0) {
                                     arrayResult += ',';
@@ -91,24 +106,22 @@ var Latch = Java.type('org.cometd.javascript.Latch');
                         arrayResult += ']';
                         return arrayResult;
                     } else {
-                        for (var oid = 0; oid < ids.length; ++oid) {
+                        for (let oid = 0; oid < ids.length; ++oid) {
                             if (ids[oid] === object) {
                                 return undefined;
                             }
                         }
                         ids.push(object);
 
-                        var objectResult = '{';
-                        for (var name in object) {
-                            if (object.hasOwnProperty(name)) {
-                                if (objectResult.length > 1) {
-                                    objectResult += ',';
-                                }
-                                objectResult += '"' + name + '":';
-                                var objectValue = _toJSON(object[name], ids);
-                                if (objectValue !== undefined) {
-                                    objectResult += '' + objectValue;
-                                }
+                        let objectResult = '{';
+                        for (let name in object) {
+                            if (objectResult.length > 1) {
+                                objectResult += ',';
+                            }
+                            objectResult += '"' + name + '":';
+                            const objectValue = _toJSON(object[name], ids);
+                            if (objectValue !== undefined) {
+                                objectResult += '' + objectValue;
                             }
                         }
                         objectResult += '}';
@@ -121,70 +134,63 @@ var Latch = Java.type('org.cometd.javascript.Latch');
             }
         }
 
+        const _formatter = Java.type('java.time.format.DateTimeFormatter').ofPattern('yyyy-MM-dd HH:mm:ss.SSS');
+
         function _log(level, args) {
-            var formatter = new java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss.SSS');
-            var log = formatter.format(new java.util.Date());
-            log += ' ' + java.lang.Thread.currentThread().getName();
+            let log = _formatter.format(Java.type('java.time.LocalDateTime').now());
+            log += ' ' + Java.type('java.lang.Thread').currentThread().getName();
             log += ' [' + level + '][browser.js]';
-            for (var i = 0; i < args.length; ++i) {
-                var element = args[i];
+            for (let i = 0; i < args.length; ++i) {
+                let element = args[i];
                 if (typeof element === 'object') {
                     element = _toJSON(element, []);
                 }
                 log += ' ' + element;
             }
-            java.lang.System.err.println(log);
+            Java.type('java.lang.System').err.println(log);
         }
 
         return {
-            error: function() {
+            error() {
                 _log('ERROR', arguments);
             },
-            warn: function() {
-                _log('WARN', arguments);
+            warn() {
+                _log(' WARN', arguments);
             },
-            info: function() {
-                _log('INFO', arguments);
+            info() {
+                _log(' INFO', arguments);
             },
-            debug: function() {
+            debug() {
                 _log('DEBUG', arguments);
             },
-            log: function() {
-                _log('LOG', arguments);
+            log() {
+                _log('  LOG', arguments);
             }
         };
-    }();
+    })();
 
 
     // Timers
-    window.setTimeout = function(fn, delay) {
+    window.setTimeout = (fn, delay) => {
         delay = delay || 0;
-        return scheduler.schedule(new java.lang.Runnable({
-            run: function() {
-                javaScript.invoke(true, window, fn);
-            }
-        }), delay, java.util.concurrent.TimeUnit.MILLISECONDS);
+        return javaScript.schedule(window, fn, delay);
     };
-    window.clearTimeout = function(handle) {
+    window.clearTimeout = handle => {
         if (handle) {
             handle.cancel(true);
         }
     };
-    window.setInterval = function(fn, period) {
-        return scheduler.scheduleWithFixedDelay(new java.lang.Runnable({
-            run: function() {
-                javaScript.invoke(true, window, fn);
-            }
-        }), period, period, java.util.concurrent.TimeUnit.MILLISECONDS);
-    };
-    window.clearInterval = function(handle) {
-        handle.cancel(true);
+    window.setInterval = (fn, period) => javaScript.scheduleWithFixedDelay(window, fn, period, period);
+    window.clearInterval = handle => {
+        if (handle) {
+            handle.cancel(true);
+        }
     };
 
 
     // Window Events
-    var _events = [{}];
-    window.addEventListener = function(type, fn) {
+    const _events = [{}];
+    window.addEventListener = (type, fn) => {
         if (!this.uuid || this === window) {
             this.uuid = _events.length;
             _events[this.uuid] = {};
@@ -198,7 +204,7 @@ var Latch = Java.type('org.cometd.javascript.Latch');
             _events[this.uuid][type].push(fn);
         }
     };
-    window.removeEventListener = function(type, fn) {
+    window.removeEventListener = (type, fn) => {
         if (!this.uuid || this === window) {
             this.uuid = _events.length;
             _events[this.uuid] = {};
@@ -209,22 +215,18 @@ var Latch = Java.type('org.cometd.javascript.Latch');
         }
 
         _events[this.uuid][type] =
-            _events[this.uuid][type].filter(function(f) {
-                return f !== fn;
-            });
+            _events[this.uuid][type].filter(f => f !== fn);
     };
-    window.dispatchEvent = function(event) {
+    window.dispatchEvent = event => {
         if (event.type) {
-            var self = this;
-
             if (this.uuid && _events[this.uuid][event.type]) {
-                _events[this.uuid][event.type].forEach(function(fn) {
-                    fn.call(self, event);
+                _events[this.uuid][event.type].forEach(fn => {
+                    fn.call(this, event);
                 });
             }
 
-            if (this["on" + event.type]) {
-                this["on" + event.type].call(self, event);
+            if (this['on' + event.type]) {
+                this['on' + event.type].call(this, event);
             }
         }
     };
@@ -238,15 +240,15 @@ var Latch = Java.type('org.cometd.javascript.Latch');
      */
     function makeScriptRequest(script) {
         if (script.src) {
-            var xhr = new window.XMLHttpRequest();
-            xhr.open("GET", script.src, true);
-            xhr.onload = function() {
-                eval(this.responseText);
+            const xhr = new window.XMLHttpRequest();
+            xhr.open('GET', script.src, true);
+            xhr.onload = () => {
+                eval(xhr.responseText);
 
                 if (script.onload && typeof script.onload === 'function') {
                     script.onload.call(script);
                 } else {
-                    var event = window.document.createEvent();
+                    const event = window.document.createEvent();
                     event.initEvent('load', true, true);
                     script.dispatchEvent(event);
                 }
@@ -257,11 +259,11 @@ var Latch = Java.type('org.cometd.javascript.Latch');
         }
     }
 
-    var _domNodes = new java.util.HashMap();
+    const _domNodes = new (Java.type('java.util.HashMap'))();
 
     /**
      * Helper method for generating the right javascript DOM objects based upon the node type.
-     * If the java node exists, returns it, otherwise creates a corresponding javascript node.
+     * If the javascript node exists, returns it, otherwise creates a corresponding javascript node.
      * @param javaNode the java node to convert to javascript node
      */
     function makeNode(javaNode) {
@@ -271,15 +273,19 @@ var Latch = Java.type('org.cometd.javascript.Latch');
         if (_domNodes.containsKey(javaNode)) {
             return _domNodes.get(javaNode);
         }
-        var isElement = javaNode.getNodeType() === org.w3c.dom.Node.ELEMENT_NODE;
-        var jsNode = isElement ? new window.DOMElement(javaNode) : new window.DOMNode(javaNode);
+        const isElement = javaNode.getNodeType() === org.w3c.dom.Node.ELEMENT_NODE;
+        const jsNode = isElement ? new window.DOMElement(javaNode) : new window.DOMNode(javaNode);
         _domNodes.put(javaNode, jsNode);
         return jsNode;
     }
 
     function makeHTMLDocument(html) {
-        var bytes = (new Packages.java.lang.String(html)).getBytes("UTF8");
-        return new window.DOMDocument(new Packages.java.io.ByteArrayInputStream(bytes));
+        const utf8 = Java.type('java.nio.charset.StandardCharsets').UTF_8.encode(html);
+        const bytes = [];
+        while (utf8.hasRemaining()) {
+            bytes.push(utf8.get());
+        }
+        return new window.DOMDocument(new (Java.type('java.io.ByteArrayInputStream'))(bytes));
     }
 
 
@@ -317,39 +323,41 @@ var Latch = Java.type('org.cometd.javascript.Latch');
             return makeNode(this._dom.getNextSibling());
         },
         get attributes() {
-            var jsAttributes = {};
-            var javaAttributes = this._dom.getAttributes();
-            for (var i = 0; i < javaAttributes.getLength(); ++i) {
-                var javaAttribute = javaAttributes.item(i);
-                jsAttributes[javaAttribute.nodeName] = javaAttribute.nodeValue;
+            const jsAttributes = {};
+            const javaAttributes = this._dom.getAttributes();
+            if (javaAttributes) {
+                for (let i = 0; i < javaAttributes.getLength(); ++i) {
+                    const javaAttribute = javaAttributes.item(i);
+                    jsAttributes[javaAttribute.nodeName] = javaAttribute.nodeValue;
+                }
             }
             return jsAttributes;
         },
         get ownerDocument() {
-            return _domNodes.get(this._dom.ownerDocument);
+            return makeNode(this._dom.getOwnerDocument());
         },
-        insertBefore: function(node, before) {
+        insertBefore(node, before) {
             return makeNode(this._dom.insertBefore(node._dom, before ? before._dom : before));
         },
-        replaceChild: function(newNode, oldNode) {
+        replaceChild(newNode, oldNode) {
             return makeNode(this._dom.replaceChild(newNode._dom, oldNode._dom));
         },
-        removeChild: function(node) {
+        removeChild(node) {
             return makeNode(this._dom.removeChild(node._dom));
         },
-        appendChild: function(node) {
+        appendChild(node) {
             return makeNode(this._dom.appendChild(node._dom));
         },
-        hasChildNodes: function() {
+        hasChildNodes() {
             return this._dom.hasChildNodes();
         },
-        cloneNode: function(deep) {
+        cloneNode(deep) {
             return makeNode(this._dom.cloneNode(deep));
         },
-        normalize: function() {
+        normalize() {
             this._dom.normalize();
         },
-        isSupported: function(feature, version) {
+        isSupported(feature, version) {
             return this._dom.isSupported(feature, version);
         },
         get namespaceURI() {
@@ -364,7 +372,7 @@ var Latch = Java.type('org.cometd.javascript.Latch');
         get localName() {
             return this._dom.getLocalName();
         },
-        hasAttributes: function() {
+        hasAttributes() {
             return this._dom.hasAttributes();
         },
         // END OFFICIAL DOM
@@ -376,7 +384,7 @@ var Latch = Java.type('org.cometd.javascript.Latch');
         get documentElement() {
             return makeNode(this._dom.documentElement);
         },
-        toString: function() {
+        toString() {
             return '"' + this.nodeValue + '"';
         },
         get outerHTML() {
@@ -389,22 +397,22 @@ var Latch = Java.type('org.cometd.javascript.Latch');
     window.DOMImplementation = function() {
     };
     window.DOMImplementation.prototype = {
-        createHTMLDocument: function(title) {
-            return makeHTMLDocument("<html><head><title>" + title + "</title></head><body></body></html>");
+        createHTMLDocument(title) {
+            return makeHTMLDocument('<html lang="en"><head><title>' + title + '</title></head><body></body></html>');
         }
     };
 
     // DOM Document
-    var ScriptInjectionEventListener = Java.type('org.cometd.javascript.ScriptInjectionEventListener');
+    const ScriptInjectionEventListener = Java.type('org.cometd.javascript.ScriptInjectionEventListener');
     window.DOMDocument = function(stream) {
         this._file = stream;
-        this._dom = javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(stream);
+        this._dom = Java.type('javax.xml.parsers.DocumentBuilderFactory').newInstance().newDocumentBuilder().parse(stream);
 
         if (!_domNodes.containsKey(this._dom)) {
             _domNodes.put(this._dom, this);
         }
 
-        var listener = new ScriptInjectionEventListener(javaScript, window, makeScriptRequest, _domNodes);
+        const listener = new ScriptInjectionEventListener(javaScript, window, makeScriptRequest, _domNodes);
         this._dom.addEventListener('DOMNodeInserted', listener, false);
 
         this._impl = new window.DOMImplementation();
@@ -413,43 +421,43 @@ var Latch = Java.type('org.cometd.javascript.Latch');
         // START OFFICIAL DOM
 //        doctype
         get implementation() {
-           return this._impl;
+            return this._impl;
         },
         get documentElement() {
             return makeNode(this._dom.getDocumentElement());
         },
-        createElement: function(name) {
+        createElement(name) {
             return makeNode(this._dom.createElement(name.toLowerCase()));
         },
-        createDocumentFragment: function() {
+        createDocumentFragment() {
             return makeNode(this._dom.createDocumentFragment());
         },
-        createTextNode: function(text) {
-            return makeNode(this._dom.createTextNode(text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")));
+        createTextNode(text) {
+            return makeNode(this._dom.createTextNode(text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')));
         },
-        createComment: function(text) {
+        createComment(text) {
             return makeNode(this._dom.createComment(text));
         },
 //        createCDATASection
 //        createProcessingInstruction
 //        createAttribute
 //        createEntityReference
-        getElementsByTagName: function(name) {
+        getElementsByTagName(name) {
             return new window.DOMNodeList(this._dom.getElementsByTagName(
                 name.toLowerCase()));
         },
-        importNode: function(node, deep) {
+        importNode(node, deep) {
             return makeNode(this._dom.importNode(node._dom, deep));
         },
 //        createElementNS
 //        createAttributeNS
 //        getElementsByTagNameNS
-        getElementById: function(id) {
-            var elems = this._dom.getElementsByTagName("*");
+        getElementById(id) {
+            const elems = this._dom.getElementsByTagName('*');
 
-            for (var i = 0; i < elems.length; i++) {
-                var elem = elems.item(i);
-                if (elem.getAttribute("id") === id) {
+            for (let i = 0; i < elems.length; i++) {
+                const elem = elems.item(i);
+                if (elem.getAttribute('id') === id) {
                     return makeNode(elem);
                 }
             }
@@ -459,45 +467,39 @@ var Latch = Java.type('org.cometd.javascript.Latch');
         // END OFFICIAL DOM
 
         get body() {
-            return this.getElementsByTagName("body")[0];
+            return this.getElementsByTagName('body')[0];
         },
         get ownerDocument() {
             return null;
         },
         get nodeName() {
-            return "#document";
+            return '#document';
         },
-        toString: function() {
-            return "Document" + (typeof this._file === "string" ?
-                ": " + this._file : "");
+        toString() {
+            return 'Document' + (typeof this._file === 'string' ?
+                ': ' + this._file : '');
         },
         get innerHTML() {
             return this.documentElement.outerHTML;
         },
         get defaultView() {
             return {
-                getComputedStyle: function(elem) {
-                    return {
-                        getPropertyValue: function(prop) {
-                            prop = prop.replace(/\-(\w)/g, function(m, c) {
-                                return c.toUpperCase();
-                            });
-                            var val = elem.style[prop];
-
-                            if (prop === "opacity" && val === "") {
-                                val = "1";
-                            }
-
-                            return val;
+                getComputedStyle: elem => ({
+                    getPropertyValue(prop) {
+                        prop = prop.replace(/-(\w)/g, (m, c) => c.toUpperCase());
+                        let val = elem.style[prop];
+                        if (_equalsIgnoreCase(prop, 'opacity') && val === '') {
+                            val = '1';
                         }
-                    };
-                }
+                        return val;
+                    }
+                })
             };
         },
-        createEvent: function() {
+        createEvent() {
             return {
-                type: "",
-                initEvent: function(type) {
+                type: '',
+                initEvent(type) {
                     this.type = type;
                 }
             };
@@ -519,21 +521,18 @@ var Latch = Java.type('org.cometd.javascript.Latch');
         this._dom = list;
         this.length = list.getLength();
 
-        for (var i = 0; i < this.length; i++) {
-            var node = list.item(i);
+        for (let i = 0; i < this.length; i++) {
+            const node = list.item(i);
             this[i] = makeNode(node);
         }
     };
     window.DOMNodeList.prototype = {
-        toString: function() {
-            return "[ " +
-                Array.prototype.join.call(this, ", ") + " ]";
+        toString() {
+            return '[ ' +
+                Array.prototype.join.call(this, ', ') + ' ]';
         },
         get outerHTML() {
-            return Array.prototype.map.call(
-                this, function(node) {
-                    return node.outerHTML;
-                }).join('');
+            return Array.prototype.map.call(this, node => node.outerHTML).join('');
         }
     };
 
@@ -546,15 +545,15 @@ var Latch = Java.type('org.cometd.javascript.Latch');
                 return this._opacity;
             },
             set opacity(val) {
-                this._opacity = val + "";
+                this._opacity = val + '';
             }
         };
 
         // Load CSS info
-        var styles = (this.getAttribute("style") || "").split(/\s*;\s*/);
+        const styles = (this.getAttribute('style') || '').split(/\s*;\s*/);
 
-        for (var i = 0; i < styles.length; i++) {
-            var style = styles[i].split(/\s*:\s*/);
+        for (let i = 0; i < styles.length; i++) {
+            const style = styles[i].split(/\s*:\s*/);
             if (style.length === 2) {
                 this.style[style[0]] = style[1];
             }
@@ -565,13 +564,13 @@ var Latch = Java.type('org.cometd.javascript.Latch');
         get tagName() {
             return this._dom.getTagName();
         },
-        getAttribute: function(name) {
+        getAttribute(name) {
             return this._dom.hasAttribute(name) ? this._dom.getAttribute(name) : null;
         },
-        setAttribute: function(name, value) {
-            this._dom.setAttribute(name, value);
+        setAttribute(name, value) {
+            this._dom.setAttribute(name, value ? value.toString() : null);
         },
-        removeAttribute: function(name) {
+        removeAttribute(name) {
             this._dom.removeAttribute(name);
         },
 //        getAttributeNode
@@ -584,7 +583,7 @@ var Latch = Java.type('org.cometd.javascript.Latch');
 //        getAttributeNodeNS
 //        setAttributeNodeNS
 //        getElementsByTagNameNS
-        hasAttribute: function(name) {
+        hasAttribute(name) {
             return this._dom.hasAttribute(name);
         },
 //        hasAttributeNS
@@ -593,23 +592,24 @@ var Latch = Java.type('org.cometd.javascript.Latch');
         get nodeName() {
             return this.tagName.toUpperCase();
         },
-        toString: function() {
-            return "<" + this.tagName + (this.id ? "#" + this.id : "" ) + ">";
+        toString() {
+            return '<' + this.tagName + (this.id ? '#' + this.id : '') + '>';
         },
         get outerHTML() {
-            var ret = "<" + this.tagName, attr = this.attributes;
+            let ret = '<' + this.tagName;
+            const attr = this.attributes;
 
-            for (var i in attr) {
+            for (let i in attr) {
                 if (attr.hasOwnProperty(i)) {
-                    ret += " " + i + "='" + attr[i] + "'";
+                    ret += ' ' + i + '="' + attr[i] + '"';
                 }
             }
 
-            if (this.childNodes.length || this.nodeName === "SCRIPT") {
-                ret += ">" + this.childNodes.outerHTML +
-                    "</" + this.tagName + ">";
+            if (this.childNodes.length || _equalsIgnoreCase(this.nodeName, 'script')) {
+                ret += '>' + this.childNodes.outerHTML +
+                    '</' + this.tagName + '>';
             } else {
-                ret += "/>";
+                ret += '/>';
             }
 
             return ret;
@@ -618,20 +618,16 @@ var Latch = Java.type('org.cometd.javascript.Latch');
             return this.childNodes.outerHTML;
         },
         set innerHTML(html) {
-            html = html.replace(/<\/?([A-Z]+)/g, function(m) {
-                return m.toLowerCase();
-            });
+            html = html.replace(/<\/?([A-Z]+)/g, m => m.toLowerCase());
 
-            var nodes = this.ownerDocument.importNode(
-                new window.DOMDocument(new java.io.ByteArrayInputStream(
-                    (new java.lang.String("<wrap>" + html + "</wrap>"))
-                        .getBytes("UTF8"))).documentElement, true).childNodes;
+            const innerDoc = makeHTMLDocument('<wrap>' + html + '</wrap>');
+            const nodes = this.ownerDocument.importNode(innerDoc.documentElement, true).childNodes;
 
             while (this.firstChild) {
                 this.removeChild(this.firstChild);
             }
 
-            for (var i = 0; i < nodes.length; i++) {
+            for (let i = 0; i < nodes.length; i++) {
                 this.appendChild(nodes[i]);
             }
         },
@@ -639,8 +635,8 @@ var Latch = Java.type('org.cometd.javascript.Latch');
             return nav(this.childNodes);
 
             function nav(nodes) {
-                var str = "";
-                for (var i = 0; i < nodes.length; i++) {
+                let str = '';
+                for (let i = 0; i < nodes.length; i++) {
                     if (nodes[i].nodeType === 3) {
                         str += nodes[i].nodeValue;
                     } else if (nodes[i].nodeType === 1) {
@@ -662,30 +658,30 @@ var Latch = Java.type('org.cometd.javascript.Latch');
         offsetHeight: 0,
         offsetWidth: 0,
         get disabled() {
-            var val = this.getAttribute("disabled");
-            return val !== "false" && !!val;
+            const val = this.getAttribute('disabled');
+            return val !== 'false' && !!val;
         },
         set disabled(val) {
-            return this.setAttribute("disabled", val);
+            return this.setAttribute('disabled', val);
         },
         get checked() {
-            var val = this.getAttribute("checked");
-            return val !== "false" && !!val;
+            const val = this.getAttribute('checked');
+            return val !== 'false' && !!val;
         },
         set checked(val) {
-            return this.setAttribute("checked", val);
+            return this.setAttribute('checked', val);
         },
         get selected() {
             if (!this._selectDone) {
                 this._selectDone = true;
 
-                if (this.nodeName === "OPTION" && !this.parentNode.getAttribute("multiple")) {
-                    var opt = this.parentNode.getElementsByTagName("option");
+                if (_equalsIgnoreCase(this.nodeName, 'option') && !this.parentNode.getAttribute('multiple')) {
+                    const opt = this.parentNode.getElementsByTagName('option');
 
                     if (this === opt[0]) {
-                        var select = true;
+                        let select = true;
 
-                        for (var i = 1; i < opt.length; i++) {
+                        for (let i = 1; i < opt.length; i++) {
                             if (opt[i].selected) {
                                 select = false;
                                 break;
@@ -698,74 +694,74 @@ var Latch = Java.type('org.cometd.javascript.Latch');
                     }
                 }
             }
-            var val = this.getAttribute("selected");
-            return val !== "false" && !!val;
+            const val = this.getAttribute('selected');
+            return val !== 'false' && !!val;
         },
         set selected(val) {
-            return this.setAttribute("selected", val);
+            return this.setAttribute('selected', val);
         },
         get className() {
-            return this.getAttribute("class") || "";
+            return this.getAttribute('class') || '';
         },
         set className(val) {
-            return this.setAttribute("class", val.replace(/(^\s*|\s*$)/g, ""));
+            return this.setAttribute('class', val.replace(/(^\s*|\s*$)/g, ''));
         },
         get type() {
-            return this.getAttribute("type") || "";
+            return this.getAttribute('type') || '';
         },
         set type(val) {
-            return this.setAttribute("type", val);
+            return this.setAttribute('type', val);
         },
         get value() {
-            return this.getAttribute("value") || "";
+            return this.getAttribute('value') || '';
         },
         set value(val) {
-            return this.setAttribute("value", val);
+            return this.setAttribute('value', val);
         },
         get src() {
-            return this.getAttribute("src") || "";
+            return this.getAttribute('src') || '';
         },
         set src(val) {
-            return this.setAttribute("src", val);
+            return this.setAttribute('src', val);
         },
         get id() {
-            return this.getAttribute("id") || "";
+            return this.getAttribute('id') || '';
         },
         set id(val) {
-            return this.setAttribute("id", val);
+            return this.setAttribute('id', val);
         },
-        click: function() {
-            var event = document.createEvent();
-            event.initEvent("click");
+        click() {
+            const event = document.createEvent();
+            event.initEvent('click');
             this.dispatchEvent(event);
         },
-        submit: function() {
-            var event = document.createEvent();
-            event.initEvent("submit");
+        submit() {
+            const event = document.createEvent();
+            event.initEvent('submit');
             this.dispatchEvent(event);
         },
-        focus: function() {
-            var event = document.createEvent();
-            event.initEvent("focus");
+        focus() {
+            const event = document.createEvent();
+            event.initEvent('focus');
             this.dispatchEvent(event);
         },
-        blur: function() {
-            var event = document.createEvent();
-            event.initEvent("blur");
+        blur() {
+            const event = document.createEvent();
+            event.initEvent('blur');
             this.dispatchEvent(event);
         },
         get elements() {
-            return this.getElementsByTagName("*");
+            return this.getElementsByTagName('*');
         },
         get contentWindow() {
-            return this.nodeName === "IFRAME" ? {
+            return _equalsIgnoreCase(this.nodeName, 'iframe') ? {
                 document: this.contentDocument
             } : null;
         },
         get contentDocument() {
-            if (this.nodeName === "IFRAME") {
+            if (_equalsIgnoreCase(this.nodeName, 'iframe')) {
                 if (!this._doc) {
-                    this._doc = makeHTMLDocument("<html><head></head><body></body></html>");
+                    this._doc = makeHTMLDocument('<html lang="en"><head><title></title></head><body></body></html>');
                 }
                 return this._doc;
             } else {
@@ -776,16 +772,16 @@ var Latch = Java.type('org.cometd.javascript.Latch');
 
 
     // Fake document object. Dojo needs a script element to work properly.
-    window.document = makeHTMLDocument("<html><head><title></title><script></script></head><body></body></html>");
+    window.document = makeHTMLDocument('<html lang="en"><head><title></title><script></script></head><body></body></html>');
     window.document.head = window.document.getElementsByTagName('head')[0];
 
 
-    // Helper method for extending one object with another
+    // Helper function for extending one object with another.
     function extend(a, b) {
-        for (var i in b) {
+        for (let i in b) {
             if (b.hasOwnProperty(i)) {
-                var g = Object.getOwnPropertyDescriptor(b, i).get;
-                var s = Object.getOwnPropertyDescriptor(b, i).set;
+                const g = Object.getOwnPropertyDescriptor(b, i).get;
+                const s = Object.getOwnPropertyDescriptor(b, i).set;
 
                 if (g || s) {
                     if (g && s) {
@@ -813,7 +809,7 @@ var Latch = Java.type('org.cometd.javascript.Latch');
     window.screen = {};
     window.innerWidth = 0;
 
-    window.assert = function(condition, text) {
+    window.assert = (condition, text) => {
         if (!condition) {
             throw 'ASSERTION FAILED' + (text ? ': ' + text : '');
         }
@@ -825,7 +821,7 @@ var Latch = Java.type('org.cometd.javascript.Latch');
     // When using java.net.URL it happens that a long poll can be closed at any time,
     // just to be reissued using another socket.
     // Therefore we use helper classes that are based on Jetty's HttpClient, which offers full control.
-    var XMLHttpRequestExchange = Java.type('org.cometd.javascript.XMLHttpRequestExchange');
+    const XMLHttpRequestExchange = Java.type('org.cometd.javascript.XMLHttpRequestExchange');
     window.XMLHttpRequest = function() {
     };
     window.XMLHttpRequest.UNSENT = 0;
@@ -833,169 +829,130 @@ var Latch = Java.type('org.cometd.javascript.Latch');
     window.XMLHttpRequest.HEADERS_RECEIVED = 2;
     window.XMLHttpRequest.LOADING = 3;
     window.XMLHttpRequest.DONE = 4;
-    window.XMLHttpRequest.prototype = function() {
-        return {
-            get readyState() {
-                return this._exchange.readyState;
-            },
-            get responseText() {
-                return this._exchange.responseText;
-            },
-            get responseXML() {
-                return null;
-            },
-            get status() {
-                return this._exchange.responseStatus;
-            },
-            get statusText() {
-                return this._exchange.responseStatusText;
-            },
-            onreadystatechange: function() {
-                // Dojo does not override this function (but uses a timer to poll state)
-                // so we do not throw if this function is called like we do with WebSocket below.
-            },
-            onload: function() {
-            },
-            onerror: function() {
-            },
-            onabort: function() {
-            },
-            open: function(method, url, async) {
-                // Abort previous exchange
-                this.abort();
-
-                var absolute = /^https?:\/\//.test(url);
-                var absoluteURL = absolute ? url : window.location.href + url;
-                this._exchange = new XMLHttpRequestExchange(xhrClient, javaScript, this, method, absoluteURL, async);
-            },
-            setRequestHeader: function(header, value) {
-                if (this.readyState !== XMLHttpRequest.OPENED) {
-                    throw 'INVALID_STATE_ERR: ' + this.readyState;
-                }
-                if (!header) {
-                    throw 'SYNTAX_ERR';
-                }
-                if (value) {
-                    this._exchange.addRequestHeader(header, value);
-                }
-            },
-            send: function(data) {
-                if (this.readyState !== XMLHttpRequest.OPENED) {
-                    throw 'INVALID_STATE_ERR';
-                }
-                if (this._exchange.method === 'GET') {
-                    data = null;
-                }
-                if (data) {
-                    this._exchange.setRequestContent(data);
-                }
-                this._exchange.send();
-            },
-            abort: function() {
-                if (this._exchange) {
-                    this._exchange.abort();
-                }
-            },
-            getAllResponseHeaders: function() {
-                if (this.readyState === XMLHttpRequest.UNSENT || this.readyState === XMLHttpRequest.OPENED) {
-                    throw 'INVALID_STATE_ERR';
-                }
-                return this._exchange.getAllResponseHeaders();
-            },
-            getResponseHeader: function(header) {
-                if (this.readyState === XMLHttpRequest.UNSENT || this.readyState === XMLHttpRequest.OPENED) {
-                    throw 'INVALID_STATE_ERR';
-                }
-                return this._exchange.getResponseHeader(header);
-            },
-            get withCredentials() {
-                return !!this._withCredentials;
-            },
-            set withCredentials(val) {
-                this._withCredentials = val;
+    window.XMLHttpRequest.prototype = {
+        get readyState() {
+            const exchange = this._exchange;
+            return exchange ? exchange.getReadyState() : window.XMLHttpRequest.UNSENT;
+        },
+        get responseText() {
+            const exchange = this._exchange;
+            return exchange ? exchange.getResponseText() : null;
+        },
+        get responseXML() {
+            return null;
+        },
+        get status() {
+            const exchange = this._exchange;
+            return exchange ? exchange.getResponseStatus() : 0;
+        },
+        get statusText() {
+            const exchange = this._exchange;
+            return exchange ? exchange.getResponseStatusText() : null;
+        },
+        onreadystatechange() {
+            // Dojo does not override this function (but uses a timer to poll state)
+            // so we do not throw if this function is called like we do with WebSocket below.
+        },
+        onload() {
+        },
+        onerror() {
+        },
+        onabort() {
+        },
+        open(method, url, async) {
+            const absolute = /^https?:\/\//.test(url);
+            const absoluteURL = absolute ? url : window.location.href + url;
+            this._exchange = new XMLHttpRequestExchange(xhrClient, javaScript, this, method, absoluteURL, async);
+        },
+        setRequestHeader(header, value) {
+            const ready = this.readyState;
+            if (ready !== XMLHttpRequest.OPENED) {
+                throw 'INVALID_STATE_ERR: ' + ready;
             }
-        };
-    }();
+            if (!header) {
+                throw 'SYNTAX_ERR';
+            }
+            if (value) {
+                this._exchange.addRequestHeader(header, value);
+            }
+        },
+        send(data) {
+            const ready = this.readyState;
+            if (ready !== XMLHttpRequest.OPENED) {
+                throw 'INVALID_STATE_ERR';
+            }
+            const exchange = this._exchange;
+            if (exchange.getMethod() === 'GET') {
+                data = null;
+            }
+            if (data) {
+                exchange.setRequestContent(data);
+            }
+            exchange.send();
+        },
+        abort() {
+            const exchange = this._exchange;
+            if (exchange) {
+                exchange.abort();
+            }
+        },
+        getAllResponseHeaders() {
+            const ready = this.readyState;
+            if (ready === XMLHttpRequest.UNSENT || ready === XMLHttpRequest.OPENED) {
+                throw 'INVALID_STATE_ERR';
+            }
+            return this._exchange.getAllResponseHeaders();
+        },
+        getResponseHeader(header) {
+            const ready = this.readyState;
+            if (ready === XMLHttpRequest.UNSENT || ready === XMLHttpRequest.OPENED) {
+                throw 'INVALID_STATE_ERR';
+            }
+            return this._exchange.getResponseHeader(header);
+        },
+        get withCredentials() {
+            return !!this._withCredentials;
+        },
+        set withCredentials(val) {
+            this._withCredentials = val;
+        }
+    };
 
-    var WebSocketConnection = Java.type('org.cometd.javascript.WebSocketConnection');
-    var wsIds = 0;
+    const WebSocketConnection = Java.type('org.cometd.javascript.WebSocketConnection');
     window.WebSocket = function(url, protocol) {
-        this._id = ++wsIds;
-        this._url = url;
-        this._ws = new WebSocketConnection(javaScript, this, wsConnector, url, protocol ? protocol : null);
+        this._construct(url, protocol);
     };
     window.WebSocket.CONNECTING = 0;
     window.WebSocket.OPEN = 1;
     window.WebSocket.CLOSING = 2;
     window.WebSocket.CLOSED = 3;
-    window.WebSocket.prototype = function() {
-        return {
-            get url() {
-                return this._url;
-            },
-            onopen: function() {
-                window.assert(false, "onopen not assigned");
-            },
-            onerror: function() {
-                window.assert(false, "onerror not assigned");
-            },
-            onclose: function() {
-                window.assert(false, "onclose not assigned");
-            },
-            onmessage: function() {
-                window.assert(false, "onmessage not assigned");
-            },
-            send: function(data) {
-                this._ws.send(data);
-            },
-            close: function(code, reason) {
-                this._ws.close(code, reason);
-            }
-        };
-    }();
+    window.WebSocket.prototype = {
+        _construct(url, protocol) {
+            this._url = url;
+            this._ws = new WebSocketConnection(javaScript, this, wsConnector, url, protocol ? protocol : null);
+        },
+        get url() {
+            return this._url;
+        },
+        onopen() {
+            window.assert(false, 'onopen not assigned');
+        },
+        onerror() {
+            window.assert(false, 'onerror not assigned');
+        },
+        onclose() {
+            window.assert(false, 'onclose not assigned');
+        },
+        onmessage() {
+            window.assert(false, 'onmessage not assigned');
+        },
+        send(data) {
+            this._ws.send(data);
+        },
+        close(code, reason) {
+            this._ws.close(code, reason);
+        }
+    };
 
     window.sessionStorage = sessionStorage;
-
-    window.ArrayBuffer = function(length) {
-        this._byteBuffer = Packages.java.nio.ByteBuffer.allocate(length);
-    };
-    window.ArrayBuffer.prototype = {
-        get byteLength() {
-            return this._byteBuffer.capacity();
-        },
-        get _buffer() {
-            return this._byteBuffer;
-        }
-    };
-
-    window.DataView = function(buffer, offset, length) {
-        this._buffer = buffer;
-        this._offset = offset || 0;
-        this._length = length || buffer.byteLength;
-        var bb = buffer._buffer;
-        var position = bb.position();
-        var limit = bb.limit();
-        bb.limit(position + this._offset + this._length);
-        bb.position(position + this._offset);
-        this._view = bb.slice();
-        bb.position(position);
-        bb.limit(limit);
-    };
-    window.DataView.prototype = {
-        get buffer() {
-            return this._buffer;
-        },
-        get byteLength() {
-            return this._length;
-        },
-        get byteOffset() {
-            return this._offset;
-        },
-        getUint8: function(offset) {
-            return this._view.get(offset) & 0xFF;
-        },
-        setUint8: function(offset, value) {
-            this._view.put(offset, Packages.java.lang.Integer.valueOf(value).byteValue());
-        }
-    };
 })();

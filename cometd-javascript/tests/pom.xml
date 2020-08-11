@@ -60,6 +60,18 @@
       <version>${jetty-version}</version>
     </dependency>
     <dependency>
+      <groupId>org.graalvm.js</groupId>
+      <artifactId>js</artifactId>
+      <version>${graalvm-version}</version>
+    </dependency>
+<!--
+    <dependency>
+      <groupId>org.graalvm.js</groupId>
+      <artifactId>js-scriptengine</artifactId>
+      <version>${graalvm-version}</version>
+    </dependency>
+-->
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
