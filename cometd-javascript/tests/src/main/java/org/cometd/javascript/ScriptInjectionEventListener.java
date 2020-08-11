@@ -17,7 +17,6 @@ package org.cometd.javascript;
 
 import java.util.Map;
 
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.w3c.dom.Element;
 import org.w3c.dom.events.Event;
 import org.w3c.dom.events.EventListener;
@@ -27,17 +26,18 @@ import org.w3c.dom.events.EventListener;
  * and calls a JavaScript function when it detects such injections.
  * This mechanism is used to simulate the browser behavior in case
  * of callback-polling transport.
- * This class is used from the browser.js script.
+ * This class is used from the {@code browser.js} script.
  */
 public class ScriptInjectionEventListener implements EventListener {
     private final JavaScript javaScript;
-    private final ScriptObjectMirror thiz;
-    private final ScriptObjectMirror function;
+    private final Object jsThis;
+    private final Object function;
+    // Maps Java DOM nodes to JS DOM nodes.
     private final Map<?, ?> domNodes;
 
-    public ScriptInjectionEventListener(JavaScript javaScript, ScriptObjectMirror thiz, ScriptObjectMirror function, Map<?, ?> domNodes) {
+    public ScriptInjectionEventListener(JavaScript javaScript, Object jsThis, Object function, Map<?, ?> domNodes) {
         this.javaScript = javaScript;
-        this.thiz = thiz;
+        this.jsThis = jsThis;
         this.function = function;
         this.domNodes = domNodes;
     }
@@ -49,7 +49,7 @@ public class ScriptInjectionEventListener implements EventListener {
             if (target instanceof Element) {
                 Element element = (Element)target;
                 if ("script".equalsIgnoreCase(element.getNodeName())) {
-                    javaScript.invoke(true, thiz, function, domNodes.get(element));
+                    javaScript.invoke(true, jsThis, function, domNodes.get(element));
                 }
             }
         }

@@ -20,10 +20,7 @@ import java.net.CookieStore;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
-import jdk.nashorn.api.scripting.JSObject;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.server.Server;
@@ -76,7 +73,6 @@ public abstract class AbstractCometDTest {
     protected JavaScript javaScript;
     private XMLHttpRequestClient xhrClient;
     private WebSocketConnector wsConnector;
-    private ScheduledExecutorService executor;
 
     @Before
     public void initCometDServer() throws Exception {
@@ -171,25 +167,22 @@ public abstract class AbstractCometDTest {
         javaScript = new JavaScript();
         javaScript.init();
 
-        executor = Executors.newSingleThreadScheduledExecutor(Executors.privilegedThreadFactory());
-        javaScript.putAsync("scheduler", executor);
-
-        javaScript.evaluate(getClass().getResource("/browser.js"));
-        ((JSObject)javaScript.getAsync("window")).setMember("location", contextURL);
-
         JavaScriptCookieStore cookies = new JavaScriptCookieStore(cookieStore);
-        javaScript.putAsync("cookies", cookies);
+        javaScript.put("cookies", cookies);
 
         xhrClient = new XMLHttpRequestClient(cookies);
         xhrClient.start();
-        javaScript.putAsync("xhrClient", xhrClient);
+        javaScript.put("xhrClient", xhrClient);
 
         wsConnector = new WebSocketConnector(xhrClient);
         wsConnector.start();
-        javaScript.putAsync("wsConnector", wsConnector);
+        javaScript.put("wsConnector", wsConnector);
 
         SessionStorage sessionStorage = new SessionStorage(sessionStore);
-        javaScript.putAsync("sessionStorage", sessionStorage);
+        javaScript.put("sessionStorage", sessionStorage);
+
+        javaScript.evaluate(getClass().getResource("/browser.js"));
+        javaScript.bindings().getMember("window").putMember("location", contextURL);
     }
 
     protected void provideCometD() throws Exception {
@@ -253,10 +246,6 @@ public abstract class AbstractCometDTest {
         if (javaScript != null) {
             javaScript.destroy();
             javaScript = null;
-        }
-        if (executor != null) {
-            executor.shutdown();
-            executor = null;
         }
     }
 

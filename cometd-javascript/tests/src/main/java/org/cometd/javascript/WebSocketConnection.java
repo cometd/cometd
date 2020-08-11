@@ -15,10 +15,8 @@
  */
 package org.cometd.javascript;
 
-import java.io.IOException;
 import java.net.URI;
 
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -26,16 +24,29 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>This class is the underlying implementation of JavaScript's {@code window.WebSocket} in {@code browser.js}.</p>
+ */
 public class WebSocketConnection implements WebSocketListener {
     private final Logger logger = LoggerFactory.getLogger(getClass().getName());
     private JavaScript javaScript;
-    private ScriptObjectMirror thiz;
+    private Object jsWebSocket;
     private WebSocketClient wsClient;
     private Session session;
 
-    public WebSocketConnection(JavaScript javaScript, ScriptObjectMirror thiz, Object connector, String url, String protocol) {
+    /**
+     * <p>This constructor is invoked from {@code browser.js},
+     * from the {@code window.WebSocket} constructor.</p>
+     *
+     * @param javaScript the (java) JavaScript object
+     * @param jsWebSocket the (javascript) WebSocket object created in {@code browser.js}
+     * @param connector the (java) WebSocketConnector object
+     * @param url the WebSocket URL passed to the {@code window.WebSocket(url, protocol)} constructor
+     * @param protocol the WebSocket protocol passed to the {@code window.WebSocket(url, protocol)} constructor
+     */
+    public WebSocketConnection(JavaScript javaScript, Object jsWebSocket, Object connector, String url, String protocol) {
         this.javaScript = javaScript;
-        this.thiz = thiz;
+        this.jsWebSocket = jsWebSocket;
         this.wsClient = ((WebSocketConnector)connector).getWebSocketClient();
         try {
             URI uri = new URI(url);
@@ -55,7 +66,13 @@ public class WebSocketConnection implements WebSocketListener {
         }
     }
 
-    public void send(String data) throws IOException {
+    /**
+     * <p>This method is invoked from {@code browser.js},
+     * from the {@code window.WebSocket.send(data)} function.</p>
+     *
+     * @param data the data to send
+     */
+    public void send(String data) {
         try {
             Session session = this.session;
             if (session != null) {
@@ -70,7 +87,14 @@ public class WebSocketConnection implements WebSocketListener {
         }
     }
 
-    public void close(int code, String reason) throws IOException {
+    /**
+     * <p>This method is invoked from {@code browser.js},
+     * from the {@code window.WebSocket.close(code, reason)} function.</p>
+     *
+     * @param code the close code
+     * @param reason the close reason
+     */
+    public void close(int code, String reason) {
         Session session = this.session;
         if (session != null) {
             session.close(code, reason);
@@ -84,7 +108,7 @@ public class WebSocketConnection implements WebSocketListener {
         if (logger.isDebugEnabled()) {
             logger.debug("WebSocket opened session {}", session);
         }
-        javaScript.invoke(false, thiz, "onopen");
+        javaScript.invoke(false, jsWebSocket, "onopen");
     }
 
     @Override
@@ -98,7 +122,7 @@ public class WebSocketConnection implements WebSocketListener {
         }
         // Use single quotes so they do not mess up with quotes in the data string
         Object event = javaScript.evaluate("event", "({data:'" + data + "'})");
-        javaScript.invoke(false, thiz, "onmessage", event);
+        javaScript.invoke(false, jsWebSocket, "onmessage", event);
     }
 
     @Override
@@ -108,7 +132,7 @@ public class WebSocketConnection implements WebSocketListener {
         }
         // Use single quotes so they do not mess up with quotes in the reason string
         Object event = javaScript.evaluate("event", "({code:" + closeCode + ",reason:'" + reason + "'})");
-        javaScript.invoke(false, thiz, "onclose", event);
+        javaScript.invoke(false, jsWebSocket, "onclose", event);
     }
 
     @Override
@@ -116,6 +140,6 @@ public class WebSocketConnection implements WebSocketListener {
         if (logger.isDebugEnabled()) {
             logger.debug("WebSocket exception", x);
         }
-        javaScript.invoke(false, thiz, "onerror");
+        javaScript.invoke(false, jsWebSocket, "onerror");
     }
 }
