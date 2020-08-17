@@ -23,4 +23,32 @@ public class JacksonJSONContextServer extends JacksonJSONContext<ServerMessage.M
     protected Class<ServerMessageImpl[]> rootArrayClass() {
         return ServerMessageImpl[].class;
     }
+
+    @Override
+    public String generate(ServerMessage.Mutable message) {
+        String json = JSONContextServer.super.generate(message);
+        if (json == null) {
+            json = super.generate(message);
+        }
+        return json;
+    }
+
+    @Override
+    public Generator getGenerator() {
+        return new ObjectMapperGeneratorServer();
+    }
+
+    private class ObjectMapperGeneratorServer extends ObjectMapperGenerator {
+        @Override
+        public String generate(Object object) {
+            String json = null;
+            if (object instanceof ServerMessageImpl) {
+                json = ((ServerMessageImpl)object).getJSON();
+            }
+            if (json == null) {
+                json = super.generate(object);
+            }
+            return json;
+        }
+    }
 }

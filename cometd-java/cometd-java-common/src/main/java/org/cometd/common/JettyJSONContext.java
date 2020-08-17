@@ -204,7 +204,7 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
         }
     }
 
-    private class JSONGenerator implements JSONContext.Generator {
+    protected class JSONGenerator implements JSONContext.Generator {
         @Override
         public String generate(Object object) {
             return getJSON().toJSON(object);

@@ -117,7 +117,7 @@ public abstract class JacksonJSONContext<M extends Message.Mutable, I extends M>
         }
     }
 
-    private class ObjectMapperGenerator implements JSONContext.Generator {
+    protected class ObjectMapperGenerator implements JSONContext.Generator {
         @Override
         public String generate(Object object) {
             try {
