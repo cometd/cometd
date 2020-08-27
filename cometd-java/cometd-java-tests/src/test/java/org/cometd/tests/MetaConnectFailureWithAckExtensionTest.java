@@ -54,10 +54,6 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
                     serverSubscribeLatch.countDown();
                 }
             }
-
-            @Override
-            public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
-            }
         });
 
         final long delay = 1000;

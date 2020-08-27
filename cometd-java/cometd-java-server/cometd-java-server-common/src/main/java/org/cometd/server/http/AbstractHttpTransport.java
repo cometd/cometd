@@ -250,7 +250,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                     sessions.add(session);
                 }
 
-                session.addListener((ServerSession.RemoveListener)(s, timeout) -> {
+                session.addListener((ServerSession.RemovedListener)(s, m, t) -> {
                     synchronized (_sessions) {
                         Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
                         sessions.remove(session);

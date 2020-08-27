@@ -177,18 +177,10 @@ public class AuctionService extends AbstractService implements ClientSessionChan
     }
 
     @Override
-    public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
-    }
-
-    @Override
     public void channelAdded(ServerChannel channel) {
         if (channel.getId().startsWith(AUCTION_ROOT + "item")) {
             getLocalSession().getChannel(channel.getId()).subscribe(this);
         }
-    }
-
-    @Override
-    public void channelRemoved(String channelId) {
     }
 
     @Override

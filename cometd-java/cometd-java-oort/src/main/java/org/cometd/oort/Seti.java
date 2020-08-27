@@ -791,7 +791,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     /**
      * <p>A Location that represent a user connected to a local comet.</p>
      */
-    protected class LocalLocation implements Location, ServerSession.RemoveListener {
+    protected class LocalLocation implements Location, ServerSession.RemovedListener {
         private final String _userId;
         private final ServerSession _session;
 
@@ -811,7 +811,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         }
 
         @Override
-        public void removed(ServerSession session, boolean timeout) {
+        public void removed(ServerSession session, ServerMessage message, boolean timeout) {
             disassociate(_userId, session);
         }
 
@@ -1041,10 +1041,6 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
                 presence.put(SetiPresence.ALIVE_FIELD, true);
                 session.deliver(_session, SETI_ALL_CHANNEL, presence, Promise.noop());
             }
-        }
-
-        @Override
-        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
         }
     }
 }

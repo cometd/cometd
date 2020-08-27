@@ -85,7 +85,7 @@ Below you can find the code for the `MyAppAuthenticator` class referenced above:
 ====
 [source,java]
 ----
-public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerSession.RemoveListener { <1>
+public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerSession.RemovedListener { <1>
     @Override
     public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) { <2>
         if (session.isLocalSession()) { <3>
@@ -121,13 +121,13 @@ public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerS
         promise.succeed(true);
     }
 
-    public void removed(ServerSession session, boolean expired) { <7>
+    public void removed(ServerSession session, ServerMessage message, boolean expired) { <7>
         // Unlink authentication data from the remote client <8>
     }
 }
 ----
 ====
-<1> Make `MyAppAuthenticator` be a `SecurityPolicy` and a `ServerSession.RemoveListener`,
+<1> Make `MyAppAuthenticator` be a `SecurityPolicy` and a `ServerSession.RemovedListener`,
 since the code is really tied together.
 <2> Override `SecurityPolicy.canHandshake()`, to extract the authentication
 information from the message sent by the client.
@@ -138,7 +138,7 @@ server-side authentication data that you can later associate with the remote cli
 <5> Link the server-side authentication data to the session.
 <6> Register a listener to be notified when the remote session disappears
 (which you will react to in step 8).
-<7> Implement `RemoveListener.removed()`, which is called when the remote session
+<7> Implement `RemovedListener.removed()`, which is called when the remote session
 disappears, either because it disconnected or because it crashed.
 <8> Unlink the server-side authentication data from the remote client object,
 the operation opposite to step 5.
@@ -158,7 +158,7 @@ other code of the application, for example:
 ====
 [source,java]
 ----
-public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerSession.RemoveListener {
+public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerSession.RemovedListener {
     private final Users users;
 
     public MyAppAuthenticator(Users users) {
@@ -200,7 +200,7 @@ public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerS
         promise.succeed(true);
     }
 
-    public void removed(ServerSession session, boolean expired) {
+    public void removed(ServerSession session, ServerMessage message, boolean expired) {
         // Unlink authentication data from the remote client
         users.remove(session);
     }
@@ -235,7 +235,7 @@ name for a given session, or the `ServerSession` for a given user name, etc.
 Alternatively, the linking/unlinking (steps 5 and 8 above) can be performed in a
 `BayeuxServer.SessionListener`. These listeners are invoked _after_
 `SecurityPolicy.canHandshake()` and are invoked also when a `ServerSession` is
-removed, therefore there is no need to register a `RemoveListener` with the
+removed, therefore there is no need to register a `RemovedListener` with the
 `ServerSession` like done in step 6 above:
 
 ====

@@ -81,10 +81,6 @@ public class SetiStartupTest extends OortTest {
                         logger.info("{} subscription from {}", oort.getURL(), session);
                     }
                 }
-
-                @Override
-                public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
-                }
             });
         }
 

@@ -71,10 +71,6 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
                 session.deliver(null, channelName, "data1", Promise.noop());
                 session.deliver(null, channelName, "data2", Promise.noop());
             }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
-            }
         });
 
         final CountDownLatch serverMessagesLatch = new CountDownLatch(1);
@@ -138,10 +134,6 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
                     }
                 });
             }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
-            }
         });
         provideMessageAcknowledgeExtension();
 
@@ -152,10 +144,6 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
                 // Send messages during the handshake processing.
                 session.deliver(null, channelName, "data1", Promise.noop());
                 session.deliver(null, channelName, "data2", Promise.noop());
-            }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
 

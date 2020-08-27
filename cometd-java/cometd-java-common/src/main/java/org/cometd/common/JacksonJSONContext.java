@@ -47,14 +47,6 @@ public abstract class JacksonJSONContext<M extends Message.Mutable, I extends M>
 
     protected abstract Class<I[]> rootArrayClass();
 
-    public M[] parse(InputStream stream) throws ParseException {
-        try {
-            return getObjectMapper().readValue(stream, rootArrayType);
-        } catch (IOException x) {
-            throw (ParseException)new ParseException("", -1).initCause(x);
-        }
-    }
-
     public M[] parse(Reader reader) throws ParseException {
         try {
             return getObjectMapper().readValue(reader, rootArrayType);
@@ -117,7 +109,7 @@ public abstract class JacksonJSONContext<M extends Message.Mutable, I extends M>
         }
     }
 
-    private class ObjectMapperGenerator implements JSONContext.Generator {
+    protected class ObjectMapperGenerator implements JSONContext.Generator {
         @Override
         public String generate(Object object) {
             try {

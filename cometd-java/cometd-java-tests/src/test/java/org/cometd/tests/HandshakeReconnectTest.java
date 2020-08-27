@@ -70,11 +70,7 @@ public class HandshakeReconnectTest extends AbstractClientServerTest {
         final CountDownLatch sessionRemoved = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
-            public void sessionAdded(ServerSession session, ServerMessage message) {
-            }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
+            public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
                 sessionRemoved.countDown();
             }
         });

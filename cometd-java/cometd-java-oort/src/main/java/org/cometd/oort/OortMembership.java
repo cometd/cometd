@@ -15,8 +15,6 @@
  */
 package org.cometd.oort;
 
-import static org.cometd.oort.Oort.EXT_OORT_ID_FIELD;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -46,6 +44,8 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.cometd.oort.Oort.EXT_OORT_ID_FIELD;
 
 /**
  * <p>The Oort membership protocol is made of 3 steps:</p>
@@ -623,9 +623,9 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
         }
     }
 
-    private class OortCometDisconnectListener implements ServerSession.RemoveListener {
+    private class OortCometDisconnectListener implements ServerSession.RemovedListener {
         @Override
-        public void removed(ServerSession session, boolean timeout) {
+        public void removed(ServerSession session, ServerMessage message, boolean timeout) {
             ServerCometInfo serverCometInfo = null;
             synchronized (lock) {
                 Iterator<ServerCometInfo> serverCometInfos = serverComets.values().iterator();

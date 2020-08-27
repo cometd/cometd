@@ -119,10 +119,6 @@ public abstract class AbstractOortObjectTest extends OortTest {
             }
         }
 
-        @Override
-        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
-        }
-
         public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
             return latch.await(timeout, unit);
         }

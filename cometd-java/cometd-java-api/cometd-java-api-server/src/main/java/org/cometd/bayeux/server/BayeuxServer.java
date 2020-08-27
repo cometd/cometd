@@ -193,14 +193,16 @@ public interface BayeuxServer extends Bayeux {
          *
          * @param channel the channel that has been added
          */
-        public void channelAdded(ServerChannel channel);
+        public default void channelAdded(ServerChannel channel) {
+        }
 
         /**
          * <p>Callback invoked when a {@link ServerChannel} has been removed from a {@link BayeuxServer} object.</p>
          *
          * @param channelId the channel identifier of the channel that has been removed.
          */
-        public void channelRemoved(String channelId);
+        public default void channelRemoved(String channelId) {
+        }
     }
 
     /**
@@ -215,15 +217,18 @@ public interface BayeuxServer extends Bayeux {
          * @param session the session that has been added
          * @param message the handshake message from the client
          */
-        public void sessionAdded(ServerSession session, ServerMessage message);
+        public default void sessionAdded(ServerSession session, ServerMessage message) {
+        }
 
         /**
          * <p>Callback invoked when a {@link ServerSession} has been removed from a {@link BayeuxServer} object.</p>
          *
-         * @param session  the session that has been removed
-         * @param timedout whether the session has been removed for a timeout or not
+         * @param session the session that has been removed
+         * @param message the message that caused the session removal, or null
+         * @param timeout whether the session has been removed due to a timeout
          */
-        public void sessionRemoved(ServerSession session, boolean timedout);
+        public default void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
+        }
     }
 
     /**
@@ -243,7 +248,8 @@ public interface BayeuxServer extends Bayeux {
          * @param message the subscription message sent by the client, or null in case of
          *                server-side subscription via {@link ServerChannel#subscribe(ServerSession)}
          */
-        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message);
+        public default void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
+        }
 
         /**
          * <p>Callback invoked when a {@link ServerSession} unsubscribes from a {@link ServerChannel}.</p>
@@ -253,7 +259,8 @@ public interface BayeuxServer extends Bayeux {
          * @param message the unsubscription message sent by the client, or null in case of
          *                server-side unsubscription via {@link ServerChannel#unsubscribe(ServerSession)}
          */
-        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message);
+        public default void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
+        }
     }
 
     /**

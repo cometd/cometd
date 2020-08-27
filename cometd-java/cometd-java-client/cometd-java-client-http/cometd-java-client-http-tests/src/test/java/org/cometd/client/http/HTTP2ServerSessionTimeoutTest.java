@@ -51,7 +51,7 @@ public class HTTP2ServerSessionTimeoutTest extends HTTP2ClientServerTest {
             }
 
             @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
+            public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
                 removeLatch.countDown();
             }
         });

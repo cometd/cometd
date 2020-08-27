@@ -140,7 +140,8 @@ public interface ServerChannel extends ConfigurableServerChannel {
          * @param message the subscription message sent by the client, or null in case of
          *                server-side subscription via {@link ServerChannel#subscribe(ServerSession)}
          */
-        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message);
+        public default void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
+        }
 
         /**
          * <p>Callback invoked when the given {@link ServerSession} unsubscribes from the given {@link ServerChannel}.</p>
@@ -150,6 +151,7 @@ public interface ServerChannel extends ConfigurableServerChannel {
          * @param message the unsubscription message sent by the client, or null in case of
          *                server-side unsubscription via {@link ServerChannel#unsubscribe(ServerSession)}
          */
-        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message);
+        public default void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
+        }
     }
 }

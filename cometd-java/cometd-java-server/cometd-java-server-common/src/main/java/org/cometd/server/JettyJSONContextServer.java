@@ -28,4 +28,32 @@ public class JettyJSONContextServer extends JettyJSONContext<ServerMessage.Mutab
     protected ServerMessage.Mutable[] newRootArray(int size) {
         return new ServerMessage.Mutable[size];
     }
+
+    @Override
+    public String generate(ServerMessage.Mutable message) {
+        String json = JSONContextServer.super.generate(message);
+        if (json == null) {
+            json = super.generate(message);
+        }
+        return json;
+    }
+
+    @Override
+    public Generator getGenerator() {
+        return new JSONGeneratorServer();
+    }
+
+    private class JSONGeneratorServer extends JSONGenerator {
+        @Override
+        public String generate(Object object) {
+            String json = null;
+            if (object instanceof ServerMessageImpl) {
+                json = ((ServerMessageImpl)object).getJSON();
+            }
+            if (json == null) {
+                json = super.generate(object);
+            }
+            return json;
+        }
+    }
 }

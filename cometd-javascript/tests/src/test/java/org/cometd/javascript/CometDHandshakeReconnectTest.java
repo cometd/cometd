@@ -69,11 +69,7 @@ public class CometDHandshakeReconnectTest extends AbstractCometDTransportsTest {
         final CountDownLatch sessionRemoved = new CountDownLatch(1);
         bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
-            public void sessionAdded(ServerSession session, ServerMessage message) {
-            }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
+            public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
                 sessionRemoved.countDown();
             }
         });

@@ -15,7 +15,6 @@
  */
 package org.cometd.common;
 
-import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.text.ParseException;
@@ -29,17 +28,6 @@ import org.cometd.bayeux.Message;
  * @param <T> the type of message
  */
 public interface JSONContext<T extends Message.Mutable> {
-    /**
-     * <p>Parses an array of messages from the given stream.</p>
-     *
-     * @param stream the stream to parse from
-     * @return an array of messages
-     * @throws ParseException in case of parsing errors
-     * @deprecated use {@link #parse(Reader)} instead
-     */
-    @Deprecated
-    public T[] parse(InputStream stream) throws ParseException;
-
     /**
      * <p>Parses an array of messages from the given reader.</p>
      *

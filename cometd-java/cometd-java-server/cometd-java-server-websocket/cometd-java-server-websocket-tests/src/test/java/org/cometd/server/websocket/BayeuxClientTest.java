@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -169,9 +170,9 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
     }
 
     @Test
-    public void testAuthentication() throws Exception {
+    public void testAuthentication() {
         final AtomicReference<String> sessionId = new AtomicReference<>();
-        class A extends DefaultSecurityPolicy implements ServerSession.RemoveListener {
+        class A extends DefaultSecurityPolicy implements ServerSession.RemovedListener {
             @Override
             public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
                 Map<String, Object> ext = message.getExt();
@@ -199,7 +200,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
             }
 
             @Override
-            public void removed(ServerSession session, boolean timeout) {
+            public void removed(ServerSession session, ServerMessage message, boolean timeout) {
                 sessionId.set(null);
             }
         }
@@ -319,7 +320,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
     public void testWebSocketResponseHeadersRemoved() throws Exception {
         context.addFilter(new FilterHolder(new Filter() {
             @Override
-            public void init(FilterConfig filterConfig) throws ServletException {
+            public void init(FilterConfig filterConfig) {
             }
 
             @Override
@@ -363,7 +364,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
     }
 
     @Test
-    public void testCustomTransportURL() throws Exception {
+    public void testCustomTransportURL() {
         ClientTransport transport = newWebSocketTransport(cometdURL, null);
         // Pass a bogus URL that must not be used
         BayeuxClient client = new BayeuxClient("http://foo/bar", transport);

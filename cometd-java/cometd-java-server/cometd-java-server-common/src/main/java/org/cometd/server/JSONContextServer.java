@@ -21,6 +21,12 @@ import org.cometd.common.JSONContext;
 /**
  * <p>Server specific {@link JSONContext} that binds to {@link ServerMessage.Mutable}.</p>
  */
-public interface JSONContextServer extends JSONContext<ServerMessage.Mutable>
-{
+public interface JSONContextServer extends JSONContext<ServerMessage.Mutable> {
+    @Override
+    default String generate(ServerMessage.Mutable message) {
+        if (message instanceof ServerMessageImpl) {
+            return ((ServerMessageImpl)message).getJSON();
+        }
+        return null;
+    }
 }

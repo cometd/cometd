@@ -49,10 +49,6 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
 
     protected abstract M[] newRootArray(int size);
 
-    public M[] parse(InputStream stream) throws ParseException {
-        return parse(new InputStreamReader(stream, StandardCharsets.UTF_8));
-    }
-
     public M[] parse(Reader reader) throws ParseException {
         try {
             Object object = _messagesParser.parse(new JSON.ReaderSource(reader));
@@ -201,7 +197,7 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
         }
     }
 
-    private class JSONGenerator implements JSONContext.Generator {
+    protected class JSONGenerator implements JSONContext.Generator {
         @Override
         public String generate(Object object) {
             return getJSON().toJSON(object);

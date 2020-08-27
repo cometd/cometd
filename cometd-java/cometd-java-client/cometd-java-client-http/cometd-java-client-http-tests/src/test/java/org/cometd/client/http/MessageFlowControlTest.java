@@ -87,10 +87,6 @@ public class MessageFlowControlTest extends ClientServerTest {
                     }
                 });
             }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
-            }
         });
 
         BayeuxClient client = newBayeuxClient();

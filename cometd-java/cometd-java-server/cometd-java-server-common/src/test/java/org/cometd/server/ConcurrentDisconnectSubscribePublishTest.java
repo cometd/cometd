@@ -44,10 +44,6 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         final AtomicBoolean subscribed = new AtomicBoolean(false);
         bayeux.addListener(new BayeuxServer.SubscriptionListener() {
             @Override
-            public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
-            }
-
-            @Override
             public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
                 subscribed.set(true);
             }

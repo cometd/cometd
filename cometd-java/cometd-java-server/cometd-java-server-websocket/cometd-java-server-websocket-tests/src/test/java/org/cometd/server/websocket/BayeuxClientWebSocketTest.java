@@ -15,8 +15,6 @@
  */
 package org.cometd.server.websocket;
 
-import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
-
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
@@ -61,6 +59,8 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
 
 public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     public BayeuxClientWebSocketTest(String implementation) {
@@ -835,7 +835,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(client.getId());
-        session.addListener((ServerSession.RemoveListener)(s, t) -> latch.countDown());
+        session.addListener((ServerSession.RemovedListener)(s, m, t) -> latch.countDown());
 
         client.abort();
 
@@ -911,10 +911,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 session.deliver(null, channelName, "data", Promise.noop());
             }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
-            }
         });
 
         client.handshake();
@@ -945,10 +941,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 session.deliver(null, channelName, "data", Promise.noop());
-            }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
 

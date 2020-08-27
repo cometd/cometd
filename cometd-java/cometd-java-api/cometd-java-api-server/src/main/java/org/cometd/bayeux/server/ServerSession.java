@@ -204,26 +204,28 @@ public interface ServerSession extends Session {
     /**
      * <p>Listener objects that implement this interface will be notified of session addition.</p>
      */
-    public interface AddListener extends ServerSessionListener {
+    public interface AddedListener extends ServerSessionListener {
         /**
          * <p>Callback method invoked when the session is added to a {@link BayeuxServer}.</p>
          *
          * @param session the added session
+         * @param message the message that caused the session addition
          */
-        public void added(ServerSession session);
+        public void added(ServerSession session, ServerMessage message);
     }
 
     /**
      * <p>Listeners objects that implement this interface will be notified of session removal.</p>
      */
-    public interface RemoveListener extends ServerSessionListener {
+    public interface RemovedListener extends ServerSessionListener {
         /**
          * <p>Callback invoked when the session is removed.</p>
          *
          * @param session the removed session
-         * @param timeout whether the session has been removed because of a timeout
+         * @param message the message that caused the session removal, or null
+         * @param timeout whether the session has been removed due to a timeout
          */
-        public void removed(ServerSession session, boolean timeout);
+        public void removed(ServerSession session, ServerMessage message, boolean timeout);
     }
 
     /**
@@ -261,7 +263,7 @@ public interface ServerSession extends Session {
     /**
      * <p>Listener objects that implement this interface will be notified when a message
      * is queued in the session queue.</p>
-     * <p>This is a <em>restricted</em> listener interface, see {@link MaxQueueListener}.</p>
+     * <p>This is a <em>restricted</em> listener interface, see {@link QueueMaxedListener}.</p>
      */
     public interface QueueListener extends ServerSessionListener {
         /**
@@ -276,7 +278,7 @@ public interface ServerSession extends Session {
     /**
      * <p>Listeners objects that implement this interface will be notified when the session queue
      * is being drained to actually deliver the messages.</p>
-     * <p>This is a <em>restricted</em> listener interface, see {@link MaxQueueListener}.</p>
+     * <p>This is a <em>restricted</em> listener interface, see {@link QueueMaxedListener}.</p>
      */
     public interface DeQueueListener extends ServerSessionListener {
         /**
@@ -310,7 +312,7 @@ public interface ServerSession extends Session {
      * the session lock and therefore are restricted in the type of operations they may perform; in particular,
      * publishing a message to another session may end up in a deadlock.</p>
      */
-    public interface MaxQueueListener extends ServerSessionListener {
+    public interface QueueMaxedListener extends ServerSessionListener {
         /**
          * <p>Callback invoked to notify when the message queue is exceeding the value
          * configured for the transport with the option "maxQueue".</p>
@@ -322,7 +324,7 @@ public interface ServerSession extends Session {
          * @param message the message that exceeded the max queue capacity
          * @return true if the message should be added to the session queue
          */
-        public boolean queueMaxed(ServerSession session, Queue<ServerMessage> queue, ServerSession sender, Message message);
+        public boolean queueMaxed(ServerSession session, Queue<ServerMessage> queue, ServerSession sender, ServerMessage message);
     }
 
     /**

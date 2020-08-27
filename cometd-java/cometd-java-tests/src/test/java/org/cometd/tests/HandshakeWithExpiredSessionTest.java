@@ -78,7 +78,7 @@ public class HandshakeWithExpiredSessionTest extends AbstractClientServerTest {
 
         ServerSession session1 = sessionRef1.get();
         final CountDownLatch removeLatch = new CountDownLatch(1);
-        session1.addListener((ServerSession.RemoveListener)(session, timeout) -> removeLatch.countDown());
+        session1.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
 
         final CountDownLatch handshakeLatch2 = new CountDownLatch(1);
         final AtomicReference<ServerSession> sessionRef2 = new AtomicReference<>();
