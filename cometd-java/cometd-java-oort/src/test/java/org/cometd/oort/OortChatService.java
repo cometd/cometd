@@ -114,9 +114,9 @@ public class OortChatService {
         final Set<String> members = getMemberList(room);
         synchronized (members) {
             members.add(userName);
-            client.addListener((ServerSession.RemoveListener)(session, timeout) -> {
+            client.addListener((ServerSession.RemovedListener)(s, m, t) -> {
                 if (!_oort.isOort(client)) {
-                    _seti.disassociate(userName, session);
+                    _seti.disassociate(userName, s);
                 }
                 members.remove(userName);
                 broadcastMembers(room, members);
@@ -167,7 +167,7 @@ public class OortChatService {
         _seti.sendMessage(toUid, toChannel, data);
     }
 
-    class BadWordFilter extends JSONDataFilter {
+    private static class BadWordFilter extends JSONDataFilter {
         @Override
         protected Object filterString(ServerSession session, ServerChannel channel, String string) {
             if (string.contains("dang")) {

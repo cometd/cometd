@@ -71,7 +71,7 @@ public class ServerSessionExpirationTest extends ClientServerTest {
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(client.getId());
-        session.addListener((ServerSession.RemoveListener)(s, t) -> {
+        session.addListener((ServerSession.RemovedListener)(s, m, t) -> {
             logger.info("removed");
             removeLatch.countDown();
         });
@@ -137,7 +137,7 @@ public class ServerSessionExpirationTest extends ClientServerTest {
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(client.getId());
-        session.addListener((ServerSession.RemoveListener)(s, t) -> {
+        session.addListener((ServerSession.RemovedListener)(s, m, t) -> {
             logger.info("removed");
             removeLatch.countDown();
         });

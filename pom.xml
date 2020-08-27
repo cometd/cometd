@@ -228,7 +228,7 @@
           <target>8</target>
           <showDeprecation>true</showDeprecation>
           <showWarnings>true</showWarnings>
-          <compilerArgument>-Xlint:all,-serial,-unchecked</compilerArgument>
+          <compilerArgument>-Xlint:all,-serial</compilerArgument>
         </configuration>
       </plugin>
       <plugin>

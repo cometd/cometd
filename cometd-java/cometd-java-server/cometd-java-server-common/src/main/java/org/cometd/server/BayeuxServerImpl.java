@@ -190,7 +190,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
             if (option instanceof String) {
                 Class<?> jsonContextClass = Thread.currentThread().getContextClassLoader().loadClass((String)option);
                 if (JSONContextServer.class.isAssignableFrom(jsonContextClass)) {
-                    _jsonContext = (JSONContextServer)jsonContextClass.newInstance();
+                    _jsonContext = (JSONContextServer)jsonContextClass.getConstructor().newInstance();
                 } else {
                     throw new IllegalArgumentException("Invalid " + JSONContextServer.class.getName() + " implementation class");
                 }
@@ -463,11 +463,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     @Override
-    public boolean removeSession(ServerSession session) {
-        return removeSession(session, false).getReference() != null;
-    }
-
-    @Override
     public ServerSession getSession(String clientId) {
         return clientId == null ? null : _sessions.get(clientId);
     }
@@ -482,7 +477,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                 notifySessionAdded((SessionListener)listener, session, message);
             }
         }
-        session.added();
+        session.added(message);
     }
 
     private void notifySessionAdded(SessionListener listener, ServerSession session, ServerMessage message) {
@@ -493,18 +488,23 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
     }
 
-    /**
-     * @param session  the session to remove
-     * @param timedOut whether the remove reason is server-side expiration
-     * @return true if the session was removed and was connected
-     */
-    public boolean removeServerSession(ServerSession session, boolean timedOut) {
-        return removeSession(session, timedOut).isMarked();
+    @Override
+    public boolean removeSession(ServerSession session) {
+        return removeServerSession(session, null, false).getReference() != null;
     }
 
-    private MarkedReference<ServerSessionImpl> removeSession(ServerSession session, boolean timedOut) {
+    /**
+     * @param session the session to remove
+     * @param timeout whether the session has been removed due to a timeout
+     * @return true if the session was removed and was connected
+     */
+    public boolean removeServerSession(ServerSession session, boolean timeout) {
+        return removeServerSession(session, null, timeout).isMarked();
+    }
+
+    private MarkedReference<ServerSessionImpl> removeServerSession(ServerSession session, ServerMessage message, boolean timeout) {
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Removing session {}, timed out: {}", session, timedOut);
+            _logger.debug("Removing session timeout: {}, {}, message: {}", timeout, session, message);
         }
 
         ServerSessionImpl removed = _sessions.remove(session.getId());
@@ -515,21 +515,21 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
         // Invoke BayeuxServer.SessionListener first, so that the application
         // can be "pre-notified" that a session is being removed before the
-        // application gets notifications of channel unsubscriptions
+        // application gets notifications of channel unsubscriptions.
         for (BayeuxServerListener listener : _listeners) {
             if (listener instanceof SessionListener) {
-                notifySessionRemoved((SessionListener)listener, removed, timedOut);
+                notifySessionRemoved((SessionListener)listener, removed, message, timeout);
             }
         }
 
-        boolean connected = removed.removed(timedOut);
+        boolean connected = removed.removed(message, timeout);
 
         return new MarkedReference<>(removed, connected);
     }
 
-    private void notifySessionRemoved(SessionListener listener, ServerSession session, boolean timedout) {
+    private void notifySessionRemoved(SessionListener listener, ServerSession session, ServerMessage message, boolean timeout) {
         try {
-            listener.sessionRemoved(session, timedout);
+            listener.sessionRemoved(session, message, timeout);
         } catch (Throwable x) {
             _logger.info("Exception while invoking listener " + listener, x);
         }
@@ -1015,7 +1015,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
     private void notifyOnMessage(MessageListener listener, ServerSession from, ServerChannel to, Mutable mutable, Promise<Boolean> promise) {
         try {
-            listener.onMessage(from, to, mutable, Promise.from(r -> promise.succeed(r == null ? true : r), failure -> {
+            listener.onMessage(from, to, mutable, Promise.from(r -> promise.succeed(r == null || r), failure -> {
                 _logger.info("Exception reported by listener " + listener, failure);
                 promise.succeed(true);
             }));
@@ -1033,7 +1033,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                         if (_logger.isDebugEnabled()) {
                             _logger.debug("Extension {}: result {} for incoming message {}", extension, r, message);
                         }
-                        loop.proceed(r == null ? true : r);
+                        loop.proceed(r == null || r);
                     }, failure -> {
                         _logger.info("Exception reported by extension " + extension, failure);
                         loop.proceed(true);
@@ -1054,7 +1054,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         AsyncFoldLeft.run(extensions, true, (result, extension, loop) -> {
             if (result) {
                 try {
-                    extension.outgoing(sender, session, message, Promise.from(r -> loop.proceed(r == null ? true : r), failure -> {
+                    extension.outgoing(sender, session, message, Promise.from(r -> loop.proceed(r == null || r), failure -> {
                         _logger.info("Exception reported by extension " + extension, failure);
                         loop.proceed(true);
                     }));
@@ -1473,7 +1473,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private void handleMetaDisconnect(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
         ServerMessage.Mutable reply = message.getAssociated();
         reply.setSuccessful(true);
-        removeServerSession(session, false);
+        removeServerSession(session, message, false);
         // Wake up the possibly pending /meta/connect
         session.flush();
         promise.succeed(true);

@@ -284,10 +284,10 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     private Boolean enqueueMessage(ServerSession sender, ServerMessage.Mutable message) {
         synchronized (getLock()) {
             for (ServerSessionListener listener : _listeners) {
-                if (listener instanceof MaxQueueListener) {
+                if (listener instanceof QueueMaxedListener) {
                     final int maxQueueSize = _maxQueue;
                     if (maxQueueSize > 0 && _queue.size() >= maxQueueSize) {
-                        if (!notifyQueueMaxed((MaxQueueListener)listener, this, _queue, sender, message)) {
+                        if (!notifyQueueMaxed((QueueMaxedListener)listener, this, _queue, sender, message)) {
                             return null;
                         }
                     }
@@ -325,7 +325,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }, promise);
     }
 
-    private boolean notifyQueueMaxed(MaxQueueListener listener, ServerSession session, Queue<ServerMessage> queue, ServerSession sender, ServerMessage message) {
+    private boolean notifyQueueMaxed(QueueMaxedListener listener, ServerSession session, Queue<ServerMessage> queue, ServerSession sender, ServerMessage message) {
         try {
             return listener.queueMaxed(session, queue, sender, message);
         } catch (Throwable x) {
@@ -718,7 +718,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                     loop.proceed(true);
                 }
             } else {
-                loop.leave(result);
+                loop.leave(false);
             }
         }, promise);
     }
@@ -801,23 +801,24 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         _broadcastToPublisher = value;
     }
 
-    protected void added() {
+    void added(ServerMessage message) {
         for (ServerSessionListener listener : _listeners) {
-            if (listener instanceof AddListener) {
-                notifyAdded((AddListener)listener, this);
+            if (listener instanceof AddedListener) {
+                notifyAdded((AddedListener)listener, this, message);
             }
         }
     }
 
     /**
-     * @param timedOut whether the session has been timed out
+     * @param message the message that caused the removal, or null
+     * @param timeout whether the session has been removed due a timeout
      * @return True if the session was connected.
      */
-    protected boolean removed(boolean timedOut) {
+    protected boolean removed(ServerMessage message, boolean timeout) {
         boolean result;
         synchronized (this) {
             result = isHandshook();
-            _state = timedOut ? State.EXPIRED : State.DISCONNECTED;
+            _state = timeout ? State.EXPIRED : State.DISCONNECTED;
         }
         if (result) {
             for (ServerChannelImpl channel : subscriptions) {
@@ -825,25 +826,25 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             }
 
             for (ServerSessionListener listener : _listeners) {
-                if (listener instanceof ServerSession.RemoveListener) {
-                    notifyRemoved((RemoveListener)listener, this, timedOut);
+                if (listener instanceof RemovedListener) {
+                    notifyRemoved((RemovedListener)listener, this, message, timeout);
                 }
             }
         }
         return result;
     }
 
-    private void notifyAdded(AddListener listener, ServerSession serverSession) {
+    private void notifyAdded(AddedListener listener, ServerSession serverSession, ServerMessage message) {
         try {
-            listener.added(serverSession);
+            listener.added(serverSession, message);
         } catch (Exception x) {
             _logger.info("Exception while invoking listener " + listener, x);
         }
     }
 
-    private void notifyRemoved(RemoveListener listener, ServerSession serverSession, boolean timedout) {
+    private void notifyRemoved(RemovedListener listener, ServerSession session, ServerMessage message, boolean timeout) {
         try {
-            listener.removed(serverSession, timedout);
+            listener.removed(session, message, timeout);
         } catch (Throwable x) {
             _logger.info("Exception while invoking listener " + listener, x);
         }

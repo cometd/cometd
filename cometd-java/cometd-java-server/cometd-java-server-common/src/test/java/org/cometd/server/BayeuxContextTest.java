@@ -60,10 +60,6 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
                 Assert.assertNotNull(message.getBayeuxContext().getRemoteAddress());
                 latch.countDown();
             }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
-            }
         });
 
         Request handshake = newBayeuxRequest("[{" +
@@ -90,10 +86,6 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
                 Assert.assertEquals(value1, message.getBayeuxContext().getHeader(name));
                 Assert.assertEquals(Arrays.asList(value1, value2), message.getBayeuxContext().getHeaderValues(name));
                 latch.countDown();
-            }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
 
@@ -142,10 +134,6 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
                 Assert.assertEquals(value, message.getBayeuxContext().getRequestAttribute(name));
                 latch.countDown();
             }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
-            }
         });
 
         Request handshake = newBayeuxRequest("[{" +
@@ -193,10 +181,6 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
                 Assert.assertEquals(value, message.getBayeuxContext().getHttpSessionAttribute(name));
                 latch.countDown();
             }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
-            }
         });
 
         Request handshake = newBayeuxRequest("[{" +
@@ -219,10 +203,6 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assert.assertSame(bayeux, message.getBayeuxContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
                 latch.countDown();
-            }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
 

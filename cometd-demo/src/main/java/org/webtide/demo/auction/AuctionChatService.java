@@ -42,8 +42,8 @@ public class AuctionChatService extends AbstractService {
 
     // A map(channel, map(userName, clientId))
     private final ConcurrentMap<String, Set<String>> _members = new ConcurrentHashMap<>();
-    private Oort _oort;
-    private Seti _seti;
+    private final Oort _oort;
+    private final Seti _seti;
 
     public AuctionChatService(ServletContext context) {
         super((BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE), "chat");
@@ -109,11 +109,11 @@ public class AuctionChatService extends AbstractService {
                     _seti.associate(userName, joiner);
                 }
 
-                joiner.addListener((ServerSession.RemoveListener)(session, timeout) -> {
+                joiner.addListener((ServerSession.RemovedListener)(s, m, t) -> {
                     if (!_oort.isOort(joiner)) {
-                        _seti.disassociate(userName, session);
+                        _seti.disassociate(userName, s);
                     }
-                    if (timeout) {
+                    if (t) {
                         ServerChannel channel = getBayeux().getChannel(channelName);
                         if (channel != null) {
                             Map<String, Object> leave = new HashMap<>();

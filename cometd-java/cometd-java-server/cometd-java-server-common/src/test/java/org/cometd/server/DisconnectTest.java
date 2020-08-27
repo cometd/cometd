@@ -77,7 +77,7 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest {
         Thread.sleep(1000);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        serverSession.addListener((ServerSession.RemoveListener)(session, timeout) -> latch.countDown());
+        serverSession.addListener((ServerSession.RemovedListener)(s, m, t) -> latch.countDown());
 
         Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +
@@ -93,6 +93,6 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest {
         Message.Mutable connectReply = new JettyJSONContextClient().parse(response.getContentAsString())[0];
         Assert.assertEquals(Channel.META_CONNECT, connectReply.getChannel());
         Map<String, Object> advice = connectReply.getAdvice(false);
-        Assert.assertTrue(Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)));
+        Assert.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get(Message.RECONNECT_FIELD));
     }
 }

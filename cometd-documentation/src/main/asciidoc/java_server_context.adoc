@@ -48,8 +48,8 @@ public class OneClientPerAddressSecurityPolicy extends DefaultSecurityPolicy {
         boolean notPresent = addresses.add(remoteAddress);
 
         // Avoid to leak addresses
-        session.addListener(new ServerSession.RemoveListener() {
-            public void removed(ServerSession session, boolean timeout) {
+        session.addListener(new ServerSession.RemovedListener() {
+            public void removed(ServerSession session, ServerMessage message, boolean timeout) {
                 addresses.remove(remoteAddress);
             }
         });

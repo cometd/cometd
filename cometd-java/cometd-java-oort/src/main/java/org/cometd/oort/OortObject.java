@@ -902,9 +902,5 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             // Deliver the local state to the node that subscribed.
             session.deliver(getLocalSession(), channel.getId(), getInfo(getOort().getURL()), Promise.noop());
         }
-
-        @Override
-        public void unsubscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
-        }
     }
 }

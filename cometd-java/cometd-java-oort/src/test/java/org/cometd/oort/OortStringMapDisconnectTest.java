@@ -272,7 +272,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         }
     }
 
-    public static class UserService extends AbstractService implements ServerSession.RemoveListener {
+    public static class UserService extends AbstractService implements ServerSession.RemovedListener {
         private static final String LOGIN_CHANNEL = "/service/login";
         private final Seti seti;
         private final OortStringMap<String> oortStringMap;
@@ -293,7 +293,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         }
 
         @Override
-        public void removed(ServerSession session, boolean timeout) {
+        public void removed(ServerSession session, ServerMessage message, boolean timeout) {
             String userName = (String)session.getAttribute("userName");
             seti.disassociate(userName, session);
             oortStringMap.removeAndShare(userName, new OortObject.Result.Deferred<>());

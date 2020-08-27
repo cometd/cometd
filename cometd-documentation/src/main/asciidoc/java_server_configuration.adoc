@@ -126,7 +126,7 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 | maxQueue
 | -1
 | The maximum size of the `ServerSession` queue. A value of -1 means no queue size limit.
-  A positive value triggers the invocation of `org.cometd.bayeux.server.ServerSession.MaxQueueListener` when the max queue size is exceeded.
+  A positive value triggers the invocation of `org.cometd.bayeux.server.ServerSession.QueueMaxedListener` when the max queue size is exceeded.
 
 | maxMessageSize
 | <impl>

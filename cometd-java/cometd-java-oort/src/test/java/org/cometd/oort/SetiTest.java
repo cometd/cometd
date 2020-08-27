@@ -261,7 +261,7 @@ public class SetiTest extends OortTest {
 
         // Wait for the server to expire client2 and for Seti to disassociate it
         final CountDownLatch removedLatch = new CountDownLatch(1);
-        oort2.getBayeuxServer().getSession(session2.get()).addListener((ServerSession.RemoveListener)(session, timeout) -> removedLatch.countDown());
+        oort2.getBayeuxServer().getSession(session2.get()).addListener((ServerSession.RemovedListener)(s, m, t) -> removedLatch.countDown());
         long maxTimeout = ((ServerTransport)oort2.getBayeuxServer().getTransport("websocket")).getMaxInterval();
         Assert.assertTrue(removedLatch.await(maxTimeout + 5000, TimeUnit.MILLISECONDS));
 

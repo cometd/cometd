@@ -312,7 +312,7 @@ On the server, the model is similar but much richer.
 * `ServerSession` allows you to add listeners that get notified when the session
   is removed (for example because the client disconnects, or because the client
   disappears and therefore the server expires the correspondent server session)
-  via `ServerSession.addListener(ServerSession.RemoveListener)`.
+  via `ServerSession.addListener(ServerSession.RemovedListener)`.
 * `ServerSession` allows you add listeners that can interact with the server
   session's message queue for example to detect when a message is added to the
   queue, via `ServerSession.addListener(ServerSession.QueueListener)`, or when
@@ -382,7 +382,7 @@ The `BayeuxServer` processes each message in the following steps:
 . If the message is a broadcast message, for each server session that subscribed
   to the channel, the message passes through `ServerSession` listeners, that have
   last chance to discard the message for that session; then the server session queue
-  listeners (`MaxQueueListener` and `QueueListener`) are invoked and finally the
+  listeners (`QueueMaxedListener` and `QueueListener`) are invoked and finally the
   message is added to the server session queue for delivery.
 . If the message is a lazy message (see also xref:_java_server_lazy_messages[the lazy messages section]),
   it is sent on first occasion, otherwise the message is delivered immediately.
@@ -424,7 +424,7 @@ The CometD implementation also relies on a scheduler to perform periodic or
 delayed tasks.
 The execution of these tasks may invoke server-side CometD listeners, notably
 implementations of `BayeuxServer.SessionListener#sessionRemoved()` and
-`ServerSession.RemoveListener#removed()`.
+`ServerSession.RemovedListener#removed()`.
 
 This simple threading model implies that if a server-side CometD listener takes a long
 time to process the message and to return control to the implementation, then

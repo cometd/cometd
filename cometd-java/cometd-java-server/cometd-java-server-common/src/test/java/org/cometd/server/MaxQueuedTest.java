@@ -61,7 +61,7 @@ public class MaxQueuedTest extends AbstractBayeuxClientServerTest {
         ServerSession serverSession = bayeux.getSession(clientId);
         Assert.assertNotNull(serverSession);
 
-        serverSession.addListener((ServerSession.MaxQueueListener)(session, queue, sender, message) -> {
+        serverSession.addListener((ServerSession.QueueMaxedListener)(session, queue, sender, message) -> {
             // Cannot use session.disconnect(), because it will queue the
             // disconnect message and invoke this method again, causing a loop.
             bayeux.removeSession(session);

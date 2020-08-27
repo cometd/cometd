@@ -64,7 +64,7 @@ public class CometDInitDisconnectTest extends AbstractCometDTransportsTest {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
-                    to.addListener((ServerSession.RemoveListener)(session, timeout) -> removeLatch.countDown());
+                    to.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
                 }
                 return true;
             }

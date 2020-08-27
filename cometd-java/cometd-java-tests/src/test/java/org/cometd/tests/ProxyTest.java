@@ -261,8 +261,8 @@ public class ProxyTest {
             String channel = message.getChannel();
             if (Channel.META_HANDSHAKE.equals(channel)) {
                 BayeuxClient client = new BayeuxClient(serverCometDURL, transportFactory.newClientTransport(null, null));
-                session.addListener((ServerSession.AddListener)s -> sessions.put(s, client));
-                session.addListener((ServerSession.RemoveListener)(s, timeout) -> {
+                session.addListener((ServerSession.AddedListener)(s, m) -> sessions.put(s, client));
+                session.addListener((ServerSession.RemovedListener)(s, m, t) -> {
                     sessions.remove(s);
                     client.disconnect();
                 });

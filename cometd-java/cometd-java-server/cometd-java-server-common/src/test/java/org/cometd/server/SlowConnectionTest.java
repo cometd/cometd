@@ -59,12 +59,8 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
         final CountDownLatch sweeperLatch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
-            public void sessionAdded(ServerSession session, ServerMessage message) {
-            }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
-                if (timedout) {
+            public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
+                if (timeout) {
                     sweeperLatch.countDown();
                 }
             }
@@ -142,8 +138,8 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
             }
 
             @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
-                if (timedout) {
+            public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
+                if (timeout) {
                     sweeperLatch.countDown();
                 }
             }
@@ -255,7 +251,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(clientId);
-        session.addListener((ServerSession.RemoveListener)(s, t) -> removeLatch.countDown());
+        session.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
 
         // Wait for messages to be written, but close the connection instead
         Assert.assertTrue(sendLatch.await(5, TimeUnit.SECONDS));
@@ -331,7 +327,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(clientId);
-        session.addListener((ServerSession.RemoveListener)(s, t) -> removeLatch.countDown());
+        session.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
 
         // Do not read, the server should idle timeout and close the connection.
 

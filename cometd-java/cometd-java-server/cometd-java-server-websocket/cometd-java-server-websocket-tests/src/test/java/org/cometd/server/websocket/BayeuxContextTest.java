@@ -15,7 +15,6 @@
  */
 package org.cometd.server.websocket;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpCookie;
 import java.net.Socket;
@@ -29,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.servlet.ServletException;
+
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -255,10 +254,6 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
                 Assert.assertEquals(SessionConstants.ATTRIBUTE_VALUE, message.getBayeuxContext().getHttpSessionAttribute(SessionConstants.ATTRIBUTE_NAME));
                 latch.countDown();
             }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
-            }
         });
 
         BayeuxClient client = newBayeuxClient();
@@ -281,10 +276,6 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assert.assertSame(bayeux, message.getBayeuxContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
                 latch.countDown();
-            }
-
-            @Override
-            public void sessionRemoved(ServerSession session, boolean timedout) {
             }
         });
 

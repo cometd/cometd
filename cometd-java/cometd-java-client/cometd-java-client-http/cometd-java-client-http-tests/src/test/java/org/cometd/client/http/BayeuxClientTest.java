@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -613,7 +614,7 @@ public class BayeuxClientTest extends ClientServerTest {
         server.stop();
         Assert.assertTrue(unconnectedLatch.get().await(5, TimeUnit.SECONDS));
         Assert.assertTrue(client.waitFor(5000, State.UNCONNECTED));
-        Assert.assertTrue(!client.isConnected());
+        Assert.assertFalse(client.isConnected());
 
         // restart server
         connector.setPort(port);
@@ -631,7 +632,7 @@ public class BayeuxClientTest extends ClientServerTest {
     @Test
     public void testAuthentication() {
         final AtomicReference<String> sessionId = new AtomicReference<>();
-        class A extends DefaultSecurityPolicy implements ServerSession.RemoveListener {
+        class A extends DefaultSecurityPolicy implements ServerSession.RemovedListener {
             @Override
             public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
                 Map<String, Object> ext = message.getExt();
@@ -659,7 +660,7 @@ public class BayeuxClientTest extends ClientServerTest {
             }
 
             @Override
-            public void removed(ServerSession session, boolean timeout) {
+            public void removed(ServerSession session, ServerMessage message, boolean timeout) {
                 sessionId.set(null);
             }
         }

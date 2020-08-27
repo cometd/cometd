@@ -54,7 +54,7 @@ public class BayeuxServerTest {
     }
 
     @Test
-    public void testListeners() throws Exception {
+    public void testListeners() {
         _bayeux.addListener(new SubListener());
         _bayeux.addListener(new SessListener());
         _bayeux.addListener(new CListener());
@@ -108,17 +108,17 @@ public class BayeuxServerTest {
     }
 
     @Test
-    public void testSessionAttributes() throws Exception {
+    public void testSessionAttributes() {
         LocalSession local = _bayeux.newLocalSession("s0");
         local.handshake();
         ServerSession session = local.getServerSession();
 
         local.setAttribute("foo", "bar");
         Assert.assertEquals("bar", local.getAttribute("foo"));
-        Assert.assertEquals(null, session.getAttribute("foo"));
+        Assert.assertNull(session.getAttribute("foo"));
 
         session.setAttribute("bar", "foo");
-        Assert.assertEquals(null, local.getAttribute("bar"));
+        Assert.assertNull(local.getAttribute("bar"));
         Assert.assertEquals("foo", session.getAttribute("bar"));
 
         Assert.assertTrue(local.getAttributeNames().contains("foo"));
@@ -127,13 +127,13 @@ public class BayeuxServerTest {
         Assert.assertTrue(session.getAttributeNames().contains("bar"));
 
         Assert.assertEquals("bar", local.removeAttribute("foo"));
-        Assert.assertEquals(null, local.removeAttribute("foo"));
+        Assert.assertNull(local.removeAttribute("foo"));
         Assert.assertEquals("foo", session.removeAttribute("bar"));
-        Assert.assertEquals(null, local.removeAttribute("bar"));
+        Assert.assertNull(local.removeAttribute("bar"));
     }
 
     @Test
-    public void testLocalSessions() throws Exception {
+    public void testLocalSessions() {
         LocalSession session0 = _bayeux.newLocalSession("s0");
         Assert.assertEquals("L:s0_<disconnected>", session0.toString());
         session0.handshake();
@@ -174,10 +174,10 @@ public class BayeuxServerTest {
         Assert.assertEquals(3, _bayeux.getChannel("/foo/bar").getSubscribers().size());
         Assert.assertEquals(session0, foobar0.getSession());
         Assert.assertEquals("/foo/bar", foobar0.getId());
-        Assert.assertEquals(false, foobar0.isDeepWild());
-        Assert.assertEquals(false, foobar0.isWild());
-        Assert.assertEquals(false, foobar0.isMeta());
-        Assert.assertEquals(false, foobar0.isService());
+        Assert.assertFalse(foobar0.isDeepWild());
+        Assert.assertFalse(foobar0.isWild());
+        Assert.assertFalse(foobar0.isMeta());
+        Assert.assertFalse(foobar0.isService());
 
         foobar0.publish("hello");
 
@@ -196,7 +196,7 @@ public class BayeuxServerTest {
         session1.batch(() -> {
             ClientSessionChannel foobar1 = session1.getChannel("/foo/bar");
             foobar1.publish("part1");
-            Assert.assertEquals(null, events.poll());
+            Assert.assertNull(events.poll());
             foobar1.publish("part2");
         });
 
@@ -259,7 +259,6 @@ public class BayeuxServerTest {
             _events.add("channelRemoved");
             _events.add(channelId);
         }
-
     }
 
     class SessListener implements BayeuxServer.SessionListener {
@@ -270,10 +269,10 @@ public class BayeuxServerTest {
         }
 
         @Override
-        public void sessionRemoved(ServerSession session, boolean timedout) {
+        public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
             _events.add("sessionRemoved");
             _events.add(session);
-            _events.add(timedout);
+            _events.add(timeout);
         }
     }
 
@@ -291,6 +290,5 @@ public class BayeuxServerTest {
             _events.add(session);
             _events.add(channel);
         }
-
     }
 }
