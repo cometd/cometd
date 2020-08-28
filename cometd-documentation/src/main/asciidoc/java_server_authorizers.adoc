@@ -2,238 +2,139 @@
 [[_java_server_authorizers]]
 ==== Server Channel Authorizers
 
-CometD provides application with _authorizers_, a feature that allows
-fine-grained control of authorization on channel operations.
+CometD provides application with _authorizers_, a feature that allows fine-grained control of authorization on channel operations.
 
 ===== Understanding Authorizers
 
-Authorizers are objects that implement `org.cometd.bayeux.server.Authorizer`;
-you add them to server-side channels at setup time (before any operation on
-that channel can happen) in the following way:
+Authorizers are objects that implement `org.cometd.bayeux.server.Authorizer`; you add them to server-side channels at setup time (before any operation on that channel can happen) in the following way:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxServer bayeuxServer = ...;
-bayeuxServer.createChannelIfAbsent("/my/channel", new ConfigurableServerChannel.Initializer() {
-    public void configureChannel(ConfigurableServerChannel channel) {
-        channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
-    }
-});
+include::{doc_code}/server/ServerAuthorizersDocs.java[tags=add]
 ----
 ====
 
-The utility class `org.cometd.server.authorizer.GrantAuthorizer` provides
-some pre-made authorizers, but you can create your own at will.
+The utility class `org.cometd.server.authorizer.GrantAuthorizer` provides some pre-made authorizers, but you can create your own at will.
 
-Authorizers are particularly suited to control authorization on those channels
-that CometD creates at runtime, or for those channels whose ID CometD builds
-at runtime by concatenating strings that are unknown at application startup
-(see examples below).
+Authorizers are particularly suited to control authorization on those channels that CometD creates at runtime, or for those channels whose ID CometD builds at runtime by concatenating strings that are unknown at application startup (see examples below).
 
-* Authorizers do not apply to meta channels, only to service channels and to
-  broadcast channels.
-* You can add authorizers to wildcard channels (such as `+/chat/*+`); they impact
-  all channels that match the wildcard channel on which you have added the authorizer.
+* Authorizers do not apply to meta channels, only to service channels and to broadcast channels.
+* You can add authorizers to wildcard channels (such as `+/chat/*+`); they impact all channels that match the wildcard channel on which you have added the authorizer.
 * An authorizer that you add to `+/**+` impacts all non-meta channels.
-* For a non wildcard channel such as `/chat/room/10`, the _authorizer set_ is
-  the union of all authorizers on that channel, and of all authorizers on
-  wildcard channels that match the channel (in this case authorizers on
-  channels `+/chat/room/*+`, `+/chat/room/**+`, `+/chat/**+` and `+/**+`).
+* For a non wildcard channel such as `/chat/room/10`, the _authorizer set_ is the union of all authorizers on that channel, and of all authorizers on wildcard channels that match the channel (in this case authorizers on channels `+/chat/room/*+`, `+/chat/room/**+`, `+/chat/**+` and `+/**+`).
 
 ===== Authorization Algorithm
 
-Authorizers control access to channels in collaboration with the
-`org.cometd.bayeux.server.SecurityPolicy` that is currently installed.
+Authorizers control access to channels in collaboration with the `org.cometd.bayeux.server.SecurityPolicy` that is currently installed.
 
-The `org.cometd.bayeux.server.SecurityPolicy` class exposes three methods that
-you can use to control access to channels:
+The `org.cometd.bayeux.server.SecurityPolicy` class exposes three methods that you can use to control access to channels:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public void canCreate   (BayeuxServer server, ServerSession session, String channelId,      ServerMessage message, Promise<Boolean> promise);
-public void canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message, Promise<Boolean> promise);
-public void canPublish  (BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message, Promise<Boolean> promise);
+include::{doc_code}/server/ServerAuthorizersDocs.java[tags=methods]
 ----
 ====
 
-These authorizers control, respectively, the operation to create a channel,
-the operation to subscribe to a channel, and the operation to publish to a channel.
+These authorizers control, respectively, the operation to create a channel, the operation to subscribe to a channel, and the operation to publish to a channel.
 
 The complete algorithm for the authorization follows:
 
 . If there is a security policy, and the security policy denies the request, then the request is denied.
 . Otherwise, if the authorizer set is empty, the request is granted.
 . Otherwise, if no authorizer explicitly grants the operation, the request is denied.
-. Otherwise, if at least one authorizer explicitly grants the operation, and
-  no authorizer explicitly denies the operation, the request is granted.
-. Otherwise, if one authorizer explicitly denies the operation, remaining
-  authorizers are not consulted, and the request is denied.
+. Otherwise, if at least one authorizer explicitly grants the operation, and no authorizer explicitly denies the operation, the request is granted.
+. Otherwise, if one authorizer explicitly denies the operation, remaining authorizers are not consulted, and the request is denied.
 
 The order in which the authorizers are called is not important.
 
-The following method of `org.cometd.bayeux.server.Authorizer` must be
-implemented with your authorization algorithm:
+You need to imnplement `org.cometd.bayeux.server.Authorizer` with your authorization algorithm.
 
-====
-[source,java]
-----
-public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise);
-----
-====
-
-One of three possible results must be used to succeed the promise:
+One of three possible results must be used as the result of the authorization:
 
 * `Result.grant()`:
 +
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
-    promise.succeed(Result.grant());
-}
+include::{doc_code}/server/ServerAuthorizersDocs.java[tags=grant]
 ----
 ====
-`Result.grant()` explicitly grants permission to perform the operation
-    passed in as a parameter on the channel.
-    At least one authorizer must grant the operation, otherwise the operation
-    is denied.
+`Result.grant()` explicitly grants permission to perform the operation passed in as a parameter on the channel.
+At least one authorizer must grant the operation, otherwise the operation is denied.
 +
-The fact that one (or multiple) authorizers grant an operation does not imply
-that the operation is granted at the end of the authorization algorithm: it
-could be denied by another authorizer in the set of authorizers for that channel.
+The fact that one (or multiple) authorizers grant an operation does not imply that the operation is granted at the end of the authorization algorithm: it could be denied by another authorizer in the set of authorizers for that channel.
 
 * `Result.ignore()`:
 +
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
-    promise.succeed(Result.ignore());
-}
+include::{doc_code}/server/ServerAuthorizersDocs.java[tags=ignore]
 ----
 ====
-`Result.ignore()` neither grants nor denies the permission to perform
-    the operation passed in as a parameter on the channel.
-    Ignoring the authorization request is the usual way to deny authorization
-    if the conditions for which the operation must be granted do not apply.
+`Result.ignore()` neither grants nor denies the permission to perform the operation passed in as a parameter on the channel.
+Ignoring the authorization request is the usual way to deny authorization if the conditions for which the operation must be granted do not apply.
 +
 
 * `Result.deny()`:
 +
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
-    promise.succeed(Result.deny("reason to deny"));
-}
+include::{doc_code}/server/ServerAuthorizersDocs.java[tags=deny]
 ----
 ====
-`Result.deny()` explicitly denies the permission to perform the operation
-    passed in as a parameter on the channel.
-    Denying the authorization request immediately results in the authorization
-    being denied without even consulting other authorizers in the authorizer
-    set for that channel.
+`Result.deny()` explicitly denies the permission to perform the operation passed in as a parameter on the channel.
+Denying the authorization request immediately results in the authorization being denied without even consulting other authorizers in the authorizerset for that channel.
 +
-Typically, denying authorizers are used for cross-cutting concerns: where you
-have a sophisticated logic in authorizers to grant access to users for
-specific paid TV channels based on the user's contract (imagine that bronze,
-silver and gold contracts give access to different TV channels), you have a
-single authorizer that denies the operation if the user's balance is insufficient,
-no matter the contract or the TV channel being requested.
+Typically, denying authorizers are used for cross-cutting concerns: where you have a sophisticated logic in authorizers to grant access to users for specific paid TV channels based on the user's contract (imagine that bronze, silver and gold contracts give access to different TV channels), you have a single authorizer that denies the operation if the user's balance is insufficient, no matter the contract or the TV channel being requested.
 
-Similarly to the `SecurityPolicy` (see also
-xref:_java_server_authorization[the authorization section]), `Authorizer` methods
-are invoked for any `ServerSession`, even those generated by local clients
-(such as services, see also xref:_java_server_services_inherited[the inherited services section]).
-Implementers should check whether the `ServerSession` that is performing the
-operation is related to a local client or to a remote client, and act
-accordingly (see example below).
+Similarly to the `SecurityPolicy` (see also xref:_java_server_authorization[the authorization section]), `Authorizer` methods are invoked for any `ServerSession`, even those generated by local clients (such as services, see also xref:_java_server_services_inherited[the inherited services section]).
+Implementers should check whether the `ServerSession` that is performing the operation is related to a local client or to a remote client, and act accordingly (see example below).
 
 ===== Example
 
-The following example assumes that the security policy does not interfere
-with the authorizers, and that the code is executed before the channel exists
-(either at application startup or in places where the application logic ensures
-that the channel has not been created yet).
+The following example assumes that the security policy does not interfere with the authorizers, and that the code is executed before the channel exists (either at application startup or in places where the application logic ensures that the channel has not been created yet).
 
 Imagine an application that allows you to watch and play games.
 
 Typically, an ignoring authorizer is added on a root channel:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxServer bayeuxServer = ...;
-MarkedReference<ServerChannel> ref = bayeuxServer.createChannelIfAbsent("/game/**");
-ServerChannel gameStarStar = ref.getReference();
-gameStarStar.addAuthorizer(GrantAuthorizer.GRANT_NONE);
+include::{doc_code}/server/ServerAuthorizersDocs.java[tags=example1]
 ----
 ====
 
-This ensures that the authorizer set is not empty, and that by default (if
-no other authorizer grants or denies) the authorization is ignored and hence denied.
+This ensures that the authorizer set is not empty, and that by default (if no other authorizer grants or denies) the authorization is ignored and hence denied.
 
-Only captains can start a new game, and to do so they create a new channel
-for that game, for example `/game/123` (where `123` is the gameId):
+Only captains can start a new game, and to do so they create a new channel for that game, for example `/game/123` (where `123` is the game identifier):
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-gameStarStar.addAuthorizer(new Authorizer() {
-    public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
-        // Always grant authorization to local clients
-        if (session.isLocalSession()) {
-            promise.succeed(Result.grant());
-            return;
-        }
-
-        boolean isCaptain = isCaptain(session);
-        boolean isGameChannel = !channel.isWild() && new ChannelId("/game").isParentOf(channel);
-        if (operation == Operation.CREATE && isCaptain && isGameChannel) {
-            promise.succeed(Result.grant());
-            return;
-        }
-
-        promise.succeed(Result.ignore());
-    }
-});
+include::{doc_code}/server/ServerAuthorizersDocs.java[tags=example2]
 ----
 ====
 
 Everyone can watch the game:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-gameStarStar.addAuthorizer(GrantAuthorizer.GRANT_SUBSCRIBE);
+include::{doc_code}/server/ServerAuthorizersDocs.java[tags=example3]
 ----
 ====
 
 Only players can play:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-ServerChannel gameChannel = bayeuxServer.getChannel("/game/" + gameId);
-gameChannel.addAuthorizer(new Authorizer() {
-    public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
-        // Always grant authorization to local clients
-        if (session.isLocalSession()) {
-            promise.succeed(Result.grant());
-            return;
-        }
-
-        boolean isPlayer = isPlayer(session, channel);
-        if (operation == Operation.PUBLISH && isPlayer) {
-            promise.succeed(Result.grant());
-            return;
-        }
-
-        promise.succeed(Result.ignore());
-    }
-});
+include::{doc_code}/server/ServerAuthorizersDocs.java[tags=example4]
 ----
 ====
 
@@ -249,30 +150,12 @@ The authorizers are the following:
 ----
 ====
 
-Imagine that later you want to forbid criminal supporters to watch games,
-so you can add another authorizer (instead of modifying the one that
-allows everyone to watch games):
+Imagine that later you want to forbid criminal supporters to watch games, so you can add another authorizer (instead of modifying the one that allows everyone to watch games):
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-gameStarStar.addAuthorizer(new Authorizer() {
-    public void authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message, Promise<Result> promise) {
-        // Always grant authorization to local clients
-        if (session.isLocalSession()) {
-            promise.succeed(Result.grant());
-            return;
-        }
-
-        boolean isCriminalSupporter = isCriminalSupporter(session);
-        if (operation == Operation.SUBSCRIBE && isCriminalSupporter) {
-            promise.succeed(Result.deny("criminal_supporter"));
-            return;
-        }
-
-        promise.succeed(Result.ignore());
-    }
-});
+include::{doc_code}/server/ServerAuthorizersDocs.java[tags=example5]
 ----
 ====
 
@@ -288,8 +171,5 @@ The authorizers are now the following:
 ----
 ====
 
-Notice how authorizers on `+/game/**+` never grant `Operation.PUBLISH`, which
-authorizers only grant on specific game channels.
-Also, the specific game channel does not need to grant `Operation.SUBSCRIBE`,
-because its authorizer ignores the subscribe operation that is authorizers
-therefore handle on the `+/game/**+` channel.
+Notice how authorizers on `+/game/**+` never grant `Operation.PUBLISH`, which authorizers only grant on specific game channels.
+Also, the specific game channel does not need to grant `Operation.SUBSCRIBE`, because its authorizer ignores the subscribe operation that is authorizers therefore handle on the `+/game/**+` channel.
