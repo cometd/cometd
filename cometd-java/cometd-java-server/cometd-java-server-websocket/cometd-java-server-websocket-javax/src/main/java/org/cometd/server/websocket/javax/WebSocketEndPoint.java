@@ -40,7 +40,11 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
     private volatile Session _wsSession;
 
     public WebSocketEndPoint(AbstractWebSocketTransport transport, BayeuxContext bayeuxContext) {
-        _delegate = new Delegate(transport, bayeuxContext);
+        _delegate = newDelegate(transport, bayeuxContext);
+    }
+
+    protected Delegate newDelegate(AbstractWebSocketTransport transport, BayeuxContext bayeuxContext) {
+        return new Delegate(transport, bayeuxContext);
     }
 
     @Override
@@ -86,7 +90,7 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
     protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
     }
 
-    private class Delegate extends AbstractWebSocketEndPoint {
+    protected class Delegate extends AbstractWebSocketEndPoint {
         public Delegate(AbstractWebSocketTransport transport, BayeuxContext bayeuxContext) {
             super(transport, bayeuxContext);
         }

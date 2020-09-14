@@ -1031,10 +1031,20 @@
                     var message = envelope.messages[i];
                     if (message.id) {
                         messageIds.push(message.id);
-                        context.timeouts[message.id] = self.setTimeout(function() {
-                            _cometd._debug('Transport', self.getType(), 'timing out message', message.id, 'after', delay, 'on', context);
-                            _forceClose.call(self, context, {code: 1000, reason: 'Message Timeout'});
-                        }, delay);
+                        var timeout = { };
+                        timeout.clear = function() {
+                            timeout.timeout && self.clearTimeout(timeout.timeout);
+                            timeout.timeout = null;
+                        };
+                        timeout.rearm = function() {
+                            timeout.clear();
+                            timeout.timeout = self.setTimeout(function() {
+                                _cometd._debug('Transport', self.getType(), 'timing out message', message.id, 'after', delay, 'on', context);
+                                _forceClose.call(self, context, {code: 1000, reason: 'Message Timeout'});
+                            }, delay);
+                        };
+                        context.timeouts[message.id] = timeout;
+                        timeout.rearm();
                     }
                 })();
             }
@@ -1095,6 +1105,14 @@
         _self.onMessage = function(context, wsMessage) {
             this._debug('Transport', this.getType(), 'received websocket message', wsMessage, context);
 
+            if (this.getConfiguration().rearmNetworkDelayAfterMessage) {
+                for (var id in context.timeouts) {
+                    if (context.timeouts.hasOwnProperty(id)) {
+                        context.timeouts[id].rearm();
+                    }
+                }
+            }
+
             var close = false;
             var messages = this.convertToMessages(wsMessage.data);
             var messageIds = [];
@@ -1110,7 +1128,7 @@
 
                         var timeout = context.timeouts[message.id];
                         if (timeout) {
-                            this.clearTimeout(timeout);
+                            timeout.clear();
                             delete context.timeouts[message.id];
                             this._debug('Transport', this.getType(), 'removed timeout for message', message.id, ', timeouts', context.timeouts);
                         }
@@ -1175,7 +1193,7 @@
             context.timeouts = {};
             for (var id in timeouts) {
                 if (timeouts.hasOwnProperty(id)) {
-                    this.clearTimeout(timeouts[id]);
+                    timeouts[id].clear();
                 }
             }
 
@@ -1279,6 +1297,7 @@
             maxBackoff: 60000,
             logLevel: 'info',
             maxNetworkDelay: 10000,
+            rearmNetworkDelayAfterMessage: false,
             requestHeaders: {},
             appendMessageTypeToURL: true,
             autoBatch: false,
