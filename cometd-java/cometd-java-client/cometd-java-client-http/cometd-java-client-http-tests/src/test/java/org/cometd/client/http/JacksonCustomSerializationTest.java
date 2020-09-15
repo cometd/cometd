@@ -49,9 +49,9 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
         start(serverOptions);
 
         String channelName = "/data";
-        final String dataContent = "random";
-        final long extraContent = 13;
-        final CountDownLatch latch = new CountDownLatch(1);
+        String dataContent = "random";
+        long extraContent = 13;
+        CountDownLatch latch = new CountDownLatch(1);
 
         LocalSession service = bayeux.newLocalSession("custom_serialization");
         service.handshake();
@@ -136,6 +136,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
         @com.fasterxml.jackson.annotation.JsonProperty
         private String content;
 
+        @SuppressWarnings("unused")
         private Data() {
             // Needed by Jackson
         }
@@ -149,6 +150,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
         @com.fasterxml.jackson.annotation.JsonProperty
         private long content;
 
+        @SuppressWarnings("unused")
         private Extra() {
             // Needed by Jackson
         }

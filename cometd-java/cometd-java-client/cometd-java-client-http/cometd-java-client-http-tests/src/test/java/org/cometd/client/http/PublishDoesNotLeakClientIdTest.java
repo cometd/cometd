@@ -46,13 +46,13 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest {
             try {
                 Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-                Assert.assertFalse(client1.getId().equals(client2.getId()));
+                Assert.assertNotEquals(client1.getId(), client2.getId());
 
                 String channel = "/test";
-                final CountDownLatch subscribe = new CountDownLatch(1);
+                CountDownLatch subscribe = new CountDownLatch(1);
                 client1.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> subscribe.countDown());
-                final CountDownLatch latch = new CountDownLatch(1);
-                final AtomicReference<Message> messageRef = new AtomicReference<>();
+                CountDownLatch latch = new CountDownLatch(1);
+                AtomicReference<Message> messageRef = new AtomicReference<>();
                 client1.getChannel(channel).subscribe((c, m) -> {
                     messageRef.set(m);
                     latch.countDown();

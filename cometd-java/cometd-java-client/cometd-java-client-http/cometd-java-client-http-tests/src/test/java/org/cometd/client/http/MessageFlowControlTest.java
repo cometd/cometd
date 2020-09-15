@@ -52,10 +52,10 @@ public class MessageFlowControlTest extends ClientServerTest {
         testMessageFlowControlWithDeQueueListener(true, maxLazyTimeout);
     }
 
-    public void testMessageFlowControlWithDeQueueListener(final boolean lazyChannel, long maxLazyTimeout) throws Exception {
+    public void testMessageFlowControlWithDeQueueListener(boolean lazyChannel, long maxLazyTimeout) throws Exception {
         bayeux.addExtension(new TimestampExtension("yyyyMMddHHmmss"));
 
-        final String channelName = "/test";
+        String channelName = "/test";
         bayeux.createChannelIfAbsent(channelName, channel -> {
             channel.setPersistent(true);
             if (lazyChannel) {
@@ -64,9 +64,9 @@ public class MessageFlowControlTest extends ClientServerTest {
         });
 
         int totalMessages = 8;
-        final CountDownLatch queuedMessages = new CountDownLatch(totalMessages);
-        final long toleranceSeconds = 2;
-        final AtomicInteger keptMessages = new AtomicInteger();
+        CountDownLatch queuedMessages = new CountDownLatch(totalMessages);
+        long toleranceSeconds = 2;
+        AtomicInteger keptMessages = new AtomicInteger();
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
@@ -96,12 +96,10 @@ public class MessageFlowControlTest extends ClientServerTest {
         // Wait for the long poll to establish
         Thread.sleep(1000);
 
-        final CountDownLatch subscribed = new CountDownLatch(1);
+        CountDownLatch subscribed = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribed.countDown());
-        final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
-        client.getChannel(channelName).subscribe((channel, message) -> {
-            messages.offer(message);
-        });
+        BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+        client.getChannel(channelName).subscribe((channel, message) -> messages.offer(message));
         Assert.assertTrue(subscribed.await(5, TimeUnit.SECONDS));
 
         // Publishing a message result in the long poll being woken up, which in turn will

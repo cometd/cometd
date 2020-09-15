@@ -49,8 +49,8 @@ public class MaxNetworkDelayTest extends ClientServerTest {
 
     @Test
     public void testMaxNetworkDelayOnHandshake() throws Exception {
-        final long maxNetworkDelay = 2000;
-        final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
+        long maxNetworkDelay = 2000;
+        long sleep = maxNetworkDelay + maxNetworkDelay / 2;
 
         bayeux.addExtension(new BayeuxServer.Extension() {
             @Override
@@ -68,7 +68,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
             }
         });
 
-        final CountDownLatch latch = new CountDownLatch(2);
+        CountDownLatch latch = new CountDownLatch(2);
         ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
         transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
         BayeuxClient client = new BayeuxClient(cometdURL, transport) {
@@ -93,11 +93,11 @@ public class MaxNetworkDelayTest extends ClientServerTest {
 
     @Test
     public void testMaxNetworkDelayOnConnect() throws Exception {
-        final long maxNetworkDelay = 2000;
-        final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
+        long maxNetworkDelay = 2000;
+        long sleep = maxNetworkDelay + maxNetworkDelay / 2;
 
         bayeux.addExtension(new BayeuxServer.Extension() {
-            private AtomicInteger connects = new AtomicInteger();
+            private final AtomicInteger connects = new AtomicInteger();
 
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
@@ -117,7 +117,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
             }
         });
 
-        final CountDownLatch latch = new CountDownLatch(3);
+        CountDownLatch latch = new CountDownLatch(3);
         ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
         transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
         BayeuxClient client = new BayeuxClient(cometdURL, transport) {
@@ -129,7 +129,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
             }
         };
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            private AtomicInteger connects = new AtomicInteger();
+            private final AtomicInteger connects = new AtomicInteger();
 
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
@@ -153,9 +153,9 @@ public class MaxNetworkDelayTest extends ClientServerTest {
 
     @Test
     public void testDynamicMaxNetworkDelay() throws Exception {
-        final long maxNetworkDelay1 = 2000;
-        final long maxNetworkDelay2 = 4000;
-        final long sleep = (maxNetworkDelay1 + maxNetworkDelay2) / 2;
+        long maxNetworkDelay1 = 2000;
+        long maxNetworkDelay2 = 4000;
+        long sleep = (maxNetworkDelay1 + maxNetworkDelay2) / 2;
 
         bayeux.addExtension(new BayeuxServer.Extension() {
             @Override
@@ -171,10 +171,10 @@ public class MaxNetworkDelayTest extends ClientServerTest {
             }
         });
 
-        final CountDownLatch latch = new CountDownLatch(3);
+        CountDownLatch latch = new CountDownLatch(3);
         ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
         transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay1);
-        final BayeuxClient client = new BayeuxClient(cometdURL, transport) {
+        BayeuxClient client = new BayeuxClient(cometdURL, transport) {
             @Override
             public void onFailure(Throwable failure, List<? extends Message> messages) {
                 if (failure instanceof TimeoutException) {
@@ -183,7 +183,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
             }
         };
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            private AtomicInteger connects = new AtomicInteger();
+            private final AtomicInteger connects = new AtomicInteger();
 
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {

@@ -48,8 +48,8 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
         int port = connector.getLocalPort();
         server.stop();
 
-        final String userName = "cometd";
-        final String password = "cometd";
+        String userName = "cometd";
+        String password = "cometd";
         String role = "admin";
         Path authProps = Files.createTempFile("cometd-autentication", ".properties");
         try (BufferedWriter writer = Files.newBufferedWriter(authProps, StandardCharsets.UTF_8)) {

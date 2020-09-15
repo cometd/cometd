@@ -38,7 +38,7 @@ import org.junit.Test;
 public class LazyChannelAndMessageTest extends ClientServerTest {
     @Test
     public void testLazyChannelWithGlobalTimeout() throws Exception {
-        final long globalLazyTimeout = 1000;
+        long globalLazyTimeout = 1000;
         start(new HashMap<String, String>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
@@ -53,10 +53,10 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         client.handshake();
         client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> subscribeLatch.countDown());
-        final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicLong begin = new AtomicLong();
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicLong begin = new AtomicLong();
         client.getChannel(channelName).subscribe((c, m) -> {
             if (m.getDataAsMap() == null) {
                 return;
@@ -85,8 +85,8 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
     @Test
     public void testLazyChannelWithChannelTimeout() throws Exception {
-        final long channelLazyTimeout = 1000;
-        final long globalLazyTimeout = channelLazyTimeout * 4;
+        long channelLazyTimeout = 1000;
+        long globalLazyTimeout = channelLazyTimeout * 4;
         start(new HashMap<String, String>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
@@ -101,10 +101,10 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         client.handshake();
         client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> subscribeLatch.countDown());
-        final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicLong begin = new AtomicLong();
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicLong begin = new AtomicLong();
         client.getChannel(channelName).subscribe((c, m) -> {
             if (m.getDataAsMap() == null) {
                 return;
@@ -134,8 +134,8 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
     @Test
     public void testLazyChannelsWithDifferentChannelTimeouts() throws Exception {
-        final long channelLazyTimeout = 1000;
-        final long globalLazyTimeout = channelLazyTimeout * 4;
+        long channelLazyTimeout = 1000;
+        long globalLazyTimeout = channelLazyTimeout * 4;
         start(new HashMap<String, String>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
@@ -156,10 +156,10 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         client.handshake();
         client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
-        final CountDownLatch subscribeLatch = new CountDownLatch(2);
+        CountDownLatch subscribeLatch = new CountDownLatch(2);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.countDown());
-        final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicLong begin = new AtomicLong();
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicLong begin = new AtomicLong();
         ClientSessionChannel.MessageListener messageListener = (channel, message) -> {
             if (message.getDataAsMap() == null) {
                 return;
@@ -198,7 +198,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         // the semantic that the channel is intended for the remote end, and as such
         // it should not do any logic related to lazyness, which belongs to the server.
 
-        final long globalLazyTimeout = 1000;
+        long globalLazyTimeout = 1000;
         start(new HashMap<String, String>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
@@ -221,10 +221,10 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         client.handshake();
         client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> subscribeLatch.countDown());
-        final AtomicLong begin = new AtomicLong();
-        final CountDownLatch latch = new CountDownLatch(1);
+        AtomicLong begin = new AtomicLong();
+        CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(channelName).subscribe((c, m) -> {
             if (m.getDataAsMap() == null) {
                 return;
@@ -255,7 +255,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
     @Test
     public void testServerSessionDeliverLazyMessageOnLazyChannelDeliversLazily() throws Exception {
-        final long globalLazyTimeout = 1000;
+        long globalLazyTimeout = 1000;
         start(new HashMap<String, String>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
@@ -283,10 +283,10 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         client.handshake();
         client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> subscribeLatch.countDown());
-        final AtomicLong begin = new AtomicLong();
-        final CountDownLatch latch = new CountDownLatch(1);
+        AtomicLong begin = new AtomicLong();
+        CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(channelName).subscribe((c, m) -> {
             if (m.getDataAsMap() == null) {
                 return;
@@ -318,20 +318,20 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
     @Test
     public void testQueueFullOfLazyMessagesIsNotDelivered() throws Exception {
-        final long globalLazyTimeout = 1000;
+        long globalLazyTimeout = 1000;
         start(new HashMap<String, String>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
-        final String channelName = "/testQueueLazy";
-        final MarkedReference<ServerChannel> serverChannel = bayeux.createChannelIfAbsent(channelName, channel -> {
+        String channelName = "/testQueueLazy";
+        MarkedReference<ServerChannel> serverChannel = bayeux.createChannelIfAbsent(channelName, channel -> {
             channel.setLazy(true);
             channel.setPersistent(true);
         });
 
-        final BayeuxClient client = newBayeuxClient();
-        final AtomicLong begin = new AtomicLong();
-        final CountDownLatch latch = new CountDownLatch(1);
+        BayeuxClient client = newBayeuxClient();
+        AtomicLong begin = new AtomicLong();
+        CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> client.getChannel(channelName).subscribe((c, m) -> {
             if (m.getDataAsMap() == null) {
                 return;
@@ -355,7 +355,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
                 }
             }
         });
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.countDown());
 
         client.handshake();
@@ -370,13 +370,13 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
     @Test
     public void testLazynessIsNotInheritedFromParentChannel() throws Exception {
-        final long globalLazyTimeout = 1000;
+        long globalLazyTimeout = 1000;
         start(new HashMap<String, String>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
         String parentChannelName = "/foo";
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         bayeux.createChannelIfAbsent(parentChannelName, channel -> {
             channel.setPersistent(true);
             channel.setLazy(true);
@@ -401,14 +401,14 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
     @Test
     public void testLazynessIsInheritedFromWildChannel() throws Exception {
-        final long globalLazyTimeout = 1000;
+        long globalLazyTimeout = 1000;
         start(new HashMap<String, String>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
         String parentChannelName = "/foo";
         String wildChannelName = parentChannelName + "/*";
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         bayeux.createChannelIfAbsent(wildChannelName, channel -> {
             channel.setPersistent(true);
             channel.setLazy(true);

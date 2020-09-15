@@ -37,9 +37,9 @@ public class ServerSessionExtensionTest extends ClientServerTest {
         // Wait for the /meta/connect to be held.
         Thread.sleep(1000);
 
-        final String channelName = "/delete";
-        final CountDownLatch messageLatch = new CountDownLatch(1);
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        String channelName = "/delete";
+        CountDownLatch messageLatch = new CountDownLatch(1);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(channelName).subscribe((channel, message) -> messageLatch.countDown(), message -> subscribeLatch.countDown());
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 

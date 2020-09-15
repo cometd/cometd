@@ -44,7 +44,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
     }
 
     @Test
-    public void testHandshake() throws Exception {
+    public void testHandshake() {
         BayeuxClient client = newBayeuxClient();
         CountingExtension extension = new CountingExtension(Channel.META_HANDSHAKE);
         client.addExtension(extension);
@@ -86,7 +86,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> latch.countDown());
         client.getChannel("/foo").subscribe((channel, message) -> {
         });
@@ -108,10 +108,10 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_UNSUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> latch.countDown());
-        final ClientSessionChannel channel = client.getChannel("/foo");
-        final ClientSessionChannel.MessageListener listener = (c, m) -> {
+        ClientSessionChannel channel = client.getChannel("/foo");
+        ClientSessionChannel.MessageListener listener = (c, m) -> {
         };
         client.batch(() -> {
             channel.subscribe(listener);
@@ -136,7 +136,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final ClientSessionChannel channel = client.getChannel(channelName);
+        ClientSessionChannel channel = client.getChannel(channelName);
         client.batch(() -> {
             channel.subscribe((c, m) -> {
             });
@@ -176,7 +176,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
     @Test
     public void testReturningFalseOnSend() throws Exception {
         String channelName = "/test";
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
         channel.getReference().addListener(new ServerChannel.MessageListener() {
             @Override
@@ -205,9 +205,9 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
 
     @Test
     public void testExtensionIsInvokedAfterNetworkFailure() throws Exception {
-        final BayeuxClient client = newBayeuxClient();
-        final String channelName = "/test";
-        final AtomicReference<CountDownLatch> rcv = new AtomicReference<>(new CountDownLatch(1));
+        BayeuxClient client = newBayeuxClient();
+        String channelName = "/test";
+        AtomicReference<CountDownLatch> rcv = new AtomicReference<>(new CountDownLatch(1));
         client.addExtension(new ClientSession.Extension() {
             @Override
             public boolean rcv(ClientSession session, Message.Mutable message) {
@@ -217,7 +217,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
                 return true;
             }
         });
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.handshake(message -> client.getChannel(channelName).subscribe((c, m) -> {
         }, m -> {
             if (m.isSuccessful()) {
@@ -248,7 +248,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         disconnectBayeuxClient(client);
     }
 
-    private class CountingExtension implements ClientSession.Extension {
+    private static class CountingExtension implements ClientSession.Extension {
         private final List<Message> rcvs = new ArrayList<>();
         private final List<Message> rcvMetas = new ArrayList<>();
         private final List<Message> sends = new ArrayList<>();

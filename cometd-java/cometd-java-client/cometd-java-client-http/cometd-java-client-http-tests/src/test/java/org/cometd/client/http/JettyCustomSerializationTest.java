@@ -51,12 +51,12 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         start(serverOptions);
 
         String broadcastChannelName = "/data";
-        final String serviceChannelName = "/service/data";
-        final String content = "random";
-        final CountDownLatch broadcastLatch = new CountDownLatch(1);
-        final CountDownLatch serviceLatch = new CountDownLatch(2);
+        String serviceChannelName = "/service/data";
+        String content = "random";
+        CountDownLatch broadcastLatch = new CountDownLatch(1);
+        CountDownLatch serviceLatch = new CountDownLatch(2);
 
-        final LocalSession service = bayeux.newLocalSession("custom_serialization");
+        LocalSession service = bayeux.newLocalSession("custom_serialization");
         service.handshake();
         service.getChannel(broadcastChannelName).subscribe((channel, message) -> {
             Data data = (Data)message.getData();
@@ -163,7 +163,7 @@ public class JettyCustomSerializationTest extends ClientServerTest {
     }
 
     private static class Data {
-        private String content;
+        private final String content;
 
         private Data(String content) {
             this.content = content;
@@ -171,7 +171,7 @@ public class JettyCustomSerializationTest extends ClientServerTest {
     }
 
     private static class Extra {
-        private String content;
+        private final String content;
 
         private Extra(String content) {
             this.content = content;
@@ -187,7 +187,6 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         }
 
         @Override
-        @SuppressWarnings("rawtypes")
         public Object fromJSON(Map map) {
             String content = (String)map.get("content");
             return new Data(content);
@@ -203,7 +202,6 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         }
 
         @Override
-        @SuppressWarnings("rawtypes")
         public Object fromJSON(Map map) {
             String content = (String)map.get("content");
             return new Extra(content);

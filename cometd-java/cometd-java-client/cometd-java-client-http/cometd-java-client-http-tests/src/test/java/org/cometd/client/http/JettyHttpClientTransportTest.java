@@ -75,48 +75,45 @@ public class JettyHttpClientTransportTest {
     }
 
     @Test
-    public void testAccept() throws Exception {
+    public void testAccept() {
         ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
         Assert.assertTrue(transport.accept("1.0"));
     }
 
     @Test
     public void testSendWithResponse200() throws Exception {
-        final long processingTime = 500;
-        final ServerSocket serverSocket = new ServerSocket(0);
-        final AtomicReference<Exception> serverException = new AtomicReference<>();
-        Thread serverThread = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Socket socket = serverSocket.accept();
+        long processingTime = 500;
+        ServerSocket serverSocket = new ServerSocket(0);
+        AtomicReference<Exception> serverException = new AtomicReference<>();
+        Thread serverThread = new Thread(() -> {
+            try {
+                Socket socket = serverSocket.accept();
 
-                    Thread.sleep(processingTime);
+                Thread.sleep(processingTime);
 
-                    OutputStream output = socket.getOutputStream();
-                    output.write((
-                            "HTTP/1.1 200 OK\r\n" +
-                                    "Connection: close\r\n" +
-                                    "Content-Type: application/json;charset=UTF-8\r\n" +
-                                    "Content-Length: 2\r\n" +
-                                    "\r\n" +
-                                    "[]").getBytes(StandardCharsets.UTF_8));
-                    output.flush();
-                    socket.close();
-                } catch (Exception x) {
-                    serverException.set(x);
-                }
+                OutputStream output = socket.getOutputStream();
+                output.write((
+                        "HTTP/1.1 200 OK\r\n" +
+                                "Connection: close\r\n" +
+                                "Content-Type: application/json;charset=UTF-8\r\n" +
+                                "Content-Length: 2\r\n" +
+                                "\r\n" +
+                                "[]").getBytes(StandardCharsets.UTF_8));
+                output.flush();
+                socket.close();
+            } catch (Exception x) {
+                serverException.set(x);
             }
-        };
+        });
         serverThread.start();
-        final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
+        String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
         try {
             HttpClient httpClient = new HttpClient();
             httpClient.start();
 
             try {
-                final CountDownLatch latch = new CountDownLatch(1);
+                CountDownLatch latch = new CountDownLatch(1);
                 HttpClientTransport transport = new JettyHttpClientTransport(null, httpClient);
                 transport.setURL(serverURL);
                 transport.setCookieStore(new HttpCookieStore());
@@ -150,30 +147,27 @@ public class JettyHttpClientTransportTest {
 
     @Test
     public void testSendWithResponse500() throws Exception {
-        final long processingTime = 500;
-        final ServerSocket serverSocket = new ServerSocket(0);
-        final AtomicReference<Exception> serverException = new AtomicReference<>();
-        Thread serverThread = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Socket socket = serverSocket.accept();
+        long processingTime = 500;
+        ServerSocket serverSocket = new ServerSocket(0);
+        AtomicReference<Exception> serverException = new AtomicReference<>();
+        Thread serverThread = new Thread(() -> {
+            try {
+                Socket socket = serverSocket.accept();
 
-                    Thread.sleep(processingTime);
+                Thread.sleep(processingTime);
 
-                    OutputStream output = socket.getOutputStream();
-                    output.write((
-                            "HTTP/1.1 500 Internal Server Error\r\n" +
-                                    "Connection: close\r\n" +
-                                    "\r\n").getBytes(StandardCharsets.UTF_8));
-                    output.flush();
+                OutputStream output = socket.getOutputStream();
+                output.write((
+                        "HTTP/1.1 500 Internal Server Error\r\n" +
+                                "Connection: close\r\n" +
+                                "\r\n").getBytes(StandardCharsets.UTF_8));
+                output.flush();
 
-                    socket.close();
-                } catch (Exception x) {
-                    serverException.set(x);
-                }
+                socket.close();
+            } catch (Exception x) {
+                serverException.set(x);
             }
-        };
+        });
         serverThread.start();
         String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
@@ -183,7 +177,7 @@ public class JettyHttpClientTransportTest {
 
             try {
                 HttpClientTransport transport = new JettyHttpClientTransport(null, httpClient);
-                final CountDownLatch latch = new CountDownLatch(1);
+                CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
                 transport.setCookieStore(new HttpCookieStore());
                 transport.init();
@@ -196,7 +190,7 @@ public class JettyHttpClientTransportTest {
                             latch.countDown();
                         }
                     }
-                }, new ArrayList<Message.Mutable>());
+                }, new ArrayList<>());
                 long end = System.nanoTime();
 
                 long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
@@ -216,14 +210,14 @@ public class JettyHttpClientTransportTest {
     public void testSendWithServerDown() throws Exception {
         ServerSocket serverSocket = new ServerSocket(0);
         serverSocket.close();
-        final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
+        String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
         try {
             HttpClientTransport transport = new JettyHttpClientTransport(null, httpClient);
-            final CountDownLatch latch = new CountDownLatch(1);
+            CountDownLatch latch = new CountDownLatch(1);
             transport.setURL(serverURL);
             transport.setCookieStore(new HttpCookieStore());
             transport.init();
@@ -235,7 +229,7 @@ public class JettyHttpClientTransportTest {
                         latch.countDown();
                     }
                 }
-            }, new ArrayList<Message.Mutable>());
+            }, new ArrayList<>());
 
             Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         } finally {
@@ -245,25 +239,22 @@ public class JettyHttpClientTransportTest {
 
     @Test
     public void testSendWithServerCrash() throws Exception {
-        final long processingTime = 500;
-        final ServerSocket serverSocket = new ServerSocket(0);
-        final AtomicReference<Exception> serverException = new AtomicReference<>();
-        Thread serverThread = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Socket socket = serverSocket.accept();
+        long processingTime = 500;
+        ServerSocket serverSocket = new ServerSocket(0);
+        AtomicReference<Exception> serverException = new AtomicReference<>();
+        Thread serverThread = new Thread(() -> {
+            try {
+                Socket socket = serverSocket.accept();
 
-                    Thread.sleep(processingTime);
+                Thread.sleep(processingTime);
 
-                    socket.close();
-                } catch (Exception x) {
-                    serverException.set(x);
-                }
+                socket.close();
+            } catch (Exception x) {
+                serverException.set(x);
             }
-        };
+        });
         serverThread.start();
-        final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
+        String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
         try {
             HttpClient httpClient = new HttpClient();
@@ -271,7 +262,7 @@ public class JettyHttpClientTransportTest {
 
             try {
                 HttpClientTransport transport = new JettyHttpClientTransport(null, httpClient);
-                final CountDownLatch latch = new CountDownLatch(1);
+                CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
                 transport.setCookieStore(new HttpCookieStore());
                 transport.init();
@@ -282,7 +273,7 @@ public class JettyHttpClientTransportTest {
                     public void onFailure(Throwable failure, List<? extends Message> messages) {
                         latch.countDown();
                     }
-                }, new ArrayList<Message.Mutable>());
+                }, new ArrayList<>());
                 long end = System.nanoTime();
 
                 long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
@@ -300,35 +291,32 @@ public class JettyHttpClientTransportTest {
 
     @Test
     public void testSendWithServerExpire() throws Exception {
-        final long timeout = 1000;
-        final ServerSocket serverSocket = new ServerSocket(0);
-        final AtomicReference<Exception> serverException = new AtomicReference<>();
-        Thread serverThread = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Socket socket = serverSocket.accept();
+        long timeout = 1000;
+        ServerSocket serverSocket = new ServerSocket(0);
+        AtomicReference<Exception> serverException = new AtomicReference<>();
+        Thread serverThread = new Thread(() -> {
+            try {
+                Socket socket = serverSocket.accept();
 
-                    Thread.sleep(2 * timeout);
+                Thread.sleep(2 * timeout);
 
-                    OutputStream output = socket.getOutputStream();
-                    output.write((
-                            "HTTP/1.1 200 OK\r\n" +
-                                    "Connection: close\r\n" +
-                                    "Content-Type: application/json;charset=UTF-8\r\n" +
-                                    "Content-Length: 2\r\n" +
-                                    "\r\n" +
-                                    "[]").getBytes(StandardCharsets.UTF_8));
-                    output.flush();
+                OutputStream output = socket.getOutputStream();
+                output.write((
+                        "HTTP/1.1 200 OK\r\n" +
+                                "Connection: close\r\n" +
+                                "Content-Type: application/json;charset=UTF-8\r\n" +
+                                "Content-Length: 2\r\n" +
+                                "\r\n" +
+                                "[]").getBytes(StandardCharsets.UTF_8));
+                output.flush();
 
-                    socket.close();
-                } catch (Exception x) {
-                    serverException.set(x);
-                }
+                socket.close();
+            } catch (Exception x) {
+                serverException.set(x);
             }
-        };
+        });
         serverThread.start();
-        final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
+        String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
         try {
             HttpClient httpClient = new HttpClient();
@@ -339,7 +327,7 @@ public class JettyHttpClientTransportTest {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, timeout);
                 HttpClientTransport transport = new JettyHttpClientTransport(options, httpClient);
-                final CountDownLatch latch = new CountDownLatch(1);
+                CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
                 transport.setCookieStore(new HttpCookieStore());
                 transport.init();
@@ -351,7 +339,7 @@ public class JettyHttpClientTransportTest {
                             latch.countDown();
                         }
                     }
-                }, new ArrayList<Message.Mutable>());
+                }, new ArrayList<>());
 
                 Assert.assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
             } finally {

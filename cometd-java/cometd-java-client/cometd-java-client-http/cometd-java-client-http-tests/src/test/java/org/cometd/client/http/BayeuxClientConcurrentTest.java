@@ -40,7 +40,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
 
     @Test
     public void testHandshakeFailsConcurrentDisconnect() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
             @Override
             protected void sendHandshake() {
@@ -57,7 +57,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
 
     @Test
     public void testConnectFailsConcurrentDisconnect() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
             @Override
             protected void sendConnect() {
@@ -82,7 +82,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
                 super.enqueueSend(message);
             }
         };
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             Assert.assertFalse(message.isSuccessful());
             latch.countDown();
@@ -99,7 +99,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
 
     @Test
     public void testPublishFailsConcurrentDisconnect() throws Exception {
-        final String channelName = "/test";
+        String channelName = "/test";
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
             @Override
             protected void enqueueSend(Message.Mutable message) {
@@ -110,12 +110,12 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
                 super.enqueueSend(message);
             }
         };
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             Assert.assertTrue(message.isSuccessful());
             latch.countDown();
         });
-        final CountDownLatch failLatch = new CountDownLatch(1);
+        CountDownLatch failLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> {
             Assert.assertFalse(m.isSuccessful());
@@ -124,7 +124,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch publishLatch = new CountDownLatch(1);
+        CountDownLatch publishLatch = new CountDownLatch(1);
         channel.subscribe((c, m) -> publishLatch.countDown());
 
         // Wait to be subscribed
@@ -140,9 +140,9 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
 
     @Test
     public void testPublishFailsConcurrentNetworkDown() throws Exception {
-        final String channelName = "/test";
-        final AtomicInteger connects = new AtomicInteger();
-        final BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
+        String channelName = "/test";
+        AtomicInteger connects = new AtomicInteger();
+        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
             @Override
             protected void sendConnect() {
                 try {
@@ -155,7 +155,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
                 }
             }
         };
-        final CountDownLatch publishLatch = new CountDownLatch(1);
+        CountDownLatch publishLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> {
             if (!m.isSuccessful()) {
@@ -174,9 +174,9 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
 
     @Test
     public void testHandshakeListenersAreNotifiedBeforeConnectListeners() throws Exception {
-        final BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient));
-        final int sleep = 1000;
-        final AtomicBoolean handshaken = new AtomicBoolean();
+        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient));
+        int sleep = 1000;
+        AtomicBoolean handshaken = new AtomicBoolean();
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             try {
                 Thread.sleep(sleep);
@@ -185,7 +185,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
                 // Ignored
             }
         });
-        final CountDownLatch connectLatch = new CountDownLatch(1);
+        CountDownLatch connectLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             if (handshaken.get()) {
                 connectLatch.countDown();
@@ -200,9 +200,9 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
 
     @Test
     public void testConcurrentHandshakeAndBatch() throws Exception {
-        final String channelName = "/foobar";
-        final CountDownLatch sendLatch = new CountDownLatch(1);
-        final BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
+        String channelName = "/foobar";
+        CountDownLatch sendLatch = new CountDownLatch(1);
+        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
             @Override
             protected void sendMessages(List<Message.Mutable> messages, Promise<Boolean> promise) {
                 for (Message message : messages) {
@@ -214,7 +214,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
             }
         };
 
-        final CountDownLatch handshakeLatch = new CountDownLatch(1);
+        CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             try {
                 handshakeLatch.await();
@@ -225,7 +225,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest {
 
         client.handshake();
 
-        final CountDownLatch messageLatch = new CountDownLatch(1);
+        CountDownLatch messageLatch = new CountDownLatch(1);
         client.batch(() -> {
             ClientSessionChannel channel = client.getChannel(channelName);
             channel.subscribe((c, m) -> messageLatch.countDown());

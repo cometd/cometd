@@ -42,7 +42,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         start(null);
 
         long maxNetworkDelay = 2000;
-        final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
+        long sleep = maxNetworkDelay + maxNetworkDelay / 2;
         bayeux.getChannel(Channel.META_SUBSCRIBE).addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
@@ -60,9 +60,9 @@ public class SubscriptionFailureTest extends ClientServerTest {
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch messageLatch = new CountDownLatch(1);
+        CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener messageCallback = (channel, message) -> messageLatch.countDown();
-        final CountDownLatch subscriptionLatch = new CountDownLatch(1);
+        CountDownLatch subscriptionLatch = new CountDownLatch(1);
         ClientSession.MessageListener subscriptionCallback = message -> {
             if (!message.isSuccessful()) {
                 subscriptionLatch.countDown();
@@ -94,9 +94,9 @@ public class SubscriptionFailureTest extends ClientServerTest {
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch messageLatch = new CountDownLatch(1);
+        CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener messageCallback = (channel, message) -> messageLatch.countDown();
-        final CountDownLatch subscriptionLatch = new CountDownLatch(1);
+        CountDownLatch subscriptionLatch = new CountDownLatch(1);
         ClientSession.MessageListener subscriptionCallback = message -> {
             if (!message.isSuccessful()) {
                 subscriptionLatch.countDown();
@@ -120,7 +120,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
     public void testFailedSubscriptionDecrementsSubscriptionCount() throws Exception {
         start(null);
 
-        final String channelName = "/count";
+        String channelName = "/count";
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
             public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
@@ -134,7 +134,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final AtomicBoolean allowed = new AtomicBoolean();
+        AtomicBoolean allowed = new AtomicBoolean();
         client.addExtension(new ClientSession.Extension() {
             @Override
             public boolean sendMeta(ClientSession session, Message.Mutable message) {
@@ -146,9 +146,9 @@ public class SubscriptionFailureTest extends ClientServerTest {
             }
         });
 
-        final CountDownLatch messageLatch = new CountDownLatch(1);
+        CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener messageCallback = (channel, message) -> messageLatch.countDown();
-        final CountDownLatch failedSubscription = new CountDownLatch(1);
+        CountDownLatch failedSubscription = new CountDownLatch(1);
         ClientSession.MessageListener subscriptionCallback = message -> {
             if (!message.isSuccessful()) {
                 failedSubscription.countDown();
@@ -164,7 +164,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
 
         // Now allow the subscription, we should be able to subscribe to the same channel.
         allowed.set(true);
-        final CountDownLatch succeededSubscription = new CountDownLatch(1);
+        CountDownLatch succeededSubscription = new CountDownLatch(1);
         subscriptionCallback = message -> {
             if (message.isSuccessful()) {
                 succeededSubscription.countDown();

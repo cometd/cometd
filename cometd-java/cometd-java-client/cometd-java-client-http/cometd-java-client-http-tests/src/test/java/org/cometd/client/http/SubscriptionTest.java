@@ -37,7 +37,7 @@ public class SubscriptionTest extends ClientServerTest {
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         String channelName = Channel.META_CONNECT;
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.subscribe((c, m) -> {
@@ -62,8 +62,8 @@ public class SubscriptionTest extends ClientServerTest {
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         String channelName = "/service/test";
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        final CountDownLatch messageLatch = new CountDownLatch(1);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
         ClientSessionChannel.MessageListener listener = (c, m) -> messageLatch.countDown();
         channel.subscribe(listener, message -> {
@@ -79,7 +79,7 @@ public class SubscriptionTest extends ClientServerTest {
 
         Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
-        final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
+        CountDownLatch unsubscribeLatch = new CountDownLatch(1);
         channel.unsubscribe(listener, message -> {
             Assert.assertTrue(message.isSuccessful());
             unsubscribeLatch.countDown();

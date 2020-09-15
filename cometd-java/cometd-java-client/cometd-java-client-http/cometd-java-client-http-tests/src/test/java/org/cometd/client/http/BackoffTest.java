@@ -39,7 +39,7 @@ public class BackoffTest extends ClientServerTest {
     public void testBackoffAfterReconnect() throws Exception {
         start(null);
 
-        final AtomicBoolean serverMetaConnect = new AtomicBoolean(true);
+        AtomicBoolean serverMetaConnect = new AtomicBoolean(true);
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
@@ -47,9 +47,9 @@ public class BackoffTest extends ClientServerTest {
             }
         });
 
-        final BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient();
 
-        final CountDownLatch latch = new CountDownLatch(9);
+        CountDownLatch latch = new CountDownLatch(9);
         client.addExtension(new ClientSession.Extension() {
             private final AtomicInteger clientMetaConnects = new AtomicInteger();
 
