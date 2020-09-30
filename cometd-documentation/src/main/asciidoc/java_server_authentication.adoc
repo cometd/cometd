@@ -2,19 +2,12 @@
 [[_java_server_authentication]]
 ==== Authentication
 
-Authentication is a complex task, and can be achieved in many ways, and most
-often each way is peculiar to a particular application.
-That is why CometD does not provide an out of the box solution for authentication
-but provides APIs that applications can use to implement in few steps their
-own authentication mechanism.
+Authentication is a complex task, and can be achieved in many ways, and most often each way is peculiar to a particular application.
+That is why CometD does not provide an out of the box solution for authentication but provides APIs that applications can use to implement in few steps their own authentication mechanism.
 
-The recommended way to perform authentication in CometD is to pass the
-authentication credentials in the initial handshake message.
+The recommended way to perform authentication in CometD is to pass the authentication credentials in the initial handshake message.
 
-Both the xref:_javascript_handshake[JavaScript handshake API] and the
-xref:_java_client_handshake[Java Client handshake API] allow an application to
-pass an additional object that will be merged into the handshake message and
-sent to the server:
+Both the xref:_javascript_handshake[JavaScript handshake API] and the xref:_java_client_handshake[Java Client handshake API] allow an application to pass an additional object that will be merged into the handshake message and sent to the server:
 
 ====
 [source,javascript]
@@ -35,10 +28,10 @@ cometd.addListener('/meta/handshake', function(message) {
 var username = 'foo';
 var password = 'bar';
 
-// Send the authentication information
+// Send the authentication information.
 cometd.handshake({
     ext: {
-        com.myapp.authn: {
+        'com.myapp.authn': {
             user: username,
             credentials: password
         }
@@ -47,294 +40,95 @@ cometd.handshake({
 ----
 ====
 
-The Bayeux Protocol specification suggests that the authentication information
-is stored in the `ext` field of the handshake message (see
-xref:_bayeux_security[here]) and it is good practice to use a fully qualified
-name for the extension field, such as `com.myapp.authn`.
+The Bayeux Protocol specification suggests that the authentication information is stored in the `ext` field of the handshake message (see xref:_bayeux_security[here]) and it is good practice to use a fully qualified name for the extension field, such as `com.myapp.authn`.
 
-On the server, you need to configure the `BayeuxServer` object with an implementation
-of `org.cometd.bayeux.server.SecurityPolicy` to deny the handshake to clients
-that provide wrong credentials.
+On the server, you need to configure the `BayeuxServer` object with an implementation of `org.cometd.bayeux.server.SecurityPolicy` to deny the handshake to clients that provide wrong credentials.
 
-xref:_java_server_services_integration[The section on services integration] shows
-how to perform the initialization and configuration of the `BayeuxServer` object,
-and you can use similar code to configure the `SecurityPolicy` too, for example
-below using a configuration servlet:
+xref:_java_server_services_integration[The section on services integration] shows how to perform the initialization and configuration of the `BayeuxServer` object, and you can use similar code to configure the `SecurityPolicy` too, for example below using a configuration servlet:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class MyAppInitializer extends GenericServlet {
-    @Override
-    public void init() throws ServletException {
-        BayeuxServer bayeux = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-        MyAppAuthenticator authenticator = new MyAppAuthenticator();
-        bayeux.setSecurityPolicy(authenticator);
-    }
-
-    @Override
-    public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
-        throw new ServletException();
-    }
-}
+include::{doc_code}/server/ServerAuthenticationDocs.java[tags=config]
 ----
 ====
 
 Below you can find the code for the `MyAppAuthenticator` class referenced above:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerSession.RemovedListener { <1>
-    @Override
-    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) { <2>
-        if (session.isLocalSession()) { <3>
-            promise.succeed(true);
-            return;
-        }
-
-        Map<String, Object> ext = message.getExt();
-        if (ext == null) {
-            promise.succeed(false);
-            return;
-        }
-
-        Map<String, Object> authentication = (Map<String, Object>)ext.get("com.myapp.authn");
-        if (authentication == null) {
-            promise.succeed(false);
-            return;
-        }
-
-        Object authenticationData = verify(authentication); <4>
-        if (authenticationData == null) {
-            promise.succeed(false);
-            return;
-        }
-
-        // Authentication successful
-
-        // Link authentication data to the session <5>
-
-        // Be notified when the session disappears
-        session.addListener(this); <6>
-
-        promise.succeed(true);
-    }
-
-    public void removed(ServerSession session, ServerMessage message, boolean expired) { <7>
-        // Unlink authentication data from the remote client <8>
-    }
-}
+include::{doc_code}/server/ServerAuthenticationDocs.java[tags=policy]
 ----
 ====
-<1> Make `MyAppAuthenticator` be a `SecurityPolicy` and a `ServerSession.RemovedListener`,
-since the code is really tied together.
-<2> Override `SecurityPolicy.canHandshake()`, to extract the authentication
-information from the message sent by the client.
-<3> Allow handshakes for any server-side local session (such as those associated with
-xref:_java_server_services[services]).
-<4> Verify the authentication information sent by the client, and obtain back
-server-side authentication data that you can later associate with the remote client.
+<1> Make `MyAppAuthenticator` be a `SecurityPolicy` and a `ServerSession.RemovedListener`, since the code is really tied together.
+<2> Override `SecurityPolicy.canHandshake()`, to extract the authentication information from the message sent by the client.
+<3> Allow handshakes for any server-side local session (such as those associated with xref:_java_server_services[services]).
+<4> Verify the authentication information sent by the client, and obtain back server-side authentication data that you can later associate with the remote client.
 <5> Link the server-side authentication data to the session.
-<6> Register a listener to be notified when the remote session disappears
-(which you will react to in step 8).
-<7> Implement `RemovedListener.removed()`, which is called when the remote session
-disappears, either because it disconnected or because it crashed.
-<8> Unlink the server-side authentication data from the remote client object,
-the operation opposite to step 5.
+<6> Register a listener to be notified when the remote session disappears (which you will react to in step 8).
+<7> Implement `RemovedListener.removed()`, which is called when the remote session disappears, either because it disconnected or because it crashed.
+<8> Unlink the server-side authentication data from the remote client object, the operation opposite to step 5.
 
-The most important steps are the number 5 and the number 8, where the
-server-side authentication data is linked/unlinked to/from the
-`org.cometd.bayeux.server.ServerSession` object.
+The most important steps are the number 5 and the number 8, where the server-side authentication data is linked/unlinked to/from the `org.cometd.bayeux.server.ServerSession` object.
 
 This linking depends very much from application to application.
-It may link a database primary key (of the row representing the user account)
-with the remote session id (obtained with session.getId()), and/or viceversa,
-or it may link OAUTH tokens with the remote session id, etc.
+It may link a database primary key (of the row representing the user account) with the remote session id (obtained with session.getId()), and/or viceversa, or it may link OAUTH tokens with the remote session id, etc.
 
-The linking should be performed by some other object that can then be used by
-other code of the application, for example:
+The linking should be performed by some other object that can then be used by other code of the application, for example:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class MyAppAuthenticator extends DefaultSecurityPolicy implements ServerSession.RemovedListener {
-    private final Users users;
-
-    public MyAppAuthenticator(Users users) {
-        this.users = users;
-    }
-
-    @Override
-    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
-        if (session.isLocalSession()) {
-            promise.succeed(true);
-            return;
-        }
-
-        Map<String, Object> ext = message.getExt();
-        if (ext == null) {
-            promise.succeed(false);
-            return;
-        }
-
-        Map<String, Object> authentication = (Map<String, Object>)ext.get("com.myapp.authn");
-        if (authentication == null) {
-            promise.succeed(false);
-            return;
-        }
-
-        if (!verify(authentication)) {
-            promise.succeed(false);
-            return;
-        }
-
-        // Authentication successful.
-
-        // Link authentication data to the session.
-        users.put(session, authentication);
-
-        // Be notified when the session disappears.
-        session.addListener(this);
-
-        promise.succeed(true);
-    }
-
-    public void removed(ServerSession session, ServerMessage message, boolean expired) {
-        // Unlink authentication data from the remote client
-        users.remove(session);
-    }
-}
+include::{doc_code}/server/ServerAuthenticationDocs.java[tags=example]
 ----
 ====
 
 And below you can find a very simple implementation of the `Users` class:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class Users {
-    private final ConcurrentMap<String, ServerSession> users = new ConcurrentHashMap<>();
-
-    public void put(ServerSession session, Map<String, Object> credentials) {
-        String user = (String)credentials.get("user");
-        users.put(user, session);
-    }
-
-    public void remove(ServerSession session) {
-        users.values().remove(session);
-    }
-}
+include::{doc_code}/server/ServerAuthenticationDocs.java[tags=users]
 ----
 ====
 
-The `Users` object can now be injected in xref:_java_server_services[CometD services]
-and its API enriched to fit the application needs such as retrieving the user
-name for a given session, or the `ServerSession` for a given user name, etc.
+The `Users` object can now be injected in xref:_java_server_services[CometD services] and its API enriched to fit the application needs such as retrieving the user name for a given session, or the `ServerSession` for a given user name, etc.
 
-Alternatively, the linking/unlinking (steps 5 and 8 above) can be performed in a
-`BayeuxServer.SessionListener`. These listeners are invoked _after_
-`SecurityPolicy.canHandshake()` and are invoked also when a `ServerSession` is
-removed, therefore there is no need to register a `RemovedListener` with the
-`ServerSession` like done in step 6 above:
+Alternatively, the linking/unlinking (steps 5 and 8 above) can be performed in a `BayeuxServer.SessionListener`. These listeners are invoked _after_ `SecurityPolicy.canHandshake()` and are invoked also when a `ServerSession` is removed, therefore there is no need to register a `RemovedListener` with the `ServerSession` like done in step 6 above:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxServer bayeuxServer = ...;
-
-final Users users = ...;
-
-bayeuxServer.addListener(new BayeuxServer.SessionListener() {
-    public void sessionAdded(ServerSession session, ServerMessage message) {
-        Map<String, Object> authentication = (Map<String, Object>)ext.get("com.myapp.authn");
-        users.put(session, authentication);
-    }
-
-    public void sessionRemoved(ServerSession session, boolean timedout) {
-        users.remove(session);
-    }
-});
+include::{doc_code}/server/ServerAuthenticationDocs.java[tags=listener]
 ----
 ====
 
-Each Bayeux message always come with a session id, which can be thought as
-similar to the HTTP session id.
-In the same way it is widespread practice to put the server-side authentication
-data in the `HttpSession` object (identified by the HTTP session id), in CometD
-web applications you can put server-side authentication data in the `ServerSession`
-object.
+Each Bayeux message always come with a session id, which can be thought as similar to the HTTP session id.
+In the same way it is widespread practice to put the server-side authentication data in the `HttpSession` object (identified by the HTTP session id), in CometD web applications you can put server-side authentication data in the `ServerSession` object.
 
-The Bayeux session ids are long, randomly generated numbers, exactly like HTTP
-session ids, and offer the same level security offered by a HTTP session id.
-If an attacker manages to sniff a Bayeux session id, it can impersonate that
-Bayeux session exactly in the same way it can sniff a HTTP session id and
-impersonate that HTTP session.
-And, of course, the same solutions to this problem used to secure HTTP
-applications can be used to secure CometD web applications, most notably the
-use of TLS.
+The Bayeux session ids are long, randomly generated numbers, exactly like HTTP session ids, and offer the same level security offered by an HTTP session id.
+If an attacker manages to sniff a Bayeux session id, it can impersonate that Bayeux session exactly in the same way it can sniff an HTTP session id and impersonate that HTTP session.
+And, of course, the same solutions to this problem used to secure HTTP applications can be used to secure CometD web applications, most notably the use of TLS.
 
 ===== Customizing the handshake response message
 
-The handshake response message can be customized, for example adding an object
-to the `ext` field of the response, that specify further challenge data or the
-code/reason of the failure, and what action should be done by the client (for
-example, disconnecting or retrying the handshake).
+The handshake response message can be customized, for example adding an object to the `ext` field of the response, that specify further challenge data or the code/reason of the failure, and what action should be done by the client (for example, disconnecting or retrying the handshake).
 
-This is an example of how the handshake response message can be customized in
-the `SecurityPolicy` implementation:
+This is an example of how the handshake response message can be customized in the `SecurityPolicy` implementation:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class MySecurityPolicy extends DefaultSecurityPolicy {
-    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
-        if (!canAuthenticate(session, message)) {
-            // Retrieve the handshake response
-            ServerMessage.Mutable handshakeReply = message.getAssociated();
-
-            // Modify the advice, in this case tell to try again
-            // If the advice is not modified it will default to disconnect the client
-            Map advice = handshakeReply.getAdvice(true);
-            advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);
-
-            // Modify the ext field with extra information on the authentication failure
-            Map ext = handshakeReply.getExt(true);
-            Map authentication = new HashMap();
-            ext.put("com.myapp.authn", authentication);
-            authentication.put("failureReason", "invalid_credentials");
-
-            promise.succeed(false);
-        }
-        promise.succeed(true);
-    }
-}
+include::{doc_code}/server/ServerAuthenticationDocs.java[tags=customReply]
 ----
 ====
 
-Alternatively, it is possible to customize the handshake response message by
-implementing a `BayeuxServer.Extension`:
+Alternatively, it is possible to customize the handshake response message by implementing a `BayeuxServer.Extension`, rather than directly in the `SecurityPolicy` implementation:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class HandshakeExtension implements BayeuxServer.Extension {
-    public void void outgoing(ServerSession from, ServerSession to, ServerMessage.Mutable message, Promise<Boolean> promise) {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
-            if (!message.isSuccessful()) {
-                Map advice = message.getAdvice(true);
-                advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);
-
-                Map ext = message.getExt(true);
-                Map authentication = new HashMap();
-                ext.put("com.myapp.authn", authentication);
-                authentication.put("failureReason", "invalid_credentials");
-            }
-        }
-        promise.succeed(true);
-    }
-
-    // Other methods omitted
-}
+include::{doc_code}/server/ServerAuthenticationDocs.java[tags=customReplyExt]
 ----
 ====

@@ -38,7 +38,7 @@ public class ServerRestartTest extends ClientServerTest {
 
     @Test
     public void testServerRestart() throws Exception {
-        final AtomicReference<CountDownLatch> sendLatch = new AtomicReference<>(new CountDownLatch(3));
+        AtomicReference<CountDownLatch> sendLatch = new AtomicReference<>(new CountDownLatch(3));
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
             @Override
             public void onSending(List<? extends Message> messages) {
@@ -64,9 +64,9 @@ public class ServerRestartTest extends ClientServerTest {
         Thread.sleep(backoffIncrement + 2 * backoffIncrement + 3 * backoffIncrement);
 
         // Add listeners to check the behavior of the client
-        final CountDownLatch handshakeLatch = new CountDownLatch(1);
+        CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> handshakeLatch.countDown());
-        final CountDownLatch connectLatch = new CountDownLatch(1);
+        CountDownLatch connectLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connectLatch.countDown());
         // Expect handshake and 2 connects messages to be sent
         sendLatch.set(new CountDownLatch(3));

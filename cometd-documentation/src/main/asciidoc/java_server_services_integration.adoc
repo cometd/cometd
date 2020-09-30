@@ -3,16 +3,12 @@
 ===== Services Integration
 
 There are several ways to integrate your Bayeux services into your web application.
-This is complicated because the `CometDServlet` creates the BayeuxServer object,
-and there is no easy way to detect, in general, when the `BayeuxServer` object
-has been created.
+This is complicated because the `CometDServlet` creates the BayeuxServer object, and there is no easy way to detect, in general, when the `BayeuxServer` object has been created.
 
 ===== Integration via Configuration Servlet
 
-The simplest way to initialize your web application with your services is to use
-a configuration servlet.
-This configuration servlet has no URL mapping because its only scope is to initialize
-(or _wire_ together) services for your web application to work properly.
+The simplest way to initialize your web application with your services is to use a configuration servlet.
+This configuration servlet has no URL mapping because its only scope is to initialize (or _wire_ together) services for your web application to work properly.
 
 Here is a sample `web.xml`:
 
@@ -25,22 +21,22 @@ Here is a sample `web.xml`:
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
 
-    <servlet>
-        <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
-        <load-on-startup>1</load-on-startup>
-        <async-supported>true</async-supported>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>cometd</servlet-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </servlet-mapping>
+  <servlet>
+    <servlet-name>cometd</servlet-name>
+    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>cometd</servlet-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </servlet-mapping>
 
-    <servlet>
-        <servlet-name>configuration</servlet-name>
-        <servlet-class>com.acme.cometd.ConfigurationServlet</servlet-class>
-        <load-on-startup>2</load-on-startup>
-    </servlet>
+  <servlet>
+    <servlet-name>configuration</servlet-name>
+    <servlet-class>com.acme.cometd.ConfigurationServlet</servlet-class>
+    <load-on-startup>2</load-on-startup>
+  </servlet>
 
 </web-app>
 ----
@@ -48,31 +44,15 @@ Here is a sample `web.xml`:
 
 Notice that the `web.xml` file specifies `<load-on-startup>` to be:
 
-* 1 for the CometD servlet – so that the Bayeux object gets created and put
-  in the `ServletContext`.
-* 2 for the configuration servlet – so that it will be initialized only after the
-  CometD servlet has been initialized and hence the BayeuxServer object is available.
+* 1 for the CometD servlet – so that the Bayeux object gets created and put in the `ServletContext`.
+* 2 for the configuration servlet – so that it will be initialized only after the CometD servlet has been initialized and hence the BayeuxServer object is available.
 
 This is the code for the `ConfigurationServlet`:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class ConfigurationServlet extends GenericServlet {
-    public void init() throws ServletException {
-        // Grab the Bayeux object
-        BayeuxServer bayeux = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-        new EchoService(bayeux);
-        // Create other services here
-
-        // This is also the place where you can configure the Bayeux object
-        // by adding extensions or specifying a SecurityPolicy
-    }
-
-    public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException {
-        throw new ServletException();
-    }
-}
+include::{doc_code}/server/ServerServiceIntegrationDocs.java[tags=configServlet]
 ----
 ====
 
@@ -80,8 +60,7 @@ See also xref:_java_server_services_inherited[this section] about the `EchoServi
 
 ===== Integration via Configuration Listener
 
-Instead of using a configuration servlet, you can use a configuration listener,
-by writing a class that implements `ServletContextAttributeListener`.
+Instead of using a configuration servlet, you can use a configuration listener, by writing a class that implements `ServletContextAttributeListener`.
 
 Here is a sample `web.xml` file:
 
@@ -94,106 +73,51 @@ Here is a sample `web.xml` file:
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
 
-    <servlet>
-        <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
-        <load-on-startup>1</load-on-startup>
-        <async-supported>true</async-supported>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>cometd</servlet-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </servlet-mapping>
+  <servlet>
+    <servlet-name>cometd</servlet-name>
+    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>cometd</servlet-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </servlet-mapping>
 
-    <listener>
-        <listener-class>com.acme.cometd.BayeuxInitializer</listener-class>
-    </listener>
+  <listener>
+    <listener-class>com.acme.cometd.ConfigurationListener</listener-class>
+  </listener>
 
 </web-app>
 ----
 ====
 
-This is the code for the `BayeuxInitializer`:
+This is the code for the `ConfigurationListener`:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class BayeuxInitializer implements ServletContextAttributeListener {
-    public void attributeAdded(ServletContextAttributeEvent event) {
-        if (Bayeux.ATTRIBUTE.equals(event.getName())) {
-            // Grab the Bayeux object
-            BayeuxServer bayeux = (BayeuxServer)event.getValue();
-            new EchoService(bayeux);
-            // Create other services here
-
-            // This is also the place where you can configure the Bayeux object
-            // by adding extensions or specifying a SecurityPolicy
-        }
-    }
-
-    public void attributeRemoved(ServletContextAttributeEvent event) {
-    }
-
-    public void attributeReplaced(ServletContextAttributeEvent event) {
-    }
-}
+include::{doc_code}/server/ServerServiceIntegrationDocs.java[tags=configListener]
 ----
 ====
 
 ===== Integration of Annotated Services
 
-If you prefer to use annotated services (see also
-xref:_java_server_services_annotated[the annotated services section], you still
-have to integrate them into your web application.
-The procedure is very similar to the procedures above, but it requires use of
-the annotation processor to process the annotations in your services.
+If you prefer to use annotated services (see also xref:_java_server_services_annotated[the annotated services section], you still have to integrate them into your web application.
+The procedure is very similar to the procedures above, but it requires use of the annotation processor to process the annotations in your services.
 
 For example, the `ConfigurationServlet` becomes:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class ConfigurationServlet extends GenericServlet {
-    private final List<Object> services = new ArrayList<>();
-    private ServerAnnotationProcessor processor;
-
-    public void init() throws ServletException {
-        // Grab the BayeuxServer object
-        BayeuxServer bayeux = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-
-        // Create the annotation processor
-        processor = new ServerAnnotationProcessor(bayeux);
-
-        // Create your annotated service instance and process it
-        Object service = new EchoService();
-        processor.process(service);
-        services.add(service);
-
-        // Create other services here
-
-        // This is also the place where you can configure the Bayeux object
-        // by adding extensions or specifying a SecurityPolicy
-    }
-
-    public void destroy() throws ServletException {
-        // Deprocess the services that have been created
-        for (Object service : services) {
-            processor.deprocess(service);
-        }
-    }
-
-    public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException {
-        throw new ServletException();
-    }
-}
+include::{doc_code}/server/ServerServiceIntegrationDocs.java[tags=annotationConfigServlet]
 ----
 ====
 
 ===== Integration of Annotated Services via `AnnotationCometDServlet`
 
-The `org.cometd.java.annotation.AnnotationCometDServlet` allows you to specify
-a comma-separated list of class names to instantiate and process using a
-`ServerAnnotationProcessor`.
+The `org.cometd.java.annotation.AnnotationCometDServlet` allows you to specify a comma-separated list of class names to instantiate and process using a `ServerAnnotationProcessor`.
 
 This is a sample `web.xml`:
 
@@ -206,42 +130,35 @@ This is a sample `web.xml`:
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
 
-    <servlet>
-        <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.java.annotation.AnnotationCometDServlet</servlet-class>
-        <init-param>
-            <param-name>services</param-name>
-            <param-value>com.acme.cometd.FooService, com.acme.cometd.BarService</param-value>
-        </init-param>
-        <load-on-startup>1</load-on-startup>
-        <async-supported>true</async-supported>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>cometd</servlet-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </servlet-mapping>
+  <servlet>
+    <servlet-name>cometd</servlet-name>
+    <servlet-class>org.cometd.java.annotation.AnnotationCometDServlet</servlet-class>
+    <init-param>
+      <param-name>services</param-name>
+      <param-value>com.acme.cometd.FooService, com.acme.cometd.BarService</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>cometd</servlet-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </servlet-mapping>
 
 </web-app>
 ----
 ====
 
-In this example, the `AnnotationCometDServlet` instantiates and processes the
-annotations of one object of class `com.acme.cometd.FooService` and of one object
-of class `com.acme.cometd.BarService`.
+In this example, the `AnnotationCometDServlet` instantiates and processes the annotations of one object of class `com.acme.cometd.FooService` and of one object of class `com.acme.cometd.BarService`.
 
-The service objects are stored as `ServletContext` attributes under their own
-class name, so that they can be easily retrieved by other components.
+The service objects are stored as `ServletContext` attributes under their own class name, so that they can be easily retrieved by other components.
+
 For example, `FooService` can be retrieved using the following code:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class AnotherServlet extends HttpServlet {
-    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        FooService service = (FooService)getServletContext().getAttribute("com.acme.cometd.FooService");
-        // Use the foo service here
-    }
-}
+include::{doc_code}/server/ServerServiceIntegrationDocs.java[tags=anotherServlet]
 ----
 ====
 

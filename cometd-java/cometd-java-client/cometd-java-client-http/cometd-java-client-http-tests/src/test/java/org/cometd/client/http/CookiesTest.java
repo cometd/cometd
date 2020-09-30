@@ -43,9 +43,9 @@ public class CookiesTest extends ClientServerTest {
     }
 
     @Test
-    public void testCookieSentOnHandshakeResponse() throws Exception {
-        final AtomicReference<HttpCookie> browserCookie = new AtomicReference<>();
-        final BayeuxClient client = newBayeuxClient();
+    public void testCookieSentOnHandshakeResponse() {
+        AtomicReference<HttpCookie> browserCookie = new AtomicReference<>();
+        BayeuxClient client = newBayeuxClient();
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> browserCookie.set(client.getCookie("BAYEUX_BROWSER")));
         client.handshake();
         assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -84,14 +84,14 @@ public class CookiesTest extends ClientServerTest {
 
     @Test
     public void testMultipleCookies() throws Exception {
-        final String cookie1 = "cookie1";
-        final String cookie2 = "cookie2";
-        final String channelName = "/channel";
-        final CountDownLatch handshakeLatch = new CountDownLatch(1);
-        final CountDownLatch connectLatch = new CountDownLatch(1);
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
-        final CountDownLatch publishLatch = new CountDownLatch(1);
+        String cookie1 = "cookie1";
+        String cookie2 = "cookie2";
+        String channelName = "/channel";
+        CountDownLatch handshakeLatch = new CountDownLatch(1);
+        CountDownLatch connectLatch = new CountDownLatch(1);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch unsubscribeLatch = new CountDownLatch(1);
+        CountDownLatch publishLatch = new CountDownLatch(1);
         new CookieService(bayeux, channelName, cookie1, cookie2, handshakeLatch, connectLatch, subscribeLatch, unsubscribeLatch, publishLatch);
 
         BayeuxClient client = newBayeuxClient();
@@ -144,6 +144,7 @@ public class CookiesTest extends ClientServerTest {
             addService(channelName, "process");
         }
 
+        @SuppressWarnings("unused")
         public void metaHandshake(ServerSession session, ServerMessage message) {
             BayeuxContext context = message.getBayeuxContext();
             String value1 = context.getCookie(cookie1);
@@ -153,6 +154,7 @@ public class CookiesTest extends ClientServerTest {
             }
         }
 
+        @SuppressWarnings("unused")
         public void metaConnect(ServerSession session, ServerMessage message) {
             BayeuxContext context = message.getBayeuxContext();
             String value1 = context.getCookie(cookie1);
@@ -163,6 +165,7 @@ public class CookiesTest extends ClientServerTest {
             }
         }
 
+        @SuppressWarnings("unused")
         public void metaSubscribe(ServerSession session, ServerMessage message) {
             BayeuxContext context = message.getBayeuxContext();
             String value1 = context.getCookie(cookie1);
@@ -173,6 +176,7 @@ public class CookiesTest extends ClientServerTest {
             }
         }
 
+        @SuppressWarnings("unused")
         public void metaUnsubscribe(ServerSession session, ServerMessage message) {
             BayeuxContext context = message.getBayeuxContext();
             String value1 = context.getCookie(cookie1);
@@ -183,6 +187,7 @@ public class CookiesTest extends ClientServerTest {
             }
         }
 
+        @SuppressWarnings("unused")
         public void process(ServerSession session, ServerMessage message) {
             BayeuxContext context = message.getBayeuxContext();
             String value1 = context.getCookie(cookie1);

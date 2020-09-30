@@ -41,10 +41,10 @@ public class TimeExtensionsTest extends ClientServerTest {
     public void testTimeStamp() throws Exception {
         bayeux.addExtension(new TimestampExtension());
 
-        final BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient();
         client.addExtension(new TimestampClientExtension());
 
-        final Queue<Message> messages = new ConcurrentLinkedQueue<>();
+        Queue<Message> messages = new ConcurrentLinkedQueue<>();
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> messages.add(message));
 
         client.handshake();
@@ -66,14 +66,14 @@ public class TimeExtensionsTest extends ClientServerTest {
 
     @Test
     public void testTimeSync() throws Exception {
-        final TimesyncExtension extension = new TimesyncExtension();
+        TimesyncExtension extension = new TimesyncExtension();
         extension.setAccuracyTarget(0);
         bayeux.addExtension(extension);
 
-        final BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient();
         client.addExtension(new TimesyncClientExtension());
 
-        final Queue<Message> messages = new ConcurrentLinkedQueue<>();
+        Queue<Message> messages = new ConcurrentLinkedQueue<>();
         client.getChannel("/meta/*").addListener((ClientSessionChannel.MessageListener)(channel, message) -> messages.add(message));
 
         client.handshake();

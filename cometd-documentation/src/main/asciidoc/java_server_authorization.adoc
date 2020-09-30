@@ -2,84 +2,47 @@
 [[_java_server_authorization]]
 ==== Authorization
 
-You can configure the `BayeuxServer` object with an `org.cometd.bayeux.server.SecurityPolicy`
-object, which allows you to control various steps of the Bayeux protocol such
-as handshake, subscription, and publish.
-By default, the `BayeuxServer` object has a default `SecurityPolicy`, that
-allows almost any operation.
+You can configure the `BayeuxServer` object with an `org.cometd.bayeux.server.SecurityPolicy` object, which allows you to control various steps of the Bayeux protocol such as handshake, subscription, and publish.
+By default, the `BayeuxServer` object has a default `SecurityPolicy`, that allows almost any operation.
 
-The `org.cometd.bayeux.server.SecurityPolicy` interface has a default
-implementation in `org.cometd.server.DefaultSecurityPolicy`, that is useful
-as a base class to customize the `SecurityPolicy`
-(see xref:_java_server_authentication[the authentication section] for an example).
+The `org.cometd.bayeux.server.SecurityPolicy` interface has a default implementation in `org.cometd.server.DefaultSecurityPolicy`, that is useful as a base class to customize the `SecurityPolicy` (see xref:_java_server_authentication[the authentication section] for an example).
 
 The `org.cometd.bayeux.server.SecurityPolicy` methods are:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise);
-
-void canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message, Promise<Boolean> promise);
-
-void canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage, Promise<Boolean> promise);
-
-void canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage, Promise<Boolean> promise);
+include::{doc_code}/server/ServerAuthorizationDocs.java[tags=methods]
 ----
 ====
 
-Those methods control, respectively, whether a handshake, a channel creation,
-a subscription to a channel or a publish to a channel are to be authorized.
+Those methods control whether a handshake, a channel creation, a subscription to a channel or a publish to a channel are to be authorized.
 
 [IMPORTANT]
 ====
-The `SecurityPolicy` methods are invoked for `ServerSession` that correspond
-to both local clients and remote clients (see also xref:_concepts_sessions[the sessions section]).
+The `SecurityPolicy` methods are invoked for ``ServerSession``s that correspond to both local clients and remote clients (see also xref:_concepts_sessions[the sessions section]).
 
-Application code can determine whether a `ServerSession` correspond to a
-local client by calling method `ServerSession.isLocalSession()`.
+Application code can determine whether a `ServerSession` corresponds to a local client by calling method `ServerSession.isLocalSession()`.
 
-In almost all cases, local clients should be authorized because they are
-created on the server by the application (for example, by services – see also
-xref:_java_server_services_inherited[the inherited services section]) and
-therefore are trusted clients.
+In almost all cases, local clients should be authorized because they are created on the server by the application (for example, by services – see also xref:_java_server_services_inherited[the inherited services section]) and therefore are trusted clients.
 ====
 
 The default implementation `org.cometd.server.DefaultSecurityPolicy`:
 
 * Allows any handshake.
-* Allows creation of a channel only from clients that performed a handshake,
-and only if the channel is not a meta channel.
-* Allows subscription from clients that performed a handshake, but not if
-the channel is a meta channel.
-* Allows publish from clients that performed a handshake to any channel that
-is not a meta channel.
+* Allows creation of a channel only from clients that performed a handshake, and only if the channel is not a meta channel.
+* Allows subscriptions from clients that performed a handshake, but not if the channel is a meta channel.
+* Allows publishes from clients that performed a handshake to any channel that is not a meta channel.
 
-A typical custom `SecurityPolicy` may override the `canHandshake(...)`
-method to control authentication:
+A typical custom `SecurityPolicy` may override the `canHandshake(...)` method to control authentication:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-public class CustomSecurityPolicy extends DefaultSecurityPolicy {
-    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
-        // Always allow local clients
-        if (session.isLocalSession()) {
-            promise.succeed(true);
-            return;
-        }
-
-        // Implement custom authentication logic
-        boolean authenticated = authenticate(server, session, message);
-
-        promise.succeed(authenticated);
-    }
-}
+include::{doc_code}/server/ServerAuthorizationDocs.java[tags=custom]
 ----
 ====
 
-To understand how to install your custom `SecurityPolicy` on the `BayeuxServer`
-object, see how it is done in xref:_java_server_authentication[the authentication section].
+To understand how to install your custom `SecurityPolicy` on the `BayeuxServer` object, see how it is done in xref:_java_server_authentication[the authentication section].
 
-Follow also xref:_java_server_authorizers[the authorizers section] for further
-information about authorization.
+Follow also xref:_java_server_authorizers[the authorizers section] for further information about authorization.

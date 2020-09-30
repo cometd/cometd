@@ -38,17 +38,17 @@ public class HighRateServerEventsTest extends ClientServerTest {
 
     @Test
     public void testHighRateServerEvents() throws Exception {
-        final String channelName = "/foo";
+        String channelName = "/foo";
 
         LocalSession service = bayeux.newLocalSession("high_rate_test");
         service.handshake();
 
-        final BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient();
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
-        final AtomicInteger messages = new AtomicInteger();
+        AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
+        AtomicInteger messages = new AtomicInteger();
         client.batch(() -> {
             ClientSessionChannel channel = client.getChannel(channelName);
             channel.subscribe((c, m) -> {

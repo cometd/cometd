@@ -277,6 +277,7 @@ public class ServerServiceDocs {
             // retrieve the contacts in a separate thread.
             new Thread(() -> {
                 try {
+                    @SuppressWarnings("unchecked")
                     Map<String, Object> arguments = (Map<String, Object>)data;
                     String userId = (String)arguments.get("userId");
                     List<String> contacts = retrieveContactsFromDatabase(userId);

@@ -51,8 +51,8 @@ public class ServerChannelMessageListenerTest extends ClientServerTest {
         BayeuxClient client = newBayeuxClient();
         client.handshake();
 
-        final AtomicReference<Message> messageRef = new AtomicReference<>();
-        final CountDownLatch messageLatch = new CountDownLatch(1);
+        AtomicReference<Message> messageRef = new AtomicReference<>();
+        CountDownLatch messageLatch = new CountDownLatch(1);
         client.getChannel(channelName).publish("data", message -> {
             messageRef.set(message);
             messageLatch.countDown();

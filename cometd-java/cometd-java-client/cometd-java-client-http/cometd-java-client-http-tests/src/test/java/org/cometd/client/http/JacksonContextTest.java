@@ -45,7 +45,7 @@ public class JacksonContextTest extends ClientServerTest {
 
         Map<String, Object> clientParams = new HashMap<>();
         clientParams.put(ClientTransport.JSON_CONTEXT_OPTION, JacksonJSONContextClient.class.getName());
-        final BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(clientParams, httpClient));
+        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(clientParams, httpClient));
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -53,12 +53,12 @@ public class JacksonContextTest extends ClientServerTest {
         // Wait for the long poll
         Thread.sleep(1000);
 
-        final String channelName = "/test_jackson";
-        final CountDownLatch localLatch = new CountDownLatch(2);
+        String channelName = "/test_jackson";
+        CountDownLatch localLatch = new CountDownLatch(2);
         new JacksonService(bayeux, channelName, localLatch);
 
-        final ClientSessionChannel channel = client.getChannel(channelName);
-        final CountDownLatch clientLatch = new CountDownLatch(3);
+        ClientSessionChannel channel = client.getChannel(channelName);
+        CountDownLatch clientLatch = new CountDownLatch(3);
         client.batch(() -> {
             channel.subscribe(new ClientSessionChannel.MessageListener() {
                 private boolean republishSeen;
@@ -90,7 +90,7 @@ public class JacksonContextTest extends ClientServerTest {
     public static class JacksonService extends AbstractService {
         private final String channelName;
 
-        public JacksonService(BayeuxServer bayeux, String channelName, final CountDownLatch localLatch) {
+        public JacksonService(BayeuxServer bayeux, String channelName, CountDownLatch localLatch) {
             super(bayeux, channelName);
             this.channelName = channelName;
             addService(channelName, "process");
@@ -111,6 +111,7 @@ public class JacksonContextTest extends ClientServerTest {
             });
         }
 
+        @SuppressWarnings("unused")
         public void process(ServerSession session, ServerMessage message) {
             // Republish
             Map<String, Object> data = message.getDataAsMap();

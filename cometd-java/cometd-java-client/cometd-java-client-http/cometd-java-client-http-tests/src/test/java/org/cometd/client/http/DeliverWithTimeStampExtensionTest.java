@@ -36,9 +36,9 @@ public class DeliverWithTimeStampExtensionTest extends ClientServerTest {
         start(null);
         bayeux.addExtension(new TimestampExtension());
 
-        final String channelName = "/service/test";
+        String channelName = "/service/test";
         BayeuxClient client = newBayeuxClient();
-        final CountDownLatch messageLatch = new CountDownLatch(1);
+        CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> messageLatch.countDown());
 
@@ -66,6 +66,7 @@ public class DeliverWithTimeStampExtensionTest extends ClientServerTest {
             addService(channelName, "process");
         }
 
+        @SuppressWarnings("unused")
         public void process(ServerSession remote, ServerMessage.Mutable message) {
             ServerMessage.Mutable reply = getBayeux().newMessage();
             reply.setChannel(channelName);

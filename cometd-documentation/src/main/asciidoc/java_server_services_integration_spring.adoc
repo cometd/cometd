@@ -2,24 +2,15 @@
 [[_java_server_services_integration_spring]]
 ===== Services Integration with Spring
 
-Integration of CometD services with https://spring.io/[Spring] is
-particularly interesting, since most of the time your Bayeux services require
-other _beans_ to perform their service.
-Not all Bayeux services are as simple as the `EchoService` (see also
-xref:_java_server_services_inherited[the inherited services section], and having
-Spring's dependency injection (as well as other facilities) integrated greatly
-simplifies development.
+Integration of CometD services with https://spring.io/[Spring] is fascinating, since most of the time your Bayeux services require other _beans_ to perform their service.
+Not all Bayeux services are as simple as the `EchoService` (see also xref:_java_server_services_inherited[the inherited services section], and having Spring's dependency injection (as well as other facilities) integrated greatly simplifies development.
 
-xref:_java_server_services_integration_spring_boot[Integration with Spring Boot] is
-also available if you prefer Spring Boot over a more traditional Spring
-integration.
+xref:_java_server_services_integration_spring_boot[Integration with Spring Boot] is also available if you prefer Spring Boot over a more traditional Spring integration.
 
 [[_java_server_services_integration_spring_xml_based_spring_configuration]]
 ===== XML Based Spring Configuration
 
-The `BayeuxServer` object is directly configured and initialized in the Spring
-configuration file, which injects it in the servlet context, where the CometD
-servlet picks it up, performing no further configuration or initialization.
+The `BayeuxServer` object is directly configured and initialized in the Spring configuration file, which injects it in the servlet context, where the CometD servlet picks it up, performing no further configuration or initialization.
 
 The `web.xml` file is as follows:
 
@@ -32,19 +23,19 @@ The `web.xml` file is as follows:
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
 
-    <servlet>
-        <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
-        <async-supported>true</async-supported>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>cometd</servlet-name>
-        <url-pattern>/cometd/*</url-pattern>
-    </servlet-mapping>
+  <servlet>
+    <servlet-name>cometd</servlet-name>
+    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <async-supported>true</async-supported>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>cometd</servlet-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </servlet-mapping>
 
-    <listener>
-        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
-    </listener>
+  <listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+  </listener>
 
 </web-app>
 ----
@@ -52,26 +43,14 @@ The `web.xml` file is as follows:
 
 [IMPORTANT]
 ====
-It is important to note that the `web.xml` above does _not_ contain any
-configuration specified as `<init-param>`.
-This is because if you are using Spring, you want the configuration to be
-specified in just one place, that is in the Spring configuration files.
+It is important to note that the `web.xml` above does _not_ contain any configuration specified as `<init-param>`.
+This is because if you are using Spring, you want the configuration to be specified in just one place, that is in the Spring configuration files.
 
 Furthermore, the `<load-on-startup>` directive is _not_ present.
-Since the Servlet Specification does not define the startup order between
-servlets and listeners (in particular, `<listener>` elements cannot be
-ordered with a `<load-on-startup>` element), you must make sure that the
-Spring `<listener>` runs before the `CometDServlet`, otherwise you risk
-that two `BayeuxServer` objects are created (one by `CometDServlet` and
-the other by Spring), and your application will not work properly (likely,
-the connection with remote clients will be handled by the `CometDServlet`'s
-`BayeuxServer`, while your services will be bound to Spring's `BayeuxServer`).
 
-By not specifying a `<load-on-startup>` element in the `CometDServlet`
-definition, the `CometDServlet` will be initialized lazily _after_ the Spring
-`<listener>`, ensuring that only the Spring's `BayeuxServer` is created and
-used also by `CometDServlet` when it is initialized upon receiving the first
-request from remote clients.
+Since the Servlet Specification does not define the startup order between servlets and listeners (in particular, `<listener>` elements cannot be ordered with a `<load-on-startup>` element), you must make sure that the Spring `<listener>` runs before the `CometDServlet`, otherwise you risk that two `BayeuxServer` objects are created (one by `CometDServlet` and the other by Spring), and your application will not work properly (likely, the connection with remote clients will be handled by the ``CometDServlet``'s `BayeuxServer`, while your services will be bound to Spring's `BayeuxServer`).
+
+By not specifying a `<load-on-startup>` element in the `CometDServlet` definition, the `CometDServlet` will be initialized lazily _after_ the Spring `<listener>`, ensuring that only the Spring's `BayeuxServer` is created and used also by `CometDServlet` when it is initialized upon receiving the first request from remote clients.
 ====
 
 Spring's `applicationContext.xml` is as follows:
@@ -84,40 +63,36 @@ Spring's `applicationContext.xml` is as follows:
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean id="otherService" class="com.acme..." />
+  <bean id="otherService" class="com.acme..." />
 
-    <bean id="bayeux" class="org.cometd.server.BayeuxServerImpl" init-method="start" destroy-method="stop">
-        <property name="options">
-            <map>
-                <entry key="timeout" value="15000" />
-            </map>
-        </property>
-    </bean>
+  <bean id="bayeux" class="org.cometd.server.BayeuxServerImpl" init-method="start" destroy-method="stop">
+    <property name="options">
+      <map>
+        <entry key="timeout" value="15000" />
+      </map>
+    </property>
+  </bean>
 
-    <bean id="echoService" class="com.acme.cometd.EchoService">
-        <constructor-arg><ref bean="bayeux" /></constructor-arg>
-        <constructor-arg><ref bean="otherService" /></constructor-arg>
-    </bean>
+  <bean id="echoService" class="com.acme.cometd.EchoService">
+    <constructor-arg><ref bean="bayeux" /></constructor-arg>
+    <constructor-arg><ref bean="otherService" /></constructor-arg>
+  </bean>
 
-    <bean class="org.springframework.web.context.support.ServletContextAttributeExporter">
-        <property name="attributes">
-            <map>
-                <entry key="org.cometd.bayeux" value-ref="bayeux" />
-            </map>
-        </property>
-    </bean>
+  <bean class="org.springframework.web.context.support.ServletContextAttributeExporter">
+    <property name="attributes">
+      <map>
+        <entry key="org.cometd.bayeux" value-ref="bayeux" />
+      </map>
+    </property>
+  </bean>
 </beans>
 ----
 ====
 
-Spring now creates the `BayeuxServer` object, configuring it via the `options`
-property, initializing via the `start()` method, and exporting to the servlet
-context via Spring's `ServletContextAttributeExporter`.
-This ensures that `CometDServlet` will _not_ create its own instance of `BayeuxServer`,
-but use the one that is already present in the servlet context, created by Spring.
+Spring now creates the `BayeuxServer` object, configuring it via the `options` property, initializing via the `start()` method, and exporting to the servlet context via Spring's `ServletContextAttributeExporter`.
+This ensures that `CometDServlet` will _not_ create its own instance of `BayeuxServer`, but use the one that is already present in the servlet context, created by Spring.
 
-Below you can find a Spring's `applicationContext.xml` that configures the `BayeuxServer`
-object with the WebSocket transport:
+Below you can find a Spring's `applicationContext.xml` that configures the `BayeuxServer` object with the WebSocket transport:
 
 ====
 [source,xml]
@@ -151,33 +126,22 @@ object with the WebSocket transport:
 
 [NOTE]
 ====
-When configuring the `BayeuxServer` transports, you need to explicitly
-specify all the transports you want, included the default transports that you
-do not need to specify when configuring a `BayeuxServer` using the `CometDServlet`.
-The order of the transports is important, and you want the `WebSocketTransport`
-to be the first of the list, followed by at least the `JSONTransport` (also
-known as the "long-polling" transport) as a fallback.
+When configuring the `BayeuxServer` transports, you need to explicitly specify all the transports you want, included the default transports that you do not need to specify when configuring a `BayeuxServer` using the `CometDServlet`.
+The order of the transports is important, and you want the `WebSocketTransport` to be the first of the list, followed by at least the `JSONTransport` (also known as the "long-polling" transport) as a fallback.
 ====
 
 ===== Annotation Based Spring Configuration
 
-Spring 3 or greater supports annotation-based configuration, and
-xref:_java_server_services_annotated[the annotated services section] integrate
-nicely with Spring, version 3 or greater.
-Spring 3 or greater is required because it supports injection via
-https://jcp.org/en/jsr/detail?id=330[JSR 330].
-Prerequisite to making Spring work with CometD annotated services is to have
-JSR 330's `javax.inject` classes in the classpath along with
-https://jcp.org/en/jsr/detail?id=250[JSR 250's] `javax.annotation` classes.
+Spring 3 or greater supports annotation-based configuration, and xref:_java_server_services_annotated[the annotated services section] integrate nicely with Spring, version 3 or greater.
+Spring 3 or greater is required because it supports injection via https://jcp.org/en/jsr/detail?id=330[JSR 330].
+Prerequisite to making Spring work with CometD annotated services is to have JSR 330's `javax.inject` classes in the classpath along with https://jcp.org/en/jsr/detail?id=250[JSR 250's] `javax.annotation` classes.
 
 [NOTE]
 ====
 Do not forget that Spring 3 or greater requires CGLIB classes in the classpath as well.
 ====
 
-The `web.xml` file is exactly the same as the one given as an example in the
-xref:_java_server_services_integration_spring_xml_based_spring_configuration[XML based configuration above],
-and the same important notes apply.
+The `web.xml` file is exactly the same as the one given as an example in the xref:_java_server_services_integration_spring_xml_based_spring_configuration[XML based configuration above], and the same important notes apply.
 
 Spring's `applicationContext.xml` is as follows:
 
@@ -191,7 +155,7 @@ Spring's `applicationContext.xml` is as follows:
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
                            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
-    <context:component-scan base-package="com.acme..." />
+  <context:component-scan base-package="com.acme..." />
 
 </beans>
 ----
@@ -202,101 +166,27 @@ Spring scans the classpath for classes that qualify as Spring beans in the given
 The CometD annotated service needs some additional annotation to make it qualify as a Spring bean:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-@javax.inject.Named // Tells Spring that this is a bean
-@javax.inject.Singleton // Tells Spring that this is a singleton
-@Service("echoService")
-public class EchoService {
-    @Inject
-    private BayeuxServer bayeux;
-    @Session
-    private ServerSession serverSession;
-
-    @PostConstruct
-    public void init() {
-        System.out.println("Echo Service Initialized");
-    }
-
-    @Listener("/echo")
-    public void echo(ServerSession remote, ServerMessage.Mutable message) {
-        String channel = message.getChannel();
-        Object data = message.getData();
-        remote.deliver(serverSession, channel, data, Promise.noop());
-    }
-}
+include::{doc_code}/server/ServerServiceIntegrationSpringDocs.java[tags=service]
 ----
 ====
 
-The missing piece is that you need to tell Spring to perform the processing of
-the CometD annotations; do so using a Spring component:
+The missing piece is that you need to tell Spring to perform the processing of the CometD annotations; do so using a `@Configuration` Spring component:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-@Configuration
-public class Configurer implements DestructionAwareBeanPostProcessor, ServletContextAware {
-    private BayeuxServer bayeuxServer;
-    private ServerAnnotationProcessor processor;
-
-    @Inject
-    private void setBayeuxServer(BayeuxServer bayeuxServer) {
-        this.bayeuxServer = bayeuxServer;
-    }
-
-    @PostConstruct
-    private void init() {
-        this.processor = new ServerAnnotationProcessor(bayeuxServer);
-    }
-
-    @Override
-    public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException {
-        processor.processDependencies(bean);
-        processor.processConfigurations(bean);
-        processor.processCallbacks(bean);
-        return bean;
-    }
-
-    @Override
-    public Object postProcessAfterInitialization(Object bean, String name) throws BeansException {
-        return bean;
-    }
-
-    @Override
-    public boolean requiresDestruction(Object bean) {
-        return true;
-    }
-
-    @Override
-    public void postProcessBeforeDestruction(Object bean, String name) throws BeansException {
-        processor.deprocessCallbacks(bean);
-    }
-
-    @Bean(initMethod = "start", destroyMethod = "stop")
-    public BayeuxServer bayeuxServer() {
-        BayeuxServerImpl bean = new BayeuxServerImpl();
-        bean.setOption(BayeuxServerImpl.LOG_LEVEL, "3");
-        return bean;
-    }
-
-    @Override
-    public void setServletContext(ServletContext servletContext) {
-        servletContext.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
-    }
-}
+include::{doc_code}/server/ServerServiceIntegrationSpringDocs.java[tags=configurer]
 ----
 ====
 
 Summary:
 
-* This Spring component is the factory for the BayeuxServer object via the
-  `bayeuxServer()` method (annotated with Spring's `@Bean`).
-* Creating CometD's `ServerAnnotationProcessor` requires the BayeuxServer object,
-  and therefore it `@Injects` it into a setter method.
-* The lifecycle callback `init()` creates CometD's `ServerAnnotationProcessor`,
-  which is then used during Spring's bean post processing phases.
-* Finally, the BayeuxServer object is exported into the servlet context for
-  the CometD servlet to use.
+* This `@Configuration` Spring component is the factory for the BayeuxServer object via the`bayeuxServer()` method (annotated with Spring's `@Bean`).
+* Creating CometD's `ServerAnnotationProcessor` requires the `BayeuxServer` object, and therefore it `@Injects` it into a setter method.
+* The lifecycle callback `init()` creates CometD's `ServerAnnotationProcessor`, which is then used during Spring's bean post processing phases.
+* Finally, the `BayeuxServer` object is exported into the `ServletContext` for the CometD servlet to use.
 
 [[_java_server_services_integration_spring_boot]]
 ===== Spring Boot Configuration
@@ -304,43 +194,23 @@ Summary:
 Integration with Spring Boot is quite simple as shown in the following example:
 
 ====
-[source,java]
+[source,java,indent=0]
 ----
-@SpringBootApplication <1>
-public class CometDApplication implements ServletContextInitializer { <2>
-    public static void main(String[] args) {
-        SpringApplication.run(CometDApplication.class, args);
-    }
-
-    @Override
-    public void onStartup(ServletContext servletContext) throws ServletException {
-        ServletRegistration.Dynamic cometdServlet = servletContext.addServlet("cometd", AnnotationCometDServlet.class); <3>
-        cometdServlet.addMapping("/cometd/*");
-        cometdServlet.setAsyncSupported(true);
-        cometdServlet.setLoadOnStartup(1);
-        cometdServlet.setInitParameter("services", MyCometDService.class.getName());
-        // Possible additional CometD Servlet configuration.
-    }
-}
+include::{doc_code}/server/ServerServiceIntegrationSpringDocs.java[tags=boot]
 ----
 ====
 
 What you have to do is:
 
 <1> Annotate the class with `@SpringBootApplication` so that Spring Boot can find it.
-<2> Implement `org.springframework.boot.web.servlet.ServletContextInitializer`, so that
-you can register the CometD Servlet.
-<3> Register and configure the CometD Servlet. You typically want to use the
-`AnnotationCometDServlet` because Spring Boot is heavily based on annotations, and so
-should your CometD application when using Spring Boot.
+<2> Implement `org.springframework.boot.web.servlet.ServletContextInitializer`, so that you can register the CometD Servlet.
+<3> Register and configure the CometD Servlet. You typically want to use the `AnnotationCometDServlet` because Spring Boot is heavily based on annotations, and so should your CometD application when using Spring Boot.
 
 By default, Spring Boot uses embedded Tomcat, but Jetty is recommended with CometD.
-To use Jetty's Spring Boot support, you can modify your Maven dependencies in the
-following way:
+To use Jetty's Spring Boot support, you can modify your Maven dependencies in the following way in your `pom.xml`:
 
 ====
 [source,xml]
-.pom.xml
 ----
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -367,6 +237,4 @@ following way:
 ----
 ====
 
-In the `pom.xml` above, the dependency on `spring-boot-starter-web` excludes the
-dependency on Tomcat `spring-boot-starter-tomcat` and adds the equivalent dependency
-on Jetty `spring-boot-starter-jetty`.
+In the `pom.xml` above, the dependency on `spring-boot-starter-web` excludes the dependency on Tomcat `spring-boot-starter-tomcat` and adds the equivalent dependency on Jetty `spring-boot-starter-jetty`.

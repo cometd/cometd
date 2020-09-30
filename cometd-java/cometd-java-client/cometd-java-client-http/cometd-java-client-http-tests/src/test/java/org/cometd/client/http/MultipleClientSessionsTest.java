@@ -36,6 +36,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -64,8 +65,8 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         start(options);
 
         BayeuxClient client1 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
-        final CountDownLatch latch1 = new CountDownLatch(2);
+        ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
+        CountDownLatch latch1 = new CountDownLatch(2);
         client1.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             connects1.offer(message);
             latch1.countDown();
@@ -80,8 +81,8 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         Thread.sleep(1000);
 
         BayeuxClient client2 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
-        final CountDownLatch latch2 = new CountDownLatch(1);
+        ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
+        CountDownLatch latch2 = new CountDownLatch(1);
         client2.putCookie(browserCookie);
         client2.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             connects2.offer(message);
@@ -92,6 +93,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         assertTrue(latch2.await(5, TimeUnit.SECONDS));
         assertEquals(1, connects2.size());
         Message connect2 = connects2.peek();
+        Assert.assertNotNull(connect2);
         Map<String, Object> advice2 = connect2.getAdvice();
         assertEquals(Message.RECONNECT_NONE_VALUE, advice2.get(Message.RECONNECT_FIELD));
         assertSame(Boolean.TRUE, advice2.get("multiple-clients"));
@@ -117,7 +119,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         start(options);
 
         BayeuxClient client1 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
         client1.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             if (message.isSuccessful()) {
                 connects1.offer(message);
@@ -132,7 +134,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         Thread.sleep(1000);
 
         BayeuxClient client2 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
         client2.putCookie(browserCookie);
         client2.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects2.offer(message));
         client2.handshake();
@@ -141,7 +143,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         Thread.sleep(1000);
 
         BayeuxClient client3 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<>();
         client3.putCookie(browserCookie);
         client3.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects3.offer(message));
         client3.handshake();
@@ -229,7 +231,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         start(options);
 
         BayeuxClient client1 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
         client1.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             if (message.isSuccessful()) {
                 connects1.offer(message);
@@ -244,7 +246,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         Thread.sleep(1000);
 
         BayeuxClient client2 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
         client2.putCookie(browserCookie);
         client2.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects2.offer(message));
         client2.handshake();
@@ -253,7 +255,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         Thread.sleep(1000);
 
         BayeuxClient client3 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<>();
         client3.putCookie(browserCookie);
         client3.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects3.offer(message));
         client3.handshake();
@@ -358,7 +360,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         assertEquals(200, connect1.getStatus());
 
         // This /meta/connect is suspended.
-        final CountDownLatch abortedConnectLatch = new CountDownLatch(1);
+        CountDownLatch abortedConnectLatch = new CountDownLatch(1);
         String connectContent2 = "[{" +
                 "\"id\":\"3\"," +
                 "\"channel\":\"/meta/connect\"," +
@@ -425,7 +427,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         start(options);
 
         BayeuxClient client1 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
         client1.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             if (message.isSuccessful()) {
                 connects1.offer(message);
@@ -440,7 +442,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         Thread.sleep(1000);
 
         BayeuxClient client2 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
         client2.putCookie(browserCookie);
         client2.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects2.offer(message));
         client2.handshake();

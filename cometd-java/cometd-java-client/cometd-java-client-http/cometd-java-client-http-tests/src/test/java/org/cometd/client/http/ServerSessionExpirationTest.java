@@ -46,8 +46,8 @@ public class ServerSessionExpirationTest extends ClientServerTest {
         start(serverOptions);
 
         long backOffIncrement = 3000;
-        final AtomicBoolean networkDown = new AtomicBoolean();
-        final CountDownLatch failedConnect = new CountDownLatch(2);
+        AtomicBoolean networkDown = new AtomicBoolean();
+        CountDownLatch failedConnect = new CountDownLatch(2);
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient) {
             @Override
             public void send(TransportListener listener, List<Message.Mutable> messages) {
@@ -69,7 +69,7 @@ public class ServerSessionExpirationTest extends ClientServerTest {
         // Wait for the second /meta/connect.
         Thread.sleep(1000);
 
-        final CountDownLatch removeLatch = new CountDownLatch(1);
+        CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(client.getId());
         session.addListener((ServerSession.RemovedListener)(s, m, t) -> {
             logger.info("removed");
@@ -112,8 +112,8 @@ public class ServerSessionExpirationTest extends ClientServerTest {
         start(serverOptions);
 
         long backOffIncrement = 3000;
-        final AtomicBoolean networkDown = new AtomicBoolean();
-        final CountDownLatch failedConnect = new CountDownLatch(2);
+        AtomicBoolean networkDown = new AtomicBoolean();
+        CountDownLatch failedConnect = new CountDownLatch(2);
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient) {
             @Override
             public void send(TransportListener listener, List<Message.Mutable> messages) {
@@ -135,7 +135,7 @@ public class ServerSessionExpirationTest extends ClientServerTest {
         // Wait for the second /meta/connect.
         Thread.sleep(1000);
 
-        final CountDownLatch removeLatch = new CountDownLatch(1);
+        CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(client.getId());
         session.addListener((ServerSession.RemovedListener)(s, m, t) -> {
             logger.info("removed");

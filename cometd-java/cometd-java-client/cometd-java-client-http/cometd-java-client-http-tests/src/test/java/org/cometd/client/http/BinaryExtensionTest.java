@@ -43,13 +43,13 @@ public class BinaryExtensionTest extends ClientServerTest {
 
     @Test
     public void testClientBinaryUpload() throws Exception {
-        final String channelName = "/binary";
+        String channelName = "/binary";
 
-        final byte[] bytes = new byte[1024];
+        byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
-        final ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
-        final LocalSession service = bayeux.newLocalSession("bin");
+        LocalSession service = bayeux.newLocalSession("bin");
         service.addExtension(new BinaryExtension());
         service.handshake();
         service.getChannel(channelName).subscribe((channel, message) -> {
@@ -62,8 +62,8 @@ public class BinaryExtensionTest extends ClientServerTest {
             }
         });
 
-        final CountDownLatch messageLatch = new CountDownLatch(1);
-        final BayeuxClient client = newBayeuxClient();
+        CountDownLatch messageLatch = new CountDownLatch(1);
+        BayeuxClient client = newBayeuxClient();
         client.addExtension(new BinaryExtension());
         client.getChannel(channelName).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             if (!message.isPublishReply()) {
@@ -89,15 +89,15 @@ public class BinaryExtensionTest extends ClientServerTest {
 
     @Test
     public void testServerBinaryDownload() throws Exception {
-        final String channelName = "/binary";
+        String channelName = "/binary";
 
-        final byte[] bytes = new byte[1024];
+        byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
-        final ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        final CountDownLatch messageLatch = new CountDownLatch(1);
-        final BayeuxClient client = newBayeuxClient();
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch messageLatch = new CountDownLatch(1);
+        BayeuxClient client = newBayeuxClient();
         client.addExtension(new BinaryExtension());
         client.handshake(message -> client.getChannel(channelName).subscribe((c, m) -> {
             BinaryData data = (BinaryData)m.getData();

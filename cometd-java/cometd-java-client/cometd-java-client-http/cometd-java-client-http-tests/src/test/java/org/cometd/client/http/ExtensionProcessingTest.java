@@ -46,12 +46,12 @@ public class ExtensionProcessingTest extends ClientServerTest {
         bayeux.addExtension(new org.cometd.server.ext.BinaryExtension());
         bayeux.addExtension(new GZIPServerExtension());
 
-        final BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient();
         client.addExtension(new org.cometd.client.ext.BinaryExtension());
         client.addExtension(new GZIPClientExtension());
 
         String channelName = "/server_ext_proc";
-        final String data = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+        String data = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
         testExtensionProcessing(client, channelName, data);
     }
 
@@ -87,7 +87,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
             }
         });
 
-        final BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient();
         client.addExtension(new org.cometd.client.ext.BinaryExtension());
         client.addExtension(new GZIPClientExtension());
         client.addExtension(new ScrambleClientExtension());
@@ -97,7 +97,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
         testExtensionProcessing(client, channelName, data);
     }
 
-    private void testExtensionProcessing(final BayeuxClient client, final String channelName, final String data) throws Exception {
+    private void testExtensionProcessing(BayeuxClient client, String channelName, String data) throws Exception {
         bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
@@ -105,7 +105,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
             }
         });
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> client.batch(() -> {
             ClientSessionChannel channel = client.getChannel(channelName);
             channel.subscribe((c, m) -> {

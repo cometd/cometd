@@ -86,9 +86,9 @@ public class ChannelReleaseTest extends ClientServerTest {
         // Wait for the long poll
         Thread.sleep(1000);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         String channelName = "/foo";
-        final ClientSessionChannel channel = client.getChannel(channelName);
+        ClientSessionChannel channel = client.getChannel(channelName);
         client.batch(() -> {
             channel.subscribe((c, m) -> latch.countDown());
             channel.publish("");
@@ -145,10 +145,10 @@ public class ChannelReleaseTest extends ClientServerTest {
         // Wait for the long poll
         Thread.sleep(1000);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         String channelName = "/foo";
-        final ClientSessionChannel channel = client.getChannel(channelName);
-        final ClientSessionChannel.MessageListener listener = (c, m) -> latch.countDown();
+        ClientSessionChannel channel = client.getChannel(channelName);
+        ClientSessionChannel.MessageListener listener = (c, m) -> latch.countDown();
         client.batch(() -> {
             channel.subscribe(listener);
             channel.publish("");
@@ -158,7 +158,7 @@ public class ChannelReleaseTest extends ClientServerTest {
 
         Assert.assertFalse(released);
 
-        final CountDownLatch unsubscribe = new CountDownLatch(1);
+        CountDownLatch unsubscribe = new CountDownLatch(1);
         client.getChannel(Channel.META_UNSUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> unsubscribe.countDown());
         channel.unsubscribe(listener);
         Assert.assertTrue(unsubscribe.await(5, TimeUnit.SECONDS));
