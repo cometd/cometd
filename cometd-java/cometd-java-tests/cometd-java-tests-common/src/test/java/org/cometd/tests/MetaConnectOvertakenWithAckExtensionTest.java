@@ -15,8 +15,6 @@
  */
 package org.cometd.tests;
 
-import static org.cometd.bayeux.client.ClientSessionChannel.MessageListener;
-
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +35,8 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.cometd.bayeux.client.ClientSessionChannel.MessageListener;
 
 public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServerTest {
     public MetaConnectOvertakenWithAckExtensionTest(Transport transport) {

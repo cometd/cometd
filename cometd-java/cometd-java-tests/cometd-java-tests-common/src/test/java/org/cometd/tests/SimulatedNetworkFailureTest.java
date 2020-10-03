@@ -15,9 +15,6 @@
  */
 package org.cometd.tests;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +31,9 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.server.BayeuxServerImpl;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
     private long timeout = 10000;

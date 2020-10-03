@@ -13,41 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.annotation.spring;
+package org.cometd.tests.spring.annotation;
 
 import java.util.Arrays;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class SpringAnnotationTest {
     @Test
     public void testSpringWiringOfCometDServices() {
         ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext();
-        applicationContext.setConfigLocation("classpath:applicationContext.xml");
+        applicationContext.setConfigLocation("classpath:applicationContext-annotation.xml");
         applicationContext.refresh();
 
         String serviceClass = SpringBayeuxService.class.getSimpleName();
         String beanName = Character.toLowerCase(serviceClass.charAt(0)) + serviceClass.substring(1);
 
         String[] beanNames = applicationContext.getBeanDefinitionNames();
-        assertTrue(Arrays.asList(beanNames).contains(beanName));
+        Assert.assertTrue(Arrays.asList(beanNames).contains(beanName));
 
         SpringBayeuxService service = (SpringBayeuxService)applicationContext.getBean(beanName);
-        assertNotNull(service);
-        assertNotNull(service.dependency);
-        assertNotNull(service.bayeuxServer);
-        assertNotNull(service.serverSession);
-        assertTrue(service.active);
-        assertEquals(1, service.bayeuxServer.getChannel(SpringBayeuxService.CHANNEL).getSubscribers().size());
+        Assert.assertNotNull(service);
+        Assert.assertNotNull(service.dependency);
+        Assert.assertNotNull(service.bayeuxServer);
+        Assert.assertNotNull(service.serverSession);
+        Assert.assertTrue(service.active);
+        Assert.assertEquals(1, service.bayeuxServer.getChannel(SpringBayeuxService.CHANNEL).getSubscribers().size());
 
         applicationContext.close();
 
-        assertFalse(service.active);
+        Assert.assertFalse(service.active);
     }
 }
