@@ -20,9 +20,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.websocket.ContainerProvider;
-import javax.websocket.WebSocketContainer;
-
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.WebSocketContainer;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -40,7 +39,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,7 +60,7 @@ public class TransportFailureTest {
 
         ServletContextHandler context = new ServletContextHandler(server, "/");
 
-        JavaxWebSocketServletContainerInitializer.configure(context, null);
+        JakartaWebSocketServletContainerInitializer.configure(context, null);
 
         cometdServletPath = "/cometd";
 

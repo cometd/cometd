@@ -19,8 +19,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.servlet.AsyncEvent;
-
+import jakarta.servlet.AsyncEvent;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;

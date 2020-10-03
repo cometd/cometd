@@ -7,7 +7,7 @@ package ${package};
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.annotation.ServerAnnotationProcessor;

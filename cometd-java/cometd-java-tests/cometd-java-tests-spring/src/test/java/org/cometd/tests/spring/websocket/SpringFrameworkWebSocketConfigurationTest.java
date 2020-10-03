@@ -39,7 +39,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Assert;
@@ -65,7 +65,7 @@ public class SpringFrameworkWebSocketConfigurationTest {
         context = new ServletContextHandler(server, contextPath, true, false);
 
         if (WebSocketTransport.class.equals(wsTransportClass)) {
-            JavaxWebSocketServletContainerInitializer.configure(context, null);
+            JakartaWebSocketServletContainerInitializer.configure(context, null);
         } else if (JettyWebSocketTransport.class.equals(wsTransportClass)) {
             JettyWebSocketServletContainerInitializer.configure(context, null);
         } else {

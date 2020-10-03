@@ -20,9 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.CometDServlet;
@@ -31,7 +30,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -77,7 +76,7 @@ public class OortStartupTest {
         ServletContextHandler context = new ServletContextHandler(server, "/");
         contexts.put(port1, context);
 
-        JavaxWebSocketServletContainerInitializer.configure(context, null);
+        JakartaWebSocketServletContainerInitializer.configure(context, null);
 
         // CometD servlet.
         String cometdServletPath = "/cometd";

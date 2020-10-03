@@ -22,9 +22,9 @@ import java.util.Set;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
@@ -33,7 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -50,7 +50,7 @@ public class JMXTest {
 
         ServletContextHandler context = new ServletContextHandler(server, "/");
 
-        JavaxWebSocketServletContainerInitializer.configure(context, null);
+        JakartaWebSocketServletContainerInitializer.configure(context, null);
 
         String value = BayeuxServerImpl.ATTRIBUTE + "," + Oort.OORT_ATTRIBUTE + "," + Seti.SETI_ATTRIBUTE;
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);
@@ -112,7 +112,7 @@ public class JMXTest {
 
         ServletContextHandler context = new ServletContextHandler(server, "/");
 
-        JavaxWebSocketServletContainerInitializer.configure(context, null);
+        JakartaWebSocketServletContainerInitializer.configure(context, null);
 
         String value = BayeuxServerImpl.ATTRIBUTE + "," + Oort.OORT_ATTRIBUTE + "," + Seti.SETI_ATTRIBUTE;
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);

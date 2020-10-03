@@ -56,7 +56,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
       <version>4.0.2</version>
       <scope>provided</scope>
     </dependency>
@@ -78,7 +78,7 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-websocket-javax-server</artifactId>
+      <artifactId>cometd-java-websocket-jakarta-server</artifactId>
       <version>${cometd-version}</version>
     </dependency>
     <dependency>

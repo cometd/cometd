@@ -17,29 +17,14 @@ package org.cometd.documentation.server;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletRegistration;
 
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
-import org.cometd.annotation.server.AnnotationCometDServlet;
-import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.documentation.server.ServerServiceIntegrationSpringDocs.EchoService;
-import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.BayeuxServerImpl;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.servlet.ServletContextInitializer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.context.ServletContextAware;
 
 @SuppressWarnings("unused")
 public class ServerServiceIntegrationSpringDocs {
@@ -68,7 +53,7 @@ public class ServerServiceIntegrationSpringDocs {
     }
     // end::service[]
 
-
+/*
     @SuppressWarnings("InnerClassMayBeStatic")
     // tag::configurer[]
     @Configuration
@@ -124,8 +109,10 @@ public class ServerServiceIntegrationSpringDocs {
         }
     }
     // end::configurer[]
+*/
 }
 
+/*
 // tag::boot[]
 @SpringBootApplication // <1>
 class CometDApplication implements ServletContextInitializer { // <2>
@@ -144,3 +131,4 @@ class CometDApplication implements ServletContextInitializer { // <2>
     }
 }
 // end::boot[]
+*/

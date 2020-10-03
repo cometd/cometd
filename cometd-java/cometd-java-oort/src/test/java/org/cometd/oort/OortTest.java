@@ -46,7 +46,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Rule;
@@ -102,7 +102,7 @@ public abstract class OortTest {
         ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
 
         if (serverTransport.equals(WebSocketTransport.class.getName())) {
-            JavaxWebSocketServletContainerInitializer.configure(context, null);
+            JakartaWebSocketServletContainerInitializer.configure(context, null);
         } else if (serverTransport.equals(JettyWebSocketTransport.class.getName())) {
             JettyWebSocketServletContainerInitializer.configure(context, null);
         } else {

@@ -17,8 +17,7 @@ package org.cometd.javascript;
 
 import java.util.EnumSet;
 
-import javax.servlet.DispatcherType;
-
+import jakarta.servlet.DispatcherType;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;

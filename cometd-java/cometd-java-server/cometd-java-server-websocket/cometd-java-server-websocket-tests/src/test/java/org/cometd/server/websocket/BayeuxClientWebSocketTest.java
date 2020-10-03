@@ -27,9 +27,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.WebSocketContainer;
-
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.WebSocketContainer;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;

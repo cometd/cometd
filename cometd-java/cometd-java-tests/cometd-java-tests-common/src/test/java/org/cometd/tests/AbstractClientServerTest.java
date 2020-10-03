@@ -24,9 +24,8 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import javax.websocket.ContainerProvider;
-import javax.websocket.WebSocketContainer;
-
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.WebSocketContainer;
 import okhttp3.OkHttpClient;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
@@ -47,7 +46,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Rule;
@@ -104,7 +103,7 @@ public abstract class AbstractClientServerTest {
         switch (transport) {
             case JAVAX_WEBSOCKET:
             case OKHTTP_WEBSOCKET:
-                JavaxWebSocketServletContainerInitializer.configure(context, null);
+                JakartaWebSocketServletContainerInitializer.configure(context, null);
                 break;
             case JETTY_WEBSOCKET:
                 JettyWebSocketServletContainerInitializer.configure(context, null);

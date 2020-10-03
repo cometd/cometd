@@ -18,9 +18,9 @@ package org.cometd.server.websocket;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.websocket.ContainerProvider;
-import javax.websocket.WebSocketContainer;
 
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.WebSocketContainer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.CometDServlet;
@@ -29,7 +29,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Assert;
@@ -77,7 +77,7 @@ public class MultipleURLMappingsTest {
 
         switch (wsTransportClass) {
             case JSR_WS_TRANSPORT:
-                JavaxWebSocketServletContainerInitializer.configure(context, null);
+                JakartaWebSocketServletContainerInitializer.configure(context, null);
                 break;
             case JETTY_WS_TRANSPORT:
                 JettyWebSocketServletContainerInitializer.configure(context, null);

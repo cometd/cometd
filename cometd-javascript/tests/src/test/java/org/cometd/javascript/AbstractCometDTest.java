@@ -32,7 +32,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -98,7 +98,7 @@ public abstract class AbstractCometDTest {
         String contextPath = "/cometd";
         context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
 
-        JavaxWebSocketServletContainerInitializer.configure(context, null);
+        JakartaWebSocketServletContainerInitializer.configure(context, null);
 
         // Setup default servlet to serve static files
         context.addServlet(DefaultServlet.class, "/");

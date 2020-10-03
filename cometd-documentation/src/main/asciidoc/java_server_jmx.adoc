@@ -82,10 +82,10 @@ A simple example of such initializer class is the following:
 ----
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import javax.servlet.GenericServlet;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import jakarta.servlet.GenericServlet;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.eclipse.jetty.jmx.MBeanContainer;
 

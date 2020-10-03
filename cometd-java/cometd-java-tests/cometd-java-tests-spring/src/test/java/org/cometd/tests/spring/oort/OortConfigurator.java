@@ -16,8 +16,8 @@
 package org.cometd.tests.spring.oort;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.ServletContext;
 
+import jakarta.servlet.ServletContext;
 import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.SecurityPolicy;

@@ -22,10 +22,9 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import javax.websocket.HandshakeResponse;
-import javax.websocket.WebSocketContainer;
-import javax.websocket.server.HandshakeRequest;
-
+import jakarta.websocket.HandshakeResponse;
+import jakarta.websocket.WebSocketContainer;
+import jakarta.websocket.server.HandshakeRequest;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -37,8 +36,6 @@ import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.hamcrest.Matchers;
 import org.junit.Assert;

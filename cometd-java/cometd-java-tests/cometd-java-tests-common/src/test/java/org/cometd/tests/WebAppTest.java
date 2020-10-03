@@ -31,9 +31,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import javax.websocket.ContainerProvider;
-import javax.websocket.WebSocketContainer;
-
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.WebSocketContainer;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.server.RemoteCall;
 import org.cometd.bayeux.Message;
@@ -62,7 +61,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.JndiConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketConfiguration;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration;
 import org.junit.After;
 import org.junit.Assert;
@@ -145,7 +144,7 @@ public class WebAppTest {
         webApp.setBaseResource(Resource.newResource(contextDir.toUri()));
         webApp.addConfiguration(
                 new AnnotationConfiguration(),
-                new JavaxWebSocketConfiguration(),
+                new JakartaWebSocketConfiguration(),
                 new JettyWebSocketConfiguration(),
                 new JndiConfiguration()
         );
@@ -209,7 +208,7 @@ public class WebAppTest {
 
         Stream.of(WebAppService.HTTP_CHANNEL, WebAppService.JAVAX_WS_CHANNEL, WebAppService.JETTY_WS_CHANNEL)
                 .map(channel -> remoteCall(client, channel, uri))
-                .reduce((cf1, cf2) -> CompletableFuture.allOf(cf1, cf2))
+                .reduce(CompletableFuture::allOf)
                 .get()
                 .get(5, TimeUnit.SECONDS);
 

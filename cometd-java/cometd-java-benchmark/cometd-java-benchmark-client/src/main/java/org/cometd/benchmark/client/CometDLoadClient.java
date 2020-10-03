@@ -42,11 +42,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicStampedReference;
 
-import javax.websocket.ContainerProvider;
-import javax.websocket.WebSocketContainer;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.WebSocketContainer;
 import org.HdrHistogram.Histogram;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
