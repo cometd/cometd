@@ -423,7 +423,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
 
         @Override
         protected void modifyUpgrade(JettyServerUpgradeRequest request, JettyServerUpgradeResponse response) {
-            HttpSession session = request.getSession();
+            HttpSession session = (HttpSession)request.getSession();
             Assert.assertNotNull(session);
             Assert.assertEquals(ATTRIBUTE_VALUE, session.getAttribute(ATTRIBUTE_NAME));
         }

@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.annotation.spring;
+package org.cometd.tests.spring.annotation;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.servlet.ServletContext;
 
 import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.http.AsyncJSONTransport;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.context.annotation.Bean;
@@ -78,6 +80,9 @@ public class Configurator implements DestructionAwareBeanPostProcessor {
 
     @Bean(initMethod = "start", destroyMethod = "stop")
     public BayeuxServer bayeuxServer() {
-        return new BayeuxServerImpl();
+        BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
+        // Don't initialize the WebSocket transports.
+        bayeuxServer.setOption("transports", AsyncJSONTransport.class.getName());
+        return bayeuxServer;
     }
 }

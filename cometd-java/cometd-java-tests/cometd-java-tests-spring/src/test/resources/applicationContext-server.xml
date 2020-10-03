@@ -11,6 +11,8 @@
     <property name="options">
       <map>
         <entry key="sweepPeriod" value-ref="sweepPeriod" />
+        <!-- Don't initialize WebSocket transports -->
+        <entry key="transports" value="org.cometd.server.http.AsyncJSONTransport" />
       </map>
     </property>
   </bean>

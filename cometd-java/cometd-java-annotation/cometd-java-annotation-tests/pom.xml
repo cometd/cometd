@@ -63,19 +63,6 @@
       <version>${jetty-version}</version>
       <scope>test</scope>
     </dependency>
-    <!-- Spring dependencies -->
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-beans</artifactId>
-      <version>${spring-version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context</artifactId>
-      <version>${spring-version}</version>
-      <scope>test</scope>
-    </dependency>
     <!-- Guice dependencies -->
     <dependency>
       <groupId>com.google.inject</groupId>

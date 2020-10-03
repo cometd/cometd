@@ -15,8 +15,6 @@
  */
 package org.cometd.tests;
 
-import static org.cometd.bayeux.client.ClientSessionChannel.MessageListener;
-
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -87,7 +86,7 @@ public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServ
 
         CountDownLatch messageLatch1 = new CountDownLatch(1);
         CountDownLatch messageLatch2 = new CountDownLatch(1);
-        MessageListener messageCallback = (channel, message) -> {
+        ClientSessionChannel.MessageListener messageCallback = (channel, message) -> {
             if (messageLatch1.getCount() == 0) {
                 messageLatch2.countDown();
             } else {
@@ -120,7 +119,7 @@ public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServ
 
         // Setup to hold the 3rd /meta/connect on the client, so the 4th is delayed.
         CountDownLatch metaConnectLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_CONNECT).addListener((MessageListener)(channel, message) -> {
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             try {
                 metaConnectLatch.await(5, TimeUnit.SECONDS);
             } catch (Exception ignored) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.oort.spring;
+package org.cometd.tests.spring.oort;
 
 import java.util.Arrays;
 
@@ -40,7 +40,7 @@ public class OortSpringAnnotationTest {
         ServletContextHandler context = new ServletContextHandler(server, "/");
         JavaxWebSocketServletContainerInitializer.configure(context, null);
         context.addEventListener(new ContextLoaderListener());
-        context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:/applicationContext.xml");
+        context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:/applicationContext-oort.xml");
         server.start();
 
         ApplicationContext applicationContext = WebApplicationContextUtils.getWebApplicationContext(context.getServletContext());

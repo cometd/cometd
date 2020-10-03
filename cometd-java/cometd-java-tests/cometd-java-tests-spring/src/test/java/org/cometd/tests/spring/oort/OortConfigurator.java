@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.oort.spring;
+package org.cometd.tests.spring.oort;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.ServletContext;

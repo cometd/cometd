@@ -23,13 +23,14 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
 
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.websocket.common.AbstractBayeuxContext;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
@@ -122,12 +123,12 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
         return true;
     }
 
-    private class WebSocketContext extends AbstractBayeuxContext {
+    private static class WebSocketContext extends AbstractBayeuxContext {
         private final Map<String, Object> attributes;
 
         private WebSocketContext(ServletContext context, JettyServerUpgradeRequest request) {
-            super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeadersMap(),
-                    request.getParameterMap(), request.getUserPrincipal(), request.getSession(),
+            super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
+                    request.getParameterMap(), request.getUserPrincipal(), (HttpSession)request.getSession(),
                     (InetSocketAddress)request.getLocalSocketAddress(), (InetSocketAddress)request.getRemoteSocketAddress(),
                     Collections.list(request.getLocales()), "HTTP/1.1", request.isSecure());
             this.attributes = request.getServletAttributes();
