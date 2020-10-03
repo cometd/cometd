@@ -17,7 +17,6 @@ package org.cometd.tests.spring.annotation;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import javax.servlet.ServletContext;
 
 import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -44,7 +43,6 @@ import org.springframework.context.annotation.Configuration;
 public class Configurator implements DestructionAwareBeanPostProcessor {
     private BayeuxServer bayeuxServer;
     private ServerAnnotationProcessor processor;
-    private ServletContext servletContext;
 
     @Inject
     private void setBayeuxServer(BayeuxServer bayeuxServer) {
