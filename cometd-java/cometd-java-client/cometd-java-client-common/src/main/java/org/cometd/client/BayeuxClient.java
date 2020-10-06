@@ -920,6 +920,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         if (ownScheduler) {
             scheduler.shutdown();
             scheduler = null;
+            ownScheduler = false;
         }
     }
 
