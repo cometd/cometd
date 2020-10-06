@@ -23,7 +23,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -42,8 +45,12 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JettyHttpClientTransport extends AbstractHttpClientTransport {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JettyHttpClientTransport.class);
+
     private final List<Request> _requests = new ArrayList<>();
     private final HttpClient _httpClient;
 
@@ -118,10 +125,23 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
         });
 
         long maxNetworkDelay = calculateMaxNetworkDelay(messages);
-        // Set the idle timeout for this request larger than the total
-        // timeout so there are no races between the two timeouts.
-        request.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
-        request.timeout(maxNetworkDelay, TimeUnit.MILLISECONDS);
+        // Disable the idle timeout.
+        request.idleTimeout(0, TimeUnit.MILLISECONDS);
+        // Schedule a task to timeout the request.
+        AtomicReference<ScheduledFuture<?>> timeoutTaskRef = new AtomicReference<>();
+        ScheduledFuture<?> newTask = getScheduler().schedule(() -> onTimeout(listener, messages, request, maxNetworkDelay, timeoutTaskRef), maxNetworkDelay, TimeUnit.MILLISECONDS);
+        timeoutTaskRef.set(newTask);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Started waiting for message replies, {} ms, task@{}", maxNetworkDelay, Integer.toHexString(newTask.hashCode()));
+        }
+
+        request.onComplete(result -> {
+            ScheduledFuture<?> task = timeoutTaskRef.get();
+            task.cancel(false);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Cancelled waiting for message replies, task@{}", Integer.toHexString(task.hashCode()));
+            }
+        });
 
         synchronized (this) {
             if (!isAborted()) {
@@ -130,6 +150,20 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
         }
 
         request.send(new ResponseListener(listener, messages, cookieURI));
+    }
+
+    private void onTimeout(TransportListener listener, List<? extends Message> messages, Request request, long delay, AtomicReference<ScheduledFuture<?>> timeoutTaskRef) {
+        listener.onTimeout(messages, Promise.from(result -> {
+            if (result > 0) {
+                ScheduledFuture<?> newTask = getScheduler().schedule(() -> onTimeout(listener, messages, request, delay + result, timeoutTaskRef), result, TimeUnit.MILLISECONDS);
+                ScheduledFuture<?> oldTask = timeoutTaskRef.getAndSet(newTask);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Extended waiting for message replies, {} ms, oldTask@{}, newTask@{}", result, Integer.toHexString(oldTask.hashCode()), Integer.toHexString(newTask.hashCode()));
+                }
+            } else {
+                request.abort(new TimeoutException("Network delay expired: " + delay + " ms"));
+            }
+        }, request::abort));
     }
 
     protected void customize(Request request) {
@@ -165,7 +199,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
         private long contentLength;
         private JSONContext.AsyncParser parser;
 
-        public ResponseListener(TransportListener listener, List<Message.Mutable> messages, URI cookieURI) {
+        private ResponseListener(TransportListener listener, List<Message.Mutable> messages, URI cookieURI) {
             this.listener = listener;
             this.outgoing = messages;
             this.cookieURI = cookieURI;

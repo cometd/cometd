@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -102,6 +103,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     public static final String BAYEUX_VERSION = "1.0";
 
     private final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + Integer.toHexString(System.identityHashCode(this)));
+    private final CopyOnWriteArrayList<TransportListener> transportListeners = new CopyOnWriteArrayList<>();
     private final TransportRegistry transportRegistry = new TransportRegistry();
     private final Map<String, Object> options = new ConcurrentHashMap<>();
     private final List<Message.Mutable> messageQueue = new ArrayList<>(32);
@@ -240,6 +242,67 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
      */
     protected State getState() {
         return sessionState.getState();
+    }
+
+    /**
+     * @param listener the {@link TransportListener} to add
+     */
+    public void addTransportListener(TransportListener listener) {
+        transportListeners.add(listener);
+    }
+
+    /**
+     * @param listener the {@link TransportListener} to remove
+     */
+    public void removeTransportListener(TransportListener listener) {
+        transportListeners.remove(listener);
+    }
+
+    private void notifyTransportSending(List<? extends Message> messages) {
+        for (TransportListener listener : transportListeners) {
+            try {
+                listener.onSending(messages);
+            } catch (Throwable x) {
+                logger.info("Exception while invoking listener " + listener, x);
+            }
+        }
+    }
+
+    private void notifyTransportMessages(List<Message.Mutable> messages) {
+        for (TransportListener listener : transportListeners) {
+            try {
+                listener.onMessages(messages);
+            } catch (Throwable x) {
+                logger.info("Exception while invoking listener " + listener, x);
+            }
+        }
+    }
+
+    private void notifyTransportFailure(Throwable failure, List<? extends Message> messages) {
+        for (TransportListener listener : transportListeners) {
+            try {
+                listener.onFailure(failure, messages);
+            } catch (Throwable x) {
+                logger.info("Exception while invoking listener " + listener, x);
+            }
+        }
+    }
+
+    private void notifyTransportTimeout(List<? extends Message> messages, Promise<Long> promise) {
+        AsyncFoldLeft.run(transportListeners, 0L, (result, listener, loop) -> {
+            try {
+                listener.onTimeout(messages, Promise.from(r -> {
+                    if (r > 0) {
+                        loop.leave(r);
+                    } else {
+                        loop.proceed(0L);
+                    }
+                }, loop::fail));
+            } catch (Throwable x) {
+                logger.info("Exception while invoking listener " + listener, x);
+                loop.fail(x);
+            }
+        }, promise);
     }
 
     /**
@@ -843,6 +906,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         if (scheduler == null) {
             scheduler = new BayeuxClientScheduler();
         }
+        setOption(ClientTransport.SCHEDULER_OPTION, scheduler);
     }
 
     protected void terminate(Throwable failure) {
@@ -920,7 +984,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
      * already been sent.</p>
      *
      * @param messages the messages sent
+     * @deprecated use {@link #addTransportListener(TransportListener)} instead
      */
+    @Deprecated
     public void onSending(List<? extends Message> messages) {
     }
 
@@ -930,7 +996,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
      * <p>Extensions will be processed after the invocation of this method.</p>
      *
      * @param messages the messages arrived
+     * @deprecated use {@link #addTransportListener(TransportListener)} instead
      */
+    @Deprecated
     public void onMessages(List<Message.Mutable> messages) {
     }
 
@@ -940,7 +1008,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
      *
      * @param failure  the exception that caused the failure
      * @param messages the messages being sent
+     * @deprecated use {@link #addTransportListener(TransportListener)} instead
      */
+    @Deprecated
     public void onFailure(Throwable failure, List<? extends Message> messages) {
         if (logger.isDebugEnabled()) {
             logger.debug("Messages failed " + messages, failure);
@@ -1211,18 +1281,26 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         @Override
         public void onSending(List<? extends Message> messages) {
             BayeuxClient.this.onSending(messages);
+            notifyTransportSending(messages);
         }
 
         @Override
-        public void onMessages(final List<Message.Mutable> messages) {
+        public void onMessages(List<Message.Mutable> messages) {
             BayeuxClient.this.onMessages(messages);
+            notifyTransportMessages(messages);
             processMessages(messages);
         }
 
         @Override
-        public void onFailure(final Throwable failure, final List<? extends Message> messages) {
+        public void onFailure(Throwable failure, List<? extends Message> messages) {
             BayeuxClient.this.onFailure(failure, messages);
+            notifyTransportFailure(failure, messages);
             messagesFailure(failure, messages);
+        }
+
+        @Override
+        public void onTimeout(List<? extends Message> messages, Promise<Long> promise) {
+            notifyTransportTimeout(messages, promise);
         }
     }
 
