@@ -25,6 +25,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
+import org.cometd.client.transport.TransportListener;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,13 +40,13 @@ public class ServerRestartTest extends ClientServerTest {
     @Test
     public void testServerRestart() throws Exception {
         AtomicReference<CountDownLatch> sendLatch = new AtomicReference<>(new CountDownLatch(3));
-        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
+        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient));
+        client.addTransportListener(new TransportListener() {
             @Override
             public void onSending(List<? extends Message> messages) {
-                super.onSending(messages);
                 sendLatch.get().countDown();
             }
-        };
+        });
         long backoffIncrement = 500;
         client.setOption(BayeuxClient.BACKOFF_INCREMENT_OPTION, backoffIncrement);
         client.handshake();

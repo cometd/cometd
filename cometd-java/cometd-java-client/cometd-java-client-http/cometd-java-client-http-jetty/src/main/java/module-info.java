@@ -18,4 +18,5 @@ module org.cometd.client.http.jetty {
 
     requires transitive org.cometd.client.http.common;
     requires transitive org.eclipse.jetty.client;
+    requires org.slf4j;
 }

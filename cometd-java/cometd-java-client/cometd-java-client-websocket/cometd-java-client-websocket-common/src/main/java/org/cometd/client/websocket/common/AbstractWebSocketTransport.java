@@ -28,11 +28,13 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
+import org.cometd.bayeux.Promise;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
@@ -307,7 +309,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             }
         }
 
-        private void registerMessage(final Message.Mutable message, final TransportListener listener) {
+        private void registerMessage(Message.Mutable message, TransportListener listener) {
             // Calculate max network delay
             long maxNetworkDelay = getMaxNetworkDelay();
             if (Channel.META_CONNECT.equals(message.getChannel())) {
@@ -326,25 +328,19 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
                 _connected = true;
             }
 
-            // Schedule a task to expire if the maxNetworkDelay elapses
-            final long expiration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + maxNetworkDelay;
-            ScheduledFuture<?> task = _scheduler.schedule(() -> {
-                long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                long delay = now - expiration;
-                if (LOGGER.isDebugEnabled()) {
-                    // TODO: make the max delay a parameter ?
-                    if (delay > 5000) {
-                        LOGGER.debug("Message {} expired {} ms too late", message, delay);
-                    }
-                    LOGGER.debug("Expiring message {}", message);
-                }
-                fail(new TimeoutException(), "Expired");
-            }, maxNetworkDelay, TimeUnit.MILLISECONDS);
+            // Schedule a task to expire if the maxNetworkDelay elapses.
+            long delay = maxNetworkDelay;
+            AtomicReference<ScheduledFuture<?>> timeoutTaskRef = new AtomicReference<>();
+            ScheduledFuture<?> newTask = getScheduler().schedule(() -> onTimeout(listener, message, delay, timeoutTaskRef), maxNetworkDelay, TimeUnit.MILLISECONDS);
+            timeoutTaskRef.set(newTask);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Started waiting for message reply, {} ms, task@{}", maxNetworkDelay, Integer.toHexString(newTask.hashCode()));
+            }
 
             // Register the exchange
             // Message responses must have the same messageId as the requests
 
-            WebSocketExchange exchange = new WebSocketExchange(message, listener, task);
+            WebSocketExchange exchange = new WebSocketExchange(message, listener, timeoutTaskRef);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Registering {}", exchange);
             }
@@ -353,6 +349,20 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             if (existing != null) {
                 throw new IllegalStateException();
             }
+        }
+
+        private void onTimeout(TransportListener listener, Message message, long delay, AtomicReference<ScheduledFuture<?>> timeoutTaskRef) {
+            listener.onTimeout(Collections.singletonList(message), Promise.from(result -> {
+                if (result > 0) {
+                    ScheduledFuture<?> newTask = getScheduler().schedule(() -> onTimeout(listener, message, delay + result, timeoutTaskRef), result, TimeUnit.MILLISECONDS);
+                    ScheduledFuture<?> oldTask = timeoutTaskRef.getAndSet(newTask);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Extended waiting for message reply, {} ms, oldTask@{}, newTask@{}", result, Integer.toHexString(oldTask.hashCode()), Integer.toHexString(newTask.hashCode()));
+                    }
+                } else {
+                    fail(new TimeoutException("Network delay expired: " + delay + " ms"), "Expired");
+                }
+            }, failure -> fail(failure, "Failure")));
         }
 
         private WebSocketExchange deregisterMessage(Message message) {
@@ -372,7 +382,11 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             }
 
             if (exchange != null) {
-                exchange.task.cancel(false);
+                ScheduledFuture<?> task = exchange.taskRef.get();
+                task.cancel(false);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Cancelled waiting for message replies, task@{}", Integer.toHexString(task.hashCode()));
+                }
             }
 
             return exchange;
@@ -393,7 +407,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
         }
 
         protected void failMessages(Throwable cause) {
-            List<Message.Mutable> messages = new ArrayList<>(1);
+            List<Message> messages = new ArrayList<>(1);
             for (WebSocketExchange exchange : new ArrayList<>(_exchanges.values())) {
                 Mutable message = exchange.message;
                 if (deregisterMessage(message) == exchange) {
@@ -444,12 +458,12 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     private static class WebSocketExchange {
         private final Mutable message;
         private final TransportListener listener;
-        private final ScheduledFuture<?> task;
+        private final AtomicReference<ScheduledFuture<?>> taskRef;
 
-        public WebSocketExchange(Mutable message, TransportListener listener, ScheduledFuture<?> task) {
+        private WebSocketExchange(Mutable message, TransportListener listener, AtomicReference<ScheduledFuture<?>> taskRef) {
             this.message = message;
             this.listener = listener;
-            this.task = task;
+            this.taskRef = taskRef;
         }
 
         @Override

@@ -40,6 +40,7 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
+import org.cometd.client.transport.TransportListener;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
@@ -52,7 +53,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class SetiTest extends OortTest {
-    private List<Seti> setis = new ArrayList<>();
+    private final List<Seti> setis = new ArrayList<>();
 
     public SetiTest(String serverTransport) {
         super(serverTransport);
@@ -1152,13 +1153,17 @@ public class SetiTest extends OortTest {
             @Override
             protected OortComet newOortComet(String cometURL, ClientTransport transport, ClientTransport[] otherTransports) {
                 return new OortComet(this, cometURL, getScheduler(), transport, otherTransports) {
-                    @Override
-                    public void onMessages(List<Message.Mutable> messages) {
-                        if (halfNetworkDown.get()) {
-                            logger.info("Network down for client receive {}", messages);
-                            messagesFailure(new Exception(), messages);
-                            messages.clear();
-                        }
+                    {
+                        addTransportListener(new TransportListener() {
+                            @Override
+                            public void onMessages(List<Message.Mutable> messages) {
+                                if (halfNetworkDown.get()) {
+                                    logger.info("Network down for client receive {}", messages);
+                                    messagesFailure(new Exception(), messages);
+                                    messages.clear();
+                                }
+                            }
+                        });
                     }
                 };
             }
@@ -1282,13 +1287,17 @@ public class SetiTest extends OortTest {
             @Override
             protected OortComet newOortComet(String cometURL, ClientTransport transport, ClientTransport[] otherTransports) {
                 return new OortComet(this, cometURL, getScheduler(), transport, otherTransports) {
-                    @Override
-                    public void onMessages(List<Message.Mutable> messages) {
-                        if (networkDown21.get()) {
-                            logger.info("Network down for client receive {}", messages);
-                            messagesFailure(new Exception(), messages);
-                            messages.clear();
-                        }
+                    {
+                        addTransportListener(new TransportListener() {
+                            @Override
+                            public void onMessages(List<Message.Mutable> messages) {
+                                if (networkDown21.get()) {
+                                    logger.info("Network down for client receive {}", messages);
+                                    messagesFailure(new Exception(), messages);
+                                    messages.clear();
+                                }
+                            }
+                        });
                     }
                 };
             }
@@ -1312,13 +1321,17 @@ public class SetiTest extends OortTest {
             @Override
             protected OortComet newOortComet(String cometURL, ClientTransport transport, ClientTransport[] otherTransports) {
                 return new OortComet(this, cometURL, getScheduler(), transport, otherTransports) {
-                    @Override
-                    public void onMessages(List<Message.Mutable> messages) {
-                        if (networkDown12.get()) {
-                            logger.info("Network down for client receive {}", messages);
-                            messagesFailure(new Exception(), messages);
-                            messages.clear();
-                        }
+                    {
+                        addTransportListener(new TransportListener() {
+                            @Override
+                            public void onMessages(List<Message.Mutable> messages) {
+                                if (networkDown12.get()) {
+                                    logger.info("Network down for client receive {}", messages);
+                                    messagesFailure(new Exception(), messages);
+                                    messages.clear();
+                                }
+                            }
+                        });
                     }
                 };
             }

@@ -32,6 +32,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
+import org.cometd.client.transport.TransportListener;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -71,14 +72,15 @@ public class MaxNetworkDelayTest extends ClientServerTest {
         CountDownLatch latch = new CountDownLatch(2);
         ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
         transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
-        BayeuxClient client = new BayeuxClient(cometdURL, transport) {
+        BayeuxClient client = new BayeuxClient(cometdURL, transport);
+        client.addTransportListener(new TransportListener() {
             @Override
             public void onFailure(Throwable failure, List<? extends Message> messages) {
                 if (failure instanceof TimeoutException) {
                     latch.countDown();
                 }
             }
-        };
+        });
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             if (!message.isSuccessful()) {
                 latch.countDown();
@@ -120,14 +122,15 @@ public class MaxNetworkDelayTest extends ClientServerTest {
         CountDownLatch latch = new CountDownLatch(3);
         ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
         transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
-        BayeuxClient client = new BayeuxClient(cometdURL, transport) {
+        BayeuxClient client = new BayeuxClient(cometdURL, transport);
+        client.addTransportListener(new TransportListener() {
             @Override
             public void onFailure(Throwable failure, List<? extends Message> messages) {
                 if (failure instanceof TimeoutException) {
                     latch.countDown();
                 }
             }
-        };
+        });
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             private final AtomicInteger connects = new AtomicInteger();
 
@@ -174,14 +177,15 @@ public class MaxNetworkDelayTest extends ClientServerTest {
         CountDownLatch latch = new CountDownLatch(3);
         ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
         transport.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay1);
-        BayeuxClient client = new BayeuxClient(cometdURL, transport) {
+        BayeuxClient client = new BayeuxClient(cometdURL, transport);
+        client.addTransportListener(new TransportListener() {
             @Override
             public void onFailure(Throwable failure, List<? extends Message> messages) {
                 if (failure instanceof TimeoutException) {
                     latch.countDown();
                 }
             }
-        };
+        });
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             private final AtomicInteger connects = new AtomicInteger();
 
