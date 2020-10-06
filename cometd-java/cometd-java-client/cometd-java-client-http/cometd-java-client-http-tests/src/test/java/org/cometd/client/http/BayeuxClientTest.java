@@ -52,6 +52,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
+import org.cometd.client.transport.TransportListener;
 import org.cometd.common.HashMapMessage;
 import org.cometd.common.TransportException;
 import org.cometd.server.BayeuxServerImpl;
@@ -210,13 +211,17 @@ public class BayeuxClientTest extends ClientServerTest {
         BlockingArrayQueue<Message> queue = new BlockingArrayQueue<>(100, 100);
         AtomicBoolean connected = new AtomicBoolean(false);
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
-            @Override
-            public void onFailure(Throwable failure, List<? extends Message> messages) {
-                Message.Mutable problem = newMessage();
-                problem.setId(newMessageId());
-                problem.setSuccessful(false);
-                problem.put("exception", failure);
-                queue.offer(problem);
+            {
+                addTransportListener(new TransportListener() {
+                    @Override
+                    public void onFailure(Throwable failure, List<? extends Message> messages) {
+                        Message.Mutable problem = newMessage();
+                        problem.setId(newMessageId());
+                        problem.setSuccessful(false);
+                        problem.put("exception", failure);
+                        queue.offer(problem);
+                    }
+                });
             }
         };
 
@@ -456,18 +461,18 @@ public class BayeuxClientTest extends ClientServerTest {
     @Test
     public void testAbortThenRestart() throws Exception {
         AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(2));
-        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
+        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient));
+        client.addTransportListener(new TransportListener() {
             @Override
             public void onSending(List<? extends Message> messages) {
                 // Need to be sure that the second connect is sent otherwise
                 // the abort and rehandshake may happen before the second
                 // connect and the test will fail.
-                super.onSending(messages);
                 if (messages.size() == 1 && Channel.META_CONNECT.equals(messages.get(0).getChannel())) {
                     connectLatch.get().countDown();
                 }
             }
-        };
+        });
         client.handshake();
 
         // Wait for connect

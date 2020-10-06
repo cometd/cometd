@@ -20,7 +20,9 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import okhttp3.Call;
@@ -40,8 +42,11 @@ import org.cometd.client.http.common.AbstractHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OkHttpClientTransport extends AbstractHttpClientTransport {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OkHttpClientTransport.class);
     private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json;charset=UTF-8");
 
     private final List<Call> _calls = new ArrayList<>();
@@ -110,15 +115,24 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
     private void send(TransportListener listener, List<Message.Mutable> messages, URI cookieURI, Request.Builder request) {
         long maxNetworkDelay = calculateMaxNetworkDelay(messages);
         OkHttpClient client = _client.newBuilder()
-                // Set the read timeout for this request larger than the total
-                // timeout so there are no races between the two timeouts.
-                .callTimeout(maxNetworkDelay, TimeUnit.MILLISECONDS)
-                .readTimeout(2 * maxNetworkDelay, TimeUnit.MILLISECONDS)
+                // Disable the read timeout.
+                .readTimeout(0, TimeUnit.MILLISECONDS)
+                // Schedule a task to timeout the request.
                 .build();
 
-        request = request.tag(TransportListener.class, listener).tag(List.class, messages);
+        request = request
+                .tag(TransportListener.class, listener)
+                .tag(List.class, messages);
 
         Call call = client.newCall(request.build());
+
+        AtomicReference<ScheduledFuture<?>> timeoutRef = new AtomicReference<>();
+        ScheduledFuture<?> newTask = getScheduler().schedule(() -> onTimeout(listener, messages, call, maxNetworkDelay, timeoutRef), maxNetworkDelay, TimeUnit.MILLISECONDS);
+        timeoutRef.set(newTask);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Started waiting for message replies, {} ms, task@{}", maxNetworkDelay, Integer.toHexString(newTask.hashCode()));
+        }
+
         synchronized (this) {
             if (!isAborted()) {
                 _calls.add(call);
@@ -133,18 +147,51 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
                     storeCookies(cookieURI, response.headers().toMultimap());
                     // Blocking I/O, unfortunately.
                     try (ResponseBody body = response.body()) {
-                        processResponseContent(listener, messages, body.string());
+                        String content = body == null ? "" : body.string();
+                        ScheduledFuture<?> task = timeoutRef.get();
+                        task.cancel(false);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Cancelled waiting for message replies (HTTP {}) task@{}", code, Integer.toHexString(task.hashCode()));
+                        }
+                        processResponseContent(listener, messages, content);
                     }
                 } else {
+                    ScheduledFuture<?> task = timeoutRef.get();
+                    task.cancel(false);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Cancelled waiting for message replies (HTTP {}) task@{}", code, Integer.toHexString(task.hashCode()));
+                    }
                     processWrongResponseCode(listener, messages, code);
                 }
             }
 
             @Override
             public void onFailure(Call call, IOException e) {
+                ScheduledFuture<?> task = timeoutRef.get();
+                task.cancel(false);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Cancelled waiting for failed message replies task@{}", Integer.toHexString(task.hashCode()) , e);
+                }
                 listener.onFailure(e, messages);
             }
         });
+    }
+
+    private void onTimeout(TransportListener listener, List<? extends Message> messages, Call call, long delay, AtomicReference<ScheduledFuture<?>> timeoutRef) {
+        listener.onTimeout(messages, Promise.from(result -> {
+            if (result > 0) {
+                ScheduledFuture<?> newTask = getScheduler().schedule(() -> onTimeout(listener, messages, call, delay + result, timeoutRef), result, TimeUnit.MILLISECONDS);
+                ScheduledFuture<?> oldTask = timeoutRef.getAndSet(newTask);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Extended waiting for message replies, {} ms, oldTask@{}, newTask@{}", result, Integer.toHexString(oldTask.hashCode()), Integer.toHexString(newTask.hashCode()));
+                }
+            } else {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Network delay expired: {} ms", delay);
+                }
+                call.cancel();
+            }
+        }, x -> call.cancel()));
     }
 
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
@@ -166,9 +213,13 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
         public Response intercept(Chain chain) throws IOException {
             Request request = chain.request();
             TransportListener listener = request.tag(TransportListener.class);
-            @SuppressWarnings("unchecked")
-            List<Message.Mutable> messages = request.tag(List.class);
-            listener.onSending(messages);
+            if (listener != null) {
+                @SuppressWarnings("unchecked")
+                List<Message> messages = request.tag(List.class);
+                if (messages != null) {
+                    listener.onSending(messages);
+                }
+            }
             return chain.proceed(request);
         }
     }

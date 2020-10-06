@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
@@ -115,6 +116,10 @@ public abstract class ClientTransport extends AbstractTransport {
 
     protected String generateJSON(List<Message.Mutable> messages) {
         return jsonContext.generate(messages);
+    }
+
+    protected ScheduledExecutorService getScheduler() {
+        return (ScheduledExecutorService)getOption(SCHEDULER_OPTION);
     }
 
     public long getMaxNetworkDelay() {

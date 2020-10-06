@@ -122,7 +122,7 @@ public class JettyHttpClientTransportTest {
                 List<Message.Mutable> messages = new ArrayList<>(1);
                 messages.add(new HashMapMessage());
                 long start = System.nanoTime();
-                transport.send(new TransportListener.Empty() {
+                transport.send(new TransportListener() {
                     @Override
                     public void onMessages(List<Message.Mutable> messages) {
                         latch.countDown();
@@ -183,7 +183,7 @@ public class JettyHttpClientTransportTest {
                 transport.init();
 
                 long start = System.nanoTime();
-                transport.send(new TransportListener.Empty() {
+                transport.send(new TransportListener() {
                     @Override
                     public void onFailure(Throwable failure, List<? extends Message> messages) {
                         if (failure instanceof TransportException) {
@@ -222,7 +222,7 @@ public class JettyHttpClientTransportTest {
             transport.setCookieStore(new HttpCookieStore());
             transport.init();
 
-            transport.send(new TransportListener.Empty() {
+            transport.send(new TransportListener() {
                 @Override
                 public void onFailure(Throwable failure, List<? extends Message> messages) {
                     if (failure instanceof ConnectException) {
@@ -268,7 +268,7 @@ public class JettyHttpClientTransportTest {
                 transport.init();
 
                 long start = System.nanoTime();
-                transport.send(new TransportListener.Empty() {
+                transport.send(new TransportListener() {
                     @Override
                     public void onFailure(Throwable failure, List<? extends Message> messages) {
                         latch.countDown();
@@ -332,7 +332,7 @@ public class JettyHttpClientTransportTest {
                 transport.setCookieStore(new HttpCookieStore());
                 transport.init();
 
-                transport.send(new TransportListener.Empty() {
+                transport.send(new TransportListener() {
                     @Override
                     public void onFailure(Throwable failure, List<? extends Message> messages) {
                         if (failure instanceof TimeoutException) {

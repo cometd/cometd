@@ -58,6 +58,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
+import org.cometd.client.transport.TransportListener;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.common.JacksonJSONContextClient;
@@ -896,12 +897,13 @@ public class CometDLoadClient implements MeasureConverter {
         }
     }
 
-    private class LoadBayeuxClient extends BayeuxClient {
+    private class LoadBayeuxClient extends BayeuxClient implements TransportListener {
         private final List<Integer> subscriptions = new ArrayList<>();
         private final CountDownLatch initLatch = new CountDownLatch(1);
 
         private LoadBayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport) {
             super(url, scheduler, transport);
+            addTransportListener(this);
         }
 
         public void setupRoom(int room) {

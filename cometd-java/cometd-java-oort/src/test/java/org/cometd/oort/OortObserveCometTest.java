@@ -41,6 +41,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
+import org.cometd.client.transport.TransportListener;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -1215,13 +1216,17 @@ public class OortObserveCometTest extends OortTest {
             @Override
             protected OortComet newOortComet(String cometURL, ClientTransport transport, ClientTransport[] otherTransports) {
                 return new OortComet(this, cometURL, getScheduler(), transport, otherTransports) {
-                    @Override
-                    public void onMessages(final List<Message.Mutable> messages) {
-                        if (halfNetworkDown.get()) {
-                            logger.info("Network down for client receive {}", messages);
-                            messagesFailure(new Exception(), messages);
-                            messages.clear();
-                        }
+                    {
+                        addTransportListener(new TransportListener() {
+                            @Override
+                            public void onMessages(final List<Message.Mutable> messages) {
+                                if (halfNetworkDown.get()) {
+                                    logger.info("Network down for client receive {}", messages);
+                                    messagesFailure(new Exception(), messages);
+                                    messages.clear();
+                                }
+                            }
+                        });
                     }
                 };
             }
