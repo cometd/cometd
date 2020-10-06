@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,6 +34,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.Promise;
+import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
@@ -56,6 +56,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     private final Object _lock = this;
     private boolean _open;
     private ScheduledExecutorService _scheduler;
+    private boolean _ownScheduler;
     private String _protocol;
     private long _connectTimeout;
     private long _idleTimeout;
@@ -65,8 +66,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
     protected AbstractWebSocketTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler) {
         super(NAME, url, options);
-        _scheduler = scheduler;
         setOptionPrefix(PREFIX);
+        _scheduler = scheduler;
     }
 
     @Override
@@ -91,8 +92,11 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
         locked(() -> {
             _open = true;
             if (_scheduler == null) {
-                int threads = Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
-                _scheduler = new WebSocketTransportScheduler(threads);
+                _scheduler = (ScheduledExecutorService)getOption(SCHEDULER_OPTION);
+                if (_scheduler == null) {
+                    _scheduler = new BayeuxClient.Scheduler(1);
+                    _ownScheduler = true;
+                }
             }
         });
     }
@@ -108,6 +112,10 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
         synchronized (_lock) {
             return block.get();
         }
+    }
+
+    protected ScheduledExecutorService getScheduler() {
+        return _scheduler;
     }
 
     public String getProtocol() {
@@ -152,7 +160,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     }
 
     private void shutdownScheduler() {
-        if (_scheduler instanceof WebSocketTransportScheduler) {
+        if (_ownScheduler) {
             _scheduler.shutdown();
             _scheduler = null;
         }
@@ -469,14 +477,6 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
         @Override
         public String toString() {
             return getClass().getSimpleName() + " " + message;
-        }
-    }
-
-    private static class WebSocketTransportScheduler extends ScheduledThreadPoolExecutor {
-        public WebSocketTransportScheduler(int threads) {
-            super(threads);
-            setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-            setRemoveOnCancelPolicy(true);
         }
     }
 }

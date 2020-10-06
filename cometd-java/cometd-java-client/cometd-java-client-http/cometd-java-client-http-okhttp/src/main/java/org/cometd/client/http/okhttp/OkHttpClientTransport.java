@@ -20,6 +20,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,8 +56,13 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
     public OkHttpClientTransport(Map<String, Object> options, OkHttpClient client) {
         this(null, options, client);
     }
+
     public OkHttpClientTransport(String url, Map<String, Object> options, OkHttpClient client) {
-        super(url, options);
+        this(url, options, null, client);
+    }
+
+    public OkHttpClientTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler, OkHttpClient client) {
+        super(url, options, scheduler);
         _client = client.newBuilder()
                 .cookieJar(CookieJar.NO_COOKIES)
                 .addInterceptor(new SendingInterceptor())
@@ -127,10 +133,13 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
         Call call = client.newCall(request.build());
 
         AtomicReference<ScheduledFuture<?>> timeoutRef = new AtomicReference<>();
-        ScheduledFuture<?> newTask = getScheduler().schedule(() -> onTimeout(listener, messages, call, maxNetworkDelay, timeoutRef), maxNetworkDelay, TimeUnit.MILLISECONDS);
-        timeoutRef.set(newTask);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Started waiting for message replies, {} ms, task@{}", maxNetworkDelay, Integer.toHexString(newTask.hashCode()));
+        ScheduledExecutorService scheduler = getScheduler();
+        if (scheduler != null) {
+            ScheduledFuture<?> newTask = scheduler.schedule(() -> onTimeout(listener, messages, call, maxNetworkDelay, timeoutRef), maxNetworkDelay, TimeUnit.MILLISECONDS);
+            timeoutRef.set(newTask);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Started waiting for message replies, {} ms, task@{}", maxNetworkDelay, Integer.toHexString(newTask.hashCode()));
+            }
         }
 
         synchronized (this) {
@@ -149,17 +158,21 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
                     try (ResponseBody body = response.body()) {
                         String content = body == null ? "" : body.string();
                         ScheduledFuture<?> task = timeoutRef.get();
-                        task.cancel(false);
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("Cancelled waiting for message replies (HTTP {}) task@{}", code, Integer.toHexString(task.hashCode()));
+                        if (task != null) {
+                            task.cancel(false);
+                            if (LOGGER.isDebugEnabled()) {
+                                LOGGER.debug("Cancelled waiting for message replies (HTTP {}) task@{}", code, Integer.toHexString(task.hashCode()));
+                            }
                         }
                         processResponseContent(listener, messages, content);
                     }
                 } else {
                     ScheduledFuture<?> task = timeoutRef.get();
-                    task.cancel(false);
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Cancelled waiting for message replies (HTTP {}) task@{}", code, Integer.toHexString(task.hashCode()));
+                    if (task != null) {
+                        task.cancel(false);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Cancelled waiting for message replies (HTTP {}) task@{}", code, Integer.toHexString(task.hashCode()));
+                        }
                     }
                     processWrongResponseCode(listener, messages, code);
                 }
@@ -168,9 +181,11 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
             @Override
             public void onFailure(Call call, IOException e) {
                 ScheduledFuture<?> task = timeoutRef.get();
-                task.cancel(false);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Cancelled waiting for failed message replies task@{}", Integer.toHexString(task.hashCode()) , e);
+                if (task != null) {
+                    task.cancel(false);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Cancelled waiting for failed message replies task@{}", Integer.toHexString(task.hashCode()) , e);
+                    }
                 }
                 listener.onFailure(e, messages);
             }
@@ -180,10 +195,13 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
     private void onTimeout(TransportListener listener, List<? extends Message> messages, Call call, long delay, AtomicReference<ScheduledFuture<?>> timeoutRef) {
         listener.onTimeout(messages, Promise.from(result -> {
             if (result > 0) {
-                ScheduledFuture<?> newTask = getScheduler().schedule(() -> onTimeout(listener, messages, call, delay + result, timeoutRef), result, TimeUnit.MILLISECONDS);
-                ScheduledFuture<?> oldTask = timeoutRef.getAndSet(newTask);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Extended waiting for message replies, {} ms, oldTask@{}, newTask@{}", result, Integer.toHexString(oldTask.hashCode()), Integer.toHexString(newTask.hashCode()));
+                ScheduledExecutorService scheduler = getScheduler();
+                if (scheduler != null) {
+                    ScheduledFuture<?> newTask = scheduler.schedule(() -> onTimeout(listener, messages, call, delay + result, timeoutRef), result, TimeUnit.MILLISECONDS);
+                    ScheduledFuture<?> oldTask = timeoutRef.getAndSet(newTask);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Extended waiting for message replies, {} ms, oldTask@{}, newTask@{}", result, Integer.toHexString(oldTask.hashCode()), Integer.toHexString(newTask.hashCode()));
+                    }
                 }
             } else {
                 if (LOGGER.isDebugEnabled()) {
