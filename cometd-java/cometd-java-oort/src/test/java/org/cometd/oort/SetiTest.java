@@ -1108,6 +1108,30 @@ public class SetiTest extends OortTest {
         Assert.assertEquals(0, ((ServerSessionImpl)session).getListeners().size());
     }
 
+    @Test
+    public void testDisassociateAllSessions() throws Exception {
+        Server server1 = startServer(0);
+        Oort oort1 = startOort(server1);
+
+        Seti seti1 = startSeti(oort1);
+
+        String user = "user";
+        LocalSession localSession = oort1.getBayeuxServer().newLocalSession(user);
+        localSession.handshake();
+        ServerSession session = localSession.getServerSession();
+
+        seti1.associate(user, session);
+        Set<ServerSession> removedSessions = seti1.disassociate(user);
+
+        Assert.assertEquals(1, removedSessions.size());
+        Assert.assertEquals(session, removedSessions.iterator().next());
+        Assert.assertEquals(0, ((ServerSessionImpl)session).getListeners().size());
+
+        // Don't throw when the userId is not known.
+        Set<ServerSession> removedUnknownSessions = seti1.disassociate("unknown-user");
+        Assert.assertEquals(0, removedUnknownSessions.size());
+    }
+
     private static class UserPresentListener implements Seti.PresenceListener {
         private final CountDownLatch latch;
 
