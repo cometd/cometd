@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -59,8 +61,12 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
     }
 
     public JettyHttpClientTransport(String url, Map<String, Object> options, HttpClient httpClient) {
-        super(url, options);
-        _httpClient = httpClient;
+        this(url, options, null, httpClient);
+    }
+
+    public JettyHttpClientTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler, HttpClient httpClient) {
+        super(url, options, scheduler);
+        _httpClient = Objects.requireNonNull(httpClient);
     }
 
     protected HttpClient getHttpClient() {
@@ -129,17 +135,22 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
         request.idleTimeout(0, TimeUnit.MILLISECONDS);
         // Schedule a task to timeout the request.
         AtomicReference<ScheduledFuture<?>> timeoutTaskRef = new AtomicReference<>();
-        ScheduledFuture<?> newTask = getScheduler().schedule(() -> onTimeout(listener, messages, request, maxNetworkDelay, timeoutTaskRef), maxNetworkDelay, TimeUnit.MILLISECONDS);
-        timeoutTaskRef.set(newTask);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Started waiting for message replies, {} ms, task@{}", maxNetworkDelay, Integer.toHexString(newTask.hashCode()));
+        ScheduledExecutorService scheduler = getScheduler();
+        if (scheduler != null) {
+            ScheduledFuture<?> newTask = scheduler.schedule(() -> onTimeout(listener, messages, request, maxNetworkDelay, timeoutTaskRef), maxNetworkDelay, TimeUnit.MILLISECONDS);
+            timeoutTaskRef.set(newTask);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Started waiting for message replies, {} ms, task@{}", maxNetworkDelay, Integer.toHexString(newTask.hashCode()));
+            }
         }
 
         request.onComplete(result -> {
             ScheduledFuture<?> task = timeoutTaskRef.get();
-            task.cancel(false);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Cancelled waiting for message replies, task@{}", Integer.toHexString(task.hashCode()));
+            if (task != null) {
+                task.cancel(false);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Cancelled waiting for message replies, task@{}", Integer.toHexString(task.hashCode()));
+                }
             }
         });
 
@@ -155,10 +166,13 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
     private void onTimeout(TransportListener listener, List<? extends Message> messages, Request request, long delay, AtomicReference<ScheduledFuture<?>> timeoutTaskRef) {
         listener.onTimeout(messages, Promise.from(result -> {
             if (result > 0) {
-                ScheduledFuture<?> newTask = getScheduler().schedule(() -> onTimeout(listener, messages, request, delay + result, timeoutTaskRef), result, TimeUnit.MILLISECONDS);
-                ScheduledFuture<?> oldTask = timeoutTaskRef.getAndSet(newTask);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Extended waiting for message replies, {} ms, oldTask@{}, newTask@{}", result, Integer.toHexString(oldTask.hashCode()), Integer.toHexString(newTask.hashCode()));
+                ScheduledExecutorService scheduler = getScheduler();
+                if (scheduler != null) {
+                    ScheduledFuture<?> newTask = scheduler.schedule(() -> onTimeout(listener, messages, request, delay + result, timeoutTaskRef), result, TimeUnit.MILLISECONDS);
+                    ScheduledFuture<?> oldTask = timeoutTaskRef.getAndSet(newTask);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Extended waiting for message replies, {} ms, oldTask@{}, newTask@{}", result, Integer.toHexString(oldTask.hashCode()), Integer.toHexString(newTask.hashCode()));
+                    }
                 }
             } else {
                 request.abort(new TimeoutException("Network delay expired: " + delay + " ms"));
