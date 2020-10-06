@@ -1127,7 +1127,7 @@ public class SetiTest extends OortTest {
         Assert.assertEquals(session, removedSessions.iterator().next());
         Assert.assertEquals(0, ((ServerSessionImpl)session).getListeners().size());
 
-        // Doesn't throw an Exception when userId is not known
+        // Don't throw when the userId is not known.
         Set<ServerSession> removedUnknownSessions = seti1.disassociate("unknown-user");
         Assert.assertEquals(0, removedUnknownSessions.size());
     }

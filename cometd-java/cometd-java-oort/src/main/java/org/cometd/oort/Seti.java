@@ -164,7 +164,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      * @see #isAssociated(String)
      * @see #disassociate(String, ServerSession)
      */
-    public boolean associate(final String userId, final ServerSession session) {
+    public boolean associate(String userId, ServerSession session) {
         if (session == null) {
             throw new NullPointerException();
         }
@@ -318,7 +318,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      * @return true if the session has been disassociated, false if it was not associated
      * @see #associate(String, ServerSession)
      */
-    public boolean disassociate(final String userId, ServerSession session) {
+    public boolean disassociate(String userId, ServerSession session) {
         LocalLocation location = new LocalLocation(userId, session);
         boolean removed = disassociate(userId, location);
 
@@ -361,24 +361,22 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      * @return set of sessions that were disassociated
      * @see #associate(String, ServerSession)
      */
-    public Set<ServerSession> disassociate(final String userId) {
-        final Set<LocalLocation> localLocations = new HashSet<>();
-        final Set<ServerSession> removedUserSessions = new HashSet<>();
+    public Set<ServerSession> disassociate(String userId) {
+        Set<LocalLocation> localLocations = new HashSet<>();
         synchronized (_uid2Location) {
-            final Set<Location> userLocations = _uid2Location.get(userId);
-            if (userLocations == null) {
-                return removedUserSessions;
-            }
-
-            for (Location location : userLocations) {
-                if (location instanceof LocalLocation) {
-                    localLocations.add((LocalLocation)location);
+            Set<Location> userLocations = _uid2Location.get(userId);
+            if (userLocations != null) {
+                for (Location location : userLocations) {
+                    if (location instanceof LocalLocation) {
+                        localLocations.add((LocalLocation)location);
+                    }
                 }
             }
         }
 
+        Set<ServerSession> removedUserSessions = new HashSet<>();
         for (LocalLocation location : localLocations) {
-            final ServerSession session = location._session;
+            ServerSession session = location._session;
             boolean removed = disassociate(userId, session);
             if (removed) {
                 removedUserSessions.add(session);
@@ -410,7 +408,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     }
 
     protected void removeAssociationsAndPresences() {
-        final Set<String> userIds = new HashSet<>();
+        Set<String> userIds = new HashSet<>();
         synchronized (_uid2Location) {
             getAssociatedUserIds(userIds);
             _uid2Location.clear();
@@ -499,7 +497,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      * @param data      the content of the message
      * @see #sendMessage(Collection, String, Object)
      */
-    public void sendMessage(final String toUserId, final String toChannel, final Object data) {
+    public void sendMessage(String toUserId, String toChannel, Object data) {
         sendMessage(Collections.singleton(toUserId), toChannel, data);
     }
 
@@ -510,7 +508,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      * @param toChannel the channel to send the message to
      * @param data      the content of the message
      */
-    public void sendMessage(final Collection<String> toUserIds, final String toChannel, final Object data) {
+    public void sendMessage(Collection<String> toUserIds, String toChannel, Object data) {
         for (String toUserId : toUserIds) {
             Set<Location> copy = new HashSet<>();
             synchronized (_uid2Location) {
