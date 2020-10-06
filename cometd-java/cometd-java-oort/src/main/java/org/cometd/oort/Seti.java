@@ -362,17 +362,22 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      * @see #associate(String, ServerSession)
      */
     public Set<ServerSession> disassociate(final String userId) {
-        final Set<LocalLocation> userLocations = new HashSet<>();
+        final Set<LocalLocation> localLocations = new HashSet<>();
+        final Set<ServerSession> removedUserSessions = new HashSet<>();
         synchronized (_uid2Location) {
-            for (Location location : _uid2Location.get(userId)) {
+            final Set<Location> userLocations = _uid2Location.get(userId);
+            if (userLocations == null) {
+                return removedUserSessions;
+            }
+
+            for (Location location : userLocations) {
                 if (location instanceof LocalLocation) {
-                    userLocations.add((LocalLocation)location);
+                    localLocations.add((LocalLocation)location);
                 }
             }
         }
 
-        final Set<ServerSession> removedUserSessions = new HashSet<>();
-        for (LocalLocation location : userLocations) {
+        for (LocalLocation location : localLocations) {
             final ServerSession session = location._session;
             boolean removed = disassociate(userId, session);
             if (removed) {
