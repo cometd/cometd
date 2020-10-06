@@ -87,6 +87,7 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
     @Override
     public void abort(Throwable failure) {
         _aborted = true;
+        shutdownScheduler();
     }
 
     protected boolean isAborted() {
