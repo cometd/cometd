@@ -139,7 +139,7 @@ public class JettyHttpClientTransportTest {
                 httpClient.stop();
             }
         } finally {
-            serverThread.join();
+            serverThread.join(5000);
             Assert.assertNull(serverException.get());
             serverSocket.close();
         }
@@ -200,7 +200,7 @@ public class JettyHttpClientTransportTest {
                 httpClient.stop();
             }
         } finally {
-            serverThread.join();
+            serverThread.join(5000);
             Assert.assertNull(serverException.get());
             serverSocket.close();
         }
@@ -283,7 +283,7 @@ public class JettyHttpClientTransportTest {
                 httpClient.stop();
             }
         } finally {
-            serverThread.join();
+            serverThread.join(5000);
             Assert.assertNull(serverException.get());
             serverSocket.close();
         }
@@ -346,7 +346,7 @@ public class JettyHttpClientTransportTest {
                 httpClient.stop();
             }
         } finally {
-            serverThread.join();
+            serverThread.join(5000);
             Assert.assertNull(serverException.get());
             serverSocket.close();
         }

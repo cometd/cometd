@@ -112,6 +112,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     private final SessionState sessionState = new SessionState();
     private final String url;
     private ScheduledExecutorService scheduler;
+    private boolean ownScheduler;
     private BackOffStrategy backOffStrategy = new BackOffStrategy.Linear();
 
     /**
@@ -904,7 +905,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         if (scheduler == null) {
-            scheduler = new BayeuxClientScheduler();
+            scheduler = new Scheduler(1);
+            ownScheduler = true;
         }
         setOption(ClientTransport.SCHEDULER_OPTION, scheduler);
     }
@@ -915,7 +917,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         cookieStore.removeAll();
 
-        if (scheduler instanceof BayeuxClientScheduler) {
+        if (ownScheduler) {
             scheduler.shutdown();
             scheduler = null;
         }
@@ -1719,9 +1721,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
     }
 
-    private static class BayeuxClientScheduler extends ScheduledThreadPoolExecutor {
-        public BayeuxClientScheduler() {
-            super(1);
+    public static class Scheduler extends ScheduledThreadPoolExecutor {
+        public Scheduler(int threads) {
+            super(threads);
             setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
             setRemoveOnCancelPolicy(true);
         }

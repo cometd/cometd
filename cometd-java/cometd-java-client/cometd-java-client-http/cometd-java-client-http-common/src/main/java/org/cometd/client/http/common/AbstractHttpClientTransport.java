@@ -19,11 +19,13 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.TransportListener;
@@ -39,11 +41,24 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
     private boolean _aborted;
     private int _maxMessageSize;
     private boolean _appendMessageType;
+    private ScheduledExecutorService _scheduler;
+    private boolean _ownScheduler;
     private Map<String, Object> _advice;
 
+    /**
+     * @param url the CometD server URL
+     * @param options the transport options
+     * @deprecated use {@link #AbstractHttpClientTransport(String, Map, ScheduledExecutorService)} instead
+     */
+    @Deprecated
     protected AbstractHttpClientTransport(String url, Map<String, Object> options) {
+        this(url, options, null);
+    }
+
+    protected AbstractHttpClientTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler) {
         super(NAME, url, options);
         setOptionPrefix(PREFIX);
+        _scheduler = scheduler;
     }
 
     @Override
@@ -54,9 +69,7 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
     @Override
     public void init() {
         super.init();
-
         _aborted = false;
-
         _maxMessageSize = getOption(ClientTransport.MAX_MESSAGE_SIZE_OPTION, 1024 * 1024);
 
         Pattern uriRegexp = Pattern.compile("(^https?://(((\\[[^]]+])|([^:/?#]+))(:(\\d+))?))?([^?#]*)(.*)?");
@@ -65,6 +78,23 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
             String afterPath = uriMatcher.group(9);
             _appendMessageType = afterPath == null || afterPath.trim().length() == 0;
         }
+
+        if (_scheduler == null) {
+            _scheduler = (ScheduledExecutorService)getOption(SCHEDULER_OPTION);
+            if (_scheduler == null) {
+                _scheduler = new BayeuxClient.Scheduler(1);
+                _ownScheduler = true;
+            }
+        }
+    }
+
+    @Override
+    public void terminate() {
+        if (_ownScheduler) {
+            _scheduler.shutdown();
+            _scheduler = null;
+        }
+        super.terminate();
     }
 
     @Override
@@ -82,6 +112,10 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
 
     protected boolean isAppendMessageType() {
         return _appendMessageType;
+    }
+
+    protected ScheduledExecutorService getScheduler() {
+        return _scheduler;
     }
 
     protected String newRequestURI(List<Message.Mutable> messages) {
