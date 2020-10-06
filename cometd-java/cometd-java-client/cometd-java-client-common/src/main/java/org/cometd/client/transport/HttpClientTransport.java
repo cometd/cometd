@@ -23,6 +23,7 @@ import java.net.HttpCookie;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +33,13 @@ public abstract class HttpClientTransport extends ClientTransport {
 
     private volatile CookieStore cookieStore;
 
+    @Deprecated
     protected HttpClientTransport(String name, String url, Map<String, Object> options) {
-        super(name, url, options);
+        this(name, url, options, null);
+    }
+
+    protected HttpClientTransport(String name, String url, Map<String, Object> options, ScheduledExecutorService scheduler) {
+        super(name, url, options, scheduler);
     }
 
     protected CookieStore getCookieStore() {

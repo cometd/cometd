@@ -34,7 +34,6 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.Promise;
-import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
@@ -55,8 +54,6 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
     private final Object _lock = this;
     private boolean _open;
-    private ScheduledExecutorService _scheduler;
-    private boolean _ownScheduler;
     private String _protocol;
     private long _connectTimeout;
     private long _idleTimeout;
@@ -65,9 +62,8 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     private TransportListener _listener;
 
     protected AbstractWebSocketTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler) {
-        super(NAME, url, options);
+        super(NAME, url, options, scheduler);
         setOptionPrefix(PREFIX);
-        _scheduler = scheduler;
     }
 
     @Override
@@ -91,13 +87,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
         _stickyReconnect = getOption(STICKY_RECONNECT_OPTION, true);
         locked(() -> {
             _open = true;
-            if (_scheduler == null) {
-                _scheduler = (ScheduledExecutorService)getOption(SCHEDULER_OPTION);
-                if (_scheduler == null) {
-                    _scheduler = new BayeuxClient.Scheduler(1);
-                    _ownScheduler = true;
-                }
-            }
+            initScheduler();
         });
     }
 
@@ -112,10 +102,6 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
         synchronized (_lock) {
             return block.get();
         }
-    }
-
-    protected ScheduledExecutorService getScheduler() {
-        return _scheduler;
     }
 
     public String getProtocol() {
@@ -157,13 +143,6 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             delegate.terminate();
         }
         super.terminate();
-    }
-
-    private void shutdownScheduler() {
-        if (_ownScheduler) {
-            _scheduler.shutdown();
-            _scheduler = null;
-        }
     }
 
     protected Delegate getDelegate() {

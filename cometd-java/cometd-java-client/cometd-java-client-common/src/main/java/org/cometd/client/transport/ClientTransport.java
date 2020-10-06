@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
@@ -38,12 +39,23 @@ public abstract class ClientTransport extends AbstractTransport {
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
 
     private String url;
+    private ScheduledExecutorService scheduler;
+    private SchedulerSource schedulerSource = SchedulerSource.UNKNOWN;
     private long maxNetworkDelay;
     private JSONContext.Client jsonContext;
 
+    @Deprecated
     protected ClientTransport(String name, String url, Map<String, Object> options) {
+        this(name, url, options, null);
+    }
+
+    protected ClientTransport(String name, String url, Map<String, Object> options, ScheduledExecutorService scheduler) {
         super(name, options);
         this.url = url;
+        this.scheduler = scheduler;
+        if (scheduler != null) {
+            this.schedulerSource = SchedulerSource.PROVIDED;
+        }
     }
 
     public String getURL() {
@@ -68,7 +80,7 @@ public abstract class ClientTransport extends AbstractTransport {
                 try {
                     Class<?> jsonContextClass = Thread.currentThread().getContextClassLoader().loadClass((String)jsonContextOption);
                     if (JSONContext.Client.class.isAssignableFrom(jsonContextClass)) {
-                        jsonContext = (JSONContext.Client)jsonContextClass.newInstance();
+                        jsonContext = (JSONContext.Client)jsonContextClass.getConstructor().newInstance();
                     } else {
                         throw new IllegalArgumentException("Invalid implementation of " + JSONContext.Client.class.getName() + " provided: " + jsonContextOption);
                     }
@@ -86,6 +98,31 @@ public abstract class ClientTransport extends AbstractTransport {
 
     protected JSONContext.Client getJSONContextClient() {
         return jsonContext;
+    }
+
+    protected void initScheduler() {
+        if (scheduler == null) {
+            scheduler = (ScheduledExecutorService)getOption(SCHEDULER_OPTION);
+            schedulerSource = SchedulerSource.SHARED;
+            if (scheduler == null) {
+                scheduler = new BayeuxClient.Scheduler(1);
+                schedulerSource = SchedulerSource.INTERNAL;
+            }
+        }
+    }
+
+    protected void shutdownScheduler() {
+        if (schedulerSource == SchedulerSource.INTERNAL) {
+            scheduler.shutdown();
+        }
+        if (schedulerSource != SchedulerSource.PROVIDED) {
+            scheduler = null;
+            schedulerSource = SchedulerSource.UNKNOWN;
+        }
+    }
+
+    protected ScheduledExecutorService getScheduler() {
+        return scheduler;
     }
 
     /**
@@ -161,5 +198,9 @@ public abstract class ClientTransport extends AbstractTransport {
 
     public interface FailureHandler {
         void handle(FailureInfo failureInfo);
+    }
+
+    private enum SchedulerSource {
+        UNKNOWN, PROVIDED, SHARED, INTERNAL
     }
 }

@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.TransportListener;
@@ -41,8 +40,6 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
     private boolean _aborted;
     private int _maxMessageSize;
     private boolean _appendMessageType;
-    private ScheduledExecutorService _scheduler;
-    private boolean _ownScheduler;
     private Map<String, Object> _advice;
 
     /**
@@ -56,9 +53,8 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
     }
 
     protected AbstractHttpClientTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler) {
-        super(NAME, url, options);
+        super(NAME, url, options, scheduler);
         setOptionPrefix(PREFIX);
-        _scheduler = scheduler;
     }
 
     @Override
@@ -79,21 +75,12 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
             _appendMessageType = afterPath == null || afterPath.trim().length() == 0;
         }
 
-        if (_scheduler == null) {
-            _scheduler = (ScheduledExecutorService)getOption(SCHEDULER_OPTION);
-            if (_scheduler == null) {
-                _scheduler = new BayeuxClient.Scheduler(1);
-                _ownScheduler = true;
-            }
-        }
+        initScheduler();
     }
 
     @Override
     public void terminate() {
-        if (_ownScheduler) {
-            _scheduler.shutdown();
-            _scheduler = null;
-        }
+        shutdownScheduler();
         super.terminate();
     }
 
@@ -112,10 +99,6 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
 
     protected boolean isAppendMessageType() {
         return _appendMessageType;
-    }
-
-    protected ScheduledExecutorService getScheduler() {
-        return _scheduler;
     }
 
     protected String newRequestURI(List<Message.Mutable> messages) {
