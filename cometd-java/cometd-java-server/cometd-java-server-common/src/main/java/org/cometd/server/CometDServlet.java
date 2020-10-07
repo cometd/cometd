@@ -104,9 +104,6 @@ public class CometDServlet extends HttpServlet {
         // Just return 200 OK, there is nothing more to add to such requests.
     }
 
-    /**
-     * @see javax.servlet.GenericServlet#destroy()
-     */
     @Override
     public void destroy() {
         for (ServerSession session : _bayeux.getSessions()) {
