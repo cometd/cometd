@@ -46,20 +46,29 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
         evaluateScript("cometd.unsubscribe(subscription);");
         Assert.assertTrue(unsubscribeLatch.await(5000));
 
-        // Two subscriptions to the same channel also generate only one message to the server
+        // Two subscriptions to the same channel generate only one message to the server.
         subscribeLatch.reset(2);
-        evaluateScript("var subscription1 = cometd.subscribe('/foo', function() {});");
-        evaluateScript("var subscription2 = cometd.subscribe('/foo', function() {});");
+        evaluateScript("var callbackLatch = new Latch(2);");
+        Latch callbackLatch = javaScript.get("callbackLatch");
+        evaluateScript("var subscription1 = cometd.subscribe('/foo', function() {}, function() { callbackLatch.countDown(); });");
+        evaluateScript("var subscription2 = cometd.subscribe('/foo', function() {}, function() { callbackLatch.countDown(); });");
+        // The callback should be notified even if the message was not sent to the server.
+        Assert.assertTrue(callbackLatch.await(5000));
         Assert.assertFalse(subscribeLatch.await(1000));
 
-        // No message if there are subscriptions
+        // No message sent to server if there still are subscriptions.
         unsubscribeLatch.reset(1);
-        evaluateScript("cometd.unsubscribe(subscription2);");
+        callbackLatch.reset(1);
+        evaluateScript("cometd.unsubscribe(subscription2, function() { callbackLatch.countDown(); });");
+        // The callback should be notified even if the message was not sent to the server.
+        Assert.assertTrue(callbackLatch.await(5000));
         Assert.assertFalse(unsubscribeLatch.await(1000));
 
-        // Expect message for last unsubscription on the channel
+        // Expect message sent to the server for last unsubscription on the channel.
         unsubscribeLatch.reset(1);
-        evaluateScript("cometd.unsubscribe(subscription1);");
+        callbackLatch.reset(1);
+        evaluateScript("cometd.unsubscribe(subscription1, function() { callbackLatch.countDown(); });");
+        Assert.assertTrue(callbackLatch.await(5000));
         Assert.assertTrue(unsubscribeLatch.await(5000));
 
         disconnect();

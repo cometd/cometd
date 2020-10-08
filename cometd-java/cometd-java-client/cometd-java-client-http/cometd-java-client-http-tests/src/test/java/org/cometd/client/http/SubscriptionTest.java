@@ -133,28 +133,32 @@ public class SubscriptionTest extends ClientServerTest {
 
         Assert.assertFalse(result);
         Assert.assertFalse(subscribeLatch.get().await(500, TimeUnit.MILLISECONDS));
-        Assert.assertFalse(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
 
         // Try a different listener.
         ClientSessionChannel.MessageListener listener2 = (c, m) -> {};
+        replyLatch.set(new CountDownLatch(1));
         result = channel.subscribe(listener2, reply -> replyLatch.get().countDown());
 
         Assert.assertFalse(result);
         Assert.assertFalse(subscribeLatch.get().await(500, TimeUnit.MILLISECONDS));
-        Assert.assertFalse(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
 
+        replyLatch.set(new CountDownLatch(1));
         result = channel.unsubscribe(listener2, reply -> replyLatch.get().countDown());
 
         Assert.assertFalse(result);
         Assert.assertFalse(unsubscribeLatch.get().await(500, TimeUnit.MILLISECONDS));
-        Assert.assertFalse(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
 
+        replyLatch.set(new CountDownLatch(1));
         result = channel.unsubscribe(listener1, reply -> replyLatch.get().countDown());
 
         Assert.assertFalse(result);
         Assert.assertFalse(unsubscribeLatch.get().await(500, TimeUnit.MILLISECONDS));
-        Assert.assertFalse(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
 
+        replyLatch.set(new CountDownLatch(1));
         result = channel.unsubscribe(listener1, reply -> replyLatch.get().countDown());
 
         Assert.assertTrue(result);
