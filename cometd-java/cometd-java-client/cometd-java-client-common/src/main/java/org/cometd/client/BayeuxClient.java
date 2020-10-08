@@ -1278,6 +1278,18 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             throwIfReleased();
             return BayeuxClient.this;
         }
+
+        @Override
+        protected void nonFirstSubscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback) {
+            // Keep the semantic that the callback is notified asynchronously.
+            scheduleAction(() -> super.nonFirstSubscribe(message, listener, callback), 0, 0);
+        }
+
+        @Override
+        protected void nonLastUnSubscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback) {
+            // Keep the semantic that the callback is notified asynchronously.
+            scheduleAction(() -> super.nonLastUnSubscribe(message, listener, callback), 0, 0);
+        }
     }
 
     private class SessionState implements ClientTransport.FailureHandler {

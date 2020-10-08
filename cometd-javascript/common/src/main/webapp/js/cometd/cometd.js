@@ -2936,6 +2936,18 @@
                 _cometd._putCallback(message.id, subscribeCallback);
 
                 _queueSend(message);
+            } else {
+                if (_isFunction(subscribeCallback)) {
+                    // Keep the semantic that the callback is notified asynchronously.
+                    _cometd.setTimeout(function() {
+                        _notifyCallback(subscribeCallback, {
+                            id: _nextMessageId(),
+                            successful: true,
+                            channel: '/meta/subscribe',
+                            subscription: channel
+                        });
+                    }, 0);
+                }
             }
 
             return subscription;
@@ -2979,6 +2991,18 @@
                 _cometd._putCallback(message.id, unsubscribeCallback);
 
                 _queueSend(message);
+            } else {
+                if (_isFunction(unsubscribeCallback)) {
+                    // Keep the semantic that the callback is notified asynchronously.
+                    _cometd.setTimeout(function() {
+                        _notifyCallback(unsubscribeCallback, {
+                            id: _nextMessageId(),
+                            successful: true,
+                            channel: '/meta/unsubscribe',
+                            subscription: channel
+                        });
+                    }, 0);
+                }
             }
         };
 
