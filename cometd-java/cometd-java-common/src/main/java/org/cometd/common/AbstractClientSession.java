@@ -437,15 +437,15 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         @Override
         public boolean subscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback) {
             throwIfReleased();
-            boolean added = _subscriptions.add(listener);
-            if (added) {
-                int count = _subscriptionCount.incrementAndGet();
-                if (count == 1) {
-                    sendSubscribe(message, listener, callback);
-                    return true;
-                }
+            _subscriptions.add(listener);
+            int count = _subscriptionCount.incrementAndGet();
+            if (count == 1) {
+                sendSubscribe(message, listener, callback);
+                return true;
+            } else {
+                nonFirstSubscribe(message, listener, callback);
+                return false;
             }
-            return false;
         }
 
         protected void sendSubscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback) {
@@ -461,14 +461,27 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
             send(message);
         }
 
+        protected void nonFirstSubscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback) {
+            if (callback != null) {
+                Message.Mutable reply = newMessage();
+                reply.setSuccessful(true);
+                reply.setId(newMessageId());
+                reply.setChannel(Channel.META_SUBSCRIBE);
+                reply.put(Message.SUBSCRIPTION_FIELD, getId());
+                notifyCallback(callback, reply);
+            }
+        }
+
         @Override
         public boolean unsubscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback) {
             boolean removedLast = removeSubscription(listener);
             if (removedLast) {
-                sendUnSubscribe(message, callback);
+                sendUnSubscribe(message, listener, callback);
                 return true;
+            } else {
+                nonLastUnSubscribe(message, listener, callback);
+                return false;
             }
-            return false;
         }
 
         private boolean removeSubscription(MessageListener listener) {
@@ -480,6 +493,11 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
             return false;
         }
 
+        protected void sendUnSubscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback) {
+            sendUnSubscribe(message, callback);
+        }
+
+        @Deprecated
         protected void sendUnSubscribe(Message.Mutable message, ClientSession.MessageListener callback) {
             if (message == null) {
                 message = newMessage();
@@ -490,6 +508,17 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
             message.put(Message.SUBSCRIPTION_FIELD, getId());
             registerCallback(messageId, callback);
             send(message);
+        }
+
+        protected void nonLastUnSubscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback) {
+            if (callback != null) {
+                Message.Mutable reply = newMessage();
+                reply.setSuccessful(true);
+                reply.setId(newMessageId());
+                reply.setChannel(Channel.META_UNSUBSCRIBE);
+                reply.put(Message.SUBSCRIPTION_FIELD, getId());
+                notifyCallback(callback, reply);
+            }
         }
 
         @Override
