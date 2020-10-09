@@ -7,7 +7,7 @@
     <property name="options">
       <map>
         <!-- Bean "servletContext" is made available by Spring -->
-        <entry key="javax.servlet.ServletContext" value-ref="servletContext" />
+        <entry key="jakarta.servlet.ServletContext" value-ref="servletContext" />
         <entry key="ws.cometdURLMapping" value="/cometd/*" />
       </map>
     </property>

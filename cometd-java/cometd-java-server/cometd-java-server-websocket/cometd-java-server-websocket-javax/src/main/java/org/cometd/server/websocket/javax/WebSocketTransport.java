@@ -111,8 +111,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
             super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
                     request.getParameterMap(), request.getUserPrincipal(), (HttpSession)request.getHttpSession(),
                     // Hopefully these will become a standard, for now they are Jetty specific.
-                    (InetSocketAddress)userProperties.get("javax.websocket.endpoint.localAddress"),
-                    (InetSocketAddress)userProperties.get("javax.websocket.endpoint.remoteAddress"),
+                    (InetSocketAddress)userProperties.get("jakarta.websocket.endpoint.localAddress"),
+                    (InetSocketAddress)userProperties.get("jakarta.websocket.endpoint.remoteAddress"),
                     WebSocketTransport.retrieveLocales(userProperties), "HTTP/1.1",
                     WebSocketTransport.isSecure(request));
         }
@@ -120,7 +120,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
 
     private static List<Locale> retrieveLocales(Map<String, Object> userProperties) {
         @SuppressWarnings("unchecked")
-        List<Locale> locales = (List<Locale>)userProperties.get("javax.websocket.upgrade.locales");
+        List<Locale> locales = (List<Locale>)userProperties.get("jakarta.websocket.upgrade.locales");
         if (locales == null || locales.isEmpty()) {
             return Collections.singletonList(Locale.getDefault());
         }

@@ -262,7 +262,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private ServerTransport newWebSocketTransport() {
         try {
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            loader.loadClass("javax.websocket.server.ServerContainer");
+            loader.loadClass("jakarta.websocket.server.ServerContainer");
             String transportClass = "org.cometd.server.websocket.javax.WebSocketTransport";
             ServerTransport transport = newServerTransport(transportClass);
             if (transport == null) {
@@ -278,7 +278,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private ServerTransport newJSONTransport() {
         try {
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            loader.loadClass("javax.servlet.ReadListener");
+            loader.loadClass("jakarta.servlet.ReadListener");
             return new AsyncJSONTransport(this);
         } catch (Exception x) {
             return new JSONTransport(this);
