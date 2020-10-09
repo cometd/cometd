@@ -58,7 +58,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>11.0.0.beta2</jetty-version>
+    <jetty-version>11.0.0-SNAPSHOT</jetty-version>
     <!-- end::jetty-version[] -->
     <graalvm-version>20.1.0</graalvm-version>
     <slf4j-version>1.8.0-beta4</slf4j-version>
