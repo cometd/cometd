@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
@@ -164,5 +165,54 @@ public class ServerSessionExpirationTest extends ClientServerTest {
         Assert.assertTrue(removeLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testExpirationExtendedByNonConnectMessagesEventuallyExpires() throws Exception {
+        Map<String, String> serverOptions = new HashMap<>();
+        long timeout = 2000;
+        serverOptions.put("timeout", String.valueOf(timeout));
+        long maxInterval = 4000;
+        serverOptions.put("maxInterval", String.valueOf(maxInterval));
+        start(serverOptions);
+
+        BayeuxClient client = newBayeuxClient();
+        client.addExtension(new ClientSession.Extension() {
+            private int metaConnects;
+
+            @Override
+            public boolean sendMeta(ClientSession session, Message.Mutable message) {
+                if (Channel.META_CONNECT.equals(message.getChannel())) {
+                    ++metaConnects;
+                    // Don't send /meta/connect after the first.
+                    return metaConnects <= 1;
+                }
+                return true;
+            }
+        });
+
+        client.handshake();
+
+        // The client sent /meta/handshake and the first /meta/connect
+        // but won't sent more /meta/connect messages.
+        long delay = maxInterval * 3 / 4;
+        logger.info("waiting {} ms", delay);
+        Thread.sleep(delay);
+
+        // Send messages to extend the expiration time.
+        client.getChannel("/foo").publish("data");
+        logger.info("message sent, waiting {} ms", delay);
+        Thread.sleep(delay);
+        client.getChannel("/foo").publish("data");
+
+        // Don't send more messages, the server must expire the session.
+        long expire = maxInterval + maxInterval / 2;
+        logger.info("message sent, waiting for expiration {} ms", expire);
+        Thread.sleep(expire);
+
+        Assert.assertNull(bayeux.getSession(client.getId()));
+
+        client.disconnect();
+        client.waitFor(1000, BayeuxClient.State.DISCONNECTED);
     }
 }
