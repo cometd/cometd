@@ -79,7 +79,6 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     private int _batch;
     private String _userAgent;
     private long _messageTime;
-    private long _scheduleTime;
     private long _expireTime;
     private boolean _nonLazyMessages;
     private boolean _broadcastToPublisher;
@@ -577,9 +576,14 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         synchronized (getLock()) {
             _messageTime = now;
             if (metaConnect) {
+                // A /meta/connect was received and possibly
+                // suspended by the server, don't sweep it.
                 _expireTime = 0;
             } else if (_expireTime != 0) {
-                _expireTime += now - _scheduleTime;
+                // A /meta/connect was returned to
+                // the client, and another message was
+                // received, so extend the expiration.
+                _expireTime = Math.max(_expireTime, now + getMaxInterval());
             }
         }
         if (_logger.isDebugEnabled()) {
@@ -591,8 +595,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         long interval = calculateInterval(defaultInterval);
         long now = System.currentTimeMillis();
         synchronized (getLock()) {
-            _scheduleTime = now;
-            _expireTime = now + interval + _maxInterval;
+            _expireTime = now + interval + getMaxInterval();
         }
         if (_logger.isDebugEnabled()) {
             _logger.debug("Scheduled expiration for {}", this);
