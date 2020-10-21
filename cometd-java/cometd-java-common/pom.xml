@@ -36,15 +36,6 @@
       <version>${jackson-version}</version>
       <optional>true</optional>
     </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-    </dependency>
   </dependencies>
 
 </project>
