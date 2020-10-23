@@ -1401,6 +1401,61 @@
             return Utils.isString(value);
         }
 
+        function _isAlpha(char) {
+            if (char >= 'A' && char <= 'Z') {
+                return true;
+            }
+            return char >= 'a' && char <= 'z';
+        }
+
+        function _isNumeric(char) {
+            return char >= '0' && char <= '9';
+        }
+
+        function _isAllowed(char) {
+            switch (char) {
+                case ' ':
+                case '!':
+                case '#':
+                case '$':
+                case '(':
+                case ')':
+                case '*':
+                case '+':
+                case '-':
+                case '.':
+                case '/':
+                case '@':
+                case '_':
+                case '{':
+                case '~':
+                case '}':
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        function _isValidChannel(value) {
+            if (!_isString(value)) {
+                return false;
+            }
+            if (value.length < 2) {
+                return false;
+            }
+            if (value.charAt(0) !== '/') {
+                return false;
+            }
+            for (var i = 1; i < value.length; ++i) {
+                var char = value.charAt(i);
+                if (_isAlpha(char) || _isNumeric(char) || _isAllowed(char)) {
+                    continue;
+                }
+                return false;
+            }
+            return true;
+        }
+
         function _isFunction(value) {
             if (value === undefined || value === null) {
                 return false;
@@ -2896,8 +2951,8 @@
             if (arguments.length < 2) {
                 throw 'Illegal arguments number: required 2, got ' + arguments.length;
             }
-            if (!_isString(channel)) {
-                throw 'Illegal argument type: channel must be a string';
+            if (!_isValidChannel(channel)) {
+                throw 'Illegal argument: invalid channel ' + channel;
             }
             if (_isDisconnected()) {
                 throw 'Illegal state: disconnected';
@@ -3033,8 +3088,8 @@
             if (arguments.length < 1) {
                 throw 'Illegal arguments number: required 1, got ' + arguments.length;
             }
-            if (!_isString(channel)) {
-                throw 'Illegal argument type: channel must be a string';
+            if (!_isValidChannel(channel)) {
+                throw 'Illegal argument: invalid channel ' + channel;
             }
             if (/^\/meta\//.test(channel)) {
                 throw 'Illegal argument: cannot publish to meta channels';
@@ -3138,6 +3193,9 @@
                 target = '/' + target;
             }
             var channel = '/service' + target;
+            if (!_isValidChannel(channel)) {
+                throw 'Illegal argument: invalid target ' + target;
+            }
 
             var bayeuxMessage = {
                 id: _nextMessageId(),
