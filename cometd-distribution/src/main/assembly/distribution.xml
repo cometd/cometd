@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 https://maven.apache.org/xsd/assembly-2.1.0.xsd">
   <id>distribution</id>
   <formats>
     <format>tar.gz</format>
@@ -17,6 +17,8 @@
         <exclude>**/*.iml</exclude>
         <exclude>.gitignore</exclude>
       </excludes>
+      <fileMode>0444</fileMode>
+      <directoryMode>0755</directoryMode>
     </fileSet>
     <fileSet>
       <directory>..</directory>
@@ -24,6 +26,7 @@
       <includes>
         <include>**/target/*.?ar</include>
       </includes>
+      <fileMode>0444</fileMode>
     </fileSet>
   </fileSets>
 </assembly>
