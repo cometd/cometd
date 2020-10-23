@@ -35,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
@@ -72,36 +74,6 @@ import org.slf4j.LoggerFactory;
 
 @ManagedObject("The CometD server")
 public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer, Dumpable {
-    private static final boolean[] VALID = new boolean[256];
-
-    static {
-        VALID[' '] = true;
-        VALID['!'] = true;
-        VALID['#'] = true;
-        VALID['$'] = true;
-        VALID['('] = true;
-        VALID[')'] = true;
-        VALID['*'] = true;
-        VALID['+'] = true;
-        VALID['-'] = true;
-        VALID['.'] = true;
-        VALID['/'] = true;
-        VALID['@'] = true;
-        VALID['_'] = true;
-        VALID['{'] = true;
-        VALID['~'] = true;
-        VALID['}'] = true;
-        for (int i = '0'; i <= '9'; ++i) {
-            VALID[i] = true;
-        }
-        for (int i = 'A'; i <= 'Z'; ++i) {
-            VALID[i] = true;
-        }
-        for (int i = 'a'; i <= 'z'; ++i) {
-            VALID[i] = true;
-        }
-    }
-
     public static final String ALLOWED_TRANSPORTS_OPTION = "allowedTransports";
     public static final String SWEEP_PERIOD_OPTION = "sweepPeriod";
     public static final String TRANSPORTS_OPTION = "transports";
@@ -702,24 +674,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         if (channel == null) {
             return "400::channel_missing";
         }
-        if (!validate(channel)) {
+        if (!Bayeux.Validator.isValidChannelId(channel)) {
             return "405::channel_invalid";
         }
         String id = message.getId();
-        if (id != null && !validate(id)) {
+        if (id != null && !Bayeux.Validator.isValidMessageId(id)) {
             return "405::message_id_invalid";
         }
         return null;
-    }
-
-    private boolean validate(String value) {
-        for (int i = 0; i < value.length(); ++i) {
-            char c = value.charAt(i);
-            if (c > 127 || !VALID[c]) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private void isPublishAuthorized(ServerChannel channel, ServerSession session, ServerMessage message, Promise<Authorizer.Result> promise) {
@@ -1224,7 +1186,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private boolean validateSubscriptions(List<String> subscriptions) {
         if (_validation) {
             for (String subscription : subscriptions) {
-                if (!validate(subscription)) {
+                if (!Bayeux.Validator.isValidChannelId(subscription)) {
                     return false;
                 }
             }
