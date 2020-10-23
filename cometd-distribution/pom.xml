@@ -29,6 +29,8 @@
                   <goal>single</goal>
                 </goals>
                 <configuration>
+                  <overrideUid>0</overrideUid>
+                  <overrideGid>0</overrideGid>
                   <descriptors>
                     <descriptor>src/main/assembly/distribution.xml</descriptor>
                   </descriptors>

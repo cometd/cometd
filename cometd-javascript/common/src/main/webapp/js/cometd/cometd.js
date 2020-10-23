@@ -758,7 +758,7 @@
                 const maxLength = this.getConfiguration().maxURILength;
                 if (urlLength > maxLength) {
                     if (length === 1) {
-                        var x = 'Bayeux message too big (' + urlLength + ' bytes, max is ' + maxLength + ') ' +
+                        const x = 'Bayeux message too big (' + urlLength + ' bytes, max is ' + maxLength + ') ' +
                             'for transport ' + this.getType();
                         // Keep the semantic of calling response callbacks asynchronously after the request
                         this.setTimeout(_failTransportFn.call(this, envelope, request, x), 0);
@@ -1345,6 +1345,61 @@
 
         function _isString(value) {
             return Utils.isString(value);
+        }
+
+        function _isAlpha(char) {
+            if (char >= 'A' && char <= 'Z') {
+                return true;
+            }
+            return char >= 'a' && char <= 'z';
+        }
+
+        function _isNumeric(char) {
+            return char >= '0' && char <= '9';
+        }
+
+        function _isAllowed(char) {
+            switch (char) {
+                case ' ':
+                case '!':
+                case '#':
+                case '$':
+                case '(':
+                case ')':
+                case '*':
+                case '+':
+                case '-':
+                case '.':
+                case '/':
+                case '@':
+                case '_':
+                case '{':
+                case '~':
+                case '}':
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        function _isValidChannel(value) {
+            if (!_isString(value)) {
+                return false;
+            }
+            if (value.length < 2) {
+                return false;
+            }
+            if (value.charAt(0) !== '/') {
+                return false;
+            }
+            for (let i = 1; i < value.length; ++i) {
+                const char = value.charAt(i);
+                if (_isAlpha(char) || _isNumeric(char) || _isAllowed(char)) {
+                    continue;
+                }
+                return false;
+            }
+            return true;
         }
 
         function _isFunction(value) {
@@ -2832,8 +2887,8 @@
             if (arguments.length < 2) {
                 throw 'Illegal arguments number: required 2, got ' + arguments.length;
             }
-            if (!_isString(channel)) {
-                throw 'Illegal argument type: channel must be a string';
+            if (!_isValidChannel(channel)) {
+                throw 'Illegal argument: invalid channel ' + channel;
             }
             if (_isDisconnected()) {
                 throw 'Illegal state: disconnected';
@@ -2969,8 +3024,8 @@
             if (arguments.length < 1) {
                 throw 'Illegal arguments number: required 1, got ' + arguments.length;
             }
-            if (!_isString(channel)) {
-                throw 'Illegal argument type: channel must be a string';
+            if (!_isValidChannel(channel)) {
+                throw 'Illegal argument: invalid channel ' + channel;
             }
             if (/^\/meta\//.test(channel)) {
                 throw 'Illegal argument: cannot publish to meta channels';
@@ -3074,6 +3129,9 @@
                 target = '/' + target;
             }
             const channel = '/service' + target;
+            if (!_isValidChannel(channel)) {
+                throw 'Illegal argument: invalid target ' + target;
+            }
 
             const bayeuxMessage = {
                 id: _nextMessageId(),

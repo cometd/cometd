@@ -29,7 +29,7 @@ import java.util.Set;
  */
 public interface Bayeux {
     /**
-     * @return the set of known transport names of this {@link Bayeux} object.
+     * @return the set of known transport names of this Bayeux object.
      * @see #getAllowedTransports()
      */
     Set<String> getKnownTransportNames();
@@ -74,5 +74,76 @@ public interface Bayeux {
      * <p>Specific sub-interfaces define what kind of events listeners will be notified.</p>
      */
     interface BayeuxListener extends EventListener {
+    }
+
+    /**
+     * <p>Validates Bayeux protocol elements such as channel ids and message ids.</p>
+     */
+    class Validator {
+        public static boolean isValidChannelId(String channelId) {
+            if (channelId.length() < 2) {
+                return false;
+            }
+            if (channelId.charAt(0) != '/') {
+                return false;
+            }
+            for (int i = 1; i < channelId.length(); ++i) {
+                char c = channelId.charAt(i);
+                if (isAlpha(c) || isNumeric(c) || isAllowed(c)) {
+                    continue;
+                }
+                return false;
+            }
+            return true;
+        }
+
+        public static boolean isValidMessageId(String messageId) {
+            if (messageId.length() < 1) {
+                return false;
+            }
+            for (int i = 0; i < messageId.length(); ++i) {
+                char c = messageId.charAt(i);
+                if (isAlpha(c) || isNumeric(c)) {
+                    continue;
+                }
+                return false;
+            }
+            return true;
+        }
+
+        private static boolean isAlpha(char c) {
+            if (c >= 'A' && c <= 'Z') {
+                return true;
+            }
+            return c >= 'a' && c <= 'z';
+        }
+
+        private static boolean isNumeric(char c) {
+            return c >= '0' && c <= '9';
+        }
+
+        private static boolean isAllowed(char c) {
+            switch (c) {
+                case ' ':
+                case '!':
+                case '#':
+                case '$':
+                case '(':
+                case ')':
+                case '*':
+                case '+':
+                case '-':
+                case '.':
+                case '/':
+                case '@':
+                case '_':
+                case '{':
+                case '~':
+                case '}':
+                    return true;
+                default:
+                    return false;
+            }
+        }
     }
 }

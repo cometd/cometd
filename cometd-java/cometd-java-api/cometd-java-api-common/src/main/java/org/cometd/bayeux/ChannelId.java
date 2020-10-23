@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 public class ChannelId {
     public static final String WILD = "*";
     public static final String DEEPWILD = "**";
-    private static final Pattern VAR = Pattern.compile("\\{(\\w+)\\}");
+    private static final Pattern VAR = Pattern.compile("\\{(\\w+)}");
 
     private final String _id;
     private String[] _segments;
@@ -53,7 +53,7 @@ public class ChannelId {
      * @param id the channel id in string form
      */
     public ChannelId(String id) {
-        if (id == null || id.length() == 0 || id.charAt(0) != '/' || "/".equals(id)) {
+        if (id == null || id.length() == 0 || !Bayeux.Validator.isValidChannelId(id)) {
             throw new IllegalArgumentException("Invalid channel id: " + id);
         }
 
@@ -223,7 +223,7 @@ public class ChannelId {
     }
 
     /**
-     * @return the list of variable names if this {@link ChannelId} is a template,
+     * @return the list of variable names if this ChannelId is a template,
      * otherwise an empty list.
      * @see #isTemplate()
      */
@@ -442,7 +442,7 @@ public class ChannelId {
     }
 
     /**
-     * <p>Returns the regular part of this {@link ChannelId}: the part
+     * <p>Returns the regular part of this ChannelId: the part
      * of the channel id from the beginning until the first occurrence
      * of a parameter or a wild character.</p>
      * <p>Examples:</p>
@@ -477,15 +477,15 @@ public class ChannelId {
      * </tr>
      * <tr>
      * <td>/*</td>
-     * <td><code>null</code></td>
+     * <td>{@code null}</td>
      * </tr>
      * <tr>
      * <td>/**</td>
-     * <td><code>null</code></td>
+     * <td>{@code null}</td>
      * </tr>
      * <tr>
      * <td>/{p}</td>
-     * <td><code>null</code></td>
+     * <td>{@code null}</td>
      * </tr>
      * </tbody>
      * </table>
