@@ -26,16 +26,16 @@ import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class CometDApplicationTest {
     @LocalServerPort
@@ -43,7 +43,7 @@ public class CometDApplicationTest {
     private HttpClient httpClient;
     private WebSocketContainer wsContainer;
 
-    @Before
+    @BeforeEach
     public void prepare() throws Exception {
         httpClient = new HttpClient();
         wsContainer = ContainerProvider.getWebSocketContainer();
@@ -51,7 +51,7 @@ public class CometDApplicationTest {
         httpClient.start();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception {
         if (httpClient != null) {
             httpClient.stop();
@@ -78,20 +78,20 @@ public class CometDApplicationTest {
                 handshakeLatch.countDown();
             }
         });
-        Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
 
         CountDownLatch messageLatch = new CountDownLatch(1);
         String data = "yo-ohh!";
         client.remoteCall("echo", data, message -> {
             if (message.isSuccessful()) {
-                Assert.assertEquals(data, message.getData());
+                Assertions.assertEquals(data, message.getData());
                 messageLatch.countDown();
             }
         });
-        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 
         CountDownLatch disconnectLatch = new CountDownLatch(1);
         client.disconnect(message -> disconnectLatch.countDown());
-        Assert.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
     }
 }
