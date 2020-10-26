@@ -23,27 +23,21 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServerTest {
-    public CometDServiceMetaNotificationsTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMetaNotifications(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testMetaNotifications() throws Exception {
-        final CountDownLatch handshakeLatch = new CountDownLatch(1);
-        final CountDownLatch connectLatch = new CountDownLatch(1);
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
-        final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
-        final CountDownLatch disconnectLatch = new CountDownLatch(1);
+        CountDownLatch handshakeLatch = new CountDownLatch(1);
+        CountDownLatch connectLatch = new CountDownLatch(1);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch unsubscribeLatch = new CountDownLatch(1);
+        CountDownLatch disconnectLatch = new CountDownLatch(1);
         new MetaChannelsService(bayeux, handshakeLatch, connectLatch, subscribeLatch, unsubscribeLatch, disconnectLatch);
 
         Request handshake = newBayeuxRequest("[{" +
@@ -53,8 +47,8 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -65,8 +59,8 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "}]");
         response = connect.send();
 
-        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(200, response.getStatus());
 
         String channel = "/foo";
         Request subscribe = newBayeuxRequest("[{" +
@@ -75,8 +69,8 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(200, response.getStatus());
 
         Request unsubscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/unsubscribe\"," +
@@ -84,16 +78,16 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         response = unsubscribe.send();
-        Assert.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(200, response.getStatus());
 
         Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send();
-        Assert.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(200, response.getStatus());
     }
 
     public static class MetaChannelsService extends AbstractService {

@@ -15,12 +15,16 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDTransportTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testTransport() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testTransport(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("cometd.unregisterTransports();");
@@ -102,21 +106,22 @@ public class CometDTransportTest extends AbstractCometDTransportsTest {
 
         evaluateScript("var localTransport = new LocalTransport();");
         // The server does not support a 'local' transport, so use 'long-polling'
-        Assert.assertTrue(evaluateScript("cometd.registerTransport('long-polling', localTransport);"));
+        boolean registered = evaluateScript("cometd.registerTransport('long-polling', localTransport);");
+        Assertions.assertTrue(registered);
 
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
-        Assert.assertEquals(3, ((Number)evaluateScript("localTransport.getSends();")).intValue());
-        Assert.assertEquals("connected", evaluateScript("cometd.getStatus();"));
+        Assertions.assertEquals(3, ((Number)evaluateScript("localTransport.getSends();")).intValue());
+        Assertions.assertEquals("connected", evaluateScript("cometd.getStatus();"));
 
         readyLatch.reset(1);
         evaluateScript("cometd.addListener('/meta/disconnect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
-        Assert.assertEquals(4, ((Number)evaluateScript("localTransport.getSends();")).intValue());
-        Assert.assertEquals("disconnected", evaluateScript("cometd.getStatus();"));
+        Assertions.assertEquals(4, ((Number)evaluateScript("localTransport.getSends();")).intValue());
+        Assertions.assertEquals("disconnected", evaluateScript("cometd.getStatus();"));
     }
 }

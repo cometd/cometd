@@ -17,8 +17,8 @@ package org.cometd.client.http;
 
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ClientChannelTest extends ClientServerTest {
     @Test
@@ -31,7 +31,7 @@ public class ClientChannelTest extends ClientServerTest {
         ClientSessionChannel channel1 = client.getChannel(channelName);
         ClientSessionChannel channel2 = client.getChannel(channelName + "/");
 
-        Assert.assertSame(channel1, channel2);
+        Assertions.assertSame(channel1, channel2);
 
         disconnectBayeuxClient(client);
     }

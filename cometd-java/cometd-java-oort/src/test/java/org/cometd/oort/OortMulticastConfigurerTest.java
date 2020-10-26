@@ -25,20 +25,17 @@ import java.util.List;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class OortMulticastConfigurerTest extends OortTest {
     private final List<OortMulticastConfigurer> configurers = new ArrayList<>();
 
-    public OortMulticastConfigurerTest(String serverTransport) {
-        super(serverTransport);
-    }
-
-    @Before
+    @BeforeEach
     public void assumeMulticast() throws Exception {
         InetAddress multicastAddress = InetAddress.getByName("239.255.0.1");
 
@@ -56,7 +53,7 @@ public class OortMulticastConfigurerTest extends OortTest {
         try {
             receiver.receive(new DatagramPacket(buffer, 0, buffer.length));
         } catch (SocketTimeoutException x) {
-            Assume.assumeNoException(x);
+            Assumptions.assumeTrue(false, x.toString());
         } finally {
             receiver.close();
         }
@@ -70,7 +67,7 @@ public class OortMulticastConfigurerTest extends OortTest {
         return configurer;
     }
 
-    @After
+    @AfterEach
     public void stopConfigurers() throws Exception {
         for (int i = configurers.size() - 1; i >= 0; --i) {
             stopConfigurer(configurers.get(i));
@@ -82,52 +79,54 @@ public class OortMulticastConfigurerTest extends OortTest {
         configurer.join(1000);
     }
 
-    @Test
-    public void testTwoComets() throws Exception {
-        Server server1 = startServer(0);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testTwoComets(String serverTransport) throws Exception {
+        Server server1 = startServer(serverTransport, 0);
         int groupPort = ((NetworkConnector)server1.getConnectors()[0]).getLocalPort();
         Oort oort1 = startOort(server1);
         startConfigurer(oort1, groupPort);
 
-        Server server2 = startServer(0);
+        Server server2 = startServer(serverTransport, 0);
         Oort oort2 = startOort(server2);
         startConfigurer(oort2, groupPort);
 
         // Give some time to advertise
         Thread.sleep(2000);
 
-        Assert.assertEquals(1, oort1.getKnownComets().size());
-        Assert.assertEquals(1, oort2.getKnownComets().size());
+        Assertions.assertEquals(1, oort1.getKnownComets().size());
+        Assertions.assertEquals(1, oort2.getKnownComets().size());
     }
 
-    @Test
-    public void testThreeComets() throws Exception {
-        Server server1 = startServer(0);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testThreeComets(String serverTransport) throws Exception {
+        Server server1 = startServer(serverTransport, 0);
         int groupPort = ((NetworkConnector)server1.getConnectors()[0]).getLocalPort();
         Oort oort1 = startOort(server1);
         startConfigurer(oort1, groupPort);
 
-        Server server2 = startServer(0);
+        Server server2 = startServer(serverTransport, 0);
         Oort oort2 = startOort(server2);
-        final OortMulticastConfigurer configurer2 = startConfigurer(oort2, groupPort);
+        OortMulticastConfigurer configurer2 = startConfigurer(oort2, groupPort);
 
         // Give some time to advertise
         Thread.sleep(2000);
 
-        Assert.assertEquals(1, oort1.getKnownComets().size());
-        Assert.assertEquals(1, oort2.getKnownComets().size());
+        Assertions.assertEquals(1, oort1.getKnownComets().size());
+        Assertions.assertEquals(1, oort2.getKnownComets().size());
 
         // Create another comet
-        Server server3 = startServer(0);
+        Server server3 = startServer(serverTransport, 0);
         Oort oort3 = startOort(server3);
         startConfigurer(oort3, groupPort);
 
         // Give some time to advertise
         Thread.sleep(2000);
 
-        Assert.assertEquals(2, oort1.getKnownComets().size());
-        Assert.assertEquals(2, oort2.getKnownComets().size());
-        Assert.assertEquals(2, oort3.getKnownComets().size());
+        Assertions.assertEquals(2, oort1.getKnownComets().size());
+        Assertions.assertEquals(2, oort2.getKnownComets().size());
+        Assertions.assertEquals(2, oort3.getKnownComets().size());
 
         stopConfigurer(configurer2);
         stopOort(oort2);
@@ -136,17 +135,18 @@ public class OortMulticastConfigurerTest extends OortTest {
         // Give some time to advertise
         Thread.sleep(2000);
 
-        Assert.assertEquals(1, oort1.getKnownComets().size());
-        Assert.assertEquals(oort3.getURL(), oort1.getKnownComets().iterator().next());
-        Assert.assertEquals(1, oort3.getKnownComets().size());
-        Assert.assertEquals(oort1.getURL(), oort3.getKnownComets().iterator().next());
+        Assertions.assertEquals(1, oort1.getKnownComets().size());
+        Assertions.assertEquals(oort3.getURL(), oort1.getKnownComets().iterator().next());
+        Assertions.assertEquals(1, oort3.getKnownComets().size());
+        Assertions.assertEquals(oort1.getURL(), oort3.getKnownComets().iterator().next());
     }
 
-    @Test
-    public void testTwoCometsOneWithWrongURL() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testTwoCometsOneWithWrongURL(String serverTransport) throws Exception {
         long connectTimeout = 2000;
 
-        Server serverA = startServer(0);
+        Server serverA = startServer(serverTransport, 0);
         int groupPort = ((NetworkConnector)serverA.getConnectors()[0]).getLocalPort();
         Oort oortA = startOort(serverA);
         OortMulticastConfigurer configurerA = new OortMulticastConfigurer(oortA);
@@ -155,7 +155,7 @@ public class OortMulticastConfigurerTest extends OortTest {
         configurers.add(configurerA);
         configurerA.start();
 
-        Server serverB = startServer(0);
+        Server serverB = startServer(serverTransport, 0);
         String wrongURL = "http://localhost:4/cometd";
         BayeuxServer bayeuxServerB = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
         Oort oortB = new Oort(bayeuxServerB, wrongURL);
@@ -170,7 +170,7 @@ public class OortMulticastConfigurerTest extends OortTest {
 
         // Stop configurerB to make sure it won't advertise again.
         configurerB.stop();
-        Assert.assertTrue(configurerB.join(2 * connectTimeout));
+        Assertions.assertTrue(configurerB.join(2 * connectTimeout));
         // Node B may have send an advertisement just before being stopped,
         // so wait to be sure that A does not try to connect anymore.
         Thread.sleep(2 * connectTimeout);
@@ -179,8 +179,8 @@ public class OortMulticastConfigurerTest extends OortTest {
         // However, B was able to connect to A.
         // Node A is still advertising, but node B is not.
 
-        Assert.assertEquals(0, oortA.getKnownComets().size());
-        Assert.assertEquals(1, oortB.getKnownComets().size());
+        Assertions.assertEquals(0, oortA.getKnownComets().size());
+        Assertions.assertEquals(1, oortB.getKnownComets().size());
 
         // Now start nodeB with the right URL
         oortB.stop();
@@ -190,7 +190,7 @@ public class OortMulticastConfigurerTest extends OortTest {
         // Give some time to advertise
         Thread.sleep(2 * connectTimeout);
 
-        Assert.assertEquals(1, oortA.getKnownComets().size());
-        Assert.assertEquals(1, oortB.getKnownComets().size());
+        Assertions.assertEquals(1, oortA.getKnownComets().size());
+        Assertions.assertEquals(1, oortB.getKnownComets().size());
     }
 }

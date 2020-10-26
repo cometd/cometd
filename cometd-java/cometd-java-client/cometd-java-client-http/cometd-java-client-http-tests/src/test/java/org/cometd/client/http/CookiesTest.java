@@ -29,15 +29,12 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractService;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class CookiesTest extends ClientServerTest {
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         start(null);
     }
@@ -48,8 +45,8 @@ public class CookiesTest extends ClientServerTest {
         BayeuxClient client = newBayeuxClient();
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> browserCookie.set(client.getCookie("BAYEUX_BROWSER")));
         client.handshake();
-        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
-        assertNotNull(browserCookie.get());
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertNotNull(browserCookie.get());
 
         disconnectBayeuxClient(client);
     }
@@ -58,26 +55,26 @@ public class CookiesTest extends ClientServerTest {
     public void testCookiesExpiration() throws Exception {
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         long maxAge = 1;
         HttpCookie cookie = new HttpCookie("foo", "bar");
         cookie.setMaxAge(maxAge);
         client.putCookie(cookie);
-        assertNotNull(client.getCookie(cookie.getName()));
+        Assertions.assertNotNull(client.getCookie(cookie.getName()));
 
         // Allow cookie to expire
         TimeUnit.SECONDS.sleep(maxAge * 2);
 
-        assertNull(client.getCookie(cookie.getName()));
+        Assertions.assertNull(client.getCookie(cookie.getName()));
 
         cookie = new HttpCookie("foo", "bar");
         client.putCookie(cookie);
-        assertNotNull(client.getCookie(cookie.getName()));
+        Assertions.assertNotNull(client.getCookie(cookie.getName()));
 
         TimeUnit.SECONDS.sleep(maxAge * 2);
 
-        assertNotNull(client.getCookie(cookie.getName()));
+        Assertions.assertNotNull(client.getCookie(cookie.getName()));
 
         disconnectBayeuxClient(client);
     }
@@ -101,20 +98,20 @@ public class CookiesTest extends ClientServerTest {
 
         client.handshake();
 
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.subscribe((c, m) -> {
         });
-        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         channel.publish(new HashMap<>());
-        assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         channel.unsubscribe();
-        assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

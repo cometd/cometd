@@ -15,27 +15,14 @@
  */
 package org.cometd.javascript;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import java.util.Arrays;
+import java.util.List;
 
 /**
- * A base test class to be extended for tests valid for any transport.
+ * A base test class to be extended for tests that apply to each transport.
  */
-@RunWith(Parameterized.class)
 public abstract class AbstractCometDTransportsTest extends AbstractCometDTest {
-    @Parameterized.Parameters(name = "{0}")
-    public static String[] transports() {
-        return new String[]{"long-polling", "websocket"};
-    }
-
-    @Parameterized.Parameter
-    public String transport;
-
-    @Override
-    protected void initPage() throws Exception {
-        super.initPage();
-        evaluateScript("only_" + transport, "" +
-                "cometd.unregisterTransports();" +
-                "cometd.registerTransport('" + transport + "', originalTransports['" + transport + "']);");
+    public static List<String> transports() {
+        return Arrays.asList("long-polling", "websocket");
     }
 }

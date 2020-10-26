@@ -29,24 +29,20 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 
 public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServerTest {
     protected HttpClient httpClient;
 
-    protected AbstractBayeuxClientServerTest(String serverTransport) {
-        super(serverTransport);
-    }
-
-    @Before
+    @BeforeEach
     public void startHttpClient() throws Exception {
         httpClient = new HttpClient();
         httpClient.start();
     }
 
-    @After
+    @AfterEach
     public void stopHttpClient() throws Exception {
         httpClient.stop();
     }
@@ -54,9 +50,9 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
     protected String extractClientId(ContentResponse handshake) {
         String content = handshake.getContentAsString();
         Matcher matcher = Pattern.compile("\"clientId\"\\s*:\\s*\"([^\"]*)\"").matcher(content);
-        Assert.assertTrue(matcher.find());
+        Assertions.assertTrue(matcher.find());
         String clientId = matcher.group(1);
-        Assert.assertTrue(clientId.length() > 0);
+        Assertions.assertTrue(clientId.length() > 0);
         return clientId;
     }
 

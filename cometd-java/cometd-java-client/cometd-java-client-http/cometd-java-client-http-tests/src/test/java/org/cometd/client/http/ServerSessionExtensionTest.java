@@ -22,8 +22,8 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ServerSessionExtensionTest extends ClientServerTest {
     @Test
@@ -32,7 +32,7 @@ public class ServerSessionExtensionTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the /meta/connect to be held.
         Thread.sleep(1000);
@@ -41,7 +41,7 @@ public class ServerSessionExtensionTest extends ClientServerTest {
         CountDownLatch messageLatch = new CountDownLatch(1);
         CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(channelName).subscribe((channel, message) -> messageLatch.countDown(), message -> subscribeLatch.countDown());
-        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         ServerSession session = bayeux.getSession(client.getId());
         session.addExtension(new ServerSession.Extension() {
@@ -56,7 +56,7 @@ public class ServerSessionExtensionTest extends ClientServerTest {
 
         bayeux.getChannel(channelName).publish(null, "data", Promise.noop());
 
-        Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

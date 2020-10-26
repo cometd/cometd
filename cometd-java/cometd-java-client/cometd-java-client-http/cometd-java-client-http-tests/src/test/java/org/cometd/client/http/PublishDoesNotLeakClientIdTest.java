@@ -24,12 +24,12 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class PublishDoesNotLeakClientIdTest extends ClientServerTest {
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         start(null);
     }
@@ -39,14 +39,14 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest {
         BayeuxClient client1 = newBayeuxClient();
         client1.handshake();
         try {
-            Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+            Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
 
             BayeuxClient client2 = newBayeuxClient();
             client2.handshake();
             try {
-                Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+                Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-                Assert.assertNotEquals(client1.getId(), client2.getId());
+                Assertions.assertNotEquals(client1.getId(), client2.getId());
 
                 String channel = "/test";
                 CountDownLatch subscribe = new CountDownLatch(1);
@@ -57,12 +57,12 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest {
                     messageRef.set(m);
                     latch.countDown();
                 });
-                Assert.assertTrue(subscribe.await(5, TimeUnit.SECONDS));
+                Assertions.assertTrue(subscribe.await(5, TimeUnit.SECONDS));
 
                 client2.getChannel(channel).publish(new HashMap<>());
 
-                Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-                Assert.assertNull(messageRef.get().getClientId());
+                Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
+                Assertions.assertNull(messageRef.get().getClientId());
             } finally {
                 disconnectBayeuxClient(client2);
             }

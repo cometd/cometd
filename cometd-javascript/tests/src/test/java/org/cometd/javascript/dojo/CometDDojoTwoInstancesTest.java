@@ -16,8 +16,8 @@
 package org.cometd.javascript.dojo;
 
 import org.cometd.javascript.Latch;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDDojoTwoInstancesTest extends AbstractCometDDojoTest {
     @Test
@@ -39,14 +39,14 @@ public class CometDDojoTwoInstancesTest extends AbstractCometDDojoTest {
                 "" +
                 "cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "");
-        Assert.assertTrue(handshakeLatch.await(5000));
-        Assert.assertFalse(handshakeLatch2.await(1000));
+        Assertions.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertFalse(handshakeLatch2.await(1000));
 
         String cometdURL2 = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("" +
                 "cometd2.init({url: '" + cometdURL2 + "', logLevel: '" + getLogLevel() + "'});" +
                 "");
-        Assert.assertTrue(handshakeLatch2.await(5000));
+        Assertions.assertTrue(handshakeLatch2.await(5000));
 
         String channelName = "/test";
 
@@ -64,15 +64,15 @@ public class CometDDojoTwoInstancesTest extends AbstractCometDDojoTest {
                 "cometd.subscribe('" + channelName + "', function() { publishLatch.countDown(); });" +
                 "cometd2.subscribe('" + channelName + "', function() { publishLatch2.countDown(); });" +
                 "");
-        Assert.assertTrue(subscribeLatch.await(5000));
-        Assert.assertTrue(subscribeLatch2.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch2.await(5000));
 
         evaluateScript("" +
                 "cometd.publish('" + channelName + "', {});" +
                 "cometd2.publish('" + channelName + "', {});" +
                 "");
-        Assert.assertTrue(publishLatch.await(5000));
-        Assert.assertTrue(publishLatch2.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(publishLatch2.await(5000));
 
         evaluateScript("" +
                 "cometd.disconnect();" +

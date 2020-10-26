@@ -15,23 +15,24 @@
  */
 package org.cometd.common;
 
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class Z85Test {
     @Test
-    public void testZ85Basic() throws Exception {
+    public void testZ85Basic() {
         byte[] bytes = new byte[]{-122, 79, -46, 111, -75, 89, -9, 91};
         String string = Z85.encoder.encodeBytes(bytes);
-        Assert.assertEquals("HelloWorld", string);
+        Assertions.assertEquals("HelloWorld", string);
         byte[] result = Z85.decoder.decodeBytes(string);
-        Assert.assertArrayEquals(bytes, result);
+        Assertions.assertArrayEquals(bytes, result);
     }
 
     @Test
-    public void testZ85Unpadded() throws Exception {
+    public void testZ85Unpadded() {
         byte[] bytes = new byte[]{0xC, 0x0, 0xF, 0xF, 0xE, 0xE};
         byte[] result = Z85.decoder.decodeBytes(Z85.encoder.encodeBytes(bytes));
-        Assert.assertArrayEquals(bytes, result);
+        Assertions.assertArrayEquals(bytes, result);
     }
 }

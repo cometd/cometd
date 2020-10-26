@@ -53,32 +53,30 @@ import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class NetworkDelayListenerTest extends AbstractClientServerTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkDelayListenerTest.class);
 
-    public NetworkDelayListenerTest(Transport transport) {
-        super(transport);
-    }
-
-    @Test
-    public void testNetworkDelayListener() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testNetworkDelayListener(Transport transport) throws Exception {
         try (ServerSocketChannel serverSocket = ServerSocketChannel.open()) {
             serverSocket.bind(new InetSocketAddress("localhost", 0));
             cometdServletPath = "/cometd";
             int port = serverSocket.socket().getLocalPort();
             cometdURL = "http://localhost:" + port + cometdServletPath;
             LOGGER.debug("Listening on localhost:{}", port);
-            startClient();
+            startClient(transport);
 
             long maxNetworkDelay = 1000;
             Map<String, Object> clientOptions = new HashMap<>();
             clientOptions.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
-            BayeuxClient bayeuxClient = new BayeuxClient(cometdURL, newClientTransport(clientOptions));
+            BayeuxClient bayeuxClient = new BayeuxClient(cometdURL, newClientTransport(transport, clientOptions));
 
             BlockingQueue<Message> metaConnectQueue = new LinkedBlockingDeque<>();
             AtomicLong lastMessageNanos = new AtomicLong();
@@ -117,7 +115,7 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
             ByteBuffer buffer = isWebSocket(transport) ? websocketUpgrade(socket) : BufferUtil.allocate(1024);
 
             // Read the /meta/handshake message.
-            ServerMessage hs = receiveMessage(socket, buffer, json);
+            ServerMessage hs = receiveMessage(transport, socket, buffer, json);
 
             // Write the /meta/handshake reply.
             ServerMessage.Mutable hsReply = new ServerMessageImpl();
@@ -131,10 +129,10 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
             hsAdvice.put(Message.TIMEOUT_FIELD, 0L);
             hsAdvice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
             String hsReplyJSON = jsonGenerator.generate(new Object[]{hsReply});
-            sendMessage(socket, hsReplyJSON);
+            sendMessage(transport, socket, hsReplyJSON);
 
             // Read the first /meta/connect.
-            ServerMessage cn1 = receiveMessage(socket, buffer, json);
+            ServerMessage cn1 = receiveMessage(transport, socket, buffer, json);
 
             // Write the first /meta/connect reply.
             ServerMessage.Mutable cn1Reply = new ServerMessageImpl();
@@ -145,21 +143,21 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
             Map<String, Object> cn1Advice = cn1Reply.getAdvice(true);
             cn1Advice.put(Message.TIMEOUT_FIELD, timeout);
             String cn1ReplyJSON = jsonGenerator.generate(new Object[]{cn1Reply});
-            sendMessage(socket, cn1ReplyJSON);
+            sendMessage(transport, socket, cn1ReplyJSON);
 
             Message metaConnect = metaConnectQueue.poll(5, TimeUnit.SECONDS);
-            Assert.assertNotNull(metaConnect);
-            Assert.assertTrue(metaConnect.isSuccessful());
+            Assertions.assertNotNull(metaConnect);
+            Assertions.assertTrue(metaConnect.isSuccessful());
             LOGGER.debug("[client] received {}", metaConnect);
 
             // Read the second /meta/connect.
-            ServerMessage cn2 = receiveMessage(socket, buffer, json);
+            ServerMessage cn2 = receiveMessage(transport, socket, buffer, json);
 
             // Delay the second /meta/connect reply,
             // but send some message to trigger the
             // extension, simulating slow message arrival.
 
-            sendMessageChunkBegin(socket);
+            sendMessageChunkBegin(transport, socket);
 
             // Write the messages.
             for (int i = 0; i < count; ++i) {
@@ -168,7 +166,7 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
                 message.setChannel(channelName);
                 message.setData("DATA_" + i);
                 String messageJSON = jsonGenerator.generate(message);
-                sendMessageChunk(socket, messageJSON, i == 0);
+                sendMessageChunk(transport, socket, messageJSON, i == 0);
                 LOGGER.debug("[server] sent {}", messageJSON);
                 lastMessageNanos.set(System.nanoTime());
             }
@@ -180,25 +178,25 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
             cn2Reply.setChannel(cn2.getChannel());
             cn2Reply.put(Message.CONNECTION_TYPE_FIELD, connectionType);
             String cn2ReplyJSON = jsonGenerator.generate(cn2Reply);
-            sendMessageChunk(socket, cn2ReplyJSON, false);
+            sendMessageChunk(transport, socket, cn2ReplyJSON, false);
 
-            sendMessageChunkEnd(socket);
+            sendMessageChunkEnd(transport, socket);
             LOGGER.debug("[server] sent {}", cn2ReplyJSON);
 
             // Check that the listener was called at least once.
-            Assert.assertTrue(timeoutLatch.await(5, TimeUnit.SECONDS));
+            Assertions.assertTrue(timeoutLatch.await(5, TimeUnit.SECONDS));
 
             // Check that the second /meta/connect was successful, even if it was delayed.
             metaConnect = metaConnectQueue.poll(5, TimeUnit.SECONDS);
-            Assert.assertNotNull(metaConnect);
-            Assert.assertTrue(metaConnect.isSuccessful());
+            Assertions.assertNotNull(metaConnect);
+            Assertions.assertTrue(metaConnect.isSuccessful());
             LOGGER.debug("[client] received {}", metaConnect);
 
             // Check that all messages arrived.
-            Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+            Assertions.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 
             // Read the third /meta/connect.
-            ServerMessage cn3 = receiveMessage(socket, buffer, json);
+            ServerMessage cn3 = receiveMessage(transport, socket, buffer, json);
 
             // Write the third /meta/connect reply.
             ServerMessage.Mutable cn3Reply = new ServerMessageImpl();
@@ -209,12 +207,12 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
             Map<String, Object> cn3Advice = cn3Reply.getAdvice(true);
             cn3Advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
             String cn3ReplyJSON = jsonGenerator.generate(new Object[]{cn3Reply});
-            sendMessage(socket, cn3ReplyJSON);
+            sendMessage(transport, socket, cn3ReplyJSON);
 
             // Check that the third /meta/connect arrived.
             metaConnect = metaConnectQueue.poll(5, TimeUnit.SECONDS);
-            Assert.assertNotNull(metaConnect);
-            Assert.assertFalse(metaConnect.isSuccessful());
+            Assertions.assertNotNull(metaConnect);
+            Assertions.assertFalse(metaConnect.isSuccessful());
             LOGGER.debug("[client] received {}", metaConnect);
         }
     }
@@ -241,7 +239,7 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
         return buffer;
     }
 
-    private ServerMessage receiveMessage(SocketChannel socket, ByteBuffer buffer, JSONContextServer json) throws Exception {
+    private ServerMessage receiveMessage(Transport transport, SocketChannel socket, ByteBuffer buffer, JSONContextServer json) throws Exception {
         if (isWebSocket(transport)) {
             return receiveWebSocketMessage(socket, buffer, json);
         } else {
@@ -277,7 +275,7 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
         return json.parse(request.getContent())[0];
     }
 
-    private void sendMessage(SocketChannel socket, String content) throws IOException {
+    private void sendMessage(Transport transport, SocketChannel socket, String content) throws IOException {
         if (isWebSocket(transport)) {
             sendWebSocketMessage(socket, content);
         } else {
@@ -303,7 +301,7 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
         socket.write(new ByteBuffer[]{response, buffer});
     }
 
-    private void sendMessageChunkBegin(SocketChannel socket) throws IOException {
+    private void sendMessageChunkBegin(Transport transport, SocketChannel socket) throws IOException {
         if (!isWebSocket(transport)) {
             ByteBuffer response = BufferUtil.toBuffer("HTTP/1.1 200 OK\r\n" +
                     "ContentType: application/json\r\n" +
@@ -314,7 +312,7 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
         }
     }
 
-    private void sendMessageChunk(SocketChannel socket, String content, boolean first) throws IOException {
+    private void sendMessageChunk(Transport transport, SocketChannel socket, String content, boolean first) throws IOException {
         if (isWebSocket(transport)) {
             sendWebSocketMessage(socket, "[" + content + "]");
         } else {
@@ -326,7 +324,7 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
         }
     }
 
-    private void sendMessageChunkEnd(SocketChannel socket) throws IOException {
+    private void sendMessageChunkEnd(Transport transport, SocketChannel socket) throws IOException {
         if (!isWebSocket(transport)) {
             ByteBuffer chunkEnd = BufferUtil.toBuffer("1\r\n]\r\n0\r\n\r\n", StandardCharsets.UTF_8);
             socket.write(new ByteBuffer[]{chunkEnd});

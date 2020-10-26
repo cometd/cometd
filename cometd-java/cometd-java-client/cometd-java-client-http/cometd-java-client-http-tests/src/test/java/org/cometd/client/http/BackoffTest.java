@@ -27,8 +27,8 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +107,7 @@ public class BackoffTest extends ClientServerTest {
 
         client.handshake();
 
-        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(10, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

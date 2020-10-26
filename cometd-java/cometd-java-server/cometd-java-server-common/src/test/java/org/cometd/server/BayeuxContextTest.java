@@ -36,28 +36,22 @@ import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
-    public BayeuxContextTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testAddresses(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testAddresses() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assert.assertNotNull(message.getBayeuxContext().getLocalAddress());
-                Assert.assertNotNull(message.getBayeuxContext().getRemoteAddress());
+                Assertions.assertNotNull(message.getBayeuxContext().getLocalAddress());
+                Assertions.assertNotNull(message.getBayeuxContext().getRemoteAddress());
                 latch.countDown();
             }
         });
@@ -69,22 +63,25 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testRequestHeader() throws Exception {
-        final String name = "test";
-        final String value1 = "foo";
-        final String value2 = "bar";
-        final CountDownLatch latch = new CountDownLatch(1);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRequestHeader(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
+        String name = "test";
+        String value1 = "foo";
+        String value2 = "bar";
+        CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assert.assertEquals(value1, message.getBayeuxContext().getHeader(name));
-                Assert.assertEquals(Arrays.asList(value1, value2), message.getBayeuxContext().getHeaderValues(name));
+                Assertions.assertEquals(value1, message.getBayeuxContext().getHeader(name));
+                Assertions.assertEquals(Arrays.asList(value1, value2), message.getBayeuxContext().getHeaderValues(name));
                 latch.countDown();
             }
         });
@@ -98,20 +95,23 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
         handshake.header(name, value1);
         handshake.header(name, value2);
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testRequestAttribute() throws Exception {
-        final String name = "test";
-        final String value = "foo";
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRequestAttribute(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
+        String name = "test";
+        String value = "foo";
 
         context.stop();
         context.addFilter(new FilterHolder(new Filter() {
             @Override
-            public void init(FilterConfig filterConfig) throws ServletException {
+            public void init(FilterConfig filterConfig) {
             }
 
             @Override
@@ -127,11 +127,11 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
         context.start();
         bayeux = cometdServlet.getBayeux();
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assert.assertEquals(value, message.getBayeuxContext().getRequestAttribute(name));
+                Assertions.assertEquals(value, message.getBayeuxContext().getRequestAttribute(name));
                 latch.countDown();
             }
         });
@@ -143,20 +143,23 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testSessionAttribute() throws Exception {
-        final String name = "test";
-        final String value = "foo";
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSessionAttribute(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
+        String name = "test";
+        String value = "foo";
 
         context.stop();
         context.addFilter(new FilterHolder(new Filter() {
             @Override
-            public void init(FilterConfig filterConfig) throws ServletException {
+            public void init(FilterConfig filterConfig) {
             }
 
             @Override
@@ -173,12 +176,12 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
         context.start();
         bayeux = cometdServlet.getBayeux();
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assert.assertNotNull(message.getBayeuxContext().getHttpSessionId());
-                Assert.assertEquals(value, message.getBayeuxContext().getHttpSessionAttribute(name));
+                Assertions.assertNotNull(message.getBayeuxContext().getHttpSessionId());
+                Assertions.assertEquals(value, message.getBayeuxContext().getHttpSessionAttribute(name));
                 latch.countDown();
             }
         });
@@ -190,18 +193,21 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testContextAttribute() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testContextAttribute(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
+        CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assert.assertSame(bayeux, message.getBayeuxContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
+                Assertions.assertSame(bayeux, message.getBayeuxContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
                 latch.countDown();
             }
         });
@@ -213,8 +219,8 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

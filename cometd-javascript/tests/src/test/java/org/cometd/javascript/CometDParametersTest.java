@@ -15,150 +15,175 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDParametersTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testConfigureInitMissingURL() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testConfigureInitMissingURL(String transport) throws Exception {
+        initCometDServer(transport);
+
         try {
             evaluateScript("cometd.configure();");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
 
         try {
             evaluateScript("cometd.configure({});");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
 
         try {
             evaluateScript("cometd.init();");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
 
         try {
             evaluateScript("cometd.init({});");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
     }
 
-    @Test
-    public void testSubscribeMissingChannel() {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSubscribeMissingChannel(String transport) throws Exception {
+        initCometDServer(transport);
+
         try {
             evaluateScript("cometd.subscribe();");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
 
         try {
             evaluateScript("cometd.subscribe(cometd, '_debug');");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
     }
 
-    @Test
-    public void testSubscribeMissingFunction() {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSubscribeMissingFunction(String transport) throws Exception {
+        initCometDServer(transport);
+
         try {
             evaluateScript("cometd.subscribe('/channel');");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
 
         try {
             evaluateScript("cometd.subscribe('/channel', {});");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
 
         try {
             evaluateScript("cometd.subscribe('/channel', {}, 0);");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
     }
 
-    @Test
-    public void testUnsubscribeMissingSubscription() {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testUnsubscribeMissingSubscription(String transport) throws Exception {
+        initCometDServer(transport);
+
         try {
             evaluateScript("cometd.unsubscribe();");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
 
         try {
             evaluateScript("cometd.unsubscribe({});");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
     }
 
-    @Test
-    public void testAddListenerMissingChannel() {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testAddListenerMissingChannel(String transport) throws Exception {
+        initCometDServer(transport);
+
         try {
             evaluateScript("cometd.addListener();");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
 
         try {
             evaluateScript("cometd.addListener(cometd, '_debug');");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
     }
 
-    @Test
-    public void testAddListenerMissingFunction() {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testAddListenerMissingFunction(String transport) throws Exception {
+        initCometDServer(transport);
+
         try {
             evaluateScript("cometd.addListener('/channel');");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
 
         try {
             evaluateScript("cometd.addListener('/channel', {});");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
 
         try {
             evaluateScript("cometd.addListener('/channel', {}, 0);");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
     }
 
-    @Test
-    public void testRemoveListenerMissingSubscription() {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRemoveListenerMissingSubscription(String transport) throws Exception {
+        initCometDServer(transport);
+
         try {
             evaluateScript("cometd.removeListener();");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
 
         try {
             evaluateScript("cometd.removeListener({});");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
     }
 
-    @Test
-    public void testPublishMissingChannel() {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testPublishMissingChannel(String transport) throws Exception {
+        initCometDServer(transport);
+
         try {
             evaluateScript("cometd.publish();");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
 
         try {
             evaluateScript("cometd.publish({});");
-            Assert.fail();
+            Assertions.fail();
         } catch (JavaScriptException ignored) {
         }
     }

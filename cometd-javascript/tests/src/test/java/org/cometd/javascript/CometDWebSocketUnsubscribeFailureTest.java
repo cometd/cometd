@@ -19,8 +19,8 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDWebSocketUnsubscribeFailureTest extends AbstractCometDWebSocketTest {
     @Test
@@ -31,7 +31,7 @@ public class CometDWebSocketUnsubscribeFailureTest extends AbstractCometDWebSock
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait for the long poll to establish
         Thread.sleep(1000);
@@ -40,7 +40,7 @@ public class CometDWebSocketUnsubscribeFailureTest extends AbstractCometDWebSock
         Latch subscribeLatch = javaScript.get("subscribeLatch");
         evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
         evaluateScript("var subscription = cometd.subscribe('/echo', function() { subscribeLatch.countDown(); });");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("var unsubscribeLatch = new Latch(1);");
         Latch unsubscribeLatch = javaScript.get("unsubscribeLatch");
@@ -49,8 +49,8 @@ public class CometDWebSocketUnsubscribeFailureTest extends AbstractCometDWebSock
         evaluateScript("cometd.addListener('/meta/unsubscribe', function() { unsubscribeLatch.countDown(); });");
         evaluateScript("cometd.addListener('/meta/unsuccessful', function() { failureLatch.countDown(); });");
         evaluateScript("cometd.unsubscribe(subscription);");
-        Assert.assertTrue(unsubscribeLatch.await(5000));
-        Assert.assertTrue(failureLatch.await(5000));
+        Assertions.assertTrue(unsubscribeLatch.await(5000));
+        Assertions.assertTrue(failureLatch.await(5000));
 
         disconnect();
     }

@@ -25,8 +25,8 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class SubscriptionTest extends ClientServerTest {
     @Test
@@ -35,20 +35,20 @@ public class SubscriptionTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         CountDownLatch latch = new CountDownLatch(1);
         String channelName = Channel.META_CONNECT;
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.subscribe((c, m) -> {
         }, message -> {
-            Assert.assertFalse(message.isSuccessful());
+            Assertions.assertFalse(message.isSuccessful());
             latch.countDown();
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(0, channel.getSubscribers().size());
-        Assert.assertEquals(0, bayeux.getChannel(channelName).getSubscribers().size());
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(0, channel.getSubscribers().size());
+        Assertions.assertEquals(0, bayeux.getChannel(channelName).getSubscribers().size());
 
         disconnectBayeuxClient(client);
     }
@@ -59,7 +59,7 @@ public class SubscriptionTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         String channelName = "/service/test";
         CountDownLatch subscribeLatch = new CountDownLatch(1);
@@ -67,26 +67,26 @@ public class SubscriptionTest extends ClientServerTest {
         ClientSessionChannel channel = client.getChannel(channelName);
         ClientSessionChannel.MessageListener listener = (c, m) -> messageLatch.countDown();
         channel.subscribe(listener, message -> {
-            Assert.assertTrue(message.isSuccessful());
+            Assertions.assertTrue(message.isSuccessful());
             subscribeLatch.countDown();
         });
 
-        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(1, channel.getSubscribers().size());
-        Assert.assertEquals(0, bayeux.getChannel(channelName).getSubscribers().size());
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(1, channel.getSubscribers().size());
+        Assertions.assertEquals(0, bayeux.getChannel(channelName).getSubscribers().size());
 
         channel.publish("test");
 
-        Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         CountDownLatch unsubscribeLatch = new CountDownLatch(1);
         channel.unsubscribe(listener, message -> {
-            Assert.assertTrue(message.isSuccessful());
+            Assertions.assertTrue(message.isSuccessful());
             unsubscribeLatch.countDown();
         });
 
-        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(0, channel.getSubscribers().size());
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(0, channel.getSubscribers().size());
 
         disconnectBayeuxClient(client);
     }
@@ -114,7 +114,7 @@ public class SubscriptionTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         String channelName = "/foo";
         AtomicReference<CountDownLatch> replyLatch = new AtomicReference<>(new CountDownLatch(1));
@@ -122,48 +122,48 @@ public class SubscriptionTest extends ClientServerTest {
         ClientSessionChannel channel = client.getChannel(channelName);
         boolean result = channel.subscribe(listener1, reply -> replyLatch.get().countDown());
 
-        Assert.assertTrue(result);
-        Assert.assertTrue(subscribeLatch.get().await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(result);
+        Assertions.assertTrue(subscribeLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(replyLatch.get().await(5, TimeUnit.SECONDS));
 
         // Try the same listener.
         subscribeLatch.set(new CountDownLatch(1));
         replyLatch.set(new CountDownLatch(1));
         result = channel.subscribe(listener1, reply -> replyLatch.get().countDown());
 
-        Assert.assertFalse(result);
-        Assert.assertFalse(subscribeLatch.get().await(500, TimeUnit.MILLISECONDS));
-        Assert.assertTrue(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
+        Assertions.assertFalse(result);
+        Assertions.assertFalse(subscribeLatch.get().await(500, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
 
         // Try a different listener.
         ClientSessionChannel.MessageListener listener2 = (c, m) -> {};
         replyLatch.set(new CountDownLatch(1));
         result = channel.subscribe(listener2, reply -> replyLatch.get().countDown());
 
-        Assert.assertFalse(result);
-        Assert.assertFalse(subscribeLatch.get().await(500, TimeUnit.MILLISECONDS));
-        Assert.assertTrue(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
+        Assertions.assertFalse(result);
+        Assertions.assertFalse(subscribeLatch.get().await(500, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
 
         replyLatch.set(new CountDownLatch(1));
         result = channel.unsubscribe(listener2, reply -> replyLatch.get().countDown());
 
-        Assert.assertFalse(result);
-        Assert.assertFalse(unsubscribeLatch.get().await(500, TimeUnit.MILLISECONDS));
-        Assert.assertTrue(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
+        Assertions.assertFalse(result);
+        Assertions.assertFalse(unsubscribeLatch.get().await(500, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
 
         replyLatch.set(new CountDownLatch(1));
         result = channel.unsubscribe(listener1, reply -> replyLatch.get().countDown());
 
-        Assert.assertFalse(result);
-        Assert.assertFalse(unsubscribeLatch.get().await(500, TimeUnit.MILLISECONDS));
-        Assert.assertTrue(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
+        Assertions.assertFalse(result);
+        Assertions.assertFalse(unsubscribeLatch.get().await(500, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(replyLatch.get().await(500, TimeUnit.MILLISECONDS));
 
         replyLatch.set(new CountDownLatch(1));
         result = channel.unsubscribe(listener1, reply -> replyLatch.get().countDown());
 
-        Assert.assertTrue(result);
-        Assert.assertTrue(unsubscribeLatch.get().await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(result);
+        Assertions.assertTrue(unsubscribeLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(replyLatch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

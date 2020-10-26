@@ -31,22 +31,20 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServerTest {
-    public MetaConnectFailureWithAckExtensionTest(Transport transport) {
-        super(transport);
-    }
-
-    @Test
-    public void testMetaConnectFailureWithAckExtension() throws Exception {
-        startServer(serverOptions());
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMetaConnectFailureWithAckExtension(Transport transport) throws Exception {
+        startServer(transport);
         bayeux.addExtension(new AcknowledgedMessagesExtension());
 
-        final String channelName = "/test";
+        String channelName = "/test";
 
-        final CountDownLatch serverSubscribeLatch = new CountDownLatch(1);
+        CountDownLatch serverSubscribeLatch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SubscriptionListener() {
             @Override
             public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
@@ -56,8 +54,8 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
             }
         });
 
-        final long delay = 1000;
-        final long maxNetworkDelay = 3 * delay;
+        long delay = 1000;
+        long maxNetworkDelay = 3 * delay;
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
             private final AtomicInteger connects = new AtomicInteger();
 
@@ -91,22 +89,22 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
             }
         });
 
-        final BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(transport);
         client.setBackOffStrategy(new BayeuxClient.BackOffStrategy.Constant(0));
         client.addExtension(new AckExtension());
         client.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
 
-        final CountDownLatch messageLatch1 = new CountDownLatch(1);
-        final CountDownLatch messageLatch2 = new CountDownLatch(1);
-        final ClientSessionChannel.MessageListener messageCallback = (channel, message) -> {
+        CountDownLatch messageLatch1 = new CountDownLatch(1);
+        CountDownLatch messageLatch2 = new CountDownLatch(1);
+        ClientSessionChannel.MessageListener messageCallback = (channel, message) -> {
             if (messageLatch1.getCount() == 0) {
                 messageLatch2.countDown();
             }
             messageLatch1.countDown();
         };
 
-        final CountDownLatch clientSubscribeLatch = new CountDownLatch(1);
-        final ClientSession.MessageListener subscribeCallback = message -> {
+        CountDownLatch clientSubscribeLatch = new CountDownLatch(1);
+        ClientSession.MessageListener subscribeCallback = message -> {
             if (message.isSuccessful()) {
                 clientSubscribeLatch.countDown();
             }
@@ -118,9 +116,9 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
             }
         });
 
-        Assert.assertTrue(clientSubscribeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(messageLatch1.await(2 * maxNetworkDelay, TimeUnit.MILLISECONDS));
-        Assert.assertFalse(messageLatch2.await(2 * delay, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(clientSubscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch1.await(2 * maxNetworkDelay, TimeUnit.MILLISECONDS));
+        Assertions.assertFalse(messageLatch2.await(2 * delay, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }

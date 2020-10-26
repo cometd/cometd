@@ -24,14 +24,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.client.BayeuxClient;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class HighRateServerEventsTest extends ClientServerTest {
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         start(null);
     }
@@ -45,7 +43,7 @@ public class HighRateServerEventsTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         AtomicInteger messages = new AtomicInteger();
@@ -59,7 +57,7 @@ public class HighRateServerEventsTest extends ClientServerTest {
         });
 
         // Wait until subscription is acknowledged
-        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
 
         long begin = System.nanoTime();
         int count = 500;
@@ -69,10 +67,10 @@ public class HighRateServerEventsTest extends ClientServerTest {
             service.getChannel(channelName).publish(new HashMap<String, Object>());
         }
         long end = System.nanoTime();
-        Assert.assertTrue(latch.get().await(count * 100, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(latch.get().await(count * 100, TimeUnit.MILLISECONDS));
         logger.info("rate = {} messages/s", count * 1_000_000_000L / (end - begin));
 
-        assertEquals(count, messages.get());
+        Assertions.assertEquals(count, messages.get());
 
         disconnectBayeuxClient(client);
     }

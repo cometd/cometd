@@ -26,22 +26,16 @@ import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class DisconnectTest extends AbstractBayeuxClientServerTest {
-    public DisconnectTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDisconnect(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testDisconnect() throws Exception {
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -49,7 +43,7 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -59,10 +53,10 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         ServerSession serverSession = bayeux.getSession(clientId);
-        Assert.assertNotNull(serverSession);
+        Assertions.assertNotNull(serverSession);
 
         Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -76,7 +70,7 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest {
         // Wait for the /meta/connect to be suspended
         Thread.sleep(1000);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         serverSession.addListener((ServerSession.RemovedListener)(s, m, t) -> latch.countDown());
 
         Request disconnect = newBayeuxRequest("[{" +
@@ -84,15 +78,15 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest {
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         response = listener.get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
         Message.Mutable connectReply = new JettyJSONContextClient().parse(response.getContentAsString())[0];
-        Assert.assertEquals(Channel.META_CONNECT, connectReply.getChannel());
+        Assertions.assertEquals(Channel.META_CONNECT, connectReply.getChannel());
         Map<String, Object> advice = connectReply.getAdvice(false);
-        Assert.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get(Message.RECONNECT_FIELD));
+        Assertions.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get(Message.RECONNECT_FIELD));
     }
 }

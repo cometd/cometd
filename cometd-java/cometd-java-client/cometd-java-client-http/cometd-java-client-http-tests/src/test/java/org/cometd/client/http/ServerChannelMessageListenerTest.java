@@ -24,8 +24,8 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ServerChannelMessageListenerTest extends ClientServerTest {
     @Test
@@ -58,9 +58,9 @@ public class ServerChannelMessageListenerTest extends ClientServerTest {
             messageLatch.countDown();
         });
 
-        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
         Message message = messageRef.get();
-        Assert.assertFalse(message.isSuccessful());
-        Assert.assertTrue(message.containsKey(Message.ERROR_FIELD));
+        Assertions.assertFalse(message.isSuccessful());
+        Assertions.assertTrue(message.containsKey(Message.ERROR_FIELD));
     }
 }

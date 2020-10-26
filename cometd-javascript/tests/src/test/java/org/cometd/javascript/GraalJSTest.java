@@ -19,10 +19,8 @@ import java.util.function.Function;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
-import org.junit.Assert;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class GraalJSTest {
     @Test
@@ -33,7 +31,7 @@ public class GraalJSTest {
                 Object object = new Object();
                 bindings.putMember("root", object);
                 Value result = context.eval("js", "root");
-                Assert.assertSame(object, result.asHostObject());
+                Assertions.assertSame(object, result.asHostObject());
             });
         }
     }
@@ -48,7 +46,7 @@ public class GraalJSTest {
                 Function<Object, Integer> function = value -> Value.asValue(value).execute().asInt();
                 bindings.putMember("fn", function);
                 Value result = context.eval("js", "fn.apply(function() { return 42; });");
-                assertEquals(42, result.asInt());
+                Assertions.assertEquals(42, result.asInt());
             });
         }
     }
@@ -65,9 +63,9 @@ public class GraalJSTest {
                 Value jsThis = obj.getMember("self");
                 Object[] args = new Object[]{Boolean.TRUE};
                 Value result1 = obj.getMember("exec").execute(args);
-                assertEquals(obj.toString(), result1.toString());
+                Assertions.assertEquals(obj.toString(), result1.toString());
                 Value result2 = obj.getMember("exec").getMember("apply").execute(jsThis, args);
-                assertEquals(jsThis.toString(), result2.toString());
+                Assertions.assertEquals(jsThis.toString(), result2.toString());
             });
         }
     }

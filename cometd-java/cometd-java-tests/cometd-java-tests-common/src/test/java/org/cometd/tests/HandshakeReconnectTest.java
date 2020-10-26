@@ -26,29 +26,27 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class HandshakeReconnectTest extends AbstractClientServerTest {
-    public HandshakeReconnectTest(Transport transport) {
-        super(transport);
-    }
-
-    @Test
-    public void testReconnectUsingHandshake() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testReconnectUsingHandshake(Transport transport) throws Exception {
         long timeout = 1500;
         long maxInterval = 2000;
-        Map<String, String> options = serverOptions();
+        Map<String, String> options = serverOptions(transport);
         options.put(AbstractServerTransport.HANDSHAKE_RECONNECT_OPTION, String.valueOf(true));
         options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
-        startServer(options);
+        startServer(transport, options);
 
-        BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(transport);
         long backOffIncrement = 1000;
         client.setBackOffStrategy(new BayeuxClient.BackOffStrategy.Linear(backOffIncrement, -1));
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the /meta/connect to be held.
         Thread.sleep(1000);
@@ -58,7 +56,7 @@ public class HandshakeReconnectTest extends AbstractClientServerTest {
         connector.stop();
 
         // Add a /meta/handshake listener to be sure we reconnect using handshake.
-        final CountDownLatch handshakeReconnect = new CountDownLatch(1);
+        CountDownLatch handshakeReconnect = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             // Reconnecting using handshake, first failure.
             if (!message.isSuccessful()) {
@@ -67,7 +65,7 @@ public class HandshakeReconnectTest extends AbstractClientServerTest {
         });
 
         // Wait for the session to be swept (timeout + maxInterval).
-        final CountDownLatch sessionRemoved = new CountDownLatch(1);
+        CountDownLatch sessionRemoved = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
@@ -75,14 +73,14 @@ public class HandshakeReconnectTest extends AbstractClientServerTest {
             }
         });
 
-        Assert.assertTrue(sessionRemoved.await(timeout + 2 * maxInterval, TimeUnit.MILLISECONDS));
-        Assert.assertTrue(handshakeReconnect.await(10 * backOffIncrement, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(sessionRemoved.await(timeout + 2 * maxInterval, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(handshakeReconnect.await(10 * backOffIncrement, TimeUnit.MILLISECONDS));
 
         // Restart the connector.
         connector.setPort(port);
         connector.start();
 
-        Assert.assertTrue(client.waitFor(20 * backOffIncrement, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(20 * backOffIncrement, BayeuxClient.State.CONNECTED));
 
         disconnectBayeuxClient(client);
     }

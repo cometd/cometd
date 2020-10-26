@@ -30,8 +30,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests that failing the disconnect, the comet communication is aborted anyway
@@ -45,20 +46,23 @@ public class CometDDisconnectFailureTest extends AbstractCometDTransportsTest {
         context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
-    @Test
-    public void testDisconnectFailure() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDisconnectFailure(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
 
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
 
         // The test ends here, as we cannot get any information about the fact that
         // the long poll call returned (which we would have liked to, confirming that
@@ -73,7 +77,7 @@ public class CometDDisconnectFailureTest extends AbstractCometDTransportsTest {
 
     public static class DisconnectThrowingFilter implements Filter {
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException {
+        public void init(FilterConfig filterConfig) {
         }
 
         @Override

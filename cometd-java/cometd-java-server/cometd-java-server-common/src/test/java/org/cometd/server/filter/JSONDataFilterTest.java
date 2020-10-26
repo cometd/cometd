@@ -18,32 +18,24 @@ package org.cometd.server.filter;
 import java.util.Collections;
 
 import org.cometd.bayeux.Promise;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class JSONDataFilterTest extends AbstractBayeuxClientServerTest {
-    public JSONDataFilterTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testImmutableData(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Test
-    public void testImmutableData() throws Exception {
-        startServer(null);
-
-        final String filtered = "/filtered";
-        bayeux.createChannelIfAbsent(filtered, new ConfigurableServerChannel.Initializer() {
-            @Override
-            public void configureChannel(ConfigurableServerChannel channel) {
-                channel.addListener(new DataFilterMessageListener(new NoScriptsFilter()));
-            }
-        });
+        String filtered = "/filtered";
+        bayeux.createChannelIfAbsent(filtered, channel -> channel.addListener(new DataFilterMessageListener(new NoScriptsFilter())));
 
         String unfiltered = "/service/unfiltered";
         bayeux.createChannelIfAbsent(unfiltered).getReference().addListener(new ServerChannel.MessageListener() {
@@ -60,7 +52,7 @@ public class JSONDataFilterTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -70,7 +62,7 @@ public class JSONDataFilterTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request subscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/subscribe\"," +
@@ -78,7 +70,7 @@ public class JSONDataFilterTest extends AbstractBayeuxClientServerTest {
                 "\"subscription\": \"" + filtered + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String script = "<script>alert()</script>";
         Request publish = newBayeuxRequest("[{" +
@@ -89,10 +81,10 @@ public class JSONDataFilterTest extends AbstractBayeuxClientServerTest {
                 "}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String json = response.getContentAsString();
         String expected = script.replaceAll("script", "span");
-        Assert.assertTrue(json.contains(expected));
+        Assertions.assertTrue(json.contains(expected));
     }
 }

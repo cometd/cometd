@@ -22,12 +22,16 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDDeliverTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testDeliver() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDeliver(String transport) throws Exception {
+        initCometDServer(transport);
+
         new DeliverService(bayeuxServer);
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -41,24 +45,24 @@ public class CometDDeliverTest extends AbstractCometDTransportsTest {
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
         evaluateScript("var listener = cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
         evaluateScript("cometd.publish('/service/deliver', { deliver: false });");
-        Assert.assertTrue(latch.await(5000));
-        Assert.assertFalse(pushLatch.await(1000));
+        Assertions.assertTrue(latch.await(5000));
+        Assertions.assertFalse(pushLatch.await(1000));
         evaluateScript("cometd.removeListener(listener);");
         evaluateScript("window.assert(_data === undefined);");
 
         latch.reset(1);
         evaluateScript("listener = cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
         evaluateScript("cometd.publish('/service/deliver', { deliver: true });");
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
         evaluateScript("cometd.removeListener(listener);");
         // Wait for the listener to be notified from the server
-        Assert.assertTrue(pushLatch.await(5000));
+        Assertions.assertTrue(pushLatch.await(5000));
         evaluateScript("window.assert(_data !== undefined);");
 
         disconnect();

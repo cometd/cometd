@@ -35,8 +35,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class DemoTest {
     @Test
@@ -70,31 +70,31 @@ public class DemoTest {
             String clearTextURL = "http://localhost:" + httpPort + contextPath + "/cometd";
             BayeuxClient client = new BayeuxClient(clearTextURL, new WebSocketTransport(null, null, jsrWebSocketClient));
             client.handshake();
-            Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+            Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
             client.disconnect();
-            Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+            Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
             // Test confidential communication.
             String confidentialURL = "https://localhost:" + httpsPort + contextPath + "/cometd";
             client = new BayeuxClient(confidentialURL, new JettyHttpClientTransport(null, httpClient));
             client.handshake();
-            Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+            Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
             client.disconnect();
-            Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+            Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
             client = new BayeuxClient(confidentialURL, new JettyWebSocketTransport(null, null, jettyWebSocketClient));
             client.handshake();
-            Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+            Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
             client.disconnect();
-            Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+            Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
             // Test JMX.
             MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
             Set<ObjectInstance> objectInstances = mbeanServer.queryMBeans(ObjectName.getInstance("org.cometd.server:*"), null);
-            Assert.assertFalse(objectInstances.isEmpty());
+            Assertions.assertFalse(objectInstances.isEmpty());
         } finally {
             jettyWebSocketClient.stop();
             if (jsrWebSocketClient instanceof LifeCycle) {

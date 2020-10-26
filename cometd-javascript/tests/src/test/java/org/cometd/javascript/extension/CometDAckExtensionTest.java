@@ -21,21 +21,25 @@ import org.cometd.javascript.Latch;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDAckExtensionTest extends AbstractCometDTransportsTest {
     private AckService ackService;
 
-    @Before
-    public void initExtension() throws Exception {
+    @Override
+    public void initCometDServer(String transport) throws Exception {
+        super.initCometDServer(transport);
         bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         ackService = new AckService(bayeuxServer);
     }
 
-    @Test
-    public void testClientSupportsAckExtension() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientSupportsAckExtension(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var cometd = cometd;");
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
@@ -56,17 +60,20 @@ public class CometDAckExtensionTest extends AbstractCometDTransportsTest {
         evaluateScript("cometd.addListener('/meta/handshake', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
 
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         Boolean clientSupportsAck = javaScript.get("clientSupportsAck");
-        Assert.assertTrue(clientSupportsAck);
+        Assertions.assertTrue(clientSupportsAck);
         evaluateScript("cometd.unregisterExtension('test');");
 
         disconnect();
     }
 
-    @Test
-    public void testAcknowledgement() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testAcknowledgement(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var inAckId = undefined;");
@@ -92,11 +99,11 @@ public class CometDAckExtensionTest extends AbstractCometDTransportsTest {
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
 
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         Number inAckId = javaScript.get("inAckId");
         // The server should have returned a non-negative value during the first connect call
-        Assert.assertTrue(inAckId.intValue() >= 0);
+        Assertions.assertTrue(inAckId.intValue() >= 0);
 
         // Subscribe to receive server events
         evaluateScript("var msgCount = 0;");
@@ -106,17 +113,17 @@ public class CometDAckExtensionTest extends AbstractCometDTransportsTest {
         Latch publishLatch = javaScript.get("publishLatch");
         evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
         evaluateScript("cometd.subscribe('/echo', function() { ++msgCount; publishLatch.countDown(); });");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         // The server receives an event and sends it to the client via the long poll
         ackService.emit("test acknowledgement");
-        Assert.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
 
         inAckId = javaScript.get("inAckId");
         Number outAckId = javaScript.get("outAckId");
-        Assert.assertTrue(inAckId.intValue() >= outAckId.intValue());
+        Assertions.assertTrue(inAckId.intValue() >= outAckId.intValue());
         Number msgCount = javaScript.get("msgCount");
-        Assert.assertEquals(1, msgCount.intValue());
+        Assertions.assertEquals(1, msgCount.intValue());
 
         evaluateScript("cometd.unregisterExtension('test');");
 

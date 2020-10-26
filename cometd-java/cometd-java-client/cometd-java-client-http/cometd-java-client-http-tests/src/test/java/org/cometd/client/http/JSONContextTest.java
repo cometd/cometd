@@ -15,13 +15,14 @@
  */
 package org.cometd.client.http;
 
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -39,45 +40,30 @@ import org.cometd.server.JSONContextServer;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.JettyJSONContextServer;
 import org.cometd.server.ServerMessageImpl;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-@RunWith(Parameterized.class)
 public class JSONContextTest extends ClientServerTest {
-    @Parameterized.Parameters(name = "{index}: JSON Context Server: {0} JSON Context Client: {1}")
-    public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[][]
-                {
-                        {JacksonJSONContextServer.class, JacksonJSONContextClient.class},
-                        {JettyJSONContextServer.class, JettyJSONContextClient.class}
-                }
+    public static Stream<Arguments> jsonContexts() {
+        return Stream.of(
+                Arguments.of(JacksonJSONContextServer.class, JacksonJSONContextClient.class),
+                Arguments.of(JettyJSONContextServer.class, JettyJSONContextClient.class)
         );
     }
 
-    private final Class<?> jsonContextServerClass;
-    private final Class<?> jsonContextClientClass;
-
-    public JSONContextTest(Class<?> jsonContextServerClass, Class<?> jsonContextClientClass) {
-        this.jsonContextServerClass = jsonContextServerClass;
-        this.jsonContextClientClass = jsonContextClientClass;
-    }
-
-    @Test
-    public void testAsyncParser() throws Exception {
-        JSONContext.Client jsonContextClient = (JSONContext.Client)jsonContextClientClass.getConstructor().newInstance();
+    @ParameterizedTest(name = "{index}: JSON Context Server: {0} JSON Context Client: {1}")
+    @MethodSource("jsonContexts")
+    public void testAsyncParser(Class<JSONContextServer>jsonContextServerClass, Class<JSONContext.Client> jsonContextClientClass) throws Exception {
+        JSONContext.Client jsonContextClient = jsonContextClientClass.getConstructor().newInstance();
         JSONContext.AsyncParser clientParser = jsonContextClient.newAsyncParser();
-        Assume.assumeNotNull(clientParser);
+        Assumptions.assumeTrue(clientParser != null);
 
-        JSONContextServer jsonContextServer = (JSONContextServer)jsonContextServerClass.getConstructor().newInstance();
+        JSONContextServer jsonContextServer = jsonContextServerClass.getConstructor().newInstance();
         JSONContext.AsyncParser serverParser = jsonContextServer.newAsyncParser();
-        Assume.assumeNotNull(serverParser);
+        Assumptions.assumeTrue(serverParser != null);
 
         String json = "[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -86,7 +72,7 @@ public class JSONContextTest extends ClientServerTest {
                 "\"advice\": {\"timeout\": 0, \"reconnect\": \"retry\"}," +
                 "\"ext\": {\"ack\": true}" +
                 "}]";
-        byte[] bytes = json.getBytes(UTF_8);
+        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
 
         for (int i = 0; i < bytes.length; ++i) {
             clientParser.parse(bytes, i, 1);
@@ -95,16 +81,17 @@ public class JSONContextTest extends ClientServerTest {
         List<Message.Mutable> clientMessages = clientParser.complete();
         List<ServerMessage.Mutable> serverMessages = serverParser.complete();
 
-        assertEquals(1, clientMessages.size());
+        Assertions.assertEquals(1, clientMessages.size());
         Message.Mutable clientMessage = clientMessages.get(0);
-        assertTrue(clientMessage instanceof HashMapMessage);
-        assertEquals(1, serverMessages.size());
+        Assertions.assertTrue(clientMessage instanceof HashMapMessage);
+        Assertions.assertEquals(1, serverMessages.size());
         ServerMessage.Mutable serverMessage = serverMessages.get(0);
-        assertTrue(serverMessage instanceof ServerMessageImpl);
+        Assertions.assertTrue(serverMessage instanceof ServerMessageImpl);
     }
 
-    @Test
-    public void testHandshakeSubscribePublishUnsubscribeDisconnect() throws Exception {
+    @ParameterizedTest(name = "{index}: JSON Context Server: {0} JSON Context Client: {1}")
+    @MethodSource("jsonContexts")
+    public void testHandshakeSubscribePublishUnsubscribeDisconnect(Class<JSONContextServer>jsonContextServerClass, Class<JSONContext.Client> jsonContextClientClass) throws Exception {
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, jsonContextServerClass.getName());
         start(serverOptions);
@@ -125,11 +112,11 @@ public class JSONContextTest extends ClientServerTest {
         client.handshake();
 
         Message message = metaMessages.poll(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(message);
-        assertEquals(Channel.META_HANDSHAKE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
+        Assertions.assertTrue(message.isSuccessful());
         String id = client.getId();
-        Assert.assertNotNull(id);
+        Assertions.assertNotNull(id);
 
         BlockingQueue<Message> messages = new ArrayBlockingQueue<>(16);
         ClientSessionChannel.MessageListener subscriber = (c, m) -> messages.offer(m);
@@ -137,21 +124,21 @@ public class JSONContextTest extends ClientServerTest {
         aChannel.subscribe(subscriber);
 
         message = metaMessages.poll(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(message);
-        assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
+        Assertions.assertTrue(message.isSuccessful());
 
         String data = "data";
         aChannel.publish(data);
         message = messages.poll(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(message);
-        assertEquals(data, message.getData());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(data, message.getData());
 
         aChannel.unsubscribe(subscriber);
         message = metaMessages.poll(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(message);
-        assertEquals(Channel.META_UNSUBSCRIBE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_UNSUBSCRIBE, message.getChannel());
+        Assertions.assertTrue(message.isSuccessful());
 
         disconnectBayeuxClient(client);
     }

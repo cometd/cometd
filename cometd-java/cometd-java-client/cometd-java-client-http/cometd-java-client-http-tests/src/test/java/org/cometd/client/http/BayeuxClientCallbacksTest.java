@@ -35,12 +35,12 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.cometd.server.LocalSessionImpl;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class BayeuxClientCallbacksTest extends ClientServerTest {
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         start(null);
     }
@@ -52,7 +52,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> latch.countDown());
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -84,8 +84,8 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
             }
         });
 
-        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -97,7 +97,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> client.disconnect(m -> latch.countDown()));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -108,7 +108,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> client.getChannel(channelName).subscribe(new MessageListenerAdapter(), m -> latch.countDown()));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -128,7 +128,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> client.getChannel(channelName).subscribe(new MessageListenerAdapter(), m -> latch.countDown()));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -144,7 +144,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
             client.getChannel(channelName).subscribe(listener, m -> client.getChannel(channelName).unsubscribe(listener, r -> latch.countDown()));
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -153,22 +153,22 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
     public void testPublishSuccessfulInvokesCallback() throws Exception {
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap<>(), message -> {
-            Assert.assertTrue(message.isSuccessful());
+            Assertions.assertTrue(message.isSuccessful());
             latch.get().countDown();
         });
 
-        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
 
         // Publish again without callback, must not trigger the previous callback
         latch.set(new CountDownLatch(1));
         channel.publish(new HashMap<>());
 
-        Assert.assertFalse(latch.get().await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(latch.get().await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -184,16 +184,16 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap<>(), message -> {
-            Assert.assertFalse(message.isSuccessful());
+            Assertions.assertFalse(message.isSuccessful());
             latch.get().countDown();
         });
 
-        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -215,11 +215,11 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
         ClientSessionChannel channel = client.getChannel("/test");
         // Publish will fail because we did not handshake.
         channel.publish(new HashMap<>(), message -> {
-            Assert.assertFalse(message.isSuccessful());
+            Assertions.assertFalse(message.isSuccessful());
             latch.get().countDown();
         });
 
-        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -228,18 +228,18 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
     public void testPublishWithServerDownInvokesCallback() throws Exception {
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         server.stop();
 
         AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap<>(), message -> {
-            Assert.assertFalse(message.isSuccessful());
+            Assertions.assertFalse(message.isSuccessful());
             latch.get().countDown();
         });
 
-        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -280,8 +280,8 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
             }
         });
 
-        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -317,7 +317,7 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
             }
         });
 
-        Assert.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -358,8 +358,8 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
             }
         });
 
-        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -401,8 +401,8 @@ public class BayeuxClientCallbacksTest extends ClientServerTest {
             }
         });
 
-        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(unregisterLatch.await(5, TimeUnit.SECONDS));
 
         session.disconnect();
     }

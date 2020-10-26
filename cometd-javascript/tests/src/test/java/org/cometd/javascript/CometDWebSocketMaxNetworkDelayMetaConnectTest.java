@@ -25,17 +25,13 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.eclipse.jetty.io.Connection;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractCometDWebSocketTest {
-    @Override
-    public void initCometDServer() {
-    }
-
+public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractCometDTest {
     @Test
     public void testMaxNetworkDelay() throws Exception {
-        initCometDServer(new HashMap<>());
+        initCometDServer("websocket");
 
         long maxNetworkDelay = 2000;
         long backOffIncrement = 1000;
@@ -85,7 +81,7 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         //   + Second connect is canceled and not replied
         // Sixth connect is replied
 
-        Assert.assertTrue(latch.await(2 * (3 * metaConnectPeriod + 3 * maxNetworkDelay)));
+        Assertions.assertTrue(latch.await(2 * (3 * metaConnectPeriod + 3 * maxNetworkDelay)));
         evaluateScript("window.assert(failure === undefined, failure);");
 
         disconnect();
@@ -96,7 +92,7 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         long maxInterval = 1500;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
-        initCometDServer(options);
+        initCometDServer("websocket", options);
 
         AtomicInteger opened = new AtomicInteger();
         AtomicInteger closed = new AtomicInteger();
@@ -138,13 +134,13 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         Thread.sleep(delay + 1000);
 
         // For each WebSocketConnection there is also a HttpConnection for the upgrade.
-        Assert.assertEquals(4, opened.get());
+        Assertions.assertEquals(4, opened.get());
 
         disconnect();
         // Wait for the /meta/connect to return.
         Thread.sleep(1000);
 
-        Assert.assertEquals(4, closed.get());
+        Assertions.assertEquals(4, closed.get());
     }
 
     private static class DelayingExtension implements BayeuxServer.Extension {

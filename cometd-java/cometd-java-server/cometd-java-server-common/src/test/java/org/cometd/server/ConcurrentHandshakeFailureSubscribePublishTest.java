@@ -17,22 +17,16 @@ package org.cometd.server;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBayeuxClientServerTest {
-    public ConcurrentHandshakeFailureSubscribePublishTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testConcurrentHandshakeFailureAndSubscribe(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testConcurrentHandshakeFailureAndSubscribe() throws Exception {
         // A bad sequence of messages results in the server rejecting them.
         String channelName = "/foo";
         Request handshake = newBayeuxRequest("[{" +
@@ -46,11 +40,14 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(500, response.getStatus());
+        Assertions.assertEquals(500, response.getStatus());
     }
 
-    @Test
-    public void testConcurrentHandshakeFailureAndPublish() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testConcurrentHandshakeFailureAndPublish(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         // A bad sequence of messages results in the server rejecting them.
         String channelName = "/foo";
         Request handshake = newBayeuxRequest("[{" +
@@ -64,6 +61,6 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 "\"data\": {}" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(500, response.getStatus());
+        Assertions.assertEquals(500, response.getStatus());
     }
 }

@@ -50,70 +50,68 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.junit.Assert;
-import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class BayeuxContextTest extends ClientServerWebSocketTest {
-    public BayeuxContextTest(String implementation) {
-        super(implementation);
-    }
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testRequestHeaderIsCaseInsensitive(String wsType) throws Exception {
+        prepareAndStart(wsType, null);
 
-    @Test
-    public void testRequestHeaderIsCaseInsensitive() throws Exception {
-        prepareAndStart(null);
-
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 BayeuxContext context = message.getBayeuxContext();
-                Assert.assertEquals(context.getHeader("Host"), context.getHeader("HOST"));
-                Assert.assertEquals(context.getHeader("Host"), context.getHeaderValues("HOST").get(0));
+                Assertions.assertEquals(context.getHeader("Host"), context.getHeader("HOST"));
+                Assertions.assertEquals(context.getHeader("Host"), context.getHeaderValues("HOST").get(0));
                 latch.countDown();
                 return true;
             }
         });
 
-        BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(wsType);
         client.handshake();
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
 
-    @Test
-    public void testCookiesSentToServer() throws Exception {
-        prepareAndStart(null);
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testCookiesSentToServer(String wsType) throws Exception {
+        prepareAndStart(wsType, null);
 
-        final String cookieName = "name";
-        final String cookieValue = "value";
-        final CountDownLatch latch = new CountDownLatch(1);
+        String cookieName = "name";
+        String cookieValue = "value";
+        CountDownLatch latch = new CountDownLatch(1);
         bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 BayeuxContext context = message.getBayeuxContext();
-                Assert.assertEquals(cookieValue, context.getCookie(cookieName));
+                Assertions.assertEquals(cookieValue, context.getCookie(cookieName));
                 latch.countDown();
                 return true;
             }
         });
 
-        BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(wsType);
         client.putCookie(new HttpCookie(cookieName, cookieValue));
         client.handshake();
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
 
-    @Test
-    public void testCookiesSentToClient() throws Exception {
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testCookiesSentToClient(String wsType) throws Exception {
         String wsTransportClass;
-        switch (wsTransportType) {
+        switch (wsType) {
             case WEBSOCKET_JSR356:
             case WEBSOCKET_OKHTTP:
                 wsTransportClass = CookieWebSocketTransport.class.getName();
@@ -124,40 +122,41 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
             default:
                 throw new IllegalArgumentException();
         }
-        prepareServer(0, "/cometd", null, true, wsTransportClass);
+        prepareServer(wsType, 0, "/cometd", null, wsTransportClass);
         startServer();
-        prepareClient();
+        prepareClient(wsType);
         startClient();
 
-        BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(wsType);
         client.handshake();
 
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         HttpCookie cookie = client.getCookie(CookieConstants.COOKIE_NAME);
-        Assert.assertEquals(CookieConstants.COOKIE_VALUE, cookie.getValue());
+        Assertions.assertEquals(CookieConstants.COOKIE_VALUE, cookie.getValue());
 
         disconnectBayeuxClient(client);
     }
 
-    @Test
-    public void testMultipleCookiesSentToServer() throws Exception {
-        prepareAndStart(null);
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testMultipleCookiesSentToServer(String wsType) throws Exception {
+        prepareAndStart(wsType, null);
 
-        final List<String> cookieNames = Arrays.asList("a", "BAYEUX_BROWSER", "b");
-        final List<String> cookieValues = Arrays.asList("1", "761e1pplr7yo3wmsri1x5y0gnnby", "2");
+        List<String> cookieNames = Arrays.asList("a", "BAYEUX_BROWSER", "b");
+        List<String> cookieValues = Arrays.asList("1", "761e1pplr7yo3wmsri1x5y0gnnby", "2");
         StringBuilder cookies = new StringBuilder();
         for (int i = 0; i < cookieNames.size(); ++i) {
             cookies.append(cookieNames.get(i)).append("=").append(cookieValues.get(i)).append("; ");
         }
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 BayeuxContext context = message.getBayeuxContext();
                 for (int i = 0; i < cookieNames.size(); ++i) {
-                    Assert.assertEquals(cookieValues.get(i), context.getCookie(cookieNames.get(i)));
+                    Assertions.assertEquals(cookieValues.get(i), context.getCookie(cookieNames.get(i)));
                 }
                 latch.countDown();
                 return true;
@@ -189,7 +188,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
                     "\"supportedConnectionTypes\":[\"websocket\"]" +
                     "}";
             byte[] handshakeBytes = handshake.getBytes(StandardCharsets.UTF_8);
-            Assert.assertTrue(handshakeBytes.length <= 125); // Max payload length
+            Assertions.assertTrue(handshakeBytes.length <= 125); // Max payload length
 
             output.write(0x81); // FIN FLAG + TYPE=TEXT
             output.write(0x80 + handshakeBytes.length); // MASK FLAG + LENGTH
@@ -197,14 +196,15 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
             output.write(handshakeBytes); // PAYLOAD
             output.flush();
 
-            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 
-    @Test
-    public void testSessionAttribute() throws Exception {
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testSessionAttribute(String wsType) throws Exception {
         String wsTransportClass;
-        switch (wsTransportType) {
+        switch (wsType) {
             case WEBSOCKET_JSR356:
             case WEBSOCKET_OKHTTP:
                 wsTransportClass = SessionWebSocketTransport.class.getName();
@@ -215,7 +215,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
             default:
                 throw new IllegalArgumentException();
         }
-        prepareServer(0, "/cometd", null, true, wsTransportClass);
+        prepareServer(wsType, 0, "/cometd", null, wsTransportClass);
 
         context.addServlet(new ServletHolder(new HttpServlet() {
             @Override
@@ -225,7 +225,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
             }
         }), "/session");
         startServer();
-        prepareClient();
+        prepareClient(wsType);
         startClient();
 
         // Make an HTTP request to prime the HttpSession
@@ -234,64 +234,66 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
                 .path("/session")
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         List<HttpCookie> cookies = httpClient.getCookieStore().get(uri);
-        Assert.assertNotNull(cookies);
+        Assertions.assertNotNull(cookies);
         HttpCookie sessionCookie = null;
         for (HttpCookie cookie : cookies) {
             if ("jsessionid".equalsIgnoreCase(cookie.getName())) {
                 sessionCookie = cookie;
             }
         }
-        Assert.assertNotNull(sessionCookie);
+        Assertions.assertNotNull(sessionCookie);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assert.assertNotNull(message.getBayeuxContext().getHttpSessionId());
-                Assert.assertEquals(SessionConstants.ATTRIBUTE_VALUE, message.getBayeuxContext().getHttpSessionAttribute(SessionConstants.ATTRIBUTE_NAME));
+                Assertions.assertNotNull(message.getBayeuxContext().getHttpSessionId());
+                Assertions.assertEquals(SessionConstants.ATTRIBUTE_VALUE, message.getBayeuxContext().getHttpSessionAttribute(SessionConstants.ATTRIBUTE_NAME));
                 latch.countDown();
             }
         });
 
-        BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(wsType);
         client.getCookieStore().add(uri, sessionCookie);
         client.handshake();
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         disconnectBayeuxClient(client);
     }
 
-    @Test
-    public void testContextAttribute() throws Exception {
-        prepareAndStart(null);
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testContextAttribute(String wsType) throws Exception {
+        prepareAndStart(wsType, null);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assert.assertSame(bayeux, message.getBayeuxContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
+                Assertions.assertSame(bayeux, message.getBayeuxContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
                 latch.countDown();
             }
         });
 
-        BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(wsType);
         client.handshake();
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         disconnectBayeuxClient(client);
     }
 
-    @Test
-    public void testConcurrentClientsHaveDifferentBayeuxContexts() throws Exception {
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testConcurrentClientsHaveDifferentBayeuxContexts(String wsType) throws Exception {
         String wsTransportClass;
-        switch (wsTransportType) {
+        switch (wsType) {
             case WEBSOCKET_JSR356:
             case WEBSOCKET_OKHTTP:
                 wsTransportClass = ConcurrentBayeuxContextWebSocketTransport.class.getName();
@@ -302,27 +304,27 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
             default:
                 throw new IllegalArgumentException();
         }
-        prepareServer(0, "/cometd", null, true, wsTransportClass);
+        prepareServer(wsType, 0, "/cometd", null, wsTransportClass);
         startServer();
-        prepareClient();
+        prepareClient(wsType);
         startClient();
 
         // The first client will be held by the server.
-        final BayeuxClient client1 = newBayeuxClient();
+        BayeuxClient client1 = newBayeuxClient(wsType);
         // The connect operation is blocking, so we must use another thread.
         new Thread(client1::handshake).start();
 
         // Wait for the first client to arrive at the concurrency point.
-        switch (wsTransportType) {
+        switch (wsType) {
             case WEBSOCKET_JSR356:
             case WEBSOCKET_OKHTTP: {
                 CountDownLatch enterLatch = ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).enterLatch;
-                assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
+                Assertions.assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
                 break;
             }
             case WEBSOCKET_JETTY: {
                 CountDownLatch enterLatch = ((ConcurrentBayeuxContextJettyWebSocketTransport)bayeux.getTransport("websocket")).enterLatch;
-                assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
+                Assertions.assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
                 break;
             }
             default:
@@ -330,12 +332,12 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         }
 
         // Connect the second client.
-        BayeuxClient client2 = newBayeuxClient();
+        BayeuxClient client2 = newBayeuxClient(wsType);
         client2.handshake();
-        assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         // Release the first client.
-        switch (wsTransportType) {
+        switch (wsType) {
             case WEBSOCKET_JSR356:
             case WEBSOCKET_OKHTTP:
                 ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).proceedLatch.countDown();
@@ -346,11 +348,11 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
             default:
                 throw new IllegalArgumentException();
         }
-        assertTrue(client1.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client1.waitFor(1000, BayeuxClient.State.CONNECTED));
 
-        final String channelName = "/service/test";
-        final Map<String, BayeuxContext> contexts = new ConcurrentHashMap<>();
-        final CountDownLatch contextLatch = new CountDownLatch(2);
+        String channelName = "/service/test";
+        Map<String, BayeuxContext> contexts = new ConcurrentHashMap<>();
+        CountDownLatch contextLatch = new CountDownLatch(2);
         bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
@@ -362,10 +364,10 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
 
         client1.getChannel(channelName).publish("data");
         client2.getChannel(channelName).publish("data");
-        assertTrue(contextLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(contextLatch.await(5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(2, contexts.size());
-        Assert.assertNotSame(contexts.get(client1.getId()), contexts.get(client2.getId()));
+        Assertions.assertEquals(2, contexts.size());
+        Assertions.assertNotSame(contexts.get(client1.getId()), contexts.get(client2.getId()));
 
         disconnectBayeuxClient(client1);
         disconnectBayeuxClient(client2);
@@ -411,8 +413,8 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         @Override
         protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response) {
             HttpSession session = (HttpSession)request.getHttpSession();
-            Assert.assertNotNull(session);
-            Assert.assertEquals(ATTRIBUTE_VALUE, session.getAttribute(ATTRIBUTE_NAME));
+            Assertions.assertNotNull(session);
+            Assertions.assertEquals(ATTRIBUTE_VALUE, session.getAttribute(ATTRIBUTE_NAME));
         }
     }
 
@@ -424,8 +426,8 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         @Override
         protected void modifyUpgrade(ServletUpgradeRequest request, ServletUpgradeResponse response) {
             HttpSession session = request.getSession();
-            Assert.assertNotNull(session);
-            Assert.assertEquals(ATTRIBUTE_VALUE, session.getAttribute(ATTRIBUTE_NAME));
+            Assertions.assertNotNull(session);
+            Assertions.assertEquals(ATTRIBUTE_VALUE, session.getAttribute(ATTRIBUTE_NAME));
         }
     }
 

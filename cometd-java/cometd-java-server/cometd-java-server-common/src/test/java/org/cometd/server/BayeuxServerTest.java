@@ -25,10 +25,10 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class BayeuxServerTest {
     private final Queue<Object> _events = new ConcurrentLinkedQueue<>();
@@ -42,12 +42,12 @@ public class BayeuxServerTest {
         return session;
     }
 
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         _bayeux.start();
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception {
         _bayeux.stop();
         _events.clear();
@@ -70,41 +70,41 @@ public class BayeuxServerTest {
         channelName = "/wibble";
         ServerChannelImpl wibble = (ServerChannelImpl)_bayeux.createChannelIfAbsent(channelName).getReference();
 
-        Assert.assertEquals("channelAdded", _events.poll());
-        Assert.assertEquals(foobar, _events.poll());
-        Assert.assertEquals("channelAdded", _events.poll());
-        Assert.assertEquals(foostar, _events.poll());
-        Assert.assertEquals("channelAdded", _events.poll());
-        Assert.assertEquals(starstar, _events.poll());
-        Assert.assertEquals("channelAdded", _events.poll());
-        Assert.assertEquals(foobob, _events.poll());
-        Assert.assertEquals("channelAdded", _events.poll());
-        Assert.assertEquals(wibble, _events.poll());
+        Assertions.assertEquals("channelAdded", _events.poll());
+        Assertions.assertEquals(foobar, _events.poll());
+        Assertions.assertEquals("channelAdded", _events.poll());
+        Assertions.assertEquals(foostar, _events.poll());
+        Assertions.assertEquals("channelAdded", _events.poll());
+        Assertions.assertEquals(starstar, _events.poll());
+        Assertions.assertEquals("channelAdded", _events.poll());
+        Assertions.assertEquals(foobob, _events.poll());
+        Assertions.assertEquals("channelAdded", _events.poll());
+        Assertions.assertEquals(wibble, _events.poll());
 
         wibble.remove();
-        Assert.assertEquals("channelRemoved", _events.poll());
-        Assert.assertEquals(wibble.getId(), _events.poll());
+        Assertions.assertEquals("channelRemoved", _events.poll());
+        Assertions.assertEquals(wibble.getId(), _events.poll());
 
         ServerSessionImpl session0 = newServerSession();
         ServerSessionImpl session1 = newServerSession();
         ServerSessionImpl session2 = newServerSession();
 
-        Assert.assertEquals("sessionAdded", _events.poll());
-        Assert.assertEquals(session0, _events.poll());
-        Assert.assertEquals("sessionAdded", _events.poll());
-        Assert.assertEquals(session1, _events.poll());
-        Assert.assertEquals("sessionAdded", _events.poll());
-        Assert.assertEquals(session2, _events.poll());
+        Assertions.assertEquals("sessionAdded", _events.poll());
+        Assertions.assertEquals(session0, _events.poll());
+        Assertions.assertEquals("sessionAdded", _events.poll());
+        Assertions.assertEquals(session1, _events.poll());
+        Assertions.assertEquals("sessionAdded", _events.poll());
+        Assertions.assertEquals(session2, _events.poll());
 
         foobar.subscribe(session0);
         foobar.unsubscribe(session0);
 
-        Assert.assertEquals("subscribed", _events.poll());
-        Assert.assertEquals(session0, _events.poll());
-        Assert.assertEquals(foobar, _events.poll());
-        Assert.assertEquals("unsubscribed", _events.poll());
-        Assert.assertEquals(session0, _events.poll());
-        Assert.assertEquals(foobar, _events.poll());
+        Assertions.assertEquals("subscribed", _events.poll());
+        Assertions.assertEquals(session0, _events.poll());
+        Assertions.assertEquals(foobar, _events.poll());
+        Assertions.assertEquals("unsubscribed", _events.poll());
+        Assertions.assertEquals(session0, _events.poll());
+        Assertions.assertEquals(foobar, _events.poll());
     }
 
     @Test
@@ -114,38 +114,38 @@ public class BayeuxServerTest {
         ServerSession session = local.getServerSession();
 
         local.setAttribute("foo", "bar");
-        Assert.assertEquals("bar", local.getAttribute("foo"));
-        Assert.assertNull(session.getAttribute("foo"));
+        Assertions.assertEquals("bar", local.getAttribute("foo"));
+        Assertions.assertNull(session.getAttribute("foo"));
 
         session.setAttribute("bar", "foo");
-        Assert.assertNull(local.getAttribute("bar"));
-        Assert.assertEquals("foo", session.getAttribute("bar"));
+        Assertions.assertNull(local.getAttribute("bar"));
+        Assertions.assertEquals("foo", session.getAttribute("bar"));
 
-        Assert.assertTrue(local.getAttributeNames().contains("foo"));
-        Assert.assertFalse(local.getAttributeNames().contains("bar"));
-        Assert.assertFalse(session.getAttributeNames().contains("foo"));
-        Assert.assertTrue(session.getAttributeNames().contains("bar"));
+        Assertions.assertTrue(local.getAttributeNames().contains("foo"));
+        Assertions.assertFalse(local.getAttributeNames().contains("bar"));
+        Assertions.assertFalse(session.getAttributeNames().contains("foo"));
+        Assertions.assertTrue(session.getAttributeNames().contains("bar"));
 
-        Assert.assertEquals("bar", local.removeAttribute("foo"));
-        Assert.assertNull(local.removeAttribute("foo"));
-        Assert.assertEquals("foo", session.removeAttribute("bar"));
-        Assert.assertNull(local.removeAttribute("bar"));
+        Assertions.assertEquals("bar", local.removeAttribute("foo"));
+        Assertions.assertNull(local.removeAttribute("foo"));
+        Assertions.assertEquals("foo", session.removeAttribute("bar"));
+        Assertions.assertNull(local.removeAttribute("bar"));
     }
 
     @Test
     public void testLocalSessions() {
         LocalSession session0 = _bayeux.newLocalSession("s0");
-        Assert.assertEquals("L:s0_<disconnected>", session0.toString());
+        Assertions.assertEquals("L:s0_<disconnected>", session0.toString());
         session0.handshake();
-        Assert.assertNotEquals("L:s0_", session0.toString());
-        Assert.assertTrue(session0.toString().startsWith("L:s0_"));
+        Assertions.assertNotEquals("L:s0_", session0.toString());
+        Assertions.assertTrue(session0.toString().startsWith("L:s0_"));
 
-        final LocalSession session1 = _bayeux.newLocalSession("s1");
+        LocalSession session1 = _bayeux.newLocalSession("s1");
         session1.handshake();
-        final LocalSession session2 = _bayeux.newLocalSession("s2");
+        LocalSession session2 = _bayeux.newLocalSession("s2");
         session2.handshake();
 
-        final Queue<String> events = new ConcurrentLinkedQueue<>();
+        Queue<String> events = new ConcurrentLinkedQueue<>();
 
         ClientSessionChannel.MessageListener listener = (channel, message) -> {
             events.add(channel.getSession().getId());
@@ -157,12 +157,12 @@ public class BayeuxServerTest {
         session1.getChannel("/foo/bar").subscribe(listener);
         session2.getChannel("/foo/bar").subscribe(listener);
 
-        Assert.assertEquals(3, _bayeux.getChannel("/foo/bar").getSubscribers().size());
+        Assertions.assertEquals(3, _bayeux.getChannel("/foo/bar").getSubscribers().size());
 
         session0.getChannel("/foo/bar").unsubscribe(listener);
-        Assert.assertEquals(3, _bayeux.getChannel("/foo/bar").getSubscribers().size());
+        Assertions.assertEquals(3, _bayeux.getChannel("/foo/bar").getSubscribers().size());
         session0.getChannel("/foo/bar").unsubscribe(listener);
-        Assert.assertEquals(2, _bayeux.getChannel("/foo/bar").getSubscribers().size());
+        Assertions.assertEquals(2, _bayeux.getChannel("/foo/bar").getSubscribers().size());
 
         ClientSessionChannel foobar0 = session0.getChannel("/foo/bar");
         foobar0.subscribe(listener);
@@ -171,76 +171,76 @@ public class BayeuxServerTest {
         ClientSessionChannel foostar0 = session0.getChannel("/foo/*");
         foostar0.subscribe(listener);
 
-        Assert.assertEquals(3, _bayeux.getChannel("/foo/bar").getSubscribers().size());
-        Assert.assertEquals(session0, foobar0.getSession());
-        Assert.assertEquals("/foo/bar", foobar0.getId());
-        Assert.assertFalse(foobar0.isDeepWild());
-        Assert.assertFalse(foobar0.isWild());
-        Assert.assertFalse(foobar0.isMeta());
-        Assert.assertFalse(foobar0.isService());
+        Assertions.assertEquals(3, _bayeux.getChannel("/foo/bar").getSubscribers().size());
+        Assertions.assertEquals(session0, foobar0.getSession());
+        Assertions.assertEquals("/foo/bar", foobar0.getId());
+        Assertions.assertFalse(foobar0.isDeepWild());
+        Assertions.assertFalse(foobar0.isWild());
+        Assertions.assertFalse(foobar0.isMeta());
+        Assertions.assertFalse(foobar0.isService());
 
         foobar0.publish("hello");
 
-        Assert.assertEquals(session0.getId(), events.poll());
-        Assert.assertEquals("hello", events.poll());
-        Assert.assertEquals(session0.getId(), events.poll());
-        Assert.assertEquals("hello", events.poll());
-        Assert.assertEquals(session0.getId(), events.poll());
-        Assert.assertEquals("hello", events.poll());
-        Assert.assertEquals(session1.getId(), events.poll());
-        Assert.assertEquals("hello", events.poll());
-        Assert.assertEquals(session2.getId(), events.poll());
-        Assert.assertEquals("hello", events.poll());
+        Assertions.assertEquals(session0.getId(), events.poll());
+        Assertions.assertEquals("hello", events.poll());
+        Assertions.assertEquals(session0.getId(), events.poll());
+        Assertions.assertEquals("hello", events.poll());
+        Assertions.assertEquals(session0.getId(), events.poll());
+        Assertions.assertEquals("hello", events.poll());
+        Assertions.assertEquals(session1.getId(), events.poll());
+        Assertions.assertEquals("hello", events.poll());
+        Assertions.assertEquals(session2.getId(), events.poll());
+        Assertions.assertEquals("hello", events.poll());
         foostar0.unsubscribe(listener);
 
         session1.batch(() -> {
             ClientSessionChannel foobar1 = session1.getChannel("/foo/bar");
             foobar1.publish("part1");
-            Assert.assertNull(events.poll());
+            Assertions.assertNull(events.poll());
             foobar1.publish("part2");
         });
 
-        Assert.assertEquals(session1.getId(), events.poll());
-        Assert.assertEquals("part1", events.poll());
-        Assert.assertEquals(session2.getId(), events.poll());
-        Assert.assertEquals("part1", events.poll());
-        Assert.assertEquals(session0.getId(), events.poll());
-        Assert.assertEquals("part1", events.poll());
-        Assert.assertEquals(session0.getId(), events.poll());
-        Assert.assertEquals("part1", events.poll());
-        Assert.assertEquals(session1.getId(), events.poll());
-        Assert.assertEquals("part2", events.poll());
-        Assert.assertEquals(session2.getId(), events.poll());
-        Assert.assertEquals("part2", events.poll());
-        Assert.assertEquals(session0.getId(), events.poll());
-        Assert.assertEquals("part2", events.poll());
-        Assert.assertEquals(session0.getId(), events.poll());
-        Assert.assertEquals("part2", events.poll());
+        Assertions.assertEquals(session1.getId(), events.poll());
+        Assertions.assertEquals("part1", events.poll());
+        Assertions.assertEquals(session2.getId(), events.poll());
+        Assertions.assertEquals("part1", events.poll());
+        Assertions.assertEquals(session0.getId(), events.poll());
+        Assertions.assertEquals("part1", events.poll());
+        Assertions.assertEquals(session0.getId(), events.poll());
+        Assertions.assertEquals("part1", events.poll());
+        Assertions.assertEquals(session1.getId(), events.poll());
+        Assertions.assertEquals("part2", events.poll());
+        Assertions.assertEquals(session2.getId(), events.poll());
+        Assertions.assertEquals("part2", events.poll());
+        Assertions.assertEquals(session0.getId(), events.poll());
+        Assertions.assertEquals("part2", events.poll());
+        Assertions.assertEquals(session0.getId(), events.poll());
+        Assertions.assertEquals("part2", events.poll());
 
         foobar0.unsubscribe();
-        Assert.assertEquals(2, _bayeux.getChannel("/foo/bar").getSubscribers().size());
+        Assertions.assertEquals(2, _bayeux.getChannel("/foo/bar").getSubscribers().size());
 
-        Assert.assertTrue(session0.isConnected());
-        Assert.assertTrue(session1.isConnected());
-        Assert.assertTrue(session2.isConnected());
+        Assertions.assertTrue(session0.isConnected());
+        Assertions.assertTrue(session1.isConnected());
+        Assertions.assertTrue(session2.isConnected());
         ServerSession ss0 = session0.getServerSession();
         ServerSession ss1 = session1.getServerSession();
         ServerSession ss2 = session2.getServerSession();
-        Assert.assertTrue(ss0.isConnected());
-        Assert.assertTrue(ss1.isConnected());
-        Assert.assertTrue(ss2.isConnected());
+        Assertions.assertTrue(ss0.isConnected());
+        Assertions.assertTrue(ss1.isConnected());
+        Assertions.assertTrue(ss2.isConnected());
 
         session0.disconnect();
-        Assert.assertFalse(session0.isConnected());
-        Assert.assertFalse(ss0.isConnected());
+        Assertions.assertFalse(session0.isConnected());
+        Assertions.assertFalse(ss0.isConnected());
 
         session1.getServerSession().disconnect();
-        Assert.assertFalse(session1.isConnected());
-        Assert.assertFalse(ss1.isConnected());
+        Assertions.assertFalse(session1.isConnected());
+        Assertions.assertFalse(ss1.isConnected());
 
         session2.getServerSession().disconnect();
-        Assert.assertFalse(session2.isConnected());
-        Assert.assertFalse(ss2.isConnected());
+        Assertions.assertFalse(session2.isConnected());
+        Assertions.assertFalse(ss2.isConnected());
     }
 
     class CListener implements BayeuxServer.ChannelListener {

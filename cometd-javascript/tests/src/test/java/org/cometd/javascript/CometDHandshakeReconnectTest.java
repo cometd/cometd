@@ -23,20 +23,24 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDHandshakeReconnectTest extends AbstractCometDTransportsTest {
     @Override
-    protected void initCometDServer(Map<String, String> options) throws Exception {
+    protected void initCometDServer(String transport, Map<String, String> options) throws Exception {
         options.put(AbstractServerTransport.HANDSHAKE_RECONNECT_OPTION, String.valueOf(true));
         options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(1500));
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(2000));
-        super.initCometDServer(options);
+        super.initCometDServer(transport, options);
     }
 
-    @Test
-    public void testReconnectUsingHandshake() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testReconnectUsingHandshake(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(m) {" +
@@ -48,7 +52,7 @@ public class CometDHandshakeReconnectTest extends AbstractCometDTransportsTest {
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("cometd.handshake();");
 
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         // Wait for the /meta/connect to be held.
         Thread.sleep(1000);
@@ -66,7 +70,7 @@ public class CometDHandshakeReconnectTest extends AbstractCometDTransportsTest {
                 "});");
 
         // Wait for the session to be swept (timeout + maxInterval).
-        final CountDownLatch sessionRemoved = new CountDownLatch(1);
+        CountDownLatch sessionRemoved = new CountDownLatch(1);
         bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
@@ -76,16 +80,16 @@ public class CometDHandshakeReconnectTest extends AbstractCometDTransportsTest {
 
         long timeout = Long.parseLong((String)bayeuxServer.getOption(AbstractServerTransport.TIMEOUT_OPTION));
         long maxInterval = Long.parseLong((String)bayeuxServer.getOption(AbstractServerTransport.MAX_INTERVAL_OPTION));
-        Assert.assertTrue(sessionRemoved.await(timeout + 2 * maxInterval, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(sessionRemoved.await(timeout + 2 * maxInterval, TimeUnit.MILLISECONDS));
 
-        Assert.assertTrue(handshakeReconnect.await(10000));
+        Assertions.assertTrue(handshakeReconnect.await(10000));
 
         // Restart the connector.
         connectLatch.reset(1);
         connector.setPort(port);
         connector.start();
 
-        Assert.assertTrue(connectLatch.await(20000));
+        Assertions.assertTrue(connectLatch.await(20000));
 
         disconnect();
     }

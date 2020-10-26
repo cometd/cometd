@@ -18,17 +18,21 @@ package org.cometd.javascript;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDPublishTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testPublish() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testPublish(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var echoLatch = new Latch(1);");
         Latch echoLatch = javaScript.get("echoLatch");
@@ -38,38 +42,44 @@ public class CometDPublishTest extends AbstractCometDTransportsTest {
         evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
 
         evaluateScript("cometd.publish('/echo', 'test');");
-        Assert.assertTrue(echoLatch.await(5000));
-        Assert.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(echoLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
 
         disconnect();
     }
 
-    @Test
-    public void testPublishSuccessfulInvokesCallback() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testPublishSuccessfulInvokesCallback(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(2);");
         Latch publishLatch = javaScript.get("publishLatch");
         evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
 
         evaluateScript("cometd.publish('/echo', 'test1', function() { publishLatch.countDown(); });");
-        Assert.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
 
         // Be sure that another publish without callback does not trigger the previous callback
         publishLatch.reset(2);
         evaluateScript("cometd.publish('/echo', 'test2');");
-        Assert.assertFalse(publishLatch.await(1000));
-        Assert.assertEquals(1, publishLatch.getCount());
+        Assertions.assertFalse(publishLatch.await(1000));
+        Assertions.assertEquals(1, publishLatch.getCount());
 
         disconnect();
     }
 
-    @Test
-    public void testPublishFailedInvokesCallback() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testPublishFailedInvokesCallback(String transport) throws Exception {
+        initCometDServer(transport);
+
         bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
@@ -81,7 +91,7 @@ public class CometDPublishTest extends AbstractCometDTransportsTest {
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(2);");
         Latch publishLatch = javaScript.get("publishLatch");
@@ -92,19 +102,22 @@ public class CometDPublishTest extends AbstractCometDTransportsTest {
                 "        publishLatch.countDown();" +
                 "    }" +
                 "});");
-        Assert.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
 
         // Be sure that another publish without callback does not trigger the previous callback
         publishLatch.reset(2);
         evaluateScript("cometd.publish('/echo', 'test2');");
-        Assert.assertFalse(publishLatch.await(1000));
-        Assert.assertEquals(1, publishLatch.getCount());
+        Assertions.assertFalse(publishLatch.await(1000));
+        Assertions.assertEquals(1, publishLatch.getCount());
 
         disconnect();
     }
 
-    @Test
-    public void testPublishWithServerDownInvokesCallback() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testPublishWithServerDownInvokesCallback(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
@@ -123,21 +136,21 @@ public class CometDPublishTest extends AbstractCometDTransportsTest {
         Latch publishLatch = javaScript.get("publishLatch");
         evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait for the /meta/connect to be held by the server.
         Thread.sleep(1000);
 
         server.stop();
 
-        Assert.assertTrue(failedLatch.await(5000));
+        Assertions.assertTrue(failedLatch.await(5000));
 
         evaluateScript("cometd.publish('/echo', 'test2', function(message) {" +
                 "    if (!message.successful) {" +
                 "        publishLatch.countDown();" +
                 "    }" +
                 "});");
-        Assert.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
 
         disconnect();
     }

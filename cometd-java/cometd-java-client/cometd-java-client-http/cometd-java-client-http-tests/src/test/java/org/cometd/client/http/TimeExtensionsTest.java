@@ -27,12 +27,12 @@ import org.cometd.client.ext.TimestampClientExtension;
 import org.cometd.client.ext.TimesyncClientExtension;
 import org.cometd.server.ext.TimestampExtension;
 import org.cometd.server.ext.TimesyncExtension;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class TimeExtensionsTest extends ClientServerTest {
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         start(null);
     }
@@ -48,17 +48,17 @@ public class TimeExtensionsTest extends ClientServerTest {
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> messages.add(message));
 
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the second /meta/connect.
         Thread.sleep(1000);
 
-        Assert.assertTrue(client.disconnect(5000));
+        Assertions.assertTrue(client.disconnect(5000));
 
-        Assert.assertTrue(messages.size() > 0);
+        Assertions.assertTrue(messages.size() > 0);
 
         for (Message message : messages) {
-            Assert.assertNotNull(message.get(Message.TIMESTAMP_FIELD));
+            Assertions.assertNotNull(message.get(Message.TIMESTAMP_FIELD));
         }
 
         disconnectBayeuxClient(client);
@@ -77,19 +77,19 @@ public class TimeExtensionsTest extends ClientServerTest {
         client.getChannel("/meta/*").addListener((ClientSessionChannel.MessageListener)(channel, message) -> messages.add(message));
 
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the second /meta/connect.
         Thread.sleep(1000);
 
-        Assert.assertTrue(client.disconnect(5000));
+        Assertions.assertTrue(client.disconnect(5000));
 
-        Assert.assertTrue(messages.size() > 0);
+        Assertions.assertTrue(messages.size() > 0);
 
         for (Message message : messages) {
             Map<String, Object> ext = message.getExt();
-            Assert.assertNotNull(String.valueOf(message), ext);
-            Assert.assertNotNull(ext.get("timesync"));
+            Assertions.assertNotNull(ext, String.valueOf(message));
+            Assertions.assertNotNull(ext.get("timesync"));
         }
 
         disconnectBayeuxClient(client);

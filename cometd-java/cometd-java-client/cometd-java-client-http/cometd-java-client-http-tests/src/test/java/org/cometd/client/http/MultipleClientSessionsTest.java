@@ -36,14 +36,8 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Assert;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * Simulates a browser opening multiple tabs to the same Bayeux server
@@ -73,9 +67,9 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         });
         client1.handshake();
 
-        assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         HttpCookie browserCookie = client1.getCookie("BAYEUX_BROWSER");
-        assertNotNull(browserCookie);
+        Assertions.assertNotNull(browserCookie);
 
         // Give some time to the first client to establish the long poll before the second client
         Thread.sleep(1000);
@@ -90,22 +84,22 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         });
         client2.handshake();
 
-        assertTrue(latch2.await(5, TimeUnit.SECONDS));
-        assertEquals(1, connects2.size());
+        Assertions.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(1, connects2.size());
         Message connect2 = connects2.peek();
-        Assert.assertNotNull(connect2);
+        Assertions.assertNotNull(connect2);
         Map<String, Object> advice2 = connect2.getAdvice();
-        assertEquals(Message.RECONNECT_NONE_VALUE, advice2.get(Message.RECONNECT_FIELD));
-        assertSame(Boolean.TRUE, advice2.get("multiple-clients"));
-        assertFalse(connect2.isSuccessful());
+        Assertions.assertEquals(Message.RECONNECT_NONE_VALUE, advice2.get(Message.RECONNECT_FIELD));
+        Assertions.assertSame(Boolean.TRUE, advice2.get("multiple-clients"));
+        Assertions.assertFalse(connect2.isSuccessful());
 
         // Give some time to the second client to process the disconnect
         Thread.sleep(1000);
-        assertFalse(client2.isConnected());
+        Assertions.assertFalse(client2.isConnected());
 
-        assertTrue(latch1.await(timeout, TimeUnit.MILLISECONDS));
-        assertEquals(2, connects1.size());
-        assertTrue(client1.isConnected());
+        Assertions.assertTrue(latch1.await(timeout, TimeUnit.MILLISECONDS));
+        Assertions.assertEquals(2, connects1.size());
+        Assertions.assertTrue(client1.isConnected());
 
         disconnectBayeuxClient(client1);
     }
@@ -126,9 +120,9 @@ public class MultipleClientSessionsTest extends ClientServerTest {
             }
         });
         client1.handshake();
-        assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         HttpCookie browserCookie = client1.getCookie("BAYEUX_BROWSER");
-        assertNotNull(browserCookie);
+        Assertions.assertNotNull(browserCookie);
 
         // Give some time to the first client to establish the long poll before the second client
         Thread.sleep(1000);
@@ -138,7 +132,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         client2.putCookie(browserCookie);
         client2.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects2.offer(message));
         client2.handshake();
-        assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Thread.sleep(1000);
 
@@ -147,33 +141,33 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         client3.putCookie(browserCookie);
         client3.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects3.offer(message));
         client3.handshake();
-        assertTrue(client3.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client3.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Sleep for a while
         Thread.sleep(2 * multiSessionInterval);
 
         // The first client must remain in long poll mode
-        assertEquals(1, connects1.size());
+        Assertions.assertEquals(1, connects1.size());
 
         // Second client must be in normal poll mode
-        assertTrue(connects2.size() > 1);
+        Assertions.assertTrue(connects2.size() > 1);
         Message lastConnect2 = new LinkedList<>(connects2).getLast();
         Map<String, Object> advice2 = lastConnect2.getAdvice();
-        assertNotNull(advice2);
-        assertSame(Boolean.TRUE, advice2.get("multiple-clients"));
+        Assertions.assertNotNull(advice2);
+        Assertions.assertSame(Boolean.TRUE, advice2.get("multiple-clients"));
 
         // Third client must be in normal poll mode
-        assertTrue(connects3.size() > 1);
+        Assertions.assertTrue(connects3.size() > 1);
         Message lastConnect3 = new LinkedList<>(connects3).getLast();
         Map<String, Object> advice3 = lastConnect3.getAdvice();
-        assertNotNull(advice3);
-        assertSame(Boolean.TRUE, advice3.get("multiple-clients"));
+        Assertions.assertNotNull(advice3);
+        Assertions.assertSame(Boolean.TRUE, advice3.get("multiple-clients"));
 
         // Wait for the first client to re-issue a long poll
         Thread.sleep(timeout);
 
         // First client must still be in long poll mode
-        assertEquals(2, connects1.size());
+        Assertions.assertEquals(2, connects1.size());
 
         // Abort abruptly the first client
         // Another client must switch to long poll
@@ -181,7 +175,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
 
         // Sleep another timeout to be sure client1 does not poll
         Thread.sleep(timeout);
-        assertEquals(2, connects1.size());
+        Assertions.assertEquals(2, connects1.size());
 
         // Loop until one of the other clients switched to long poll
         BayeuxClient client4 = null;
@@ -203,7 +197,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
             }
             Thread.sleep(timeout / 10);
         }
-        assertNotNull(client4);
+        Assertions.assertNotNull(client4);
 
         // Disconnect this client normally, the last client must switch to long poll
         disconnectBayeuxClient(client4);
@@ -217,7 +211,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
             lastConnect = new LinkedList<>(connects3).getLast();
         }
         Map<String, Object> advice = lastConnect.getAdvice();
-        assertTrue(advice == null || !advice.containsKey("multiple-clients"));
+        Assertions.assertTrue(advice == null || !advice.containsKey("multiple-clients"));
 
         disconnectBayeuxClient(client5);
     }
@@ -238,9 +232,9 @@ public class MultipleClientSessionsTest extends ClientServerTest {
             }
         });
         client1.handshake();
-        assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         HttpCookie browserCookie = client1.getCookie("BAYEUX_BROWSER");
-        assertNotNull(browserCookie);
+        Assertions.assertNotNull(browserCookie);
 
         // Give some time to the first client to establish the long poll before the second client
         Thread.sleep(1000);
@@ -250,7 +244,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         client2.putCookie(browserCookie);
         client2.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects2.offer(message));
         client2.handshake();
-        assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Thread.sleep(1000);
 
@@ -259,30 +253,30 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         client3.putCookie(browserCookie);
         client3.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects3.offer(message));
         client3.handshake();
-        assertTrue(client3.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client3.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Sleep for a while
         Thread.sleep(2 * multiSessionInterval);
 
         // The first client must remain in long poll mode
-        assertEquals(1, connects1.size());
+        Assertions.assertEquals(1, connects1.size());
 
         // Second client must remain in long poll mode
-        assertEquals(1, connects2.size());
+        Assertions.assertEquals(1, connects2.size());
 
         // Third client must be in normal poll mode
-        assertTrue(connects3.size() > 1);
+        Assertions.assertTrue(connects3.size() > 1);
         Message lastConnect3 = new LinkedList<>(connects3).getLast();
         Map<String, Object> advice3 = lastConnect3.getAdvice();
-        assertNotNull(advice3);
-        assertSame(Boolean.TRUE, advice3.get("multiple-clients"));
+        Assertions.assertNotNull(advice3);
+        Assertions.assertSame(Boolean.TRUE, advice3.get("multiple-clients"));
 
         // Wait for the first and second clients to re-issue a long poll
         Thread.sleep(timeout);
 
         // First and second clients must still be in long poll mode
-        assertEquals(2, connects1.size());
-        assertEquals(2, connects2.size());
+        Assertions.assertEquals(2, connects1.size());
+        Assertions.assertEquals(2, connects2.size());
 
         // Abort abruptly the first client
         // Third client must switch to long poll
@@ -290,7 +284,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
 
         // Sleep another timeout to be sure client1 does not poll
         Thread.sleep(timeout);
-        assertEquals(2, connects1.size());
+        Assertions.assertEquals(2, connects1.size());
 
         // Loop until client3 switched to long poll
         for (int i = 0; i < 10; ++i) {
@@ -304,7 +298,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
 
         lastConnect3 = new LinkedList<>(connects3).getLast();
         advice3 = lastConnect3.getAdvice();
-        assertTrue(advice3 == null || !advice3.containsKey("multiple-clients"));
+        Assertions.assertTrue(advice3 == null || !advice3.containsKey("multiple-clients"));
 
         disconnectBayeuxClient(client2);
 
@@ -335,13 +329,13 @@ public class MultipleClientSessionsTest extends ClientServerTest {
                 .content(new StringContentProvider(handshakeContent), "application/json;charset=UTF-8")
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
-        assertEquals(200, handshake.getStatus());
+        Assertions.assertEquals(200, handshake.getStatus());
         List<HttpCookie> cookies = httpClient.getCookieStore().get(URI.create(cometdURL));
-        assertEquals(1, cookies.size());
+        Assertions.assertEquals(1, cookies.size());
         HttpCookie browserCookie = cookies.get(0);
-        assertEquals("BAYEUX_BROWSER", browserCookie.getName());
+        Assertions.assertEquals("BAYEUX_BROWSER", browserCookie.getName());
         Message.Mutable[] messages = parser.parse(handshake.getContentAsString());
-        assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         String clientId = messages[0].getClientId();
 
         String connectContent1 = "[{" +
@@ -357,7 +351,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
                 .content(new StringContentProvider(connectContent1), "application/json;charset=UTF-8")
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
-        assertEquals(200, connect1.getStatus());
+        Assertions.assertEquals(200, connect1.getStatus());
 
         // This /meta/connect is suspended.
         CountDownLatch abortedConnectLatch = new CountDownLatch(1);
@@ -373,8 +367,8 @@ public class MultipleClientSessionsTest extends ClientServerTest {
                 .content(new StringContentProvider(connectContent2), "application/json;charset=UTF-8")
                 .timeout(5, TimeUnit.SECONDS)
                 .send(result -> {
-                    assertTrue(result.isSucceeded());
-                    assertEquals(duplicateMetaConnectHttpCode, result.getResponse().getStatus());
+                    Assertions.assertTrue(result.isSucceeded());
+                    Assertions.assertEquals(duplicateMetaConnectHttpCode, result.getResponse().getStatus());
                     abortedConnectLatch.countDown();
                 });
 
@@ -395,9 +389,9 @@ public class MultipleClientSessionsTest extends ClientServerTest {
                 .content(new StringContentProvider(connectContent3), "application/json;charset=UTF-8")
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
-        assertEquals(200, connect3.getStatus());
+        Assertions.assertEquals(200, connect3.getStatus());
 
-        assertTrue(abortedConnectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(abortedConnectLatch.await(5, TimeUnit.SECONDS));
 
         // Make sure a subsequent connect does not have the multiple-clients advice.
         String connectContent4 = "[{" +
@@ -412,12 +406,12 @@ public class MultipleClientSessionsTest extends ClientServerTest {
                 .content(new StringContentProvider(connectContent4), "application/json;charset=UTF-8")
                 .timeout(2 * timeout, TimeUnit.MILLISECONDS)
                 .send();
-        assertEquals(200, connect4.getStatus());
+        Assertions.assertEquals(200, connect4.getStatus());
         messages = parser.parse(connect4.getContentAsString());
-        assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         Message.Mutable message = messages[0];
         Map<String, Object> advice = message.getAdvice(true);
-        assertFalse(advice.containsKey("multiple-clients"));
+        Assertions.assertFalse(advice.containsKey("multiple-clients"));
     }
 
     @Test
@@ -434,9 +428,9 @@ public class MultipleClientSessionsTest extends ClientServerTest {
             }
         });
         client1.handshake();
-        assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         HttpCookie browserCookie = client1.getCookie("BAYEUX_BROWSER");
-        assertNotNull(browserCookie);
+        Assertions.assertNotNull(browserCookie);
 
         // Wait for /meta/connect to be held.
         Thread.sleep(1000);
@@ -446,14 +440,14 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         client2.putCookie(browserCookie);
         client2.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects2.offer(message));
         client2.handshake();
-        assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for /meta/connect to be held.
         Thread.sleep(1000);
 
         // At this point, both clients should have their /meta/connect held.
-        assertEquals(1, connects1.size());
-        assertEquals(1, connects2.size());
+        Assertions.assertEquals(1, connects1.size());
+        Assertions.assertEquals(1, connects2.size());
 
         disconnectBayeuxClient(client1);
         disconnectBayeuxClient(client2);

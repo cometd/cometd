@@ -29,23 +29,23 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class OortStringMapTest extends AbstractOortObjectTest {
-    public OortStringMapTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testEntryPut(String serverTransport) throws Exception {
+        prepare(serverTransport);
 
-    @Test
-    public void testEntryPut() throws Exception {
         String name = "test";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
         OortStringMap<String> oortMap2 = new OortStringMap<>(oort2, name, factory);
         startOortObjects(oortMap1, oortMap2);
 
-        final CountDownLatch setLatch = new CountDownLatch(2);
+        CountDownLatch setLatch = new CountDownLatch(2);
         OortObject.Listener<ConcurrentMap<String, String>> objectListener = new OortObject.Listener<ConcurrentMap<String, String>>() {
             @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo) {
@@ -54,34 +54,37 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         };
         oortMap1.addListener(objectListener);
         oortMap2.addListener(objectListener);
-        final String key = "key";
-        final String value1 = "value1";
+        String key = "key";
+        String value1 = "value1";
         ConcurrentMap<String, String> map = factory.newObject(null);
         map.put(key, value1);
         oortMap1.setAndShare(map, null);
-        Assert.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
-        final String value2 = "value2";
+        String value2 = "value2";
         final CountDownLatch putLatch = new CountDownLatch(1);
         oortMap2.addEntryListener(new OortMap.EntryListener<String, String>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
-                Assert.assertEquals(key, entry.getKey());
-                Assert.assertEquals(value1, entry.getOldValue());
-                Assert.assertEquals(value2, entry.getNewValue());
+                Assertions.assertEquals(key, entry.getKey());
+                Assertions.assertEquals(value1, entry.getOldValue());
+                Assertions.assertEquals(value2, entry.getNewValue());
                 putLatch.countDown();
             }
         });
 
         OortObject.Result.Deferred<String> result = new OortObject.Result.Deferred<>();
         oortMap1.putAndShare(key, value2, result);
-        Assert.assertEquals(value1, result.get(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(value1, result.get(5, TimeUnit.SECONDS));
 
-        Assert.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testEntryRemoved() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testEntryRemoved(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "test";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
@@ -102,27 +105,30 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         ConcurrentMap<String, String> map = factory.newObject(null);
         map.put(key, value1);
         oortMap1.setAndShare(map, null);
-        Assert.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
         oortMap2.addEntryListener(new OortMap.EntryListener<String, String>() {
             @Override
             public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
-                Assert.assertEquals(key, entry.getKey());
-                Assert.assertEquals(value1, entry.getOldValue());
-                Assert.assertNull(entry.getNewValue());
+                Assertions.assertEquals(key, entry.getKey());
+                Assertions.assertEquals(value1, entry.getOldValue());
+                Assertions.assertNull(entry.getNewValue());
                 removeLatch.countDown();
             }
         });
 
         OortObject.Result.Deferred<String> result = new OortObject.Result.Deferred<>();
         oortMap1.removeAndShare(key, result);
-        Assert.assertEquals(value1, result.get(5, TimeUnit.SECONDS));
-        Assert.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(value1, result.get(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testDeltaListener() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDeltaListener(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "test";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
@@ -146,7 +152,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         String valueB = "valueB";
         oldMap.put(key2, valueB);
         oortMap1.setAndShare(oldMap, null);
-        Assert.assertTrue(setLatch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(setLatch1.await(5, TimeUnit.SECONDS));
 
         ConcurrentMap<String, String> newMap = factory.newObject(null);
         String valueA2 = "valueA2";
@@ -177,9 +183,9 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         oortMap2.addEntryListener(entryListener);
         oortMap1.setAndShare(newMap, null);
 
-        Assert.assertTrue(setLatch2.get().await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(4, puts.size());
-        Assert.assertEquals(2, removes.size());
+        Assertions.assertTrue(setLatch2.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(4, puts.size());
+        Assertions.assertEquals(2, removes.size());
 
         puts.clear();
         removes.clear();
@@ -187,12 +193,15 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         // Stop Oort1 so that OortMap2 gets the notification
         stopOort(oort1);
 
-        Assert.assertTrue(setLatch2.get().await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(2, removes.size());
+        Assertions.assertTrue(setLatch2.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(2, removes.size());
     }
 
-    @Test
-    public void testGetFind() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testGetFind(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "test";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
@@ -214,33 +223,36 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         final String keyB = "keyB";
         final String valueB = "valueB";
         oortMap2.putAndShare(keyB, valueB, null);
-        Assert.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(valueA, oortMap1.get(keyA));
-        Assert.assertNull(oortMap1.get(keyB));
-        Assert.assertEquals(valueB, oortMap2.get(keyB));
-        Assert.assertNull(oortMap2.get(keyA));
+        Assertions.assertEquals(valueA, oortMap1.get(keyA));
+        Assertions.assertNull(oortMap1.get(keyB));
+        Assertions.assertEquals(valueB, oortMap2.get(keyB));
+        Assertions.assertNull(oortMap2.get(keyA));
 
-        Assert.assertEquals(valueA, oortMap1.find(keyA));
-        Assert.assertEquals(valueA, oortMap2.find(keyA));
-        Assert.assertEquals(valueB, oortMap1.find(keyB));
-        Assert.assertEquals(valueB, oortMap2.find(keyB));
+        Assertions.assertEquals(valueA, oortMap1.find(keyA));
+        Assertions.assertEquals(valueA, oortMap2.find(keyA));
+        Assertions.assertEquals(valueB, oortMap1.find(keyB));
+        Assertions.assertEquals(valueB, oortMap2.find(keyB));
 
         OortObject.Info<ConcurrentMap<String, String>> info1A = oortMap1.findInfo(keyA);
-        Assert.assertNotNull(info1A);
-        Assert.assertTrue(info1A.isLocal());
-        Assert.assertEquals(oort1.getURL(), info1A.getOortURL());
+        Assertions.assertNotNull(info1A);
+        Assertions.assertTrue(info1A.isLocal());
+        Assertions.assertEquals(oort1.getURL(), info1A.getOortURL());
         OortObject.Info<ConcurrentMap<String, String>> info1B = oortMap1.findInfo(keyB);
-        Assert.assertNotNull(info1B);
-        Assert.assertFalse(info1B.isLocal());
-        Assert.assertEquals(oort2.getURL(), info1B.getOortURL());
+        Assertions.assertNotNull(info1B);
+        Assertions.assertFalse(info1B.isLocal());
+        Assertions.assertEquals(oort2.getURL(), info1B.getOortURL());
 
         oortMap2.removeEntryListener(putListener);
         oortMap1.removeEntryListener(putListener);
     }
 
-    @Test
-    public void testConcurrent() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testConcurrent(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "concurrent";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         final OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
@@ -281,16 +293,19 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         barrier.await();
 
         // Wait for all threads to finish.
-        Assert.assertTrue(latch1.await(15, TimeUnit.SECONDS));
-        Assert.assertTrue(latch2.await(15, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch1.await(15, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch2.await(15, TimeUnit.SECONDS));
 
         ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.concurrentMapUnion());
         ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion());
-        Assert.assertEquals(map1, map2);
+        Assertions.assertEquals(map1, map2);
     }
 
-    @Test
-    public void testEntryBeforeMap() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testEntryBeforeMap(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "entry_before_map";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
@@ -299,7 +314,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         // Simulate that the second map lost the whole map update from the first map.
         oortMap2.removeInfo(oort1.getURL());
 
-        Assert.assertNull(oortMap2.getInfo(oort1.getURL()));
+        Assertions.assertNull(oortMap2.getInfo(oort1.getURL()));
 
         final CountDownLatch objectLatch = new CountDownLatch(1);
         oortMap2.addListener(new OortObject.Listener<ConcurrentMap<String, String>>() {
@@ -315,11 +330,11 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         oortMap1.putAndShare("key1", "value1", result1);
         result1.get(5, TimeUnit.SECONDS);
 
-        Assert.assertTrue(objectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(objectLatch.await(5, TimeUnit.SECONDS));
 
         ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.concurrentMapUnion());
         ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion());
-        Assert.assertEquals(map1, map2);
+        Assertions.assertEquals(map1, map2);
 
         final AtomicReference<CountDownLatch> putLatch = new AtomicReference<>(new CountDownLatch(1));
         oortMap2.addEntryListener(new OortMap.EntryListener<String, String>() {
@@ -334,11 +349,11 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         oortMap1.putAndShare("key2", "value2", result2);
         result2.get(5, TimeUnit.SECONDS);
 
-        Assert.assertTrue(putLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(putLatch.get().await(5, TimeUnit.SECONDS));
 
         map1 = oortMap1.merge(OortObjectMergers.concurrentMapUnion());
         map2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion());
-        Assert.assertEquals(map1, map2);
+        Assertions.assertEquals(map1, map2);
 
         // And again.
         putLatch.set(new CountDownLatch(1));
@@ -346,15 +361,18 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         oortMap1.putAndShare("key3", "value3", result3);
         result3.get(5, TimeUnit.SECONDS);
 
-        Assert.assertTrue(putLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(putLatch.get().await(5, TimeUnit.SECONDS));
 
         map1 = oortMap1.merge(OortObjectMergers.concurrentMapUnion());
         map2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion());
-        Assert.assertEquals(map1, map2);
+        Assertions.assertEquals(map1, map2);
     }
 
-    @Test
-    public void testLostEntry() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testLostEntry(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "lost_entry";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         final OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
@@ -388,8 +406,8 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         Thread.sleep(1000);
 
         // Verify that the objects are out-of-sync.
-        Assert.assertNull(oortMap1.get(key1));
-        Assert.assertNotNull(oortMap2.find(key1));
+        Assertions.assertNull(oortMap1.get(key1));
+        Assertions.assertNotNull(oortMap2.find(key1));
 
         // Update again, the maps should sync.
         final String key2 = "key2";
@@ -412,21 +430,20 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         });
         oortMap1.putAndShare(key2, "value2", null);
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         // Make sure that the maps are in sync.
         ConcurrentMap<String, String> map1 = oortMap1.merge(OortObjectMergers.concurrentMapUnion());
         ConcurrentMap<String, String> map2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion());
-        Assert.assertEquals(map1, map2);
+        Assertions.assertEquals(map1, map2);
     }
 
-    @Test
-    public void testNodeSyncWithLargeMap() throws Exception {
-        // Reconfigure the Oorts.
-        stop();
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testNodeSyncWithLargeMap(String serverTransport) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put("ws.maxMessageSize", String.valueOf(64 * 1024 * 1024));
-        prepare(options);
+        prepare(serverTransport, options);
 
         String name = "large_sync";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
@@ -442,9 +459,9 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         OortComet comet12 = oort1.findComet(oort2.getURL());
         OortComet comet21 = oort2.findComet(oort1.getURL());
         comet21.disconnect();
-        Assert.assertTrue(leftLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(comet12.waitFor(5000, BayeuxClient.State.DISCONNECTED));
-        Assert.assertTrue(comet21.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assertions.assertTrue(leftLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(comet12.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assertions.assertTrue(comet21.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
         // Update node1 with a large number of map entries.
         final int size = 64 * 1024;
@@ -453,9 +470,9 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         }
 
         int size1 = oortMap1.merge(OortObjectMergers.concurrentMapUnion()).size();
-        Assert.assertEquals(size, size1);
+        Assertions.assertEquals(size, size1);
         int size2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion()).size();
-        Assert.assertEquals(0, size2);
+        Assertions.assertEquals(0, size2);
 
         final CountDownLatch syncLatch = new CountDownLatch(1);
         oortMap2.addListener(new OortObject.Listener<ConcurrentMap<String, String>>() {
@@ -475,30 +492,30 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         oort1.addCometListener(joinedListener);
         oort2.addCometListener(joinedListener);
         OortComet oortComet12 = oort1.observeComet(oort2.getURL());
-        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
-        Assert.assertTrue(joinedLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(joinedLatch.await(5, TimeUnit.SECONDS));
         OortComet oortComet21 = oort2.findComet(oort1.getURL());
-        Assert.assertNotNull(oortComet21);
-        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertNotNull(oortComet21);
+        Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the maps to sync.
-        Assert.assertTrue(syncLatch.await(15, TimeUnit.SECONDS));
+        Assertions.assertTrue(syncLatch.await(15, TimeUnit.SECONDS));
 
         // Verify that the maps are in sync.
         size1 = oortMap1.getInfo(oort1.getURL()).getObject().size();
         size2 = oortMap2.getInfo(oort1.getURL()).getObject().size();
-        Assert.assertEquals(size1, size2);
+        Assertions.assertEquals(size1, size2);
     }
 
-    @Test
-    public void testNodeHalfDisconnectedWillReconnect() throws Exception {
-        stop();
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testNodeHalfDisconnectedWillReconnect(String serverTransport) throws Exception {
         long timeout = 5000;
         long maxInterval = 3000;
         Map<String, String> options = new HashMap<>();
         options.put("timeout", String.valueOf(timeout));
         options.put("maxInterval", String.valueOf(maxInterval));
-        prepare(options);
+        prepare(serverTransport, options);
         String name = "half_disconnection";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         final OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
@@ -516,7 +533,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         oortMap2.addEntryListener(putListener);
         oortMap1.putAndShare("key1", "value1", null);
         oortMap2.putAndShare("key2", "value2", null);
-        Assert.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
 
         // Stop only one of the connectors, so that the communication is half-disconnected.
         final CountDownLatch leftLatch = new CountDownLatch(2);
@@ -531,7 +548,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
         int port1 = connector1.getLocalPort();
         connector1.stop();
-        Assert.assertTrue(leftLatch.await(2 * (timeout + maxInterval), TimeUnit.SECONDS));
+        Assertions.assertTrue(leftLatch.await(2 * (timeout + maxInterval), TimeUnit.SECONDS));
 
         // Give some time before reconnecting.
         Thread.sleep(1000);
@@ -548,21 +565,21 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         });
         connector1.setPort(port1);
         connector1.start();
-        Assert.assertTrue(joinLatch.await(15, TimeUnit.SECONDS));
+        Assertions.assertTrue(joinLatch.await(15, TimeUnit.SECONDS));
 
         String value2 = oortMap1.find("key2");
-        Assert.assertNotNull(value2);
+        Assertions.assertNotNull(value2);
     }
 
-    @Test
-    public void testNodeHalfDisconnectedWillResync() throws Exception {
-        stop();
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testNodeHalfDisconnectedWillResync(String serverTransport) throws Exception {
         long timeout = 5000;
         long maxInterval = 3000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
-        prepare(options);
+        prepare(serverTransport, options);
         String name = "half_disconnection_resync";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         final String key2B = "key2B";
@@ -596,7 +613,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         oortMap2.addEntryListener(putListener);
         oortMap1.putAndShare("key1A", "value1A", null);
         oortMap2.putAndShare("key2A", "value2A", null);
-        Assert.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
 
         // Stop only one of the connectors, so that the communication is half-disconnected.
         final CountDownLatch leftLatch = new CountDownLatch(2);
@@ -611,17 +628,17 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
         int port1 = connector1.getLocalPort();
         connector1.stop();
-        Assert.assertTrue(leftLatch.await(2 * (timeout + maxInterval), TimeUnit.SECONDS));
+        Assertions.assertTrue(leftLatch.await(2 * (timeout + maxInterval), TimeUnit.SECONDS));
 
         // OortCometBA communication is interrupted, but OortCometAB
         // will allow nodeA to receive messages from nodeB.
         oortMap2.putAndShare("key2B", "value2B", null);
 
         // The merge should only contain node1 entries.
-        Assert.assertTrue(mergeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(mergeLatch.await(5, TimeUnit.SECONDS));
         ConcurrentMap<String, String> merge = mergeRef.get();
-        Assert.assertEquals(1, merge.size());
-        Assert.assertEquals("value1A", merge.get("key1A"));
+        Assertions.assertEquals(1, merge.size());
+        Assertions.assertEquals("value1A", merge.get("key1A"));
 
         // Give some time before reconnecting.
         Thread.sleep(1000);
@@ -638,13 +655,13 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         });
         connector1.setPort(port1);
         connector1.start();
-        Assert.assertTrue(joinLatch.await(15, TimeUnit.SECONDS));
+        Assertions.assertTrue(joinLatch.await(15, TimeUnit.SECONDS));
 
         String value2A = oortMap1.find("key2A");
-        Assert.assertNotNull(value2A);
+        Assertions.assertNotNull(value2A);
         String value2B = oortMap1.find("key2B");
-        Assert.assertNotNull(value2B);
+        Assertions.assertNotNull(value2B);
         String value1A = oortMap2.find("key1A");
-        Assert.assertNotNull(value1A);
+        Assertions.assertNotNull(value1A);
     }
 }

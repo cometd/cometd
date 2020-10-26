@@ -24,17 +24,13 @@ import org.cometd.server.JacksonJSONContextServer;
 import org.eclipse.jetty.server.Server;
 
 public class JacksonOortObjectTest extends OortObjectTest {
-    public JacksonOortObjectTest(String serverTransport) {
-        super(serverTransport);
-    }
-
     @Override
-    protected Server startServer(int port, Map<String, String> options) throws Exception {
+    protected Server startServer(String serverTransport, int port, Map<String, String> options) throws Exception {
         if (options == null) {
             options = new HashMap<>();
         }
         options.put(AbstractServerTransport.JSON_CONTEXT_OPTION, JacksonJSONContextServer.class.getName());
-        return super.startServer(port, options);
+        return super.startServer(serverTransport, port, options);
     }
 
     @Override

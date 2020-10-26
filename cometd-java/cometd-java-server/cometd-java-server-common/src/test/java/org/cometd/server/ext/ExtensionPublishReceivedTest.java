@@ -29,24 +29,18 @@ import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.AbstractService;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest {
-    private CountingExtension extension = new CountingExtension();
+    private final CountingExtension extension = new CountingExtension();
 
-    public ExtensionPublishReceivedTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testExtension(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testExtension() throws Exception {
         bayeux.addExtension(extension);
         new Publisher(bayeux);
 
@@ -57,7 +51,7 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -68,15 +62,15 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
-        Assert.assertEquals(0, extension.rcvs.size());
-        Assert.assertEquals(4, extension.rcvMetas.size());
-        Assert.assertEquals(1, extension.sends.size());
-        Assert.assertEquals(4, extension.sendMetas.size());
+        Assertions.assertEquals(0, extension.rcvs.size());
+        Assertions.assertEquals(4, extension.rcvMetas.size());
+        Assertions.assertEquals(1, extension.sends.size());
+        Assertions.assertEquals(4, extension.sendMetas.size());
     }
 
-    private class CountingExtension implements BayeuxServer.Extension {
+    private static class CountingExtension implements BayeuxServer.Extension {
         private final List<Message> rcvs = new ArrayList<>();
         private final List<Message> rcvMetas = new ArrayList<>();
         private final List<Message> sends = new ArrayList<>();
@@ -107,7 +101,7 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
         }
     }
 
-    public class Publisher extends AbstractService {
+    public static class Publisher extends AbstractService {
         public Publisher(BayeuxServer bayeux) {
             super(bayeux, "test");
             addService(Channel.META_SUBSCRIBE, "emit");

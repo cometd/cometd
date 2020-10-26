@@ -33,8 +33,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.ext.TimestampExtension;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class MessageFlowControlTest extends ClientServerTest {
     @Test
@@ -91,7 +91,7 @@ public class MessageFlowControlTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll to establish
         Thread.sleep(1000);
@@ -100,7 +100,7 @@ public class MessageFlowControlTest extends ClientServerTest {
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribed.countDown());
         BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
         client.getChannel(channelName).subscribe((channel, message) -> messages.offer(message));
-        Assert.assertTrue(subscribed.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(subscribed.await(5, TimeUnit.SECONDS));
 
         // Publishing a message result in the long poll being woken up, which in turn will
         // drain the queue. There is a race between the publish of messages below and the
@@ -114,16 +114,16 @@ public class MessageFlowControlTest extends ClientServerTest {
         }
         // Wait for all the message to be processed on server side,
         // to avoids a race to access variable keptMessages
-        Assert.assertTrue(queuedMessages.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(queuedMessages.await(5, TimeUnit.SECONDS));
 
         if (lazyChannel) {
             Thread.sleep(maxLazyTimeout);
         }
 
         for (int i = 0; i < keptMessages.get(); ++i) {
-            Assert.assertNotNull(messages.poll(1, TimeUnit.SECONDS));
+            Assertions.assertNotNull(messages.poll(1, TimeUnit.SECONDS));
         }
-        Assert.assertNull(messages.poll(1, TimeUnit.SECONDS));
+        Assertions.assertNull(messages.poll(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

@@ -17,46 +17,47 @@ package org.cometd.server.websocket;
 
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class URLMappingTest extends ClientServerWebSocketTest {
-    public URLMappingTest(String wsTransportType) {
-        super(wsTransportType);
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testURLMappingNoGlobbing(String wsType) throws Exception {
+        testURLMapping(wsType, "/cometd");
     }
 
-    @Test
-    public void testURLMappingNoGlobbing() throws Exception {
-        testURLMapping("/cometd");
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testRootURLMappingNoGlobbing(String wsType) throws Exception {
+        testURLMapping(wsType, "/");
     }
 
-    @Test
-    public void testRootURLMappingNoGlobbing() throws Exception {
-        testURLMapping("/");
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testURLMappingWithGlobbing(String wsType) throws Exception {
+        testURLMapping(wsType, "/cometd/*");
     }
 
-    @Test
-    public void testURLMappingWithGlobbing() throws Exception {
-        testURLMapping("/cometd/*");
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testRootURLMappingWithGlobbing(String wsType) throws Exception {
+        testURLMapping(wsType, "/*");
     }
 
-    @Test
-    public void testRootURLMappingWithGlobbing() throws Exception {
-        testURLMapping("/*");
-    }
+    private void testURLMapping(String wsType, String urlMapping) throws Exception {
+        prepareAndStart(wsType, urlMapping, null);
 
-    private void testURLMapping(String urlMapping) throws Exception {
-        prepareAndStart(urlMapping, null);
-
-        final BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(wsType);
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for connect to establish
         Thread.sleep(1000);
 
         ClientTransport clientTransport = client.getTransport();
-        Assert.assertEquals("websocket", clientTransport.getName());
+        Assertions.assertEquals("websocket", clientTransport.getName());
 
         disconnectBayeuxClient(client);
     }

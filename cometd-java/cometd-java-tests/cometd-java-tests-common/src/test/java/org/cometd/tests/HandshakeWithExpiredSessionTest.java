@@ -28,31 +28,30 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class HandshakeWithExpiredSessionTest extends AbstractClientServerTest {
-    public HandshakeWithExpiredSessionTest(Transport transport) {
-        super(transport);
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        Map<String, String> options = serverOptions();
+    @Override
+    public void startServer(Transport transport) throws Exception {
+        Map<String, String> options = serverOptions(transport);
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, "2000");
         options.put(BayeuxServerImpl.SWEEP_PERIOD_OPTION, "500");
-        startServer(options);
+        startServer(transport, options);
     }
 
-    @Test
-    public void testHandshakeWithExpiredSession() throws Exception {
-        final AtomicBoolean connect = new AtomicBoolean(true);
-        TestBayeuxClient client = new TestBayeuxClient(connect);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testHandshakeWithExpiredSession(Transport transport) throws Exception {
+        startServer(transport);
 
-        final CountDownLatch handshakeLatch1 = new CountDownLatch(1);
-        final AtomicReference<ServerSession> sessionRef1 = new AtomicReference<>();
-        final ClientSessionChannel metaHandshake = client.getChannel(Channel.META_HANDSHAKE);
+        AtomicBoolean connect = new AtomicBoolean(true);
+        TestBayeuxClient client = new TestBayeuxClient(transport, connect);
+
+        CountDownLatch handshakeLatch1 = new CountDownLatch(1);
+        AtomicReference<ServerSession> sessionRef1 = new AtomicReference<>();
+        ClientSessionChannel metaHandshake = client.getChannel(Channel.META_HANDSHAKE);
         metaHandshake.addListener(new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
@@ -62,7 +61,7 @@ public class HandshakeWithExpiredSessionTest extends AbstractClientServerTest {
             }
         });
 
-        final ClientSessionChannel metaConnect = client.getChannel(Channel.META_CONNECT);
+        ClientSessionChannel metaConnect = client.getChannel(Channel.META_CONNECT);
         metaConnect.addListener(new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
@@ -74,32 +73,32 @@ public class HandshakeWithExpiredSessionTest extends AbstractClientServerTest {
 
         client.handshake();
 
-        Assert.assertTrue(handshakeLatch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(handshakeLatch1.await(5, TimeUnit.SECONDS));
 
         ServerSession session1 = sessionRef1.get();
-        final CountDownLatch removeLatch = new CountDownLatch(1);
+        CountDownLatch removeLatch = new CountDownLatch(1);
         session1.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
 
-        final CountDownLatch handshakeLatch2 = new CountDownLatch(1);
-        final AtomicReference<ServerSession> sessionRef2 = new AtomicReference<>();
+        CountDownLatch handshakeLatch2 = new CountDownLatch(1);
+        AtomicReference<ServerSession> sessionRef2 = new AtomicReference<>();
         metaHandshake.addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             sessionRef2.set(bayeux.getSession(message.getClientId()));
             handshakeLatch2.countDown();
         });
 
         // Wait for the session to expire on the server.
-        Assert.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
 
         // Re-enable /meta/connect messages.
         connect.set(true);
         client.sendConnect();
 
         // Wait for the second handshake.
-        Assert.assertTrue(handshakeLatch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(handshakeLatch2.await(5, TimeUnit.SECONDS));
 
         // Sessions must be different.
         ServerSession session2 = sessionRef2.get();
-        Assert.assertNotEquals(session1.getId(), session2.getId());
+        Assertions.assertNotEquals(session1.getId(), session2.getId());
 
         disconnectBayeuxClient(client);
     }
@@ -107,8 +106,8 @@ public class HandshakeWithExpiredSessionTest extends AbstractClientServerTest {
     private class TestBayeuxClient extends BayeuxClient {
         private final AtomicBoolean connect;
 
-        public TestBayeuxClient(AtomicBoolean connect) {
-            super(cometdURL, newClientTransport(null));
+        public TestBayeuxClient(Transport transport, AtomicBoolean connect) {
+            super(cometdURL, newClientTransport(transport, null));
             this.connect = connect;
         }
 

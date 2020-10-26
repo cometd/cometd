@@ -48,50 +48,30 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@RunWith(Parameterized.class)
 public abstract class OortTest {
-    @Parameterized.Parameters(name = "{index}: transport: {0}")
-    public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[][]
-                {
-                        {WebSocketTransport.class.getName()},
-                        {JettyWebSocketTransport.class.getName()}
-                }
-        );
+    public static List<String> transports() {
+        return Arrays.asList(WebSocketTransport.class.getName(), JettyWebSocketTransport.class.getName());
     }
 
-    @Rule
-    public final TestWatcher testName = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            super.starting(description);
-            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
-        }
-    };
+    @RegisterExtension
+    final BeforeTestExecutionCallback printMethodName = context ->
+            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final List<Server> servers = new ArrayList<>();
     protected final List<Oort> oorts = new ArrayList<>();
     private final List<BayeuxClient> clients = new ArrayList<>();
-    private final String serverTransport;
 
-    protected OortTest(String serverTransport) {
-        this.serverTransport = serverTransport;
+    protected Server startServer(String serverTransport, int port) throws Exception {
+        return startServer(serverTransport, port, new HashMap<>());
     }
 
-    protected Server startServer(int port) throws Exception {
-        return startServer(port, new HashMap<>());
-    }
-
-    protected Server startServer(int port, Map<String, String> options) throws Exception {
+    protected Server startServer(String serverTransport, int port, Map<String, String> options) throws Exception {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server_" + servers.size());
         Server server = new Server(serverThreads);
@@ -154,7 +134,7 @@ public abstract class OortTest {
         return client;
     }
 
-    @After
+    @AfterEach
     public void stop() throws Exception {
         stopClients();
         stopOorts();

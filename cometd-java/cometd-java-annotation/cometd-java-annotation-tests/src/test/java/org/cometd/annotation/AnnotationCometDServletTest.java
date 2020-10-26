@@ -25,8 +25,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class AnnotationCometDServletTest {
     @Test
@@ -48,20 +48,20 @@ public class AnnotationCometDServletTest {
         server.start();
 
         List<Object> services = cometdServlet.getServices();
-        Assert.assertNotNull(services);
-        Assert.assertEquals(1, services.size());
+        Assertions.assertNotNull(services);
+        Assertions.assertEquals(1, services.size());
 
         TestService service = (TestService)services.get(0);
         TestService registeredService = (TestService)context.getServletContext().getAttribute(TestService.class.getName());
-        Assert.assertSame(service, registeredService);
+        Assertions.assertSame(service, registeredService);
 
-        Assert.assertTrue(service.init);
+        Assertions.assertTrue(service.init);
 
         server.stop();
         server.join();
 
-        Assert.assertTrue(service.destroy);
-        Assert.assertNull(context.getServletContext().getAttribute(TestService.class.getName()));
+        Assertions.assertTrue(service.destroy);
+        Assertions.assertNull(context.getServletContext().getAttribute(TestService.class.getName()));
     }
 
     @Service("test")

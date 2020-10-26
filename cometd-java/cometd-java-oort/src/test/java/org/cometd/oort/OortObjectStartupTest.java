@@ -27,29 +27,27 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class OortObjectStartupTest extends OortTest {
     private final List<OortObject<String>> oortObjects = new ArrayList<>();
 
-    public OortObjectStartupTest(String serverTransport) {
-        super(serverTransport);
-    }
-
-    @After
+    @AfterEach
     public void dispose() throws Exception {
         for (int i = oortObjects.size() - 1; i >= 0; --i) {
             oortObjects.get(i).stop();
         }
     }
 
-    @Test
-    public void testOortObjectStartup() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testOortObjectStartup(String serverTransport) throws Exception {
         int nodes = 4;
         int edges = nodes * (nodes - 1);
-        final CountDownLatch joinLatch = new CountDownLatch(edges);
+        CountDownLatch joinLatch = new CountDownLatch(edges);
         Oort.CometListener joinListener = new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
@@ -59,21 +57,21 @@ public class OortObjectStartupTest extends OortTest {
         Map<String, String> options = new HashMap<>();
         options.put("ws.maxMessageSize", String.valueOf(1024 * 1024));
         for (int i = 0; i < nodes; i++) {
-            Oort oort = startOort(startServer(0, options));
+            Oort oort = startOort(startServer(serverTransport, 0, options));
             oort.addCometListener(joinListener);
         }
         Oort oort1 = oorts.get(0);
         for (int i = 1; i < oorts.size(); i++) {
             Oort oort = oorts.get(i);
             OortComet oortComet1X = oort1.observeComet(oort.getURL());
-            Assert.assertTrue(oortComet1X.waitFor(5000, BayeuxClient.State.CONNECTED));
+            Assertions.assertTrue(oortComet1X.waitFor(5000, BayeuxClient.State.CONNECTED));
             OortComet oortCometX1 = oort.findComet(oort1.getURL());
-            Assert.assertTrue(oortCometX1.waitFor(5000, BayeuxClient.State.CONNECTED));
+            Assertions.assertTrue(oortCometX1.waitFor(5000, BayeuxClient.State.CONNECTED));
         }
-        Assert.assertTrue(joinLatch.await(nodes * 2, TimeUnit.SECONDS));
+        Assertions.assertTrue(joinLatch.await(nodes * 2, TimeUnit.SECONDS));
         Thread.sleep(1000);
 
-        for (final Oort oort : oorts) {
+        for (Oort oort : oorts) {
             oort.getBayeuxServer().addListener(new BayeuxServer.SubscriptionListener() {
                 @Override
                 public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
@@ -84,10 +82,10 @@ public class OortObjectStartupTest extends OortTest {
             });
         }
 
-        final CountDownLatch initialLatch = new CountDownLatch(edges);
+        CountDownLatch initialLatch = new CountDownLatch(edges);
         String name = "test_startup";
         for (int i = 0; i < oorts.size(); i++) {
-            final Oort oort = oorts.get(i);
+            Oort oort = oorts.get(i);
             OortObject<String> oortObject = new OortObject<>(oort, name, OortObjectFactories.forString(i + "_default"));
             oortObject.addListener(new OortObject.Listener<String>() {
                 @Override
@@ -102,6 +100,6 @@ public class OortObjectStartupTest extends OortTest {
             oortObject.start();
             Thread.sleep(1000);
         }
-        Assert.assertTrue(initialLatch.await(nodes * 2, TimeUnit.SECONDS));
+        Assertions.assertTrue(initialLatch.await(nodes * 2, TimeUnit.SECONDS));
     }
 }

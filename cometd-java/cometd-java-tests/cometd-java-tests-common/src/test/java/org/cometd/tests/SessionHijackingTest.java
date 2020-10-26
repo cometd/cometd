@@ -23,25 +23,23 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class SessionHijackingTest extends AbstractClientServerTest {
-    public SessionHijackingTest(Transport transport) {
-        super(transport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSessionHijacking(Transport transport) throws Exception {
+        startServer(transport);
 
-    @Test
-    public void testSessionHijacking() throws Exception {
-        startServer(serverOptions());
-
-        BayeuxClient client1 = newBayeuxClient();
+        BayeuxClient client1 = newBayeuxClient(transport);
         client1.handshake();
-        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final BayeuxClient client2 = newBayeuxClient();
+        BayeuxClient client2 = newBayeuxClient(transport);
         client2.handshake();
-        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Client1 tries to impersonate Client2.
         client1.addExtension(new ClientSession.Extension() {
@@ -52,40 +50,41 @@ public class SessionHijackingTest extends AbstractClientServerTest {
             }
         });
 
-        final AtomicReference<Message> messageRef = new AtomicReference<>();
-        final CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Message> messageRef = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
         String channel = "/session_mismatch";
         client1.getChannel(channel).publish("data", m -> {
             messageRef.set(m);
             latch.countDown();
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Message publishReply = messageRef.get();
-        Assert.assertNotNull(publishReply);
-        Assert.assertFalse(publishReply.isSuccessful());
-        Assert.assertTrue(((String)publishReply.get(Message.ERROR_FIELD)).startsWith("402"));
+        Assertions.assertNotNull(publishReply);
+        Assertions.assertFalse(publishReply.isSuccessful());
+        Assertions.assertTrue(((String)publishReply.get(Message.ERROR_FIELD)).startsWith("402"));
 
         // Client2 should be connected.
-        Assert.assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         disconnectBayeuxClient(client1);
         disconnectBayeuxClient(client2);
     }
 
-    @Test
-    public void testSessionHijackingByBatchedSecondMessage() throws Exception {
-        startServer(serverOptions());
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSessionHijackingByBatchedSecondMessage(Transport transport) throws Exception {
+        startServer(transport);
 
-        final BayeuxClient client1 = newBayeuxClient();
+        BayeuxClient client1 = newBayeuxClient(transport);
         client1.handshake();
-        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final BayeuxClient client2 = newBayeuxClient();
+        BayeuxClient client2 = newBayeuxClient(transport);
         client2.handshake();
-        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final String channelName = "/hijack";
+        String channelName = "/hijack";
 
         // Client1 tries to impersonate Client2.
         client1.addExtension(new ClientSession.Extension() {
@@ -98,8 +97,8 @@ public class SessionHijackingTest extends AbstractClientServerTest {
             }
         });
 
-        final AtomicReference<Message> messageRef = new AtomicReference<>();
-        final CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Message> messageRef = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
         client1.batch(() -> {
             ClientSessionChannel channel = client1.getChannel(channelName);
             channel.subscribe((c, m) -> {
@@ -111,14 +110,14 @@ public class SessionHijackingTest extends AbstractClientServerTest {
             });
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Message publishReply = messageRef.get();
-        Assert.assertNotNull(publishReply);
-        Assert.assertFalse(publishReply.isSuccessful());
-        Assert.assertTrue(((String)publishReply.get(Message.ERROR_FIELD)).startsWith("402"));
+        Assertions.assertNotNull(publishReply);
+        Assertions.assertFalse(publishReply.isSuccessful());
+        Assertions.assertTrue(((String)publishReply.get(Message.ERROR_FIELD)).startsWith("402"));
 
         // Client2 should be connected.
-        Assert.assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         disconnectBayeuxClient(client1);
         disconnectBayeuxClient(client2);

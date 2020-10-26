@@ -33,10 +33,10 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * This is of use when running demo in a terracotta cluster
  */
 public class OortDemo {
-    private Server _server;
+    private final Server _server;
 
     public static void main(String[] args) throws Exception {
-        int port = args.length == 0 ? 8080 : Integer.valueOf(args[0]);
+        int port = args.length == 0 ? 8080 : Integer.parseInt(args[0]);
         OortDemo demo = new OortDemo(port);
         demo._server.join();
     }

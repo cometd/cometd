@@ -23,48 +23,51 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class OortListTest extends AbstractOortObjectTest {
-    public OortListTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testElementAdded(String serverTransport) throws Exception {
+        prepare(serverTransport);
 
-    @Test
-    public void testElementAdded() throws Exception {
         String name = "test";
         OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
         OortList<Long> oortList1 = new OortList<>(oort1, name, factory);
         OortList<Long> oortList2 = new OortList<>(oort2, name, factory);
         startOortObjects(oortList1, oortList2);
 
-        final long element = 1;
-        final CountDownLatch addLatch = new CountDownLatch(1);
+        long element = 1;
+        CountDownLatch addLatch = new CountDownLatch(1);
         oortList2.addElementListener(new OortList.ElementListener<Long>() {
             @Override
             public void onAdded(OortObject.Info<List<Long>> info, List<Long> elements) {
-                Assert.assertEquals(1, elements.size());
-                Assert.assertEquals(element, (long)elements.get(0));
+                Assertions.assertEquals(1, elements.size());
+                Assertions.assertEquals(element, (long)elements.get(0));
                 addLatch.countDown();
             }
         });
 
         OortObject.Result.Deferred<Boolean> result = new OortObject.Result.Deferred<>();
         oortList1.addAndShare(result, element);
-        Assert.assertTrue(result.get(5, TimeUnit.SECONDS));
-        Assert.assertTrue(addLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(result.get(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(addLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testElementRemoved() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testElementRemoved(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "test";
         OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
         OortList<Long> oortList1 = new OortList<>(oort1, name, factory);
         OortList<Long> oortList2 = new OortList<>(oort2, name, factory);
         startOortObjects(oortList1, oortList2);
 
-        final CountDownLatch setLatch = new CountDownLatch(2);
+        CountDownLatch setLatch = new CountDownLatch(2);
         OortObject.Listener<List<Long>> listener = new OortObject.Listener<List<Long>>() {
             @Override
             public void onUpdated(OortObject.Info<List<Long>> oldInfo, OortObject.Info<List<Long>> newInfo) {
@@ -74,36 +77,39 @@ public class OortListTest extends AbstractOortObjectTest {
         oortList1.addListener(listener);
         oortList2.addListener(listener);
         List<Long> list = factory.newObject(null);
-        final long element = 1;
+        long element = 1;
         list.add(element);
         oortList1.setAndShare(list, null);
-        Assert.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch removeLatch = new CountDownLatch(1);
+        CountDownLatch removeLatch = new CountDownLatch(1);
         oortList2.addElementListener(new OortList.ElementListener<Long>() {
             @Override
             public void onRemoved(OortObject.Info<List<Long>> info, List<Long> elements) {
-                Assert.assertEquals(1, elements.size());
-                Assert.assertEquals(element, (long)elements.get(0));
+                Assertions.assertEquals(1, elements.size());
+                Assertions.assertEquals(element, (long)elements.get(0));
                 removeLatch.countDown();
             }
         });
 
         OortObject.Result.Deferred<Boolean> result = new OortObject.Result.Deferred<>();
         oortList1.removeAndShare(result, element);
-        Assert.assertTrue(result.get(5, TimeUnit.SECONDS));
-        Assert.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(result.get(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testDeltaListener() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDeltaListener(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "test";
         OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
         OortList<String> oortList1 = new OortList<>(oort1, name, factory);
         OortList<String> oortList2 = new OortList<>(oort2, name, factory);
         startOortObjects(oortList1, oortList2);
 
-        final CountDownLatch setLatch1 = new CountDownLatch(2);
+        CountDownLatch setLatch1 = new CountDownLatch(2);
         OortObject.Listener<List<String>> listener = new OortObject.Listener<List<String>>() {
             @Override
             public void onUpdated(OortObject.Info<List<String>> oldInfo, OortObject.Info<List<String>> newInfo) {
@@ -118,7 +124,7 @@ public class OortListTest extends AbstractOortObjectTest {
         oldList.add(elementA);
         oldList.add(elementB);
         oortList1.setAndShare(oldList, null);
-        Assert.assertTrue(setLatch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(setLatch1.await(5, TimeUnit.SECONDS));
 
         List<String> newList = factory.newObject(null);
         String elementC = "C";
@@ -127,9 +133,9 @@ public class OortListTest extends AbstractOortObjectTest {
         newList.add(elementC);
         newList.add(elementD);
 
-        final List<String> adds = new ArrayList<>();
-        final List<String> removes = new ArrayList<>();
-        final AtomicReference<CountDownLatch> setLatch2 = new AtomicReference<>(new CountDownLatch(4));
+        List<String> adds = new ArrayList<>();
+        List<String> removes = new ArrayList<>();
+        AtomicReference<CountDownLatch> setLatch2 = new AtomicReference<>(new CountDownLatch(4));
         oortList1.addListener(new OortList.DeltaListener<>(oortList1));
         oortList2.addListener(new OortList.DeltaListener<>(oortList2));
         OortList.ElementListener<String> elementListener = new OortList.ElementListener<String>() {
@@ -149,9 +155,9 @@ public class OortListTest extends AbstractOortObjectTest {
         oortList2.addElementListener(elementListener);
         oortList1.setAndShare(newList, null);
 
-        Assert.assertTrue(setLatch2.get().await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(4, adds.size());
-        Assert.assertEquals(2, removes.size());
+        Assertions.assertTrue(setLatch2.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(4, adds.size());
+        Assertions.assertEquals(2, removes.size());
 
         adds.clear();
         removes.clear();
@@ -159,19 +165,22 @@ public class OortListTest extends AbstractOortObjectTest {
         // Stop Oort1 so that OortList2 gets the notification
         stopOort(oort1);
 
-        Assert.assertTrue(setLatch2.get().await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(3, removes.size());
+        Assertions.assertTrue(setLatch2.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(3, removes.size());
     }
 
-    @Test
-    public void testContains() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testContains(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "test";
         OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
         OortList<String> oortList1 = new OortList<>(oort1, name, factory);
         OortList<String> oortList2 = new OortList<>(oort2, name, factory);
         startOortObjects(oortList1, oortList2);
 
-        final CountDownLatch setLatch = new CountDownLatch(2);
+        CountDownLatch setLatch = new CountDownLatch(2);
         OortObject.Listener<List<String>> listener = new OortObject.Listener<List<String>>() {
             @Override
             public void onUpdated(OortObject.Info<List<String>> oldInfo, OortObject.Info<List<String>> newInfo) {
@@ -181,9 +190,9 @@ public class OortListTest extends AbstractOortObjectTest {
         oortList1.addListener(listener);
         oortList2.addListener(listener);
         oortList1.setAndShare(factory.newObject(null), null);
-        Assert.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch addLatch = new CountDownLatch(4);
+        CountDownLatch addLatch = new CountDownLatch(4);
         OortList.ElementListener<String> addedListener = new OortList.ElementListener<String>() {
             @Override
             public void onAdded(OortObject.Info<List<String>> info, List<String> elements) {
@@ -198,27 +207,30 @@ public class OortListTest extends AbstractOortObjectTest {
         oortList1.addAndShare(nullResult, element1A);
         String element2A = "2A";
         oortList2.addAndShare(nullResult, element2A);
-        Assert.assertTrue(addLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(addLatch.await(5, TimeUnit.SECONDS));
 
-        Assert.assertTrue(oortList1.contains(element1A));
-        Assert.assertFalse(oortList2.contains(element1A));
-        Assert.assertFalse(oortList1.contains(element2A));
-        Assert.assertTrue(oortList2.contains(element2A));
+        Assertions.assertTrue(oortList1.contains(element1A));
+        Assertions.assertFalse(oortList2.contains(element1A));
+        Assertions.assertFalse(oortList1.contains(element2A));
+        Assertions.assertTrue(oortList2.contains(element2A));
 
-        Assert.assertTrue(oortList1.isPresent(element1A));
-        Assert.assertTrue(oortList2.isPresent(element1A));
-        Assert.assertTrue(oortList1.isPresent(element2A));
-        Assert.assertTrue(oortList2.isPresent(element2A));
+        Assertions.assertTrue(oortList1.isPresent(element1A));
+        Assertions.assertTrue(oortList2.isPresent(element1A));
+        Assertions.assertTrue(oortList1.isPresent(element2A));
+        Assertions.assertTrue(oortList2.isPresent(element2A));
 
         oortList2.removeElementListener(addedListener);
         oortList1.removeElementListener(addedListener);
     }
 
-    @Test
-    public void testConcurrent() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testConcurrent(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "concurrent";
         OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
-        final OortList<String> oortList1 = new OortList<>(oort1, name, factory);
+        OortList<String> oortList1 = new OortList<>(oort1, name, factory);
         OortList<String> oortList2 = new OortList<>(oort2, name, factory);
         startOortObjects(oortList1, oortList2);
 
@@ -258,13 +270,13 @@ public class OortListTest extends AbstractOortObjectTest {
         barrier.await();
 
         // Wait for all threads to finish.
-        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch2.await(5, TimeUnit.SECONDS));
 
         List<String> list1 = oortList1.merge(OortObjectMergers.listUnion());
         Collections.sort(list1);
         List<String> list2 = oortList2.merge(OortObjectMergers.listUnion());
         Collections.sort(list2);
-        Assert.assertEquals(list1, list2);
+        Assertions.assertEquals(list1, list2);
     }
 }

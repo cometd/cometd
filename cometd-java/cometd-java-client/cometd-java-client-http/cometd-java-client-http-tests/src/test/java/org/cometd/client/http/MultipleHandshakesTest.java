@@ -16,10 +16,8 @@
 package org.cometd.client.http;
 
 import org.cometd.client.BayeuxClient;
-import org.junit.Assert;
-import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class MultipleHandshakesTest extends ClientServerTest {
     @Test
@@ -28,12 +26,12 @@ public class MultipleHandshakesTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         try {
             // Handshake again.
             client.handshake();
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException x) {
             // Expected.
         }

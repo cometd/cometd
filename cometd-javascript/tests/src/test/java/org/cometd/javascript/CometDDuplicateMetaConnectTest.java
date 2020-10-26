@@ -15,7 +15,7 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class CometDDuplicateMetaConnectTest extends AbstractCometDLongPollingTest {
     @Test

@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.cometd.bayeux.Promise;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class AsyncFoldLeftTest {
     @Test
@@ -32,15 +32,15 @@ public class AsyncFoldLeftTest {
 
         Promise.Completable<String> promise1 = new Promise.Completable<>();
         AsyncFoldLeft.run(new String[0], zero, (result, element, loop) -> loop.proceed(result + element), promise1);
-        Assert.assertEquals(zero, promise1.get());
+        Assertions.assertEquals(zero, promise1.get());
 
         Promise.Completable<String> promise2 = new Promise.Completable<>();
         AsyncFoldLeft.run(Collections.emptyList(), zero, (result, element, loop) -> loop.proceed(result + element), promise2);
-        Assert.assertEquals(zero, promise2.get());
+        Assertions.assertEquals(zero, promise2.get());
 
         Promise.Completable<String> promise3 = new Promise.Completable<>();
         AsyncFoldLeft.run(Collections.emptySet(), zero, (result, element, loop) -> loop.proceed(result + element), promise3);
-        Assert.assertEquals(zero, promise3.get());
+        Assertions.assertEquals(zero, promise3.get());
     }
 
     @Test
@@ -51,7 +51,7 @@ public class AsyncFoldLeftTest {
         Promise.Completable<String> promise = new Promise.Completable<>();
         AsyncFoldLeft.run(elements, "", (result, element, loop) -> loop.proceed(result + element), promise);
         String result = promise.get();
-        Assert.assertEquals(expected, result);
+        Assertions.assertEquals(expected, result);
     }
 
     @Test
@@ -65,7 +65,7 @@ public class AsyncFoldLeftTest {
             loop.proceed(result + element);
         }).start(), promise);
         String result = promise.get();
-        Assert.assertEquals(expected, result);
+        Assertions.assertEquals(expected, result);
     }
 
     @Test
@@ -80,7 +80,7 @@ public class AsyncFoldLeftTest {
             }
         }, promise);
         String result = promise.get();
-        Assert.assertEquals("1", result);
+        Assertions.assertEquals("1", result);
     }
 
     @Test
@@ -98,7 +98,7 @@ public class AsyncFoldLeftTest {
             }
         }, promise);
         String result = promise.get();
-        Assert.assertEquals("1", result);
+        Assertions.assertEquals("1", result);
     }
 
     @Test
@@ -115,9 +115,9 @@ public class AsyncFoldLeftTest {
         }, promise);
         try {
             promise.get();
-            Assert.fail();
+            Assertions.fail();
         } catch (ExecutionException x) {
-            Assert.assertSame(failure, x.getCause());
+            Assertions.assertSame(failure, x.getCause());
         }
     }
 
@@ -138,9 +138,9 @@ public class AsyncFoldLeftTest {
         }, promise);
         try {
             promise.get();
-            Assert.fail();
+            Assertions.fail();
         } catch (ExecutionException x) {
-            Assert.assertSame(failure, x.getCause());
+            Assertions.assertSame(failure, x.getCause());
         }
     }
 

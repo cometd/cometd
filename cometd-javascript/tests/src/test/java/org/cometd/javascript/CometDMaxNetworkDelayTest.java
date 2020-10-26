@@ -25,14 +25,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDMaxNetworkDelayTest extends AbstractCometDTransportsTest {
     private final long maxNetworkDelay = 2000;
 
-    @Test
-    public void testMaxNetworkDelay() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMaxNetworkDelay(String transport) throws Exception {
+        initCometDServer(transport);
+
         bayeuxServer.addExtension(new DelayingExtension());
 
         evaluateScript("var Listener = Java.type('" + Listener.class.getName() + "');");
@@ -50,7 +54,7 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTransportsTest {
         // Allow long poll to establish
         Thread.sleep(1000);
 
-        AtomicReference<List<Throwable>> failures = new AtomicReference<>(new ArrayList<Throwable>());
+        AtomicReference<List<Throwable>> failures = new AtomicReference<>(new ArrayList<>());
         publishListener.expect(failures, 1);
         evaluateScript("cometd.publish('/test', {});");
 
@@ -58,14 +62,14 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTransportsTest {
         // However, the test holds it for 2 * maxNetworkDelay
         // The request timeout kicks in after maxNetworkDelay,
         // canceling the request.
-        Assert.assertTrue(publishListener.await(2 * maxNetworkDelay));
-        Assert.assertTrue(failures.get().toString(), failures.get().isEmpty());
+        Assertions.assertTrue(publishListener.await(2 * maxNetworkDelay));
+        Assertions.assertTrue(failures.get().isEmpty(), failures.get().toString());
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
 
         // Avoid exceptions by sleeping a while
         Thread.sleep(maxNetworkDelay);

@@ -20,12 +20,16 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDTransportNegotiationFailureTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testTransportNegotiationFailureForClientLongPollingServerCallbackPolling() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testTransportNegotiationFailureForClientLongPollingServerCallbackPolling(String transport) throws Exception {
+        initCometDServer(transport);
+
         // Only callback-polling on server (via extension), only long-polling on client.
         bayeuxServer.setAllowedTransports("long-polling", "callback-polling");
         bayeuxServer.addExtension(new BayeuxServer.Extension() {
@@ -54,13 +58,16 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTranspo
                 "    }" +
                 "});");
 
-        Assert.assertTrue(failureLatch.await(5000));
+        Assertions.assertTrue(failureLatch.await(5000));
 
         disconnect();
     }
 
-    @Test
-    public void testTransportNegotiationFailureForClientLongPollingServerWebSocket() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testTransportNegotiationFailureForClientLongPollingServerWebSocket(String transport) throws Exception {
+        initCometDServer(transport);
+
         // Only websocket on server, only long-polling on client.
         bayeuxServer.setAllowedTransports("websocket");
         evaluateScript("keep_only_long_polling_transport",
@@ -79,13 +86,16 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTranspo
                 "    }" +
                 "});");
 
-        Assert.assertTrue(failureLatch.await(5000));
+        Assertions.assertTrue(failureLatch.await(5000));
 
         disconnect();
     }
 
-    @Test
-    public void testTransportNegotiationFailureForClientWebSocketServerLongPolling() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testTransportNegotiationFailureForClientWebSocketServerLongPolling(String transport) throws Exception {
+        initCometDServer(transport);
+
         // Only long-polling on server, only websocket on client.
         bayeuxServer.setAllowedTransports("long-polling");
         evaluateScript("keep_only_websocket_transport",
@@ -104,7 +114,8 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTranspo
                 "    }" +
                 "});");
 
-        Assert.assertTrue(failureLatch.await(5000));
-        Assert.assertTrue(evaluateScript("cometd.isDisconnected();"));
+        Assertions.assertTrue(failureLatch.await(5000));
+        boolean disconnected = evaluateScript("cometd.isDisconnected();");
+        Assertions.assertTrue(disconnected);
     }
 }

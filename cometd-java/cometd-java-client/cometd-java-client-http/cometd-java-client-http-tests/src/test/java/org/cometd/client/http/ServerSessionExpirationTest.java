@@ -31,8 +31,8 @@ import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ServerSessionExpirationTest extends ClientServerTest {
     private final Logger logger = Log.getLogger(ServerSessionExpirationTest.class);
@@ -83,8 +83,8 @@ public class ServerSessionExpirationTest extends ClientServerTest {
         // Third /meta/connect is attempted, but failed.
         // Wait for backOffIncrement.
         // Fourth /meta/connect is attempted, but failed.
-        Assert.assertTrue(failedConnect.await(2 * backOffIncrement, TimeUnit.MILLISECONDS));
-        Assert.assertFalse(client.isConnected());
+        Assertions.assertTrue(failedConnect.await(2 * backOffIncrement, TimeUnit.MILLISECONDS));
+        Assertions.assertFalse(client.isConnected());
 
         // Publish a message, should cancel the removal of the session.
         client.getChannel("/foo").publish("bar");
@@ -95,10 +95,10 @@ public class ServerSessionExpirationTest extends ClientServerTest {
         client.getChannel("/foo").publish("bar");
 
         // After 2 backOffIncrements, we should connect again.
-        Assert.assertTrue(client.waitFor(3 * backOffIncrement, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(3 * backOffIncrement, BayeuxClient.State.CONNECTED));
 
         // Make sure we never disconnected.
-        Assert.assertFalse(removeLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(removeLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -149,8 +149,8 @@ public class ServerSessionExpirationTest extends ClientServerTest {
         // Third /meta/connect is attempted, but failed.
         // Wait for backOffIncrement.
         // Fourth /meta/connect is attempted, but failed.
-        Assert.assertTrue(failedConnect.await(2 * backOffIncrement, TimeUnit.MILLISECONDS));
-        Assert.assertFalse(client.isConnected());
+        Assertions.assertTrue(failedConnect.await(2 * backOffIncrement, TimeUnit.MILLISECONDS));
+        Assertions.assertFalse(client.isConnected());
 
         // Publish a message, should cancel the removal of the session.
         client.getChannel("/foo").publish("bar");
@@ -158,11 +158,11 @@ public class ServerSessionExpirationTest extends ClientServerTest {
         // At this point, backOffIncrement has passed.
         // Verify that the session is still alive.
         Thread.sleep((maxInterval - backOffIncrement) * 2);
-        Assert.assertFalse(removeLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(removeLatch.await(1, TimeUnit.SECONDS));
 
         // We never restore the network, so eventually
         // the server must expire the session after maxInterval.
-        Assert.assertTrue(removeLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(removeLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -210,7 +210,7 @@ public class ServerSessionExpirationTest extends ClientServerTest {
         logger.info("message sent, waiting for expiration {} ms", expire);
         Thread.sleep(expire);
 
-        Assert.assertNull(bayeux.getSession(client.getId()));
+        Assertions.assertNull(bayeux.getSession(client.getId()));
 
         client.disconnect();
         client.waitFor(1000, BayeuxClient.State.DISCONNECTED);

@@ -38,32 +38,26 @@ import org.cometd.common.HashMapMessage;
 import org.cometd.common.TransportException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.HttpCookieStore;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class JettyHttpClientTransportTest {
-    @Rule
-    public final TestWatcher testName = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            super.starting(description);
-            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
-        }
-    };
+    @RegisterExtension
+    final BeforeTestExecutionCallback printMethodName = context ->
+            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
     private HttpClient httpClient;
 
-    @Before
+    @BeforeEach
     public void prepare() throws Exception {
         httpClient = new HttpClient();
         httpClient.start();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception {
         httpClient.stop();
     }
@@ -71,13 +65,13 @@ public class JettyHttpClientTransportTest {
     @Test
     public void testType() {
         ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
-        Assert.assertEquals("long-polling", transport.getName());
+        Assertions.assertEquals("long-polling", transport.getName());
     }
 
     @Test
     public void testAccept() {
         ClientTransport transport = new JettyHttpClientTransport(null, httpClient);
-        Assert.assertTrue(transport.accept("1.0"));
+        Assertions.assertTrue(transport.accept("1.0"));
     }
 
     @Test
@@ -131,8 +125,8 @@ public class JettyHttpClientTransportTest {
                 long end = System.nanoTime();
 
                 long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
-                Assert.assertTrue("elapsed=" + elapsed + ", processing=" + processingTime, elapsed <= processingTime);
-                Assert.assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
+                Assertions.assertTrue(elapsed <= processingTime, "elapsed=" + elapsed + ", processing=" + processingTime);
+                Assertions.assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
@@ -140,7 +134,7 @@ public class JettyHttpClientTransportTest {
             }
         } finally {
             serverThread.join(5000);
-            Assert.assertNull(serverException.get());
+            Assertions.assertNull(serverException.get());
             serverSocket.close();
         }
     }
@@ -194,14 +188,14 @@ public class JettyHttpClientTransportTest {
                 long end = System.nanoTime();
 
                 long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
-                Assert.assertTrue("elapsed=" + elapsed + ", processing=" + processingTime, elapsed <= processingTime);
-                Assert.assertTrue(latch.await(2000 + 2 * processingTime, TimeUnit.MILLISECONDS));
+                Assertions.assertTrue(elapsed <= processingTime, "elapsed=" + elapsed + ", processing=" + processingTime);
+                Assertions.assertTrue(latch.await(2000 + 2 * processingTime, TimeUnit.MILLISECONDS));
             } finally {
                 httpClient.stop();
             }
         } finally {
             serverThread.join(5000);
-            Assert.assertNull(serverException.get());
+            Assertions.assertNull(serverException.get());
             serverSocket.close();
         }
     }
@@ -231,7 +225,7 @@ public class JettyHttpClientTransportTest {
                 }
             }, new ArrayList<>());
 
-            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
         } finally {
             httpClient.stop();
         }
@@ -277,14 +271,14 @@ public class JettyHttpClientTransportTest {
                 long end = System.nanoTime();
 
                 long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
-                Assert.assertTrue("elapsed=" + elapsed + ", processing=" + processingTime, elapsed <= processingTime);
-                Assert.assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
+                Assertions.assertTrue(elapsed <= processingTime, "elapsed=" + elapsed + ", processing=" + processingTime);
+                Assertions.assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
             } finally {
                 httpClient.stop();
             }
         } finally {
             serverThread.join(5000);
-            Assert.assertNull(serverException.get());
+            Assertions.assertNull(serverException.get());
             serverSocket.close();
         }
     }
@@ -341,13 +335,13 @@ public class JettyHttpClientTransportTest {
                     }
                 }, new ArrayList<>());
 
-                Assert.assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
+                Assertions.assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
             } finally {
                 httpClient.stop();
             }
         } finally {
             serverThread.join(5000);
-            Assert.assertNull(serverException.get());
+            Assertions.assertNull(serverException.get());
             serverSocket.close();
         }
     }

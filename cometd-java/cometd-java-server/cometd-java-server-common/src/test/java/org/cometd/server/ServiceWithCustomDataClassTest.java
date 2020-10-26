@@ -26,19 +26,17 @@ import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTest {
-    public ServiceWithCustomDataClassTest(String serverTransport) {
-        super(serverTransport);
-    }
-
-    @Test
-    public void testServiceWithCustomDataClass() throws Exception {
-        Map<String, String> options = new HashMap<String, String>();
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServiceWithCustomDataClass(String serverTransport) throws Exception {
+        Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.JSON_CONTEXT_OPTION, TestJettyJSONContextServer.class.getName());
-        startServer(options);
+        startServer(serverTransport, options);
 
         String channelName = "/foo";
         CountDownLatch latch = new CountDownLatch(1);
@@ -55,7 +53,7 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -69,11 +67,11 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
                 "}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertNotNull(service.holder);
-        Assert.assertEquals(value, service.holder.field);
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertNotNull(service.holder);
+        Assertions.assertEquals(value, service.holder.field);
     }
 
     public static class Holder {
@@ -89,7 +87,6 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
         }
 
         @Override
-        @SuppressWarnings("rawtypes")
         public Object fromJSON(Map map) {
             String value = (String)map.get("field");
             Holder holder = new Holder();

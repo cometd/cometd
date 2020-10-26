@@ -23,22 +23,16 @@ import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CharsetTest extends AbstractBayeuxClientServerTest {
-    public CharsetTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMissingContentTypeWithLongPolling(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testMissingContentTypeWithLongPolling() throws Exception {
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -46,22 +40,22 @@ public class CharsetTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
-        final String data = new String(new byte[]{(byte)0xC3, (byte)0xA9}, StandardCharsets.UTF_8);
+        String data = new String(new byte[]{(byte)0xC3, (byte)0xA9}, StandardCharsets.UTF_8);
         String channelName = "/test_charset";
         bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 String messageData = (String)message.getData();
-                Assert.assertEquals(data, messageData);
+                Assertions.assertEquals(data, messageData);
                 return true;
             }
         });
 
-        final Request publish = newBayeuxRequest("[{" +
+        Request publish = newBayeuxRequest("[{" +
                 "\"channel\":\"" + channelName + "\"," +
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"data\":\"" + data + "\"" +
@@ -70,18 +64,21 @@ public class CharsetTest extends AbstractBayeuxClientServerTest {
         // the Content-Type header is not sent, and we must behave well even if it's missing
         publish.onResponseBegin(r -> publish.header(HttpHeader.CONTENT_TYPE, null));
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
     }
 
-    @Test
-    public void testContentTypeWithISO_8859_7() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testContentTypeWithISO_8859_7(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -89,20 +86,20 @@ public class CharsetTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         // Greek encoding
         String encoding = "ISO-8859-7";
         // Lowercase greek letter alpha
-        final String data = new String(new byte[]{(byte)0xE1}, encoding);
+        String data = new String(new byte[]{(byte)0xE1}, encoding);
         String channelName = "/test_charset";
         bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 String messageData = (String)message.getData();
-                Assert.assertEquals(data, messageData);
+                Assertions.assertEquals(data, messageData);
                 return true;
             }
         });
@@ -114,13 +111,13 @@ public class CharsetTest extends AbstractBayeuxClientServerTest {
                 "\"data\":\"" + data + "\"" +
                 "}]", encoding);
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
     }
 }

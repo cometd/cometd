@@ -15,16 +15,15 @@
  */
 package org.cometd.javascript;
 
+import org.junit.jupiter.api.BeforeEach;
+
 /**
  * A base test class to be extended for tests
  * valid only for the callback-polling transport.
  */
 public class AbstractCometDCallbackPollingTest extends AbstractCometDTest {
-    @Override
-    protected void initPage() throws Exception {
-        super.initPage();
-        evaluateScript("keep_only_callback_polling_transport", "" +
-                        "cometd.unregisterTransports();" +
-                        "cometd.registerTransport('callback-polling', originalTransports['callback-polling']);");
+    @BeforeEach
+    public void init() throws Exception {
+        initCometDServer("callback-polling");
     }
 }

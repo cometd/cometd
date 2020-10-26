@@ -20,8 +20,8 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDWebSocketNetworkDelayListenerTest extends AbstractCometDWebSocketTest {
     @Test
@@ -76,14 +76,15 @@ public class CometDWebSocketNetworkDelayListenerTest extends AbstractCometDWebSo
         String sessionId = evaluateScript("cometd.getClientId();");
         bayeuxServer.getSession(sessionId).deliver(null, channelName, "DATA", Promise.noop());
 
-        Assert.assertTrue(messageLatch.await(5000));
+        Assertions.assertTrue(messageLatch.await(5000));
 
         // Verify that the transport listener is invoked.
-        Assert.assertTrue(transportLatch.await(metaConnectPeriod));
+        Assertions.assertTrue(transportLatch.await(metaConnectPeriod));
 
         // Verify that we are still connected.
-        Assert.assertTrue(connectLatch.await(2 * metaConnectPeriod));
-        Assert.assertFalse(evaluateScript("cometd.isDisconnected();"));
+        Assertions.assertTrue(connectLatch.await(2 * metaConnectPeriod));
+        boolean disconnected = evaluateScript("cometd.isDisconnected();");
+        Assertions.assertFalse(disconnected);
 
         disconnect();
     }

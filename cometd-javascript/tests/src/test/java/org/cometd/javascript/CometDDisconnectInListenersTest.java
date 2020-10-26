@@ -15,12 +15,16 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDDisconnectInListenersTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testDisconnectInHandshakeListener() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDisconnectInHandshakeListener(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("var disconnectLatch = new Latch(1);");
@@ -42,13 +46,16 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTransportsTes
                 "");
 
         // Connect must not be called
-        Assert.assertFalse(connectLatch.await(1000));
+        Assertions.assertFalse(connectLatch.await(1000));
 
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 
-    @Test
-    public void testDisconnectInConnectListener() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDisconnectInConnectListener(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var connectLatch = new Latch(2);");
         Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("var disconnectLatch = new Latch(1);");
@@ -70,9 +77,9 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTransportsTes
                 "");
 
         // Connect must be called only once
-        Assert.assertFalse(connectLatch.await(1000));
-        Assert.assertEquals(1L, connectLatch.getCount());
+        Assertions.assertFalse(connectLatch.await(1000));
+        Assertions.assertEquals(1L, connectLatch.getCount());
 
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 }
