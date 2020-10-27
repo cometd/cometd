@@ -1,7 +1,7 @@
 require({
         baseUrl: "../../js/jquery",
         paths: {
-            jquery: "https://code.jquery.com/jquery-3.4.1",
+            jquery: "https://code.jquery.com/jquery-3.5.1",
             cometd: "../cometd"
         }
     },
