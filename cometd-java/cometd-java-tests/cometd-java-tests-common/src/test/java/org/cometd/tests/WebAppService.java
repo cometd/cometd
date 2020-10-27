@@ -17,9 +17,9 @@ package org.cometd.tests;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
+
 import org.cometd.annotation.Service;
 import org.cometd.annotation.server.RemoteCall;
 import org.cometd.client.BayeuxClient;
