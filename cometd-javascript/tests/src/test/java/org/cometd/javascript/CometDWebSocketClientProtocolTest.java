@@ -15,20 +15,11 @@
  */
 package org.cometd.javascript;
 
-import java.util.Map;
-
-import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class CometDWebSocketClientProtocolTest extends AbstractCometDWebSocketTest {
     private static final String PROTOCOL = "bayeux/1.0";
-
-    @Override
-    protected void initCometDServer(String transport, Map<String, String> options) throws Exception {
-        options.put(AbstractWebSocketTransport.PROTOCOL_OPTION, PROTOCOL);
-        super.initCometDServer(transport, options);
-    }
 
     @Test
     public void testClientWithoutWebSocketProtocolServerWithoutWebSocketProtocol() throws Exception {
