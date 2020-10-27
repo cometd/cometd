@@ -16,11 +16,11 @@
 package org.cometd.javascript.dojo;
 
 import org.cometd.javascript.Latch;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-@Ignore("Failing due to issue #742")
+@Disabled("Failing due to issue #742")
 public class CometDDojoHitchTest extends AbstractCometDDojoTest {
     @Test
     public void testDojoHitch() throws Exception {
@@ -29,7 +29,7 @@ public class CometDDojoHitchTest extends AbstractCometDDojoTest {
         Latch handshakeLatch = javaScript.get("handshakeLatch");
         evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(handshakeLatch.await(5000));
 
         evaluateScript("var latch1 = new Latch(1);");
         Latch latch1 = javaScript.get("latch1");
@@ -38,8 +38,8 @@ public class CometDDojoHitchTest extends AbstractCometDDojoTest {
         Latch latch2 = javaScript.get("latch2");
         evaluateScript("cometd.subscribe('/test', dojo.hitch(latch2, 'countDown'));");
         evaluateScript("cometd.publish('/test', {});");
-        Assert.assertTrue(latch1.await(5000));
-        Assert.assertTrue(latch2.await(5000));
+        Assertions.assertTrue(latch1.await(5000));
+        Assertions.assertTrue(latch2.await(5000));
 
         disconnect();
     }

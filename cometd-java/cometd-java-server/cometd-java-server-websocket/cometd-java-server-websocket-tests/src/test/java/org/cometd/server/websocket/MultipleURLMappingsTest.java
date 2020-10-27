@@ -16,11 +16,13 @@
 package org.cometd.server.websocket;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
+
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.CometDServlet;
@@ -31,49 +33,33 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class MultipleURLMappingsTest {
     private static final String JSR_WS_TRANSPORT = "org.cometd.server.websocket.javax.WebSocketTransport";
     private static final String JETTY_WS_TRANSPORT = "org.cometd.server.websocket.jetty.JettyWebSocketTransport";
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[][]
-                {
-                        {JSR_WS_TRANSPORT},
-                        {JETTY_WS_TRANSPORT}
-                }
-        );
+    public static List<String> wsTransports() {
+        return Arrays.asList(JSR_WS_TRANSPORT, JETTY_WS_TRANSPORT);
     }
 
-    private final String wsTransportClass;
     private Server server;
     private ServerConnector connector;
-    private ServletContextHandler context;
     private WebSocketContainer wsClientContainer;
     private WebSocketClient wsClient;
     private String servletPath1 = "/cometd1";
     private String servletPath2 = "/cometd2";
 
-    public MultipleURLMappingsTest(String wsTransportClass) {
-        this.wsTransportClass = wsTransportClass;
-    }
-
-    @Before
-    public void prepare() throws Exception {
+    private void start(String wsTransportClass) throws Exception {
         server = new Server();
 
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        context = new ServletContextHandler(server, "/", true, false);
+        ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
 
         switch (wsTransportClass) {
             case JSR_WS_TRANSPORT:
@@ -110,11 +96,11 @@ public class MultipleURLMappingsTest {
         server.start();
     }
 
-    private BayeuxClient newBayeuxClient(String servletPath) {
-        return new BayeuxClient("http://localhost:" + connector.getLocalPort() + servletPath, newWebSocketTransport());
+    private BayeuxClient newBayeuxClient(String wsTransportClass, String servletPath) {
+        return new BayeuxClient("http://localhost:" + connector.getLocalPort() + servletPath, newWebSocketTransport(wsTransportClass));
     }
 
-    private ClientTransport newWebSocketTransport() {
+    private ClientTransport newWebSocketTransport(String wsTransportClass) {
         switch (wsTransportClass) {
             case JSR_WS_TRANSPORT:
                 return new org.cometd.client.websocket.javax.WebSocketTransport(null, null, wsClientContainer);
@@ -125,32 +111,35 @@ public class MultipleURLMappingsTest {
         }
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception {
         server.stop();
     }
 
-    @Test
-    public void testMultipleURLMappings() throws Exception {
-        BayeuxClient client1 = newBayeuxClient(servletPath1);
-        client1.handshake();
-        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+    @ParameterizedTest
+    @MethodSource("wsTransports")
+    public void testMultipleURLMappings(String wsTransportClass) throws Exception {
+        start(wsTransportClass);
 
-        BayeuxClient client2 = newBayeuxClient(servletPath2);
+        BayeuxClient client1 = newBayeuxClient(wsTransportClass, servletPath1);
+        client1.handshake();
+        Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        BayeuxClient client2 = newBayeuxClient(wsTransportClass, servletPath2);
         client2.handshake();
-        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         String channelName = "/foobarbaz";
-        final CountDownLatch messageLatch = new CountDownLatch(4);
-        final CountDownLatch subscribeLatch = new CountDownLatch(2);
+        CountDownLatch messageLatch = new CountDownLatch(4);
+        CountDownLatch subscribeLatch = new CountDownLatch(2);
         client1.getChannel(channelName).subscribe((channel, message) -> messageLatch.countDown(), message -> subscribeLatch.countDown());
         client2.getChannel(channelName).subscribe((channel, message) -> messageLatch.countDown(), message -> subscribeLatch.countDown());
-        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         client1.getChannel(channelName).publish("1");
         client2.getChannel(channelName).publish("2");
 
-        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 
         client1.disconnect(1000);
         client2.disconnect(1000);

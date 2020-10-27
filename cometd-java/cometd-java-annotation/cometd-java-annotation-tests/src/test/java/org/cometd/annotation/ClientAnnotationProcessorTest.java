@@ -31,28 +31,22 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
     private BayeuxClient bayeuxClient;
     private ClientAnnotationProcessor processor;
 
-    @Before
+    @BeforeEach
     public void init() {
         bayeuxClient = newBayeuxClient();
         processor = new ClientAnnotationProcessor(bayeuxClient);
     }
 
-    @After
+    @AfterEach
     public void destroy() {
         disconnectBayeuxClient(bayeuxClient);
     }
@@ -60,15 +54,15 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
     @Test
     public void testNull() {
         boolean processed = processor.process(null);
-        assertFalse(processed);
+        Assertions.assertFalse(processed);
     }
 
     @Test
     public void testNonServiceAnnotatedClass() {
         NonServiceAnnotatedService s = new NonServiceAnnotatedService();
         boolean processed = processor.process(s);
-        assertFalse(processed);
-        assertNull(s.session);
+        Assertions.assertFalse(processed);
+        Assertions.assertNull(s.session);
     }
 
     public static class NonServiceAnnotatedService {
@@ -80,8 +74,8 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
     public void testInjectClientSessionOnField() {
         InjectClientSessionOnFieldService s = new InjectClientSessionOnFieldService();
         boolean processed = processor.process(s);
-        assertTrue(processed);
-        assertNotNull(s.session);
+        Assertions.assertTrue(processed);
+        Assertions.assertNotNull(s.session);
     }
 
     @Service
@@ -94,8 +88,8 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
     public void testInjectClientSessionOnMethod() {
         InjectClientSessionOnMethodService s = new InjectClientSessionOnMethodService();
         boolean processed = processor.process(s);
-        assertTrue(processed);
-        assertNotNull(s.session);
+        Assertions.assertTrue(processed);
+        Assertions.assertNotNull(s.session);
     }
 
     @Service
@@ -110,30 +104,30 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
 
     @Test
     public void testListenUnlisten() throws Exception {
-        final AtomicReference<Message> handshakeRef = new AtomicReference<>();
-        final CountDownLatch handshakeLatch = new CountDownLatch(1);
-        final AtomicReference<Message> connectRef = new AtomicReference<>();
-        final CountDownLatch connectLatch = new CountDownLatch(1);
-        final AtomicReference<Message> disconnectRef = new AtomicReference<>();
-        final CountDownLatch disconnectLatch = new CountDownLatch(1);
+        AtomicReference<Message> handshakeRef = new AtomicReference<>();
+        CountDownLatch handshakeLatch = new CountDownLatch(1);
+        AtomicReference<Message> connectRef = new AtomicReference<>();
+        CountDownLatch connectLatch = new CountDownLatch(1);
+        AtomicReference<Message> disconnectRef = new AtomicReference<>();
+        CountDownLatch disconnectLatch = new CountDownLatch(1);
 
         ListenUnlistenService s = new ListenUnlistenService(handshakeRef, handshakeLatch, connectRef, connectLatch, disconnectRef, disconnectLatch);
         boolean processed = processor.process(s);
-        assertTrue(processed);
+        Assertions.assertTrue(processed);
 
         bayeuxClient.handshake();
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
         Message handshake = handshakeRef.get();
-        assertNotNull(handshake);
-        assertTrue(handshake.isSuccessful());
+        Assertions.assertNotNull(handshake);
+        Assertions.assertTrue(handshake.isSuccessful());
 
-        assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
         Message connect = connectRef.get();
-        assertNotNull(connect);
-        assertTrue(connect.isSuccessful());
+        Assertions.assertNotNull(connect);
+        Assertions.assertTrue(connect.isSuccessful());
 
         processed = processor.deprocessCallbacks(s);
-        assertTrue(processed);
+        Assertions.assertTrue(processed);
 
         // Listener method must not be notified, since we have deconfigured
         bayeuxClient.disconnect(1000);
@@ -179,33 +173,33 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
 
     @Test
     public void testSubscribeUnsubscribe() throws Exception {
-        final AtomicReference<Message> messageRef = new AtomicReference<>();
-        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
+        AtomicReference<Message> messageRef = new AtomicReference<>();
+        AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
 
         SubscribeUnsubscribeService s = new SubscribeUnsubscribeService(messageRef, messageLatch);
         boolean processed = processor.process(s);
-        assertTrue(processed);
+        Assertions.assertTrue(processed);
 
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
         bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.countDown());
 
         bayeuxClient.handshake();
-        assertTrue(bayeuxClient.waitFor(5000, BayeuxClient.State.CONNECTED));
-        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(bayeuxClient.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         bayeuxClient.getChannel("/foo").publish(new HashMap<>());
-        assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
+        CountDownLatch unsubscribeLatch = new CountDownLatch(1);
         bayeuxClient.getChannel(Channel.META_UNSUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> unsubscribeLatch.countDown());
 
         processor.deprocessCallbacks(s);
-        assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
 
         messageLatch.set(new CountDownLatch(1));
 
         bayeuxClient.getChannel("/foo").publish(new HashMap<>());
-        assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
     }
 
     @Service
@@ -227,32 +221,32 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
 
     @Test
     public void testUsage() throws Exception {
-        final CountDownLatch connectLatch = new CountDownLatch(1);
-        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>();
+        CountDownLatch connectLatch = new CountDownLatch(1);
+        AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>();
 
         UsageService s = new UsageService(connectLatch, messageLatch);
         processor.process(s);
-        assertTrue(s.initialized);
-        assertFalse(s.connected);
+        Assertions.assertTrue(s.initialized);
+        Assertions.assertFalse(s.connected);
 
-        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
         bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.countDown());
 
         bayeuxClient.handshake();
-        assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(s.connected);
-        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(s.connected);
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         messageLatch.set(new CountDownLatch(1));
         bayeuxClient.getChannel("/foo").publish(new HashMap<>());
-        assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         processor.deprocess(s);
-        assertFalse(s.initialized);
+        Assertions.assertFalse(s.initialized);
 
         messageLatch.set(new CountDownLatch(1));
         bayeuxClient.getChannel("/foo").publish(new HashMap<>());
-        assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
     }
 
     @Service
@@ -297,15 +291,15 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
         InjectablesService s = new InjectablesService();
         processor = new ClientAnnotationProcessor(bayeuxClient, i);
         boolean processed = processor.process(s);
-        assertTrue(processed);
+        Assertions.assertTrue(processed);
 
-        assertSame(i, s.i);
+        Assertions.assertSame(i, s.i);
     }
 
-    class Injectable {
+    static class Injectable {
     }
 
-    class DerivedInjectable extends Injectable {
+    static class DerivedInjectable extends Injectable {
     }
 
     @Service
@@ -319,21 +313,21 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
         AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>();
         ResubscribeOnRehandshakeService s = new ResubscribeOnRehandshakeService(messageLatch);
         boolean processed = processor.process(s);
-        assertTrue(processed);
+        Assertions.assertTrue(processed);
 
-        final AtomicReference<CountDownLatch> subscribeLatch = new AtomicReference<>(new CountDownLatch(1));
+        AtomicReference<CountDownLatch> subscribeLatch = new AtomicReference<>(new CountDownLatch(1));
         bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.get().countDown());
 
         bayeuxClient.handshake();
-        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
-        assertTrue(subscribeLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(subscribeLatch.get().await(5, TimeUnit.SECONDS));
 
         messageLatch.set(new CountDownLatch(1));
         bayeuxClient.getChannel("/foo").publish("data1");
-        assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         bayeuxClient.disconnect();
-        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        Assertions.assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.DISCONNECTED));
 
         // Wait for the /meta/connect to return.
         Thread.sleep(1000);
@@ -341,31 +335,31 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
         // Rehandshake
         subscribeLatch.set(new CountDownLatch(1));
         bayeuxClient.handshake();
-        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
-        assertTrue(subscribeLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(subscribeLatch.get().await(5, TimeUnit.SECONDS));
 
         // Republish, it must have resubscribed
         messageLatch.set(new CountDownLatch(1));
         bayeuxClient.getChannel("/foo").publish("data2");
-        assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         bayeuxClient.disconnect();
-        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        Assertions.assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.DISCONNECTED));
 
         boolean deprocessed = processor.deprocess(s);
-        assertTrue(deprocessed);
+        Assertions.assertTrue(deprocessed);
 
         // Wait for the /meta/connect to return.
         Thread.sleep(1000);
 
         // Rehandshake
         bayeuxClient.handshake();
-        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         // Republish, it must not have resubscribed
         messageLatch.set(new CountDownLatch(1));
         bayeuxClient.getChannel("/foo").publish(new HashMap<>());
-        assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
     }
 
     @Service
@@ -388,12 +382,12 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
         CountDownLatch latch = new CountDownLatch(2);
         ListenerWithParametersService s = new ListenerWithParametersService(latch);
         boolean processed = processor.process(s);
-        assertTrue(processed);
+        Assertions.assertTrue(processed);
 
         bayeuxClient.handshake();
-        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Service
@@ -419,16 +413,16 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
         String value2 = "v2";
         SubscriberWithParametersService s = new SubscriberWithParametersService(latch, value1, value2);
         boolean processed = processor.process(s);
-        assertTrue(processed);
+        Assertions.assertTrue(processed);
 
         bayeuxClient.handshake();
-        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         String channel = "/a/" + value1 + "/" + value2 + "/d";
-        assertFalse(new ChannelId(SubscriberWithParametersService.CHANNEL).bind(new ChannelId(channel)).isEmpty());
+        Assertions.assertFalse(new ChannelId(SubscriberWithParametersService.CHANNEL).bind(new ChannelId(channel)).isEmpty());
 
         bayeuxClient.getChannel(channel).publish("data");
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Service
@@ -447,8 +441,8 @@ public class ClientAnnotationProcessorTest extends AbstractClientServerTest {
 
         @Subscription(CHANNEL)
         public void service(Message message, @Param("b") String b, @Param("c") String c) {
-            assertEquals(value1, b);
-            assertEquals(value2, c);
+            Assertions.assertEquals(value1, b);
+            Assertions.assertEquals(value2, c);
             latch.countDown();
         }
     }

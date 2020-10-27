@@ -40,22 +40,20 @@ import org.cometd.server.http.JSONTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.io.EofException;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
-    public SlowConnectionTest(String serverTransport) {
-        super(serverTransport);
-    }
-
-    @Test
-    public void testSessionSweptDoesNotSendReconnectNoneAdvice() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSessionSweptDoesNotSendReconnectNoneAdvice(String serverTransport) throws Exception {
         long maxInterval = 1000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
-        startServer(options);
+        startServer(serverTransport, options);
 
-        final CountDownLatch sweeperLatch = new CountDownLatch(1);
+        CountDownLatch sweeperLatch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
@@ -72,7 +70,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -82,10 +80,10 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         // Do not send the second connect, so the sweeper can do its job
-        Assert.assertTrue(sweeperLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(sweeperLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
 
         // Send the second connect, we should not get the reconnect:"none" advice
         Request connect2 = newBayeuxRequest("[{" +
@@ -94,24 +92,25 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect2.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Message.Mutable reply = new JettyJSONContextClient().parse(response.getContentAsString())[0];
-        Assert.assertEquals(Channel.META_CONNECT, reply.getChannel());
+        Assertions.assertEquals(Channel.META_CONNECT, reply.getChannel());
         Map<String, Object> advice = reply.getAdvice(false);
         if (advice != null) {
-            Assert.assertFalse(Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)));
+            Assertions.assertNotEquals(advice.get(Message.RECONNECT_FIELD), Message.RECONNECT_NONE_VALUE);
         }
     }
 
-    @Test
-    public void testSessionSweptWhileWritingQueueDoesNotSendReconnectNoneAdvice() throws Exception {
-        final long maxInterval = 1000;
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSessionSweptWhileWritingQueueDoesNotSendReconnectNoneAdvice(String serverTransport) throws Exception {
+        long maxInterval = 1000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
-        startServer(options);
+        startServer(serverTransport, options);
 
-        final String channelName = "/test";
+        String channelName = "/test";
         JSONTransport transport = new JSONTransport(bayeux) {
             @Override
             protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException {
@@ -129,7 +128,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
         transport.init();
         bayeux.setTransports(transport);
 
-        final CountDownLatch sweeperLatch = new CountDownLatch(1);
+        CountDownLatch sweeperLatch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
@@ -151,7 +150,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -161,26 +160,27 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
-        Assert.assertTrue(sweeperLatch.await(maxInterval, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(sweeperLatch.await(maxInterval, TimeUnit.MILLISECONDS));
 
         Message.Mutable[] replies = new JettyJSONContextClient().parse(response.getContentAsString());
         Message.Mutable reply = replies[replies.length - 1];
-        Assert.assertEquals(Channel.META_CONNECT, reply.getChannel());
+        Assertions.assertEquals(Channel.META_CONNECT, reply.getChannel());
         Map<String, Object> advice = reply.getAdvice(false);
         if (advice != null) {
-            Assert.assertFalse(Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)));
+            Assertions.assertNotEquals(advice.get(Message.RECONNECT_FIELD), Message.RECONNECT_NONE_VALUE);
         }
     }
 
-    @Test
-    public void testSlowConnection() throws Exception {
-        startServer(null);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSlowConnection(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-        final CountDownLatch sendLatch = new CountDownLatch(1);
-        final CountDownLatch closeLatch = new CountDownLatch(1);
-        final JSONTransport transport = new JSONTransport(bayeux) {
+        CountDownLatch sendLatch = new CountDownLatch(1);
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        JSONTransport transport = new JSONTransport(bayeux) {
             @Override
             protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException {
                 if (!message.isMeta() && !message.isPublishReply()) {
@@ -204,7 +204,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
         String cookieName = "BAYEUX_BROWSER";
@@ -217,7 +217,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -225,7 +225,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         // Send a server-side message so it gets written to the client
         bayeux.getChannel(channelName).publish(null, "x", Promise.noop());
@@ -248,26 +248,27 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
         output.write(content);
         output.flush();
 
-        final CountDownLatch removeLatch = new CountDownLatch(1);
+        CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(clientId);
         session.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
 
         // Wait for messages to be written, but close the connection instead
-        Assert.assertTrue(sendLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(sendLatch.await(5, TimeUnit.SECONDS));
         socket.close();
         closeLatch.countDown();
 
         // The session must be swept even if the server could not write a response
         // to the connect because of the exception.
-        Assert.assertTrue(removeLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(removeLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
     }
 
-    @Test
-    public void testLargeMessageOnSlowConnection() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testLargeMessageOnSlowConnection(String serverTransport) throws Exception {
         Map<String, String> options = new HashMap<>();
         long maxInterval = 5000;
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
-        startServer(options);
+        startServer(serverTransport, options);
         connector.setIdleTimeout(1000);
 
         Request handshake = newBayeuxRequest("[{" +
@@ -277,7 +278,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
         String cookieName = "BAYEUX_BROWSER";
@@ -290,7 +291,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -298,7 +299,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         // Send a server-side message so it gets written to the client
         char[] chars = new char[64 * 1024 * 1024];
@@ -324,7 +325,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
         output.write(content);
         output.flush();
 
-        final CountDownLatch removeLatch = new CountDownLatch(1);
+        CountDownLatch removeLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(clientId);
         session.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
 
@@ -332,7 +333,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
 
         // The session must be swept even if the server could not write a response
         // to the connect because of the exception.
-        Assert.assertTrue(removeLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(removeLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
     }
 
     private void await(CountDownLatch latch) {

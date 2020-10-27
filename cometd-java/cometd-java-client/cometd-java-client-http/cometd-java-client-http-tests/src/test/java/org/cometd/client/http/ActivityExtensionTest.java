@@ -30,17 +30,17 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.ext.ActivityExtension;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ActivityExtensionTest extends ClientServerTest {
     private long timeout;
     private String channelName = "/test";
     private ScheduledExecutorService scheduler;
 
-    @Before
+    @BeforeEach
     public void prepare() throws Exception {
         timeout = 1000;
         Map<String, String> options = new HashMap<>();
@@ -50,7 +50,7 @@ public class ActivityExtensionTest extends ClientServerTest {
         scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception {
         scheduler.shutdown();
         scheduler.awaitTermination(5, TimeUnit.SECONDS);
@@ -82,7 +82,7 @@ public class ActivityExtensionTest extends ClientServerTest {
 
         client.handshake();
 
-        Assert.assertTrue(latch.await(2 * maxInactivityPeriod, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(latch.await(2 * maxInactivityPeriod, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -108,8 +108,8 @@ public class ActivityExtensionTest extends ClientServerTest {
         client.getChannel(Channel.META_DISCONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> latch.get().countDown());
 
         client.handshake();
-        Assert.assertTrue(latch.get().await(2 * maxInactivityPeriod, TimeUnit.MILLISECONDS));
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assertions.assertTrue(latch.get().await(2 * maxInactivityPeriod, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
         // Wait for the /meta/connect to return.
         Thread.sleep(1000);
@@ -123,15 +123,15 @@ public class ActivityExtensionTest extends ClientServerTest {
         client.getChannel(channelName).publish("");
 
         // Sleep for a while, we must still be connected
-        Assert.assertFalse(latch.get().await(maxInactivityPeriod / 2, TimeUnit.MILLISECONDS));
+        Assertions.assertFalse(latch.get().await(maxInactivityPeriod / 2, TimeUnit.MILLISECONDS));
 
         // Do some server activity
         bayeux.getChannel(channelName).publish(null, "test", Promise.noop());
 
         // Sleep for a while, we must still be connected
-        Assert.assertFalse(latch.get().await(maxInactivityPeriod * 3 / 4, TimeUnit.MILLISECONDS));
+        Assertions.assertFalse(latch.get().await(maxInactivityPeriod * 3 / 4, TimeUnit.MILLISECONDS));
 
         // Finally we must disconnect
-        Assert.assertTrue(latch.get().await(maxInactivityPeriod / 2, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(latch.get().await(maxInactivityPeriod / 2, TimeUnit.MILLISECONDS));
     }
 }

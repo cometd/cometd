@@ -15,20 +15,18 @@
  */
 package org.cometd.javascript;
 
-import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDWebSocketServerProtocolTest extends AbstractCometDWebSocketTest {
     private static final String PROTOCOL = "bayeux/1.0";
 
     @Override
-    public void initCometDServer() throws Exception {
-        Map<String, String> options = new HashMap<>();
+    public void initCometDServer(String transport, Map<String, String> options) throws Exception {
         options.put("ws.protocol", PROTOCOL);
-        initCometDServer(options);
+        super.initCometDServer(transport, options);
     }
 
     @Test
@@ -51,7 +49,7 @@ public class CometDWebSocketServerProtocolTest extends AbstractCometDWebSocketTe
                 "});");
 
         evaluateScript("cometd.handshake();");
-        Assert.assertFalse(latch.await(1000));
+        Assertions.assertFalse(latch.await(1000));
     }
 
     @Test
@@ -75,12 +73,12 @@ public class CometDWebSocketServerProtocolTest extends AbstractCometDWebSocketTe
                 "});");
 
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 }

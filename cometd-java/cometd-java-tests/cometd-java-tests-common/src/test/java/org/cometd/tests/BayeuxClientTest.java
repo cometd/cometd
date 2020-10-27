@@ -27,31 +27,25 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class BayeuxClientTest extends AbstractClientServerTest {
-    public BayeuxClientTest(Transport transport) {
-        super(transport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testIPv6Address(Transport transport) throws Exception {
+        Assumptions.assumeTrue(ipv6Available());
 
-    @Before
-    public void setUp() throws Exception {
-        startServer(serverOptions());
-    }
-
-    @Test
-    public void testIPv6Address() throws Exception {
-        Assume.assumeTrue(ipv6Available());
+        startServer(transport);
 
         cometdURL = cometdURL.replace("localhost", "[::1]");
 
-        BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(transport);
         client.handshake();
 
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Allow long poll to establish
         Thread.sleep(1000);
@@ -59,9 +53,12 @@ public class BayeuxClientTest extends AbstractClientServerTest {
         disconnectBayeuxClient(client);
     }
 
-    @Test
-    public void testBatchingAfterHandshake() throws Exception {
-        BayeuxClient client = newBayeuxClient();
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testBatchingAfterHandshake(Transport transport) throws Exception {
+        startServer(transport);
+
+        BayeuxClient client = newBayeuxClient(transport);
         AtomicBoolean connected = new AtomicBoolean();
         client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connected.set(message.isSuccessful()));
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connected.set(false));
@@ -79,17 +76,20 @@ public class BayeuxClientTest extends AbstractClientServerTest {
             client.getChannel(channelName).publish("hello");
         });
 
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        Assert.assertEquals(channelName, messages.poll(1, TimeUnit.SECONDS));
-        Assert.assertEquals("hello", messages.poll(1, TimeUnit.SECONDS));
+        Assertions.assertEquals(channelName, messages.poll(1, TimeUnit.SECONDS));
+        Assertions.assertEquals("hello", messages.poll(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
 
-    @Test
-    public void testMessageWithoutChannel() {
-        BayeuxClient client = newBayeuxClient();
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMessageWithoutChannel(Transport transport) throws Exception {
+        startServer(transport);
+
+        BayeuxClient client = newBayeuxClient(transport);
         client.addExtension(new ClientSession.Extension() {
             @Override
             public void outgoing(ClientSession session, Message.Mutable message, Promise<Boolean> promise) {
@@ -99,13 +99,16 @@ public class BayeuxClientTest extends AbstractClientServerTest {
         });
 
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
         disconnectBayeuxClient(client);
     }
 
-    @Test
-    public void loadTest() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void loadTest(Transport transport) throws Exception {
+        startServer(transport);
+
         boolean stress = Boolean.getBoolean("STRESS");
         Random random = new Random();
 
@@ -120,7 +123,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
 
         for (int i = 0; i < clients.length; i++) {
             AtomicBoolean connected = new AtomicBoolean();
-            BayeuxClient client = newBayeuxClient();
+            BayeuxClient client = newBayeuxClient(transport);
             String room = "/channel/" + (i % rooms);
             clients[i] = client;
 
@@ -141,10 +144,10 @@ public class BayeuxClientTest extends AbstractClientServerTest {
             });
 
             clients[i].handshake();
-            Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+            Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         }
 
-        Assert.assertEquals(clients.length, connections.get());
+        Assertions.assertEquals(clients.length, connections.get());
 
         long start0 = System.nanoTime();
         for (int i = 0; i < publish; i++) {
@@ -167,10 +170,10 @@ public class BayeuxClientTest extends AbstractClientServerTest {
         }
         logger.info("{} m/s", (received.get() * 1000 * 1000 * 1000L) / (System.nanoTime() - start0));
 
-        Assert.assertEquals(expected, received.get());
+        Assertions.assertEquals(expected, received.get());
 
         for (BayeuxClient client : clients) {
-            Assert.assertTrue(client.disconnect(1000));
+            Assertions.assertTrue(client.disconnect(1000));
         }
     }
 }

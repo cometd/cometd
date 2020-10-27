@@ -30,8 +30,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTest {
     private BayeuxFilter filter;
@@ -72,15 +72,15 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         script.append("cometd.handshake(handshakeProps)");
         evaluateScript(script.toString());
         script.setLength(0);
-        Assert.assertTrue(outLatch.await(5000));
+        Assertions.assertTrue(outLatch.await(5000));
 
         evaluateScript("window.assert(outHandshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(outHandshake.ext !== undefined, 'handshake without ext');");
         int token = ((Number)evaluateScript("outHandshake.ext.token")).intValue();
-        Assert.assertEquals(1, token);
+        Assertions.assertEquals(1, token);
 
         Latch inLatch = javaScript.get("inLatch");
-        Assert.assertTrue(inLatch.await(5000));
+        Assertions.assertTrue(inLatch.await(5000));
 
         String clientId = evaluateScript("inHandshake.clientId");
         evaluateScript("outHandshake = undefined;");
@@ -92,12 +92,12 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         filter.setClientId(clientId);
 
         // Wait for the re-handshake
-        Assert.assertTrue(outLatch.await(5000));
+        Assertions.assertTrue(outLatch.await(5000));
 
         evaluateScript("window.assert(outHandshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(outHandshake.ext !== undefined, 'handshake without ext');");
         token = ((Number)evaluateScript("outHandshake.ext.token")).intValue();
-        Assert.assertEquals(2, token);
+        Assertions.assertEquals(2, token);
 
         disconnect();
     }
@@ -107,7 +107,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         private String clientId;
 
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException {
+        public void init(FilterConfig filterConfig) {
         }
 
         @Override

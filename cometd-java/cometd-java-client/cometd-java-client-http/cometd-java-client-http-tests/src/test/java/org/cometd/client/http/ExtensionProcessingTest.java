@@ -36,8 +36,8 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.ext.BinarySessionExtension;
 import org.eclipse.jetty.util.IO;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ExtensionProcessingTest extends ClientServerTest {
     @Test
@@ -116,7 +116,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
             channel.publish(data);
         }));
 
-        Assert.assertTrue(latch.await(555, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(555, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

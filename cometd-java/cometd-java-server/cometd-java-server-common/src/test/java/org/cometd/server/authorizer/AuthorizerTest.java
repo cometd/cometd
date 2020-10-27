@@ -26,22 +26,16 @@ import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class AuthorizerTest extends AbstractBayeuxClientServerTest {
-    public AuthorizerTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testAuthorizersOnSlashStarStar(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testAuthorizersOnSlashStarStar() throws Exception {
         bayeux.createChannelIfAbsent("/**", channel -> {
             // Grant create and subscribe to all and publishes only to service channels
             channel.addAuthorizer(GrantAuthorizer.GRANT_CREATE_SUBSCRIBE);
@@ -60,7 +54,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -70,13 +64,13 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"data\": {}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         Message message = messages[0];
-        Assert.assertFalse(message.isSuccessful());
+        Assertions.assertFalse(message.isSuccessful());
 
         publish = newBayeuxRequest("[{" +
                 "\"channel\": \"/service/foo\"," +
@@ -84,21 +78,22 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"data\": {}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         message = messages[0];
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertTrue(message.isSuccessful());
     }
 
-    @Test
-    public void testIgnoringAuthorizerDenies() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testIgnoringAuthorizerDenies(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         String channelName = "/test";
         bayeux.createChannelIfAbsent(channelName, channel ->
-                channel.addAuthorizer((operation, channel1, session, message) -> {
-                    return Authorizer.Result.ignore();
-                }));
+                channel.addAuthorizer((operation, channel1, session, message) -> Authorizer.Result.ignore()));
 
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -107,7 +102,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -117,13 +112,13 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"data\": {}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         Message message = messages[0];
-        Assert.assertFalse(message.isSuccessful());
+        Assertions.assertFalse(message.isSuccessful());
 
         // Check that publishing to another channel does not involve authorizers
         Request grantedPublish = newBayeuxRequest("[{" +
@@ -132,16 +127,19 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"data\": {}" +
                 "}]");
         response = grantedPublish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         message = messages[0];
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertTrue(message.isSuccessful());
     }
 
-    @Test
-    public void testNoAuthorizersGrant() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testNoAuthorizersGrant(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -149,7 +147,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -159,23 +157,24 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"data\": {}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         Message message = messages[0];
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertTrue(message.isSuccessful());
     }
 
-    @Test
-    public void testDenyAuthorizerDenies() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDenyAuthorizerDenies(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         bayeux.createChannelIfAbsent("/test/*", channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_ALL));
         String channelName = "/test/denied";
         bayeux.createChannelIfAbsent(channelName, channel ->
-                channel.addAuthorizer((operation, channel1, session, message) -> {
-                    return Authorizer.Result.deny("test");
-                }));
+                channel.addAuthorizer((operation, channel1, session, message) -> Authorizer.Result.deny("test")));
 
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -184,7 +183,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -194,13 +193,13 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"data\": {}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         Message message = messages[0];
-        Assert.assertFalse(message.isSuccessful());
+        Assertions.assertFalse(message.isSuccessful());
 
         // Check that publishing to another channel does not involve authorizers
         Request grantedPublish = newBayeuxRequest("[{" +
@@ -209,21 +208,24 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"data\": {}" +
                 "}]");
         response = grantedPublish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         message = messages[0];
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertTrue(message.isSuccessful());
     }
 
-    @Test
-    public void testAddRemoveAuthorizer() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testAddRemoveAuthorizer(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         bayeux.createChannelIfAbsent("/test/*", channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_NONE));
         String channelName = "/test/granted";
         bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer() {
             @Override
-            public void configureChannel(final ConfigurableServerChannel channel) {
+            public void configureChannel(ConfigurableServerChannel channel) {
                 channel.addAuthorizer(new Authorizer() {
                     @Override
                     public Result authorize(Operation operation, ChannelId channelId, ServerSession session, ServerMessage message) {
@@ -241,7 +243,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -251,13 +253,13 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"data\": {}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         Message message = messages[0];
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertTrue(message.isSuccessful());
 
         // Check that publishing again fails (the authorizer has been removed)
         Request grantedPublish = newBayeuxRequest("[{" +
@@ -266,11 +268,11 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 "\"data\": {}" +
                 "}]");
         response = grantedPublish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         message = messages[0];
-        Assert.assertFalse(message.isSuccessful());
+        Assertions.assertFalse(message.isSuccessful());
     }
 }

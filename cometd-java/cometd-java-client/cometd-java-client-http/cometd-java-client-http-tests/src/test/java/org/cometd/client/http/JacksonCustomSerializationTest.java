@@ -34,8 +34,8 @@ import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.http.AbstractHttpTransport;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class JacksonCustomSerializationTest extends ClientServerTest {
     @Test
@@ -57,11 +57,11 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
         service.handshake();
         service.getChannel(channelName).subscribe((channel, message) -> {
             Data data = (Data)message.getData();
-            Assert.assertEquals(dataContent, data.content);
+            Assertions.assertEquals(dataContent, data.content);
             Map<String, Object> ext = message.getExt();
-            Assert.assertNotNull(ext);
+            Assertions.assertNotNull(ext);
             Extra extra = (Extra)ext.get("extra");
-            Assert.assertEquals(extraContent, extra.content);
+            Assertions.assertEquals(extraContent, extra.content);
             latch.countDown();
         });
 
@@ -69,12 +69,12 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
         client.addExtension(new ExtraExtension(extraContent));
 
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         // Wait for the connect to establish
         Thread.sleep(1000);
 
         client.getChannel(channelName).publish(new Data(dataContent));
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -101,8 +101,8 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
         Map<String, Object> map2 = jsonContext.getParser().parse(new StringReader(json), Map.class);
         Data data2 = (Data)map2.get("data");
         Extra extra2 = (Extra)map2.get("extra");
-        Assert.assertEquals(data1.content, data2.content);
-        Assert.assertEquals(extra1.content, extra2.content);
+        Assertions.assertEquals(data1.content, data2.content);
+        Assertions.assertEquals(extra1.content, extra2.content);
     }
 
     private static class ExtraExtension implements ClientSession.Extension {

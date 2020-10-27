@@ -22,22 +22,20 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class MaxQueuedTest extends AbstractBayeuxClientServerTest {
-    public MaxQueuedTest(String serverTransport) {
-        super(serverTransport);
-    }
-
-    @Test
-    public void testMaxQueued() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMaxQueued(String serverTransport) throws Exception {
         int maxQueue = 2;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_QUEUE_OPTION, String.valueOf(maxQueue));
         // Makes the test simpler: publishes are only sent via /meta/connect.
         options.put(AbstractServerTransport.META_CONNECT_DELIVERY_OPTION, String.valueOf(true));
-        startServer(options);
+        startServer(serverTransport, options);
 
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -46,7 +44,7 @@ public class MaxQueuedTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -56,10 +54,10 @@ public class MaxQueuedTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         ServerSession serverSession = bayeux.getSession(clientId);
-        Assert.assertNotNull(serverSession);
+        Assertions.assertNotNull(serverSession);
 
         serverSession.addListener((ServerSession.QueueMaxedListener)(session, queue, sender, message) -> {
             // Cannot use session.disconnect(), because it will queue the
@@ -74,6 +72,6 @@ public class MaxQueuedTest extends AbstractBayeuxClientServerTest {
         }
 
         // Session should be gone.
-        Assert.assertNull(bayeux.getSession(clientId));
+        Assertions.assertNull(bayeux.getSession(clientId));
     }
 }

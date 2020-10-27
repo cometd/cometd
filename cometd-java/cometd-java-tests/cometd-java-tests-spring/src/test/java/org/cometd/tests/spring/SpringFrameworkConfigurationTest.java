@@ -29,17 +29,13 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.web.context.ContextLoader;
 import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 
 public class SpringFrameworkConfigurationTest {
     private Server server;
@@ -71,7 +67,7 @@ public class SpringFrameworkConfigurationTest {
         return "http://localhost:" + connector.getLocalPort() + contextPath + cometdServletPath;
     }
 
-    @After
+    @AfterEach
     public void dispose() {
         LifeCycle.stop(server);
     }
@@ -85,16 +81,16 @@ public class SpringFrameworkConfigurationTest {
         });
 
         WebApplicationContext applicationContext = WebApplicationContextUtils.getRequiredWebApplicationContext(context.getServletContext());
-        assertNotNull(applicationContext);
+        Assertions.assertNotNull(applicationContext);
 
         int sweepPeriod = (Integer)applicationContext.getBean("sweepPeriod");
 
         BayeuxServerImpl bayeuxServer = (BayeuxServerImpl)applicationContext.getBean("bayeux");
-        assertNotNull(bayeuxServer);
-        assertTrue(bayeuxServer.isStarted());
-        assertEquals(sweepPeriod, bayeuxServer.getOption("sweepPeriod"));
+        Assertions.assertNotNull(bayeuxServer);
+        Assertions.assertTrue(bayeuxServer.isStarted());
+        Assertions.assertEquals(sweepPeriod, bayeuxServer.getOption("sweepPeriod"));
 
-        assertSame(bayeuxServer, cometdServlet.getBayeux());
+        Assertions.assertSame(bayeuxServer, cometdServlet.getBayeux());
 
         CountDownLatch latch = new CountDownLatch(1);
         BayeuxClient bayeuxClient = new BayeuxClient(url, new JettyHttpClientTransport(null, httpClient));
@@ -104,6 +100,6 @@ public class SpringFrameworkConfigurationTest {
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

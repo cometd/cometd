@@ -29,8 +29,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPollingTest {
     @Override
@@ -47,13 +47,13 @@ public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPolli
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = javaScript.get("subscribeLatch");
         evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
         evaluateScript("var subscription = cometd.subscribe('/echo', function() { subscribeLatch.countDown(); });");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(1);");
         Latch publishLatch = javaScript.get("publishLatch");
@@ -62,28 +62,28 @@ public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPolli
         evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
         evaluateScript("cometd.addListener('/meta/unsuccessful', function() { failureLatch.countDown(); });");
         evaluateScript("cometd.publish('/echo', 'test');");
-        Assert.assertTrue(publishLatch.await(5000));
-        Assert.assertTrue(failureLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(failureLatch.await(5000));
 
         // Be sure there is no backoff
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
         int backoff = ((Number)javaScript.get("backoff")).intValue();
-        Assert.assertEquals(0, backoff);
+        Assertions.assertEquals(0, backoff);
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
         String status = evaluateScript("cometd.getStatus();");
-        Assert.assertEquals("disconnected", status);
+        Assertions.assertEquals("disconnected", status);
     }
 
     public static class PublishThrowingFilter implements Filter {
         private int messages;
 
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException {
+        public void init(FilterConfig filterConfig) {
         }
 
         @Override

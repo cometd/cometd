@@ -19,22 +19,22 @@ import java.net.HttpCookie;
 import java.text.ParseException;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CookieParserTest {
-    @Test(expected = ParseException.class)
-    public void testNoName() throws Exception {
+    @Test
+    public void testNoName() {
         String header = "=value";
-        CookieParser.parse(header);
+        Assertions.assertThrows(ParseException.class, () -> CookieParser.parse(header));
     }
 
-    @Test(expected = ParseException.class)
-    public void parseUnclosedQuote() throws Exception {
+    @Test
+    public void parseUnclosedQuote() {
         String name = "name";
         String value = "value";
         String header = name + "=\"" + value;
-        CookieParser.parse(header);
+        Assertions.assertThrows(ParseException.class, () -> CookieParser.parse(header));
     }
 
     @Test
@@ -43,10 +43,10 @@ public class CookieParserTest {
         String value = "value";
         String header = name + "=" + value;
         List<HttpCookie> cookies = CookieParser.parse(header);
-        Assert.assertEquals(1, cookies.size());
+        Assertions.assertEquals(1, cookies.size());
         HttpCookie cookie = cookies.get(0);
-        Assert.assertEquals(name, cookie.getName());
-        Assert.assertEquals(value, cookie.getValue());
+        Assertions.assertEquals(name, cookie.getName());
+        Assertions.assertEquals(value, cookie.getValue());
     }
 
     @Test
@@ -55,10 +55,10 @@ public class CookieParserTest {
         String value = "value";
         String header = " " + name + "=" + value;
         List<HttpCookie> cookies = CookieParser.parse(header);
-        Assert.assertEquals(1, cookies.size());
+        Assertions.assertEquals(1, cookies.size());
         HttpCookie cookie = cookies.get(0);
-        Assert.assertEquals(name, cookie.getName());
-        Assert.assertEquals(value, cookie.getValue());
+        Assertions.assertEquals(name, cookie.getName());
+        Assertions.assertEquals(value, cookie.getValue());
     }
 
     @Test
@@ -67,10 +67,10 @@ public class CookieParserTest {
         String value = "value";
         String header = name + " =" + value;
         List<HttpCookie> cookies = CookieParser.parse(header);
-        Assert.assertEquals(1, cookies.size());
+        Assertions.assertEquals(1, cookies.size());
         HttpCookie cookie = cookies.get(0);
-        Assert.assertEquals(name, cookie.getName());
-        Assert.assertEquals(value, cookie.getValue());
+        Assertions.assertEquals(name, cookie.getName());
+        Assertions.assertEquals(value, cookie.getValue());
     }
 
     @Test
@@ -79,10 +79,10 @@ public class CookieParserTest {
         String value = "value";
         String header = name + "= " + value;
         List<HttpCookie> cookies = CookieParser.parse(header);
-        Assert.assertEquals(1, cookies.size());
+        Assertions.assertEquals(1, cookies.size());
         HttpCookie cookie = cookies.get(0);
-        Assert.assertEquals(name, cookie.getName());
-        Assert.assertEquals(value, cookie.getValue());
+        Assertions.assertEquals(name, cookie.getName());
+        Assertions.assertEquals(value, cookie.getValue());
     }
 
     @Test
@@ -91,10 +91,10 @@ public class CookieParserTest {
         String value = "value";
         String header = name + "=" + value + " ";
         List<HttpCookie> cookies = CookieParser.parse(header);
-        Assert.assertEquals(1, cookies.size());
+        Assertions.assertEquals(1, cookies.size());
         HttpCookie cookie = cookies.get(0);
-        Assert.assertEquals(name, cookie.getName());
-        Assert.assertEquals(value, cookie.getValue());
+        Assertions.assertEquals(name, cookie.getName());
+        Assertions.assertEquals(value, cookie.getValue());
     }
 
     @Test
@@ -105,13 +105,13 @@ public class CookieParserTest {
         String value2 = "value2";
         String header = name1 + "=" + value1 + "; " + name2 + " = " + value2;
         List<HttpCookie> cookies = CookieParser.parse(header);
-        Assert.assertEquals(2, cookies.size());
+        Assertions.assertEquals(2, cookies.size());
         HttpCookie cookie1 = cookies.get(0);
-        Assert.assertEquals(name1, cookie1.getName());
-        Assert.assertEquals(value1, cookie1.getValue());
+        Assertions.assertEquals(name1, cookie1.getName());
+        Assertions.assertEquals(value1, cookie1.getValue());
         HttpCookie cookie2 = cookies.get(1);
-        Assert.assertEquals(name2, cookie2.getName());
-        Assert.assertEquals(value2, cookie2.getValue());
+        Assertions.assertEquals(name2, cookie2.getName());
+        Assertions.assertEquals(value2, cookie2.getValue());
     }
 
     @Test
@@ -122,13 +122,13 @@ public class CookieParserTest {
         String value2 = "value2";
         String header = name1 + "=\"" + value1 + "\"; " + name2 + " = " + value2 + "; ";
         List<HttpCookie> cookies = CookieParser.parse(header);
-        Assert.assertEquals(2, cookies.size());
+        Assertions.assertEquals(2, cookies.size());
         HttpCookie cookie1 = cookies.get(0);
-        Assert.assertEquals(name1, cookie1.getName());
-        Assert.assertEquals(value1, cookie1.getValue());
+        Assertions.assertEquals(name1, cookie1.getName());
+        Assertions.assertEquals(value1, cookie1.getValue());
         HttpCookie cookie2 = cookies.get(1);
-        Assert.assertEquals(name2, cookie2.getName());
-        Assert.assertEquals(value2, cookie2.getValue());
+        Assertions.assertEquals(name2, cookie2.getName());
+        Assertions.assertEquals(value2, cookie2.getValue());
     }
 
     @Test
@@ -139,13 +139,13 @@ public class CookieParserTest {
         String value2 = "value2";
         String header = name1 + "=" + value1 + "; " + name2 + " = \"" + value2 + "\" ; ";
         List<HttpCookie> cookies = CookieParser.parse(header);
-        Assert.assertEquals(2, cookies.size());
+        Assertions.assertEquals(2, cookies.size());
         HttpCookie cookie1 = cookies.get(0);
-        Assert.assertEquals(name1, cookie1.getName());
-        Assert.assertEquals(value1, cookie1.getValue());
+        Assertions.assertEquals(name1, cookie1.getName());
+        Assertions.assertEquals(value1, cookie1.getValue());
         HttpCookie cookie2 = cookies.get(1);
-        Assert.assertEquals(name2, cookie2.getName());
-        Assert.assertEquals(value2, cookie2.getValue());
+        Assertions.assertEquals(name2, cookie2.getName());
+        Assertions.assertEquals(value2, cookie2.getValue());
     }
 
     @Test
@@ -154,10 +154,10 @@ public class CookieParserTest {
         String value = "va;lue";
         String header = name + "=\"" + value + "\"";
         List<HttpCookie> cookies = CookieParser.parse(header);
-        Assert.assertEquals(1, cookies.size());
+        Assertions.assertEquals(1, cookies.size());
         HttpCookie cookie1 = cookies.get(0);
-        Assert.assertEquals(name, cookie1.getName());
-        Assert.assertEquals(value, cookie1.getValue());
+        Assertions.assertEquals(name, cookie1.getName());
+        Assertions.assertEquals(value, cookie1.getValue());
     }
 
     @Test
@@ -166,10 +166,10 @@ public class CookieParserTest {
         String value = "value";
         String header = name + "=" + value + "; $Path=/";
         List<HttpCookie> cookies = CookieParser.parse(header);
-        Assert.assertEquals(1, cookies.size());
+        Assertions.assertEquals(1, cookies.size());
         HttpCookie cookie1 = cookies.get(0);
-        Assert.assertEquals(name, cookie1.getName());
-        Assert.assertEquals(value, cookie1.getValue());
+        Assertions.assertEquals(name, cookie1.getName());
+        Assertions.assertEquals(value, cookie1.getValue());
     }
 
     @Test
@@ -178,10 +178,10 @@ public class CookieParserTest {
         String value = "value";
         String header = "$Version=1; " + name + "=" + value;
         List<HttpCookie> cookies = CookieParser.parse(header);
-        Assert.assertEquals(1, cookies.size());
+        Assertions.assertEquals(1, cookies.size());
         HttpCookie cookie1 = cookies.get(0);
-        Assert.assertEquals(name, cookie1.getName());
-        Assert.assertEquals(value, cookie1.getValue());
+        Assertions.assertEquals(name, cookie1.getName());
+        Assertions.assertEquals(value, cookie1.getValue());
     }
 
     @Test
@@ -190,9 +190,9 @@ public class CookieParserTest {
         String value = "value";
         String header = name + "=" + value + "; $Port";
         List<HttpCookie> cookies = CookieParser.parse(header);
-        Assert.assertEquals(1, cookies.size());
+        Assertions.assertEquals(1, cookies.size());
         HttpCookie cookie1 = cookies.get(0);
-        Assert.assertEquals(name, cookie1.getName());
-        Assert.assertEquals(value, cookie1.getValue());
+        Assertions.assertEquals(name, cookie1.getName());
+        Assertions.assertEquals(value, cookie1.getValue());
     }
 }

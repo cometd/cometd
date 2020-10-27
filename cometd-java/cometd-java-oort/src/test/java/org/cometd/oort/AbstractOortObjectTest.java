@@ -28,28 +28,22 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.server.Server;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 
 public abstract class AbstractOortObjectTest extends OortTest {
     private final List<OortObject<?>> oortObjects = new ArrayList<>();
     protected Oort oort1;
     protected Oort oort2;
 
-    public AbstractOortObjectTest(String serverTransport) {
-        super(serverTransport);
+    protected void prepare(String serverTransport) throws Exception {
+        prepare(serverTransport, new HashMap<>());
     }
 
-    @Before
-    public void prepare() throws Exception {
-        prepare(new HashMap<>());
-    }
-
-    protected void prepare(Map<String, String> options) throws Exception {
-        Server server1 = startServer(0, options);
+    protected void prepare(String serverTransport, Map<String, String> options) throws Exception {
+        Server server1 = startServer(serverTransport, 0, options);
         oort1 = startOort(server1);
-        Server server2 = startServer(0, options);
+        Server server2 = startServer(serverTransport, 0, options);
         oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(2);
@@ -57,14 +51,14 @@ public abstract class AbstractOortObjectTest extends OortTest {
         oort1.addCometListener(listener);
         oort2.addCometListener(listener);
         OortComet oortComet12 = oort1.observeComet(oort2.getURL());
-        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
         OortComet oortComet21 = oort2.findComet(oort1.getURL());
-        Assert.assertNotNull(oortComet21);
-        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertNotNull(oortComet21);
+        Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception {
         for (int i = oortObjects.size() - 1; i >= 0; --i) {
             oortObjects.get(i).stop();
@@ -82,12 +76,12 @@ public abstract class AbstractOortObjectTest extends OortTest {
         oortObject2.addListener(initialListener);
         oortObject1.start();
         // Wait for node1 to be subscribed on node2
-        Assert.assertTrue(listener2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(listener2.await(5, TimeUnit.SECONDS));
         oortObject2.start();
         // Wait for node2 to be subscribed on node1
-        Assert.assertTrue(listener1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(listener1.await(5, TimeUnit.SECONDS));
         // Wait for initialization of the oort objects on both nodes
-        Assert.assertTrue(initialListener.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(initialListener.await(5, TimeUnit.SECONDS));
         oortObjects.add(oortObject1);
         oortObjects.add(oortObject2);
         logger.info("oort_object_1 -> {}", oortObject1.getOort().getURL());

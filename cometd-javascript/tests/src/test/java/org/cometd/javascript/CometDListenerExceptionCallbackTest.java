@@ -15,12 +15,16 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDListenerExceptionCallbackTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testListenerExceptionCallback() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testListenerExceptionCallback(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
         evaluateScript("var connectLatch = new Latch(1);");
@@ -38,15 +42,18 @@ public class CometDListenerExceptionCallbackTest extends AbstractCometDTransport
                 "};" +
                 "" +
                 "cometd.handshake();");
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         disconnect();
     }
 
-    @Test
-    public void testSubscriberExceptionCallback() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSubscriberExceptionCallback(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
         evaluateScript("" +
@@ -62,7 +69,7 @@ public class CometDListenerExceptionCallbackTest extends AbstractCometDTransport
                 "cometd.handshake();" +
                 "channelSubscription = cometd.subscribe('/test', function() { throw 'test'; });" +
                 "cometd.publish('/test', {});");
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         disconnect();
     }

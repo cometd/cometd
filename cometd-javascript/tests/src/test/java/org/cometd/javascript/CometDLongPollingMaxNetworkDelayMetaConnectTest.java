@@ -30,8 +30,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCometDLongPollingTest {
     private final long maxNetworkDelay = 2000;
@@ -87,13 +87,13 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
         //  + Sixth connect is held
         // Sixth connect returns (time = 2 * metaConnectPeriod + 2 * maxNetworkDelay)
 
-        Assert.assertTrue(latch.await(2 * metaConnectPeriod + 3 * maxNetworkDelay));
+        Assertions.assertTrue(latch.await(2 * metaConnectPeriod + 3 * maxNetworkDelay));
         evaluateScript("window.assert(failure === undefined, failure);");
 
         disconnect();
     }
 
-    private class DelayingFilter implements Filter {
+    private static class DelayingFilter implements Filter {
         private final AtomicInteger connects = new AtomicInteger();
         private final long delay;
 
@@ -102,7 +102,7 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
         }
 
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException {
+        public void init(FilterConfig filterConfig) {
         }
 
         @Override

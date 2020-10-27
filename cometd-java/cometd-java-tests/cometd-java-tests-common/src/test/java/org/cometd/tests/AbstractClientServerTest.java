@@ -18,6 +18,8 @@ package org.cometd.tests;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,36 +50,25 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@RunWith(Parameterized.class)
 public abstract class AbstractClientServerTest {
-    @Parameterized.Parameters(name = "{0}")
-    public static Object[] data() {
-        return Transport.values();
+    public static Collection<Transport> transports() {
+        return EnumSet.allOf(Transport.class);
     }
 
-    @Rule
-    public final TestWatcher testName = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            super.starting(description);
-            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
-        }
-    };
+    @RegisterExtension
+    final BeforeTestExecutionCallback printMethodName = context ->
+            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
     protected final Logger logger = LoggerFactory.getLogger(getClass());
-    protected final Transport transport;
     protected Server server;
     protected ServerConnector connector;
     protected ServletContextHandler context;
-    protected String cometdServletPath;
+    protected String cometdServletPath = "/cometd";
     protected String cometdURL;
     protected BayeuxServer bayeux;
     private ScheduledExecutorService scheduler;
@@ -86,12 +77,11 @@ public abstract class AbstractClientServerTest {
     private WebSocketClient wsClient;
     private OkHttpClient okHttpClient;
 
-    protected AbstractClientServerTest(Transport transport) {
-        this.transport = transport;
-        this.cometdServletPath = "/cometd";
+    public void startServer(Transport transport) throws Exception {
+        startServer(transport, serverOptions(transport));
     }
 
-    public void startServer(Map<String, String> initParams) throws Exception {
+    public void startServer(Transport transport, Map<String, String> initParams) throws Exception {
         server = new Server();
 
         connector = new ServerConnector(server, 1, 1);
@@ -130,10 +120,10 @@ public abstract class AbstractClientServerTest {
 
         bayeux = (BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
 
-        startClient();
+        startClient(transport);
     }
 
-    protected void startClient() throws Exception {
+    protected void startClient(Transport transport) throws Exception {
         scheduler = Executors.newSingleThreadScheduledExecutor();
         switch (transport) {
             case JETTY_HTTP:
@@ -160,14 +150,14 @@ public abstract class AbstractClientServerTest {
         }
     }
 
-    protected Map<String, String> serverOptions() {
+    protected Map<String, String> serverOptions(Transport transport) {
         Map<String, String> options = new HashMap<>();
-        options.put(BayeuxServerImpl.TRANSPORTS_OPTION, serverTransport());
+        options.put(BayeuxServerImpl.TRANSPORTS_OPTION, serverTransport(transport));
         options.put("ws.cometdURLMapping", cometdServletPath + "/*");
         return options;
     }
 
-    protected String serverTransport() {
+    protected String serverTransport(Transport transport) {
         switch (transport) {
             case JETTY_HTTP:
                 return JSONTransport.class.getName();
@@ -184,11 +174,11 @@ public abstract class AbstractClientServerTest {
         }
     }
 
-    protected BayeuxClient newBayeuxClient() {
-        return new BayeuxClient(cometdURL, newClientTransport(null));
+    protected BayeuxClient newBayeuxClient(Transport transport) {
+        return new BayeuxClient(cometdURL, newClientTransport(transport, null));
     }
 
-    protected ClientTransport newClientTransport(Map<String, Object> options) {
+    protected ClientTransport newClientTransport(Transport transport, Map<String, Object> options) {
         switch (transport) {
             case JETTY_HTTP:
             case ASYNC_HTTP:
@@ -210,7 +200,7 @@ public abstract class AbstractClientServerTest {
         client.disconnect(1000);
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception {
         stopClient();
         if (server != null) {
@@ -227,6 +217,9 @@ public abstract class AbstractClientServerTest {
         }
         if (httpClient != null) {
             httpClient.stop();
+        }
+        if (scheduler != null) {
+            scheduler.shutdownNow();
         }
     }
 

@@ -34,20 +34,18 @@ import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServerTest {
-    public MetaConnectOvertakenWithAckExtensionTest(Transport transport) {
-        super(transport);
-    }
-
-    @Test
-    public void testMetaConnectFailureWithAckExtension() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMetaConnectFailureWithAckExtension(Transport transport) throws Exception {
         long timeout = 2000;
-        Map<String, String> serverOptions = serverOptions();
+        Map<String, String> serverOptions = serverOptions(transport);
         serverOptions.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
-        startServer(serverOptions);
+        startServer(transport, serverOptions);
         AtomicReference<ServerMessage.Mutable> messageRef = new AtomicReference<>();
         AtomicReference<Promise<ServerMessage.Mutable>> promiseRef = new AtomicReference<>();
         bayeux.addExtension(new BayeuxServer.Extension() {
@@ -79,7 +77,7 @@ public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServ
         String channelName = "/overtaken";
 
         long maxNetworkDelay = 1000;
-        BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(transport);
         client.addExtension(new AckExtension());
         client.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
         client.setOption(BayeuxClient.BACKOFF_INCREMENT_OPTION, 0);
@@ -107,7 +105,7 @@ public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServ
             }
         });
 
-        Assert.assertTrue(clientSubscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(clientSubscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Wait for the 2nd /meta/connect to be held by the server.
         Thread.sleep(1000);
@@ -130,19 +128,19 @@ public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServ
         Thread.sleep(timeout + 2 * maxNetworkDelay);
 
         // The 3rd /meta/connect overtakes the 2nd, and delivers the message.
-        Assert.assertTrue(messageLatch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch1.await(5, TimeUnit.SECONDS));
 
         // Now the server does not have a /meta/connect outstanding.
         // Publish the 2nd message and resume the processing of the 2nd /meta/connect.
         serverChannel.publish(null, "data2", Promise.noop());
         promiseRef.get().succeed(messageRef.get());
         // The 2nd message must not be delivered because the 2nd /meta/connect has an old batch.
-        Assert.assertFalse(messageLatch2.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(messageLatch2.await(1, TimeUnit.SECONDS));
 
         // Release to send the 4th /meta/connect.
         metaConnectLatch.countDown();
         // Must receive the 2nd message.
-        Assert.assertTrue(messageLatch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch2.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

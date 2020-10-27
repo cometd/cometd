@@ -25,23 +25,17 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClientServerTest {
-    public ConcurrentDisconnectSubscribePublishTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDisconnectSubscribe(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testDisconnectSubscribe() throws Exception {
-        final AtomicBoolean subscribed = new AtomicBoolean(false);
+        AtomicBoolean subscribed = new AtomicBoolean(false);
         bayeux.addListener(new BayeuxServer.SubscriptionListener() {
             @Override
             public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
@@ -49,7 +43,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
             }
         });
 
-        final AtomicBoolean serviced = new AtomicBoolean(false);
+        AtomicBoolean serviced = new AtomicBoolean(false);
         new MetaSubscribeService(bayeux, serviced);
 
         Request handshake = newBayeuxRequest("[{" +
@@ -59,7 +53,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -69,7 +63,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         // Forge a bad sequence of messages to simulate concurrent arrival of disconnect and subscribe messages
         String channel = "/foo";
@@ -82,18 +76,21 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         response = disconnect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
-        Assert.assertFalse("not subscribed", subscribed.get());
-        Assert.assertFalse("not serviced", serviced.get());
+        Assertions.assertFalse(subscribed.get(), "not subscribed");
+        Assertions.assertFalse(serviced.get(), "not serviced");
         // The response to the subscribe must be that the session is unknown.
-        Assert.assertTrue(response.getContentAsString().contains("402::"));
+        Assertions.assertTrue(response.getContentAsString().contains("402::"));
     }
 
-    @Test
-    public void testDisconnectPublish() throws Exception {
-        final String channel = "/foo";
-        final AtomicInteger publishes = new AtomicInteger();
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDisconnectPublish(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
+        String channel = "/foo";
+        AtomicInteger publishes = new AtomicInteger();
         new BroadcastChannelService(bayeux, channel, publishes);
 
         Request handshake = newBayeuxRequest("[{" +
@@ -103,7 +100,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -113,7 +110,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request subscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/subscribe\"," +
@@ -121,7 +118,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         // Forge a bad sequence of messages to simulate concurrent arrival of disconnect and publish messages
         Request disconnect = newBayeuxRequest("[{" +
@@ -137,10 +134,10 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"data\": {}" +
                 "}]");
         response = disconnect.send();
-        Assert.assertEquals(200, response.getStatus());
-        Assert.assertEquals(1, publishes.get());
+        Assertions.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(1, publishes.get());
         // The response to the publish must be that the session is unknown.
-        Assert.assertTrue(response.getContentAsString().contains("402::"));
+        Assertions.assertTrue(response.getContentAsString().contains("402::"));
     }
 
     public static class MetaSubscribeService extends AbstractService {

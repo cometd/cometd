@@ -15,7 +15,6 @@
  */
 package org.cometd.tests;
 
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,9 +39,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class TransportFailureTest {
     private Server server;
@@ -53,7 +52,7 @@ public class TransportFailureTest {
     private WebSocketContainer wsClient;
     private String cometdServletPath;
 
-    private void startServer(Map<String, String> initParams) throws Exception {
+    private void startServer() throws Exception {
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
@@ -69,11 +68,6 @@ public class TransportFailureTest {
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdServletPath);
         cometdServletHolder.setInitOrder(1);
-        if (initParams != null) {
-            for (Map.Entry<String, String> entry : initParams.entrySet()) {
-                cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
-            }
-        }
         context.addServlet(cometdServletHolder, cometdServletPath + "/*");
 
         httpClient = new HttpClient();
@@ -87,7 +81,7 @@ public class TransportFailureTest {
         bayeux = (BayeuxServerImpl)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception {
         if (server != null) {
             server.stop();
@@ -96,23 +90,23 @@ public class TransportFailureTest {
 
     @Test
     public void testTransportNegotiationClientWebSocketAndLongPollingServerLongPolling() throws Exception {
-        startServer(null);
+        startServer();
         bayeux.setAllowedTransports("long-polling");
 
-        final ClientTransport webSocketTransport = new WebSocketTransport(null, null, wsClient);
-        final ClientTransport longPollingTransport = new JettyHttpClientTransport(null, httpClient);
-        final CountDownLatch failureLatch = new CountDownLatch(1);
-        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport) {
+        ClientTransport webSocketTransport = new WebSocketTransport(null, null, wsClient);
+        ClientTransport longPollingTransport = new JettyHttpClientTransport(null, httpClient);
+        CountDownLatch failureLatch = new CountDownLatch(1);
+        BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport) {
             @Override
             protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure) {
-                Assert.assertEquals(webSocketTransport.getName(), oldTransportName);
-                Assert.assertEquals(longPollingTransport.getName(), newTransportName);
+                Assertions.assertEquals(webSocketTransport.getName(), oldTransportName);
+                Assertions.assertEquals(longPollingTransport.getName(), newTransportName);
                 failureLatch.countDown();
             }
         };
 
-        final CountDownLatch successLatch = new CountDownLatch(1);
-        final CountDownLatch failedLatch = new CountDownLatch(1);
+        CountDownLatch successLatch = new CountDownLatch(1);
+        CountDownLatch failedLatch = new CountDownLatch(1);
         client.handshake(message -> {
             if (message.isSuccessful()) {
                 successLatch.countDown();
@@ -121,44 +115,44 @@ public class TransportFailureTest {
             }
         });
 
-        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
 
         client.disconnect(1000);
     }
 
     @Test
     public void testTransportNegotiationFailureForClientWebSocketServerLongPolling() throws Exception {
-        startServer(null);
+        startServer();
         bayeux.setAllowedTransports("long-polling");
 
-        final ClientTransport webSocketTransport = new WebSocketTransport(null, null, wsClient);
-        final CountDownLatch failureLatch = new CountDownLatch(1);
-        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport) {
+        ClientTransport webSocketTransport = new WebSocketTransport(null, null, wsClient);
+        CountDownLatch failureLatch = new CountDownLatch(1);
+        BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport) {
             @Override
             protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure) {
-                Assert.assertEquals(webSocketTransport.getName(), oldTransportName);
-                Assert.assertNull(newTransportName);
+                Assertions.assertEquals(webSocketTransport.getName(), oldTransportName);
+                Assertions.assertNull(newTransportName);
                 failureLatch.countDown();
             }
         };
 
-        final CountDownLatch failedLatch = new CountDownLatch(1);
+        CountDownLatch failedLatch = new CountDownLatch(1);
         client.handshake(message -> {
             if (!message.isSuccessful()) {
                 failedLatch.countDown();
             }
         });
 
-        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assertions.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 
     @Test
     public void testTransportNegotiationFailureForClientLongPollingServerCallbackPolling() throws Exception {
-        startServer(null);
+        startServer();
         // Only callback-polling on server (via extension), only long-polling on client.
         bayeux.setAllowedTransports("long-polling", "callback-polling");
         bayeux.addExtension(new BayeuxServer.Extension() {
@@ -171,57 +165,57 @@ public class TransportFailureTest {
             }
         });
 
-        final CountDownLatch failureLatch = new CountDownLatch(1);
+        CountDownLatch failureLatch = new CountDownLatch(1);
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
             @Override
             protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure) {
                 failureLatch.countDown();
             }
         };
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> {
             if (!message.isSuccessful()) {
                 latch.countDown();
             }
         });
 
-        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assertions.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 
     @Test
     public void testTransportNegotiationFailureForClientLongPollingServerWebSocket() throws Exception {
-        startServer(null);
+        startServer();
         bayeux.setAllowedTransports("websocket");
 
-        final ClientTransport longPollingTransport = new JettyHttpClientTransport(null, httpClient);
-        final CountDownLatch failureLatch = new CountDownLatch(1);
-        final BayeuxClient client = new BayeuxClient(cometdURL, longPollingTransport) {
+        ClientTransport longPollingTransport = new JettyHttpClientTransport(null, httpClient);
+        CountDownLatch failureLatch = new CountDownLatch(1);
+        BayeuxClient client = new BayeuxClient(cometdURL, longPollingTransport) {
             @Override
             protected void onTransportFailure(String oldTransportName, String newTransportName, Throwable failure) {
-                Assert.assertEquals(longPollingTransport.getName(), oldTransportName);
-                Assert.assertEquals(longPollingTransport.getName(), newTransportName);
+                Assertions.assertEquals(longPollingTransport.getName(), oldTransportName);
+                Assertions.assertEquals(longPollingTransport.getName(), newTransportName);
                 failureLatch.countDown();
             }
         };
 
-        final CountDownLatch failedLatch = new CountDownLatch(1);
+        CountDownLatch failedLatch = new CountDownLatch(1);
         client.handshake(message -> {
             if (!message.isSuccessful()) {
                 failedLatch.countDown();
             }
         });
 
-        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
 
         client.disconnect(1000);
     }
 
     @Test
     public void testChangeTransportURLOnMetaConnectFailure() throws Exception {
-        startServer(null);
+        startServer();
         ServerConnector connector2 = new ServerConnector(server);
         server.addConnector(connector2);
         connector2.start();
@@ -237,9 +231,9 @@ public class TransportFailureTest {
             }
         });
 
-        final String newURL = "http://localhost:" + connector2.getLocalPort() + cometdServletPath;
+        String newURL = "http://localhost:" + connector2.getLocalPort() + cometdServletPath;
 
-        final BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
+        BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient)) {
             private int metaConnects;
 
             @Override
@@ -257,7 +251,7 @@ public class TransportFailureTest {
         };
 
         // The second connect fails, the third connect should succeed on the new URL.
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             private int metaConnects;
 
@@ -274,7 +268,7 @@ public class TransportFailureTest {
 
         client.handshake();
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         client.disconnect(1000);
         connector2.stop();
@@ -282,7 +276,7 @@ public class TransportFailureTest {
 
     @Test
     public void testChangeTransportOnMetaConnectFailure() throws Exception {
-        startServer(null);
+        startServer();
 
         bayeux.addExtension(new MetaConnectFailureExtension() {
             @Override
@@ -291,9 +285,9 @@ public class TransportFailureTest {
             }
         });
 
-        final ClientTransport webSocketTransport = new WebSocketTransport(null, null, wsClient);
+        ClientTransport webSocketTransport = new WebSocketTransport(null, null, wsClient);
         ClientTransport longPollingTransport = new JettyHttpClientTransport(null, httpClient);
-        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport) {
+        BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport) {
             private int metaConnects;
 
             @Override
@@ -309,7 +303,7 @@ public class TransportFailureTest {
         };
 
         // The second connect fails, the third connect should succeed on the new transport.
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
             private int metaConnects;
 
@@ -326,12 +320,12 @@ public class TransportFailureTest {
 
         client.handshake();
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         client.disconnect(1000);
     }
 
-    private abstract class MetaConnectFailureExtension implements BayeuxServer.Extension {
+    private abstract static class MetaConnectFailureExtension implements BayeuxServer.Extension {
         private final AtomicInteger metaConnects = new AtomicInteger();
 
         @Override

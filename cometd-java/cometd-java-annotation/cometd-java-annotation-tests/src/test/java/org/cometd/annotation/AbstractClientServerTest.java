@@ -25,28 +25,21 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public abstract class AbstractClientServerTest {
+    @RegisterExtension
+    final BeforeTestExecutionCallback printMethodName = context ->
+            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
     protected Server server;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
     protected HttpClient httpClient;
 
-    @Rule
-    public final TestWatcher testName = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            super.starting(description);
-            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
-        }
-    };
-
-    @Before
+    @BeforeEach
     public void prepare() throws Exception {
         server = new Server();
 
@@ -74,7 +67,7 @@ public abstract class AbstractClientServerTest {
         httpClient.start();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception {
         if (httpClient != null) {
             httpClient.stop();

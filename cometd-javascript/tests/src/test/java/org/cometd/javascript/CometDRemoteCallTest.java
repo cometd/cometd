@@ -26,12 +26,16 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.JettyJSONContextServer;
 import org.cometd.server.ext.BinaryExtension;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testRemoteCallWithResult() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRemoteCallWithResult(String transport) throws Exception {
+        initCometDServer(transport);
+
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeux());
         String response = "response";
         processor.process(new RemoteCallWithResultService(response));
@@ -50,7 +54,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
                 "    latch.countDown();" +
                 "});");
 
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         disconnect();
     }
@@ -70,8 +74,11 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         }
     }
 
-    @Test
-    public void testRemoteCallWithFailure() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRemoteCallWithFailure(String transport) throws Exception {
+        initCometDServer(transport);
+
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeux());
         String failure = "response";
         processor.process(new RemoteCallWithFailureService(failure));
@@ -90,7 +97,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
                 "    latch.countDown();" +
                 "});");
 
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         disconnect();
     }
@@ -110,12 +117,15 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         }
     }
 
-    @Test
-    public void testRemoteCallTimeout() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRemoteCallTimeout(String transport) throws Exception {
+        initCometDServer(transport);
+
         long timeout = 1000;
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeux());
         boolean processed = processor.process(new RemoteCallTimeoutService(timeout));
-        Assert.assertTrue(processed);
+        Assertions.assertTrue(processed);
 
         evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
         Thread.sleep(1000); // Wait for /meta/connect
@@ -137,8 +147,8 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         // to verify that the callback is not called twice.
         Thread.sleep(3 * timeout);
 
-        Assert.assertTrue(latch.await(5000));
-        Assert.assertEquals(1, ((Number)javaScript.get("calls")).intValue());
+        Assertions.assertTrue(latch.await(5000));
+        Assertions.assertEquals(1, ((Number)javaScript.get("calls")).intValue());
 
         disconnect();
     }
@@ -154,7 +164,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         }
 
         @RemoteCall(CHANNEL)
-        public void service(final RemoteCall.Caller caller, Object data) {
+        public void service(RemoteCall.Caller caller, Object data) {
             new Thread(() -> {
                 try {
                     Thread.sleep(2 * timeout);
@@ -166,17 +176,20 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         }
     }
 
-    @Test
-    public void testRemoteCallWithCustomDataClass() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRemoteCallWithCustomDataClass(String transport) throws Exception {
+        initCometDServer(transport);
+
         JettyJSONContextServer jsonContext = (JettyJSONContextServer)bayeuxServer.getOption(AbstractServerTransport.JSON_CONTEXT_OPTION);
         jsonContext.getJSON().addConvertor(Custom.class, new CustomConvertor());
 
-        final String request = "request";
-        final String response = "response";
+        String request = "request";
+        String response = "response";
 
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeux());
         boolean processed = processor.process(new RemoteCallWithCustomDataClassService(request, response));
-        Assert.assertTrue(processed);
+        Assertions.assertTrue(processed);
 
         evaluateScript("var latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
@@ -196,7 +209,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
                 "    latch.countDown();" +
                 "});");
 
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         disconnect();
     }
@@ -244,8 +257,11 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         }
     }
 
-    @Test
-    public void testRemoteCallBinary() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRemoteCallBinary(String transport) throws Exception {
+        initCometDServer(transport);
+
         bayeuxServer.addExtension(new BinaryExtension());
         provideBinaryExtension();
 
@@ -278,7 +294,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
                 "    latch.countDown();" +
                 "});");
 
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         disconnect();
     }

@@ -26,13 +26,17 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDDisconnectServerSideTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testServerSideDisconnect() throws Exception {
-        final CountDownLatch connectRequestLatch = new CountDownLatch(1);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerSideDisconnect(String transport) throws Exception {
+        initCometDServer(transport);
+
+        CountDownLatch connectRequestLatch = new CountDownLatch(1);
         ServerSideDisconnectService service = new ServerSideDisconnectService(bayeuxServer, connectRequestLatch);
 
         evaluateScript("var connectLatch = new Latch(2);");
@@ -45,18 +49,21 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTransportsTest
                 "cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });" +
                 "cometd.handshake();" +
                 "");
-        Assert.assertTrue(connectRequestLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectRequestLatch.await(5, TimeUnit.SECONDS));
 
         service.disconnect(evaluateScript("cometd.getClientId()"));
 
-        Assert.assertTrue(disconnectLatch.await(5000));
-        Assert.assertTrue(connectResponseLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(connectResponseLatch.await(5000));
     }
 
-    @Test
-    public void testDeliverAndServerSideDisconnect() throws Exception {
-        final String channelName = "/service/kick";
-        final CountDownLatch connectLatch = new CountDownLatch(1);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDeliverAndServerSideDisconnect(String transport) throws Exception {
+        initCometDServer(transport);
+
+        String channelName = "/service/kick";
+        CountDownLatch connectLatch = new CountDownLatch(1);
         DeliverAndServerSideDisconnectService service = new DeliverAndServerSideDisconnectService(bayeuxServer, channelName, connectLatch);
 
         evaluateScript("var deliverLatch = new Latch(1);");
@@ -73,12 +80,12 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTransportsTest
                 "});" +
                 "cometd.handshake();" +
                 "");
-        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         service.kick(evaluateScript("cometd.getClientId()"));
 
-        Assert.assertTrue(deliverLatch.await(5000));
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(deliverLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 
     public static class ServerSideDisconnectService extends AbstractService {
@@ -122,11 +129,11 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTransportsTest
         }
 
         public void kick(String sessionId) {
-            final ServerMessage.Mutable kickMessage = getBayeux().newMessage();
+            ServerMessage.Mutable kickMessage = getBayeux().newMessage();
             kickMessage.setChannel(channelName);
             kickMessage.setData(new HashMap<>());
 
-            final ServerSession session = getBayeux().getSession(sessionId);
+            ServerSession session = getBayeux().getSession(sessionId);
 
             // We need to batch otherwise the deliver() will wake up the long poll
             // and the disconnect may not be delivered, since the client won't issue

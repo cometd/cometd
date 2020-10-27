@@ -47,9 +47,9 @@ import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class WebSocketTransportFailureTest {
     private Server server;
@@ -59,7 +59,7 @@ public class WebSocketTransportFailureTest {
     private WebSocketClient client;
     private BayeuxServerImpl bayeux;
 
-    @After
+    @AfterEach
     public void dispose() throws Exception {
         if (client != null) {
             client.stop();
@@ -133,9 +133,9 @@ public class WebSocketTransportFailureTest {
         session.getRemote().sendString(handshake);
 
         Message message = messages.poll(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(message);
-        Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
+        Assertions.assertTrue(message.isSuccessful());
         String clientId = message.getClientId();
 
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
@@ -164,10 +164,10 @@ public class WebSocketTransportFailureTest {
         Thread.sleep(2 * maxInterval);
 
         ServerSession serverSession = bayeux.getSession(clientId);
-        Assert.assertNull(serverSession);
+        Assertions.assertNull(serverSession);
 
         JakartaWebSocketServerContainer container = (JakartaWebSocketServerContainer)context.getServletContext().getAttribute(jakarta.websocket.server.ServerContainer.class.getName());
-        Assert.assertTrue(container.getOpenSessions().isEmpty());
+        Assertions.assertTrue(container.getOpenSessions().isEmpty());
     }
 
     @Test
@@ -192,9 +192,9 @@ public class WebSocketTransportFailureTest {
         session.getRemote().sendString(handshake);
 
         Message message = messages.poll(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(message);
-        Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
+        Assertions.assertTrue(message.isSuccessful());
 
         // Expire the session when receiving the first /meta/connect.
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
@@ -217,12 +217,12 @@ public class WebSocketTransportFailureTest {
         session.getRemote().sendString(connect);
 
         message = messages.poll(2 * maxInterval, TimeUnit.MILLISECONDS);
-        Assert.assertNotNull(message);
-        Assert.assertEquals(Channel.META_CONNECT, message.getChannel());
-        Assert.assertFalse(message.isSuccessful());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_CONNECT, message.getChannel());
+        Assertions.assertFalse(message.isSuccessful());
         Map<String, Object> advice = message.getAdvice();
-        Assert.assertNotNull(advice);
-        Assert.assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));
+        Assertions.assertNotNull(advice);
+        Assertions.assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));
     }
 
     private void disconnect(Session session) {

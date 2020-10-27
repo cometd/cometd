@@ -27,17 +27,17 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.authorizer.GrantAuthorizer;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ServerChannelTest {
     private BayeuxChannelListener _bayeuxChannelListener;
     private BayeuxSubscriptionListener _bayeuxSubscriptionListener;
     private BayeuxServerImpl _bayeux;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         _bayeuxChannelListener = new BayeuxChannelListener();
         _bayeuxSubscriptionListener = new BayeuxSubscriptionListener();
@@ -47,7 +47,7 @@ public class ServerChannelTest {
         _bayeux.addListener(_bayeuxSubscriptionListener);
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception {
         _bayeux.removeListener(_bayeuxSubscriptionListener);
         _bayeux.removeListener(_bayeuxChannelListener);
@@ -55,114 +55,114 @@ public class ServerChannelTest {
     }
 
     @Test
-    public void testChannelCreate() throws Exception {
-        Assert.assertNull(_bayeux.getChannel("/foo"));
-        Assert.assertNull(_bayeux.getChannel("/foo/bar"));
+    public void testChannelCreate() {
+        Assertions.assertNull(_bayeux.getChannel("/foo"));
+        Assertions.assertNull(_bayeux.getChannel("/foo/bar"));
 
         _bayeux.createChannelIfAbsent("/foo/bar");
 
-        Assert.assertNull(_bayeux.getChannel("/foo"));
+        Assertions.assertNull(_bayeux.getChannel("/foo"));
         ServerChannel fooBar = _bayeux.getChannel("/foo/bar");
-        Assert.assertNotNull(fooBar);
-        Assert.assertEquals(2, _bayeuxChannelListener._calls);
-        Assert.assertEquals("initadded", _bayeuxChannelListener._method);
-        Assert.assertEquals("/foo/bar", _bayeuxChannelListener._channel);
+        Assertions.assertNotNull(fooBar);
+        Assertions.assertEquals(2, _bayeuxChannelListener._calls);
+        Assertions.assertEquals("initadded", _bayeuxChannelListener._method);
+        Assertions.assertEquals("/foo/bar", _bayeuxChannelListener._channel);
 
         // Same channel with trailing slash.
         MarkedReference<ServerChannel> channelRef = _bayeux.createChannelIfAbsent("/foo/bar/");
-        Assert.assertFalse(channelRef.isMarked());
-        Assert.assertSame(channelRef.getReference(), fooBar);
+        Assertions.assertFalse(channelRef.isMarked());
+        Assertions.assertSame(channelRef.getReference(), fooBar);
 
         // Same channel with trailing whitespace.
         channelRef = _bayeux.createChannelIfAbsent("/foo/bar/ ");
-        Assert.assertFalse(channelRef.isMarked());
-        Assert.assertSame(channelRef.getReference(), fooBar);
+        Assertions.assertFalse(channelRef.isMarked());
+        Assertions.assertSame(channelRef.getReference(), fooBar);
 
         _bayeux.createChannelIfAbsent("/foo/bob");
 
-        Assert.assertNotNull(_bayeux.getChannel("/foo/bob"));
-        Assert.assertEquals(4, _bayeuxChannelListener._calls);
-        Assert.assertEquals("initadded", _bayeuxChannelListener._method);
-        Assert.assertEquals("/foo/bob", _bayeuxChannelListener._channel);
+        Assertions.assertNotNull(_bayeux.getChannel("/foo/bob"));
+        Assertions.assertEquals(4, _bayeuxChannelListener._calls);
+        Assertions.assertEquals("initadded", _bayeuxChannelListener._method);
+        Assertions.assertEquals("/foo/bob", _bayeuxChannelListener._channel);
     }
 
     @Test
     public void testCreateChildChannelAfterParent() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(2);
+        CountDownLatch latch = new CountDownLatch(2);
         String channelName = "/root";
-        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName, channel -> {
+        Assertions.assertTrue(_bayeux.createChannelIfAbsent(channelName, channel -> {
             channel.setPersistent(true);
             latch.countDown();
         }).isMarked());
-        Assert.assertTrue(_bayeux.createChannelIfAbsent(channelName + "/1", channel -> {
+        Assertions.assertTrue(_bayeux.createChannelIfAbsent(channelName + "/1", channel -> {
             channel.setPersistent(true);
             latch.countDown();
         }).isMarked());
-        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
     @Test
-    public void testSubscribe() throws Exception {
+    public void testSubscribe() {
         ServerChannelImpl fooBar = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/foo/bar").getReference();
         ChannelSubscriptionListener csubl = new ChannelSubscriptionListener();
         fooBar.addListener(csubl);
         ServerSessionImpl session0 = newServerSession();
 
         fooBar.subscribe(session0);
-        Assert.assertEquals(1, fooBar.getSubscribers().size());
-        Assert.assertTrue(fooBar.getSubscribers().contains(session0));
+        Assertions.assertEquals(1, fooBar.getSubscribers().size());
+        Assertions.assertTrue(fooBar.getSubscribers().contains(session0));
 
-        Assert.assertEquals("subscribed", _bayeuxSubscriptionListener._method);
-        Assert.assertEquals(fooBar, _bayeuxSubscriptionListener._channel);
-        Assert.assertEquals(session0, _bayeuxSubscriptionListener._session);
+        Assertions.assertEquals("subscribed", _bayeuxSubscriptionListener._method);
+        Assertions.assertEquals(fooBar, _bayeuxSubscriptionListener._channel);
+        Assertions.assertEquals(session0, _bayeuxSubscriptionListener._session);
 
-        Assert.assertEquals("subscribed", csubl._method);
-        Assert.assertEquals(fooBar, csubl._channel);
-        Assert.assertEquals(session0, csubl._session);
+        Assertions.assertEquals("subscribed", csubl._method);
+        Assertions.assertEquals(fooBar, csubl._channel);
+        Assertions.assertEquals(session0, csubl._session);
 
         // config+add for /foo/bar
-        Assert.assertEquals(2, _bayeuxChannelListener._calls);
+        Assertions.assertEquals(2, _bayeuxChannelListener._calls);
 
         ServerSessionImpl session1 = newServerSession();
         _bayeux.createChannelIfAbsent("/foo/*").getReference().subscribe(session1);
 
-        Assert.assertEquals("subscribed", _bayeuxSubscriptionListener._method);
-        Assert.assertEquals("/foo/*", _bayeuxSubscriptionListener._channel.getId());
-        Assert.assertEquals(session1, _bayeuxSubscriptionListener._session);
+        Assertions.assertEquals("subscribed", _bayeuxSubscriptionListener._method);
+        Assertions.assertEquals("/foo/*", _bayeuxSubscriptionListener._channel.getId());
+        Assertions.assertEquals(session1, _bayeuxSubscriptionListener._session);
 
         // config+add for /foo/*
-        Assert.assertEquals(4, _bayeuxChannelListener._calls);
+        Assertions.assertEquals(4, _bayeuxChannelListener._calls);
 
         ServerSessionImpl session2 = newServerSession();
         _bayeux.createChannelIfAbsent("/**").getReference().subscribe(session2);
 
-        Assert.assertEquals("subscribed", _bayeuxSubscriptionListener._method);
-        Assert.assertEquals("/**", _bayeuxSubscriptionListener._channel.getId());
-        Assert.assertEquals(session2, _bayeuxSubscriptionListener._session);
+        Assertions.assertEquals("subscribed", _bayeuxSubscriptionListener._method);
+        Assertions.assertEquals("/**", _bayeuxSubscriptionListener._channel.getId());
+        Assertions.assertEquals(session2, _bayeuxSubscriptionListener._session);
 
         // config+add for /**
-        Assert.assertEquals(6, _bayeuxChannelListener._calls);
+        Assertions.assertEquals(6, _bayeuxChannelListener._calls);
 
         fooBar.unsubscribe(session0);
-        Assert.assertEquals(0, fooBar.getSubscribers().size());
-        Assert.assertFalse(fooBar.getSubscribers().contains(session0));
+        Assertions.assertEquals(0, fooBar.getSubscribers().size());
+        Assertions.assertFalse(fooBar.getSubscribers().contains(session0));
 
-        Assert.assertEquals("unsubscribed", _bayeuxSubscriptionListener._method);
-        Assert.assertEquals(fooBar, _bayeuxSubscriptionListener._channel);
-        Assert.assertEquals(session0, _bayeuxSubscriptionListener._session);
+        Assertions.assertEquals("unsubscribed", _bayeuxSubscriptionListener._method);
+        Assertions.assertEquals(fooBar, _bayeuxSubscriptionListener._channel);
+        Assertions.assertEquals(session0, _bayeuxSubscriptionListener._session);
 
-        Assert.assertEquals("unsubscribed", csubl._method);
-        Assert.assertEquals(fooBar, csubl._channel);
-        Assert.assertEquals(session0, csubl._session);
+        Assertions.assertEquals("unsubscribed", csubl._method);
+        Assertions.assertEquals(fooBar, csubl._channel);
+        Assertions.assertEquals(session0, csubl._session);
 
         // Remove also the listener, then sweep: /foo/bar should be gone
         fooBar.removeListener(csubl);
         sweep();
 
         // remove for /foo/bar
-        Assert.assertEquals(7, _bayeuxChannelListener._calls);
-        Assert.assertEquals("/foo/bar", _bayeuxChannelListener._channel);
-        Assert.assertEquals("removed", _bayeuxChannelListener._method);
+        Assertions.assertEquals(7, _bayeuxChannelListener._calls);
+        Assertions.assertEquals("/foo/bar", _bayeuxChannelListener._channel);
+        Assertions.assertEquals("removed", _bayeuxChannelListener._method);
 
         ServerChannelImpl fooBob = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/foo/bob").getReference();
         fooBob.subscribe(session0);
@@ -171,35 +171,35 @@ public class ServerChannelTest {
         foo.addListener(new ChannelSubscriptionListener());
 
         // config+add for /foo/bob and /foo
-        Assert.assertEquals(11, _bayeuxChannelListener._calls);
+        Assertions.assertEquals(11, _bayeuxChannelListener._calls);
 
         foo.remove();
 
         // removed for /foo
-        Assert.assertEquals(12, _bayeuxChannelListener._calls);
-        Assert.assertEquals("/foo", _bayeuxChannelListener._channel);
-        Assert.assertEquals("removed", _bayeuxChannelListener._method);
-        Assert.assertNull(_bayeux.getChannel("/foo"));
-        Assert.assertEquals(0, foo.getSubscribers().size());
-        Assert.assertEquals(0, foo.getListeners().size());
-        Assert.assertNotNull(_bayeux.getChannel("/foo/bob"));
-        Assert.assertEquals(1, fooBob.getSubscribers().size());
-        Assert.assertNotNull(_bayeux.getChannel("/foo/*"));
+        Assertions.assertEquals(12, _bayeuxChannelListener._calls);
+        Assertions.assertEquals("/foo", _bayeuxChannelListener._channel);
+        Assertions.assertEquals("removed", _bayeuxChannelListener._method);
+        Assertions.assertNull(_bayeux.getChannel("/foo"));
+        Assertions.assertEquals(0, foo.getSubscribers().size());
+        Assertions.assertEquals(0, foo.getListeners().size());
+        Assertions.assertNotNull(_bayeux.getChannel("/foo/bob"));
+        Assertions.assertEquals(1, fooBob.getSubscribers().size());
+        Assertions.assertNotNull(_bayeux.getChannel("/foo/*"));
     }
 
     @Test
-    public void testUnSubscribeAll() throws Exception {
+    public void testUnSubscribeAll() {
         ServerChannelImpl channel = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/foo/bar").getReference();
         ServerSessionImpl session0 = newServerSession();
 
         channel.subscribe(session0);
-        Assert.assertEquals(1, channel.getSubscribers().size());
-        Assert.assertTrue(channel.getSubscribers().contains(session0));
+        Assertions.assertEquals(1, channel.getSubscribers().size());
+        Assertions.assertTrue(channel.getSubscribers().contains(session0));
 
         _bayeux.removeServerSession(session0, false);
 
-        Assert.assertEquals(0, channel.getSubscribers().size());
-        Assert.assertTrue(!channel.getSubscribers().contains(session0));
+        Assertions.assertEquals(0, channel.getSubscribers().size());
+        Assertions.assertFalse(channel.getSubscribers().contains(session0));
     }
 
     @Test
@@ -253,48 +253,48 @@ public class ServerChannelTest {
         msg.setData("Hello World");
 
         foobar.publish(session0, msg, Promise.noop());
-        Assert.assertEquals(1, session0.getQueue().size());
-        Assert.assertEquals(1, session1.getQueue().size());
-        Assert.assertEquals(1, session2.getQueue().size());
+        Assertions.assertEquals(1, session0.getQueue().size());
+        Assertions.assertEquals(1, session1.getQueue().size());
+        Assertions.assertEquals(1, session2.getQueue().size());
 
         foobob.publish(session0, _bayeux.newMessage(msg), Promise.noop());
-        Assert.assertEquals(1, session0.getQueue().size());
-        Assert.assertEquals(2, session1.getQueue().size());
-        Assert.assertEquals(2, session2.getQueue().size());
+        Assertions.assertEquals(1, session0.getQueue().size());
+        Assertions.assertEquals(2, session1.getQueue().size());
+        Assertions.assertEquals(2, session2.getQueue().size());
 
         wibble.publish(session0, _bayeux.newMessage(msg), Promise.noop());
-        Assert.assertEquals(1, session0.getQueue().size());
-        Assert.assertEquals(2, session1.getQueue().size());
-        Assert.assertEquals(3, session2.getQueue().size());
+        Assertions.assertEquals(1, session0.getQueue().size());
+        Assertions.assertEquals(2, session1.getQueue().size());
+        Assertions.assertEquals(3, session2.getQueue().size());
 
         msg = _bayeux.newMessage();
         msg.setData("ignore");
         foobar.publish(session0, msg, Promise.noop());
-        Assert.assertEquals(1, session0.getQueue().size());
-        Assert.assertEquals(2, session1.getQueue().size());
-        Assert.assertEquals(3, session2.getQueue().size());
+        Assertions.assertEquals(1, session0.getQueue().size());
+        Assertions.assertEquals(2, session1.getQueue().size());
+        Assertions.assertEquals(3, session2.getQueue().size());
 
         msg = _bayeux.newMessage();
         msg.setChannel("/lazy");
         msg.setData("foostar");
         msg.setLazy(true);
         foobar.publish(session0, msg, Promise.noop());
-        Assert.assertEquals(2, session0.getQueue().size());
-        Assert.assertEquals(3, session1.getQueue().size());
-        Assert.assertEquals(4, session2.getQueue().size());
+        Assertions.assertEquals(2, session0.getQueue().size());
+        Assertions.assertEquals(3, session1.getQueue().size());
+        Assertions.assertEquals(4, session2.getQueue().size());
 
         msg = _bayeux.newMessage();
         msg.setChannel("/lazy");
         msg.setData("starstar");
         msg.setLazy(true);
         foobar.publish(session0, msg, Promise.noop());
-        Assert.assertEquals(3, session0.getQueue().size());
-        Assert.assertEquals(4, session1.getQueue().size());
-        Assert.assertEquals(5, session2.getQueue().size());
+        Assertions.assertEquals(3, session0.getQueue().size());
+        Assertions.assertEquals(4, session1.getQueue().size());
+        Assertions.assertEquals(5, session2.getQueue().size());
 
-        Assert.assertEquals("Hello World", session0.getQueue().poll().getData());
-        Assert.assertEquals("FooStar", session0.getQueue().poll().getData());
-        Assert.assertEquals("StarStar", session0.getQueue().poll().getData());
+        Assertions.assertEquals("Hello World", session0.getQueue().poll().getData());
+        Assertions.assertEquals("FooStar", session0.getQueue().poll().getData());
+        Assertions.assertEquals("StarStar", session0.getQueue().poll().getData());
     }
 
     @Test
@@ -310,48 +310,48 @@ public class ServerChannelTest {
 
         sweep();
 
-        Assert.assertNull(_bayeux.getChannel(fooBar.getId()));
+        Assertions.assertNull(_bayeux.getChannel(fooBar.getId()));
 
         ServerSessionImpl session0 = newServerSession();
         ServerMessage.Mutable message = _bayeux.newMessage();
         message.setData("test");
         fooBar.publish(session0, message, Promise.noop());
 
-        Assert.assertEquals(1, session1.getQueue().size());
+        Assertions.assertEquals(1, session1.getQueue().size());
     }
 
     @Test
-    public void testPersistentChannelIsNotSwept() throws Exception {
+    public void testPersistentChannelIsNotSwept() {
         String channelName = "/foo/bar";
         ServerChannel foobar = _bayeux.createChannelIfAbsent(channelName).getReference();
         foobar.setPersistent(true);
 
         sweep();
-        Assert.assertNotNull(_bayeux.getChannel(channelName));
+        Assertions.assertNotNull(_bayeux.getChannel(channelName));
     }
 
     @Test
-    public void testChannelWithSubscriberIsNotSwept() throws Exception {
+    public void testChannelWithSubscriberIsNotSwept() {
         ServerChannelImpl foobar = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/foo/bar").getReference();
-        Assert.assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
+        Assertions.assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
 
         // First sweep does not remove the channel yet
         _bayeux.sweep();
-        Assert.assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
+        Assertions.assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
         // Nor a second sweep
         _bayeux.sweep();
-        Assert.assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
+        Assertions.assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
         // Third sweep removes it
         _bayeux.sweep();
-        Assert.assertNull(_bayeux.getChannel("/foo/bar"));
+        Assertions.assertNull(_bayeux.getChannel("/foo/bar"));
 
         _bayeux.createChannelIfAbsent("/foo/bar/baz").getReference().remove();
-        Assert.assertNull(_bayeux.getChannel("/foo/bar/baz"));
-        Assert.assertNull(_bayeux.getChannel("/foo/bar"));
-        Assert.assertNull(_bayeux.getChannel("/foo"));
+        Assertions.assertNull(_bayeux.getChannel("/foo/bar/baz"));
+        Assertions.assertNull(_bayeux.getChannel("/foo/bar"));
+        Assertions.assertNull(_bayeux.getChannel("/foo"));
 
         foobar = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/foo/bar").getReference();
-        Assert.assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
+        Assertions.assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
 
         ServerChannelImpl foobarbaz = (ServerChannelImpl)_bayeux.createChannelIfAbsent("/foo/bar/baz").getReference();
         ServerSessionImpl session0 = newServerSession();
@@ -359,25 +359,25 @@ public class ServerChannelTest {
         _bayeux.createChannelIfAbsent("/foo").getReference().subscribe(session0);
 
         sweep();
-        Assert.assertNotNull(_bayeux.getChannel("/foo/bar/baz"));
-        Assert.assertNull(_bayeux.getChannel("/foo/bar"));
-        Assert.assertNotNull(_bayeux.getChannel("/foo"));
+        Assertions.assertNotNull(_bayeux.getChannel("/foo/bar/baz"));
+        Assertions.assertNull(_bayeux.getChannel("/foo/bar"));
+        Assertions.assertNotNull(_bayeux.getChannel("/foo"));
 
         foobarbaz.unsubscribe(session0);
 
         sweep();
-        Assert.assertNull(_bayeux.getChannel("/foo/bar/baz"));
-        Assert.assertNull(_bayeux.getChannel("/foo/bar"));
-        Assert.assertNotNull(_bayeux.getChannel("/foo"));
+        Assertions.assertNull(_bayeux.getChannel("/foo/bar/baz"));
+        Assertions.assertNull(_bayeux.getChannel("/foo/bar"));
+        Assertions.assertNotNull(_bayeux.getChannel("/foo"));
 
         _bayeux.getChannel("/foo").unsubscribe(session0);
 
         sweep();
-        Assert.assertNull(_bayeux.getChannel("/foo"));
+        Assertions.assertNull(_bayeux.getChannel("/foo"));
     }
 
     @Test
-    public void testChannelWithListenersIsNotSwept() throws Exception {
+    public void testChannelWithListenersIsNotSwept() {
         String channelName = "/test";
         ServerChannel channel = _bayeux.createChannelIfAbsent(channelName).getReference();
         channel.addListener(new ServerChannel.MessageListener() {
@@ -389,11 +389,11 @@ public class ServerChannelTest {
 
         sweep();
 
-        Assert.assertNotNull(_bayeux.getChannel(channelName));
+        Assertions.assertNotNull(_bayeux.getChannel(channelName));
     }
 
     @Test
-    public void testChannelsWithAutorizersSweeping() throws Exception {
+    public void testChannelsWithAutorizersSweeping() {
         ServerChannel.MessageListener listener = new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
@@ -415,18 +415,18 @@ public class ServerChannelTest {
         sweep();
 
         // Channel with authorizers but no listeners or subscriber must not be swept
-        Assert.assertNotNull(_bayeux.getChannel(channelName1));
-        Assert.assertNotNull(_bayeux.getChannel(wildName1));
-        Assert.assertNotNull(_bayeux.getChannel(wildName2));
+        Assertions.assertNotNull(_bayeux.getChannel(channelName1));
+        Assertions.assertNotNull(_bayeux.getChannel(wildName1));
+        Assertions.assertNotNull(_bayeux.getChannel(wildName2));
 
         // Remove the authorizer from a wild parent must sweep the wild parent
         _bayeux.getChannel(wildName2).removeAuthorizer(GrantAuthorizer.GRANT_ALL);
 
         sweep();
 
-        Assert.assertNotNull(_bayeux.getChannel(channelName1));
-        Assert.assertNotNull(_bayeux.getChannel(wildName1));
-        Assert.assertNull(_bayeux.getChannel(wildName2));
+        Assertions.assertNotNull(_bayeux.getChannel(channelName1));
+        Assertions.assertNotNull(_bayeux.getChannel(wildName1));
+        Assertions.assertNull(_bayeux.getChannel(wildName2));
 
         // Remove the listener from a channel must not sweep the wild parent with authorizer
         // since other channels may be added later that will match the wild channel
@@ -434,9 +434,9 @@ public class ServerChannelTest {
 
         sweep();
 
-        Assert.assertNull(_bayeux.getChannel(channelName1));
-        Assert.assertNotNull(_bayeux.getChannel(wildName1));
-        Assert.assertNull(_bayeux.getChannel(wildName2));
+        Assertions.assertNull(_bayeux.getChannel(channelName1));
+        Assertions.assertNotNull(_bayeux.getChannel(wildName1));
+        Assertions.assertNull(_bayeux.getChannel(wildName2));
     }
 
     @Test
@@ -450,8 +450,8 @@ public class ServerChannelTest {
         class W extends L implements ServerChannel.ServerChannelListener.Weak {
         }
 
-        final ServerChannel.ServerChannelListener listener = new L();
-        final String channelName = "/weak";
+        ServerChannel.ServerChannelListener listener = new L();
+        String channelName = "/weak";
         _bayeux.createChannelIfAbsent(channelName, channel -> {
             channel.addListener(listener);
             channel.addListener(new W());
@@ -460,35 +460,35 @@ public class ServerChannelTest {
         sweep();
 
         // Non-weak listener present, must not be swept
-        Assert.assertNotNull(_bayeux.getChannel(channelName));
+        Assertions.assertNotNull(_bayeux.getChannel(channelName));
 
         _bayeux.getChannel(channelName).removeListener(listener);
         sweep();
 
         // Only weak listeners present, must be swept
-        Assert.assertNull(_bayeux.getChannel(channelName));
+        Assertions.assertNull(_bayeux.getChannel(channelName));
     }
 
     @Test
-    public void testLazyTimeout() throws Exception {
+    public void testLazyTimeout() {
         String channelName = "/testLazy";
         ServerChannel channel = _bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer.Persistent()).getReference();
-        Assert.assertFalse(channel.isLazy());
+        Assertions.assertFalse(channel.isLazy());
 
         int lazyTimeout = 1000;
         channel.setLazyTimeout(lazyTimeout);
-        Assert.assertTrue(channel.isLazy());
+        Assertions.assertTrue(channel.isLazy());
 
         channel.setLazy(true);
-        Assert.assertEquals(lazyTimeout, channel.getLazyTimeout());
+        Assertions.assertEquals(lazyTimeout, channel.getLazyTimeout());
 
         channel.setLazy(false);
-        Assert.assertFalse(channel.isLazy());
-        Assert.assertEquals(-1, channel.getLazyTimeout());
+        Assertions.assertFalse(channel.isLazy());
+        Assertions.assertEquals(-1, channel.getLazyTimeout());
 
         channel.setLazy(true);
-        Assert.assertTrue(channel.isLazy());
-        Assert.assertEquals(-1, channel.getLazyTimeout());
+        Assertions.assertTrue(channel.isLazy());
+        Assertions.assertEquals(-1, channel.getLazyTimeout());
     }
 
     private void sweep() {

@@ -18,8 +18,8 @@ package org.cometd.javascript;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTest {
     @Test
@@ -30,7 +30,7 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait a while for the connect to establish
         Thread.sleep(1000);
@@ -39,7 +39,7 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
         Latch subscribeLatch = javaScript.get("subscribeLatch");
         evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
         evaluateScript("var subscription = cometd.subscribe('/echo', function() { subscribeLatch.countDown(); });");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(1);");
         Latch publishLatch = javaScript.get("publishLatch");
@@ -48,16 +48,16 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
         evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
         evaluateScript("cometd.addListener('/meta/unsuccessful', function() { failureLatch.countDown(); });");
         evaluateScript("cometd.publish('/echo', 'test');");
-        Assert.assertTrue(publishLatch.await(5000));
-        Assert.assertTrue(failureLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(failureLatch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
         String status = evaluateScript("cometd.getStatus();");
-        Assert.assertEquals("disconnected", status);
+        Assertions.assertEquals("disconnected", status);
     }
 
     private static class DeletePublishExtension implements BayeuxServer.Extension {

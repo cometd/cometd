@@ -19,13 +19,13 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class CometDURLPathTest extends AbstractCometDLongPollingTest {
-    @Before
-    public void init() {
+    @BeforeEach
+    public void initExtension() {
         bayeuxServer.addExtension(new BayeuxURLExtension());
     }
 
@@ -38,29 +38,29 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "/', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
         String handshakeURI = evaluateScript("handshake.ext.uri");
-        Assert.assertTrue(handshakeURI.endsWith("/handshake"));
+        Assertions.assertTrue(handshakeURI.endsWith("/handshake"));
 
         evaluateScript("window.assert(connect !== undefined, 'connect is undefined');");
         evaluateScript("window.assert(connect.ext !== undefined, 'connect without ext');");
         String connectURI = evaluateScript("connect.ext.uri");
-        Assert.assertTrue(connectURI.endsWith("/connect"));
+        Assertions.assertTrue(connectURI.endsWith("/connect"));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("var disconnect = undefined;");
         evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
 
         evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
         evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");
         String disconnectURI = evaluateScript("disconnect.ext.uri");
-        Assert.assertTrue(disconnectURI.endsWith("/disconnect"));
+        Assertions.assertTrue(disconnectURI.endsWith("/disconnect"));
     }
 
     @Test
@@ -72,29 +72,29 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "/target.cometd', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
         String handshakeURI = evaluateScript("handshake.ext.uri");
-        Assert.assertFalse(handshakeURI.endsWith("/handshake"));
+        Assertions.assertFalse(handshakeURI.endsWith("/handshake"));
 
         evaluateScript("window.assert(connect !== undefined, 'connect is undefined');");
         evaluateScript("window.assert(connect.ext !== undefined, 'connect without ext');");
         String connectURI = evaluateScript("connect.ext.uri");
-        Assert.assertFalse(connectURI.endsWith("/connect"));
+        Assertions.assertFalse(connectURI.endsWith("/connect"));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("var disconnect = undefined;");
         evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
 
         evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
         evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");
         String disconnectURI = evaluateScript("disconnect.ext.uri");
-        Assert.assertFalse(disconnectURI.endsWith("/disconnect"));
+        Assertions.assertFalse(disconnectURI.endsWith("/disconnect"));
     }
 
     @Test
@@ -106,29 +106,29 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "/?param=1', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
         String handshakeURI = evaluateScript("handshake.ext.uri");
-        Assert.assertFalse(handshakeURI.endsWith("/handshake"));
+        Assertions.assertFalse(handshakeURI.endsWith("/handshake"));
 
         evaluateScript("window.assert(connect !== undefined, 'connect is undefined');");
         evaluateScript("window.assert(connect.ext !== undefined, 'connect without ext');");
         String connectURI = evaluateScript("connect.ext.uri");
-        Assert.assertFalse(connectURI.endsWith("/connect"));
+        Assertions.assertFalse(connectURI.endsWith("/connect"));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("var disconnect = undefined;");
         evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
 
         evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
         evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");
         String disconnectURI = evaluateScript("disconnect.ext.uri");
-        Assert.assertFalse(disconnectURI.endsWith("/disconnect"));
+        Assertions.assertFalse(disconnectURI.endsWith("/disconnect"));
     }
 
     @Test
@@ -140,29 +140,29 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "/', logLevel: '" + getLogLevel() + "', appendMessageTypeToURL: false})");
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
         String handshakeURI = evaluateScript("handshake.ext.uri");
-        Assert.assertFalse(handshakeURI.endsWith("/handshake"));
+        Assertions.assertFalse(handshakeURI.endsWith("/handshake"));
 
         evaluateScript("window.assert(connect !== undefined, 'connect is undefined');");
         evaluateScript("window.assert(connect.ext !== undefined, 'connect without ext');");
         String connectURI = evaluateScript("connect.ext.uri");
-        Assert.assertFalse(connectURI.endsWith("/connect"));
+        Assertions.assertFalse(connectURI.endsWith("/connect"));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("var disconnect = undefined;");
         evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
 
         evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
         evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");
         String disconnectURI = evaluateScript("disconnect.ext.uri");
-        Assert.assertFalse(disconnectURI.endsWith("/disconnect"));
+        Assertions.assertFalse(disconnectURI.endsWith("/disconnect"));
     }
 
     public static class BayeuxURLExtension implements Extension {

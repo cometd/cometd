@@ -19,8 +19,8 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocketTest {
     @Test
@@ -31,7 +31,7 @@ public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocket
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait a while for the connect to establish
         Thread.sleep(1000);
@@ -43,8 +43,8 @@ public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocket
         evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
         evaluateScript("cometd.addListener('/meta/unsuccessful', function() { failureLatch.countDown(); });");
         evaluateScript("cometd.subscribe('/echo', function() { subscribeLatch.countDown(); });");
-        Assert.assertTrue(subscribeLatch.await(5000));
-        Assert.assertTrue(failureLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(failureLatch.await(5000));
 
         disconnect();
     }

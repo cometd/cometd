@@ -33,8 +33,8 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.cometd.server.authorizer.GrantAuthorizer;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class SubscriptionFailureTest extends ClientServerTest {
     @Test
@@ -58,7 +58,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         BayeuxClient client = newBayeuxClient();
         client.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener messageCallback = (channel, message) -> messageLatch.countDown();
@@ -70,7 +70,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         };
         String channelName = "/echo";
         client.getChannel(channelName).subscribe(messageCallback, subscriptionCallback);
-        Assert.assertTrue(subscriptionLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(subscriptionLatch.await(5, TimeUnit.SECONDS));
 
         // Wait for subscription to happen on server.
         Thread.sleep(sleep);
@@ -78,7 +78,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         // Subscription has failed on client, but not on server.
         // Publishing a message on server-side must not be notified on the client.
         bayeux.getChannel(channelName).publish(null, "data", Promise.noop());
-        Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -92,7 +92,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         CountDownLatch messageLatch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener messageCallback = (channel, message) -> messageLatch.countDown();
@@ -103,7 +103,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
             }
         };
         client.getChannel(channelName).subscribe(messageCallback, subscriptionCallback);
-        Assert.assertTrue(subscriptionLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(subscriptionLatch.await(5, TimeUnit.SECONDS));
 
         // Force subscription on server.
         bayeux.getChannel(channelName).subscribe(bayeux.getSession(client.getId()));
@@ -111,7 +111,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
         // Subscription has failed on client, but has been forced on server.
         // Publishing a message on server-side must not be notified on the client.
         bayeux.getChannel(channelName).publish(null, "data", Promise.noop());
-        Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -132,7 +132,7 @@ public class SubscriptionFailureTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         AtomicBoolean allowed = new AtomicBoolean();
         client.addExtension(new ClientSession.Extension() {
@@ -157,10 +157,10 @@ public class SubscriptionFailureTest extends ClientServerTest {
         // First subscription fails, the subscription count should be
         // decremented to zero so that a subsequent subscribe() could succeed.
         client.getChannel(channelName).subscribe(messageCallback, subscriptionCallback);
-        Assert.assertTrue(failedSubscription.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(failedSubscription.await(5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(0, client.getChannel(channelName).getSubscribers().size());
-        Assert.assertEquals(0, bayeux.getChannel(channelName).getSubscribers().size());
+        Assertions.assertEquals(0, client.getChannel(channelName).getSubscribers().size());
+        Assertions.assertEquals(0, bayeux.getChannel(channelName).getSubscribers().size());
 
         // Now allow the subscription, we should be able to subscribe to the same channel.
         allowed.set(true);
@@ -171,14 +171,14 @@ public class SubscriptionFailureTest extends ClientServerTest {
             }
         };
         client.getChannel(channelName).subscribe(messageCallback, subscriptionCallback);
-        Assert.assertTrue(succeededSubscription.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(succeededSubscription.await(5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(1, client.getChannel(channelName).getSubscribers().size());
-        Assert.assertEquals(1, bayeux.getChannel(channelName).getSubscribers().size());
+        Assertions.assertEquals(1, client.getChannel(channelName).getSubscribers().size());
+        Assertions.assertEquals(1, bayeux.getChannel(channelName).getSubscribers().size());
 
         // Make sure the message can be received.
         bayeux.getChannel(channelName).publish(null, "data", Promise.noop());
-        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

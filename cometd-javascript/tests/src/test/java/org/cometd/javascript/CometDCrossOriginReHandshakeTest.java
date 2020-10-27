@@ -35,8 +35,8 @@ import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingTest {
     @Override
@@ -64,9 +64,9 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
         evaluateScript("cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
 
-        Assert.assertTrue(connectLatch.await(metaConnectPeriod + 5000));
-        Assert.assertTrue(handshakeLatch.await(5000));
-        Assert.assertEquals("long-polling", evaluateScript("cometd.getTransport().getType()"));
+        Assertions.assertTrue(connectLatch.await(metaConnectPeriod + 5000));
+        Assertions.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertEquals("long-polling", evaluateScript("cometd.getTransport().getType()"));
 
         disconnect();
     }
@@ -92,11 +92,11 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
         }
     }
 
-    private class ConnectThrowingFilter implements Filter {
+    private static class ConnectThrowingFilter implements Filter {
         private final AtomicInteger connects = new AtomicInteger();
 
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException {
+        public void init(FilterConfig filterConfig) {
         }
 
         @Override

@@ -22,12 +22,16 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDInitDisconnectTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testInitDisconnect() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testInitDisconnect(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var latch = new Latch(2);");
         Latch latch = javaScript.get("latch");
@@ -35,31 +39,34 @@ public class CometDInitDisconnectTest extends AbstractCometDTransportsTest {
                 // Expect 2 messages: handshake and connect
                 "cometd.handshake();";
         evaluateScript(script);
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         // Wait for the long poll to happen, so that we're sure
         // the disconnect is sent after the long poll
         Thread.sleep(1000);
 
         String status = evaluateScript("cometd.getStatus();");
-        Assert.assertEquals("connected", status);
+        Assertions.assertEquals("connected", status);
 
         // Expect disconnect and connect
         latch.reset(2);
         disconnect();
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         status = evaluateScript("cometd.getStatus();");
-        Assert.assertEquals("disconnected", status);
+        Assertions.assertEquals("disconnected", status);
 
         // Make sure there are no attempts to reconnect
         latch.reset(1);
-        Assert.assertFalse(latch.await(metaConnectPeriod * 3));
+        Assertions.assertFalse(latch.await(metaConnectPeriod * 3));
     }
 
-    @Test
-    public void testHandshakeDisconnect() throws Exception {
-        final CountDownLatch removeLatch = new CountDownLatch(1);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testHandshakeDisconnect(String transport) throws Exception {
+        initCometDServer(transport);
+
+        CountDownLatch removeLatch = new CountDownLatch(1);
         bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
@@ -89,7 +96,7 @@ public class CometDInitDisconnectTest extends AbstractCometDTransportsTest {
                 "});" +
                 "cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });" +
                 "cometd.handshake();");
-        Assert.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 }

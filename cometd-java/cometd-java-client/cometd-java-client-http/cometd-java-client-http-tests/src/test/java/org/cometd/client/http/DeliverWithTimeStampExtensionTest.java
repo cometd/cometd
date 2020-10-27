@@ -27,8 +27,8 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractService;
 import org.cometd.server.ext.TimestampExtension;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class DeliverWithTimeStampExtensionTest extends ClientServerTest {
     @Test
@@ -45,14 +45,14 @@ public class DeliverWithTimeStampExtensionTest extends ClientServerTest {
         new DeliverService(bayeux, channelName);
 
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         Thread.sleep(1000);
 
         channel.publish(new HashMap<>());
 
-        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

@@ -20,12 +20,16 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.DefaultSecurityPolicy;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDSubscribeWithPublishDeniedTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testSubscribeWithPublishDenied() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSubscribeWithPublishDenied(String transport) throws Exception {
+        initCometDServer(transport);
+
         bayeuxServer.setSecurityPolicy(new Policy());
 
         evaluateScript("var subscribeLatch = new Latch(1);");
@@ -57,23 +61,23 @@ public class CometDSubscribeWithPublishDeniedTest extends AbstractCometDTranspor
                 "" +
                 "cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });" +
                 "");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
         boolean subscribeFailed = javaScript.get("subscribeFailed");
-        Assert.assertFalse(subscribeFailed);
+        Assertions.assertFalse(subscribeFailed);
 
         evaluateScript("" +
                 "cometd.publish(channelName, {});" +
                 "");
 
-        Assert.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
         boolean publishFailed = javaScript.get("publishFailed");
         // Denied by policy
-        Assert.assertTrue(publishFailed);
+        Assertions.assertTrue(publishFailed);
 
         disconnect();
     }
 
-    private class Policy extends DefaultSecurityPolicy {
+    private static class Policy extends DefaultSecurityPolicy {
         @Override
         public boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
             return false;

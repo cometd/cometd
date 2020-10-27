@@ -17,6 +17,7 @@ package org.cometd.server;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.cometd.server.http.AsyncJSONTransport;
@@ -26,31 +27,18 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@RunWith(Parameterized.class)
 public abstract class AbstractBayeuxServerTest {
-    @Parameterized.Parameters(name = "{0}")
-    public static Iterable<Object[]> data() {
-        Object[][] data = {{JSONTransport.class.getName()}, {AsyncJSONTransport.class.getName()}};
-        return Arrays.asList(data);
+    public static List<String> transports() {
+        return Arrays.asList(JSONTransport.class.getName(), AsyncJSONTransport.class.getName());
     }
 
-    @Rule
-    public final TestWatcher testName = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            super.starting(description);
-            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
-        }
-    };
-
-    protected final String serverTransport;
+    @RegisterExtension
+    final BeforeTestExecutionCallback printMethodName = context ->
+            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
     protected Server server;
     protected ServerConnector connector;
     protected int port;
@@ -60,11 +48,7 @@ public abstract class AbstractBayeuxServerTest {
     protected BayeuxServerImpl bayeux;
     protected long timeout = 2000;
 
-    protected AbstractBayeuxServerTest(String serverTransport) {
-        this.serverTransport = serverTransport;
-    }
-
-    public void startServer(Map<String, String> options) throws Exception {
+    public void startServer(String serverTransport, Map<String, String> options) throws Exception {
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
@@ -98,9 +82,10 @@ public abstract class AbstractBayeuxServerTest {
         bayeux = cometdServlet.getBayeux();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception {
-        server.stop();
-        server.join();
+        if (server != null) {
+            server.stop();
+        }
     }
 }

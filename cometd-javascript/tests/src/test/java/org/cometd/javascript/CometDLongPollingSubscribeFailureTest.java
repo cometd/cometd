@@ -33,8 +33,8 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPollingTest {
     @Test
@@ -47,7 +47,7 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = javaScript.get("subscribeLatch");
@@ -58,21 +58,21 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
         evaluateScript(script);
 
         evaluateScript("cometd.subscribe('/echo', function() { subscribeLatch.countDown(); });");
-        Assert.assertTrue(subscribeLatch.await(5000));
-        Assert.assertTrue(failureLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(failureLatch.await(5000));
 
         // Be sure there is no backoff
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
         int backoff = ((Number)javaScript.get("backoff")).intValue();
-        Assert.assertEquals(0, backoff);
+        Assertions.assertEquals(0, backoff);
 
         disconnect();
     }
 
     @Test
     public void testSubscribeFailedOnlyOnClient() throws Exception {
-        final long maxNetworkDelay = 2000;
-        final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
+        long maxNetworkDelay = 2000;
+        long sleep = maxNetworkDelay + maxNetworkDelay / 2;
 
         bayeuxServer.getChannel(Channel.META_SUBSCRIBE).addListener(new ServerChannel.MessageListener() {
             @Override
@@ -91,7 +91,7 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'," +
                 "maxNetworkDelay: " + maxNetworkDelay + "})");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = javaScript.get("subscribeLatch");
@@ -104,7 +104,7 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
                 "       subscribeLatch.countDown();" +
                 "   }" +
                 "});");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         // Wait for the subscription to happen on server.
         Thread.sleep(sleep);
@@ -112,14 +112,14 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
         // Subscription has failed on the client, but not on server.
         // Emitting a message on server must not be received by the client.
         bayeuxServer.getChannel(channelName).publish(null, "data", Promise.noop());
-        Assert.assertFalse(messageLatch.await(1000));
+        Assertions.assertFalse(messageLatch.await(1000));
 
         disconnect();
     }
 
     public static class SubscribeThrowingFilter implements Filter {
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException {
+        public void init(FilterConfig filterConfig) {
         }
 
         @Override

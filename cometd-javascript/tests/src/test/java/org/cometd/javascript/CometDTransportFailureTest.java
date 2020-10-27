@@ -22,8 +22,8 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.server.ServerConnector;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
     @Test
@@ -82,8 +82,8 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
                 "});" +
                 "cometd.handshake();");
 
-        Assert.assertTrue(latch.await(5000));
-        Assert.assertEquals(newURL, javaScript.get("url"));
+        Assertions.assertTrue(latch.await(5000));
+        Assertions.assertEquals(newURL, javaScript.get("url"));
 
         connector2.stop();
     }
@@ -92,7 +92,7 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
     public void testConnectFailureChangeTransport() throws Exception {
         bayeuxServer.addExtension(new ConnectFailureExtension() {
             @Override
-            protected boolean onConnect(int count) throws Exception {
+            protected boolean onConnect(int count) {
                 return count != 2;
             }
         });
@@ -137,11 +137,11 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
                 "});" +
                 "cometd.handshake();");
 
-        Assert.assertTrue(latch.await(5000));
-        Assert.assertEquals("websocket", javaScript.get("transport"));
+        Assertions.assertTrue(latch.await(5000));
+        Assertions.assertEquals("websocket", javaScript.get("transport"));
     }
 
-    private abstract class ConnectFailureExtension implements BayeuxServer.Extension {
+    private abstract static class ConnectFailureExtension implements BayeuxServer.Extension {
         private final AtomicInteger connects = new AtomicInteger();
 
         @Override

@@ -15,12 +15,16 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDRedeployTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testRedeploy() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRedeploy(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
         Latch handshakeLatch = javaScript.get("handshakeLatch");
@@ -37,8 +41,8 @@ public class CometDRedeployTest extends AbstractCometDTransportsTest {
                 "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(handshakeLatch.await(5000));
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         // Wait for the second connect to reach the server
         Thread.sleep(1000);
@@ -47,7 +51,7 @@ public class CometDRedeployTest extends AbstractCometDTransportsTest {
         handshakeLatch.reset(1);
         connectLatch.reset(1);
         context.stop();
-        Assert.assertTrue(failureLatch.await(5000));
+        Assertions.assertTrue(failureLatch.await(5000));
         // Assume the redeploy takes a while
         long backoffIncrement = ((Number)evaluateScript("cometd.getBackoffIncrement();")).longValue();
         Thread.sleep(2 * backoffIncrement);
@@ -55,13 +59,13 @@ public class CometDRedeployTest extends AbstractCometDTransportsTest {
         context.start();
 
         long backoffPeriod = ((Number)evaluateScript("cometd.getBackoffPeriod();")).longValue();
-        Assert.assertTrue(handshakeLatch.await(backoffPeriod + 2 * backoffIncrement));
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(handshakeLatch.await(backoffPeriod + 2 * backoffIncrement));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 }

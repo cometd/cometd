@@ -29,6 +29,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
@@ -37,20 +38,16 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
     private final Map<String, List<String>> responseHeaders = new HashMap<>();
 
-    public ExtensionNegotiationTest(String wsTransportType) {
-        super(wsTransportType);
-    }
-
     @Override
-    protected WebSocketTransport newWebSocketTransport(String url, Map<String, Object> options, WebSocketContainer wsContainer) {
+    protected ClientTransport newWebSocketTransport(String url, Map<String, Object> options, WebSocketContainer wsContainer) {
         return new WebSocketTransport(url, options, null, wsContainer) {
             @Override
             protected void onHandshakeRequest(Map<String, List<String>> headers) {
@@ -67,7 +64,7 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
     }
 
     @Override
-    protected JettyWebSocketTransport newJettyWebSocketTransport(String url, Map<String, Object> options, WebSocketClient wsClient) {
+    protected ClientTransport newJettyWebSocketTransport(String url, Map<String, Object> options, WebSocketClient wsClient) {
         return new JettyWebSocketTransport(url, options, null, wsClient) {
             @Override
             public void onHandshakeRequest(HttpRequest request) {
@@ -84,7 +81,7 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
     }
 
     @Override
-    protected OkHttpWebSocketTransport newOkHttpWebSocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
+    protected ClientTransport newOkHttpWebSocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
         return new OkHttpWebSocketTransport(url, options, null, okHttpClient) {
             @Override
             protected void onHandshakeRequest(String uri, Request.Builder upgradeRequest) {
@@ -100,37 +97,38 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
         };
     }
 
-    @Test
-    public void testExtensionNegotiation() throws Exception {
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testExtensionNegotiation(String wsType) throws Exception {
         // OkHttp does not support specifying WebSocket extensions.
-        Assume.assumeThat(wsTransportType, Matchers.not(WEBSOCKET_OKHTTP));
+        Assumptions.assumeFalse(wsType.equals(WEBSOCKET_OKHTTP));
 
         // Disable the identity extension on server.
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "identity", "false");
-        prepareAndStart(serverOptions);
+        prepareAndStart(wsType, serverOptions);
 
         // Extension identity is enabled by default on the client.
-        BayeuxClient client = newBayeuxClient();
-        final CountDownLatch latch = new CountDownLatch(1);
+        BayeuxClient client = newBayeuxClient(wsType);
+        CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> {
             if (message.isSuccessful()) {
                 List<String> extensions = responseHeaders.get(HandshakeRequest.SEC_WEBSOCKET_EXTENSIONS);
                 boolean hasFragment = false;
                 for (String extension : extensions) {
                     if (extension.contains("identity")) {
-                        Assert.fail();
+                        Assertions.fail();
                     }
                     if (extension.contains("fragment")) {
                         hasFragment = true;
                     }
                 }
-                Assert.assertTrue(hasFragment);
+                Assertions.assertTrue(hasFragment);
                 latch.countDown();
             }
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

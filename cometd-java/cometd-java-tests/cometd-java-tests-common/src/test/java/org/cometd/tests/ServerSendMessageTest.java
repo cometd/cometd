@@ -24,20 +24,18 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ServerSendMessageTest extends AbstractClientServerTest {
-    public ServerSendMessageTest(Transport transport) {
-        super(transport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerCanSendMessageBeforeFirstMetaConnect(Transport transport) throws Exception {
+        startServer(transport);
 
-    @Test
-    public void testServerCanSendMessageBeforeFirstMetaConnect() throws Exception {
-        startServer(serverOptions());
-
-        final String channelName = "/service/test";
-        final String response = "response";
+        String channelName = "/service/test";
+        String response = "response";
         bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
@@ -46,15 +44,15 @@ public class ServerSendMessageTest extends AbstractClientServerTest {
             }
         });
 
-        BayeuxClient client = new BayeuxClient(cometdURL, newClientTransport(null)) {
+        BayeuxClient client = new BayeuxClient(cometdURL, newClientTransport(transport, null)) {
             @Override
             protected void sendConnect() {
                 // Do not send /meta/connect messages to the server.
             }
         };
 
-        final ClientSessionChannel clientChannel = client.getChannel(channelName);
-        final CountDownLatch latch = new CountDownLatch(1);
+        ClientSessionChannel clientChannel = client.getChannel(channelName);
+        CountDownLatch latch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener clientListener = (channel, message) -> {
             if (response.equals(message.getData())) {
                 latch.countDown();
@@ -64,7 +62,7 @@ public class ServerSendMessageTest extends AbstractClientServerTest {
 
         client.handshake(message -> clientChannel.publish("request"));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

@@ -19,12 +19,16 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDConnectFailureTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testConnectFailure() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testConnectFailure(String transport) throws Exception {
+        initCometDServer(transport);
+
         bayeuxServer.addExtension(new DeleteMetaConnectExtension());
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -42,17 +46,17 @@ public class CometDConnectFailureTest extends AbstractCometDTransportsTest {
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
         evaluateScript("var backoffIncrement = cometd.getBackoffIncrement();");
         int backoff = ((Number)javaScript.get("backoff")).intValue();
-        final int backoffIncrement = ((Number)javaScript.get("backoffIncrement")).intValue();
-        Assert.assertEquals(0, backoff);
-        Assert.assertTrue(backoffIncrement > 0);
+        int backoffIncrement = ((Number)javaScript.get("backoffIncrement")).intValue();
+        Assertions.assertEquals(0, backoff);
+        Assertions.assertTrue(backoffIncrement > 0);
 
         evaluateScript("cometd.handshake();");
 
         // Time = 0.
         // First connect after handshake will fail,
         // will be retried after a backoff.
-        Assert.assertTrue(handshakeLatch.await(5000));
-        Assert.assertTrue(connectLatch.await(2 * backoffIncrement));
+        Assertions.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(2 * backoffIncrement));
 
         // Time = 1.
         // Waits for the backoff to happen.
@@ -61,10 +65,10 @@ public class CometDConnectFailureTest extends AbstractCometDTransportsTest {
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
         backoff = ((Number)javaScript.get("backoff")).intValue();
         // The backoff period is always the backoff that will be waited on the *next* failure.
-        Assert.assertEquals(2 * backoffIncrement, backoff);
+        Assertions.assertEquals(2 * backoffIncrement, backoff);
 
         connectLatch.reset(1);
-        Assert.assertTrue(connectLatch.await(2 * backoffIncrement));
+        Assertions.assertTrue(connectLatch.await(2 * backoffIncrement));
 
         // Time = 3.
         // Another failure, backoff will be increased to 3 * backoffIncrement.
@@ -73,23 +77,23 @@ public class CometDConnectFailureTest extends AbstractCometDTransportsTest {
         // Time = 3.5.
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
         backoff = ((Number)javaScript.get("backoff")).intValue();
-        Assert.assertEquals(3 * backoffIncrement, backoff);
+        Assertions.assertEquals(3 * backoffIncrement, backoff);
 
         connectLatch.reset(1);
-        Assert.assertTrue(connectLatch.await(3 * backoffIncrement));
+        Assertions.assertTrue(connectLatch.await(3 * backoffIncrement));
 
         // Disconnect so that connect is not performed anymore
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
         String status = evaluateScript("cometd.getStatus();");
-        Assert.assertEquals("disconnected", status);
+        Assertions.assertEquals("disconnected", status);
 
         // Be sure the connect is not retried anymore
         connectLatch.reset(1);
-        Assert.assertFalse(connectLatch.await(4 * backoffIncrement));
+        Assertions.assertFalse(connectLatch.await(4 * backoffIncrement));
     }
 
     private static class DeleteMetaConnectExtension implements BayeuxServer.Extension {

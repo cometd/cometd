@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ChannelReleaseTest extends ClientServerTest {
     @Test
@@ -31,7 +31,7 @@ public class ChannelReleaseTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         Thread.sleep(1000);
@@ -40,11 +40,11 @@ public class ChannelReleaseTest extends ClientServerTest {
         ClientSessionChannel channel = client.getChannel(channelName);
         boolean released = channel.release();
 
-        Assert.assertTrue(released);
+        Assertions.assertTrue(released);
 
         ClientSessionChannel newChannel = client.getChannel(channelName);
-        Assert.assertNotNull(newChannel);
-        Assert.assertNotSame(channel, newChannel);
+        Assertions.assertNotNull(newChannel);
+        Assertions.assertNotSame(channel, newChannel);
 
         disconnectBayeuxClient(client);
     }
@@ -55,7 +55,7 @@ public class ChannelReleaseTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         Thread.sleep(1000);
@@ -66,11 +66,11 @@ public class ChannelReleaseTest extends ClientServerTest {
         });
         boolean released = channel.release();
 
-        Assert.assertFalse(released);
+        Assertions.assertFalse(released);
 
         ClientSessionChannel newChannel = client.getChannel(channelName);
-        Assert.assertNotNull(newChannel);
-        Assert.assertSame(channel, newChannel);
+        Assertions.assertNotNull(newChannel);
+        Assertions.assertSame(channel, newChannel);
 
         disconnectBayeuxClient(client);
     }
@@ -81,7 +81,7 @@ public class ChannelReleaseTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         Thread.sleep(1000);
@@ -93,14 +93,14 @@ public class ChannelReleaseTest extends ClientServerTest {
             channel.subscribe((c, m) -> latch.countDown());
             channel.publish("");
         });
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
         boolean released = channel.release();
 
-        Assert.assertFalse(released);
+        Assertions.assertFalse(released);
 
         ClientSessionChannel newChannel = client.getChannel(channelName);
-        Assert.assertNotNull(newChannel);
-        Assert.assertSame(channel, newChannel);
+        Assertions.assertNotNull(newChannel);
+        Assertions.assertSame(channel, newChannel);
 
         disconnectBayeuxClient(client);
     }
@@ -111,7 +111,7 @@ public class ChannelReleaseTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         Thread.sleep(1000);
@@ -123,13 +123,13 @@ public class ChannelReleaseTest extends ClientServerTest {
         channel.addListener(listener);
         boolean released = channel.release();
 
-        Assert.assertFalse(released);
+        Assertions.assertFalse(released);
 
         channel.removeListener(listener);
-        Assert.assertTrue(channel.getListeners().isEmpty());
+        Assertions.assertTrue(channel.getListeners().isEmpty());
         released = channel.release();
 
-        Assert.assertTrue(released);
+        Assertions.assertTrue(released);
 
         disconnectBayeuxClient(client);
     }
@@ -140,7 +140,7 @@ public class ChannelReleaseTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         Thread.sleep(1000);
@@ -153,19 +153,19 @@ public class ChannelReleaseTest extends ClientServerTest {
             channel.subscribe(listener);
             channel.publish("");
         });
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
         boolean released = channel.release();
 
-        Assert.assertFalse(released);
+        Assertions.assertFalse(released);
 
         CountDownLatch unsubscribe = new CountDownLatch(1);
         client.getChannel(Channel.META_UNSUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(c, m) -> unsubscribe.countDown());
         channel.unsubscribe(listener);
-        Assert.assertTrue(unsubscribe.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(channel.getSubscribers().isEmpty());
+        Assertions.assertTrue(unsubscribe.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(channel.getSubscribers().isEmpty());
         released = channel.release();
 
-        Assert.assertTrue(released);
+        Assertions.assertTrue(released);
 
         disconnectBayeuxClient(client);
     }
@@ -183,38 +183,38 @@ public class ChannelReleaseTest extends ClientServerTest {
 
         String channelName = "/foo";
         ClientSessionChannel channel = client.getChannel(channelName);
-        Assert.assertTrue(channel.release());
-        Assert.assertTrue(channel.isReleased());
+        Assertions.assertTrue(channel.release());
+        Assertions.assertTrue(channel.isReleased());
 
         ClientSessionChannel.ClientSessionChannelListener channelListener = new ClientSessionChannel.ClientSessionChannelListener() {
         };
         try {
             channel.addListener(channelListener);
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException expected) {
         }
 
         try {
             channel.removeListener(channelListener);
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException expected) {
         }
 
         try {
             channel.setAttribute("foo", "bar");
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException expected) {
         }
 
         try {
             channel.removeAttribute("foo");
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException expected) {
         }
 
         try {
             channel.getAttributeNames();
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException expected) {
         }
 
@@ -222,31 +222,31 @@ public class ChannelReleaseTest extends ClientServerTest {
         };
         try {
             channel.subscribe(listener);
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException expected) {
         }
 
         try {
             channel.unsubscribe(listener);
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException expected) {
         }
 
         try {
             channel.unsubscribe();
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException expected) {
         }
 
         try {
             channel.publish("");
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException expected) {
         }
 
         try {
             channel.getSession();
-            Assert.fail();
+            Assertions.fail();
         } catch (IllegalStateException expected) {
         }
 

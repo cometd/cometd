@@ -22,9 +22,8 @@ import java.util.Set;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
+
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
@@ -34,8 +33,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class JMXTest {
     @Test
@@ -77,29 +76,29 @@ public class JMXTest {
 
         String domain = BayeuxServerImpl.class.getPackage().getName();
         Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*"), null);
-        Assert.assertEquals(1, mbeanNames.size());
+        Assertions.assertEquals(1, mbeanNames.size());
         ObjectName objectName = mbeanNames.iterator().next();
         @SuppressWarnings("unchecked")
         Set<String> channels = (Set<String>)mbeanServer.getAttribute(objectName, "channels");
-        Assert.assertTrue(channels.size() > 0);
+        Assertions.assertTrue(channels.size() > 0);
 
         domain = Oort.class.getPackage().getName();
         mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*,type=oort"), null);
-        Assert.assertEquals(1, mbeanNames.size());
+        Assertions.assertEquals(1, mbeanNames.size());
         objectName = mbeanNames.iterator().next();
 
         String channel = "/foo";
         mbeanServer.invoke(objectName, "observeChannel", new Object[]{channel}, new String[]{String.class.getName()});
         @SuppressWarnings("unchecked")
         Set<String> observedChannels = (Set<String>)mbeanServer.getAttribute(objectName, "observedChannels");
-        Assert.assertTrue(observedChannels.contains(channel));
+        Assertions.assertTrue(observedChannels.contains(channel));
 
         domain = Seti.class.getPackage().getName();
         mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*,type=seti"), null);
-        Assert.assertEquals(1, mbeanNames.size());
+        Assertions.assertEquals(1, mbeanNames.size());
         objectName = mbeanNames.iterator().next();
         ObjectName oortObjectName = (ObjectName)mbeanServer.getAttribute(objectName, "oort");
-        Assert.assertEquals("oort", oortObjectName.getKeyProperty("type"));
+        Assertions.assertEquals("oort", oortObjectName.getKeyProperty("type"));
 
         server.stop();
     }
@@ -135,11 +134,11 @@ public class JMXTest {
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         String domain = BayeuxServerImpl.class.getPackage().getName();
         Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*"), null);
-        Assert.assertEquals(1, mbeanNames.size());
+        Assertions.assertEquals(1, mbeanNames.size());
         ObjectName objectName = mbeanNames.iterator().next();
         @SuppressWarnings("unchecked")
         Set<String> channels = (Set<String>)mbeanServer.getAttribute(objectName, "channels");
-        Assert.assertTrue(channels.size() > 0);
+        Assertions.assertTrue(channels.size() > 0);
 
         server.stop();
     }
@@ -149,7 +148,7 @@ public class JMXTest {
         private volatile MBeanContainer mbeanContainer;
 
         @Override
-        public void init() throws ServletException {
+        public void init() {
             mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
             BayeuxServer bayeuxServer = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
             mbeanContainer.beanAdded(null, bayeuxServer);

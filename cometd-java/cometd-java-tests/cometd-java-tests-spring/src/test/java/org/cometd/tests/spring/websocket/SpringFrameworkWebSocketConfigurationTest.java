@@ -41,9 +41,9 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.web.context.ContextLoader;
 import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.WebApplicationContext;
@@ -91,7 +91,7 @@ public class SpringFrameworkWebSocketConfigurationTest {
         return "http://localhost:" + connector.getLocalPort() + contextPath + cometdServletPath;
     }
 
-    @After
+    @AfterEach
     public void dispose() {
         LifeCycle.stop(server);
     }
@@ -125,29 +125,29 @@ public class SpringFrameworkWebSocketConfigurationTest {
 
     private void testXMLSpringConfigurationWithWebSocket(String url, ClientTransport clientTransport) throws Exception {
         WebApplicationContext applicationContext = WebApplicationContextUtils.getRequiredWebApplicationContext(context.getServletContext());
-        Assert.assertNotNull(applicationContext);
+        Assertions.assertNotNull(applicationContext);
 
         BayeuxServerImpl bayeuxServer = (BayeuxServerImpl)applicationContext.getBean("bayeux");
-        Assert.assertNotNull(bayeuxServer);
-        Assert.assertTrue(bayeuxServer.isStarted());
+        Assertions.assertNotNull(bayeuxServer);
+        Assertions.assertTrue(bayeuxServer.isStarted());
 
         BayeuxServerImpl bayeux = (BayeuxServerImpl)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-        Assert.assertSame(bayeuxServer, bayeux);
+        Assertions.assertSame(bayeuxServer, bayeux);
 
         ServerTransport transport = bayeuxServer.getTransport("websocket");
-        Assert.assertNotNull(transport);
+        Assertions.assertNotNull(transport);
 
         BayeuxClient client = new BayeuxClient(url, clientTransport);
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for connect to establish
         Thread.sleep(1000);
 
-        Assert.assertEquals("websocket", client.getTransport().getName());
+        Assertions.assertEquals("websocket", client.getTransport().getName());
 
         CountDownLatch latch = new CountDownLatch(1);
         client.disconnect(dcReply -> latch.countDown());
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

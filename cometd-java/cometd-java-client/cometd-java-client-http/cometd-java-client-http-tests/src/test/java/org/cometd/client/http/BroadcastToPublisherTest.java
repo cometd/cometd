@@ -29,8 +29,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.BayeuxServerImpl;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class BroadcastToPublisherTest extends ClientServerTest {
     @Test
@@ -57,10 +57,10 @@ public class BroadcastToPublisherTest extends ClientServerTest {
                 client.getChannel(channelName).subscribe((c, m) -> messageLatch.countDown(), m -> subscribeLatch.countDown());
             }
         });
-        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         client.getChannel(channelName).publish("test");
-        Assert.assertEquals(broadcast, messageLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertEquals(broadcast, messageLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -85,7 +85,7 @@ public class BroadcastToPublisherTest extends ClientServerTest {
 
         session.getChannel(channelName).publish("test");
 
-        Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         session.disconnect();
     }
@@ -110,7 +110,7 @@ public class BroadcastToPublisherTest extends ClientServerTest {
             noBroadcastWildClientChannel.subscribe((channel, message) -> noBroadcastLatch.countDown());
             noBroadcastClientChannel.publish("no_broadcast");
         });
-        Assert.assertFalse(noBroadcastLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(noBroadcastLatch.await(1, TimeUnit.SECONDS));
 
         ClientSessionChannel broadcastClientChannel = session.getChannel("/test");
         CountDownLatch broadcastLatch = new CountDownLatch(1);
@@ -118,7 +118,7 @@ public class BroadcastToPublisherTest extends ClientServerTest {
             broadcastClientChannel.subscribe((channel, message) -> broadcastLatch.countDown());
             broadcastClientChannel.publish("broadcast");
         });
-        Assert.assertTrue(broadcastLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(broadcastLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -139,7 +139,7 @@ public class BroadcastToPublisherTest extends ClientServerTest {
         ServerSession session = bayeux.getSession(client.getId());
         session.disconnect();
 
-        Assert.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

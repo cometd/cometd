@@ -30,27 +30,27 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class MessageProcessingOrderTest {
     private final BayeuxServerImpl _bayeux = new BayeuxServerImpl();
 
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         _bayeux.start();
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception {
         _bayeux.stop();
     }
 
     @Test
-    public void testProcessingOrderClientPublishBroadcast() throws Exception {
-        final Queue<String> events = new ConcurrentLinkedQueue<>();
+    public void testProcessingOrderClientPublishBroadcast() {
+        Queue<String> events = new ConcurrentLinkedQueue<>();
 
         LocalSession session0 = _bayeux.newLocalSession("s0");
         session0.handshake();
@@ -96,19 +96,19 @@ public class MessageProcessingOrderTest {
                 "0.cln.ext.rcv.rpy",
                 "0.cln.lst.rpy"
         );
-        Assert.assertEquals(expected, new ArrayList<>(events));
+        Assertions.assertEquals(expected, new ArrayList<>(events));
     }
 
     @Test
-    public void testProcessingOrderClientPublishServiceServerDeliver() throws Exception {
-        final Queue<String> events = new ConcurrentLinkedQueue<>();
+    public void testProcessingOrderClientPublishServiceServerDeliver() {
+        Queue<String> events = new ConcurrentLinkedQueue<>();
 
         LocalSession client = _bayeux.newLocalSession("cln");
         client.handshake();
-        final LocalSession service = _bayeux.newLocalSession("svc");
+        LocalSession service = _bayeux.newLocalSession("svc");
         service.handshake();
 
-        final String channelName = "/service/foo";
+        String channelName = "/service/foo";
 
         client.addExtension(new ClientExtension(events, "0"));
         client.getChannel(channelName).addListener(new ClientListener(events, "0"));
@@ -148,22 +148,22 @@ public class MessageProcessingOrderTest {
                 "0.cln.ext.rcv.rpy",
                 "0.cln.lst.rpy"
         );
-        Assert.assertEquals(expected, new ArrayList<>(events));
+        Assertions.assertEquals(expected, new ArrayList<>(events));
     }
 
     @Test
-    public void testProcessingOrderClientPublishServiceServerPublish() throws Exception {
-        final Queue<String> events = new ConcurrentLinkedQueue<>();
+    public void testProcessingOrderClientPublishServiceServerPublish() {
+        Queue<String> events = new ConcurrentLinkedQueue<>();
 
         LocalSession session0 = _bayeux.newLocalSession("s0");
         session0.handshake();
         LocalSession session1 = _bayeux.newLocalSession("s1");
         session1.handshake();
-        final LocalSession service = _bayeux.newLocalSession("svc");
+        LocalSession service = _bayeux.newLocalSession("svc");
         service.handshake();
 
         String serviceChannel = "/service/foo";
-        final String broadcastChannel = "/foo";
+        String broadcastChannel = "/foo";
 
         session0.addExtension(new ClientExtension(events, "0"));
         session0.getChannel(serviceChannel).addListener(new ClientListener(events, "0"));
@@ -210,7 +210,7 @@ public class MessageProcessingOrderTest {
                 "0.pub.cln.cbk",
                 "0.cln.lst.rpy"
         );
-        Assert.assertEquals(expected, new ArrayList<>(events));
+        Assertions.assertEquals(expected, new ArrayList<>(events));
     }
 
     private static class ClientListener implements ClientSessionChannel.MessageListener {

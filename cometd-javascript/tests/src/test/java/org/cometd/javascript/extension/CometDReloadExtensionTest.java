@@ -21,12 +21,17 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testReloadWithConfiguration() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testReloadWithConfiguration(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = javaScript.get("readyLatch");
         String attributeName = "reload.test";
@@ -44,20 +49,23 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait that the long poll is established before reloading
         Thread.sleep(metaConnectPeriod / 2);
 
         evaluateScript("cometd.reload();");
         String reloadState = evaluateScript("window.sessionStorage.getItem('" + attributeName + "');");
-        Assert.assertNotNull(reloadState);
+        Assertions.assertNotNull(reloadState);
 
         disconnect();
     }
 
-    @Test
-    public void testReloadedHandshakeContainsExtension() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testReloadedHandshakeContainsExtension(String transport) throws Exception {
+        initCometDServer(transport);
+
         bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
@@ -79,7 +87,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait that the long poll is established before reloading
         Thread.sleep(metaConnectPeriod / 2);
@@ -88,7 +96,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
 
         // Reload the page
         destroyPage();
-        initPage();
+        initPage(transport);
 
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = javaScript.get("readyLatch");
@@ -107,7 +115,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("" +
                 "window.assert(ext !== undefined, 'ext must be present');" +
@@ -117,8 +125,11 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
         disconnect();
     }
 
-    @Test
-    public void testReloadDoesNotExpire() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testReloadDoesNotExpire(String transport) throws Exception {
+        initCometDServer(transport);
+
         provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
@@ -130,7 +141,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Get the clientId
         String clientId = evaluateScript("cometd.getClientId();");
@@ -143,7 +154,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
 
         // Reload the page
         destroyPage();
-        initPage();
+        initPage(transport);
 
         provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -160,29 +171,32 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         String newClientId = evaluateScript("cometd.getClientId();");
-        Assert.assertEquals(clientId, newClientId);
+        Assertions.assertEquals(clientId, newClientId);
 
         // Make sure that reloading will not expire the client on the server
-        Assert.assertFalse(expireLatch.await(expirationPeriod + metaConnectPeriod));
+        Assertions.assertFalse(expireLatch.await(expirationPeriod + metaConnectPeriod));
 
         disconnect();
     }
 
     @Test
     public void testReloadWithWebSocketTransport() throws Exception {
+        initCometDServer(null);
         testReloadWithTransport(cometdURL, "websocket");
     }
 
     @Test
     public void testReloadWithLongPollingTransport() throws Exception {
+        initCometDServer(null);
         testReloadWithTransport(cometdURL, "long-polling");
     }
 
     @Test
     public void testReloadWithCallbackPollingTransport() throws Exception {
+        initCometDServer(null);
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
         testReloadWithTransport(url, "callback-polling");
@@ -203,7 +217,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Get the clientId
         String clientId = evaluateScript("cometd.getClientId();");
@@ -213,7 +227,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
 
         // Reload the page
         destroyPage();
-        initPage();
+        initPage(null);
 
         provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
@@ -229,24 +243,27 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         String newClientId = evaluateScript("cometd.getClientId();");
-        Assert.assertEquals(clientId, newClientId);
+        Assertions.assertEquals(clientId, newClientId);
 
         String transportType = evaluateScript("cometd.getTransport().getType();");
-        Assert.assertEquals(transportName, transportType);
+        Assertions.assertEquals(transportName, transportType);
 
         evaluateScript("cometd.disconnect();");
         Thread.sleep(1000);
 
         // Be sure the sessionStorage item has been removed on disconnect.
         Boolean reloadState = evaluateScript("window.sessionStorage.getItem('org.cometd.reload') == null;");
-        Assert.assertTrue(reloadState);
+        Assertions.assertTrue(reloadState);
     }
 
-    @Test
-    public void testReloadAcrossServerRestart() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testReloadAcrossServerRestart(String transport) throws Exception {
+        initCometDServer(transport);
+
         provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
@@ -263,12 +280,12 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "    }" +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Stop the server
         int port = connector.getLocalPort();
         server.stop();
-        Assert.assertTrue(stopLatch.await(5000));
+        Assertions.assertTrue(stopLatch.await(5000));
 
         // Disconnect
         evaluateScript("cometd.disconnect();");
@@ -280,7 +297,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
         // Reload the page
         evaluateScript("cometd.reload();");
         destroyPage();
-        initPage();
+        initPage(transport);
 
         provideReloadExtension();
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -297,29 +314,32 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "    }" +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
         // Must not have failed with a 402::unknown_session error.
-        Assert.assertEquals(0, ((Number)javaScript.get("failures")).intValue());
+        Assertions.assertEquals(0, ((Number)javaScript.get("failures")).intValue());
 
         disconnect();
     }
 
-    @Test
-    public void testReloadWithSubscriptionAndPublish() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testReloadWithSubscriptionAndPublish(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateApplication();
         Latch latch = javaScript.get("latch");
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         // Calling reload() results in the state being saved.
         evaluateScript("cometd.reload();");
 
         // Reload the page
         destroyPage();
-        initPage();
+        initPage(transport);
 
         evaluateApplication();
         latch = javaScript.get("latch");
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         // Check that handshake was faked
         evaluateScript("window.assert(extHandshake === null, 'extHandshake');");
@@ -333,7 +353,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
         disconnect();
     }
 
-    private void evaluateApplication() throws Exception {
+    private void evaluateApplication() {
         evaluateScript("" +
                 "var latch = new Latch(1);" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
@@ -384,8 +404,11 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "cometd.handshake();");
     }
 
-    @Test
-    public void testReloadWithHandshakeCallback() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testReloadWithHandshakeCallback(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = javaScript.get("readyLatch");
 
@@ -396,7 +419,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "        readyLatch.countDown();" +
                 "    }" +
                 "});");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait that the long poll is established before reloading
         Thread.sleep(metaConnectPeriod / 2);
@@ -404,7 +427,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
         // Reload the page
         evaluateScript("cometd.reload();");
         destroyPage();
-        initPage();
+        initPage(transport);
 
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = javaScript.get("readyLatch");
@@ -416,7 +439,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "        readyLatch.countDown();" +
                 "    }" +
                 "});");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         disconnect();
     }

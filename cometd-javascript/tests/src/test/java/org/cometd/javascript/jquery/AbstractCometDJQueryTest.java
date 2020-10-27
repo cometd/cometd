@@ -16,10 +16,16 @@
 package org.cometd.javascript.jquery;
 
 import org.cometd.javascript.AbstractCometDTest;
+import org.junit.jupiter.api.BeforeEach;
 
 public class AbstractCometDJQueryTest extends AbstractCometDTest {
+    @BeforeEach
+    public void init() throws Exception {
+        initCometDServer(null);
+    }
+
     @Override
-    protected void provideCometD() throws Exception {
+    protected void provideCometD(String transport) {
         javaScript.evaluate(getClass().getResource("/js/jquery/jquery-3.4.1.js"));
         javaScript.evaluate(getClass().getResource("/js/cometd/cometd.js"));
         javaScript.evaluate(getClass().getResource("/js/jquery/jquery.cometd.js"));
@@ -33,5 +39,10 @@ public class AbstractCometDJQueryTest extends AbstractCometDTest {
                 "    originalTransports[transportName] = cometd.findTransport(transportName);" +
                 "}" +
                 "");
+        if (transport != null) {
+            evaluateScript("only_" + transport, "" +
+                    "cometd.unregisterTransports();" +
+                    "cometd.registerTransport('" + transport + "', originalTransports['" + transport + "']);");
+        }
     }
 }

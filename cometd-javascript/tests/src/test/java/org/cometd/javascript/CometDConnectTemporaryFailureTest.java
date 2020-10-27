@@ -19,12 +19,16 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDConnectTemporaryFailureTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testConnectTemporaryFailure() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testConnectTemporaryFailure(String transport) throws Exception {
+        initCometDServer(transport);
+
         bayeuxServer.addExtension(new DeleteMetaConnectExtension());
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -50,16 +54,16 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTransportsT
                 "});");
 
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(handshakeLatch.await(5000));
-        Assert.assertTrue(connectLatch.await(5000));
-        Assert.assertEquals(1L, failureLatch.getCount());
+        Assertions.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
+        Assertions.assertEquals(1L, failureLatch.getCount());
 
         handshakeLatch.reset(1);
         connectLatch.reset(1);
         // Wait for the connect to temporarily fail
-        Assert.assertTrue(failureLatch.await(metaConnectPeriod * 2));
-        Assert.assertEquals(1L, handshakeLatch.getCount());
-        Assert.assertEquals(1L, connectLatch.getCount());
+        Assertions.assertTrue(failureLatch.await(metaConnectPeriod * 2));
+        Assertions.assertEquals(1L, handshakeLatch.getCount());
+        Assertions.assertEquals(1L, connectLatch.getCount());
 
         // Implementation will backoff the connect attempt
         long backoff = ((Number)evaluateScript("cometd.getBackoffIncrement();")).longValue();
@@ -67,9 +71,9 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTransportsT
 
         failureLatch.reset(1);
         // Reconnection will trigger /meta/connect
-        Assert.assertTrue(connectLatch.await(5000));
-        Assert.assertEquals(1L, handshakeLatch.getCount());
-        Assert.assertEquals(1L, failureLatch.getCount());
+        Assertions.assertTrue(connectLatch.await(5000));
+        Assertions.assertEquals(1L, handshakeLatch.getCount());
+        Assertions.assertEquals(1L, failureLatch.getCount());
 
         disconnect();
     }

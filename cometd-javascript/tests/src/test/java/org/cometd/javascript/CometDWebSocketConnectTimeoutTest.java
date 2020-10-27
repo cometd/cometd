@@ -28,8 +28,8 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTest {
     private final long timeout = 1000;
@@ -69,15 +69,15 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
                 "};");
 
         evaluateScript("cometd.handshake()");
-        Assert.assertTrue(failureLatch.await(2 * timeout));
-        Assert.assertTrue(wsLatch.await(2 * timeout));
-        Assert.assertTrue(lpLatch.await(2 * timeout));
+        Assertions.assertTrue(failureLatch.await(2 * timeout));
+        Assertions.assertTrue(wsLatch.await(2 * timeout));
+        Assertions.assertTrue(lpLatch.await(2 * timeout));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 
     @Test
@@ -104,21 +104,21 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
                 "});");
 
         evaluateScript("cometd.handshake()");
-        Assert.assertTrue(handshakeLatch.await(2 * timeout));
+        Assertions.assertTrue(handshakeLatch.await(2 * timeout));
 
         // Wait to be sure we're not disconnected
-        Assert.assertFalse(connectLatch.await(2 * timeout));
+        Assertions.assertFalse(connectLatch.await(2 * timeout));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 
     private class TimeoutFilter implements Filter {
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException {
+        public void init(FilterConfig filterConfig) {
         }
 
         @Override

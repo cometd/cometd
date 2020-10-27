@@ -24,22 +24,16 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ServerRedeployTest extends AbstractBayeuxClientServerTest {
-    public ServerRedeployTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerRedeploy(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testServerRedeploy() throws Exception {
         Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -48,7 +42,7 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
         ServerSession session = bayeux.getSession(clientId);
@@ -69,7 +63,7 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest {
                 "\"advice\": { \"timeout\": 0 }" +
                 "}]");
         response = connect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         connect = newBayeuxRequest("" +
                 "[{" +
@@ -80,13 +74,13 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest {
         FutureResponseListener futureResponse = new FutureResponseListener(connect);
         connect.send(futureResponse);
 
-        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         // Stop the context; this is the first half of a redeploy
         context.stop();
 
         // Expect the connect to be back with an exception
         response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
-        Assert.assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
+        Assertions.assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
     }
 }

@@ -15,17 +15,12 @@
  */
 package org.cometd.annotation.guice;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.server.BayeuxServerImpl;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class GuiceAnnotationTest {
     @Test
@@ -40,7 +35,7 @@ public class GuiceAnnotationTest {
         // Guice does not handle @PostConstruct and @PreDestroy, so we need to handle them
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeuxServer);
         GuiceBayeuxService service = injector.getInstance(GuiceBayeuxService.class);
-        Assert.assertTrue(processor.process(service));
+        Assertions.assertTrue(processor.process(service));
 
         // At this point we're configured properly
         // The code above should be put into a ServletContextListener.contextInitialized()
@@ -48,20 +43,20 @@ public class GuiceAnnotationTest {
         // and the BayeuxServer instance can be put into the ServletContext
 
         // Test that we're configured properly
-        Assert.assertNotNull(service);
-        assertNotNull(service.dependency);
-        assertNotNull(service.bayeuxServer);
-        assertNotNull(service.serverSession);
-        assertTrue(service.active);
-        assertEquals(1, service.bayeuxServer.getChannel(GuiceBayeuxService.CHANNEL).getSubscribers().size());
+        Assertions.assertNotNull(service);
+        Assertions.assertNotNull(service.dependency);
+        Assertions.assertNotNull(service.bayeuxServer);
+        Assertions.assertNotNull(service.serverSession);
+        Assertions.assertTrue(service.active);
+        Assertions.assertEquals(1, service.bayeuxServer.getChannel(GuiceBayeuxService.CHANNEL).getSubscribers().size());
 
         // Deconfigure services
         // The code below should be put into a ServletContextListener.contextDestroyed()
         // method, so that it is triggered by the web application lifecycle handling
-        Assert.assertTrue(processor.deprocess(service));
+        Assertions.assertTrue(processor.deprocess(service));
         // Manually stop the BayeuxServer
         bayeuxServer.stop();
 
-        assertFalse(service.active);
+        Assertions.assertFalse(service.active);
     }
 }

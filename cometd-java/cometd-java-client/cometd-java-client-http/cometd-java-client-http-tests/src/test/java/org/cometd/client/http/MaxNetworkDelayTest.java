@@ -33,15 +33,14 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class MaxNetworkDelayTest extends ClientServerTest {
     private final long timeout = 5000;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         Map<String, String> params = new HashMap<>();
         params.put("timeout", String.valueOf(timeout));
@@ -88,7 +87,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
         });
 
         client.handshake();
-        assertTrue(latch.await(sleep, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(latch.await(sleep, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -147,9 +146,9 @@ public class MaxNetworkDelayTest extends ClientServerTest {
 
         client.handshake();
         long begin = System.nanoTime();
-        assertTrue(latch.await(timeout + sleep, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(latch.await(timeout + sleep, TimeUnit.MILLISECONDS));
         long end = System.nanoTime();
-        assertTrue(end - begin > TimeUnit.MILLISECONDS.toNanos(timeout));
+        Assertions.assertTrue(end - begin > TimeUnit.MILLISECONDS.toNanos(timeout));
 
         disconnectBayeuxClient(client);
     }
@@ -203,7 +202,7 @@ public class MaxNetworkDelayTest extends ClientServerTest {
         });
 
         client.handshake();
-        assertTrue(latch.await(3 * sleep, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(latch.await(3 * sleep, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }

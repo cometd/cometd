@@ -63,17 +63,20 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class WebAppTest {
-    @Rule
-    public TestName testname = new TestName();
-
+    private String testName;
+    @RegisterExtension
+    final BeforeTestExecutionCallback printMethodName = context -> {
+        testName = context.getRequiredTestMethod().getName();
+        System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), testName);
+    };
     private Path baseDir;
     private Server server;
     private ServerConnector connector;
@@ -82,13 +85,13 @@ public class WebAppTest {
     private WebSocketContainer wsContainer;
     private HttpClient httpClient;
 
-    @Before
+    @BeforeEach
     public void prepare() {
         baseDir = Paths.get(System.getProperty("basedir", System.getProperty("user.dir")));
     }
 
     private void start(Path webXML) throws Exception {
-        Path contextDir = baseDir.resolve("target/test-webapp/" + testname.getMethodName());
+        Path contextDir = baseDir.resolve("target/test-webapp/" + testName);
         removeDirectory(contextDir);
         Path webINF = Files.createDirectories(contextDir.resolve("WEB-INF"));
         Path classes = Files.createDirectory(webINF.resolve("classes"));
@@ -163,7 +166,7 @@ public class WebAppTest {
         server.start();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception {
         if (server != null) {
             server.stop();
@@ -204,7 +207,7 @@ public class WebAppTest {
         String uri = "http://localhost:" + connector.getLocalPort() + contextPath + "/cometd";
         BayeuxClient client = new BayeuxClient(uri, new JettyHttpClientTransport(null, httpClient));
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Stream.of(WebAppService.HTTP_CHANNEL, WebAppService.JAVAX_WS_CHANNEL, WebAppService.JETTY_WS_CHANNEL)
                 .map(channel -> remoteCall(client, channel, uri))
@@ -215,8 +218,8 @@ public class WebAppTest {
         client.disconnect();
     }
 
-    private void subscribePublishReceive(final BayeuxClient client) throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
+    private void subscribePublishReceive(BayeuxClient client) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
         client.handshake(message -> {
             if (message.isSuccessful()) {
                 client.batch(() -> {
@@ -226,7 +229,7 @@ public class WebAppTest {
                 });
             }
         });
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     private CompletableFuture<Void> remoteCall(BayeuxClient client, String channel, Object data) {

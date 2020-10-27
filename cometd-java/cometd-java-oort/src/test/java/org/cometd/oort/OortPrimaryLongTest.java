@@ -18,18 +18,18 @@ package org.cometd.oort;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class OortPrimaryLongTest extends AbstractOortObjectTest {
-    public OortPrimaryLongTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testCount(String serverTransport) throws Exception {
+        prepare(serverTransport);
 
-    @Test
-    public void testCount() throws Exception {
         String name = "test";
-        final long initial = 3;
+        long initial = 3;
         OortPrimaryLong counter1 = new OortPrimaryLong(oort1, name, true, initial);
         OortPrimaryLong counter2 = new OortPrimaryLong(oort2, name, false);
         counter1.start();
@@ -39,76 +39,76 @@ public class OortPrimaryLongTest extends AbstractOortObjectTest {
         // Wait for the nodes to synchronize
         Thread.sleep(1000);
 
-        final CountDownLatch latch1 = new CountDownLatch(1);
-        Assert.assertTrue(counter1.get(new OortPrimaryLong.Callback() {
+        CountDownLatch latch1 = new CountDownLatch(1);
+        Assertions.assertTrue(counter1.get(new OortPrimaryLong.Callback() {
             @Override
             public void succeeded(Long result) {
-                Assert.assertEquals(initial, (long)result);
+                Assertions.assertEquals(initial, (long)result);
                 latch1.countDown();
             }
         }));
-        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch1.await(5, TimeUnit.SECONDS));
         // Make sure the local value is set
-        Assert.assertEquals(initial, counter1.getValue());
+        Assertions.assertEquals(initial, counter1.getValue());
 
-        final CountDownLatch latch2 = new CountDownLatch(1);
-        Assert.assertTrue(counter2.get(new OortPrimaryLong.Callback() {
+        CountDownLatch latch2 = new CountDownLatch(1);
+        Assertions.assertTrue(counter2.get(new OortPrimaryLong.Callback() {
             @Override
             public void succeeded(Long result) {
-                Assert.assertEquals(initial, (long)result);
+                Assertions.assertEquals(initial, (long)result);
                 latch2.countDown();
             }
         }));
-        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch2.await(5, TimeUnit.SECONDS));
         // Make sure the local value is not set
-        Assert.assertEquals(0, counter2.getValue());
+        Assertions.assertEquals(0, counter2.getValue());
 
-        final CountDownLatch latch3 = new CountDownLatch(1);
-        Assert.assertTrue(counter1.addAndGet(1, new OortPrimaryLong.Callback() {
+        CountDownLatch latch3 = new CountDownLatch(1);
+        Assertions.assertTrue(counter1.addAndGet(1, new OortPrimaryLong.Callback() {
             @Override
             public void succeeded(Long result) {
-                Assert.assertEquals(initial + 1, (long)result);
+                Assertions.assertEquals(initial + 1, (long)result);
                 latch3.countDown();
             }
         }));
-        Assert.assertTrue(latch3.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch3.await(5, TimeUnit.SECONDS));
         // Make sure the local value is set
-        Assert.assertEquals(initial + 1, counter1.getValue());
+        Assertions.assertEquals(initial + 1, counter1.getValue());
 
-        final CountDownLatch latch4 = new CountDownLatch(1);
-        Assert.assertTrue(counter2.addAndGet(1, new OortPrimaryLong.Callback() {
+        CountDownLatch latch4 = new CountDownLatch(1);
+        Assertions.assertTrue(counter2.addAndGet(1, new OortPrimaryLong.Callback() {
             @Override
             public void succeeded(Long result) {
-                Assert.assertEquals(initial + 2, (long)result);
+                Assertions.assertEquals(initial + 2, (long)result);
                 latch4.countDown();
             }
         }));
-        Assert.assertTrue(latch4.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch4.await(5, TimeUnit.SECONDS));
         // Make sure the local value is not set
-        Assert.assertEquals(0, counter2.getValue());
+        Assertions.assertEquals(0, counter2.getValue());
 
-        final CountDownLatch latch5 = new CountDownLatch(1);
-        Assert.assertTrue(counter2.getAndAdd(1, new OortPrimaryLong.Callback() {
+        CountDownLatch latch5 = new CountDownLatch(1);
+        Assertions.assertTrue(counter2.getAndAdd(1, new OortPrimaryLong.Callback() {
             @Override
             public void succeeded(Long result) {
-                Assert.assertEquals(initial + 2, (long)result);
+                Assertions.assertEquals(initial + 2, (long)result);
                 latch5.countDown();
             }
         }));
-        Assert.assertTrue(latch5.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch5.await(5, TimeUnit.SECONDS));
         // Make sure the local value is not set
-        Assert.assertEquals(0, counter2.getValue());
+        Assertions.assertEquals(0, counter2.getValue());
 
-        final CountDownLatch latch6 = new CountDownLatch(1);
-        Assert.assertTrue(counter1.get(new OortPrimaryLong.Callback() {
+        CountDownLatch latch6 = new CountDownLatch(1);
+        Assertions.assertTrue(counter1.get(new OortPrimaryLong.Callback() {
             @Override
             public void succeeded(Long result) {
-                Assert.assertEquals(initial + 3, (long)result);
+                Assertions.assertEquals(initial + 3, (long)result);
                 latch6.countDown();
             }
         }));
-        Assert.assertTrue(latch6.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch6.await(5, TimeUnit.SECONDS));
         // Make sure the local value is set
-        Assert.assertEquals(initial + 3, counter1.getValue());
+        Assertions.assertEquals(initial + 3, counter1.getValue());
     }
 }

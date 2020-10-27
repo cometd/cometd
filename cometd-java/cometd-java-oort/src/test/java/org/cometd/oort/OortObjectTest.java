@@ -33,47 +33,47 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class OortObjectTest extends AbstractOortObjectTest {
-    public OortObjectTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testShareObject(String serverTransport) throws Exception {
+        prepare(serverTransport);
 
-    @Test
-    public void testShareObject() throws Exception {
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
         OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
         OortObject<Map<String, Object>> oortObject2 = new OortObject<>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
 
-        final String key1 = "key1";
-        final String value1 = "value1";
-        final CountDownLatch objectLatch1 = new CountDownLatch(1);
+        String key1 = "key1";
+        String value1 = "value1";
+        CountDownLatch objectLatch1 = new CountDownLatch(1);
         oortObject1.addListener(new OortObject.Listener<Map<String, Object>>() {
             @Override
             public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo) {
-                Assert.assertTrue(newInfo.isLocal());
-                Assert.assertNotNull(oldInfo);
-                Assert.assertTrue(oldInfo.getObject().isEmpty());
-                Assert.assertNotSame(oldInfo, newInfo);
-                Assert.assertEquals(value1, newInfo.getObject().get(key1));
+                Assertions.assertTrue(newInfo.isLocal());
+                Assertions.assertNotNull(oldInfo);
+                Assertions.assertTrue(oldInfo.getObject().isEmpty());
+                Assertions.assertNotSame(oldInfo, newInfo);
+                Assertions.assertEquals(value1, newInfo.getObject().get(key1));
                 objectLatch1.countDown();
             }
         });
 
         // The other OortObject listens to receive the object
-        final CountDownLatch objectLatch2 = new CountDownLatch(1);
+        CountDownLatch objectLatch2 = new CountDownLatch(1);
         oortObject2.addListener(new OortObject.Listener<Map<String, Object>>() {
             @Override
             public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo) {
-                Assert.assertFalse(newInfo.isLocal());
-                Assert.assertNotNull(oldInfo);
-                Assert.assertTrue(oldInfo.getObject().isEmpty());
-                Assert.assertNotSame(oldInfo, newInfo);
-                Assert.assertEquals(value1, newInfo.getObject().get(key1));
+                Assertions.assertFalse(newInfo.isLocal());
+                Assertions.assertNotNull(oldInfo);
+                Assertions.assertTrue(oldInfo.getObject().isEmpty());
+                Assertions.assertNotSame(oldInfo, newInfo);
+                Assertions.assertEquals(value1, newInfo.getObject().get(key1));
                 objectLatch2.countDown();
             }
         });
@@ -83,21 +83,24 @@ public class OortObjectTest extends AbstractOortObjectTest {
         object1.put(key1, value1);
         oortObject1.setAndShare(object1, null);
 
-        Assert.assertTrue(objectLatch1.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(objectLatch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(objectLatch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(objectLatch2.await(5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(value1, oortObject1.getInfo(oort1.getURL()).getObject().get(key1));
-        Assert.assertTrue(oortObject1.getInfo(oort2.getURL()).getObject().isEmpty());
+        Assertions.assertEquals(value1, oortObject1.getInfo(oort1.getURL()).getObject().get(key1));
+        Assertions.assertTrue(oortObject1.getInfo(oort2.getURL()).getObject().isEmpty());
 
-        Assert.assertTrue(oortObject2.getInfo(oort2.getURL()).getObject().isEmpty());
-        Assert.assertEquals(object1, oortObject2.getInfo(oort1.getURL()).getObject());
+        Assertions.assertTrue(oortObject2.getInfo(oort2.getURL()).getObject().isEmpty());
+        Assertions.assertEquals(object1, oortObject2.getInfo(oort1.getURL()).getObject());
 
         Map<String, Object> objectAtOort2 = oortObject2.merge(OortObjectMergers.mapUnion());
-        Assert.assertEquals(object1, objectAtOort2);
+        Assertions.assertEquals(object1, objectAtOort2);
     }
 
-    @Test
-    public void testLocalObjectIsPushedWhenNodeJoins() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testLocalObjectIsPushedWhenNodeJoins(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
         OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -120,12 +123,12 @@ public class OortObjectTest extends AbstractOortObjectTest {
         Thread.sleep(1000);
 
         // Connect node3
-        Server server3 = startServer(0);
+        Server server3 = startServer(serverTransport, 0);
         Oort oort3 = startOort(server3);
         OortComet oortComet31 = oort3.observeComet(oort1.getURL());
-        Assert.assertTrue(oortComet31.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(oortComet31.waitFor(5000, BayeuxClient.State.CONNECTED));
         OortComet oortComet32 = oort3.observeComet(oort2.getURL());
-        Assert.assertTrue(oortComet32.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(oortComet32.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         OortObject<Map<String, Object>> oortObject3 = new OortObject<>(oort3, name, factory);
         // Latch with 4 counts for node1 and node2 receiving from node3 + node3 receiving from node1 and node2.
@@ -137,14 +140,14 @@ public class OortObjectTest extends AbstractOortObjectTest {
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
         oortObject3.start();
-        Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(initialListener.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(initialListener.await(5, TimeUnit.SECONDS));
 
         Map<String, Object> object3 = factory.newObject(null);
         String key3 = "key3";
         String value3 = "value3";
         object3.put(key3, value3);
-        final CountDownLatch objectsLatch = new CountDownLatch(3);
+        CountDownLatch objectsLatch = new CountDownLatch(3);
         OortObject.Listener<Map<String, Object>> objectListener = new OortObject.Listener<Map<String, Object>>() {
             @Override
             public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo) {
@@ -155,21 +158,24 @@ public class OortObjectTest extends AbstractOortObjectTest {
         oortObject2.addListener(objectListener);
         oortObject3.addListener(objectListener);
         oortObject3.setAndShare(object3, null);
-        Assert.assertTrue(objectsLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(objectsLatch.await(5, TimeUnit.SECONDS));
 
         OortObject.Merger<Map<String, Object>, Map<String, Object>> merger = OortObjectMergers.mapUnion();
         Map<String, Object> objectAtOort1 = oortObject1.merge(merger);
-        Assert.assertEquals(3, objectAtOort1.size());
+        Assertions.assertEquals(3, objectAtOort1.size());
         Map<String, Object> objectAtOort2 = oortObject2.merge(merger);
-        Assert.assertEquals(3, objectAtOort2.size());
+        Assertions.assertEquals(3, objectAtOort2.size());
         Map<String, Object> objectAtOort3 = oortObject3.merge(merger);
-        Assert.assertEquals(3, objectAtOort3.size());
+        Assertions.assertEquals(3, objectAtOort3.size());
 
         oortObject3.stop();
     }
 
-    @Test
-    public void testLocalObjectIsRemovedWhenNodeLeaves() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testLocalObjectIsRemovedWhenNodeLeaves(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
         OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -194,14 +200,17 @@ public class OortObjectTest extends AbstractOortObjectTest {
         CountDownLatch latch = new CountDownLatch(1);
         oort2.addCometListener(new CometLeftListener(latch));
         stopOort(oort1);
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         Map<String, Object> objectAtOort2 = oortObject2.merge(OortObjectMergers.mapUnion());
-        Assert.assertEquals(object2, objectAtOort2);
+        Assertions.assertEquals(object2, objectAtOort2);
     }
 
-    @Test
-    public void testIterationOverInfos() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testIterationOverInfos(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
         OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -227,26 +236,29 @@ public class OortObjectTest extends AbstractOortObjectTest {
         for (OortObject.Info<Map<String, Object>> info : oortObject1) {
             infos.add(info);
         }
-        Assert.assertEquals(2, infos.size());
+        Assertions.assertEquals(2, infos.size());
         for (OortObject.Info<Map<String, Object>> info : infos) {
             Map<String, Object> data = info.getObject();
             if (data.containsKey(key1)) {
-                Assert.assertEquals(oort1.getURL(), info.getOortURL());
+                Assertions.assertEquals(oort1.getURL(), info.getOortURL());
             } else if (data.containsKey(key2)) {
-                Assert.assertEquals(oort2.getURL(), info.getOortURL());
+                Assertions.assertEquals(oort2.getURL(), info.getOortURL());
             }
         }
     }
 
-    @Test
-    public void testNonCompositeObject() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testNonCompositeObject(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "test";
         OortObject.Factory<Long> factory = OortObjectFactories.forLong(0);
         OortObject<Long> oortObject1 = new OortObject<>(oort1, name, factory);
         OortObject<Long> oortObject2 = new OortObject<>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
 
-        final CountDownLatch latch1 = new CountDownLatch(2);
+        CountDownLatch latch1 = new CountDownLatch(2);
         OortObject.Listener<Long> objectListener1 = new OortObject.Listener<Long>() {
             @Override
             public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo) {
@@ -257,9 +269,9 @@ public class OortObjectTest extends AbstractOortObjectTest {
         oortObject2.addListener(objectListener1);
         long value1 = 2;
         oortObject1.setAndShare(value1, null);
-        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch1.await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch latch2 = new CountDownLatch(2);
+        CountDownLatch latch2 = new CountDownLatch(2);
         OortObject.Listener<Long> objectListener2 = new OortObject.Listener<Long>() {
             @Override
             public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo) {
@@ -270,21 +282,24 @@ public class OortObjectTest extends AbstractOortObjectTest {
         oortObject2.addListener(objectListener2);
         long value2 = 3;
         oortObject2.setAndShare(value2, null);
-        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch2.await(5, TimeUnit.SECONDS));
 
         long sum = oortObject1.merge(OortObjectMergers.longSum());
-        Assert.assertEquals(value1 + value2, sum);
+        Assertions.assertEquals(value1 + value2, sum);
     }
 
-    @Test
-    public void testStaleUpdateIsDiscarded() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testStaleUpdateIsDiscarded(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "test";
         OortObject.Factory<Long> factory = OortObjectFactories.forLong(0);
-        final OortObject<Long> oortObject1 = new OortObject<>(oort1, name, factory);
+        OortObject<Long> oortObject1 = new OortObject<>(oort1, name, factory);
         OortObject<Long> oortObject2 = new OortObject<>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
 
-        final CountDownLatch latch1 = new CountDownLatch(2);
+        CountDownLatch latch1 = new CountDownLatch(2);
         OortObject.Listener<Long> objectListener1 = new OortObject.Listener<Long>() {
             @Override
             public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo) {
@@ -293,12 +308,12 @@ public class OortObjectTest extends AbstractOortObjectTest {
         };
         oortObject1.addListener(objectListener1);
         oortObject2.addListener(objectListener1);
-        final long value1 = 1;
+        long value1 = 1;
         oortObject1.setAndShare(value1, null);
-        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch1.await(5, TimeUnit.SECONDS));
 
         // Update "concurrently": the concurrence will be simulated
-        final long delay = 1000;
+        long delay = 1000;
         final long value2 = 2;
         final long value3 = 3;
         oort2.getBayeuxServer().addExtension(new BayeuxServer.Extension() {
@@ -326,20 +341,23 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
         OortObject.Result.Deferred<Long> result1 = new OortObject.Result.Deferred<>();
         oortObject1.setAndShare(value2, result1);
-        Assert.assertEquals(value1, result1.get(5, TimeUnit.SECONDS).longValue());
+        Assertions.assertEquals(value1, result1.get(5, TimeUnit.SECONDS).longValue());
 
         OortObject.Result.Deferred<Long> result2 = new OortObject.Result.Deferred<>();
         oortObject1.setAndShare(value3, result2);
-        Assert.assertEquals(value2, result2.get(5, TimeUnit.SECONDS).longValue());
+        Assertions.assertEquals(value2, result2.get(5, TimeUnit.SECONDS).longValue());
 
         Thread.sleep(2 * delay);
 
         long valueAtNode2 = oortObject2.getInfo(oort1.getURL()).getObject();
-        Assert.assertEquals(value3, valueAtNode2);
+        Assertions.assertEquals(value3, valueAtNode2);
     }
 
-    @Test
-    public void testConcurrent() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testConcurrent(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "concurrent";
         OortObject.Factory<String> factory = OortObjectFactories.forString("");
         final OortObject<String> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -380,7 +398,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         barrier.await();
 
         // Wait for all threads to finish.
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         // Verify that the last value set (randomly) on the first OortObject is also
         // the same value on the second OortObject when all updates have arrived.
@@ -391,11 +409,11 @@ public class OortObjectTest extends AbstractOortObjectTest {
             if (object2 == null) {
                 logger.info(oortObject1.dump());
                 logger.info(oortObject2.dump());
-                Assert.fail();
+                Assertions.fail();
             } else {
                 if (object2.equals(object1)) {
                     // Make sure there are no more values.
-                    Assert.assertNull(values.poll(1, TimeUnit.SECONDS));
+                    Assertions.assertNull(values.poll(1, TimeUnit.SECONDS));
                     break;
                 }
             }
@@ -403,11 +421,14 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
         // Re-verify.
         String object2 = oortObject2.getInfo(oort1.getURL()).getObject();
-        Assert.assertEquals(object1, object2);
+        Assertions.assertEquals(object1, object2);
     }
 
-    @Test(timeout = 5000)
-    public void testApplicationLocking() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testApplicationLocking(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         String name = "locking";
         OortObject.Factory<String> factory = OortObjectFactories.forString("initial");
         OortObject<String> oortObject1 = new OortObject<>(oort1, name, factory);
@@ -455,18 +476,19 @@ public class OortObjectTest extends AbstractOortObjectTest {
             lock.unlock();
         }
 
-        Assert.assertTrue(updatedLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertNotNull(result.get(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(updatedLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertNotNull(result.get(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testNodeCrashWhileOtherNodeStarts() throws Exception {
-        stop();
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testNodeCrashWhileOtherNodeStarts(String serverTransport) throws Exception {
+        prepare(serverTransport);
 
         String name = "crash";
         OortObject.Factory<String> factory = OortObjectFactories.forString("");
 
-        Server server1 = startServer(0);
+        Server server1 = startServer(serverTransport, 0);
         ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
         int port1 = connector1.getLocalPort();
         oort1 = startOort(server1);
@@ -477,7 +499,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         result1.get(5, TimeUnit.SECONDS);
 
         // Simulate that node2 is starting but not yet ready to accept connections.
-        Server server2 = startServer(0);
+        Server server2 = startServer(serverTransport, 0);
         ServerConnector connector2 = (ServerConnector)server2.getConnectors()[0];
         int port2 = connector2.getLocalPort();
         connector2.stop();
@@ -499,10 +521,10 @@ public class OortObjectTest extends AbstractOortObjectTest {
         });
 
         OortComet oortComet21 = oort2.observeComet(oort1.getURL());
-        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        Assert.assertFalse(joinedLatch.await(1, TimeUnit.SECONDS));
-        Assert.assertFalse(updateLatch2.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(joinedLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(updateLatch2.await(1, TimeUnit.SECONDS));
 
         // Simulate node1 crash.
         oortObject1.stop();
@@ -511,10 +533,10 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
         // Verify that node2 has no data from node1.
         OortObject.Info<String> info = oortObject2.getInfo(oort1.getURL());
-        Assert.assertNull(info);
+        Assertions.assertNull(info);
 
         // Restart node1.
-        server1 = startServer(port1);
+        server1 = startServer(serverTransport, port1);
         connector1 = (ServerConnector)server1.getConnectors()[0];
         connector1.stop();
         oort1 = startOort(server1);
@@ -540,8 +562,8 @@ public class OortObjectTest extends AbstractOortObjectTest {
         connector2.setPort(port2);
         connector2.start();
 
-        Assert.assertTrue(joinedLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(updateLatch1.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(updateLatch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(joinedLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(updateLatch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(updateLatch2.await(5, TimeUnit.SECONDS));
     }
 }

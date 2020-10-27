@@ -17,28 +17,20 @@ package org.cometd.common;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@RunWith(Parameterized.class)
 public class JettyJacksonComparisonTest {
-    @Parameters(name = "{index}: JSON Provider: {0} Iterations: {1} Count: {2}")
-    public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[][]
-                {
-                        {JacksonJSONProvider.class},
-                        {JettyJSONProvider.class}
-                }
-        );
+    public static List<JSONProvider> jsonProviders() {
+        return Arrays.asList(new JacksonJSONProvider(), new JettyJSONProvider());
     }
 
     public interface JSONProvider {
@@ -88,14 +80,10 @@ public class JettyJacksonComparisonTest {
     }
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final JSONProvider jsonProvider;
 
-    public JettyJacksonComparisonTest(final Class<?> jsonProvider) throws Exception {
-        this.jsonProvider = (JSONProvider)jsonProvider.getConstructor().newInstance();
-    }
-
-    @Test
-    public void testParse() throws Exception {
+    @ParameterizedTest(name = "{index}: JSON Provider: {0}")
+    @MethodSource("jsonProviders")
+    public void testParse(JSONProvider jsonProvider) throws Exception {
         String json = "" +
                 "[{" +
                 "   \"successful\":true," +
@@ -134,8 +122,9 @@ public class JettyJacksonComparisonTest {
         }
     }
 
-    @Test
-    public void testGenerate() throws Exception {
+    @ParameterizedTest(name = "{index}: JSON Provider: {0}")
+    @MethodSource("jsonProviders")
+    public void testGenerate(JSONProvider jsonProvider) throws Exception {
         HashMapMessage message = new HashMapMessage();
         message.setChannel("/meta/connect");
         message.setClientId("abcdefghijklmnopqrstuvwxyz");
