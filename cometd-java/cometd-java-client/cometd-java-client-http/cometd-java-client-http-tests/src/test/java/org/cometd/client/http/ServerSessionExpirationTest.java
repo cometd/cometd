@@ -29,13 +29,13 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.TransportListener;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServerSessionExpirationTest extends ClientServerTest {
-    private final Logger logger = Log.getLogger(ServerSessionExpirationTest.class);
+    private final Logger logger = LoggerFactory.getLogger(ServerSessionExpirationTest.class);
 
     @Test
     public void testExpirationCancelledByPublish() throws Exception {
